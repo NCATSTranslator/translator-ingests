@@ -1,4 +1,7 @@
 # Byte-compiled / optimized / DLL files
+# IDE metadata to be ignored
+.idea
+
 __pycache__/
 *.py[cod]
 *$py.class
