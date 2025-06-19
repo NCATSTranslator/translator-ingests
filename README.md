@@ -2,11 +2,13 @@
 
 ## Prerequisites
 
-The project uses the [uv project (dependency) management tool](https://docs.astral.sh/uv/) which should first be installed on your system and used to install project dependencies into a virtual environment. 
+The project uses the [**uv**](https://docs.astral.sh/uv/) Python package and project manager You will need to [install **uv** onto your system](https://docs.astral.sh/uv/getting-started/installation/).
+
+The project also currently (mid-June 2025) uses a conventional unix-style make file to execute tasks. For this reason, working within a unix-like command line interface terminal (i.e. MacOSX, Ubuntu, Windows WSL2 with a unix kernel, Cygwin, etc.) is recommended.
 
 ## Initial MVP: CTD
 
-Here, we apply a koza transform of CTD data, writing knowledge graph output to a jsonlines (jsonl) file. The project is built and executed using a conventional Makefile:
+Here, we apply a koza transform of CTD data, writing knowledge graph output to a jsonlines (jsonl) file. The project is built and executed using a conventional (unix-like) Makefile:
 
     │ Usage:
     │     make <target>

@@ -1,7 +1,7 @@
 [project]
 name = "bridge"
 version = "0.1.0"
-description = "Add your description here"
+description = "Translator Phase 3 Data Ingest Pipeline"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
