@@ -1,0 +1,32 @@
+[project]
+name = "bridge"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "biolink-model>=4.2.5",
+    "kghub-downloader>=0.4.1",
+    "koza",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.0",
+    "black>=24.1.0",
+    "ruff>=0.1.9",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+
+[tool.uv.sources]
+koza = { git = "https://github.com/monarch-initiative/koza.git", rev = "koza-api-new" }
