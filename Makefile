@@ -43,8 +43,12 @@ fresh: clean clobber all
 .PHONY: all
 all: install test
 
+.PHONY: python
+python:
+	uv python install
+
 .PHONY: install
-install: 
+install: python
 	uv sync
 
 ### Testing ###

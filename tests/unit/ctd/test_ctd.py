@@ -6,7 +6,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from koza.io.writer.writer import KozaWriter
 from koza.runner import KozaRunner
-from src.bridge.ctd.ctd import transform_record as ctd_transform
+from src.translator_ingest.ingests.ctd.ctd import transform_record as ctd_transform
 
 
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
