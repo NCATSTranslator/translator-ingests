@@ -67,7 +67,7 @@ download:
 .PHONY: run
 run: download
 	# TODO: this should probably go out and find every yaml config under src/translator_ingest/ingests/*/
-	$(RUN) koza transform src/translator_ingest/ingests/ctd.yaml --output-format jsonl
+	$(RUN) koza transform src/translator_ingest/ingests/ctd/ctd.yaml --output-format jsonl
 
 ### Linting, Formatting, and Cleaning ###
 
