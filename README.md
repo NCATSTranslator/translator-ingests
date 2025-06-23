@@ -10,7 +10,7 @@ The project also currently (mid-June 2025) uses a conventional unix-style make f
 
 ## Initial MVP: CTD
 
-Here, we apply a koza transform of CTD data, writing knowledge graph output to a jsonlines (jsonl) file. The project is built and executed using a conventional (unix-like) Makefile:
+Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of CTD data, writing knowledge graph output to a jsonlines (jsonl) file. The project is built and executed using a conventional (unix-like) Makefile:
 
     │ Usage:
     │     make <target>
