@@ -1,9 +1,9 @@
 # NCATS Translator Data Ingests
 
 This software repository forms an integral part of the Biomedical Data Translator Consortium, Performance Phase 3 efforts at biomedical knowledge integration, within the auspices of the **D**ata **ING**est and **O**perations ("DINGO") Working Group.
-The repository aggregates and coordinates the development of knowledge-specific and shared library software used for Translator data ingests from primary (mostly external "third party") knowledge sources, into so-called Translator "Tier 1" knowledge graph(s). This software is primarily coded in Python.
+The repository aggregates and coordinates the development of knowledge-specific and shared library software used for Translator data ingests from primary (mostly external "third party") knowledge sources, into so-called [Translator "Tier 1" knowledge graph(s)](https://github.com/NCATSTranslator/Data-Access-Working-Group/blob/main/data-tiers.md#tier-1). This software is primarily coded in Python.
 
-A general discussion of the Translator Data Ingest architecture is provided [here](https://docs.google.com/presentation/d/11RaXtVAPX_i6MpD1XG2zQMwi81UxEXJuL5cu6FpcyHU).
+A general discussion of the Translator Data Ingest architecture is provided [here](https://docs.google.com/presentation/d/1MNkosy-AmHVIXvfc5tNxpCaqnUskypIO6gwQle0H1_M).
 
 ## Prerequisites
 
