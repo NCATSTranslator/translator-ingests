@@ -1,3 +1,6 @@
+# Guidance for Populating Reference Ingest Guides
+Populate each section defiend below as relevant/possible. Include in each section any links to source documentation relevant to the topic it describes.
+
 # Section Definitions 
 
 **Source Description**: The infores of the source, and a short description providing info relevant to this ingest. Note that this may be a "sub-resource" infores (e.g. `infores:ctd-chem-disease-subset`)
@@ -29,11 +32,10 @@
 - [CTD RIG](https://github.com/NCATSTranslator/translator-ingests/edit/mbrush-patch-1/src/translator_ingest/ingests/ctd/rig.md)
 
 
------------
+---------
   
 # Template
 
-----------
 
 # [Source Name] Reference Ingest Guide (RIG)
 
