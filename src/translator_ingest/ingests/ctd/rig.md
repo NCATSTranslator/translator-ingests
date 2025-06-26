@@ -30,7 +30,7 @@ CTD is the premier source of curated chemical-disease associations, which are an
 
 ## Ingest Scope
  - Translator's ingest covers curated Chemical to Disease associations that report therapeutic associations (treats or studied or applied to treat).
- - Scope to be expanded pendingingest team discussions
+ - Scope to be expanded pending ingest team discussions
 
 
   ### Included:
