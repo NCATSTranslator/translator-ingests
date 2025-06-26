@@ -13,19 +13,19 @@ CTD is the premier source of curated chemical-disease associations, which are an
 
 ## Data Provision Mechanism(s)
 - File download.  tsv, csv, obo, or xml .gz files.
-- There are two file download webpages for this - not sure what the difference is. 
 
 
+## Data Access and Documentation
+ - There are two pages for downloading data files.
+ - CTD Bulk Downloads: http://ctdbase.org/downloads/  (this page includes fiel sizes and simple data dictioanries for each download)
+ - CTD Catalog: https://ctdbase.org/reports/   (a simple list of files, reports the number of rows in each file)
+
+   
 ## Data Release and Versioning
  - Releases vary in cadence, roughly 1-2 reelases per month.
  - Versioning is based on month + year  of the release
  - Releases page / change log: https://ctdbase.org/about/changes/
  - Latest status page: https://ctdbase.org/about/dataStatus.go
-
-   
-## Data Access and Documentation
- - CTD Bulk Downloads: http://ctdbase.org/downloads/  (this page includes simple data dictioanries for each download)
- - CTD Catalog: https://ctdbase.org/reports/
 
 
 ## Ingest Scope
