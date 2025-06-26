@@ -1,7 +1,10 @@
 # CTD Chemical-Disease Reference Ingest Guide (RIG)
 
-## Source Description and Documentation
-CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides manually curated information about chemical–gene/protein interactions, chemical–disease and gene–disease relationships. These data are integrated with functional and pathway data to aid in development of hypotheses about the mechanisms underlying environmentally influenced diseases.
+## Source Description and Licensing
+ - CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health.
+ - It provides manually curated information about chemical–gene/protein interactions, chemical–disease and gene–disease relationships.
+ - These data are integrated with functional and pathway data to aid in development of hypotheses about the mechanisms underlying environmentally influenced diseases.
+ - Terms of use are described here: https://ctdbase.org/about/legal.jsp
 
 
 ## Source Utility to Translator
