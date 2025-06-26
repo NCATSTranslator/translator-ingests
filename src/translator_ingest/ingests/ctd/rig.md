@@ -6,32 +6,27 @@
  - These data are integrated with functional and pathway data to aid in development of hypotheses about the mechanisms underlying environmentally influenced diseases.
  - Terms of use are described here: https://ctdbase.org/about/legal.jsp
 
-
 ## Source Utility to Translator
-CTD is the premier source of curated chemical-disease associations, which are an improtant type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
+- CTD is the premier source of curated chemical-disease associations, which are an improtant type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
 
-
-## Data Provision Mechanism(s)
-- File download.  tsv, csv, obo, or xml .gz files.
-
-
-## Data Access and Documentation
- - There are two pages for downloading data files.
+## Data Access Locations
+There are two pages for downloading data files.
  - CTD Bulk Downloads: http://ctdbase.org/downloads/  (this page includes fiel sizes and simple data dictioanries for each download)
  - CTD Catalog: https://ctdbase.org/reports/   (a simple list of files, reports the number of rows in each file)
-
    
-## Data Release and Versioning
- - Releases vary in cadence, roughly 1-2 reelases per month.
+## Provision Mechanism(s) and Formats
+- File download.
+- Formats include tsv, csv, obo, or xml .gz files.
+   
+## Releases and Versioning
+ - No consistent cadence for releases, but on average there are 1-2 reelases each month.
  - Versioning is based on month + year  of the release
  - Releases page / change log: https://ctdbase.org/about/changes/
  - Latest status page: https://ctdbase.org/about/dataStatus.go
 
-
 ## Ingest Scope
  - Translator's ingest covers curated Chemical to Disease associations that report therapeutic associations (treats or studied or applied to treat).
  - Scope to be expanded pending ingest team discussions
-
 
   ### Included:
 
