@@ -1,0 +1,8 @@
+git+https://github.com/monarch-initiative/koza.git@koza-api-new#egg=koza
+bmt
+kgx
+biolink-model
+mypy
+pandas
+pandas-stubs
+ruff
