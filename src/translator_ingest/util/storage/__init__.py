@@ -7,7 +7,7 @@
 #
 from typing import Optional
 from enum import Enum
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod  # see https://docs.python.org/3/library/abc.html
 
 from .dataset import DataSetId, DataSet
 
