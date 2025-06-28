@@ -68,11 +68,9 @@ def transform_and_write_jsonl(ctd_df: pandas.DataFrame,
 def main(source_url: str,
          output_nodes_filename: str,
          output_edges_filename: str):
-    
     transform_and_write_jsonl(read_and_filter_ctd(source_url),
                               output_nodes_filename,
                               output_edges_filename)
-
 
 
 if __name__ == "__main__":
