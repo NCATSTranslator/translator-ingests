@@ -60,9 +60,10 @@ def get_edges(ctd_df: pandas.DataFrame) -> tuple[ChemicalToDiseaseOrPhenotypicFe
 def transform_and_write_jsonl(ctd_df: pandas.DataFrame,
                               output_nodes_filename: str,
                               output_edges_filename: str):
-    list(map(lambda pair: iu.save_to_jsonl(pair[0](ctd_df), pair[1]),
-             [(get_nodes, output_nodes_filename),
-              (get_edges, output_edges_filename)]))
+    for func, filename in [(get_nodes, output_nodes_filename),
+                           (get_edges, output_edges_filename)]:
+        iu.save_to_jsonl(func(ctd_df), filename)
+
     
 def main(source_url: str,
          output_nodes_filename: str,
