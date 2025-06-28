@@ -86,4 +86,4 @@ def save_to_jsonl(iter_serializable: Iterable[BaseModel],
         os.remove(file_name)
     with open(file_name, 'a') as fo:
         for m in iter_serializable:
-            print(m.model_dump_json(), file=fo)
+            print(m.model_dump_json(exclude_unset=True), file=fo)
