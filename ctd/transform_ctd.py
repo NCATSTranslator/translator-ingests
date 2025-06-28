@@ -3,9 +3,6 @@ import biolink_model
 import ingest_utils as iu
 from typing import Callable, TypeVar, Type, Optional
 
-CHUNK_SIZE = 100_000
-
-
 from biolink_model.datamodel.pydanticmodel_v2 import (ChemicalEntity,
                                                       Disease,
                                                       ChemicalToDiseaseOrPhenotypicFeatureAssociation,
