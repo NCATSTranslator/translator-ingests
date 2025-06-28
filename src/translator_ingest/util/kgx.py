@@ -2,5 +2,7 @@
 # Knowledge Graph eXchange set of files
 #
 # TODO: stub KGX wrapper to be elaborated
+# import kgx
+
 class KGX:
     pass

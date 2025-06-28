@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "biolink-model>=4.2.5",
     "kghub-downloader>=0.4.1",
+    "kgx>=2.5.1",
     "koza",
 ]
 
