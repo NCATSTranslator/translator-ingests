@@ -38,7 +38,7 @@ associations = iu.make_assocs(ctd_df,
                                'knowledge_level': KnowledgeLevelEnum.knowledge_assertion,
                                'agent_type': AgentTypeEnum.manual_agent},
                               (iu.make_tx_col_func("PubMedIDs",
-                                                   lambda p: tuple(p.split("|"))),),
+                                                   lambda ps: tuple(map(lambda p: 'PMID:' + p, ps.split("|")))),),
                               ChemicalToDiseaseOrPhenotypicFeatureAssociation)
 
 iu.save_to_jsonl(associations,
