@@ -9,9 +9,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (NamedThing, Association)
 DataFrame = pandas.DataFrame
 
 
-
-
-
 def make_fix_comment_in_column_name(comment_char: str) -> Callable:
     def _fix_comment_in_column_name(df: pandas.DataFrame):
         df.columns = [df.columns[0].lstrip(comment_char).lstrip(' ')] + list(df.columns[1:])
