@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas
 import uuid
@@ -86,3 +87,10 @@ def save_to_jsonl(iter_serializable: Iterable[BaseModel],
     with open(file_name, 'a') as fo:
         for m in iter_serializable:
             print(m.model_dump_json(exclude_unset=True), file=fo)
+
+
+def namespace_to_dict(namespace: argparse.Namespace) -> dict:
+    return {
+        k: namespace_to_dict(v) if isinstance(v, argparse.Namespace) else v
+        for k, v in vars(namespace).items()
+    }
