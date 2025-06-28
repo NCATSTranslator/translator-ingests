@@ -1,3 +1,5 @@
+#!/usr/bin/env python3.12
+
 import pandas
 import ingest_utils as iu
 from biolink_model.datamodel.pydanticmodel_v2 import (ChemicalEntity,
