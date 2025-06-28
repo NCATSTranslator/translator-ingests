@@ -17,13 +17,13 @@ source venv/bin/activate.csh
 ```
 Once you've activated your virtualenv, proceed to run the test (see subsections below).
 
-## Small test
+## Small test (ingests 1000 rows)
 
 ```
 ./run-parser.sh
 ```
 
-## Big test
+## Big test (ingests the full 10M rows)
 
 ```
 ./run-parser-big.sh
