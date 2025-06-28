@@ -20,7 +20,7 @@ Once you've activated your virtualenv, proceed to run the test (see subsections 
 ## Small test
 
 ```
-.,/run-parser.sh
+./run-parser.sh
 ```
 
 ## Big test
