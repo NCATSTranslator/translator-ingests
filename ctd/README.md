@@ -1,4 +1,4 @@
-# How to run this script
+# How to run this parser
 
 ## Setup
 
