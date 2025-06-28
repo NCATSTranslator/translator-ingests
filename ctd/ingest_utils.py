@@ -1,15 +1,14 @@
-import biolink_model
 import os
 import pandas
 import uuid
-from typing import Callable, TypeVar, Type, Optional, TextIO, Iterable, Any, Union
+from typing import Callable, TypeVar, Iterable, Union
 from pydantic import BaseModel
+from biolink_model.datamodel.pydanticmodel_v2 import (NamedThing, Association)
 
 DataFrame = pandas.DataFrame
 
 
 
-from biolink_model.datamodel.pydanticmodel_v2 import (NamedThing, Association)
 
 
 def make_fix_comment_in_column_name(comment_char: str) -> Callable:
