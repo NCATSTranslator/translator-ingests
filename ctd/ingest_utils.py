@@ -54,7 +54,7 @@ def make_assocs(df: pandas.DataFrame,
                 object_id_col: str,
                 pmids_col: str,
                 fixed_properties: dict,
-                column_fixers: tuple[Callable, ...],
+                column_fixers: tuple[Callable],
                 cls: type[A]) -> tuple[A]:
     fixed_df = df[[subject_id_col,
                    object_id_col,
