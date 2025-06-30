@@ -28,8 +28,8 @@ There are two pages for downloading data files.
  - Latest status page: https://ctdbase.org/about/dataStatus.go
 
 ## Ingest Scope
- - Translator's ingest covers curated Chemical to Disease associations that report therapeutic associations (treats or studied or applied to treat).
- - Scope to be expanded pending ingest team discussions
+ - Translator's ingest covers curated Chemical to Disease associations that report therapeutic associations (treats or studied or applied to treat). Scope to be expanded pending ingest team discussions.
+ - Relevant files include CTD_chemicals_diseases.tsv.gz and CTD_exposure_events.tsv.gz.
 
   ### Included:
 
