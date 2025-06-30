@@ -28,24 +28,32 @@ There are two pages for downloading data files.
  - Latest status page: https://ctdbase.org/about/dataStatus.go
 
 ## Ingest Scope
- - Translator's ingest covers curated Chemical to Disease associations that report therapeutic associations (treats or studied or applied to treat). Scope to be expanded pending ingest team discussions.
- - Relevant files include CTD_chemicals_diseases.tsv.gz and CTD_exposure_events.tsv.gz.
+ - Translator's ingest covers curated Chemical to Disease associations that report therapeutic associations (treats or studied or applied to treat).
+ - Scope to be expanded pending ingest team discussions.
 
+
+  ### Relevant Files:
+
+  | File | Description |
+  |----------|----------|
+  | CTD_chemicals_diseases.tsv.gz  | Manually cureated and computationally inferred associations between chemicals and diseases | 
+  | CTD_exposure_events.tsv.gz  | Descriptions of statistical studies of how exposure to chemcials affects a particular population, with some records providing outcomes| 
+  
   ### Included:
 
-  | File | Rows | Columns |
+  | File | Included Content | Columns |
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Rows where a direct evidence label is applied, and is of type "T" (therapeutic)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
 
   ### Excluded:
 
-  | File | Excluded Subset | Rationale  |
+  | File | Excluded Content | Rationale  |
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Rows where the direct evidence label is of type "M" (marker/mechanism) | These will likely be included in a future ingest |
   | CTD_chemicals_diseases.tsv.gz  | Rows lacking evidence in the DirectEvidence column | Decided that the methodology used to create these inferences gave associations that were not strong/meaningful enough to be of use to Translator |
   | CTD_exposure_events.tsv.gz | All | These will likely be included in a future ingest |
 
-  ### Future Ingest Considerations:
+  ### Future Considerations:
 
   | File | Rationale |
   |----------|----------|
