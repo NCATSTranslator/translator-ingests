@@ -3,20 +3,23 @@ Populate each section defiend below as relevant/possible. Include in each sectio
 
 # Section Definitions 
 
-**Source Description**: The infores of the source, and a short description providing info relevant to this ingest. Note that this may be a "sub-resource" infores (e.g. `infores:ctd-chem-disease-subset`)
+**Source Infores**: The infores of the source. Note that this may be a "sub-resource" infores (e.g. `infores:ctd-chem-disease-subset`)
+
+**Source Description and Licensing**: A short description of the source focused on info relevant to this ingest, including any licensing or terms of use info or links 
 
 **Source Utility to Translator:** description of the general rationale for ingesting selected content from this source, and its utility for Translator use cases
 
-**Data Access Locations:** urls where data ingested can be accessed - (and any documentation about the data and how to understand/use it (e.g. data dictionaries. data models).
+**Source Data Access Locations:** urls where source data that was ingested can be accessed - (and any documentation about the data and how to understand/use it (e.g. data dictionaries. data models).
 
-**Provision Mechanism(s) and Formats:** how the source distributes their data  (file download, API endpoints, database), and a brief description of each (e.g. formats, scope of data provided, other considerations) 
+**Source Provision Mechanism(s) and Formats:** how the source distributes their data  (file download, API endpoints, database), and a brief description of each (e.g. formats, scope of data provided, other considerations) 
 
-**Releases and Versioning:** description of how releases are managed (general approach, frequency, any important considerations) 
+**Source Releases and Versioning:** description of how releases are managed by the source (general approach, frequency, any important considerations) 
 
 **Ingest Scope:** Define the subset of data form the source that was included in this ingest.
-  - **Included:** Details of what data was ingested (or used to inform ingest/transformation) - in terms of files and columns for tabular data
+  - **Relevant Files:** files provided by the source that provide data relevant to the defined ingest scope. 
+  - **Included:** details of what data was ingested form these files (or used to inform ingest/transformation) - in terms of files and columns for tabular data
   - **Excluded:** what data was not ingested or filtered out during processing. As possible, describe the rationalebehindany filtering rules or exclusion criteria.
-  - **Future Considerations:** note data that was excluded but may be useful to take in future ingests.
+  - **Future Considerations:** notes data that was excluded but may be useful to take in future ingests.
 
 **Ingested Edge Types:** List the types of edges created in our KG (Biolink Association type and meta-edge representation. As possible, include a brief rationale for why the modeling pattern/predicate was deemed appropriate to represent the source data.
 
