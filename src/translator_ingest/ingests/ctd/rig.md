@@ -1,5 +1,8 @@
 # CTD Chemical-Disease Reference Ingest Guide (RIG)
 
+## Source Infores: 
+ - infores:ctd-chemical-disease-subset
+
 ## Source Description and Licensing
  - CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health.
  - It provides manually curated information about chemical–gene/protein interactions, chemical–disease and gene–disease relationships.
@@ -15,8 +18,8 @@ There are two pages for downloading data files.
  - CTD Catalog: https://ctdbase.org/reports/   (a simple list of files, reports the number of rows in each file)
    
 ## Source Provision Mechanism(s) and Formats
-- File download.
-- Formats include tsv, csv, obo, or xml .gz files.
+- Mechanism: File download.
+- Formats: tsv, csv, obo, or xml .gz files.
    
 ## Source Releases and Versioning
  - No consistent cadence for releases, but on average there are 1-2 reelases each month.
