@@ -9,16 +9,16 @@
 ## Source Utility to Translator
 - CTD is the premier source of curated chemical-disease associations, which are an improtant type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
 
-## Data Access Locations
+## Source Data Access Locations
 There are two pages for downloading data files.
  - CTD Bulk Downloads: http://ctdbase.org/downloads/  (this page includes fiel sizes and simple data dictioanries for each download)
  - CTD Catalog: https://ctdbase.org/reports/   (a simple list of files, reports the number of rows in each file)
    
-## Provision Mechanism(s) and Formats
+## Source Provision Mechanism(s) and Formats
 - File download.
 - Formats include tsv, csv, obo, or xml .gz files.
    
-## Releases and Versioning
+## Source Releases and Versioning
  - No consistent cadence for releases, but on average there are 1-2 reelases each month.
  - Versioning is based on month + year  of the release
  - Releases page / change log: https://ctdbase.org/about/changes/
