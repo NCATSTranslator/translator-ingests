@@ -2,6 +2,7 @@ from typing import Dict
 
 # def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
 from src.translator_ingest.util.http import post_query
+
 from src.translator_ingest.util.normalize import NODE_NORMALIZER_SERVER
 
 def test_post_invalid_url_query():
