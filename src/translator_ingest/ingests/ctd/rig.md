@@ -59,7 +59,7 @@ There are two pages for downloading data files.
   |----------|----------|
   | CTD_exposure_events.tsv.gz | May provide additional chemical-disease edges reporting statistical correlations from environmental exposure studues |
 
-## Ingested Edge Types
+## Ingested Edge Info
 
 | No. | Association Type | MetaEdge | Qualifiers |  AT / KL  | Evidence Code  |
 |----------|----------|----------|----------|----------|----------|
@@ -68,7 +68,7 @@ There are two pages for downloading data files.
 **Rationale**:
 1. The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of "T" was broad ("a chemical that has a known or potenitial therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
       
-## Ingested Node Types
+## Ingested Node Info
 - ChemicalEntity (MeSH)
 - DiseaseOrPhenotypicFeature (MeSH)
 
