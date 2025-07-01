@@ -15,12 +15,16 @@ def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
     :param query, JSON query for posting
     :param params, optional parameters
     :param server, str human-readable name of server called (for error message reports)
-    :return: Dict, JSON content response from the query (empty, with logging message, if unsuccessful)
+    :return: Dict, JSON content response from the query (empty, posting a logging message, if unsuccessful)
     """
-    if params is None:
-        response = requests.post(url, json=query)
-    else:
-        response = requests.post(url, json=query, params=params)
+    try:
+        if params is None:
+            response = requests.post(url, json=query)
+        else:
+            response = requests.post(url, json=query, params=params)
+    except Exception as ce:
+        logging.error(f"URL {url} could not be accessed: {str(ce)}?")
+        return dict()
 
     result: Dict = dict()
     err_msg_prefix: str = \

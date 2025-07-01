@@ -1,6 +1,10 @@
 import pytest
 
-import src.translator_ingest.util.normalize
+from src.translator_ingest.util.normalize import (
+    convert_to_preferred,
+    normalize_edge,
+    normalize_node
+)
 
 def test_convert_to_preferred():
     pass
