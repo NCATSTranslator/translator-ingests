@@ -25,7 +25,10 @@
 from typing import Optional
 from .http import post_query
 
-from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    Literal, NamedThing, Association, Gene
+)
 
 
 NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"
@@ -60,14 +63,16 @@ def normalize_node(node: NamedThing) -> Optional[NamedThing]:
     :param node: target instance of a class object in the NameThing hierarchy
     :return: rewritten node entry; None, if a node cannot be resolved in NN
     """
+
     assert node.id, "normalize_node(node): empty node identifier?"
+
     query = {'curies': [node.id]}
     result = post_query(url=NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
 
     # Sanity check about regular NN operation for all queries
     assert node.id in result
 
-    # Maybe nothing returned if node identifier is unknown?
+    # Maybe nothing returned if the node identifier is unknown?
     if not result[node.id]:
         return None
 
@@ -78,53 +83,59 @@ def normalize_node(node: NamedThing) -> Optional[NamedThing]:
     # Update the contents of the node with the NN result
     # The original identifier of the input node may be
     # demoted to xref, while the canonical identifier is reset
-    canonical_identifier = node_identity.id.identifier
+
+    # (sanity check for required fields... We assume that they ought to always be present?)
+    assert "id" in node_identity and "identifier" in node_identity["id"]
+    canonical_identifier = node_identity["id"]["identifier"]
+    canonical_name = node_identity["id"]["label"]
+
+    # Sanity check... in case the
+    # original node xref and synonym field are empty (or not...)
+    if node.xref is None:
+        node.xref = list()
+
+    if node.synonym is None:
+        node.synonym = list()
+
+    for entry in node_identity["equivalent_identifiers"]:
+
+        # Don't include the canonical entry as xref
+        if entry["identifier"] == canonical_identifier:
+            continue
+
+        # Otherwise, capture equivalent identifier as xref...
+        if entry["identifier"] not in node.xref:
+            node.xref.append(entry["identifier"])
+        # ... and label as a synonym (except for the canonical name)
+        if "label" in entry and \
+                entry["label"] != canonical_name and \
+                entry["label"] not in node.synonym:
+            node.synonym.append(entry["label"])
 
     if node.id != canonical_identifier:
-        # input node.id moved to cross-references ('xref'),
-        # and input.name moved to the synonym slot list,...
-
-        # Sanity check... in case the
-        # original node xref and synonym field are empty (or not...)
-        if node.xref is None:
-            node.xref = list()
-
-        if node.synonym is None:
-            node.synonym = list()
-
-        for entry in node_identity.equivalent_identifiers:
-
-            # Don't include the canonical entry as xref
-            if entry.identifier == canonical_identifier:
-                continue
-
-            # Otherwise, capture equivalent identifier as xref...
-            if entry.identifier not in node.xref:
-                node.xref.append(entry.identifier)
-            # ... and label as a synonym
-            if entry.label not in node.synonym:
-                node.synonym.append(entry.label)
 
         # Reset the node.id to the canonical id...
         node.id = canonical_identifier
 
-    else:
-        # The original node identifier is already the canonical identifier;
-        # however, the cross-reference and synonym slot values still need to be set.
-        raise NotImplementedError("Implement me!")
+        # Add input.name moved to the list of synonyms
+        # if it is identical to the canonical name
+        if node.name != canonical_name and \
+                node.name not in node.synonym:
+            node.synonym.append(node.name)
 
-    # For both cases (above), we:
-    # - retain the input node name as a synonym
-    if node.name not in node.synonym:
-        node.synonym.append(node.name)
-    # - overwrite the node name with the canonical identifier name...
-    node.name = node_identity.id.label
+    # Overwrite the node name with the canonical name...
+    node.name = canonical_name
 
-    # ... and (Re-)set the node categories
-    node.category = node_identity.type
+    # ... TODO: (Re-)set the node categories
+    #           (Pydantic doesn't allow the following statement ... yet?)
+    # node.category = node_identity["type"]
 
     # return the normalized node
     return node
 
 def normalize_edge(edge: Association) -> Optional[Association]:
-    return None
+    edge_subject = normalize_node(NamedThing(id=edge.subject, **{}))
+    edge_object = normalize_node(NamedThing(id=edge.object, **{}))
+    edge.subject = edge_subject.id
+    edge.object = edge_object.id
+    return edge

@@ -119,6 +119,20 @@ wheels = [
 ]
 
 [[package]]
+name = "bmt"
+version = "1.4.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "deprecation" },
+    { name = "linkml-runtime" },
+    { name = "stringcase" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6d/ba/fc61bb7b0308bfe65e36764afd1d5fc07c22210135c27a7c991a72790c20/bmt-1.4.5.tar.gz", hash = "sha256:847386e83b2c5d4e62050ad4a336dc5c043330593b8d07216c5b18feba763e23", size = 15082, upload-time = "2025-05-27T23:39:00.914Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/db/066fea232c3088a9b5cb9bd77118a104681f54d0ade79f7a2d97a984a3fb/bmt-1.4.5-py3-none-any.whl", hash = "sha256:987efdbd76e15aa3a9f1d6170bfe10de959a97df01d34f37020fe12cdd56f019", size = 15477, upload-time = "2025-05-27T23:38:59.449Z" },
+]
+
+[[package]]
 name = "boto3"
 version = "1.38.36"
 source = { registry = "https://pypi.org/simple" }
@@ -152,6 +166,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "biolink-model" },
+    { name = "bmt" },
     { name = "kghub-downloader" },
     { name = "koza" },
 ]
@@ -166,6 +181,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "biolink-model", specifier = ">=4.2.5" },
+    { name = "bmt", specifier = ">=1.4.5" },
     { name = "kghub-downloader", specifier = ">=0.4.1" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new" },
 ]
