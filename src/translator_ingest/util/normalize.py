@@ -60,6 +60,9 @@ def normalize_node(node: NamedThing) -> Optional[NamedThing]:
     Calls the Node Normalizer ("NN") with the identifier of the given node
     and updates the node contents with NN resolved values for canonical identifier,
     categories and cross-references.
+
+    Known limitation: this method does NOT reset the node.category field values at this time.
+
     :param node: target instance of a class object in the NameThing hierarchy
     :return: rewritten node entry; None, if a node cannot be resolved in NN
     """
