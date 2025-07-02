@@ -40,6 +40,7 @@ def test_normalize_node():
     node = NamedThing(id="HGNC:12791", category=["biolink:NamedThing"],**{})
     result: Optional[NamedThing] = normalize_node(node)
     assert result.id == "NCBIGene:7486"
+    # TODO: a more thorough testing of normalization method side effects is required
 
 
 def test_normalize_node_already_canonical():
