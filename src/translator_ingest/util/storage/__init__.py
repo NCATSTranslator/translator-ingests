@@ -9,7 +9,7 @@ from typing import Optional
 from enum import Enum
 from abc import ABC, abstractmethod  # see https://docs.python.org/3/library/abc.html
 
-from .dataset import DataSetId, DataSet
+from .dataset import DataSetType, DataSetId, NodeId, EdgeId, DataSet
 
 from .file_storage import FileStorage
 from .database import Database

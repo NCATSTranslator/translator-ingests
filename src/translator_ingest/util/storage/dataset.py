@@ -1,15 +1,13 @@
 # Abstract encapsulation of Translator Ingest process datasets
-# Probably will be a collection of KGX jsonlines + metadata files
-# but for now, we specify the concept in an agnostic fashion here
+# For now, we specify the concept in an agnostic fashion here
 from enum import Enum
 from typing import Optional, Dict
 from os import urandom
-from uuid import UUID, uuid4
-from ..kgx import KGX
+from uuid import UUID
 
 class DataSetType(Enum):
-    PKS = "Primary Knowledge Source Knowledge Graph format"
-    KGX = "Knowledge Graph eXchange ('KGX') Format"
+    PKS = "Primary Knowledge Source Knowledge Graph capture format"
+    KGX = "Knowledge Graph eXchange ('KGX') format"
 
 class DataSetId(UUID):
     def __init__(self):
@@ -26,10 +24,15 @@ class EdgeId(UUID):
         # TODO: can I make a variant with UUID input argument?
         UUID.__init__(self, bytes=urandom(16), version=4)
 
-# TODO: this class is just a stub proxy for some real data, so very incomplete!
+# TODO: this class is currently just a stub proxy
+#  for some real data, thus very incomplete!
 class DataSet:
 
-    def __init__(self, dataset_id: Optional[DataSetId] = None, dataset_type: DataSetType = KGX):
+    def __init__(
+            self,
+            dataset_id: Optional[DataSetId] = None,
+            dataset_type: DataSetType = DataSetType.PKS
+    ):
         """
         Constructor for initialization of an empty dataset. Issues a new DataSetId for the DataSet
         if an existing DataSetId is not provided in as an argument to the construction.
@@ -38,14 +41,8 @@ class DataSet:
         self._dataset_id = dataset_id if dataset_id is not None else DataSetId()
         self.dataset_type = dataset_type
 
-        # ... however, we defer initialization of the KGX dataset to a later time
-        self._kgx: Optional[KGX] = None
-
-    def set_kgx(self, kgx:KGX):
-        self._kgx = kgx
-
-    def get_kgx(self):
-        return self._kgx
+        # TODO: design the internal KG data representation:
+        #       directly or by subclass inheritance?
 
     def get_id(self) -> DataSetId:
         """
@@ -56,7 +53,7 @@ class DataSet:
     def get_curie(self) -> str:
         """
         Gets the CURIE string format of the DataSet identifier for data documentation purposes.
-        However, most of the software within the project  (e.g. storage access methods) will generally want to use
+        However, most of the software within the project (e.g., storage access methods) will generally want to use
         the get_id() method to use the direct internal Python representation of the dataset identifier.
         :return: CURIE string representation of the DataSet identifier
         """
@@ -74,6 +71,11 @@ class DataSet:
             # TODO: process node here
             return None  # NodeId()
         else:
+            # The input data was not validated,
+            # thus the node could not be published
+            # TODO: how do we communicate the source
+            #       of the node validation failure:
+            #       by error log or by exception?
             return None
 
     def publish_edge(self, data: Dict) -> Optional[EdgeId]:
@@ -88,12 +90,19 @@ class DataSet:
             # TODO: process edge here
             return None  # EdgeId()
         else:
-            return None  # EdgeId()
+            # The input was not validated,
+            # thus the node could not be published
+            # TODO: how do we communicate the source
+            #       of the edge validation failure:
+            #       by error log or by exception?
+            return None
 
-    def validate_node(self, data: Dict) -> bool:
-        # TODO: Dataset type-specific validation of a node
+    @staticmethod
+    def validate_node(data: Dict) -> bool:
+        # TODO: DatasetType-specific validation of a node dictionary data structure
         return False
 
-    def validate_edge(self, data: Dict) -> bool:
-        # TODO: Dataset type-specific validation of a node
+    @staticmethod
+    def validate_edge(data: Dict) -> bool:
+        # TODO: DatasetType-specific validation of an edge dictionary data structure
         return False
