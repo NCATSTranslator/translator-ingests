@@ -84,22 +84,22 @@ Populate each section defiend below as relevant/possible. Include in each sectio
 
   ### Future Considerations:
 
-  | File | Rationale |
-  |----------|----------|
-  |          |          |
+  | File | Content |  Rationale |
+  |----------|----------|----------|
+  |          |          |          |
   
-## Ingested Edge Info
+## Ingested Edge Types
 
-| No. | Association Type | MetaEdge | Qualifiers |  AT / KL  | Evidence Code  |
-|----------|----------|----------|----------|----------|----------|
-|          |          |          |          |          |          |
+| # | Association Type | Biolink MetaEdge | Qualifier Types |  AT / KL  |
+|----------|----------|----------|----------|----------|
+|          |          |          |          |          |
 
 **Rationale**:
 1. ... (match number to row number in table above)
 2. ...
 
    
-## Ingested Node Info
+## Ingested Node Types
 - Biolink Category (source id type)
 
 ## Source Quality/Confidence Assessment
