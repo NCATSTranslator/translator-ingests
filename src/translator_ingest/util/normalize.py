@@ -22,7 +22,7 @@
 # how the normalization - of the two distinct but interrelated collections
 # containing KGX-coded Biolink entities - is best coordinated.
 #
-from typing import Optional
+from typing import Optional, Dict
 from .http import post_query
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -33,9 +33,17 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"
 
+def node_normalizer_query(query: Dict) -> Optional[Dict]:
+    """
+    Wrapper for Node Normalizer http POST query request.
+    :param query: JSON query input, as a Python dictionary
+    :return: Optional[Dict] JSON-like result as multi-level Python dictionary
+    """
+    return post_query(url=NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
+
 # I'm not sure that this method is needed... copied from the
 # reasoner-validator library, just to help thinking about NN
-def convert_to_preferred(curie, allowed_list):
+def convert_to_preferred(curie, allowed_list, nn_query=node_normalizer_query):
     """
     Given an input CURIE, consults the Node Normalizer
      to identify an acceptable CURIE match with prefix
@@ -43,9 +51,11 @@ def convert_to_preferred(curie, allowed_list):
     :param curie: str CURIE identifier of interest to convert to a preferred namespace
     :param allowed_list: List[str] of one or more acceptable CURIE
            namespaces from which to find at least one equivalent identifier
+    :param nn_query: Node Normalizer accessor query wrapper
+    :param nn_query: Node Normalizer query accessor method
     """
     query = {'curies': [curie]}
-    result = post_query(url=NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
+    result = nn_query(query=query)
     if not (result and curie in result and result[curie] and 'equivalent_identifiers' in result[curie]):
         return None
     new_ids = [v['identifier'] for v in result[curie]['equivalent_identifiers']]
@@ -55,24 +65,27 @@ def convert_to_preferred(curie, allowed_list):
     return None
 
 
-def normalize_node(node: NamedThing) -> Optional[NamedThing]:
+def normalize_node(node: NamedThing, nn_query=node_normalizer_query) -> Optional[NamedThing]:
     """
     Calls the Node Normalizer ("NN") with the identifier of the given node
     and updates the node contents with NN resolved values for canonical identifier,
-    categories and cross-references.
+    node categories, and cross-references.
 
     Known limitation: this method does NOT reset the node.category field values at this time.
 
     :param node: target instance of a class object in the NameThing hierarchy
+    :param nn_query: Node Normalizer accessor query wrapper
+
     :return: rewritten node entry; None, if a node cannot be resolved in NN
     """
 
     assert node.id, "normalize_node(node): empty node identifier?"
 
     query = {'curies': [node.id]}
-    result = post_query(url=NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
+    result = nn_query(query=query)
 
     # Sanity check about regular NN operation for all queries
+    # that returns a result with key equal to the input node identifier
     assert node.id in result
 
     # Maybe nothing returned if the node identifier is unknown?
@@ -136,9 +149,18 @@ def normalize_node(node: NamedThing) -> Optional[NamedThing]:
     # return the normalized node
     return node
 
-def normalize_edge(edge: Association) -> Optional[Association]:
-    edge_subject = normalize_node(NamedThing(id=edge.subject, **{}))
-    edge_object = normalize_node(NamedThing(id=edge.object, **{}))
+def normalize_edge(edge: Association, nn_query=node_normalizer_query) -> Optional[Association]:
+    """
+    Rewrites the Association subject and object identifiers with their Node Normalizer canonical identifiers.
+    :param edge: target instance of a class object in the Association hierarchy
+    :param nn_query: Node Normalizer accessor query wrapper
+
+    rewritten node entry; None, if an association subject or object cannot be resolved in NN
+    """
+    edge_subject = normalize_node(NamedThing(id=edge.subject, **{}), nn_query=nn_query)
+    edge_object = normalize_node(NamedThing(id=edge.object, **{}), nn_query=nn_query)
+    if not (edge_subject and edge_object):
+        return None
     edge.subject = edge_subject.id
     edge.object = edge_object.id
     return edge
