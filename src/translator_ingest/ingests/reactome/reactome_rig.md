@@ -10,18 +10,30 @@
  - 
 
 ### Terms of Use
- - 
+ - Reactome's data is available under a Creative Commons Public Domain Dedication (CC0) license. This is described here: https://reactome.org/license
 
 ### Data Access Locations
-Reactome can be downloaded from this link:
+Reactome can be downloaded from this link, replacing XX with the desired version. Note, only versions 60, 65, and 70 onwards (excluding the latest version) are available through this link. (As of June 2025, Reactome is on version 93).
+ - https://download.reactome.org/XX/databases/gk_current.sql.gz
+
+For the latest version, use:
+- https://reactome.org/download/current/databases/gk_current.sql.gz
+
+Alternative data formats can be found here (but do not appear to be downloadable by version):
  - https://reactome.org/download-data
-Note: it does not provide information surrounding version or update date (which can only be found within the downloaded file). The size of the downloadable files is also not listed. 
 
 ### Provision Mechanisms and Formats
-- Mechanism(s): 
-- Formats: 
+- Mechanism(s): File download and API
+- Formats:
+  - Downloadable Files: Neo4j graphdb; MySQL database; collection of TSV mapping files, pathway information, and protein-protein interactions; BioPAX, SBML; SBGN
+  - API Query Instructions: https://reactome.org/AnalysisService/
    
 ### Releases and Versioning
+ - Fairly consistent cadence for releases (March, June, September, and December of each year)
+ - Version is a single integer that is increased by 1 for each release
+ - Release calendar page: https://reactome.org/about/release-calendar
+ - High-level change log: https://reactome.org/about/news
+
 
 ----------------
 ## Ingest Information
