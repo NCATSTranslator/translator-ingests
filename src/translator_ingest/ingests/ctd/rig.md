@@ -66,13 +66,6 @@ This ingest covers curated Chemical to Disease associations that report therapeu
   |----------|----------|----------|
   | CTD_exposure_events.tsv.gz |  Additional chemical-disease edges reporting statistical correlations from environmental exposure studies | This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not clear, so it may not be worth it. |
 
-### Contributors
-- Kevin Schaper: code author
-- Evan Morris: code support
-- Sierra Moxon: code support
-- Vlado Dancik: code support, domain expertise
-- Matthew Brush: data modeling, domain expertise
-
 -----------------
 
 ##  Target Information
@@ -98,3 +91,11 @@ High-level Biolink categories of nodes produced from this ingest are listed belo
 | ChemicalEntity |  MeSH  | Majority are biolink:SmallMolecule |
 | DiseaseOrPhenotypicFeature| MeSH | |
 
+------------------
+
+## Ingest Contributors
+- **Kevin Schaper**: code author
+- **Evan Morris**: code support
+- **Sierra Moxon**: code support
+- **Vlado Dancik**: code support, domain expertise
+- **Matthew Brush**: data modeling, domain expertise
