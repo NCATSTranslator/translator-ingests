@@ -4,7 +4,7 @@
 ## Source Information
 
 ### Infores
- - infores:reactome
+ - `infores:reactome`
 
 ### Description
  - 
@@ -73,7 +73,7 @@ Alternative data formats can be found here (but do not appear to be downloadable
 ## Target Information
 
 ### Infores
- - infores:reactome
+ - `infores:reactome`
 
 ### Edge Types
 
@@ -90,8 +90,27 @@ Alternative data formats can be found here (but do not appear to be downloadable
 
 | Biolink Category |  Source Identifier Type(s) | Notes |
 |------------------|----------------------------|--------|
-|  |  |  |
-| |  | |
+| `biolink:BiologicalProcess` | `Reaction` |  |
+| `biolink:BiologicalEntity` | `OtherEntity` | |
+| `biolink:BiologicalEntity` | `SimpleEntity` | |
+| `biolink:BiologicalEntity` | `GenomeEncodedEntity` | |
+| `biolink:BiologicalProcess` | `BlackBoxEvent` | |
+| `biolink:BiologicalEntity` | `DefinedSet` | |
+| `biolink:SmallMolecule` | `ChemicalDrug` | |
+| `biolink:BiologicalEntity` | `Complex` | |
+| `biolink:PathologicalProcess` | `FailedReaction` | |
+| `biolink:Pathway` | `Pathway` | |
+| `biolink:BiologicalProcess` | `Depolymerisation` | |
+| `biolink:BiologicalProcess` | `PositiveRegulation` | |
+| `biolink:BiologicalProcess` | `NegativeGeneExpressionRegulation` | |
+| `biolink:BiologicalProcess` | `NegativeRegulation` |  |
+| `biolink:BiologicalEntity` | `CandidateSet` |  |
+| `biolink:BiologicalProcess` | `Requirement` |  |
+| `biolink:ChemicalEntity` | `ProteinDrug` |  |
+| `biolink:BiologicalEntity` | `Polymer` |  |
+| `biolink:BiologicalEntity` | `EntityWithAccessionedSequence` |  |
+| `biolink:BiologicalProcess` | `Polymerisation` |  |
+| `biolink:BiologicalProcess` | `PositiveGeneExpressionRegulation` |  |
 
 ------------------
 
