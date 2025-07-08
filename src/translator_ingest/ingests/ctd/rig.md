@@ -5,7 +5,8 @@
 ## Source Information
 
 ### Infores: 
- - infores:ctd   (Note that the 'Source' info below may be collected in the infores catalog as a source of truth, and the infores id/web page just be referenced here)
+ - infores:ctd
+ - (Note that the 'Source' info below may be collected in the infores catalog as a source of truth, and the infores id/web page just be referenced here)
 
 ### Description
  - CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides manually curated information about chemical relationships with genes/proteins and their activities, diseases/phenotypes, and pathways. It also provides inferred/indirect associations between such entities, based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
