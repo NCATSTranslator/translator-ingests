@@ -31,13 +31,6 @@ There are two pages for downloading data files.
 ----------------
 
 ## Ingest Information
-
-### Contributors
-- Kevin Schaper: code author
-- Evan Morris: code support
-- Sierra Moxon: code support
-- Vlado Dancik: code support, domain expertise
-- Matthew Brush: data modeling, domain expertise
     
 ### Utility 
 - CTD is the premier source of curated chemical-disease associations, which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
@@ -70,6 +63,13 @@ This ingest covers curated Chemical to Disease associations that report therapeu
   | File | Content |  Rationale |
   |----------|----------|----------|
   | CTD_exposure_events.tsv.gz |  Additional chemical-disease edges reporting statistical correlations from environmental exposure studies | This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not clear, so it may not be worth it. |
+
+### Contributors
+- Kevin Schaper: code author
+- Evan Morris: code support
+- Sierra Moxon: code support
+- Vlado Dancik: code support, domain expertise
+- Matthew Brush: data modeling, domain expertise
 
 -----------------
 
