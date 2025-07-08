@@ -88,7 +88,7 @@ Alternative data formats can be found here (but do not appear to be downloadable
    
 ### Node Types
 
-| Biolink Category |  Source Identifier Type(s) | Notes |
+| Biolink Category |  Source Identifier Type | Source Identifier Description (source: https://download.reactome.org/documentation/DataModelGlossary_V90.pdf) | Notes |
 |------------------|----------------------------|--------|
 | `biolink:BiologicalProcess` | `Reaction` |  |
 | `biolink:BiologicalEntity` | `OtherEntity` | |
@@ -102,7 +102,7 @@ Alternative data formats can be found here (but do not appear to be downloadable
 | `biolink:Pathway` | `Pathway` | |
 | `biolink:BiologicalProcess` | `Depolymerisation` | |
 | `biolink:BiologicalProcess` | `PositiveRegulation` | |
-| `biolink:BiologicalProcess` | `NegativeGeneExpressionRegulation` | |
+| `biolink:BiologicalProcess` | `NegativeGeneExpressionRegulation` | `NegativeGeneExpressionRegulation` is a subclass of `NegativeRegulation` that describes a direct inhibitory effect of a Regulator on a `BlackBoxEvent` that represents gene expression. The Regulator is a complex of regulatory component(s) such as transcription factors with the target gene or mRNA molecule. The regulatory component(s) are defined as activeUnit(s) of the `NegativeGeneExpressionRegulation` instance. |
 | `biolink:BiologicalProcess` | `NegativeRegulation` |  |
 | `biolink:BiologicalEntity` | `CandidateSet` |  |
 | `biolink:BiologicalProcess` | `Requirement` |  |
