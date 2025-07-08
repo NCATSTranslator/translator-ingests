@@ -33,15 +33,12 @@ There are two pages for downloading data files.
 ## Ingest Information
 
 ### Contributors
-
-  |       Name     | Code (Author)  |   Code (Support)  | Modeling | Domain-Expertise | 
-  |----------------|----------------|-------------------|----------|------------------|
-  | Kevin Schaper  |       x        |                   |          |                  |
-  | Matthew Brush  |                |                   |     x    |        x         |
-  | Evan Morris    |                |         x         |          |                  |
-  | Sierra Moxon   |                |         x         |          |                  |
-  | Vlado Dancik   |                |         x         |          |        x         |
-
+- Kevin Schaper: code author
+- Evan Morris: code support
+- Sierra Moxon: code support
+- Vlado Dancik: code support, domain expertise
+- Matthew Brush: data modeling, domain expertise
+    
 ### Utility 
 - CTD is the premier source of curated chemical-disease associations, which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
 
