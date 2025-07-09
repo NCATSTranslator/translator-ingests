@@ -145,7 +145,7 @@ Table | Rationale
 `frontpage_2_frontpageitem` |  
 `functionalstatus` |  
 `functionalstatustype` |  
-functionalstatustype_2_name |  
+`functionalstatustype_2_name` |  
 `geneticallymodifiedresidue` |  
 `genomeencodedentity` |  
 `genomeencodedentity_2_compartment` |  
