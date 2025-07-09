@@ -57,10 +57,210 @@ Alternative data formats can be found here (but do not appear to be downloadable
 
   #### Excluded Content:
 
-  | File | Excluded Content | Rationale  |
-  |----------|----------|----------|
-  |          |          |          |
- 
+Table | Rationale
+-- | --
+\_deleted |  
+\_deleted_2_deletedinstance |  
+\_deleted_2_deletedinstancedb_id |  
+\_deleted_2_replacementinstancedb_ids |  
+\_deleted_2_replacementinstances |  
+\_deletedinstance |  
+\_deletedinstance_2_species |  
+\_updatetracker |  
+\_updatetracker_2_action |  
+abstractmodifiedresidue |  
+affiliation |  
+affiliation_2_name |  
+anatomy |  
+blackboxevent |  
+book |  
+book_2_chapterauthors |  
+candidateset |  
+candidateset_2_hascandidate |  
+catalystactivity |  
+catalystactivity_2_activeunit |  
+catalystactivityreference |  
+cell |  
+cell_2_markerreference |  
+cell_2_proteinmarker |  
+cell_2_rnamarker |  
+cell_2_species |  
+celldevelopmentstep |  
+celllineagepath |  
+celltype |  
+chemicaldrug | This table is just a list of database identifiers for nodes with the Reactome category "ChemicalDrug". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="ChemicalDrug"`).
+compartment | This table is just a list of database identifiers for nodes with the Reactome category "Compartment". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="Compartment"`).
+complex |  
+complex_2_compartment |  
+complex_2_entityonothercell |  
+complex_2_includedlocation |  
+complex_2_relatedspecies |  
+controlledvocabulary |  
+controlledvocabulary_2_name |  
+controlreference |  
+controlreference_2_literaturereference |  
+crosslinkedresidue |  
+crosslinkedresidue_2_secondcoordinate |  
+databaseidentifier_2_crossreference |  
+databaseobject_2_modified |  
+datamodel |  
+definedset |  
+deletedcontrolledvocabulary |  
+depolymerisation |  
+disease | This table is just a list of database identifiers for nodes with the Reactome category "Disease". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="Disease"`).
+drug_2_compartment |  
+drugactiontype |  
+drugactiontype_2_instanceof |  
+entityfunctionalstatus |  
+entityfunctionalstatus_2_functionalstatus |  
+entityset |  
+entityset_2_compartment |  
+entityset_2_relatedspecies |  
+entitywithaccessionedsequence_2_hasmodifiedresidue |  
+event_2_authored |  
+event_2_crossreference |  
+event_2_edited |  
+event_2_figure |  
+event_2_inferredfrom |  
+event_2_internalreviewed |  
+event_2_name |  
+event_2_negativeprecedingevent |  
+event_2_orthologousevent |  
+event_2_precedingevent |  
+event_2_relatedspecies |  
+event_2_reviewed |  
+event_2_revised |  
+event_2_structuremodified |  
+evidencetype |  
+externalontology_2_instanceof |  
+externalontology_2_name |  
+externalontology_2_synonym |  
+failedreaction | This table is just a list of database identifiers for nodes with the Reactome category "FailedReaction". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="FailedReaction"`).
+figure |  
+fragmentdeletionmodification |  
+fragmentinsertionmodification |  
+fragmentmodification |  
+fragmentreplacedmodification |  
+frontpage |  
+frontpage_2_frontpageitem |  
+functionalstatus |  
+functionalstatustype |  
+functionalstatustype_2_name |  
+geneticallymodifiedresidue |  
+genomeencodedentity |  
+genomeencodedentity_2_compartment |  
+go_biologicalprocess_2_name |  
+go_cellularcomponent |  
+go_cellularcomponent_2_componentof |  
+go_cellularcomponent_2_haspart |  
+go_cellularcomponent_2_instanceof |  
+go_cellularcomponent_2_name |  
+go_cellularcomponent_2_surroundedby |  
+go_molecularfunction |  
+go_molecularfunction_2_ecnumber |  
+go_molecularfunction_2_name |  
+groupmodifiedresidue |  
+instanceedit_2_author |  
+interactionevent |  
+interactionevent_2_partners |  
+interchaincrosslinkedresidue |  
+interchaincrosslinkedresidue_2_equivalentto |  
+interchaincrosslinkedresidue_2_secondreferencesequence |  
+intrachaincrosslinkedresidue |  
+markerreference |  
+markerreference_2_cell |  
+modifiednucleotide |  
+modifiedresidue | This table is just a list of database identifiers for nodes with the Reactome category "ModifiedResidue". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="ModifiedResidue"`).
+negativegeneexpressionregulation | This table is just a list of database identifiers for nodes with the Reactome category "NegativeGeneExpressionRegulation". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="NegativeGeneExpressionRegulation"`).
+negativeprecedingevent |  
+negativeprecedingevent_2_precedingevent |  
+negativeprecedingeventreason |  
+negativeregulation |  
+nonsensemutation |  
+ontology |  
+otherentity |  
+otherentity_2_compartment |  
+pathway |  
+pathway_2_compartment |  
+pathwaydiagram |  
+pathwaydiagram_2_representedpathway |  
+person_2_affiliation |  
+person_2_crossreference |  
+person_2_figure |  
+physicalentity |  
+physicalentity_2_celltype |  
+physicalentity_2_edited |  
+physicalentity_2_figure |  
+physicalentity_2_inferredfrom |  
+physicalentity_2_inferredto |  
+physicalentity_2_name |  
+physicalentity_2_reviewed |  
+physicalentity_2_revised |  
+polymer |  
+polymer_2_compartment |  
+polymer_2_repeatedunit |  
+polymerisation |  
+positivegeneexpressionregulation | This table is just a list of database identifiers for nodes with the Reactome category "PositiveGeneExpressionRegulation". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="PositiveGeneExpressionRegulation"`).
+positiveregulation | This table is just a list of database identifiers for nodes with the Reactome category "PositiveRegulation". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class in ("PositiveGeneExpressionRegulation", "Requirement", "PositiveRegulation")`).
+proteindrug |  
+psimod |  
+publication |  
+reaction |  
+reactionlikeevent |  
+reactionlikeevent_2_catalystactivity |  
+reactionlikeevent_2_compartment |  
+reactionlikeevent_2_entityfunctionalstatus |  
+reactionlikeevent_2_entityonothercell |  
+reactionlikeevent_2_hasinteraction |  
+reactionlikeevent_2_reactiontype |  
+reactionlikeevent_2_regulationreference |  
+reactionlikeevent_2_requiredinputcomponent |  
+reactiontype |  
+referencednasequence |  
+referenceentity_2_crossreference |  
+referenceentity_2_name |  
+referenceentity_2_otheridentifier |  
+referencegeneproduct |  
+referencegeneproduct_2_chain |  
+referencegeneproduct_2_referencegene |  
+referencegeneproduct_2_referencetranscript |  
+referencegroup |  
+referenceisoform |  
+referenceisoform_2_isoformparent |  
+referencemolecule |  
+referencernasequence |  
+referencernasequence_2_referencegene |  
+referencesequence |  
+referencesequence_2_comment |  
+referencesequence_2_description |  
+referencesequence_2_genename |  
+referencesequence_2_keyword |  
+referencesequence_2_secondaryidentifier |  
+referencetherapeutic |  
+referencetherapeutic_2_activedrugids |  
+referencetherapeutic_2_approvalsource |  
+referencetherapeutic_2_prodrugids |  
+regulation_2_activeunit |  
+regulationreference |  
+replacedresidue |  
+replacedresidue_2_psimod |  
+requirement |  
+retractionstatus |  
+reviewstatus |  
+rnadrug | This table is just a list of database identifiers for nodes with the Reactome category "RNADrug". This information is already contained in the databaseobject table (`select DB_ID from databaseobject where _class="RNADrug"`).
+sequenceontology |  
+simpleentity_2_compartment |  
+species |  
+stableidentifier_2_history |  
+stableidentifierhistory |  
+stableidentifierhistory_2_historystatus |  
+stableidentifierreleasestatus |  
+taxon |  
+taxon_2_crossreference |  
+taxon_2_name |  
+transcriptionalmodification |  
+translationalmodification |  
+url |   
 
   #### Future Considerations:
 
