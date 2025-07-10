@@ -21,7 +21,9 @@ define HELP
 │                                                           │
 │     install             install python requirements       │
 │     download            Download data                     │
-│     run                 Run the transform                 │
+│     transform           Transform data into KGX           │
+│     normalize           Normalize the KGX files           │
+│     run                 Run the whole pipeline            │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
@@ -65,9 +67,16 @@ test:
 download:
 	$(RUN) downloader --output-dir $(ROOTDIR)/data/$(SOURCE_ID) src/translator_ingest/ingests/$(SOURCE_ID)/download.yaml
 
-.PHONY: run
-run: download
+.PHONY: transform
+transform: download
 	python src/translator_ingest/koza/main.py transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
+
+.PHONY: normalize
+normalize: transform
+	echo "Normalization placeholder"
+
+.PHONY: run
+run: download transform normalize
 
 ### Linting, Formatting, and Cleaning ###
 
