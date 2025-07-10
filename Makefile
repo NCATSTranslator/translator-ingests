@@ -1,5 +1,6 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
+SOURCE_ID = ctd
 
 ### Help ###
 
@@ -54,7 +55,7 @@ install: python
 ### Testing ###
 
 .PHONY: test
-test: download
+test:
 	$(RUN) pytest tests
 
 
@@ -62,12 +63,11 @@ test: download
 
 .PHONY: download
 download:
-	$(RUN) downloader
+	$(RUN) downloader --output-dir $(ROOTDIR)/data/$(SOURCE_ID) src/translator_ingest/ingests/$(SOURCE_ID)/download.yaml
 
 .PHONY: run
 run: download
-	# TODO: this should probably go out and find every yaml config under src/translator_ingest/ingests/*/
-	$(RUN) koza transform src/translator_ingest/ingests/ctd/ctd.yaml --output-format jsonl
+	$(RUN) koza transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
 
 ### Linting, Formatting, and Cleaning ###
 
