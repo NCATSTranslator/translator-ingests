@@ -60,6 +60,7 @@ https://current.geneontology.org/annotations/
 ## Ingest Information
 
 ### Utility
+- GOA Human provides the definitive, manually curated and electronically inferred associations between human gene products (UniProtKB entries) and Gene Ontology terms, ensuring comprehensive coverage of molecular functions, biological processes, and cellular components.
 
 ### Scope
 
