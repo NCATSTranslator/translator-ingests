@@ -67,7 +67,7 @@ download:
 
 .PHONY: run
 run: download
-	$(RUN) koza transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
+	python src/translator_ingest/koza/main.py transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
 
 ### Linting, Formatting, and Cleaning ###
 
