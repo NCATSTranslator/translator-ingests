@@ -72,14 +72,11 @@ https://current.geneontology.org/annotations/
 
 #### Included Content
 
-#### Included Content
-
 | File                     | Included Content                                                                                | Columns Used                                                                                                                                                                                                                                                                                                                 |
 | ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `goa_human.gaf.gz`       | Human gene-product -> GO term associations with evidence and provenance                         | `DB Object ID` -> `GeneProduct.id`; `DB Object Symbol` -> `symbol`; `GO ID` -> `OntologyClass.id`; `DB:Reference(s)` -> `publications`; `Evidence Code` -> `evidence_code`; `With (or) From` -> `related_to`; `Aspect` -> `participates_in`/`enables`/`occurs_in`; `Date` -> `creation_date`; `Assigned By` -> `provided_by` |
 | `goa_uniprot_all.gaf.gz` | Multi-species gene-product -> GO term associations with evidence and provenance (future ingest) | Same as `goa_human.gaf.gz`                                                                                                                                                                                                                                                                                                   |
                                                                                                                                                                                                                                                                                                                 |
-
 
 #### Excluded Content
 
@@ -88,14 +85,13 @@ https://current.geneontology.org/annotations/
 | `goa_human.gaf.gz`       | Header comment lines (`!gaf-version`, `!generated-by`, etc.); `DB`; `DB Object Name`; `DB Object Synonym`; `DB Object Type`; `Taxon`; `Annotation Extension`; `Gene Product Form ID` | File-level metadata and non-core fields outside the subject–predicate–object model; handled via Biolink provenance or qualifiers. |
 | `goa_uniprot_all.gaf.gz` | Header comment lines; `DB`; `DB Object Name`; `DB Object Synonym`; `DB Object Type`; `Taxon`; `Annotation Extension`; `Gene Product Form ID`                                         | Same exclusions apply for the multi-species file when it’s ingested in the future.                                                |
 
-
-
 #### Future Considerations
 
-| File / Feature | Rationale |
-| -------------- | --------- |
-|                |           |
-|                |           |
+| File                     | Content                                          | Rationale                                                                                       |
+| ------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `goa_human.gpad.gz`      | GPAD 1.2 associations with annotation extensions | Might enable modeling of complex qualifiers and annotation extensions not captured in GAF.           |
+| `goa_human.gpi.gz`       | GPI gene product index entries                   | Provides enriched gene product metadata (names, synonyms, types) might be used node normalization. |
+| `goa_uniprot_all.gaf.gz` | Multi-species GOA GAF                            | Broadens coverage beyond human, supporting cross-species analyses in later ingests.             |
 
 ---
 
