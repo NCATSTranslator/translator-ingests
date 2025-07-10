@@ -103,23 +103,26 @@ https://current.geneontology.org/annotations/
 
 ### Edge Types
 
-| # | Association Type | Biolink MetaEdge | Qualifier Types | AT / KL | UI Explanation |
-| - | ---------------- | ---------------- | --------------- | ------- | -------------- |
-|   |                  |                  |                 |         |                |
-|   |                  |                  |                 |         |                |
-|   |                  |                  |                 |         |                |
+| # | Association Type                             | Biolink MetaEdge | Qualifier Types | AT / KL                                 | UI Explanation                                                                    |
+| - | -------------------------------------------- | ---------------- | --------------- | --------------------------------------- | --------------------------------------------------------------------------------- |
+| 1 | GeneProduct -> BiologicalProcess association | participates\_in | negated         | manual/electronic, knowledge\_assertion | Captures that a gene product participates in the specified biological process.    |
+| 2 | GeneProduct -> MolecularFunction association | enables          | negated         | manual/electronic, knowledge\_assertion | Indicates that a gene product enables the specified molecular function.           |
+| 3 | GeneProduct -> CellularComponent association | located\_in      | negated         | manual/electronic, knowledge\_assertion | Specifies that a gene product is located within the specified cellular component. |
 
 **Rationale**
 
-1. … (match number to row in table above)
-2. …
+1. GO Aspect “P” (Biological Process) -> participates_in maps a continuant (gene product) to the process it participates in.
+
+2. GO Aspect “F” (Molecular Function) -> enables reflects a physical entity enabling a function.
+
+3. GO Aspect “C” (Cellular Component) -> located_in denotes the location of a material entity.
 
 ### Node Types
 
-| Biolink Category | Source Identifier Type(s) | Notes |
-| ---------------- | ------------------------- | ----- |
-|                  |                           |       |
-|                  |                           |       |
+| Biolink Category | Source Identifier Type(s) | Notes                                   |
+| ---------------- | ------------------------- | --------------------------------------- |
+| GeneProduct      | UniProtKB accession       | Represents proteins and gene products.  |
+| OntologyClass    | GO term                   | Represents GO terms across all aspects. |
 
 ---
 
