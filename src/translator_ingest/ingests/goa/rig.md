@@ -11,7 +11,7 @@
 
 ### Description
 
-*
+The Gene Ontology Annotation (GOA) project provides high-quality, manually curated associations between gene products and GO terms—covering molecular functions, biological processes, and cellular components—with evidence codes and literature references.
 
 ### Terms of Use
 
