@@ -166,15 +166,18 @@ class KozaRunner:
         if fn is None:
             raise NoTransformException("Can only be run when `transform` is defined")
 
-        mappings = self.load_mappings()
-
         logger.info("Running single transform")
+
+        """
+        mappings = self.load_mappings()
         transform = SingleTransform(
             _data=self.data,
             mappings=mappings,
             writer=self.writer,
             extra_fields=self.extra_transform_fields,
         )
+        """
+
         nodes, edges = fn(self.data)
         self.writer.write(nodes)
         self.writer.write(edges)
@@ -185,14 +188,17 @@ class KozaRunner:
         if fn is None:
             raise NoTransformException("Can only be run when `transform_record` is defined")
 
-        mappings = self.load_mappings()
-
         logger.info("Running serial transform")
+
+        """
+        mappings = self.load_mappings()
         transform = SerialTransform(
             mappings=mappings,
             writer=self.writer,
             extra_fields=self.extra_transform_fields,
         )
+        """
+
         for item in self.data:
             nodes, edges = fn(item)
             self.writer.write(nodes)
