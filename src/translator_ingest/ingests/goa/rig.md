@@ -63,6 +63,10 @@ https://current.geneontology.org/annotations/
 
 ### Scope
 
+- Primary ingest: the human GOA GAF 2.2 file (goa_human.gaf.gz), capturing all three annotation aspects (P, F, C) and both manual (e.g. IDA, IMP) and electronic (IEA) evidence codes.
+
+- Excluded: GPAD (.gpad) and GPI (.gpi) formats, as well as multi‐species GAF (goa_uniprot_all.gaf.gz)—the latter is earmarked for future ingestion if broader taxonomic coverage is needed.
+
 #### Relevant Files
 
 | File                     | Description                                                 |
