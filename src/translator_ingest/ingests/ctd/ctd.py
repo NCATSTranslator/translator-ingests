@@ -1,15 +1,18 @@
 import uuid
+from typing import Iterable
+
 import requests
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
+    Entity,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    Association
 )
 from bs4 import BeautifulSoup
-from koza.runner import KozaTransform
 
 # ideally we'll use a predicate enum, maybe an infores enum?
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
@@ -31,7 +34,7 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-def transform_record(koza: KozaTransform, record: dict):
+def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -46,14 +49,29 @@ def transform_record(koza: KozaTransform, record: dict):
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
+    return [chemical, disease], [association]
 
-    # todo: don't write conflicting associations, out of scope for this demo
-    to_write = [association]
-    # todo: an inline hack to avoid rewriting nodes, koza needs support to do this explicitly
-    if chemical.id not in seen_nodes:
-        to_write.append(chemical)
-        seen_nodes.add(chemical.id)
-    if disease.id not in seen_nodes:
-        to_write.append(disease)
-        seen_nodes.add(disease.id)
-    koza.write(*to_write)
+"""
+def transform(records: Iterable[dict]) -> (Iterable[Entity], Iterable[Association]):
+    nodes = []
+    edges = []
+    for record in records:
+        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
+        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+            id=str(uuid.uuid4()),
+            subject=chemical.id,
+            predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
+            object=disease.id,
+            publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
+            # is this code/repo an aggregator in this context? feels like no, but maybe yes?
+            # aggregator_knowledge_source=["infores:???"],
+            primary_knowledge_source=INFORES_CTD,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        nodes.append(chemical)
+        nodes.append(disease)
+        edges.append(association)
+    return nodes, edges
+"""
