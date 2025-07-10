@@ -3,12 +3,17 @@
 ---------------
 
 ## Source Information
+*(Note that most/all of the 'Source' info below  may be collected in the infores catalog as a source of truth, and the infores id/web page just be referenced here.*)
 
-### Infores: 
+### Infores 
  - infores:ctd
 
+### Source Category(ies)
+- Primary Knowledge Provider 
+  
 ### Description
- - CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides manually curated information about chemical relationships with genes/proteins and their activities, diseases/phenotypes, and pathways. It also provides inferred/indirect associations between such entities, based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
+ - CTD manually curates knowledge from the literature, and produces structured summaries of study results.
+ - It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
 
 ### Terms of Use
  - No formal license. Bespoke 'terms of use' are described here: https://ctdbase.org/about/legal.jsp
@@ -28,24 +33,22 @@ There are two pages for downloading data files.
  - Releases page / change log: https://ctdbase.org/about/changes/
  - Latest status page: https://ctdbase.org/about/dataStatus.go
 
-*Note that most/all of the 'Source' info above may be collected in the infores catalog as a source of truth, and the infores id/web page just be referenced here*
-
 ----------------
 
 ## Ingest Information
     
 ### Utility 
-- CTD is the premier source of curated chemical-disease associations, which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
+- CTD is the richest source of manually curated chemical-disease associations, which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries. 
 
 ### Scope
 This ingest covers curated Chemical to Disease associations that report therapeutic and marker/mechanism relationships. 
 
   #### Relevant Files:
 
-  | File | Description |
-  |----------|----------|
-  | CTD_chemicals_diseases.tsv.gz  | Manually curated and computationally inferred associations between chemicals and diseases | 
-  | CTD_exposure_events.tsv.gz  | Descriptions of statistical studies of how exposure to chemicals affects a particular population, with some records providing outcomes| 
+  | File | Location | Description |
+  |----------|----------|----------|
+  | CTD_chemicals_diseases.tsv.gz  | http://ctdbase.org/downloads/ |  Manually curated and computationally inferred associations between chemicals and diseases | 
+  | CTD_exposure_events.tsv.gz  | http://ctdbase.org/downloads/ |  Descriptions of statistical studies of how exposure to chemicals affects a particular population, with some records providing outcomes| 
   
   #### Included Content:
 
