@@ -37,7 +37,7 @@ Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data f
 
 The task involves the following steps/components:
 
-- Download source data: [download.yaml](./download.yaml)
+- CTD download source data: [download.yaml](./src/translator_ingest/ingests/ctd/download.yaml)
 - CTD transform configuration file: [ctd.yaml](./src/translator_ingest/ingests/ctd/ctd.yaml)
 - CTD transform code: [ctd.py](./src/translator_ingest/ingests/ctd/ctd.py)
 - [CTD transform documentation](./src/translator_ingest/ingests/ctd/README.md)
