@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterable
+from typing import Iterator, Dict
 
 import requests
 
@@ -31,8 +31,15 @@ def get_latest_version():
     else:
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
+"""
+def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
+    # prepare is just a function that gets run before transform or transform_record ie to seed a database
+    # return an iterator of dicts if that makes sense,
+    # or we could use env vars to just provide access to the data/db in transform()
+    return records
+"""
 
-def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
+def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -50,7 +57,8 @@ def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
     return [chemical, disease], [association]
 
 """
-def transform(records: Iterable[dict]) -> Iterable[tuple[Iterable[Entity], Iterable[Association]]]:
+this is just an example of the interface, using transform() offers the opportunity to do something more efficient
+def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
     for record in records:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
