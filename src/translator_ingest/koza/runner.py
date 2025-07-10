@@ -151,7 +151,7 @@ class KozaRunner:
         mapping_filenames: list[str] | None = None,
         extra_transform_fields: dict[str, Any] | None = None,
         transform_record: Callable[[Record], (Iterable, Iterable)] | None = None,
-        transform: Callable[[Iterator[Record]], (Iterable, Iterable)] | None = None,
+        transform: Callable[[Iterator[Record]], Iterable[tuple[Iterable, Iterable]]] | None = None,
     ):
         self.data = data
         self.writer = writer
@@ -161,9 +161,8 @@ class KozaRunner:
         self.extra_transform_fields = extra_transform_fields or {}
 
     def run_single(self):
-        fn = self.transform
 
-        if fn is None:
+        if self.transform is None:
             raise NoTransformException("Can only be run when `transform` is defined")
 
         logger.info("Running single transform")
@@ -178,9 +177,9 @@ class KozaRunner:
         )
         """
 
-        nodes, edges = fn(self.data)
-        self.writer.write(nodes)
-        self.writer.write(edges)
+        for nodes, edges in self.transform(self.data):
+            self.writer.write(nodes)
+            self.writer.write(edges)
 
     def run_serial(self):
         fn = self.transform_record
