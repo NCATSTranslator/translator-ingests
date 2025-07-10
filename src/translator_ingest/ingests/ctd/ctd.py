@@ -52,9 +52,7 @@ def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
     return [chemical, disease], [association]
 
 """
-def transform(records: Iterable[dict]) -> (Iterable[Entity], Iterable[Association]):
-    nodes = []
-    edges = []
+def transform(records: Iterable[dict]) -> Iterable[tuple[Iterable[Entity], Iterable[Association]]]:
     for record in records:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
@@ -70,8 +68,5 @@ def transform(records: Iterable[dict]) -> (Iterable[Entity], Iterable[Associatio
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
-        nodes.append(chemical)
-        nodes.append(disease)
-        edges.append(association)
-    return nodes, edges
+        yield [chemical, disease], [association]
 """
