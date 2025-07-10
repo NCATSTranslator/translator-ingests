@@ -1,7 +1,7 @@
 import importlib
 import sys
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from types import ModuleType
@@ -150,8 +150,8 @@ class KozaRunner:
         writer: KozaWriter,
         mapping_filenames: list[str] | None = None,
         extra_transform_fields: dict[str, Any] | None = None,
-        transform_record: Callable[[KozaTransform, Record], None] | None = None,
-        transform: Callable[[KozaTransform], None] | None = None,
+        transform_record: Callable[[Record], (Iterable, Iterable)] | None = None,
+        transform: Callable[[Iterator[Record]], (Iterable, Iterable)] | None = None,
     ):
         self.data = data
         self.writer = writer
@@ -175,7 +175,9 @@ class KozaRunner:
             writer=self.writer,
             extra_fields=self.extra_transform_fields,
         )
-        fn(transform)
+        nodes, edges = fn(self.data)
+        self.writer.write(nodes)
+        self.writer.write(edges)
 
     def run_serial(self):
         fn = self.transform_record
@@ -192,7 +194,9 @@ class KozaRunner:
             extra_fields=self.extra_transform_fields,
         )
         for item in self.data:
-            fn(transform, item)
+            nodes, edges = fn(item)
+            self.writer.write(nodes)
+            self.writer.write(edges)
 
     def run(self):
         if callable(self.transform) and callable(self.transform_record):
