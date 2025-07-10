@@ -1,4 +1,5 @@
 import uuid
+import requests
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -7,7 +8,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-
+from bs4 import BeautifulSoup
 from koza.runner import KozaTransform
 
 # ideally we'll use a predicate enum, maybe an infores enum?
@@ -16,6 +17,18 @@ INFORES_CTD = "infores:ctd"
 
 # hack because koza doesn't yet have a feature to avoid rewriting nodes
 seen_nodes = set()
+
+def get_latest_version():
+    # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
+    # with a version on it. Fetch the html and parse it to determine the current version.
+    html_page: requests.Response = requests.get('http://ctdbase.org/about/dataStatus.go')
+    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    version_header: BeautifulSoup.Tag = resp.find(id='pgheading')
+    if version_header is not None:
+        # pgheading looks like "Data Status: July 2025", convert it to "July_2025"
+        return version_header.text.split(':')[1].strip().replace(' ', '_')
+    else:
+        raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
 def transform_record(koza: KozaTransform, record: dict):
