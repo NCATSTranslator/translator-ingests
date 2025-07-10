@@ -18,8 +18,6 @@ from bs4 import BeautifulSoup
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 INFORES_CTD = "infores:ctd"
 
-# hack because koza doesn't yet have a feature to avoid rewriting nodes
-seen_nodes = set()
 
 def get_latest_version():
     # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
