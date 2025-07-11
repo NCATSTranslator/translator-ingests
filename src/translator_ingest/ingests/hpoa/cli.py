@@ -13,6 +13,10 @@ import typer
 app = typer.Typer()
 logger = logging.getLogger(__name__)
 
+def transform_source(**kwargs):
+    raise NotImplementedError(
+        "Unsure if this CLI package is needed, so unsure about this Koza method"
+    )
 
 @app.callback()
 def callback(version: bool = typer.Option(False, "--version", is_eager=True),

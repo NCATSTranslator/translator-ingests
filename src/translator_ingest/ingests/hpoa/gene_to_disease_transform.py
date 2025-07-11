@@ -7,8 +7,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import (CausalGeneToDiseaseAssocia
 # from koza.cli_utils import get_koza_app
 from koza.runner import KozaTransform
 
-from monarch_constants import INFORES_MONARCHINITIATIVE, BIOLINK_CAUSES
+from src.translator_ingest.util.monarch.constants import (
+    INFORES_MONARCHINITIATIVE,
+    BIOLINK_CAUSES
+)
 from phenotype_ingest_utils import get_knowledge_sources, get_predicate
+
+# All HPOA ingest submodules share one
+# simplistic ingest versioning (for now)
+from . import get_latest_version
 
 koza_app = get_koza_app("hpoa_gene_to_disease")
 
