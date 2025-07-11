@@ -30,6 +30,10 @@ import uuid
 # from koza.cli_utils import get_koza_app
 from koza.runner import KozaTransform
 
+# All HPOA ingest submodules share one
+# simplistic ingest versioning (for now)
+from . import get_latest_version
+
 from biolink_model.datamodel.pydanticmodel_v2 import (DiseaseToPhenotypicFeatureAssociation,
                                                       KnowledgeLevelEnum,
                                                       AgentTypeEnum)
