@@ -69,20 +69,12 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 
   ### Future Ingest Considerations:
 
-<!--
-  | File | Rationale |
-  |----------|----------|
-  | CTD_exposure_events.tsv.gz | May provide additional chemical-disease edges reporting statistical correlations from environmental exposure studues |
--->
+  Disease "Mode of Inheritance" inferences.
 
-  | File | Rationale |
-  |----------|----------|
-  | phenotype.hpoa  | ?    |
-  | genes_to_disease.txt  | ?    |
-  | genes_to_phenotype.txt  | ?    |
-  | mondo.sssom.tsv  | ?    |
-  | monarch_ingest/constants.py  | ?    |
-  | obo/hp.obo  | ?    |
+  | File | Rationale                                      |
+  |----------|------------------------------------------------|
+  | phenotype.hpoa  | Captures some "Mode of Inheritance" inferences |
+
 
 ## Biolink Edge Types
 
@@ -92,16 +84,18 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 | 1 | Chemical To Disease Or Phenotypic Feature Association | Chemical Entity - `treats_or_applied_or_studied_to_treat` - Disease Or Phenotypic Feature  |  n/a  |  manual agent, knowledge assertion  | n.s. |
 -->
 
-| No. | Association Type | MetaEdge | Qualifiers |  AT / KL  | Evidence Code  |
-|----------|----------|----------|----------|----------|----------|
+| No. | Association Type                                                     | MetaEdge                                       | Qualifiers                                                   |  AT / KL  | Evidence Code  |
+|-----|----------------------------------------------------------------------|------------------------------------------------|--------------------------------------------------------------|----------|----------|
+| 1   | Disease To Phenotypic Feature Association                            | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier, onset_qualifier, frequency_qualifier |  manual agent, knowledge assertion  | n.s. |
+| 2   | CausalGeneToDiseaseAssociation or CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                         |  manual agent, knowledge assertion  | n.s. |
+| 3   | Gene To Phenotypic Feature Association                               | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                         |  manual agent, knowledge assertion  | n.s. |
 
+<!-- TODO: Need to review AT/KL and Evidence Code -->
 
 **Rationale**:
 
-<!--
-- The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of "T" was broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. 
 - ALl edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation.
--->
+
       
 ## Biolink Node Types
 
@@ -112,6 +106,9 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a full representation node properties, and may not accurately reflect the correct biolink category.
 -->
 
+- Disease
+- PhenotypicFeature
+- Gene
 
 ## Source Quality/Confidence Assessment
 - ...
