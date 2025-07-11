@@ -7,8 +7,10 @@ requires-python = ">=3.12"
 dependencies = [
     "biolink-model>=4.2.5",
     "bmt>=1.4.5",
+    "importlib-metadata>=4.8.0",
     "kghub-downloader>=0.4.1",
     "koza",
+    "pronto>=2.7.0",
 ]
 
 [dependency-groups]
