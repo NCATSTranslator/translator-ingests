@@ -15,6 +15,16 @@ from phenotype_ingest_utils import Frequency, phenotype_frequency_to_hpo_term
 # simplistic ingest versioning (for now)
 from . import get_latest_version
 
+
+"""
+def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
+    # prepare is just a function that gets run before transform or transform_record ie to seed a database
+    # return an iterator of dicts if that makes sense,
+    # or we could use env vars to just provide access to the data/db in transform()
+    return records
+"""
+
+
 # TO DO: Once biolink is updated with the disease_context_qualifier
 # slot we need to update the association we make
 # https://github.com/biolink/biolink-model/pull/1524
@@ -62,3 +72,25 @@ while (row := koza_app.get_row()) is not None:
                                                      publications=publications)
 
     koza_app.write(association)
+
+
+"""
+this is just an example of the interface, using transform() offers the opportunity to do something more efficient
+def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+    for record in records:
+        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
+        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+            id=str(uuid.uuid4()),
+            subject=chemical.id,
+            predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
+            object=disease.id,
+            publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
+            # is this code/repo an aggregator in this context? feels like no, but maybe yes?
+            # aggregator_knowledge_source=["infores:???"],
+            primary_knowledge_source=INFORES_CTD,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        yield [chemical, disease], [association]
+"""
