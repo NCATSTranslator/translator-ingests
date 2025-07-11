@@ -1,12 +1,11 @@
-# HPOA: Human Phenotype Ontology Annotations Reference Ingest Guide
+# Reference Ingest Guide for HPOA: Human Phenotype Ontology Annotations 
 
 ## Source Description
-The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides a standardized vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
+The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standardized vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
 
-The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence,
-and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
+The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence, and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
 
-There are four HPOA ingests - 'disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-disease' and 'gene-to-phenotype' - that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+There are three <!-- four --> HPOA ingests - 'disease-to-phenotype', <!-- 'disease-to-mode-of-inheritance',--> 'gene-to-phenotype' and 'gene-to-disease'  - that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
 
 ## Source Utility to Translator
 
@@ -21,7 +20,7 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 - **Related Monarch Phenotype (HPOA) Metadata**: https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
      
 ## Ingest Scope
-- Covers curated Disease to Phenotype and Genes to Phenotype associations that report .... 
+- Covers curated Disease to Phenotype and Genes to Phenotype associations that report ... 
 - Relevant Files:
     - [phenotype.hpoa](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa)
     - [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt)
@@ -33,20 +32,15 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 
   ### Included:
 
-<!--
-  | File | Rows | Columns |
-  |----------|----------|----------|
-  | CTD_chemicals_diseases.tsv.gz  | Rows where a direct evidence label is applied, and is of type "T" (therapeutic)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
--->
 
-  | File | Rows | Columns |
-  |----------|------|---------|
-  | phenotype.hpoa  | ?    | ?       |
-  | genes_to_disease.txt  | ?    | ?       |
-  | genes_to_phenotype.txt  | ?    | ?       |
-  | mondo.sssom.tsv  | ?    | ?       |
-  | monarch_ingest/constants.py  | ?    | ?       |
-  | obo/hp.obo  | ?    | ?       |
+  | File                        | Rows | Columns |
+  |-----------------------------|------|---------|
+  | phenotype.hpoa              | ?    | ?       |
+  | genes_to_disease.txt        | ?    | ?       |
+  | genes_to_phenotype.txt      | ?    | ?       |
+  | mondo.sssom.tsv             | ?    | ?       |
+  | monarch_ingest/constants.py | ?    | ?       |
+  | obo/hp.obo                  | ?    | ?       |
 
   ### Excluded:
 
@@ -58,37 +52,32 @@ Several members of the Monarch Initiative are also direct participants in the Bi
   | CTD_exposure_events.tsv.gz | All | These will likely be included in a future ingest |
 -->
 
-  | File | Excluded Subset | Rationale  |
-  |----------|----------|----------|
-  | phenotype.hpoa  | ?    | ?       |
-  | genes_to_disease.txt  | ?    | ?       |
-  | genes_to_phenotype.txt  | ?    | ?       |
-  | mondo.sssom.tsv  | ?    | ?       |
-  | monarch_ingest/constants.py  | ?    | ?       |
-  | obo/hp.obo  | ?    | ?       |
+  | File                        | Excluded Subset | Rationale |
+  |-----------------------------|-----------------|-----------|
+  | phenotype.hpoa              | ?               | ?         |
+  | genes_to_disease.txt        | ?               | ?         |
+  | genes_to_phenotype.txt      | ?               | ?         |
+  | mondo.sssom.tsv             | ?               | ?         |
+  | monarch_ingest/constants.py | ?               | ?         |
+  | obo/hp.obo                  | ?               | ?         |
 
   ### Future Ingest Considerations:
 
   Disease "Mode of Inheritance" inferences.
 
-  | File | Rationale                                      |
-  |----------|------------------------------------------------|
-  | phenotype.hpoa  | Captures some "Mode of Inheritance" inferences |
+  | File           | Rationale                                      |
+  |----------------|------------------------------------------------|
+  | phenotype.hpoa | Captures some "Mode of Inheritance" inferences |
 
 
 ## Biolink Edge Types
 
-<!--
-| No. | Association Type | MetaEdge | Qualifiers |  AT / KL  | Evidence Code  |
-|----------|----------|----------|----------|----------|----------|
-| 1 | Chemical To Disease Or Phenotypic Feature Association | Chemical Entity - `treats_or_applied_or_studied_to_treat` - Disease Or Phenotypic Feature  |  n/a  |  manual agent, knowledge assertion  | n.s. |
--->
 
-| No. | Association Type                                                     | MetaEdge                                       | Qualifiers                                                   |  AT / KL  | Evidence Code  |
-|-----|----------------------------------------------------------------------|------------------------------------------------|--------------------------------------------------------------|----------|----------|
-| 1   | Disease To Phenotypic Feature Association                            | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier, onset_qualifier, frequency_qualifier |  manual agent, knowledge assertion  | n.s. |
-| 2   | CausalGeneToDiseaseAssociation or CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                         |  manual agent, knowledge assertion  | n.s. |
-| 3   | Gene To Phenotypic Feature Association                               | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                         |  manual agent, knowledge assertion  | n.s. |
+| No. | Association Type                                                     | MetaEdge                                       | Qualifiers                                                   | AT / KL                           | Evidence Code |
+|-----|----------------------------------------------------------------------|------------------------------------------------|--------------------------------------------------------------|-----------------------------------|---------------|
+| 1   | Disease To Phenotypic Feature Association                            | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier, onset_qualifier, frequency_qualifier | manual agent, knowledge assertion | n.s.          |
+| 2   | CausalGeneToDiseaseAssociation or CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                         | manual agent, knowledge assertion | n.s.          |
+| 3   | Gene To Phenotypic Feature Association                               | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                         | manual agent, knowledge assertion | n.s.          |
 
 <!-- TODO: Need to review AT/KL and Evidence Code -->
 
@@ -138,7 +127,7 @@ and age of onset and frequency (if known).
 
 There are four HPOA ingests - 'disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-disease' and 'gene-to-phenotype' - that parse out records from the [HPO Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
 
-## [Disease to Phenotype](#disease_to_phenotype)
+## Disease to Phenotype
 
 This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-qc.readthedocs.io/en/latest/annotationFormat.html#phenotype-hpoa-format) file, filtered for rows with **Aspect == 'P'** (phenotypic anomalies).
 
@@ -191,7 +180,7 @@ This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-
 }
 ```
 
-## [Disease to Mode of Inheritance](#disease_modes_of_inheritance)
+## Disease to Mode of Inheritance
 
 This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-qc.readthedocs.io/en/latest/annotationFormat.html#phenotype-hpoa-format) file, filtered for rows with **Aspect == 'I'** (inheritance).
 
@@ -235,7 +224,7 @@ This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-
 }
 ```
 
-## [Gene to Disease](#gene_to_disease)
+## Gene to Disease
 
 This ingest replaces the direct OMIM ingest so that we share gene-to-disease associations 1:1 with HPO. It processes the tab-delimited [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt) file.
 
@@ -280,7 +269,7 @@ This ingest replaces the direct OMIM ingest so that we share gene-to-disease ass
 }
 ```
 
-## [Gene to Phenotype](#gene_to_phenotype)
+## Gene to Phenotype
 
 This ingest processes the tab-delimited [genes_to_phenotype_with_publications.tsv](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt) file, which is generated by joining genes_to_phenotype.txt with phenotype.hpoa to add publication information.
 
