@@ -27,22 +27,23 @@ poetry run koza transform \
 from typing import Optional, List
 import uuid
 
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    DiseaseToPhenotypicFeatureAssociation,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
+)
 # from koza.cli_utils import get_koza_app
 from koza.runner import KozaTransform
 
-# All HPOA ingest submodules share one
-# simplistic ingest versioning (for now)
-from . import get_latest_version
-
-from biolink_model.datamodel.pydanticmodel_v2 import (DiseaseToPhenotypicFeatureAssociation,
-                                                      KnowledgeLevelEnum,
-                                                      AgentTypeEnum)
 from phenotype_ingest_utils import (evidence_to_eco, 
                                     sex_format,
                                     sex_to_pato,
                                     phenotype_frequency_to_hpo_term, 
                                     Frequency)
 
+# All HPOA ingest submodules share one
+# simplistic ingest versioning (for now)
+from . import get_latest_version
 
 def get_primary_knowledge_source(disease_id: str) -> str:
     if disease_id.startswith("OMIM"):
