@@ -1,4 +1,6 @@
-name: 'hpoa_disease_mode_of_inheritance'
+transform_code: "src/monarch_phenotype_profile_ingest/disease_to_phenotype_transform.py"
+
+name: 'hpoa_disease_to_phenotype'
 
 metadata:
   ingest_title: 'Human Phenotype Ontology Annotations'
@@ -6,28 +8,19 @@ metadata:
   description: 'Ingest of HPO disease to phenotype associations'
   rights: 'https://hpo.jax.org/app/license'
 
-# List of files to be ingested
 files:
-  - './data/hpoa/phenotype.hpoa'
+  - 'data/hpoa/phenotype.hpoa'
 
-# Format options csv, json
+header: 4
 format: 'csv'
-
-# Specify a delimiter for csv formats
 delimiter: '\t'
 
-# If the source_file has metadata lines to skip, use
-header: 4
-
-global_table: './src/translator_ingest/util/monarch/translation_table.yaml'
-local_table: './src/translator_ingest/ingests/hpoa/hpoa-translation.yaml'
-
-# We only concern ourselves with Aspect == 'I' (inheritance) records in this ingest.
+# We only concern ourselves with Aspect == 'P' (phenotypic anomalies) records in this ingest.
 filters:
   - inclusion: 'include'
     column: 'aspect'
     filter_code: 'eq'
-    value: 'I'
+    value: 'P'
 
 # For a csv/tsv file, list expected columns
 columns:
@@ -44,15 +37,24 @@ columns:
   - 'aspect'
   - 'biocuration'
 
-# Disease subject with annotated 'Mode of Inheritance'
-# DiseaseOrPhenotypicFeatureToModeOfGeneticInheritanceAssociation
+# DiseaseToPhenotypicFeatureAssociation
 edge_properties:
   - 'id'
   - 'category'
   - 'subject'
   - 'predicate'
+  - 'negated'
   - 'object'
   - 'publications'
+  - 'onset_qualifier'
+  - 'frequency_qualifier'
+  - 'has_count'
+  - 'has_total'
+  - 'has_percentage'
+  - 'has_quotient'
+  - 'sex_qualifier'
   - 'has_evidence'
   - 'aggregator_knowledge_source'
   - 'primary_knowledge_source'
+  - 'knowledge_level'
+  - 'agent_type'
