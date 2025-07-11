@@ -62,7 +62,7 @@ Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a
 ## Misc Notes
 - ...
 
-### ### Original Monarch Ingest doc (from monarch-phenotype-profile-ingest Git repo)
+### ### Original Monarch Ingest doc (from [monarch-phenotype-profile-ingest](https://github.com/monarch-initiative/monarch-phenotype-profile-ingest) Git repo)
 
 <!--
 
