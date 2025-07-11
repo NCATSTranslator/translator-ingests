@@ -1,4 +1,4 @@
-transform_code: "src/monarch_phenotype_profile_ingest/disease_to_phenotype_transform.py"
+transform_code: "src/translator_ingest/ingests/hpoa/disease_to_phenotype_transform.py"
 
 name: 'hpoa_disease_to_phenotype'
 
