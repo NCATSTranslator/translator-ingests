@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+# IDE metadata to be ignored
+.idea
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+output
+data
