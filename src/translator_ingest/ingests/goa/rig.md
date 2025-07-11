@@ -123,25 +123,23 @@ API access instructions: https://geneontology.org/docs/tools-guide/
 
 ### Edge Types
 
-| # | Association Type                             | Biolink MetaEdge                   | Qualifier Types          | Evidence & Provenance                                         | UI Explanation                                                                                        |
-| - | -------------------------------------------- | ---------------------------------- | ------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 1 | GeneProduct -> BiologicalProcess             | `biolink:participates_in`          | `biolink:negated`        | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Captures that a gene product **participates in** a biological process (GO Aspect P).                    |
-| 2 | GeneProduct -> MolecularFunction             | `biolink:enables`                  | `biolink:negated`        | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Indicates a gene product **enables** a molecular function (GO Aspect F).                               |
-| 3 | GeneProduct -> CellularComponent             | `biolink:located_in`               | `biolink:negated`        | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Specifies a gene product is **located in** a cellular component (GO Aspect C).                          |
+| # | Association Type                     | Biolink MetaEdge          | Association Slots                          | Evidence & Provenance                                     | UI Explanation                                                                                        |
+| - | ------------------------------------ | ------------------------- | ------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1 | GeneProduct -> BiologicalProcess     | `biolink:participates_in` | `biolink:negated`, `biolink:related_to`   | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Captures that a gene product **participates in** a biological process (GO Aspect P).                   |
+| 2 | GeneProduct -> MolecularFunction     | `biolink:enables`         | `biolink:negated`, `biolink:related_to`   | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Indicates a gene product **enables** a molecular function (GO Aspect F).                               |
+| 3 | GeneProduct -> CellularComponent     | `biolink:located_in`      | `biolink:negated`, `biolink:related_to`   | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Specifies a gene product is **located in** a cellular component (GO Aspect C).                         |
 
-**Rationale**
-1. **Evidence provenance:** We preserve GOA’s manual (IDA, IMP, etc.) vs. electronic (IEA) evidence codes by populating `biolink:has_evidence` and `biolink:provided_by` on each edge, enabling users to filter by confidence level.
+**Rationale**  
+1. **Evidence provenance:** We preserve GOA’s manual (IDA, IMP, etc.) vs. electronic (IEA) evidence codes by populating `biolink:has_evidence` and `biolink:provided_by` on each edge, enabling users to filter by confidence level.  
+2. **Negation:** GO “NOT” annotations are captured via the `biolink:negated` slot, ensuring negative assertions remain computable.  
+3. **Predicate semantics:**  
+   - **`participates_in`:** maps Aspect P (process involvement) of a gene product.  
+   - **`enables`:** reflects mechanistic capacity for Aspect F.  
+   - **`located_in`:** denotes molecular location for Aspect C.  
+4. **OntologyClass consolidation:** All GO terms map to `biolink:OntologyClass`, simplifying node types and ensuring uniform treatment with other ontology-based sources.  
+5. **With/From context:** Contextual details (e.g. cofactors) are preserved via the `biolink:related_to` slot, future-proofing richer edge modeling. :contentReference[oaicite:0]{index=0}
 
-2. **Negation:** GO “NOT” annotations are captured via the standard `biolink:negated` qualifier, ensuring negative assertions remain computable.
-
-3. **Predicate semantics:**
-   - **`participates_in`:** maps Aspect P (process involvement) of a continuant gene product.
-   - **`enables`:** reflects the mechanistic capacity for Aspect F.
-   - **`located_in`:** denotes a material entity’s location for Aspect C.
-
-4. **OntologyClass consolidation:** All GO terms map to `biolink:OntologyClass`, simplifying node types and ensuring uniform treatment with other ontology-based sources.
-
-5. **Qualifiers from “With/From”:** Contextual details (e.g. cofactors) are preserved via the `biolink:related_to` qualifier, future-proofing richer edge modeling.
+---
 
 ## Node Types
 
