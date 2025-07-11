@@ -1,3 +1,5 @@
+transform_code: "src/translator_ingest/ingests/hpoa/disease_mode_of_inheritance_transform.py"
+
 name: 'hpoa_disease_mode_of_inheritance'
 
 metadata:
