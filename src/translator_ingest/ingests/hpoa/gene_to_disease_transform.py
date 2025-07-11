@@ -26,6 +26,37 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
     return records
 """
 
+#
+##### ORIGINAL Koza-centric ingest code
+#
+# koza_app = get_koza_app("hpoa_gene_to_disease")
+#
+#
+# while (row := koza_app.get_row()) is not None:
+#     gene_id = row["ncbi_gene_id"]
+#     disease_id = row["disease_id"].replace("ORPHA:", "Orphanet:")
+#
+#     predicate = get_predicate(row["association_type"])
+#     primary_knowledge_source, aggregator_knowledge_source = get_knowledge_sources(row["source"],
+#                                                                                   INFORES_MONARCHINITIATIVE)
+#
+#     if predicate == BIOLINK_CAUSES:
+#         association_class = CausalGeneToDiseaseAssociation
+#     else:
+#         association_class = CorrelatedGeneToDiseaseAssociation
+#
+#     association = association_class(id="uuid:" + str(uuid.uuid1()),
+#                                     subject=gene_id,
+#                                     predicate=predicate,
+#                                     object=disease_id,
+#                                     primary_knowledge_source=primary_knowledge_source,
+#                                     aggregator_knowledge_source=aggregator_knowledge_source,
+#                                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+#                                     agent_type=AgentTypeEnum.manual_agent)
+#
+#     koza_app.write(association)
+#
+
 
 koza_app = get_koza_app("hpoa_gene_to_disease")
 
@@ -35,7 +66,7 @@ while (row := koza_app.get_row()) is not None:
     disease_id = row["disease_id"].replace("ORPHA:", "Orphanet:")
 
     predicate = get_predicate(row["association_type"])
-    primary_knowledge_source, aggregator_knowledge_source = get_knowledge_sources(row["source"], 
+    primary_knowledge_source, aggregator_knowledge_source = get_knowledge_sources(row["source"],
                                                                                   INFORES_MONARCHINITIATIVE)
 
     if predicate == BIOLINK_CAUSES:
@@ -53,7 +84,6 @@ while (row := koza_app.get_row()) is not None:
                                     agent_type=AgentTypeEnum.manual_agent)
 
     koza_app.write(association)
-
 
 """
 this is just an example of the interface, using transform() offers the opportunity to do something more efficient
