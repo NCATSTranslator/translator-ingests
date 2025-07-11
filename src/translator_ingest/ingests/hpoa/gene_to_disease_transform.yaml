@@ -1,5 +1,3 @@
-transform_code: "src/translator_ingest/ingests/hpoa/gene_to_disease_transform.py"
-
 name: 'hpoa_gene_to_disease'
 
 files:

@@ -21,7 +21,7 @@ from src.translator_ingest.util.monarch.constants import (INFORES_MEDGEN,
 evidence_to_eco: Dict = {"IEA": "ECO:0000501", # "inferred from electronic annotation",
                          "PCS": "ECO:0006017", # "published clinical study evidence",
                          "TAS": "ECO:0000304", # "traceable author statement",
-                         "ICE": "ECO:0006019"} # "individual clinical experience evidence"
+                         "ICE": "ECO:0006019"} # "individual clinical experience evidence"}
 
 # Sex (right now both all uppercase and all lowercase
 sex_format: Dict = {"male": "male",
@@ -58,7 +58,7 @@ class Frequency(BaseModel):
 hpo_term_to_frequency: Dict = {"HP:0040280": FrequencyHpoTerm(curie="HP:0040280", 
                                                               name="Obligate", 
                                                               lower=100.0, 
-                                                              upper=100.0), # Always present, i.e., 100% of the cases.
+                                                              upper=100.0), # Always present,i.e. in 100% of the cases.
                                "HP:0040281": FrequencyHpoTerm(curie="HP:0040281", 
                                                               name="Very frequent", 
                                                               lower=80.0, 
@@ -78,7 +78,7 @@ hpo_term_to_frequency: Dict = {"HP:0040280": FrequencyHpoTerm(curie="HP:0040280"
                                "HP:0040285": FrequencyHpoTerm(curie="HP:0040285", 
                                                               name="Excluded", 
                                                               lower=0.0, 
-                                                              upper=0.0)}  # Present in 0% of the cases.
+                                                              upper=0.0)}  # Present in 0% of the cases.}
 
 
 def get_hpo_term(hpo_id: str) -> Optional[FrequencyHpoTerm]:
@@ -105,22 +105,19 @@ def map_percentage_frequency_to_hpo_term(percentage_or_quotient: float) -> Optio
     return None
 
 
-def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[Frequency]:
+def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency:
     """
-    Maps a raw frequency field onto an HPO term, for consistency, since **phenotypes.hpoa** file field 8,
-    which tracks phenotypic frequency, has a variable values.   There are three allowed options for this field:
+    Maps a raw frequency field onto HPO, for consistency. This is needed since the **phenotypes.hpoa**
+    file field #8 which tracks phenotypic frequency, has a variable values. There are three allowed options for this field:
 
-    1. A term-id from the HPO-sub-ontology below the term “Frequency” (HP:0040279).
-      (since December 2016; before was a mixture of values). The terms for frequency are in alignment with Orphanet;
-
+    1. A term-id from the HPO-sub-ontology below the term “Frequency” (HP:0040279). (since December 2016 ; before was a mixture of values). The terms for frequency are in alignment with Orphanet;
     2. A percentage value such as 17%.
-
-    3. A count of patients affected within a cohort. For instance, 7/13 would indicate that 7 of the 13 patients
-       with the specified disease were found to have the phenotypic abnormality referred to by the HPO term
-       in question in the study referred to by the DB_Reference;
+    3. A count of patients affected within a cohort. For instance, 7/13 would indicate that 7 of the 13 patients with the specified disease were found to have the phenotypic abnormality referred to by the HPO term in question in the study referred to by the DB_Reference;
 
         :param frequency_field: str, raw frequency value in one of the three above forms
-        :return: Frequency containing the resolved FrequencyHpoTerm range and/or interpreted value
+        :return: Optional[FrequencyHpoTerm, float, float], raw frequency mapped to its HPO term, quotient or percentage
+                 respectively (as applicable); return None if unmappable;
+                 percentage and/or quotient returned are also None, if not applicable
     """
     hpo_term: Optional[FrequencyHpoTerm] = None
     quotient: Optional[float] = None
@@ -146,12 +143,12 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
                 percentage = quotient * 100.0
 
         except Exception:
-            # the expected ratio is not recognized
+            # expected ratio not recognized
             logger.error(f"hpoa_frequency(): invalid frequency ratio '{frequency_field}'")
-            return None
+            frequency_field = None
     else:
-        # may be None if original field was empty or has an invalid value
-        return None
+        # may be None, if original field was empty or has an invalid value
+        return Frequency()
 
     return Frequency(
         frequency_qualifier=hpo_term.curie if hpo_term else None,
@@ -198,25 +195,25 @@ def get_predicate(original_predicate: str) -> str:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 
 
-# General function to read an .obo ontology file into memory
-# using pronto to gather all terms that do not fall under a particular parent class
+# General function to read an .obo ontontolgy file into memory using pronto to gather all terms that do not fall under a particular parent class
 def read_ontology_to_exclusion_terms(ontology_obo_file, umbrella_term="HP:0000118", include=False):
     
-    # Read the ontology file into memory
+    # Read ontology file into memory
     onto = Ontology(ontology_obo_file)
     exclude_terms = {}
     term_count = len(list(onto.terms()))
     
     for term in onto.terms():
         
-        # Gather ancestor terms and update our filtering data structure accordingly
+        # Gather ancestor terms and update our filtering datastructure accordingly
         parent_terms = {ancestor.id: ancestor.name for ancestor in term.superclasses()}
-        if not include:
+        if include == False:
             if umbrella_term not in parent_terms:
                 exclude_terms.update({term.id:term.name})
 
-        elif umbrella_term in parent_terms:
-            exclude_terms.update({term.id:term.name})
+        elif include == True:
+            if umbrella_term in parent_terms:
+                exclude_terms.update({term.id:term.name})
     
     print("- Terms from ontology found that do not belong to parent class {} {}/{}".format(umbrella_term,
                                                                                            format(len(exclude_terms)), 
