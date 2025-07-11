@@ -21,21 +21,26 @@ poetry run koza transform \
 """
 
 from typing import List
+from loguru import logger
 import uuid
+
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
+)
 
 # from koza.cli_utils import get_koza_app
 from koza.runner import KozaTransform
 
+from phenotype_ingest_utils import (
+    evidence_to_eco,
+    read_ontology_to_exclusion_terms
+)
+
 # All HPOA ingest submodules share one
 # simplistic ingest versioning (for now)
 from . import get_latest_version
-
-from biolink_model.datamodel.pydanticmodel_v2 import (DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation,
-                                                      KnowledgeLevelEnum,
-                                                      AgentTypeEnum)
-from phenotype_ingest_utils import (evidence_to_eco, 
-                                    read_ontology_to_exclusion_terms)
-from loguru import logger
 
 # Read hpo mode of inheritance terms into memory using pronto + hp.obo file + HP:0000005 (Mode of Inheritance)
 modes_of_inheritance = read_ontology_to_exclusion_terms("data/hp.obo", umbrella_term="HP:0000005", include=True)
