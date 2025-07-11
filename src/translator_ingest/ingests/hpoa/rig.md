@@ -1,58 +1,116 @@
-# HPOA: Human Phenotype Ontology Annotation Reference Ingest Guide
+# HPOA: Human Phenotype Ontology Annotations Reference Ingest Guide
 
 ## Source Description
 The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides a standardized vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
 
+The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence,
+and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
+
+There are four HPOA ingests - 'disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-disease' and 'gene-to-phenotype' - that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+
 ## Source Utility to Translator
-The HPO is a flagship product of the [Monarch Initiative](https://monarchinitiative.org/), an NIH-supported international consortium dedicated to semantic integration of biomedical and model organism data with the ultimate goal of improving biomedical research. Several members of the Monarch Initiative are also direct participants in the Biomedical Data Translator, with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs. 
+
+The HPO and associated annotations are a flagship product of the [Monarch Initiative](https://monarchinitiative.org/), an NIH-supported international consortium dedicated to semantic integration of biomedical and model organism data with the ultimate goal of improving biomedical research.
+
+Several members of the Monarch Initiative are also direct participants in the Biomedical Data Translator, with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs. 
 
 ## Data Access
-- **CTD Bulk Downloads**: http://ctdbase.org/downloads/
-- **CTD Catalog**: https://ctdbase.org/reports/
+
+- **HPOA data**: http://purl.obolibrary.org/obo/hp/hpoa
+- **MONDO data**: https://mondo.monarchinitiative.org/pages/download/
+- **Related Monarch Phenotype (HPOA) Metadata**: https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
      
 ## Ingest Scope
 - Covers curated Disease to Phenotype and Genes to Phenotype associations that report .... 
 - Relevant Files:
-    - phenotype.hpoa
-    - genes_to_disease.txt
-    - genes_to_phenotype.txt
+    - [phenotype.hpoa](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa)
+    - [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt)
+    - [genes_to_phenotype.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt)
+    - [mondo.sssom.tsv](https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv)
+    - [monarch_ingest/constants.py](https://raw.githubusercontent.com/monarch-initiative/monarch-ingest/main/src/monarch_ingest/constants.py)
+    - [obo/hp.obo](http://purl.obolibrary.org/obo/hp.obo)
+
 
   ### Included:
 
+<!--
   | File | Rows | Columns |
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Rows where a direct evidence label is applied, and is of type "T" (therapeutic)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
+-->
+
+  | File | Rows | Columns |
+  |----------|------|---------|
+  | phenotype.hpoa  | ?    | ?       |
+  | genes_to_disease.txt  | ?    | ?       |
+  | genes_to_phenotype.txt  | ?    | ?       |
+  | mondo.sssom.tsv  | ?    | ?       |
+  | monarch_ingest/constants.py  | ?    | ?       |
+  | obo/hp.obo  | ?    | ?       |
 
   ### Excluded:
 
+<!--
   | File | Excluded Subset | Rationale  |
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Rows where the direct evidence label is of type "M" (marker/mechanism) | These will likely be included in a future ingest |
   | CTD_chemicals_diseases.tsv.gz  | Rows lacking evidence in the DirectEvidence column | Decided that the methodology used to create these inferences gave associations that were not strong/meaningful enough to be of use to Translator |
   | CTD_exposure_events.tsv.gz | All | These will likely be included in a future ingest |
+-->
+
+  | File | Excluded Subset | Rationale  |
+  |----------|----------|----------|
+  | phenotype.hpoa  | ?    | ?       |
+  | genes_to_disease.txt  | ?    | ?       |
+  | genes_to_phenotype.txt  | ?    | ?       |
+  | mondo.sssom.tsv  | ?    | ?       |
+  | monarch_ingest/constants.py  | ?    | ?       |
+  | obo/hp.obo  | ?    | ?       |
 
   ### Future Ingest Considerations:
 
+<!--
   | File | Rationale |
   |----------|----------|
   | CTD_exposure_events.tsv.gz | May provide additional chemical-disease edges reporting statistical correlations from environmental exposure studues |
+-->
+
+  | File | Rationale |
+  |----------|----------|
+  | phenotype.hpoa  | ?    |
+  | genes_to_disease.txt  | ?    |
+  | genes_to_phenotype.txt  | ?    |
+  | mondo.sssom.tsv  | ?    |
+  | monarch_ingest/constants.py  | ?    |
+  | obo/hp.obo  | ?    |
 
 ## Biolink Edge Types
 
+<!--
 | No. | Association Type | MetaEdge | Qualifiers |  AT / KL  | Evidence Code  |
 |----------|----------|----------|----------|----------|----------|
 | 1 | Chemical To Disease Or Phenotypic Feature Association | Chemical Entity - `treats_or_applied_or_studied_to_treat` - Disease Or Phenotypic Feature  |  n/a  |  manual agent, knowledge assertion  | n.s. |
+-->
+
+| No. | Association Type | MetaEdge | Qualifiers |  AT / KL  | Evidence Code  |
+|----------|----------|----------|----------|----------|----------|
+
 
 **Rationale**:
-- The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of "T" was broad ("a chemical that has a known or potenitial therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. 
-- ALl edges are manual agent knowledge assertiosn, as theingested data is based on manual literature curation.
+
+<!--
+- The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of "T" was broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. 
+- ALl edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation.
+-->
       
 ## Biolink Node Types
+
+<!--
 - ChemicalEntity (MeSH)
 - DiseaseOrPhenotypicFeature (MeSH)
 
 Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a full representation node properties, and may not accurately reflect the correct biolink category.
-
+-->
 
 
 ## Source Quality/Confidence Assessment
