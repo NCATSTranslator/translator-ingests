@@ -11,6 +11,10 @@ from koza.runner import KozaTransform
 
 from phenotype_ingest_utils import Frequency, phenotype_frequency_to_hpo_term
 
+# All HPOA ingest submodules share one
+# simplistic ingest versioning (for now)
+from . import get_latest_version
+
 # TO DO: Once biolink is updated with the disease_context_qualifier slot we need to update the association we make
 # https://github.com/biolink/biolink-model/pull/1524
 
