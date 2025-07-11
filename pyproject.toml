@@ -8,8 +8,10 @@ dependencies = [
     "beautifulsoup4>=4.13.4",
     "biolink-model",
     "bmt>=1.4.5",
+    "importlib-metadata>=4.8.0",
     "kghub-downloader>=0.4.1",
-    "koza"
+    "koza",
+    "pronto>=2.7.0",
 ]
 
 [dependency-groups]
