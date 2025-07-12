@@ -20,11 +20,15 @@ poetry run koza transform \
   --output-format tsv
 """
 
-from typing import List
+from typing import List, Dict, Iterator
 from loguru import logger
 import uuid
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    Entity,
+    Association,
+    Disease,
+    PhenotypicFeature,
     DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum
@@ -126,13 +130,11 @@ modes_of_inheritance = read_ontology_to_exclusion_terms("data/hp.obo", umbrella_
 #     )
 #     return [chemical, disease], [association]
 
-koza_app = get_koza_app("hpoa_disease_mode_of_inheritance")
-
-while (row := koza_app.get_row()) is not None:
+def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
 
     # Object: Actually a Genetic Inheritance (as should be specified by a suitable HPO term)
     # TODO: perhaps load the proper (Genetic Inheritance) node concepts into the Monarch Graph (simply as Ontology terms?).
-    hpo_id = row["hpo_id"]
+    hpo_id = record["hpo_id"]
 
     # We ignore records that don't map to a known HPO term for Genetic Inheritance
     # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
@@ -141,38 +143,46 @@ while (row := koza_app.get_row()) is not None:
         # Nodes
 
         # Subject: Disease
-        disease_id = row["database_id"]
+        disease_id = record["database_id"]
+        disease = Disease(id=disease_id,**{})
 
         # Predicate (canonical direction)
         predicate = "biolink:has_mode_of_inheritance"
 
+        # Object: PhenotypicFeature defined by HPO
+        phenotype = PhenotypicFeature(id=hpo_id,**{})
+
         # Annotations
 
         # Three letter ECO code to ECO class based on HPO documentation
-        evidence_curie = evidence_to_eco[row["evidence"]]
+        evidence_curie = evidence_to_eco[record["evidence"]]
 
         # Publications
-        publications_field: str = row["reference"]
+        publications_field: str = record["reference"]
         publications: List[str] = publications_field.split(";")
 
         # Filter out some weird NCBI web endpoints
         publications = [p for p in publications if not p.startswith("http")]
 
         # Association/Edge
-        association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(id="uuid:" + str(uuid.uuid1()),
-                                                                                subject=disease_id,
-                                                                                predicate=predicate,
-                                                                                object=hpo_id,
-                                                                                publications=publications,
-                                                                                has_evidence=[evidence_curie],
-                                                                                aggregator_knowledge_source=["infores:monarchinitiative"],
-                                                                                primary_knowledge_source="infores:hpo-annotations",
-                                                                                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                                                                                agent_type=AgentTypeEnum.manual_agent)
-        koza_app.write(association)
+        association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(
+            id="uuid:" + str(uuid.uuid1()),
+            subject=disease_id,
+            predicate=predicate,
+            object=hpo_id,
+            publications=publications,
+            has_evidence=[evidence_curie],
+            aggregator_knowledge_source=["infores:monarchinitiative"],
+            primary_knowledge_source="infores:hpo-annotations",
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            **{}
+        )
+        return [disease, phenotype], [association]
 
     else:
         logger.warning(f"HPOA ID field value '{str(hpo_id)}' is missing or an invalid disease mode of inheritance?")
+        return [], []
 
 
 """
