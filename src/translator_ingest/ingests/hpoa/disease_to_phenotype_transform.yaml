@@ -1,0 +1,60 @@
+transform_code: "src/translator_ingest/ingests/hpoa/disease_to_phenotype_transform.py"
+
+name: 'hpoa_disease_to_phenotype'
+
+metadata:
+  ingest_title: 'Human Phenotype Ontology Annotations'
+  ingest_url: 'https://hpo.jax.org/app/'
+  description: 'Ingest of HPO disease to phenotype associations'
+  rights: 'https://hpo.jax.org/app/license'
+
+files:
+  - 'data/hpoa/phenotype.hpoa'
+
+header: 4
+format: 'csv'
+delimiter: '\t'
+
+# We only concern ourselves with Aspect == 'P' (phenotypic anomalies) records in this ingest.
+filters:
+  - inclusion: 'include'
+    column: 'aspect'
+    filter_code: 'eq'
+    value: 'P'
+
+# For a csv/tsv file, list expected columns
+columns:
+  - 'database_id'
+  - 'disease_name'
+  - 'qualifier'
+  - 'hpo_id'
+  - 'reference'
+  - 'evidence'
+  - 'onset'
+  - 'frequency'
+  - 'sex'
+  - 'modifier'
+  - 'aspect'
+  - 'biocuration'
+
+# DiseaseToPhenotypicFeatureAssociation
+edge_properties:
+  - 'id'
+  - 'category'
+  - 'subject'
+  - 'predicate'
+  - 'negated'
+  - 'object'
+  - 'publications'
+  - 'onset_qualifier'
+  - 'frequency_qualifier'
+  - 'has_count'
+  - 'has_total'
+  - 'has_percentage'
+  - 'has_quotient'
+  - 'sex_qualifier'
+  - 'has_evidence'
+  - 'aggregator_knowledge_source'
+  - 'primary_knowledge_source'
+  - 'knowledge_level'
+  - 'agent_type'
