@@ -36,14 +36,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
-# from koza.cli_utils import get_koza_app
-from koza.runner import KozaTransform
 
-from phenotype_ingest_utils import (evidence_to_eco, 
-                                    sex_format,
-                                    sex_to_pato,
-                                    phenotype_frequency_to_hpo_term, 
-                                    Frequency)
+from phenotype_ingest_utils import (
+    evidence_to_eco,
+    sex_format,
+    sex_to_pato,
+    phenotype_frequency_to_hpo_term,
+    Frequency
+)
 
 # All HPOA ingest submodules share one
 # simplistic ingest versioning (for now)

@@ -34,9 +34,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-# from koza.cli_utils import get_koza_app
-from koza.runner import KozaTransform
-
 from phenotype_ingest_utils import (
     evidence_to_eco,
     read_ontology_to_exclusion_terms
