@@ -1,9 +1,14 @@
 import uuid
+from typing import Dict, Iterator
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    AgentTypeEnum,
+    Entity,
+    Association,
+    Gene,
+    PhenotypicFeature,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
+    AgentTypeEnum
 )
 
 # from koza.cli_utils import get_koza_app
@@ -96,46 +101,58 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 #     )
 #     return [chemical, disease], [association]
 
-# Initiate koza app and mondo map from sssom file
-koza_app = get_koza_app("hpoa_gene_to_phenotype")
-mondo_map = koza_app.get_map('mondo_map')
+# TODO: Initialize MONDO map from sssom file;
+#       alternately, don't worry about this since
+#       the subsequent Normalization step might fix this?
+# mondo_map = koza_app.get_map('mondo_map')
 
-while (row := koza_app.get_row()) is not None:
-    gene_id = "NCBIGene:" + row["ncbi_gene_id"]
-    phenotype_id = row["hpo_id"]
+def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
+
+    gene_id = "NCBIGene:" + record["ncbi_gene_id"]
+    gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
+
+    hpo_id = record["hpo_id"]
+    assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
+    phenotype = PhenotypicFeature(id=hpo_id, **{})
 
     # No frequency data provided
-    if row["frequency"] == "-":
+    if record["frequency"] == "-":
         frequency = Frequency()
     else:
         # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-        frequency: Frequency = phenotype_frequency_to_hpo_term(row["frequency"])
+        frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
     # Convert to mondo id if possible, otherwise leave as is
-    org_id = row["disease_id"].replace("ORPHA:", "Orphanet:")
-    dis_id = org_id
-    if dis_id in mondo_map:
-        dis_id = mondo_map[dis_id]['subject_id']
+    dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
 
-    publications = [pub.strip() for pub in row["publications"].split(";")] if row["publications"] else []
+    # TODO: Need to uncomment this once the MONDO map access
+    #       is sorted out here (see above comment). This
+    #       "normalization" of the disease context could be sorted out in a later pipeline step?
+    # if dis_id in mondo_map:
+    #     dis_id = mondo_map[dis_id]['subject_id']
 
-    association = GeneToPhenotypicFeatureAssociation(id="uuid:" + str(uuid.uuid1()),
-                                                     subject=gene_id,
-                                                     predicate="biolink:has_phenotype",
-                                                     object=phenotype_id,
-                                                     aggregator_knowledge_source=["infores:monarchinitiative"],
-                                                     primary_knowledge_source="infores:hpo-annotations",
-                                                     knowledge_level=KnowledgeLevelEnum.logical_entailment,
-                                                     agent_type=AgentTypeEnum.automated_agent,
-                                                     frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
-                                                     has_percentage=frequency.has_percentage,
-                                                     has_quotient=frequency.has_quotient,
-                                                     has_count=frequency.has_count,
-                                                     has_total=frequency.has_total,
-                                                     disease_context_qualifier=dis_id,
-                                                     publications=publications)
+    publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
-    koza_app.write(association)
+    association = GeneToPhenotypicFeatureAssociation(
+        id="uuid:" + str(uuid.uuid1()),
+        subject=gene_id,
+        predicate="biolink:has_phenotype",
+        object=hpo_id,
+        aggregator_knowledge_source=["infores:monarchinitiative"],
+        primary_knowledge_source="infores:hpo-annotations",
+        knowledge_level=KnowledgeLevelEnum.logical_entailment,
+        agent_type=AgentTypeEnum.automated_agent,
+        frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
+        has_percentage=frequency.has_percentage,
+        has_quotient=frequency.has_quotient,
+        has_count=frequency.has_count,
+        has_total=frequency.has_total,
+        disease_context_qualifier=dis_id,
+        publications=publications,
+        **{}
+    )
+
+    return [gene, phenotype],[association]
 
 
 """
