@@ -69,7 +69,7 @@ download:
 
 .PHONY: transform
 transform: download
-	python src/translator_ingest/koza/main.py transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
+	$(RUN) koza transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
 
 .PHONY: normalize
 normalize: transform
