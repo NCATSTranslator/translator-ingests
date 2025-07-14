@@ -64,9 +64,10 @@ Describe and define the subset of data from the source that is included in this 
   |  |  |  | 
   |  |  |  | 
 
-  #### Excluded Content (o):
-  A table describing data that was filtered out during processing of the ingested files/tables. As possible, describe the rationale behind any filtering rules or exclusion criteria.
-  It is not necessary to list any/all files from which no content was ingested.  The aim here is to describe what was filtered out or left behind from files listed above that are relevant / ingested from the source. 
+  #### Filtered Records (o):
+  A table describing records that are filtered out during processing/ingest of the source. As possible, describe the rationale behind any filtering rules or exclusion criteria.
+  Note that there is no need to list all files from which no content was ingested, or the fields from ingested files that were not used.  
+  The goal here is to indicate if some subset of records *from ingested files* were filtered out, and why (e.g. lack of relevance, low quality data, deferred to future ingest, etc). 
   | File | Excluded Content | Rationale |
   |----------|----------|----------|
   |  |  |  |
