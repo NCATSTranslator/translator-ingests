@@ -56,12 +56,11 @@ This ingest covers curated Chemical to Disease associations that report therapeu
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Curated therapeutic and marker/mechanism associations -i.e. rows where a "DirectEvidence" value is populated with type "T" or "M"  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
 
-  #### Excluded Content (o):
+  #### Filtered Records (o):
 
-  | File | Excluded Content | Rationale |
+  | File | Filtered Content | Rationale |
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Inferred associations - i.e. rows lacking a value in the DirectEvidence column | Decided that the methodology used to create these inferences gave associations that were not strong/meaningful enough to be of use to Translator |
-  | CTD_exposure_events.tsv.gz | All | These report chemical-disease association, but mapping to Biolink is not clear. These will likely be included in a future ingest |
 
   #### Future Considerations (o):
 
@@ -80,8 +79,8 @@ This ingest covers curated Chemical to Disease associations that report therapeu
 
 | # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | UI Explanation |
 |----------|----------|----------|----------|----------|----------|---------|----------|
-| 1 | Chemical To Disease Or Phenotypic Feature Association | Chemical Entity | treats or applied or studied to treat` | Disease Or Phenotypic Feature  |  n/a  |  manual agent, knowledge assertion  | CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate `treats_or_applied_or_studied_to_treat`. |
-| 2 | Chemical To Disease Or Phenotypic Feature Association | Chemical Entity | marker or causal for | Disease Or Phenotypic Feature  |  n/a  |  manual agent, knowledge assertion  | CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate `marker_or_causal_for`. |
+| 1 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | treats_or_applied_or_studied_to_treat | DiseaseOrPhenotypic Feature  |  n/a  |  manual_agent, knowledge_assertion  | CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate `treats_or_applied_or_studied_to_treat`. |
+| 2 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | marker_or_causal_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  | CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate `marker_or_causal_for`. |
 
 **Rationale (o)**:
 1. The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
@@ -91,7 +90,7 @@ This ingest covers curated Chemical to Disease associations that report therapeu
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
 | Biolink Category |  Source Identifier Type(s) | Notes |
 |------------------|----------------------------|--------|
-| ChemicalEntity |  MeSH  | Majority are biolink:SmallMolecule |
+| ChemicalEntity |  MeSH  | Majority are Biolink SmallMolecules |
 | DiseaseOrPhenotypicFeature| MeSH | |
 
 ------------------
