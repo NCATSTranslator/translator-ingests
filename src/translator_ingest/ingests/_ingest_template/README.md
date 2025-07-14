@@ -1,6 +1,6 @@
 # Ingest Template 
 
-This directory provides a template that can be used to implement a new knowledge source ingest. 
+This directory provides a template that can be used to implement a new knowledge source ingest. It is not intended to run or work as is.
 
 Make a copy of this directory and change the name of the directory, ingest-template.py, and ingest-template.yaml to the infores identifier corresponding to the new knowledge source. 
 
