@@ -75,8 +75,12 @@ transform: download
 normalize: transform
 	echo "Normalization placeholder"
 
+.PHONY: validate
+validate: normalize
+    echo "Validation placeholder"
+
 .PHONY: run
-run: download transform normalize
+run: download transform normalize validate
 
 ### Linting, Formatting, and Cleaning ###
 
