@@ -1,37 +1,12 @@
-# Comparative Toxicogenomics Database (CTD)
+# Ingest Template 
 
-CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides manually curated information about chemical–gene/protein interactions, chemical–disease and gene–disease relationships. These data are integrated with functional and pathway data to aid in development of hypotheses about the mechanisms underlying environmentally influenced diseases.
+This directory provides a template that can be used to implement a new knowledge source ingest. 
 
-* [CTD Bulk Downloads](http://ctdbase.org/downloads/) 
+Make a copy of this directory and change the name of the directory, ingest-template.py, and ingest-template.yaml to the infores identifier corresponding to the new knowledge source. 
 
-[Chemical to Disease](#chemical_to_disease)
+Populate the files with implementation details specific to that knowledge source. Avoid implementing major functionalities that seem like they should be shared across multiple ingests; instead consult translator_ingest maintainers with questions or suggestions.
 
-This ingest takes only the chemical to disease rows where a direct evidence label is applied, and creates ChemicalEntity and Disease nodes connected by a ChemicalToDiseaseOrPhenotypicFeatureAssociation. The the chemical ID row is expected to need a 'MESH:' prefix added, the disease id is used as-is. 
+## Ingest Template Reference Ingest Guide (RIG)
 
-Rows are included only if the direct evidence field is 'therapeutic' and the `biolink:treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim.
+### TODO - Information about RIGs.
 
-__**Biolink Captured**__
-
-* ChemicalToDiseaseOrPhenotypicFeatureAssociation
-  * id (random uuid)
-  * subject (chemical id)
-  * predicate (`biolink:treats_or_applied_or_studied_to_treat`)
-  * object (disease id)
-  * publication (pubmed ids provided by file)  
-  * primary_knowledge_source (`infores:ctd`)
-
-* ChemicalEntity
-  * id (chemical id)
-  * name (chemical name)
-  * category (`biolink:ChemicalEntity`)
-
-* Disease
-  * id (disease id)
-  * name (disease name)
-  * category (`biolink:Disease`)
-
-Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a full representation node properties, and may not accurately reflect the correct biolink category.
-
-## Citation
-
-Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD): update 2023. Nucleic Acids Res. 2022 Sep 28.
