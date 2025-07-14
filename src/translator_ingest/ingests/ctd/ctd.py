@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterator
+from typing import Iterator, Iterable
 
 import requests
 
@@ -39,7 +39,7 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
     return records
 """
 
-def transform_record(record: dict) -> (Iterator[Entity], Iterator[Association]):
+def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -58,7 +58,7 @@ def transform_record(record: dict) -> (Iterator[Entity], Iterator[Association]):
 
 """
 this is just an example of the interface, using transform() offers the opportunity to do something more efficient
-def transform(records: Iterator[dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[Entity], Iterable[Association]]]:
     for record in records:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])

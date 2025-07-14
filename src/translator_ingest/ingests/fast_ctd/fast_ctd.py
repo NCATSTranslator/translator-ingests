@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, Iterable
 
 import requests
 import pandas
@@ -21,7 +21,6 @@ import translator_ingest.ingests.fast_ctd.ingest_utils as iu
 # loader which is probably the bottleneck, so it's not much faster.
 
 
-# ideally we'll use a predicate enum, maybe an infores enum?
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 INFORES_CTD = "infores:ctd"
 
@@ -39,7 +38,7 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-def transform(records: Iterator[dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[Entity], Iterable[Association]]]:
     df = pandas.DataFrame(records)
     return iter([(iter(get_nodes(df)), iter(get_edges(df)))])
 
