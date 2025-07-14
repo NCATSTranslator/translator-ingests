@@ -23,6 +23,7 @@ define HELP
 │     download            Download data                     │
 │     transform           Transform data into KGX           │
 │     normalize           Normalize the KGX files           │
+│     validate            Validate the normalized KGX files │
 │     run                 Run the whole pipeline            │
 │                                                           │
 │     test                Run all tests                     │
@@ -77,7 +78,7 @@ normalize: transform
 
 .PHONY: validate
 validate: normalize
-    echo "Validation placeholder"
+	echo "Validation placeholder"
 
 .PHONY: run
 run: download transform normalize validate
