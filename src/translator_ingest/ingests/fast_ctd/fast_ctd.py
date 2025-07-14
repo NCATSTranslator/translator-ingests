@@ -1,4 +1,4 @@
-from typing import Iterator, Dict
+from typing import Iterator
 
 import requests
 import pandas
@@ -39,7 +39,7 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+def transform(records: Iterator[dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
     df = pandas.DataFrame(records)
     return iter([(iter(get_nodes(df)), iter(get_edges(df)))])
 
