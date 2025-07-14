@@ -5,13 +5,13 @@ Below we define general tasks that should be done for each re-ingest. It assumes
 - Determine who will perform and contribute to each re-ingest. See s/s here.
 - As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
 
-## 2. Understand and Compare Phase 2 Ingests
+## 2. Understand and Compare Phase 2 Ingest Review
 
 ### Prepare
 - Reps for each KP that ingested a source should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
 - For CTD, we used the spreadsheet [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) to catalog this type of info ahead of meeting.
     
-### Discuss/Assess
+### Compare
 - What teams/KPs ingested the source?
 - What source files / versions were ingested by each KP (alt, which database tables, API endpoints, etc)?
 - What content from these files was included  (e.g.  specific columns)
@@ -23,7 +23,7 @@ Below we define general tasks that should be done for each re-ingest. It assumes
    - Assess modeling generally in light of current state of Biolink model and approaches
    - If >1 KP, identify, assess, and resolve  differences in representation of same /related content.
 
-## 3. Scope and Specify the Re-Ingest (and document in a RIG)
+## 3. Scope and Specify Re-Ingest Details (document in a RIG)
 
 ### Assess Source Utility
 - Is the source as a whole worth ingesting?
@@ -41,7 +41,7 @@ Below we define general tasks that should be done for each re-ingest. It assumes
 - Note what content is excluded, and why?*
    - Be sure to document any content left behind that should be revisited/ingested in future iterations*.
 
-### **Modeling Work**
+### Modeling Work
 - What types of Biolink edges will be created (define SPOQ patterns to be used) - and capture rationale for this representation*
 - What node/edge properties and patterns should be used to capture metadata?
 - Is re-modeling of Phase 2 patterns needed?
