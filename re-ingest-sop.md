@@ -2,7 +2,7 @@
 Below we define general tasks that should be done for each re-ingest. It assumes the source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
 
 ## 1. Establish / Organize Owners and Contributors
-- Determine who will perform and contribute to each re-ingest. e.g. see s/s [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496):
+- Determine who will perform and contribute to each re-ingest. We are currently using the s/s [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
 - As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
 
 ## 2. Understand and Compare Phase 2 Ingest Review
