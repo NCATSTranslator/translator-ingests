@@ -2,7 +2,7 @@
 
 ---------------
 
-## Primary Knowledge Source Information
+## Source Information
 
 ### Infores
  - infores:ctd
@@ -14,7 +14,7 @@ CTD is a robust, publicly available database that aims to advance understanding 
 ### Source Category(ies)
 - Primary Knowledge Provider   
 
-### Citation
+### Citation (o)
 
 Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD): update 2023. Nucleic Acids Res. 2022 Sep 28.
 
