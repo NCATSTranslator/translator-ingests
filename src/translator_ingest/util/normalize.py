@@ -129,7 +129,7 @@ class Normalizer:
 
         assert node.id, "normalize_node(node): empty node identifier?"
 
-        query = {'curies': [node.id]}
+        query = {'curies': [node.id], 'description': True}
         result = self.node_normalizer(query=query)
 
         # Sanity check about regular NN operation for all queries
@@ -153,6 +153,7 @@ class Normalizer:
         assert "id" in node_identity and "identifier" in node_identity["id"]
         canonical_identifier = node_identity["id"]["identifier"]
         canonical_name = node_identity["id"]["label"]
+        canonical_description = node_identity["id"]["description"] if "description" in node_identity["id"] else ""
 
         # Sanity check... in case the
         # original node xref and synonym field are empty (or not...)
@@ -190,6 +191,7 @@ class Normalizer:
 
         # Overwrite the node name with the canonical name...
         node.name = canonical_name
+        node.description = canonical_description
 
         # ... TODO: (Re-)set the node categories
         #           (Pydantic doesn't allow the following statement ... yet?)

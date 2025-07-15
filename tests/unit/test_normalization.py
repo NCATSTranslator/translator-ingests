@@ -121,7 +121,11 @@ MOCK_NN_DISEASE_DATA = {
     ],
     "id": {
       "identifier": "MONDO:0010196",
-      "label": "Werner syndrome"
+      "label": "Werner syndrome",
+      "description": "A rare inherited syndrome characterized by premature aging with onset in the third decade "+
+                     "of life  and with cardinal clinical features including bilateral cataracts, short stature, "+
+                     "graying and thinning of scalp hair, characteristic skin disorders and premature onset of "+
+                     "additional age-related disorders."
     },
     "information_content": 100,
     "type": [
@@ -204,6 +208,20 @@ def test_normalize_node(mock_nn_query):
     # .. but not the canonical name
     assert "WRN" not in result.synonym
 
+    # Another example, with a canonical description returned
+    node = NamedThing(
+        id="DOID:5688",
+        name="Werner Syndrome",
+        category=["biolink:NamedThing"],
+        **{}
+    )
+    result = normalizer.normalize_node(node)
+    # Valid input query identifier, so should return a result
+    assert result is not None
+    # ... should be the canonical identifier and name
+    assert result.id == "MONDO:0010196"
+    assert result.name == "Werner syndrome"
+    assert result.description.startswith("A rare inherited syndrome characterized by premature aging")
 
 
 def test_normalize_node_already_canonical(mock_nn_query):
