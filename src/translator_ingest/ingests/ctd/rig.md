@@ -1,23 +1,29 @@
-# CTD Chemical-Disease Reference Ingest Guide (RIG)
+# Comparative Toxicogenomics Database (CTD) Reference Ingest Guide (RIG)
 
 ---------------
 
-## Source Information
+## Primary Knowledge Source Information
 
 ### Infores
  - infores:ctd
 
 ### Description
- - CTD provides knowledge about chemicals and ther relationship to other biological entities. most of which is manually curated from the literature.
- - It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
+ 
+CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides knowledge, manually curated from the literature, about chemicals and their relationship to other biological entities: chemical to gene/protein interactions plus chemical to disease and gene to disease relationships. These data are integrated with functional and pathway data to aid in the development of hypotheses about the mechanisms underlying environmentally influenced diseases.  It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
    
 ### Source Category(ies)
 - Primary Knowledge Provider   
 
+### Citation
+
+Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD): update 2023. Nucleic Acids Res. 2022 Sep 28.
+
 ### Terms of Use
+
  - No formal license. Bespoke 'terms of use' are described here: https://ctdbase.org/about/legal.jsp
 
 ### Data Access Locations
+
 There are two pages for downloading data files.
  - CTD Bulk Downloads: http://ctdbase.org/downloads/  (this page includes file sizes and simple data dictionaries for each download)
  - CTD Catalog: https://ctdbase.org/reports/   (a simple list of files, reports the number of rows in each file)
@@ -28,7 +34,7 @@ There are two pages for downloading data files.
    
 ### Releases and Versioning
  - No consistent cadence for releases, but on average there are 1-2 releases each month.
- - Versioning is based on month + year  of the release
+ - Versioning is based on the month and year of the release
  - Releases page / change log: https://ctdbase.org/about/changes/
  - Latest status page: https://ctdbase.org/about/dataStatus.go
 
@@ -36,12 +42,13 @@ There are two pages for downloading data files.
 
 ## Ingest Information
     
-### Utility 
-- CTD is a rich source of manually curated chemical associations to other biological entities which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries.
-  It is one of the only sources that focuses on non-drug chemicals, e.g. environmental stressorrs, and how these are related to diseases, biological processes, and genes. 
+### Utility
+
+- CTD is a rich source of manually curated chemical associations to other biological entities which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries.  It is one of the few sources that focus on non-drug chemicals, e.g. environmental stressors, and how these are related to diseases, biological processes, and genes. 
 
 ### Scope
-This ingest covers curated Chemical to Disease associations that report therapeutic and marker/mechanism relationships. 
+
+This ingest covers curated Chemical to Disease associations that report therapeutic and marker/mechanism relationships (Rows are included only if the direct evidence field is 'therapeutic' and the `biolink:treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim). The ingest takes only the chemical to disease rows where a direct evidence label is applied, and creates ChemicalEntity and Disease nodes connected by a ChemicalToDiseaseOrPhenotypicFeatureAssociation. The chemical ID row is expected to need a 'MESH:' prefix added, with the disease identifier used as-is. 
 
   #### Relevant Files:
 
@@ -83,11 +90,14 @@ This ingest covers curated Chemical to Disease associations that report therapeu
 | 2 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | marker_or_causal_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  | CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate `marker_or_causal_for`. |
 
 **Rationale (o)**:
+
 1. The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
 2. The `marker_or_causal_for` predicate is used because the CTD 'M' flag does not distinguish between when a chemical is a correlated marker for a condition, or a contributing cause for the condition. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
    
 ### Node Types
+
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
+
 | Biolink Category |  Source Identifier Type(s) | Notes |
 |------------------|----------------------------|--------|
 | ChemicalEntity |  MeSH  | Majority are Biolink SmallMolecules |
