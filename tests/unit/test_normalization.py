@@ -136,6 +136,7 @@ MOCK_NN_DISEASE_DATA = {
 
 @pytest.fixture(scope="module")
 def mock_nn_query():
+    # return Normalizer().get_normalized_nodes
     def mock_node_normalizer_query(query: Dict) -> Dict[str, Optional[Dict]]:
         # Fixture sanity check for a well-formed query input
         assert query and "curies" in query
@@ -149,6 +150,7 @@ def mock_nn_query():
                 result[identifier] = None
         return result
     return mock_node_normalizer_query
+
 
 
 # def convert_to_preferred(curie, allowed_list, mock_nn_query):
