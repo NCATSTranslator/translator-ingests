@@ -2,14 +2,14 @@
 Below we define general tasks that should be done for each re-ingest. It assumes the source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
 
 ## 1. Establish / Organize Owners and Contributors
-- Determine who will perform and contribute to each re-ingest. See s/s here.
+- Determine who will perform and contribute to each re-ingest. e.g. see s/s [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496):
 - As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
 
 ## 2. Understand and Compare Phase 2 Ingest Review
 
 ### Prepare
 - Reps for each KP that ingested a source should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
-- For CTD, we used the spreadsheet [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) to catalog this type of info ahead of meeting.
+- As appropriate (in particular for sources ingested by multiple KPs), we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) for CTD - to help surface and resolve any differneces in what and how source data is ingested, filtered, and modeled across KP graphs. This will help the 'Compare' task described below. 
     
 ### Compare
 - What teams/KPs ingested the source?
@@ -21,7 +21,7 @@ Below we define general tasks that should be done for each re-ingest. It assumes
    - If >1 KP, assess differences in logic applied to same content across existing KP ingests
 - How was source data represented using the target Biolink model
    - Assess modeling generally in light of current state of Biolink model and approaches
-   - If >1 KP, identify, assess, and resolve  differences in representation of same /related content.
+   - If >1 KP, identify, assess, and resolve  differences in representation of same /related content
 
 ## 3. Scope and Specify Re-Ingest Details (document in a RIG)
 
