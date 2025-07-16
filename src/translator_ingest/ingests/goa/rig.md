@@ -4,7 +4,6 @@
 
 ## Source Information
 
-
 ### Infores
 
 * **`infores:goa`**
@@ -15,138 +14,96 @@ The Gene Ontology Annotation (GOA) project provides high-quality, manually curat
 
 ### Terms of Use
 
-Gene Ontology’s annotations are made available under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See: https://geneontology.org/docs/go-citation-policy/
+Gene Ontology’s annotations are made available under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See: [https://geneontology.org/docs/go-citation-policy/](https://geneontology.org/docs/go-citation-policy/)
 
-CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+CC BY 4.0: [https://creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
 
 ### Data Access Locations
 
-GOA files, with embedded release dates in headers. As for 2025-06-01. can be downloaded from (Catalog): https://current.geneontology.org/products/pages/downloads.html
+GOA files, with embedded release dates in headers (e.g. `!Generated: 2025-06-01`), can be downloaded from the Gene Ontology FTP or HTTP release site:
 
-Complete annotation directory all files (Bulk download): https://current.geneontology.org/annotations/
+* **Catalog page:** [https://current.geneontology.org/products/pages/downloads.html](https://current.geneontology.org/products/pages/downloads.html)
+* **Bulk annotation directory:** [https://current.geneontology.org/annotations/](https://current.geneontology.org/annotations/)
+* **Human GAF (2025-06-01 release):**
 
-Human GAF (Bulk download):
-https://current.geneontology.org/annotations/goa_human.gaf.gz (993,520 annotations) As for 2025-06-01 release.
+  * `goa_human.gaf.gz` (993,520 annotations)
+* **Mouse GAF:**
 
-- Key files:
-
-    - goa_human.gaf.gz (human GOA GAF 2.2)
-
-    - goa_uniprot_all.gaf.gz (multi-species GOA GAF 2.2)
+  * `mgi.gaf` (mouse GOA GAF 2.2)
 
 ### Provision Mechanisms and Formats
 
-- **Mechanism(s):** File download or API access  
-- **Formats:**  
-  - **GAF 2.2** (`.gaf`, `.gaf.gz`): a tab-delimited, 17-column format (essentially a TSV). Header comment lines start with `!`. Each row corresponds to one annotation. Columns are:  
-    - `DB`  
-    - `DB Object ID`  
-    - `DB Object Symbol`  
-    - `Qualifier`  
-    - `GO ID`  
-    - `DB:Reference(s)`  
-    - `Evidence Code`  
-    - `With (or) From`  
-    - `Aspect`  
-    - `DB Object Name`  
-    - `DB Object Synonym`  
-    - `DB Object Type`  
-    - `Taxon`  
-    - `Date`  
-    - `Assigned By`  
-    - `Annotation Extension`  
-    - `Gene Product Form ID`  
-  - **GPAD 2.0** (`.gpad`, `.gpad.gz`)  
-  - **GPI 2.0** (`.gpi`, `.gpi.gz`) 
+* **Mechanism:** File download (GAF, GPAD, GPI) or API access (REST endpoints)
+* **Formats:**
 
-API access instructions: https://geneontology.org/docs/tools-guide/
+  * **GAF 2.2** (`.gaf`, `.gaf.gz`): Tab-delimited 17-column format. Header lines start with `!`.
+  * **GPAD 2.0** (`.gpad`, `.gpad.gz`)
+  * **GPI 2.0** (`.gpi`, `.gpi.gz`)
 
 ### Releases and Versioning
 
-* **Release cadence:**
-    - GOA files are released approximately every four weeks (monthly), coordinated with UniProtKB releases 
-* **Versioning:**
-    - Each GAF file header contains a !Generated: YYYY-MM-DD line indicating the precise build date
-* **Release Notes**: Detailed release information is available at https://geneontology.org/docs/download-go-annotations/ and changes for GAF files https://geneontology.org/docs/go-annotation-file-gaf-format-2.2/
+* **Release cadence:** Approximately every four weeks, synchronized with UniProtKB.
+* **Versioning:** Each GAF header includes a `!Generated: YYYY-MM-DD` line.
+* **Release notes:** [https://geneontology.org/docs/download-go-annotations/](https://geneontology.org/docs/download-go-annotations/) and [https://geneontology.org/docs/go-annotation-file-gaf-format-2.2/](https://geneontology.org/docs/go-annotation-file-gaf-format-2.2/)
 
 ---
 
 ## Ingest Information
 
 ### Utility
-- GOA Human provides the definitive, manually curated and electronically inferred associations between human gene products (UniProtKB entries) and Gene Ontology terms, ensuring comprehensive coverage of molecular functions, biological processes, and cellular components.
+
+GOA provides the definitive manually curated and electronically inferred associations between human and mouse gene products (UniProtKB entries and MGI identifiers) and GO terms, with evidence codes and literature references.
 
 ### Scope
 
-- Primary ingest: the human GOA GAF 2.2 file (goa_human.gaf.gz), capturing all three annotation aspects (P, F, C) and both manual (e.g. IDA, IMP) and electronic (IEA) evidence codes.
-
-- Excluded: GPAD (.gpad) and GPI (.gpi) formats, as well as multi‐species GAF (goa_uniprot_all.gaf.gz)—the latter is earmarked for future ingestion if broader taxonomic coverage is needed.
+* **Primary ingest:** human (`goa_human.gaf.gz`) and mouse (`mgi.gaf`) GOA GAF 2.2 files, capturing all three annotation aspects (P, F, C) with manual (e.g., IDA, IMP) and electronic (IEA) evidence codes, including the `Taxon` column to differentiate species via the `in_taxon` slot.
+* **Excluded:** GPAD and GPI formats; multi-species GAF (`goa_uniprot_all.gaf.gz`) earmarked for future broader taxonomic coverage.
 
 #### Relevant Files
 
-| File                     | Description                                                 |
-| ------------------------ | ----------------------------------------------------------- |
-| `goa_human.gaf.gz`       | Human gene-product to GO term associations (GAF 2.2)        |
+| File               | Description                                          |
+| ------------------ | ---------------------------------------------------- |
+| `goa_human.gaf.gz` | Human gene-product to GO term associations (GAF 2.2) |
+| `mgi.gaf`          | Mouse gene-product to GO term associations (GAF 2.2) |
 
 #### Included Content
 
-| File               | Included Content                                                     | Columns Used                                                                                                                                                                                                                                                   |
-| ------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `goa_human.gaf.gz` | All human annotations with evidence and provenance                  | `DB Object ID` -> `GeneProduct.id` (target type `biolink:GeneProduct`)<br>`DB Object Symbol` -> `symbol`<br>`GO ID` -> `OntologyClass.id` (target type `biolink:OntologyClass`)<br>`DB:Reference(s)` -> `publications`<br>`Evidence Code` -> `biolink:has_evidence`<br>`With/From` -> `biolink:related_to`<br>`Aspect` -> `biolink:predicate` (`participates_in`/`enables`/`located_in`)<br>`Date` -> `creation_date`<br>`Assigned By` -> `biolink:provided_by` |
-
-                                                                                                                                                                                      
+| File                           | Included Content                                             | Columns Mapped (->)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `goa_human.gaf.gz` / `mgi.gaf` | All human and mouse annotations with evidence and provenance | `DB Object ID` -> `GeneProduct.id` (biolink\:GeneProduct)<br>`DB Object Symbol` -> `symbol`<br>`Relation` -> maps to `predicate` or `negated` slots (e.g., 'NOT' sets `negated=true`; 'contributes\_to' refines `predicate`)<br>`GO ID` -> `OntologyClass.id` (biolink\:OntologyClass)<br>`DB:Reference(s)` -> `publications`<br>`Evidence Code` -> `has_evidence`<br>`Aspect` -> maps to `predicate` slot: `biolink:participates_in` / `biolink:enables` / `biolink:located_in`<br>`Date` -> `creation_date`<br>`Taxon` -> `in_taxon`<br>`Annotation Extension` -> qualifier slots if needed<br>`Gene Product Form ID` -> form/variant qualifiers (future) |
 
 #### Excluded Content
 
+| File      | Excluded Content                                                                                                                                                               | Rationale                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| GAF files | Header comment lines (`!gaf-version`, `!generated-by`, etc.);<br>`DB`;<br>`DB Object Name`;<br>`DB Object Synonym`;<br>`DB Object Type`;<br>`With (or) From`;<br>`Assigned By` | Non-core provenance or redundant context; optional context handled via qualifiers if needed. |
 
-| File(s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Excluded Content                                                                                                                                                                     | Rationale                                                                                                                                                    |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `goa_human.gaf.gz`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Header comment lines (`!gaf-version`, `!generated-by`, etc.);<br> `DB`; <br>`DB Object Name`;<br> `DB Object Synonym`;<br> `DB Object Type`;<br> `Taxon`;<br> `Annotation Extension`;<br> `Gene Product Form ID` | File-level metadata and non-core fields outside the subject–predicate–object model; handled via Biolink provenance or qualifiers.                            |
-                                                                                                                                                                                                                                                                                                    
+#### Future Considerations
 
-### Future Considerations
-
-| File                     | Content                                                | Rationale                                                                          |
-| ------------------------ | ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `goa_human.gpad.gz`      | Detailed qualifiers/annotation extensions               | Enables modeling of complex contextual qualifiers                                  |
-| `goa_human.gpi.gz`       | Gene product metadata                                  | Enriches node attributes (names, synonyms, types)                                  |
-| `goa_uniprot_all.gaf.gz` | Multi-species annotations                              | Broadens taxonomic coverage                                                         |
-
+| File                     | Content                   | Rationale                                  |
+| ------------------------ | ------------------------- | ------------------------------------------ |
+| `goa_human.gpad.gz`      | Detailed qualifiers       | Enables modeling of annotation extensions  |
+| `goa_human.gpi.gz`       | Gene product metadata     | Enriches node attributes (names, synonyms) |
+| `goa_uniprot_all.gaf.gz` | Multi-species annotations | Broadens taxonomic coverage                |
 
 ---
 
 ## Target Information
 
-### Infores
-
-* **`infores:goa`**
-
 ### Edge Types
 
-| # | Association Type                     | Biolink MetaEdge          | Association Slots                          | Evidence & Provenance                                     | UI Explanation                                                                                        |
-| - | ------------------------------------ | ------------------------- | ------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 1 | GeneProduct -> BiologicalProcess     | `biolink:participates_in` | `biolink:negated`, `biolink:related_to`   | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Captures that a gene product **participates in** a biological process (GO Aspect P).                   |
-| 2 | GeneProduct -> MolecularFunction     | `biolink:enables`         | `biolink:negated`, `biolink:related_to`   | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Indicates a gene product **enables** a molecular function (GO Aspect F).                               |
-| 3 | GeneProduct -> CellularComponent     | `biolink:located_in`      | `biolink:negated`, `biolink:related_to`   | manual/electronic, `biolink:has_evidence`, `biolink:provided_by` | Specifies a gene product is **located in** a cellular component (GO Aspect C).                         |
+| # | Association                      | Biolink MetaEdge          | Slots                                                 | UI Explanation                                                                   |
+| - | -------------------------------- | ------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 1 | GeneProduct -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `in_taxon` | Captures that a gene product **participates in** a biological process (Aspect P) |
+| 2 | GeneProduct -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `in_taxon` | Indicates a gene product **enables** a molecular function (Aspect F)             |
+| 3 | GeneProduct -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `in_taxon` | Specifies a gene product is **located in** a cellular component (Aspect C)       |
 
-**Rationale**  
-1. **Evidence provenance:** We preserve GOA’s manual (IDA, IMP, etc.) vs. electronic (IEA) evidence codes by populating `biolink:has_evidence` and `biolink:provided_by` on each edge, enabling users to filter by confidence level.  
-2. **Negation:** GO “NOT” annotations are captured via the `biolink:negated` slot, ensuring negative assertions remain computable.  
-3. **Predicate semantics:**  
-   - **`participates_in`:** maps Aspect P (process involvement) of a gene product.  
-   - **`enables`:** reflects mechanistic capacity for Aspect F.  
-   - **`located_in`:** denotes molecular location for Aspect C.  
-4. **OntologyClass consolidation:** All GO terms map to `biolink:OntologyClass`, simplifying node types and ensuring uniform treatment with other ontology-based sources.  
-5. **With/From context:** Contextual details (e.g. cofactors) are preserved via the `biolink:related_to` slot, future-proofing richer edge modeling. :contentReference[oaicite:0]{index=0}
+### Node Types
 
----
-
-## Node Types
-
-| Biolink Category    | Source Identifier Type(s) | Notes                                      |
-| ------------------- | ------------------------- | ------------------------------------------ |
-| GeneProduct         | UniProtKB accession       | Represents proteins and gene products.     |
-| OntologyClass       | GO term                   | Represents GO terms across all aspects.    |
+| Biolink Category       | Source ID Type(s)                   | Notes                                   |
+| ---------------------- | ----------------------------------- | --------------------------------------- |
+| biolink\:GeneProduct   | UniProtKB accession, MGI primary ID | Represents proteins and gene products.  |
+| biolink\:OntologyClass | GO term ID                          | Represents GO terms across all aspects. |
 
 ---
 
