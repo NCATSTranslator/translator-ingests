@@ -165,7 +165,7 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 
 ## Data Access
 
-- **HPOA data**: http://purl.obolibrary.org/obo/hp/hpoa
+- **HPOA data**: https://github.com/obophenotype/human-phenotype-ontology/
 - **MONDO data**: https://mondo.monarchinitiative.org/pages/download/
 - **Related Monarch Phenotype (HPOA) Metadata**: https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
      
