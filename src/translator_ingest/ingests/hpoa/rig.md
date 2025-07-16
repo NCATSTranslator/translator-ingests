@@ -1,7 +1,7 @@
 # Reference Ingest Guide for HPOA: Human Phenotype Ontology Annotations 
 
 ## Source Description
-The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standardized vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
+The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standard vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
 
 The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence, and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
 
@@ -73,11 +73,11 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 ## Biolink Edge Types
 
 
-| No. | Association Type                                                     | MetaEdge                                       | Qualifiers                                                   | AT / KL                           | Evidence Code |
-|-----|----------------------------------------------------------------------|------------------------------------------------|--------------------------------------------------------------|-----------------------------------|---------------|
-| 1   | Disease To Phenotypic Feature Association                            | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier, onset_qualifier, frequency_qualifier | manual agent, knowledge assertion | n.s.          |
-| 2   | CausalGeneToDiseaseAssociation or CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                         | manual agent, knowledge assertion | n.s.          |
-| 3   | Gene To Phenotypic Feature Association                               | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                         | manual agent, knowledge assertion | n.s.          |
+| No. | Association Type                                                         | MetaEdge                                       | Qualifiers                                                      | AT / KL                           | Evidence Code |
+|-----|--------------------------------------------------------------------------|------------------------------------------------|-----------------------------------------------------------------|-----------------------------------|---------------|
+| 1   | Disease To Phenotypic Feature Association                                | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier,<br>onset_qualifier, frequency_qualifier | manual agent, knowledge assertion | n.s.          |
+| 2   | CausalGeneToDiseaseAssociation or<br>CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                            | manual agent, knowledge assertion | n.s.          |
+| 3   | Gene To Phenotypic Feature Association                                   | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                            | manual agent, knowledge assertion | n.s.          |
 
 <!-- TODO: Need to review AT/KL and Evidence Code -->
 
@@ -119,13 +119,13 @@ Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a
 
 # Human Phenotype Ontology Annotations (HPOA)
 
-The [Human Phenotype Ontology](http://human-phenotype-ontology.org) group
+~~The [Human Phenotype Ontology](http://human-phenotype-ontology.org) group
 curates and assembles over 115,000 annotations to hereditary diseases
 using the HPO ontology. Here we create Biolink associations
 between diseases and phenotypic features, together with their evidence,
 and age of onset and frequency (if known).
 
-There are four HPOA ingests - 'disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-disease' and 'gene-to-phenotype' - that parse out records from the [HPO Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+There are four HPOA ingests - 'disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-disease' and 'gene-to-phenotype' - that parse out records from the [HPO Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).~~
 
 ## Disease to Phenotype
 
