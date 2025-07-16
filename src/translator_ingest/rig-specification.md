@@ -7,7 +7,7 @@ An example of a completed RIG for the Comparative Toxicogenomics Database (CTD) 
 ## Section I: Source Information
 
 ### Infores
-The infores identifier of the source from which content is being ingested. 
+The infores identifier of the source from which content is being ingested. Ideally, the value of this field will have a link pointing to the corresponding Infores Registry entry, e.g. [CTD](https://w3id.org/information-resource-registry/ctd) for the Comparative Toxicogenomics Database infores.
   
 ### Description
 A short description of the source, focused on info relevant to its ingest into Translator.
@@ -25,6 +25,9 @@ One or more of the following categories, describing the kind of source being ing
   | **Ontology/Terminology Provider** | An ontology or terminology artifact providing concept identifiers, definitions, mappings, hierarchical relationships that are ingested into Translator KGs |
   | **Node Properties Only Provider** | Provides only information that is used to annotate nodes of a particular kind in Translator graphs |
   | **Other/Unknown** | Used when the information provided by a source is not known, or does not fit into the defined categories above |
+
+### Citation
+(Optional) literature citation(s) officially/originally publishing or describing the source.
 
 ### Terms of Use
 Information about the conditions for use of the ingested source - may be a written description, the name of a community license type (e.g. `CC-BY`), and/or a link to a "terms of use" or license information web page (e.g. `https://ctdbase.org/about/legal.jsp`)
