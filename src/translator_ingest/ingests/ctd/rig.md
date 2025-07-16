@@ -12,9 +12,9 @@
 CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides knowledge, manually curated from the literature, about chemicals and their relationship to other biological entities: chemical to gene/protein interactions plus chemical to disease and gene to disease relationships. These data are integrated with functional and pathway data to aid in the development of hypotheses about the mechanisms underlying environmentally influenced diseases.  It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
    
 ### Source Category(ies)
-- Primary Knowledge Provider   
+- [Primary Knowledge Source](https://biolink.github.io/biolink-model/primary_knowledge_source/)   
 
-### Citation (o)
+### Citation
 
 Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD): update 2023. Nucleic Acids Res. 2022 Sep 28.
 
