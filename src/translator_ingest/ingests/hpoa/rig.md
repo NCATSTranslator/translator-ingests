@@ -1,3 +1,153 @@
+# Reference Ingest Guide for HPOA: Human Phenotype Ontology Annotations
+
+---------------
+
+## Source Information
+
+### Infores
+ - [infores:hpo-annotations](https://biolink.github.io/information-resource-registry/resources/hpo-annotations)
+
+### Description
+ 
+The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standard vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
+
+The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence, and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
+
+There are three <!-- four --> HPOA ingests - 'disease-to-phenotype', <!-- 'disease-to-mode-of-inheritance',--> 'gene-to-phenotype' and 'gene-to-disease'  - that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+   
+### Source Category(ies)
+- [Primary Knowledge Source](https://biolink.github.io/biolink-model/primary_knowledge_source/)   
+
+### Citation
+
+Sebastian Köhler, Michael Gargano, Nicolas Matentzoglu, Leigh C Carmody, David Lewis-Smith, Nicole A Vasilevsky, Daniel Danis, Ganna Balagura, Gareth Baynam, Amy M Brower, Tiffany J Callahan, Christopher G Chute, Johanna L Est, Peter D Galer, Shiva Ganesan, Matthias Griese, Matthias Haimel, Julia Pazmandi, Marc Hanauer, Nomi L Harris, Michael J Hartnett, Maximilian Hastreiter, Fabian Hauck, Yongqun He, Tim Jeske, Hugh Kearney, Gerhard Kindle, Christoph Klein, Katrin Knoflach, Roland Krause, David Lagorce, Julie A McMurry, Jillian A Miller, Monica C Munoz-Torres, Rebecca L Peters, Christina K Rapp, Ana M Rath, Shahmir A Rind, Avi Z Rosenberg, Michael M Segal, Markus G Seidel, Damian Smedley, Tomer Talmy, Yarlalu Thomas, Samuel A Wiafe, Julie Xian, Zafer Yüksel, Ingo Helbig, Christopher J Mungall, Melissa A Haendel, Peter N Robinson, The Human Phenotype Ontology in 2021, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D1207–D1217, https://doi.org/10.1093/nar/gkaa1043
+
+### Terms of Use
+
+ - Bespoke 'terms of use' are described here: https://hpo.jax.org/license
+
+### Data Access Locations
+
+Bulk downloading from https://hpo.jax.org/data/annotations
+   
+### Provision Mechanisms and Formats
+- Mechanism(s): File download.
+- Text files, with formats described here: https://hpo.jax.org/data/annotation-format
+   
+### Releases and Versioning
+ - No consistent cadence for releases(?).
+ - Versioning is based on the month and year of the release
+
+---------------- 
+
+## Ingest Information
+    
+### Utility
+
+- The HPO and associated annotations are a flagship product of the [Monarch Initiative](https://monarchinitiative.org/), an NIH-supported international consortium dedicated to semantic integration of biomedical and model organism data with the ultimate goal of improving biomedical research.
+
+- Several members of the Monarch Initiative are also direct participants in the Biomedical Data Translator, with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs. 
+
+### Scope
+
+- Covers curated Disease to Phenotype and Genes to Phenotype associations that report ... 
+- Relevant Files:
+    - [phenotype.hpoa](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa)
+    - [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt)
+    - [genes_to_phenotype.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt)
+    - [mondo.sssom.tsv](https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv)
+    - [monarch_ingest/constants.py](https://raw.githubusercontent.com/monarch-initiative/monarch-ingest/main/src/monarch_ingest/constants.py)
+    - [obo/hp.obo](http://purl.obolibrary.org/obo/hp.obo)
+
+  #### Relevant Files:
+
+  | File                        | Location | Description |
+  |-----------------------------|----------|-------------|
+  | phenotype.hpoa              | ?        | ?           |
+  | genes_to_disease.txt        | ?        | ?           |
+  | genes_to_phenotype.txt      | ?        | ?           |
+  | mondo.sssom.tsv             | ?        | ?           |
+  | monarch_ingest/constants.py | ?        | ?           |
+  | obo/hp.obo                  | ?        | ?           |
+  
+  #### Included Content:
+
+  | File                        | Included Content | Fields Used |
+  |-----------------------------|------------------|-------------|
+  | phenotype.hpoa              | ?                | ?           |
+  | genes_to_disease.txt        | ?                | ?           |
+  | genes_to_phenotype.txt      | ?                | ?           |
+  | mondo.sssom.tsv             | ?                | ?           |
+  | monarch_ingest/constants.py | ?                | ?           |
+  | obo/hp.obo                  | ?                | ?           |
+
+
+  #### Filtered Records (o):
+
+<!--
+  | File | Filtered Content | Rationale |
+  |----------|----------|----------|
+  | CTD_chemicals_diseases.tsv.gz  | Inferred associations - i.e. rows lacking a value in the DirectEvidence column | Decided that the methodology used to create these inferences gave associations that were not strong/meaningful enough to be of use to Translator |
+-->
+
+  #### Future Considerations (o):
+
+<!--
+  | File | Content |  Rationale |
+  |----------|----------|----------|
+  | CTD_exposure_events.tsv.gz |  Additional chemical-disease edges reporting statistical correlations from environmental exposure studies | This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not clear, so it may not be worth it. |
+-->
+
+-----------------
+
+##  Target Information
+
+### Infores:
+ - [infores:hpo-annotations](https://biolink.github.io/information-resource-registry/resources/hpo-annotations)
+   
+### Edge Types
+
+| No. | Association Type                                                        | MetaEdge                                       | Qualifiers                                                      | AT / KL                           | Evidence Code |
+|-----|-------------------------------------------------------------------------|------------------------------------------------|-----------------------------------------------------------------|-----------------------------------|---------------|
+| 1   | Disease To Phenotypic Feature Association                               | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier,<br>onset_qualifier, frequency_qualifier | manual agent, knowledge assertion | n.s.          |
+| 2   | CausalGeneToDiseaseAssociation or<br>CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                            | manual agent, knowledge assertion | n.s.          |
+| 3   | Gene To Phenotypic Feature Association                                  | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                            | manual agent, knowledge assertion | n.s.          |
+
+<!-- TODO: Need to review AT/KL and Evidence Code -->
+
+**Rationale (o)**:
+
+<!--
+1. The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
+2. The `marker_or_causal_for` predicate is used because the CTD 'M' flag does not distinguish between when a chemical is a correlated marker for a condition, or a contributing cause for the condition. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
+-->
+
+- All edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation.
+   
+### Node Types
+
+High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
+
+| Biolink Category  | Source Identifier Type(s) | Notes |
+|-------------------|--------------------------|-------|
+| Disease           | MONDO                    | ?     |
+| PhenotypicFeature | HPO                      | ?     |
+| Gene              | HGNC                     | ?     |
+
+------------------
+
+## Ingest Contributors
+- ** Richard Bruskiewich **: code author
+- **Kevin Schaper**: code author
+- **Sierra Moxon**: code support
+- **Matthew Brush**: data modeling, domain expertise
+
+-------------------
+
+## Additional Notes (o)
+
+#### ============================= Old RIG =====================================================================
+
 # Reference Ingest Guide for HPOA: Human Phenotype Ontology Annotations 
 
 ## Source Description
@@ -83,7 +233,7 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 
 **Rationale**:
 
-- ALl edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation.
+- All edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation.
 
       
 ## Biolink Node Types
@@ -94,7 +244,6 @@ Several members of the Monarch Initiative are also direct participants in the Bi
 
 Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a full representation node properties, and may not accurately reflect the correct biolink category.
 -->
-
 - Disease
 - PhenotypicFeature
 - Gene
