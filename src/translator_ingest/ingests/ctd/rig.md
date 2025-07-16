@@ -5,7 +5,7 @@
 ## Source Information
 
 ### Infores
- - infores:ctd
+ - [infores:ctd](https://w3id.org/information-resource-registry/ctd)
 
 ### Description
  
