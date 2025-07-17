@@ -198,7 +198,7 @@ def get_predicate(original_predicate: str) -> str:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 
 
-# General function to read an .obo ontontolgy file into memory using pronto to gather all terms that do not fall under a particular parent class
+# General function to read an .obo ontology file into memory using pronto to gather all terms that do not fall under a particular parent class
 def read_ontology_to_exclusion_terms(ontology_obo_file, umbrella_term="HP:0000118", include=False):
     
     # Read ontology file into memory
