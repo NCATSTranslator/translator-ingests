@@ -59,7 +59,7 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 """
 
 
-def get_primary_knowledge_source(disease_id: str) -> str:
+def get_supporting_knowledge_source(disease_id: str) -> str:
     if disease_id.startswith("OMIM"):
         return "infores:omim"
     elif disease_id.startswith("ORPHA") or "orpha" in disease_id.lower():
@@ -117,7 +117,7 @@ def get_primary_knowledge_source(disease_id: str) -> str:
 #     # don't populate the reference with the database_id / disease id
 #     publications = [p for p in publications if not p == row["database_id"]]
 #
-#     primary_knowledge_source = get_primary_knowledge_source(disease_id )
+#     primary_knowledge_source = get_supporting_knowledge_source(disease_id )
 #
 #     # Association/Edge
 #     association = DiseaseToPhenotypicFeatureAssociation(id="uuid:" + str(uuid.uuid1()),
@@ -205,7 +205,7 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
     # don't populate the reference with the database_id / disease id
     publications = [p for p in publications if not p == record["database_id"]]
 
-    primary_knowledge_source = get_primary_knowledge_source(disease_id )
+    supporting_knowledge_source = get_supporting_knowledge_source(disease_id)
 
     # Association/Edge
     association = DiseaseToPhenotypicFeatureAssociation(
@@ -223,8 +223,11 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
         frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
         has_count=frequency.has_count,
         has_total=frequency.has_total,
-        aggregator_knowledge_source=["infores:monarchinitiative","infores:hpo-annotations"],
-        primary_knowledge_source=primary_knowledge_source,
+        # TODO: the Biolink Model for edge provenance is under some revision,
+        #       deprecating the use of direct *_knowledge_source tags
+        aggregator_knowledge_source=["infores:monarchinitiative"],
+        primary_knowledge_source="infores:hpo-annotations",
+        # supporting_knowledge_source=supporting_knowledge_source,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         **{}
