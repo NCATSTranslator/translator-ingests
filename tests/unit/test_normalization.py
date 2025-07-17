@@ -10,11 +10,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene
 )
 
-from src.translator_ingest.util.normalize import (
-    convert_to_preferred,
-    normalize_edge,
-    normalize_node
-)
+from src.translator_ingest.util.normalize import Normalizer
 
 #################### MOCK Node Normalizer result data ###################
 
@@ -139,50 +135,57 @@ MOCK_NN_DISEASE_DATA = {
 #################### End of MOCK Node Normalizer result data ###################
 
 @pytest.fixture(scope="module")
-def nn_query():
-    def mock_node_normalizer_query(query: Dict) -> Optional[Dict]:
+def mock_nn_query():
+    def mock_node_normalizer_query(query: Dict) -> Dict[str, Optional[Dict]]:
         # Fixture sanity check for a well-formed query input
         assert query and "curies" in query
-        query_id = query["curies"][0]
-        if query_id in ["HGNC:12791", "NCBIGene:7486", "UniProtKB:Q14191"]:
-            return {query_id: MOCK_NN_GENE_DATA}
-        elif query_id == "DOID:5688":
-            return {query_id: MOCK_NN_DISEASE_DATA}
-        else:
-            return { query_id: None }
+        result: Dict[str, Optional[Dict]] = dict()
+        for identifier in query["curies"]:
+            if identifier in ["HGNC:12791", "NCBIGene:7486", "UniProtKB:Q14191"]:
+                result[identifier] = MOCK_NN_GENE_DATA
+            elif identifier == "DOID:5688":
+                result[identifier] = MOCK_NN_DISEASE_DATA
+            else:
+                result[identifier] = None
+        return result
     return mock_node_normalizer_query
 
 
-# def convert_to_preferred(curie, allowed_list, nn_query):
-def test_convert_to_preferred(nn_query):
-    result: str = convert_to_preferred(
-        "HGNC:12791", "UniProtKB",
-        nn_query=nn_query
-    )
+# def convert_to_preferred(curie, allowed_list, mock_nn_query):
+def test_convert_to_preferred(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
+    result: str = normalizer.convert_to_preferred(curie="HGNC:12791", allowed_list=["UniProtKB"])
     assert result == "UniProtKB:Q14191"
 
 
-# normalize_node(node: NamedThing, nn_query) -> Optional[NamedThing]
-def test_normalize_missing_node(nn_query):
+# def normalize_identifiers(self, curies: List[str]) -> Dict[str, str]
+def test_normalize_identifiers(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
+    result: Dict[str,str] = normalizer.normalize_identifiers(curies=["HGNC:12791","DOID:5688"])
+    assert result
+    assert result["HGNC:12791"] == "NCBIGene:7486"
+    assert result["DOID:5688"] == "MONDO:0010196"
+    with pytest.raises(AssertionError):
+        # Empty curies list not permitted
+        normalizer.normalize_identifiers(curies=[])
+
+# normalize_node(node: NamedThing, mock_nn_query) -> Optional[NamedThing]
+def test_normalize_missing_node(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     node = NamedThing(id="foo:bar", category=["biolink:NamedThing"],**{})
-    result: Optional[NamedThing] = normalize_node(
-        node,
-        nn_query=nn_query
-    )
+    result: Optional[NamedThing] = normalizer.normalize_node(node)
     assert result is None
 
 
-def test_normalize_node(nn_query):
+def test_normalize_node(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     node = NamedThing(
         id="HGNC:12791",
         name="Werner Syndrome Locus",
         category=["biolink:NamedThing"],
         **{}
     )
-    result: Optional[NamedThing] = normalize_node(
-        node,
-        nn_query=nn_query
-    )
+    result: Optional[NamedThing] = normalizer.normalize_node(node)
     # Valid input query identifier, so should return a result
     assert result is not None
     # ... should be the canonical identifier and name
@@ -201,25 +204,22 @@ def test_normalize_node(nn_query):
 
 
 
-def test_normalize_node_already_canonical(nn_query):
+def test_normalize_node_already_canonical(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     node = NamedThing(id="NCBIGene:7486", category=["biolink:NamedThing"],**{})
-    result: Optional[NamedThing] = normalize_node(
-        node,
-        nn_query=nn_query
-    )
+    result: Optional[NamedThing] = normalizer.normalize_node(node)
     assert result.id == "NCBIGene:7486"
 
 
-def test_normalize_non_named_thing_node(nn_query):
+def test_normalize_non_named_thing_node(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     node = Gene(id="HGNC:12791", category=["biolink:Gene"],**{})
-    result: Optional[NamedThing] = normalize_node(
-        node,
-        nn_query=nn_query
-    )
+    result: Optional[NamedThing] = normalizer.normalize_node(node)
     assert result.id == "NCBIGene:7486"
 
 
-def test_normalize_edge(nn_query):
+def test_normalize_edge(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     edge = Association(
         id="ingest:test-association",
         subject="HGNC:12791",
@@ -228,15 +228,13 @@ def test_normalize_edge(nn_query):
         knowledge_level=KnowledgeLevelEnum.not_provided,
         agent_type=AgentTypeEnum.not_provided,
         **{})
-    result: Optional[Association] = normalize_edge(
-        edge,
-        nn_query=nn_query
-    )
+    result: Optional[Association] = normalizer.normalize_edge(edge)
     assert result.subject == "NCBIGene:7486"
     assert result.object == "MONDO:0010196"
 
 
-def test_normalize_edge_invalid_subject(nn_query):
+def test_normalize_edge_invalid_subject(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     # foo:bar is a nonsense 'subject' curie...
     edge = Association(
         id="ingest:test-association",
@@ -246,8 +244,5 @@ def test_normalize_edge_invalid_subject(nn_query):
         knowledge_level=KnowledgeLevelEnum.not_provided,
         agent_type=AgentTypeEnum.not_provided,
         **{})
-    result: Optional[Association] = normalize_edge(
-        edge,
-        nn_query=nn_query
-    )
+    result: Optional[Association] = normalizer.normalize_edge(edge)
     assert result is None
