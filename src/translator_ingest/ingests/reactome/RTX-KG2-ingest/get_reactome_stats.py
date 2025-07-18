@@ -94,9 +94,9 @@ def get_node_stats(nodes_file_name):
             reactome_category_report[reactome_category] = 0
         reactome_category_report[reactome_category] += 1
 
-        if category_key not in category_report:
-            category_report[category_key] = 0
-        category_report[category_key] += 1
+        if category not in category_report:
+            category_report[category] = 0
+        category_report[category] += 1
 
         simple_nodes[node_id] = {CATEGORY_KEY: category, REACTOME_CATEGORY_KEY: reactome_category, CATEGORY_STORE_KEY: category_store}
 
