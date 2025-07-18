@@ -374,6 +374,8 @@ def get_nodes(connection, nodes_output, test):
         node['description'] = description
         node['publications'] = publications
         node['creation_date'] = str(created_date)
+        node['reactome_category'] = reactome_category
+        node['reactome_reference_class'] = reference_class
         nodes_output.write(node)
 
 
