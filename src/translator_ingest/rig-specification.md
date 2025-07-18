@@ -93,17 +93,16 @@ The infores identifier assigned to the Translator resource that will be created 
 ### Edge Types
 A table describing the types of edges created in the KG produced by this ingest. Provides the Biolink Association type, a meta-edge representation, KL/AT assigned to each edge type, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users.
 
-| # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | UI Explanation |
-|----------|----------|----------|----------|----------|----------|---------|----------|
-|  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |
+| # | Association Type | Subject Category | Predicate | Object Category | Qualifier Types | Other Edge Properties | AT / KL | UI Explanation |
+|---|------------------|------------------|-----------|-----------------|-----------------|-----------------------|---------|----------------|
+|   |                  |                  |           |                 |                 |                       |         |                |
 
 **Rationale (o)**:
 Optional additional information about the modeling/mapping rationale for a specific edge type in the table above (can use the # for a given entry in the table to reference/further describe it here).
    
 ### Node Types
 A table describing the high-level Biolink categories of nodes produced from this ingest as assigned by ingestors. Note however that downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
-| Biolink Category |  Source Identifier Type(s) | Notes |
+| Biolink Category |  Source Identifier Type(s) | Notes (o) |
 |------------------|----------------------------|--------|
 |  |  |  |
 |  |  |  |
