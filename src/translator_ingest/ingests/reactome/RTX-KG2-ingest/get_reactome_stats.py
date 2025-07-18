@@ -61,7 +61,7 @@ def get_prefix_from_curie_id(curie_id: str):
 def get_species_from_reactome_id(curie_id: str):
     species_id = curie_id.split(':')[1].split('-')[1]
 
-    species_map = {'MMA': 'Mus musculus',
+    species_map = {'MMU': 'Mus musculus',
                    'RNO': 'Rattus norvegicus',
                    'HSA': 'Homo sapiens',
                    'SSC': 'Sus scrofa',
