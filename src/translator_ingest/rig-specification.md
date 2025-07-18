@@ -54,7 +54,7 @@ Describe and define the subset of data from the source that is included in this 
 
   #### Relevant Files:
   A table listing all files (or API endpoints or database tables) that contain ingested or pertinent content to the defined scope of ingest, with (markdown clickable) url of each and a brief description.
-  | File / Endpoint / Table | Description |
+  | File / Endpoint / Table | Description (o) |
   |----------|----------|
   | **`["file/endpoint/table name"]("url")`** |  | 
   |  |  | 
@@ -62,7 +62,7 @@ Describe and define the subset of data from the source that is included in this 
   
   #### Included Content:
   A table describing the content that is ingested from each relevant file/endpoint/table. 
-  | File | Included Content | Fields Used |
+  | File | Included Content | Fields Used (o) |
   |----------|----------|----------|
   |  |  |  | 
   |  |  |  | 
@@ -93,8 +93,8 @@ The infores identifier assigned to the Translator resource that will be created 
 ### Edge Types
 A table describing the types of edges created in the KG produced by this ingest. Provides the Biolink Association type, a meta-edge representation, KL/AT assigned to each edge type, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users.
 
-| # | Association Type | Subject Category | Predicate | Object Category | Qualifier Types | Other Edge Properties | AT / KL | UI Explanation |
-|---|------------------|------------------|-----------|-----------------|-----------------|-----------------------|---------|----------------|
+| # | Association Type | Subject Category | Predicate | Object Category | Qualifier Types (o) | AT / KL | Edge Properties (o) | UI Explanation |
+|---|------------------|------------------|-----------|-----------------|-----------------|---------|-----------------|----------------|
 |   |                  |                  |           |                 |                 |                       |         |                |
 
 **Rationale (o)**:
@@ -102,14 +102,16 @@ Optional additional information about the modeling/mapping rationale for a speci
    
 ### Node Types
 A table describing the high-level Biolink categories of nodes produced from this ingest as assigned by ingestors. Note however that downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
-| Biolink Category |  Source Identifier Type(s) | Notes (o) |
+| Biolink Category |  Source Identifier Type(s) (o) | Notes (o) |
 |------------------|----------------------------|--------|
 |  |  |  |
 |  |  |  |
 
 ------------------
 
-## Section IV: Ingest Contributors
+## Section IV: Provenance Information 
+
+### Ingest Contributors
 A list of people who contributed to this ingest and the role they played. Use the following terms to describe roles. 
 
 | Role | Description |
@@ -119,7 +121,7 @@ A list of people who contributed to this ingest and the role they played. Use th
 | **domain expertise** | provision of expertise / advice in the subject area relevant to the source |
 | **data modeling** | drafting of models and mapping/transform definitions that were implemented by ingest code |
 
--------------------
+### Artifacts
 
-## Section V: Additional Notes (o)
+### Additional Notes (o)
 Optional, additional considerations or notes about why/how data was ingested, transformed, annotated during the ingest process.
