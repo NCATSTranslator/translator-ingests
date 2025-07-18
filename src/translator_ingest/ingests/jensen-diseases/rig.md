@@ -37,10 +37,10 @@ https://diseases.jensenlab.org/Downloads
 ## Ingest Information
     
 ### Utility
-DISEASES text-mined co-occurrrence data is a unique and rich soruce of G2D associations.  Their NLP-based extraction of associations from free text in Medline Plus is also unique and valuable.  However, knoweldge aggregated from soruces like UniProt and TIGA may best be ingested directly from these sources. 
+DISEASES contains gene-disease associations from unique sources, including their own text-mining pipeline and external human-curated resources that are hard to access or parse (MedlinePlus, AmyCo). These associations could be used in MVP1 ("may treat disease X") or Pathfinder queries.
 
 ### Scope
-This ingest covers text-mined co-occurrence associations, NLP-based extraction of associations from free text in Medline Plus, and manually curated content form AmyCo. Experiment-based associations from TIGA data are not ingested (we will find a diect soruce of GWAS-based associations)
+This ingest covers text-mined co-occurrence associations, and manually curated associations Medline Plus and AmyCo. Content aggregatd from UniProt is not ingested. Experiment-based associations from TIGA data are not ingested (we will find a direct source of GWAS-based associations).
 
   #### Relevant Files:
 
@@ -53,37 +53,37 @@ This ingest covers text-mined co-occurrence associations, NLP-based extraction o
 
   | File | Included Content | Fields Used |
   |----------|----------|----------|
-  | human_disease_textmining_filtered.tsv | Only association records from Medline Plus? |   gene_id,	gene_name, disease_id,	disease_name,	z_score?, confidence_score?,	url?  |
-  | human_disease_knowledge_full.tsv | All association records? |   gene_id,	gene_name,	disease_id,	disease_name,	source_db,	evidence_type?,	confidence_score?  |
+  | human_disease_knowledge_full.tsv | All association records from Medline Plus and AmyCo |   gene_id,	gene_name, disease_id,	disease_name,	z_score, confidence_score,	url?  |
+  | human_disease_textmining_filtered.tsv | All association records |   gene_id,	gene_name,	disease_id,	disease_name,	source_db,	evidence_type?,	confidence_score |
 
   #### Filtered Records (o):
 
   | File | Filtered Content | Rationale |
   |----------|----------|----------|
-  | human_disease_knowledge_full.tsv | Curated association recrods from UniProt, AmyCo, ...? | Lower quality and/or utility |
+  | human_disease_knowledge_full.tsv | Curated association records from UniProt | Questionable quality and completeness in DISEASES - best to get this content directly from UniProt.|
 
   #### Future Considerations (o):
 
   | File | Content |  Rationale |
   |----------|----------|----------|
 
-  None?
+- Revisit modeling of confidence score and z-score if/when we refactor these parts of the Biolink Model. 
 
 -----------------
 
 ##  Target Information
 
 ### Infores:
- - infores:jensen-diseases-translator-kgx
+ - infores:translator-jensen-diseases-kgx
    
 ### Edge Types
 
 | # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|----------|---------|----------|---------|
-| 1 | GeneToDiseaseAssociation | Gene | cooccurs_in_literature_with | Disease  |  n/a  |  text-mining agent, statistical association | has_confidence, z-score? | TO DO |
-| 2 | GeneToDiseaseAssociation | Gene | gene_associated_with_disease | Disease  |  n/a  |  manual_agent, knowledge_assertion  | has_confidence | TO DO |
+| 1 | Association | Gene, Protein | occurs_together_in_literature_with | Disease  |  n/a  |  text-mining agent, statistical association | has_confidence_score, z-score, original_subject, original_object | DISEASES text-mining method is based on statistically significant co-occurrence of gene and disease concepts in the literature - which is captured by the Biolink occurs_together_in_literature_withpredicate. |
+| 2 | Association | Gene, Protein | associated_with | Disease |  n/a  |  manual_agent, knowledge_assertion  | has_confidence |  DISEASES does to attempt to report more specific types of gene-disease relationships that it aggregates from curated soruces, so we can only report that they are associated_with each other in some way. |
 
-**Rationale (o)**:
+**Notes/Rationale (o)**:
 
 
 ### Node Types
