@@ -19,8 +19,7 @@ CTD is a robust, publicly available database that aims to advance understanding 
 Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD): update 2023. Nucleic Acids Res. 2022 Sep 28.
 
 ### Terms of Use
-
- - No formal license. Bespoke 'terms of use' are described here: https://ctdbase.org/about/legal.jsp
+No formal license. Bespoke 'terms of use' are described here: https://ctdbase.org/about/legal.jsp
 
 ### Data Access Locations
 
@@ -43,11 +42,9 @@ There are two pages for downloading data files.
 ## Ingest Information
     
 ### Utility
-
-- CTD is a rich source of manually curated chemical associations to other biological entities which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries.  It is one of the few sources that focus on non-drug chemicals, e.g. environmental stressors, and how these are related to diseases, biological processes, and genes. 
+CTD is a rich source of manually curated chemical associations to other biological entities which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, chemical-gene regulation predictions, and pathfinder queries.  It is one of the few sources that focus on non-drug chemicals, e.g. environmental stressors, and how these are related to diseases, biological processes, and genes. 
 
 ### Scope
-
 This ingest covers curated Chemical to Disease associations that report therapeutic and marker/mechanism relationships (Rows are included only if the direct evidence field is 'therapeutic' and the `biolink:treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim). The ingest takes only the chemical to disease rows where a direct evidence label is applied, and creates ChemicalEntity and Disease nodes connected by a ChemicalToDiseaseOrPhenotypicFeatureAssociation. The chemical ID row is expected to need a 'MESH:' prefix added, with the disease identifier used as-is. 
 
   #### Relevant Files:
@@ -80,16 +77,16 @@ This ingest covers curated Chemical to Disease associations that report therapeu
 ##  Target Information
 
 ### Infores:
- - infores:ctd-chemical-disease-kgx
+ - infores:translator-ctd-kgx
    
 ### Edge Types
 
-| # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | UI Explanation |
-|----------|----------|----------|----------|----------|----------|---------|----------|
-| 1 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | treats_or_applied_or_studied_to_treat | DiseaseOrPhenotypic Feature  |  n/a  |  manual_agent, knowledge_assertion  | CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate `treats_or_applied_or_studied_to_treat`. |
-| 2 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | marker_or_causal_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  | CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate `marker_or_causal_for`. |
+| # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
+|----------|----------|----------|----------|----------|----------|---------|----------|----------|
+| 1 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | treats_or_applied_or_studied_to_treat | DiseaseOrPhenotypic Feature  |  n/a  |  manual_agent, knowledge_assertion  |   |  CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate `treats_or_applied_or_studied_to_treat`. |
+| 2 | ChemicalToDiseaseOrPhenotypicFeatureAssociation | ChemicalEntity | marker_or_causal_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate `marker_or_causal_for`. |
 
-**Rationale (o)**:
+**Notes/Rationale (o)**:
 
 1. The `treats_or_applied_or_studied_to_treat` predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
 2. The `marker_or_causal_for` predicate is used because the CTD 'M' flag does not distinguish between when a chemical is a correlated marker for a condition, or a contributing cause for the condition. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
@@ -103,15 +100,17 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 | ChemicalEntity |  MeSH  | Majority are Biolink SmallMolecules |
 | DiseaseOrPhenotypicFeature| MeSH | |
 
-------------------
+-----------------
 
-## Ingest Contributors
+## Provenance Information
+
+### Ingest Contributors
 - **Kevin Schaper**: code author
 - **Evan Morris**: code support
 - **Sierra Moxon**: code support
 - **Vlado Dancik**: code support, domain expertise
 - **Matthew Brush**: data modeling, domain expertise
 
--------------------
+### Artifacts
 
-## Additional Notes (o)
+### Additional Notes (o)
