@@ -79,7 +79,11 @@ def get_node_stats(nodes_file_name):
 
         category = node[CATEGORY_KEY]
         node_id = node[id_key]
-        reactome_category = node[REACTOME_CATEGORY_KEY]
+        try:
+            reactome_category = node[REACTOME_CATEGORY_KEY]
+        except:
+            print(node)
+            assert False
         reactome_reference_class = node[REACTOME_REFERENCE_CLASS_KEY]
 
         category_store = str((category, reactome_category))
