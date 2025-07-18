@@ -144,7 +144,8 @@ def get_node_stats(nodes_file_name):
     node_report = {'_number_of_nodes': node_count,
                    'number_of_nodes_by_category': category_store_report,
                    'number_of_nodes_by_reactome_category': reactome_category_report,
-                   'number_of_nodes_by_category_conglomerate': category_store_report}
+                   'number_of_nodes_by_category_conglomerate': category_store_report,
+                   'number_of_nodes_by_species': species_report}
 
     return node_report, simple_nodes
 
@@ -160,6 +161,7 @@ def get_edge_stats(edges_file_name, nodes):
 
     # Initialize our output data
     edge_count = 0
+    species_report = dict()
     relations_report = dict()
     core_predicates_report = dict()
     predicates_store_report = dict()
@@ -194,20 +196,26 @@ def get_edge_stats(edges_file_name, nodes):
             subject_node_category_info = subject_node[CATEGORY_KEY]
             subject_node_reactome_category_info = subject_node[REACTOME_CATEGORY_KEY]
             subject_node_category_store_info = subject_node[CATEGORY_STORE_KEY]
+            subject_species = get_species_from_reactome_id(subject_curie)
         else:
             subject_node_category_info = subject_prefix
             subject_node_reactome_category_info = subject_prefix
             subject_node_category_store_info = subject_prefix
+            subject_species = 'Unknown - ' + subject_prefix
 
         if object_prefix == REACTOME_PREFIX:
             object_node = nodes[object_curie]
             object_node_category_info = object_node[CATEGORY_KEY]
             object_node_reactome_category_info = object_node[REACTOME_CATEGORY_KEY]
             object_node_category_store_info = object_node[CATEGORY_STORE_KEY]
+            object_species = get_species_from_reactome_id(object_curie)
         else:
             object_node_category_info = object_prefix
             object_node_reactome_category_info = object_prefix
             object_node_category_store_info = object_prefix
+            object_species = 'Unknown - ' + object_prefix
+
+        species_key = str((subject_species, object_species))
 
         edge_label_types = {'source_predicate': relation,
                             'biolink_predicate': core_predicate,
@@ -215,6 +223,10 @@ def get_edge_stats(edges_file_name, nodes):
         node_info_types = {'category': (subject_node_category_info, object_node_category_info),
                            'reactome_category': (subject_node_reactome_category_info, object_node_reactome_category_info),
                            'category_conglomerate': (subject_node_category_store_info, object_node_category_store_info)}
+
+        if species_key not in species_report:
+            species_report[species_key] = 0
+        species_report[species_key] += 1
 
         for edge_label_type in edge_label_types:
             for node_info_type in node_info_types:
@@ -227,21 +239,30 @@ def get_edge_stats(edges_file_name, nodes):
                 if key not in combos_report:
                     combos_report[key] = dict()
 
-                if combo not in combos_report[key]:
-                    combos_report[key][combo] = 0
-                combos_report[key][combo] += 1
+                if species not in combos_report[key]:
+                    combos_report[key][species] = dict()
 
-        if relation not in relations_report:
-            relations_report[relation] = 0
-        relations_report[relation] += 1
+                if combo not in combos_report[key][species]:
+                    combos_report[key][species][combo] = 0
+                combos_report[key][species][combo] += 1
 
-        if core_predicate not in core_predicates_report:
-            core_predicates_report[core_predicate] = 0
-        core_predicates_report[core_predicate] += 1
+        if species not in relations_report:
+            relations_report[species] = dict()
+        if relation not in relations_report[species]:
+            relations_report[species][relation] = 0
+        relations_report[species][relation] += 1
 
-        if predicate_store not in predicates_store_report:
-            predicates_store_report[predicate_store] = 0
-        predicates_store_report[predicate_store] += 1
+        if species not in core_predicates_report:
+            core_predicates_report[species] = dict()
+        if core_predicate not in core_predicates_report[species]:
+            core_predicates_report[species][core_predicate] = 0
+        core_predicates_report[species][core_predicate] += 1
+
+        if species not in predicates_store_report:
+            predicates_store_report[species] = dict()
+        if predicate_store not in predicates_store_report[species]:
+            predicates_store_report[species][predicate_store] = 0
+        predicates_store_report[species][predicate_store] += 1
 
     # Close our reader since we have finished
     kg2_util.end_read_jsonlines(edges_read_jsonlines_info)
@@ -252,6 +273,7 @@ def get_edge_stats(edges_file_name, nodes):
     edges_report['number_of_edges_by_core_predicates'] = core_predicates_report
     edges_report['number_of_edges_by_qualified_predicates'] = predicates_store_report
     edges_report['_number_of_edges'] = edge_count
+    edges_report['number_of_edges_by_species'] = species_report
 
     return edges_report
 
