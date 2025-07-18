@@ -53,11 +53,11 @@ Description of the general rationale for ingesting selected content from this so
 Describe and define the subset of data from the source that is included in this ingest.
 
   #### Relevant Files:
-  A table listing all files (or API endpoints or database tables) that contain ingested or pertinent content to the defined scope of ingest, with the url of each, and a brief description.
-  | File / Endpoint / Table | Location | Description |
-  |----------|----------|----------|
-  |  |  |  | 
-  |  |  |  | 
+  A table listing all files (or API endpoints or database tables) that contain ingested or pertinent content to the defined scope of ingest, with (markdown clickable) url of each and a brief description.
+  | File / Endpoint / Table | Description |
+  |----------|----------|
+  | **`["file/endpoint/table name"]("url")`** |  | 
+  |  |  | 
 
   
   #### Included Content:
