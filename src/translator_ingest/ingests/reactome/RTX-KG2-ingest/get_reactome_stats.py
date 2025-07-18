@@ -120,7 +120,7 @@ def get_edge_stats(edges_file_name, nodes):
     edges = edges_read_jsonlines_info[0]
 
     # Edge Access Keys
-    relation_key = 'relation'
+    relation_key = 'source_predicate'
     subject_key = 'subject'
     object_key = 'object'
 
@@ -134,10 +134,7 @@ def get_edge_stats(edges_file_name, nodes):
     for edge in edges:
         edge_count += 1
 
-        try:
-            relation = edge[relation_key]
-        except:
-            print(edge)
+        relation = edge[relation_key]
         subject_curie = edge[subject_key]
         subject_prefix = get_prefix_from_curie_id(subject_curie)
         object_curie = edge[object_key]
@@ -172,8 +169,8 @@ def get_edge_stats(edges_file_name, nodes):
             object_node_reactome_category_info = object_prefix
             object_node_category_store_info = object_prefix
 
-        edge_label_types = {'relation': relation,
-                            'predicate': core_predicate,
+        edge_label_types = {'source_predicate': relation,
+                            'biolink_predicate': core_predicate,
                             'qualifier_predicate': predicate_store}
         node_info_types = {'category': (subject_node_category_info, object_node_category_info),
                            'reactome_category': (subject_node_reactome_category_info, object_node_reactome_category_info),
