@@ -40,7 +40,7 @@ https://diseases.jensenlab.org/Downloads
 DISEASES text-mined co-occurrrence data is a unique and rich soruce of G2D associations.  Their NLP-based extraction of associations from free text in Medline Plus is also unique and valuable.  However, knoweldge aggregated from soruces like UniProt and TIGA may best be ingested directly fromthese primary sources. 
 
 ### Scope
-This ingest covers text-mined co-occurrence associations,  and NLP-based extraction of assocaitions from free text in Medline Plus
+This ingest covers text-mined co-occurrence associations,  and NLP-based extraction of assocaitions from free text in Medline Plus. Experiment-based assocaitiosn from TIGA  data not in scope (we will find a diect soruce of GWAS-based associations)
 
   #### Relevant Files:
 
@@ -53,15 +53,14 @@ This ingest covers text-mined co-occurrence associations,  and NLP-based extract
 
   | File | Included Content | Fields Used |
   |----------|----------|----------|
-  | human_disease_textmining_filtered.tsv | All association records? |   gene_id,	gene_name, disease_id,	disease_name,	z_score?, confidence_score?,	url?  |
+  | human_disease_textmining_filtered.tsv | Only association records from Medline Plus? |   gene_id,	gene_name, disease_id,	disease_name,	z_score?, confidence_score?,	url?  |
   | human_disease_knowledge_full.tsv | All association records? |   gene_id,	gene_name,	disease_id,	disease_name,	source_db,	evidence_type?,	confidence_score?  |
 
   #### Filtered Records (o):
 
   | File | Filtered Content | Rationale |
   |----------|----------|----------|
-
-  None?
+  | human_disease_knowledge_full.tsv | Curated association recrods from UniProt, AmyCo, ...? | Quality and utility concerns for these other sources |
 
   #### Future Considerations (o):
 
