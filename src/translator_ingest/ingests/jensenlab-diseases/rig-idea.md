@@ -14,19 +14,22 @@ They claim to have weekly updates (ref: [resource's "About" page](https://diseas
 The paper reports the resource version as "2.0", but the resource's website does not provide versioning or 
 dates for the data downloads (ref: [resource's "Downloads" page](https://diseases.jensenlab.org/Downloads)).
 
+I have noticed an increase in the number of rows in the text-mining file and the MedlinePlus and UniProtKB subsets of the knowledge file over a 
+~ 2 month span. I have not monitored/checked to see if a change happens weekly and when.
+
 ## Excluded Content 
 
 Files:
 - "full" versions: we used the "filtered" versions of these files instead, because we want non-redundant association data 
-- "experiments channel" file: this data is originally form TIGA, and we decided that if we want this data, it is best retrieved directly from TIGA (or GWAS-Catalog). 
+- "experiments channel" file: this data is originally from TIGA, and we decided that if we want this data, it is best retrieved directly from TIGA (or GWAS-Catalog). 
 
 Rows:
 - complete duplicates
-- don't have an `ENSP` ID in the `gene_id` column or a `DOID` in the `disease_id` column: these rows instead had non-ID strings (based on string-searches, a little manual review) or IDs that wouldn't be resolved by NodeNorm (AmyCo)
-- had the value `UniProtKB-KW` in the `source_db` column (only relevant to the "knowledge channel" file): we didn't find DISEASES's ingest of this resource high-quality, so we decided that if we want this data, it is best retrieved directly from UniProtKB
+- don't have an `ENSP` ID in the gene ID column or a `DOID` in the disease ID column: these rows instead had non-ID strings (based on string-searches, a little manual review) or IDs that wouldn't be resolved by NodeNorm (AmyCo)
+- had the value `UniProtKB-KW` in the source database column (only relevant to the "knowledge channel" file): we didn't find DISEASES's ingest of this resource high-quality, so we decided that if we want this data, it is best retrieved directly from UniProtKB
 - **had NodeNorm mapping failures for gene or disease IDs**
 
-Columns:
+Columns (note I named these columns, original files didn't have any headers):
 - `gene_name` and `disease_name`: nodes will ultimately use human-readable labels from NodeNorm
 - `evidence_type` (only relevant to the "knowledge channel" file): same for all rows, not needed
 
