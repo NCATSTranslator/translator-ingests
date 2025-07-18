@@ -10,6 +10,9 @@ metadata:
 
 files:
   - 'data/hpoa/phenotype.hpoa'
+  -
+depends_on:
+  - 'data/hpoa/hp.obo'
 
 header: 4
 format: 'csv'
