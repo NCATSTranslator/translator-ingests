@@ -212,7 +212,7 @@ def get_edge_stats(edges_file_name, nodes):
     # Close our reader since we have finished
     kg2_util.end_read_jsonlines(edges_read_jsonlines_info)
 
-    edge_report = combos_report
+    edges_report = combos_report
     
     edges_report['number_of_edges_by_relation'] = relations_report
     edges_report['number_of_edges_by_core_predicates'] = core_predicates_report
