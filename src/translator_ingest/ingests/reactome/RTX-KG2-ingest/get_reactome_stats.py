@@ -139,10 +139,16 @@ def get_edge_stats(edges_file_name, nodes):
         subject_prefix = get_prefix_from_curie_id(subject_curie)
         object_curie = edge[object_key]
         object_prefix = get_prefix_from_curie_id(object_curie)
-        predicate = PREDICATE_MAP[relation]
-        core_predicate = predicate[CORE_PREDICATE_KEY]
-        qualified_predicate = predicate.get(QUALIFIED_PREDICATE_KEY, None)
-        object_direction = predicate.get(OBJECT_DIRECTION_KEY, None)
+
+        if get_prefix_from_curie_id(relation) != kg2_util.CURIE_PREFIX_BIOLINK:
+            predicate = PREDICATE_MAP[relation]
+            core_predicate = predicate[CORE_PREDICATE_KEY]
+            qualified_predicate = predicate.get(QUALIFIED_PREDICATE_KEY, None)
+            object_direction = predicate.get(OBJECT_DIRECTION_KEY, None)
+        else:
+            core_predicate = relation
+            qualified_predicate = None
+            object_direction = None
 
         if qualified_predicate is not None or object_direction is not None:
             predicate_store = str((core_predicate, qualified_predicate, object_direction))
