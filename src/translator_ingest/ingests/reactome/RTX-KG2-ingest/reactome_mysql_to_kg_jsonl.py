@@ -515,29 +515,29 @@ def get_event_characteristics(connection, edges_output, test):
     # go_cellularcomponent table.
 
     # This table doesn't exist in the latest version of Reactome.
-    # compartment_sql = "SELECT si_sub.identifier, go.accession \
-    #                    FROM event_2_compartment ev_comp \
-    #                    INNER JOIN compartment compart \
-    #                    ON compart.DB_ID=ev_comp.compartment \
-    #                    INNER JOIN go_cellularcomponent_2_instanceof go_io \
-    #                    ON go_io.instanceOf=compart.DB_ID \
-    #                    INNER JOIN go_cellularcomponent go \
-    #                    ON go.DB_ID=go_io.instanceOf \
-    #                    INNER JOIN databaseobject dbobj_sub \
-    #                    ON ec.DB_ID=dbobj_sub.DB_ID \
-    #                    INNER JOIN stableidentifier si_sub \
-    #                    ON si_sub.DB_ID=dbobj_sub.stableidentifier"
-    # if test:
-    #     compartment_sql += " LIMIT " + str(ROW_LIMIT_TEST_MODE)
-    # compartment_results = run_sql(compartment_sql, connection)
-    # for compartment_ev in compartment_results:
-    #     subject_id = only_include_certain_species(kg2_util.CURIE_PREFIX_REACTOME + ':' + compartment_ev[0])
-    #     if subject_id is None:
-    #         continue
-    #     object_id = kg2_util.CURIE_PREFIX_GO + ':' + compartment_ev[1]
-    #     predicate = 'in_compartment'
-    #     edge = format_edge(subject_id, object_id, predicate)
-    #     edges_output.write(edge)
+    compartment_sql = "SELECT si_sub.identifier, go.accession \
+                       FROM event_2_compartment ev_comp \
+                       INNER JOIN compartment compart \
+                       ON compart.DB_ID=ev_comp.compartment \
+                       INNER JOIN go_cellularcomponent_2_instanceof go_io \
+                       ON go_io.instanceOf=compart.DB_ID \
+                       INNER JOIN go_cellularcomponent go \
+                       ON go.DB_ID=go_io.instanceOf \
+                       INNER JOIN databaseobject dbobj_sub \
+                       ON ec.DB_ID=dbobj_sub.DB_ID \
+                       INNER JOIN stableidentifier si_sub \
+                       ON si_sub.DB_ID=dbobj_sub.stableidentifier"
+    if test:
+        compartment_sql += " LIMIT " + str(ROW_LIMIT_TEST_MODE)
+    compartment_results = run_sql(compartment_sql, connection)
+    for compartment_ev in compartment_results:
+        subject_id = only_include_certain_species(kg2_util.CURIE_PREFIX_REACTOME + ':' + compartment_ev[0])
+        if subject_id is None:
+            continue
+        object_id = kg2_util.CURIE_PREFIX_GO + ':' + compartment_ev[1]
+        predicate = 'in_compartment'
+        edge = format_edge(subject_id, object_id, predicate)
+        edges_output.write(edge)
 
     # This MySQL query uses the reactionlikeevent_2_regulatedby
     # table to link Reactionlike Events (Reaction, BlackBoxEvent, etc)
