@@ -134,7 +134,10 @@ def get_edge_stats(edges_file_name, nodes):
     for edge in edges:
         edge_count += 1
 
-        relation = edge[relation_key]
+        try:
+            relation = edge[relation_key]
+        except:
+            print(edge)
         subject_curie = edge[subject_key]
         subject_prefix = get_prefix_from_curie_id(subject_curie)
         object_curie = edge[object_key]
