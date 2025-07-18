@@ -112,7 +112,7 @@ def get_node_stats(nodes_file_name):
                    'number_of_nodes_by_reactome_category': reactome_category_report,
                    'number_of_nodes_by_category_conglomerate': category_store_report}
 
-    return nodes_report, simple_nodes
+    return node_report, simple_nodes
 
 
 def get_edge_stats(edges_file_name, nodes):
