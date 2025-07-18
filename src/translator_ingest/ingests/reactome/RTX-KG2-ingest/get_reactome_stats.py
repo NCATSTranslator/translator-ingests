@@ -141,7 +141,11 @@ def get_edge_stats(edges_file_name, nodes):
         object_prefix = get_prefix_from_curie_id(object_curie)
 
         if get_prefix_from_curie_id(relation) != kg2_util.CURIE_PREFIX_BIOLINK:
-            predicate = PREDICATE_MAP[relation]
+            try:
+                predicate = PREDICATE_MAP[relation]
+            except:
+                print(edge)
+                assert False
             core_predicate = predicate[CORE_PREDICATE_KEY]
             qualified_predicate = predicate.get(QUALIFIED_PREDICATE_KEY, None)
             object_direction = predicate.get(OBJECT_DIRECTION_KEY, None)
