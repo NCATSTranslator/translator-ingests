@@ -58,6 +58,28 @@ def get_prefix_from_curie_id(curie_id: str):
     
     return curie_id.split(':')[0]
 
+def get_species_from_reactome_id(curie_id: str):
+    species_id = curie_id.split(':')[1].split('-')[1]
+
+    species_map = {'MMA': 'Mus musculus',
+                   'RNO': 'Rattus norvegicus',
+                   'HSA': 'Homo sapiens',
+                   'SSC': 'Sus scrofa',
+                   'BTA': 'Bos taurus',
+                   'CFA': 'Canis familiaris',
+                   'GGA': 'Gallus gallus',
+                   'XTR': 'Xenopus tropicalis',
+                   'DRE': 'Danio reria',
+                   'CEL': 'Caenorhabditis elegans',
+                   'DME': 'Drosophila melanogaster',
+                   'SPO': 'Schizosaccharomyces pombe',
+                   'SCE': 'Saccharomyces cerevisiae',
+                   'DDI': 'Dictyostelium discoideum',
+                   'PFA': 'Plasmodium falciparum',
+                   'ALL': 'All species'}
+
+    return species_map[species_id]
+
 
 def get_node_stats(nodes_file_name):
     nodes_read_jsonlines_info = kg2_util.start_read_jsonlines(nodes_file_name)
@@ -66,6 +88,7 @@ def get_node_stats(nodes_file_name):
     category_report = dict()
     category_store_report = dict()
     reactome_category_report = dict()
+    species_report = dict()
 
     # Non-global keys
     id_key = 'id'
@@ -85,22 +108,33 @@ def get_node_stats(nodes_file_name):
             print("Source Node:", node)
             continue
         reactome_reference_class = node[REACTOME_REFERENCE_CLASS_KEY]
+        species = get_species_from_reactome_id(node_id)
 
         category_store = str((category, reactome_category))
         if reactome_reference_class is not None:
             category_store = str((category, reactome_category, reactome_reference_class))
 
-        if category_store not in category_store_report:
-            category_store_report[category_store] = 0
-        category_store_report[category_store] += 1
+        if species not in species_report:
+            species_report[species] = 0
+        species_report[species] += 1
 
-        if reactome_category not in reactome_category_report:
-            reactome_category_report[reactome_category] = 0
-        reactome_category_report[reactome_category] += 1
+        if species not in if category_store_report:
+            category_store_report[species] = dict()
+        if category_store not in category_store_report[species]:
+            category_store_report[species][category_store] = 0
+        category_store_report[species][category_store] += 1
 
-        if category not in category_report:
-            category_report[category] = 0
-        category_report[category] += 1
+        if species not in if reactome_category_report:
+            reactome_category_report[species] = dict()
+        if reactome_category not in reactome_category_report[species]:
+            reactome_category_report[species][reactome_category] = 0
+        reactome_category_report[species][reactome_category] += 1
+
+        if species not in if category_report:
+            category_report[species] = dict()
+        if category not in category_report[species]:
+            category_report[species][category] = 0
+        category_report[species][category] += 1
 
         simple_nodes[node_id] = {CATEGORY_KEY: category, REACTOME_CATEGORY_KEY: reactome_category, CATEGORY_STORE_KEY: category_store}
 
