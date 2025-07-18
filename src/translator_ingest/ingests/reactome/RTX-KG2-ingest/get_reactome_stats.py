@@ -239,30 +239,30 @@ def get_edge_stats(edges_file_name, nodes):
                 if key not in combos_report:
                     combos_report[key] = dict()
 
-                if species not in combos_report[key]:
-                    combos_report[key][species] = dict()
+                if species_key not in combos_report[key]:
+                    combos_report[key][species_key] = dict()
 
-                if combo not in combos_report[key][species]:
-                    combos_report[key][species][combo] = 0
-                combos_report[key][species][combo] += 1
+                if combo not in combos_report[key][species_key]:
+                    combos_report[key][species_key][combo] = 0
+                combos_report[key][species_key][combo] += 1
 
-        if species not in relations_report:
-            relations_report[species] = dict()
-        if relation not in relations_report[species]:
-            relations_report[species][relation] = 0
-        relations_report[species][relation] += 1
+        if species_key not in relations_report:
+            relations_report[species_key] = dict()
+        if relation not in relations_report[species_key]:
+            relations_report[species_key][relation] = 0
+        relations_report[species_key][relation] += 1
 
-        if species not in core_predicates_report:
-            core_predicates_report[species] = dict()
-        if core_predicate not in core_predicates_report[species]:
-            core_predicates_report[species][core_predicate] = 0
-        core_predicates_report[species][core_predicate] += 1
+        if species_key not in core_predicates_report:
+            core_predicates_report[species_key] = dict()
+        if core_predicate not in core_predicates_report[species_key]:
+            core_predicates_report[species_key][core_predicate] = 0
+        core_predicates_report[species_key][core_predicate] += 1
 
-        if species not in predicates_store_report:
-            predicates_store_report[species] = dict()
-        if predicate_store not in predicates_store_report[species]:
-            predicates_store_report[species][predicate_store] = 0
-        predicates_store_report[species][predicate_store] += 1
+        if species_key not in predicates_store_report:
+            predicates_store_report[species_key] = dict()
+        if predicate_store not in predicates_store_report[species_key]:
+            predicates_store_report[species_key][predicate_store] = 0
+        predicates_store_report[species_key][predicate_store] += 1
 
     # Close our reader since we have finished
     kg2_util.end_read_jsonlines(edges_read_jsonlines_info)
