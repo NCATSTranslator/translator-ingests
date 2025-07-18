@@ -35,7 +35,7 @@ PREDICATE_MAP = {'REACT:has_element': {CORE_PREDICATE_KEY: 'biolink:has_part'},
                  'REACT:negatively_regulates': {CORE_PREDICATE_KEY: 'biolink:regulates', QUALIFIED_PREDICATE_KEY: 'biolink:causes', OBJECT_DIRECTION_KEY: 'downregulated'},
                  'REACT:negatively_regulates_gene_expression': {CORE_PREDICATE_KEY: 'biolink:regulates', QUALIFIED_PREDICATE_KEY: 'biolink:causes', OBJECT_DIRECTION_KEY: 'downregulated'},
                  'REACT:positively_regulates': {CORE_PREDICATE_KEY: 'biolink:regulates', QUALIFIED_PREDICATE_KEY: 'biolink:causes', OBJECT_DIRECTION_KEY: 'upregulated'},
-                 'REACT:positive_regulates_gene_expression': {CORE_PREDICATE_KEY: 'biolink:regulates', QUALIFIED_PREDICATE_KEY: 'biolink:causes', OBJECT_DIRECTION_KEY: 'upregulated'},
+                 'REACT:positively_regulates_gene_expression': {CORE_PREDICATE_KEY: 'biolink:regulates', QUALIFIED_PREDICATE_KEY: 'biolink:causes', OBJECT_DIRECTION_KEY: 'upregulated'},
                  'REACT:related_to': {CORE_PREDICATE_KEY: 'biolink:related_to'}}
 
 CATEGORY_KEY = 'category'
@@ -141,11 +141,7 @@ def get_edge_stats(edges_file_name, nodes):
         object_prefix = get_prefix_from_curie_id(object_curie)
 
         if get_prefix_from_curie_id(relation) != kg2_util.CURIE_PREFIX_BIOLINK:
-            try:
-                predicate = PREDICATE_MAP[relation]
-            except:
-                print(edge)
-                assert False
+            predicate = PREDICATE_MAP[relation]
             core_predicate = predicate[CORE_PREDICATE_KEY]
             qualified_predicate = predicate.get(QUALIFIED_PREDICATE_KEY, None)
             object_direction = predicate.get(OBJECT_DIRECTION_KEY, None)
