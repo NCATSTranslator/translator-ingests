@@ -48,8 +48,7 @@ CTKP provides an improved version of clinical trials information that addresses 
 | # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties |  UI Explanation |
 |----------|----------|----------|----------|----------|----------|---------|----------|----------|
 | 1 | Association | ChemicalEntity, MolecularMixture  | in_clinical_trials_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   | The `in_clinical_trials_for` predicate reports that an intervention was the tested in a clinical trial for a particular disease - based on a registered trial in ct.gov. |
-| 2 | Association | ChemicalEntity, MolecularMixture  | mentioned_in_trials_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  The `mentioned_in_trials_for` predicate reports that an intervention was mentioned in a ct.gov clinical trial record, where it may be the tested intervention, or play some other role in the trial (e.g. a contrast agent for imaging, a analgesic to help tolerate the primary intervention). |
-| 3 | Association | ChemicalEntity, MolecularMixture  | treats | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  The `treats` predicate reports here that an intervention was shown to successfully treat a particular disease in virtue of its passing Phase 3 or being interrogated in a Phase 4 trial. |
+| 2 | Association | ChemicalEntity, MolecularMixture  | treats | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  The `treats` predicate reports here that an intervention was shown to successfully treat a particular disease in virtue of its passing Phase 3 or being interrogated in a Phase 4 trial. |
 
 **Notes/Rationale (o)**:
 
