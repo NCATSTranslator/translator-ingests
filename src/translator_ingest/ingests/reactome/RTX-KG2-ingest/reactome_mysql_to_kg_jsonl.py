@@ -233,11 +233,10 @@ def match_reactome_category_to_biolink(reactome_category: str,
                      'EntityWithAccessionedSequence': BIOLOGICAL_ENTITY,
                      'Polymerisation': BIOLOGICAL_PROCESS,
                      'PositiveGeneExpressionRegulation': BIOLOGICAL_PROCESS,
-                     'RNADrug': ,
-                     'CellLineagePath': ,
-                     'Cell': ,
-                     'CellDevelopmentStep': ,
-                     }
+                     'RNADrug': SMALL_MOLECULE,
+                     'CellLineagePath': BIOLOGICAL_ENTITY,
+                     'Cell': BIOLOGICAL_ENTITY,
+                     'CellDevelopmentStep': BIOLOGICAL_PROCESS}
 
     biolink_category = category_dict[reactome_category]
     if reactome_category == 'EntityWithAccessionedSequence' and reference_class is not None \
