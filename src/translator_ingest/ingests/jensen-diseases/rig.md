@@ -30,7 +30,7 @@ https://diseases.jensenlab.org/Downloads
    
 ### Releases and Versioning
  - Updated weekly.  Website offers only download of latest version.
- - No apparent versioning of the data
+ - Versioned prior releases archived at https://figshare.com/authors/Lars_Juhl_Jensen/96428
 
 ----------------
 
