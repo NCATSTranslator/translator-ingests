@@ -37,10 +37,10 @@ https://diseases.jensenlab.org/Downloads
 ## Ingest Information
     
 ### Utility
-DISEASES text-mined co-occurrrence data is a unique and rich soruce of G2D associations.  Their NLP-based extraction of associations from free text in Medline Plus is also unique and valuable.  However, knoweldge aggregated from soruces like UniProt and TIGA may best be ingested directly fromthese primary sources. 
+DISEASES text-mined co-occurrrence data is a unique and rich soruce of G2D associations.  Their NLP-based extraction of associations from free text in Medline Plus is also unique and valuable.  However, knoweldge aggregated from soruces like UniProt and TIGA may best be ingested directly from these sources. 
 
 ### Scope
-This ingest covers text-mined co-occurrence associations,  and NLP-based extraction of assocaitions from free text in Medline Plus. Experiment-based assocaitiosn from TIGA  data not in scope (we will find a diect soruce of GWAS-based associations)
+This ingest covers text-mined co-occurrence associations,  and NLP-based extraction of associations from free text in Medline Plus. Experiment-based associations from TIGA data are not ingested (we will find a diect soruce of GWAS-based associations)
 
   #### Relevant Files:
 
@@ -60,7 +60,7 @@ This ingest covers text-mined co-occurrence associations,  and NLP-based extract
 
   | File | Filtered Content | Rationale |
   |----------|----------|----------|
-  | human_disease_knowledge_full.tsv | Curated association recrods from UniProt, AmyCo, ...? | Quality and utility concerns for these other sources |
+  | human_disease_knowledge_full.tsv | Curated association recrods from UniProt, AmyCo, ...? | Lower quality and/or utility |
 
   #### Future Considerations (o):
 
@@ -81,7 +81,7 @@ This ingest covers text-mined co-occurrence associations,  and NLP-based extract
 | # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|----------|---------|----------|---------|
 | 1 | GeneToDiseaseAssociation | Gene | cooccurs_in_literature_with | Disease  |  n/a  |  text-mining agent, statistical association | has_confidence, z-score? | TO DO |
-| 2 | GeneToDiseaseAssociation | Gene | gene_associated_with_disease| Disease  |  n/a  |  manual_agent, knowledge_assertion  | has_confidence | TO DO |
+| 2 | GeneToDiseaseAssociation | Gene | gene_associated_with_disease | Disease  |  n/a  |  manual_agent, knowledge_assertion  | has_confidence | TO DO |
 
 **Rationale (o)**:
 
