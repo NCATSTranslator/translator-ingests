@@ -256,7 +256,7 @@ def only_include_certain_species(reactome_id: str):
 
     # HSA: homo sapiens
     # ALL: all species, including homo sapiens (many entities have this)
-    include_species = ['HSA', 'ALL']
+    include_species = ['HSA', 'ALL', 'MMU', 'RNO', 'CFA', 'BTA', 'SSC', 'DRE', 'XTR', 'GGA', 'DME', 'CEL', 'DDI', 'SPO', 'PFA', 'SCE']
     if reactome_id.split('-')[1] in include_species:
         return reactome_id
     return None
