@@ -8,7 +8,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
-    Entity,
+    NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     Association
@@ -38,12 +38,12 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[Entity], Iterable[Association]]]:
+def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
     df = pandas.DataFrame(records)
     return iter([(iter(get_nodes(df)), iter(get_edges(df)))])
 
 
-def get_nodes(ctd_df: pandas.DataFrame) -> tuple[Entity]:
+def get_nodes(ctd_df: pandas.DataFrame) -> tuple[NamedThing]:
     return itertools.chain.from_iterable(map(lambda args: iu.make_nodes(ctd_df, *args),
                                                    [("ChemicalID", "ChemicalName", ChemicalEntity),
                                                     ("DiseaseID", "DiseaseName", Disease)]))

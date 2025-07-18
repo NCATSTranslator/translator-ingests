@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterator, Iterable
+from typing import Iterable
 
 import requests
 
@@ -7,7 +7,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
-    Entity,
+    NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     Association
@@ -39,7 +39,7 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
     return records
 """
 
-def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
+def transform_record(record: dict) -> (Iterable[NamedThing], Iterable[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -58,7 +58,7 @@ def transform_record(record: dict) -> (Iterable[Entity], Iterable[Association]):
 
 """
 this is just an example of the interface, using transform() offers the opportunity to do something more efficient
-def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[Entity], Iterable[Association]]]:
+def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
     for record in records:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
