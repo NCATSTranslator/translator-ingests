@@ -8,17 +8,18 @@ dependencies = [
     "beautifulsoup4>=4.13.4",
     "biolink-model",
     "bmt>=1.4.5",
-    "importlib-metadata>=4.8.0",
     "kghub-downloader>=0.4.1",
     "koza",
-    "pronto>=2.7.0",
+    "beautifulsoup4>=4.13.4",
+    "pronto",
+    "importlib-metadata"
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=7.4.0",
     "black>=24.1.0",
-    "ruff>=0.1.9",
+    "ruff>=0.1.9"
 ]
 
 [tool.pytest.ini_options]

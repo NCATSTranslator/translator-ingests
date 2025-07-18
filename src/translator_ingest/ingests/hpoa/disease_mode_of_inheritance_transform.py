@@ -53,8 +53,11 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 """
 
 
-# Read hpo mode of inheritance terms into memory using pronto + hp.obo file + HP:0000005 (Mode of Inheritance)
-modes_of_inheritance = read_ontology_to_exclusion_terms("data/hp.obo", umbrella_term="HP:0000005", include=True)
+# Read hpo mode of inheritance terms into memory using the
+# pronto library + hp.obo file + HP:0000005 (Mode of Inheritance) root term
+modes_of_inheritance = read_ontology_to_exclusion_terms(
+    ontology_obo_file="data/hp.obo", umbrella_term="HP:0000005", include=True
+)
 
 #
 ##### ORIGINAL Koza-centric ingest code
