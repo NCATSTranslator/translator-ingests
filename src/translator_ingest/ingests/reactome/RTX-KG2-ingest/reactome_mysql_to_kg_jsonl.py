@@ -130,7 +130,7 @@ def match_name_to_prefix(name: str):
                         'Guide to Pharmacology': kg2_util.CURIE_PREFIX_GTPI,
                         'NCIthesaurus': kg2_util.CURIE_PREFIX_NCIT,
                         'ChemSpider': None,
-                        'RNACentral': None,
+                        'RNAcentral': None,
                         'LOVD': None,
                         'Leiden Open Variation Database': None,
                         'Dfam': None}
