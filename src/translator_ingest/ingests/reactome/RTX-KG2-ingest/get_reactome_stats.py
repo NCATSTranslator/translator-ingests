@@ -217,6 +217,7 @@ def get_edge_stats(edges_file_name, nodes):
     edges_report['number_of_edges_by_relation'] = relations_report
     edges_report['number_of_edges_by_core_predicates'] = core_predicates_report
     edges_report['number_of_edges_by_qualified_predicates'] = predicates_store_report
+    edges_report['_number_of_edges'] = edge_count
 
     return edges_report
 
