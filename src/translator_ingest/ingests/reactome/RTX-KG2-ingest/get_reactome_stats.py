@@ -118,19 +118,19 @@ def get_node_stats(nodes_file_name):
             species_report[species] = 0
         species_report[species] += 1
 
-        if species not in if category_store_report:
+        if species not in category_store_report:
             category_store_report[species] = dict()
         if category_store not in category_store_report[species]:
             category_store_report[species][category_store] = 0
         category_store_report[species][category_store] += 1
 
-        if species not in if reactome_category_report:
+        if species not in reactome_category_report:
             reactome_category_report[species] = dict()
         if reactome_category not in reactome_category_report[species]:
             reactome_category_report[species][reactome_category] = 0
         reactome_category_report[species][reactome_category] += 1
 
-        if species not in if category_report:
+        if species not in category_report:
             category_report[species] = dict()
         if category not in category_report[species]:
             category_report[species][category] = 0
