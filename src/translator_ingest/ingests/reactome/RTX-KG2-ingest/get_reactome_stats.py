@@ -174,7 +174,7 @@ def get_edge_stats(edges_file_name, nodes):
 
         for edge_label_type in edge_label_types:
             for node_info_type in node_info_types:
-                key = 'number_of_' edge_label_type + '_' + node_info_type + '_combos'
+                key = 'number_of_' + edge_label_type + '_' + node_info_type + '_combos'
                 edge_label = edge_label_types[edge_label_type]
                 subject_info = node_info_types[node_info_type][0]
                 object_info = node_info_types[node_info_type][1]
