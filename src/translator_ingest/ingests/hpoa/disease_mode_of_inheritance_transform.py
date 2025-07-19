@@ -172,7 +172,6 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
             object=hpo_id,
             publications=publications,
             has_evidence=[evidence_curie],
-            aggregator_knowledge_source=["infores:monarchinitiative"],
             primary_knowledge_source="infores:hpo-annotations",
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
