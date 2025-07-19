@@ -66,7 +66,6 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 #                                                      subject=gene_id,
 #                                                      predicate="biolink:has_phenotype",
 #                                                      object=phenotype_id,
-#                                                      aggregator_knowledge_source=["infores:monarchinitiative"],
 #                                                      primary_knowledge_source="infores:hpo-annotations",
 #                                                      knowledge_level=KnowledgeLevelEnum.logical_entailment,
 #                                                      agent_type=AgentTypeEnum.automated_agent,
@@ -138,7 +137,6 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
         subject=gene_id,
         predicate="biolink:has_phenotype",
         object=hpo_id,
-        aggregator_knowledge_source=["infores:monarchinitiative"],
         primary_knowledge_source="infores:hpo-annotations",
         knowledge_level=KnowledgeLevelEnum.logical_entailment,
         agent_type=AgentTypeEnum.automated_agent,
@@ -149,6 +147,9 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
         has_total=frequency.has_total,
         disease_context_qualifier=dis_id,
         publications=publications,
+        primary_knowledge_source="infores:hpo-annotations",
+        knowledge_level=KnowledgeLevelEnum.logical_entailment,
+        agent_type=AgentTypeEnum.automated_agent,
         **{}
     )
 
