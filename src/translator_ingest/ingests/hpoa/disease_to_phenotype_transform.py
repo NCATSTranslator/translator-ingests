@@ -225,7 +225,6 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
         has_total=frequency.has_total,
         # TODO: the Biolink Model for edge provenance is under some revision,
         #       deprecating the use of direct *_knowledge_source tags
-        aggregator_knowledge_source=["infores:monarchinitiative"],
         primary_knowledge_source="infores:hpo-annotations",
         # supporting_knowledge_source=supporting_knowledge_source,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,

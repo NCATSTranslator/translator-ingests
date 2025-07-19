@@ -144,8 +144,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
   "object": "HP:0001249",
   "frequency_qualifier": 50.0,
   "has_evidence": ["ECO:0000033"],
-  "primary_knowledge_source": "infores:hpo-annotations",
-  "aggregator_knowledge_source": ["infores:monarchinitiative"]
+  "primary_knowledge_source": "infores:hpo-annotations"
 }
 ```
 
@@ -174,14 +173,11 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
   "predicate": "biolink:has_mode_of_inheritance",
   "object": "HP:0001417",
   "has_evidence": ["ECO:0000501"],
-  "primary_knowledge_source": "infores:hpo-annotations",
-  "aggregator_knowledge_source": ["infores:monarchinitiative"]
+  "primary_knowledge_source": "infores:hpo-annotations"
 }
 ```
 
 ### Gene to Disease
-
-This ingest replaces the direct OMIM ingest so that we share gene-to-disease associations 1:1 with HPO. It processes the tab-delimited [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt) file.
 
 #### Example Source Data
 
@@ -203,8 +199,8 @@ This ingest replaces the direct OMIM ingest so that we share gene-to-disease ass
   "subject": "NCBIGene:64170",
   "predicate": "biolink:causes",
   "object": "OMIM:212050",
-  "primary_knowledge_source": "infores:omim",
-  "aggregator_knowledge_source": ["infores:monarchinitiative", "infores:medgen"]
+  "primary_knowledge_source": "infores:hpo-annotations",
+  "supporting_knowledge_source": ["infores:medgen"]
 }
 ```
 
@@ -236,7 +232,6 @@ This ingest replaces the direct OMIM ingest so that we share gene-to-disease ass
   "frequency_qualifier": 30.0,
   "in_taxon": "NCBITaxon:9606",
   "primary_knowledge_source": "infores:hpo-annotations",
-  "aggregator_knowledge_source": ["infores:monarchinitiative"]
 }
 ```
 

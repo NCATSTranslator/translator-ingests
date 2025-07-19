@@ -75,7 +75,6 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 #         object=disease.id,
 #         publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
 #         # is this code/repo an aggregator in this context? feels like no, but maybe yes?
-#         # aggregator_knowledge_source=["infores:???"],
 #         primary_knowledge_source=INFORES_CTD,
 #         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
 #         agent_type=AgentTypeEnum.manual_agent,
@@ -106,7 +105,6 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
         predicate=predicate,
         object=disease_id,
         primary_knowledge_source=primary_knowledge_source,
-        aggregator_knowledge_source=aggregator_knowledge_source,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         **{}
@@ -127,7 +125,6 @@ def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Itera
             object=disease.id,
             publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
             # is this code/repo an aggregator in this context? feels like no, but maybe yes?
-            # aggregator_knowledge_source=["infores:???"],
             primary_knowledge_source=INFORES_CTD,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
