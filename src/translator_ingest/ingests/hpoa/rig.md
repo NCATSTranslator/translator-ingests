@@ -11,12 +11,14 @@
  
 The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standard vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
 
-The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence, and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
+The Human Phenotype Ontology group curates and assembles over 115,000 HPO-related annotations ("HPOA") to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence, and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
 
-There are three <!-- four --> HPOA ingests - 'disease-to-phenotype', <!-- 'disease-to-mode-of-inheritance',--> 'gene-to-phenotype' and 'gene-to-disease'  - that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+There are four HPOA ingests ('disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-phenotype' and 'gene-to-disease') that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
    
 ### Source Category(ies)
-- [Primary Knowledge Source](https://biolink.github.io/biolink-model/primary_knowledge_source/)   
+- **[Primary Knowledge Provider](https://biolink.github.io/biolink-model/primary_knowledge_source/):** HPOA 
+- **[Supporting Knowledge Providers](https://biolink.github.io/biolink-model/primary_knowledge_source/):** OMIM, Orphanet, Decipher
+- **[Ontology/Terminology Provider](https://biolink.github.io/biolink-model/OntologyClass/):** HP, MONDO
 
 ### Citation
 
@@ -28,14 +30,17 @@ Sebastian Köhler, Michael Gargano, Nicolas Matentzoglu, Leigh C Carmody, David 
 
 ### Data Access Locations
 
-Bulk downloading from https://hpo.jax.org/data/annotations
+- **HPO Annotation**: https://hpo.jax.org/data/annotations
+- **HPO**: http://purl.obolibrary.org/obo/hp.obo
+- **MONDO**: https://mondo.monarchinitiative.org/pages/download/
    
 ### Provision Mechanisms and Formats
-- Mechanism(s): File download.
-- Text files, with formats described here: https://hpo.jax.org/data/annotation-format
+- **Mechanism(s):** File download.
+- **Formats:** Text files, with formats described here: https://hpo.jax.org/data/annotation-format
    
 ### Releases and Versioning
- - No consistent cadence for releases(?).
+ - GitHub managed releases: https://github.com/obophenotype/human-phenotype-ontology/releases
+ - No consistent cadence for releases.
  - Versioning is based on the month and year of the release
 
 ---------------- 
@@ -44,52 +49,35 @@ Bulk downloading from https://hpo.jax.org/data/annotations
     
 ### Utility
 
-- The HPO and associated annotations are a flagship product of the [Monarch Initiative](https://monarchinitiative.org/), an NIH-supported international consortium dedicated to semantic integration of biomedical and model organism data with the ultimate goal of improving biomedical research. The human phenotype/disease/gene knowledge integration aligns well with the general mission of the Biomedical Data Translator.  In fact, several members of the Monarch Initiative are also direct participants in the Biomedical Data Translator, with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs. 
+- The HPO and associated annotations are a flagship product of the [Monarch Initiative](https://monarchinitiative.org/), an NIH-supported international consortium dedicated to semantic integration of biomedical and model organism data with the ultimate goal of improving biomedical research. The human phenotype/disease/gene knowledge integration aligns well with the general mission of the Biomedical Data Translator.  As a consequence, several members of the Monarch Initiative are direct participants in the Biomedical Data Translator, with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs. 
 
 ### Scope
 
-- Covers curated Disease to Phenotype and Genes to Phenotype associations that report ... 
+- Covers curated Disease, Phenotype and Genes relationships annotated with Human Phenotype Ontology terms. 
 
   #### Relevant Files:
   
-  | File / Endpoint / Table                                                                 | Description |
-  |-----------------------------------------------------------------------------------------|-------------|
-  | [phenotype.hpoa](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa)                 |             | disease to HPO phenotype annotations,<br>including inheritance information
-  | [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt)     |             | gene to HPO disease annotations
-  | [genes_to_phenotype.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt) |             | gene to HPO phenotype annotations
-  | [obo/hp.obo](http://purl.obolibrary.org/obo/hp.obo)                                     |             | Human Phenotype Ontology 
-  | [mondo.sssom.tsv](https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv)   |             | Monarch Disease Ontology ("MONDO") 
+  | File / Endpoint / Table                                                                 | Description                                                                |
+  |-----------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+  | [phenotype.hpoa](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa)                 | disease to HPO phenotype annotations,<br>including inheritance information |
+  | [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt)     | gene to HPO disease annotations                                            | 
+  | [genes_to_phenotype.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt) | gene to HPO phenotype annotations                                          | 
+  | [hp.obo](http://purl.obolibrary.org/obo/hp.obo)                                         | Human Phenotype Ontology ("HPO")                                           | 
+  | [mondo.sssom.tsv](https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv)   | Monarch Disease Ontology ("MONDO")                                         | 
 
   #### Included Content:
 
-  | File                   | Included Content                                                                                                                                                         | Fields Used                                                                        |
-  |------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-  | phenotype.hpoa         | Disease to Phenotype relationships<br>(i.e., rows with 'aspect' == 'P')                                                                                                  | database_id, qualifier, hpo_id, reference, evidence, onset, frequency, sex, aspect |
-  | phenotype.hpoa         | Disease "Mode of Inheritance" relationships<br>(i.e., rows with 'aspect' == 'I')                                                                                         | database_id, hpo_id, reference, evidence, aspect                                   |
-  | genes_to_disease.txt   | Mendelian Gene to Disease relationships<br>(i.e., rows with 'association_type' == 'MENDELIAN')                                                                           | ncbi_gene_id, gene_symbol, association_type, disease_id, source                    |
-  | genes_to_disease.txt   | Polygenic Gene to Disease relationships<br>(i.e., rows with 'association_type' == 'POLYGENIC')                                                                           | ncbi_gene_id, gene_symbol, association_type, disease_id, source                    |
-  | genes_to_disease.txt   | General Gene Contributions to Disease relationships<br>(i.e., rows with 'association_type' == 'UNKNOWN')                                                                 | ncbi_gene_id, gene_symbol, association_type, disease_id, source                    |
-  | genes_to_phenotype.txt | Gene to Phenotype relationships                                                                                                                                          | ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id                 |
-  | mondo.sssom.tsv        | Mappings of HPOA (OMIM/ORPHANET/DECIPHER) contextual disease identifiers onto MONDO terms (may not be done in the ingest, but rather, in the ingest normalization step?) | subject_id, predicate_id, object_id                                                |
-  | obo/hp.obo             | Human Phenotype Ontology (master community definitions and term hierarchy)                                                                                               | Accessed for "disease mode of inheritance" HPO term mappings                       |
+  | File                   | Included Content                                                                                                                                                                  | Fields Used                                                                               |
+  |------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+  | phenotype.hpoa         | Disease to Phenotype relationships<br>(i.e., rows with 'aspect' == 'P')                                                                                                           | database_id, qualifier, hpo_id,<br>reference, evidence, onset,<br>frequency, sex, aspect |
+  | phenotype.hpoa         | Disease "Mode of Inheritance" relationships<br>(i.e., rows with 'aspect' == 'I')                                                                                                  | database_id, hpo_id, reference,<br>evidence, aspect                                       |
+  | genes_to_disease.txt   | Mendelian Gene to Disease relationships<br>(i.e., rows with 'association_type' == 'MENDELIAN')                                                                                    | ncbi_gene_id, gene_symbol,<br>association_type, disease_id, source                        |
+  | genes_to_disease.txt   | Polygenic Gene to Disease relationships<br>(i.e., rows with 'association_type' == 'POLYGENIC')                                                                                    | ncbi_gene_id, gene_symbol,<br>association_type, disease_id, source                        |
+  | genes_to_disease.txt   | General Gene Contributions to Disease relationships<br>(i.e., rows with 'association_type' == 'UNKNOWN')                                                                          | ncbi_gene_id, gene_symbol,<br>association_type, disease_id, source                        |
+  | genes_to_phenotype.txt | Gene to Phenotype relationships                                                                                                                                                   | ncbi_gene_id, gene_symbol,<br>hpo_id, hpo_name, frequency, disease_id                     |
+  | mondo.sssom.tsv        | Mappings of HPOA (OMIM/ORPHANET/DECIPHER)<br>contextual disease identifiers onto MONDO terms<br>(may not be done in the ingest, but rather,<br>in the ingest normalization step?) | subject_id, predicate_id, object_id                                                       |
+  | obo/hp.obo             | Human Phenotype Ontology<br>(definitions and term hierarchy)                                                                                                                     | Accessed for "disease mode of inheritance"<br>HPO terms mappings                          |
 
-<!--
-
-  #### Filtered Records (o):
-
-  | File | Filtered Content | Rationale |
-  |----------|----------|----------|
-  | CTD_chemicals_diseases.tsv.gz  | Inferred associations - i.e. rows lacking a value in the DirectEvidence column | Decided that the methodology used to create these inferences gave associations that were not strong/meaningful enough to be of use to Translator |
--->
-
-<!--
-
-  #### Future Considerations (o):
-
-  | File | Content |  Rationale |
-  |----------|----------|----------|
-  | CTD_exposure_events.tsv.gz |  Additional chemical-disease edges reporting statistical correlations from environmental exposure studies | This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not clear, so it may not be worth it. |
--->
 
 -----------------
 
@@ -100,20 +88,17 @@ Bulk downloading from https://hpo.jax.org/data/annotations
    
 ### Edge Types
 
-| # | Association Type                                                    | Subject Category | Predicate                        | Object Category    | Qualifier Types                                                    | Other Edge Properties                                                                                     | AT / KL                               | UI Explanation |
-|---|---------------------------------------------------------------------|------------------|----------------------------------|--------------------|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------------------|----------------|
-| 1 | Disease To Phenotypic Feature Association                           | Disease          | `has_phenotype`                  | PhenotypicFeature  | negated, onset_qualifier,<br>frequency_qualifier,<br>sex_qualifier | has_count, has_total,<br>has_percentage, has_quotient,<br>publications,<br>has_evidence (IEA,PCS,TAS,ICE) | manual agent<br>knowledge assertion   | n.s.           |
-| 2 | CausalGeneToDiseaseAssociation                                      | Gene             | `causes`                         | Disease            |                                                                    | n.s.                                                                                                      | manual agent<br>knowledge assertion   | n.s.           |
-| 3 | CorrelatedGeneToDiseaseAssociation                                  | Gene             | `contributes_to`                 | Disease            |                                                                    | n.s.                                                                                                      | manual agent<br>knowledge assertion   | n.s.           |
-| 4 | CorrelatedGeneToDiseaseAssociation                                  | Gene             | `gene_associated_with_condition` | Disease            |                                                                    | n.s.                                                                                                      | manual agent<br>knowledge assertion   | n.s.           |
-| 5 | Gene To Phenotypic Feature Association                              | Gene             | `has_phenotype`                  | Phenotypic Feature | frequency_qualifier,<br>disease_context_qualifier                  | n.s.                                                                                                      | manual agent<br>knowledge assertion   | n.s.           |
-| 6 | Gene To Phenotypic Feature Association                              | Gene             | `has_phenotype`                  | Phenotypic Feature | frequency_qualifier,<br> disease_context_qualifier                 | has_count, has_total,<br>has_percentage, has_quotient,<br>publications,<br>has_evidence (IEA,PCS,TAS,ICE) | logical entailment<br>automated_agent | n.s.           |
-| 7 | Disease or Phenotypic Feature<br>to Genetic Inheritance Association | Disease          | `has_mode_of_inheritance`        | PhenotypicFeature  | n.s.                                                               | publications                                                                                              | manual agent<br>knowledge assertion   | n.s.           |
+| # | Association Type                                                    | Subject Category | Predicate                        | Object Category    | Qualifier Types                                                                                                                  | Other Edge Properties                                                                                     | AT / KL                                   | UI Explanation |
+|---|---------------------------------------------------------------------|------------------|----------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------|----------------|
+| 1 | Disease To Phenotypic Feature Association                           | Disease          | `has_phenotype`                  | PhenotypicFeature  | negated, onset_qualifier,<br>frequency_qualifier,<br>sex_qualifier (female -> PATO:0000383,<br>male -> PATO:0000384 or None)<br> | has_count, has_total,<br>has_percentage, has_quotient,<br>publications,<br>has_evidence (IEA,PCS,TAS,ICE) | manual agent<br>knowledge assertion       | n.s.           |
+| 2 | CausalGeneToDiseaseAssociation                                      | Gene             | `causes`                         | Disease            |                                                                                                                                  | n.s.                                                                                                      | manual agent<br>knowledge assertion       | n.s.           |
+| 3 | CorrelatedGeneToDiseaseAssociation                                  | Gene             | `contributes_to`                 | Disease            |                                                                                                                                  | n.s.                                                                                                      | manual agent<br>knowledge assertion       | n.s.           |
+| 4 | CorrelatedGeneToDiseaseAssociation                                  | Gene             | `gene_associated_with_condition` | Disease            |                                                                                                                                  | n.s.                                                                                                      | manual agent<br>knowledge assertion       | n.s.           |
+| 5 | Gene To Phenotypic Feature Association                              | Gene             | `has_phenotype`                  | Phenotypic Feature | frequency_qualifier,<br>disease_context_qualifier                                                                                | n.s.                                                                                                      | manual agent<br>knowledge assertion       | n.s.           |
+| 6 | Gene To Phenotypic Feature Association                              | Gene             | `has_phenotype`                  | Phenotypic Feature | frequency_qualifier,<br> disease_context_qualifier                                                                               | has_count, has_total,<br>has_percentage, has_quotient,<br>publications,<br>has_evidence (IEA,PCS,TAS,ICE) | logical entailment<br>automated_agent [*] | n.s.           |
+| 7 | Disease or Phenotypic Feature<br>to Genetic Inheritance Association | Disease          | `has_mode_of_inheritance`        | PhenotypicFeature  | n.s.                                                                                                                             | publications                                                                                              | manual agent<br>knowledge assertion       | n.s.           |
 
-
-**Rationale**:
-
-- Most edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation. Gene-to-disease knowledge assertions are two hop knowledge inferences from the dataset.
+[*] Gene-to-disease knowledge assertions are two hop knowledge inferences from the dataset.
    
 ### Node Types
 
@@ -127,164 +112,11 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 ------------------
 
-## Ingest Contributors
-- **Richard Bruskiewich**: code author
-- **Kevin Schaper**: code author
-- **Sierra Moxon**: code support
-- **Matthew Brush**: data modeling, domain expertise
+## Example Transformations
 
+### Disease to Phenotype
 
-#### ============================= Old RIG =====================================================================
-
-# Reference Ingest Guide for HPOA: Human Phenotype Ontology Annotations 
-
-## Source Description
-The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standard vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
-
-The Human Phenotype Ontology group curates and assembles over 115,000 HPO related annotations to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases and phenotypic features, together with their evidence, and age of onset and frequency (if known).  Disease annotations here are also cross-referenced to the [**MON**arch **D**isease **O**ntology (MONDO)](https://mondo.monarchinitiative.org/).
-
-There are three <!-- four --> HPOA ingests - 'disease-to-phenotype', <!-- 'disease-to-mode-of-inheritance',--> 'gene-to-phenotype' and 'gene-to-disease'  - that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
-
-## Source Utility to Translator
-
-The HPO and associated annotations are a flagship product of the [Monarch Initiative](https://monarchinitiative.org/), an NIH-supported international consortium dedicated to semantic integration of biomedical and model organism data with the ultimate goal of improving biomedical research.
-
-Several members of the Monarch Initiative are also direct participants in the Biomedical Data Translator, with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs. 
-
-## Data Access
-
-- **HPOA data**: https://github.com/obophenotype/human-phenotype-ontology/
-- **MONDO data**: https://mondo.monarchinitiative.org/pages/download/
-- **Related Monarch Phenotype (HPOA) Metadata**: https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
-     
-## Ingest Scope
-- Covers curated Disease to Phenotype and Genes to Phenotype associations that report ... 
-- Relevant Files:
-    - [phenotype.hpoa](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa)
-    - [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt)
-    - [genes_to_phenotype.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt)
-    - [mondo.sssom.tsv](https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv)
-    - [monarch_ingest/constants.py](https://raw.githubusercontent.com/monarch-initiative/monarch-ingest/main/src/monarch_ingest/constants.py)
-    - [obo/hp.obo](http://purl.obolibrary.org/obo/hp.obo)
-
-
-  ### Included:
-
-
-  | File                        | Rows | Columns |
-  |-----------------------------|------|---------|
-  | phenotype.hpoa              | ?    | ?       |
-  | genes_to_disease.txt        | ?    | ?       |
-  | genes_to_phenotype.txt      | ?    | ?       |
-  | mondo.sssom.tsv             | ?    | ?       |
-  | monarch_ingest/constants.py | ?    | ?       |
-  | obo/hp.obo                  | ?    | ?       |
-
-  ### Excluded:
-
-<!--
-  | File | Excluded Subset | Rationale  |
-  |----------|----------|----------|
-  | CTD_chemicals_diseases.tsv.gz  | Rows where the direct evidence label is of type "M" (marker/mechanism) | These will likely be included in a future ingest |
-  | CTD_chemicals_diseases.tsv.gz  | Rows lacking evidence in the DirectEvidence column | Decided that the methodology used to create these inferences gave associations that were not strong/meaningful enough to be of use to Translator |
-  | CTD_exposure_events.tsv.gz | All | These will likely be included in a future ingest |
--->
-
-  | File                        | Excluded Subset | Rationale |
-  |-----------------------------|-----------------|-----------|
-  | phenotype.hpoa              | ?               | ?         |
-  | genes_to_disease.txt        | ?               | ?         |
-  | genes_to_phenotype.txt      | ?               | ?         |
-  | mondo.sssom.tsv             | ?               | ?         |
-  | monarch_ingest/constants.py | ?               | ?         |
-  | obo/hp.obo                  | ?               | ?         |
-
-  ### Future Ingest Considerations:
-
-  Disease "Mode of Inheritance" inferences.
-
-  | File           | Rationale                                      |
-  |----------------|------------------------------------------------|
-  | phenotype.hpoa | Captures some "Mode of Inheritance" inferences |
-
-
-## Biolink Edge Types
-
-
-| No. | Association Type                                                         | MetaEdge                                       | Qualifiers                                                      | AT / KL                           | Evidence Code |
-|-----|--------------------------------------------------------------------------|------------------------------------------------|-----------------------------------------------------------------|-----------------------------------|---------------|
-| 1   | Disease To Phenotypic Feature Association                                | Disease - `has_phenotype` - Phenotypic Feature | negated, sex_qualifier,<br>onset_qualifier, frequency_qualifier | manual agent, knowledge assertion | n.s.          |
-| 2   | CausalGeneToDiseaseAssociation or<br>CorrelatedGeneToDiseaseAssociation | Gene - `causes` - Disease                      | n.s.                                                            | manual agent, knowledge assertion | n.s.          |
-| 3   | Gene To Phenotypic Feature Association                                   | Gene - `has_phenotype` - Phenotypic Feature    | n.s.                                                            | manual agent, knowledge assertion | n.s.          |
-
-<!-- TODO: Need to review AT/KL and Evidence Code -->
-
-**Rationale**:
-
-- All edges are manual agent knowledge assertion, as the ingested data is based on manual literature curation.
-
-      
-## Biolink Node Types
-
-<!--
-- ChemicalEntity (MeSH)
-- DiseaseOrPhenotypicFeature (MeSH)
-
-Note: The ChemicalEntity and Disease nodes here are placeholders only and lack a full representation node properties, and may not accurately reflect the correct biolink category.
--->
-- Disease
-- PhenotypicFeature
-- Gene
-
-## Source Quality/Confidence Assessment
-- ...
-
-
-## Misc Notes
-- ...
-
-### ### Original Monarch Ingest doc (from [monarch-phenotype-profile-ingest](https://github.com/monarch-initiative/monarch-phenotype-profile-ingest) Git repo)
-
-<!--
-
-# monarch-phenotype-profile-ingest Report
-
-{{ get_nodes_report() }}
-
-{{ get_edges_report() }}
--->
-
-# Human Phenotype Ontology Annotations (HPOA)
-
-~~The [Human Phenotype Ontology](http://human-phenotype-ontology.org) group
-curates and assembles over 115,000 annotations to hereditary diseases
-using the HPO ontology. Here we create Biolink associations
-between diseases and phenotypic features, together with their evidence,
-and age of onset and frequency (if known).
-
-There are four HPOA ingests - 'disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-disease' and 'gene-to-phenotype' - that parse out records from the [HPO Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).~~
-
-## Disease to Phenotype
-
-This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-qc.readthedocs.io/en/latest/annotationFormat.html#phenotype-hpoa-format) file, filtered for rows with **Aspect == 'P'** (phenotypic anomalies).
-
-### Biolink Entities Captured
-
-* biolink:DiseaseToPhenotypicFeatureAssociation
-    * id (random uuid)
-    * subject (disease.id)
-    * predicate (has_phenotype)
-    * negated (True if 'qualifier' == "NOT")
-    * object (phenotypicFeature.id)
-    * publications (List[publication.id])
-    * has_evidence (List[evidence.id])
-    * sex_qualifier (female -> PATO:0000383, male -> PATO:0000384 or None)
-    * onset_qualifier (Onset.id)
-    * frequency_qualifier (See Frequencies section in hpoa.md)
-    * aggregating_knowledge_source (["infores:monarchinitiative"])
-    * primary_knowledge_source ("infores:hpo-annotations")
-
-### Example Source Data
+#### Example Source Data
 
 ```json
 {
@@ -302,7 +134,7 @@ This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-
 }
 ```
 
-### Example Transformed Data
+#### Example Transformed Data
 
 ```json
 {
@@ -317,23 +149,9 @@ This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-
 }
 ```
 
-## Disease to Mode of Inheritance
+### Disease to Mode of Inheritance
 
-This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-qc.readthedocs.io/en/latest/annotationFormat.html#phenotype-hpoa-format) file, filtered for rows with **Aspect == 'I'** (inheritance).
-
-### Biolink Entities Captured
-
-* biolink:DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation
-    * id (random uuid)
-    * subject (disease.id)
-    * predicate (has_mode_of_inheritance)
-    * object (geneticInheritance.id)
-    * publications (List[publication.id])
-    * has_evidence (List[evidence.id])
-    * aggregating_knowledge_source (["infores:monarchinitiative"])
-    * primary_knowledge_source ("infores:hpo-annotations")
-
-### Example Source Data
+#### Example Source Data
 
 ```json
 {
@@ -347,7 +165,7 @@ This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-
 }
 ```
 
-### Example Transformed Data
+#### Example Transformed Data
 
 ```json
 {
@@ -361,27 +179,11 @@ This ingest processes the tab-delimited [phenotype.hpoa](https://hpo-annotation-
 }
 ```
 
-## Gene to Disease
+### Gene to Disease
 
 This ingest replaces the direct OMIM ingest so that we share gene-to-disease associations 1:1 with HPO. It processes the tab-delimited [genes_to_disease.txt](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt) file.
 
-### Biolink Entities Captured
-
-* biolink:CorrelatedGeneToDiseaseAssociation or biolink:CausalGeneToDiseaseAssociation (depending on predicate)
-    * id (random uuid)
-    * subject (ncbi_gene_id)
-    * predicate (association_type)
-      * MENDELIAN: `biolink:causes`
-      * POLYGENIC: `biolink:contributes_to`
-      * UNKNOWN: `biolink:gene_associated_with_condition`
-    * object (disease_id)
-    * primary_knowledge_source (source)
-      * medgen: `infores:omim`
-      * orphanet: `infores:orphanet`
-    * aggregator_knowledge_source (["infores:monarchinitiative"])
-      * also for medgen: `infores:medgen`
-
-### Example Source Data
+#### Example Source Data
 
 ```json
 {
@@ -393,7 +195,7 @@ This ingest replaces the direct OMIM ingest so that we share gene-to-disease ass
 }
 ```
 
-### Example Transformed Data
+#### Example Transformed Data
 
 ```json
 {
@@ -406,26 +208,9 @@ This ingest replaces the direct OMIM ingest so that we share gene-to-disease ass
 }
 ```
 
-## Gene to Phenotype
+### Gene to Phenotype
 
-This ingest processes the tab-delimited [genes_to_phenotype_with_publications.tsv](http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt) file, which is generated by joining genes_to_phenotype.txt with phenotype.hpoa to add publication information.
-
-The publication data is pre-processed using the `scripts/gene_to_phenotype_publications.py` script, which performs a join between gene-to-phenotype associations and phenotype annotations in HPOA. The join is based on matching HPO terms, disease IDs, and frequency values. This enriches gene-to-phenotype associations with relevant publication references from the phenotype.hpoa file.
-
-### Biolink Entities Captured
-
-* biolink:GeneToPhenotypicFeatureAssociation
-    * id (random uuid)
-    * subject (gene.id)
-    * predicate (has_phenotype)
-    * object (phenotypicFeature.id)
-    * publications (List[publication.id])
-    * frequency_qualifier (calculated from frequency data if available)
-    * in_taxon (NCBITaxon:9606)
-    * aggregating_knowledge_source (["infores:monarchinitiative"])
-    * primary_knowledge_source ("infores:hpo-annotations")
-
-### Example Source Data
+#### Example Source Data
 
 ```json
 {
@@ -439,7 +224,7 @@ The publication data is pre-processed using the `scripts/gene_to_phenotype_publi
 }
 ```
 
-### Example Transformed Data
+#### Example Transformed Data
 
 ```json
 {
@@ -455,6 +240,10 @@ The publication data is pre-processed using the `scripts/gene_to_phenotype_publi
 }
 ```
 
-## Citation
+------------------
 
-Sebastian Köhler, Michael Gargano, Nicolas Matentzoglu, Leigh C Carmody, David Lewis-Smith, Nicole A Vasilevsky, Daniel Danis, Ganna Balagura, Gareth Baynam, Amy M Brower, Tiffany J Callahan, Christopher G Chute, Johanna L Est, Peter D Galer, Shiva Ganesan, Matthias Griese, Matthias Haimel, Julia Pazmandi, Marc Hanauer, Nomi L Harris, Michael J Hartnett, Maximilian Hastreiter, Fabian Hauck, Yongqun He, Tim Jeske, Hugh Kearney, Gerhard Kindle, Christoph Klein, Katrin Knoflach, Roland Krause, David Lagorce, Julie A McMurry, Jillian A Miller, Monica C Munoz-Torres, Rebecca L Peters, Christina K Rapp, Ana M Rath, Shahmir A Rind, Avi Z Rosenberg, Michael M Segal, Markus G Seidel, Damian Smedley, Tomer Talmy, Yarlalu Thomas, Samuel A Wiafe, Julie Xian, Zafer Yüksel, Ingo Helbig, Christopher J Mungall, Melissa A Haendel, Peter N Robinson, The Human Phenotype Ontology in 2021, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D1207–D1217, https://doi.org/10.1093/nar/gkaa1043
+## Ingest Contributors
+- **Richard Bruskiewich**: code author
+- **Kevin Schaper**: code author
+- **Sierra Moxon**: code support
+- **Matthew Brush**: data modeling, domain expertise
