@@ -163,8 +163,9 @@ wheels = [
 [[package]]
 name = "bridge"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "biolink-model" },
     { name = "bmt" },
     { name = "kghub-downloader" },
@@ -180,10 +181,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.13.4" },
     { name = "biolink-model", specifier = ">=4.2.5" },
     { name = "bmt", specifier = ">=1.4.5" },
     { name = "kghub-downloader", specifier = ">=0.4.1" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests" },
 ]
 
 [package.metadata.requires-dev]
@@ -810,7 +812,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new#4d5bc95a496cabf67cad4a5a0452e8fd933c2d1f" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests#115b418a9a1df09cf1956b35d42c2a708f4af07e" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },

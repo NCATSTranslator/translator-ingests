@@ -1,0 +1,61 @@
+name: goa
+reader:
+  format: csv
+  delimiter: "	"
+  comment_char: "!"
+  header_mode: none
+  files:
+    - data/goa/goa_human.gaf.gz
+    - data/goa/mgi.gaf.gz
+  columns:
+    - DB
+    - DB_Object_ID
+    - DB_Object_Symbol
+    - Qualifier
+    - GO_ID
+    - DB_Reference
+    - Evidence_Code
+    - With_Or_From
+    - Aspect
+    - DB_Object_Name
+    - DB_Object_Synonym
+    - DB_Object_Type
+    - Taxon
+    - Date
+    - Assigned_By
+    - Annotation_Extension
+    - Gene_Product_Form_ID
+
+transform:
+  code: src/translator_ingest/ingests/goa/goa.py
+  filters:
+    - inclusion: include
+      column: Taxon
+      filter_code: in
+      value:
+        - taxon:9606 # Homo Sapiens
+        - taxon:10090 # Mouse
+    - inclusion: exclude
+      column: Qualifier
+      filter_code: eq
+      value: NOT
+
+writer:
+  node_properties:
+    - id
+    - name
+    - category
+    - in_taxon
+  edge_properties:
+    - id
+    - subject
+    - predicate
+    - object
+    - negated
+    - has_evidence
+    - publications
+    - primary_knowledge_source
+    - aggregator_knowledge_source
+    - knowledge_level
+    - agent_type
+
