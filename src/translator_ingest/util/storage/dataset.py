@@ -23,9 +23,15 @@ class DataSource:
         self._name = name
 
     def get_infores(self) -> Optional[str]:
+        """
+        :return: infores of the DataSource (if set, may be None if anonymous)
+        """
         return self._infores
 
     def get_name(self) -> Optional[str]:
+        """
+        :return: name of the DataSource (if set, may be None if anonymous)
+        """
         return self._name
 
 
