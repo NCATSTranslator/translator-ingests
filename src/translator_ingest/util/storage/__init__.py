@@ -1,9 +1,9 @@
-# The Ingest Pipeline stores intermediate and
-# final datasets in a storage repository.
+# The Ingest Pipeline stores diverse intermediate
+# and final datasets in a storage repository.
 #
-# The interfaces in this module encapsulate the use of storage,
+# This module abstracts out the use of pipeline data storage,
 # from its implementation (allowing for alternate back end
-# design choices: local file, database, cloud, etc.)
+# choices: in memory, local file, remote cloud, etc.)
 #
 from typing import Optional
 from enum import Enum
@@ -11,17 +11,17 @@ from abc import ABC, abstractmethod  # see https://docs.python.org/3/library/abc
 
 from .dataset import DataSetId, DataSet
 
+from .memory_storage import MemoryStorage
 from .file_storage import FileStorage
-from .database import Database
 from .cloud_storage import CloudStorage
 
 class StorageType(Enum):
     """
     Available categories of data storage,
-    currently local FILE, local DATABASE and CLOUD.
+    currently in memory, local file and remote cloud storage.
     """
-    FILE = 1
-    DATABASE = 2
+    IN_MEMORY = 1,
+    FILE = 2,
     CLOUD = 3
 
 
@@ -33,15 +33,15 @@ class Storage(ABC):
     @classmethod
     def get_handle(cls, storage_type: StorageType, **kwargs):
         """
-        Generic factory wrapper for ingest pipeline data storage.
+        Generic factory wrapper for the ingest pipeline data storage.
         :param storage_type: StorageType modality of storage being used
         :param kwargs: storage configuration parameters
         """
 
-        if storage_type == StorageType.FILE:
+        if storage_type == StorageType.IN_MEMORY:
+            return MemoryStorage(**kwargs)
+        elif storage_type == StorageType.FILE:
             return FileStorage(**kwargs)
-        elif storage_type == StorageType.DATABASE:
-            return Database(**kwargs)
         elif storage_type == StorageType.CLOUD:
             return CloudStorage(**kwargs)
         else:
@@ -56,6 +56,6 @@ class Storage(ABC):
         pass
 
 
+Storage.register(MemoryStorage)
 Storage.register(FileStorage)
-Storage.register(Database)
 Storage.register(CloudStorage)

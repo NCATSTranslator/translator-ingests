@@ -1,49 +1,99 @@
 # Abstract encapsulation of Translator Ingest process datasets
-# Probably will be a collection of KGX jsonlines + metadata files
-# but for now, we specify the concept in an agnostic fashion here
+# The wrapper is agnostic about the specific content of the dataset
+# which rather can (or should) be specified in a child class override.
+# For example, a 'KgxDataSet 'would precisely define the specific
+# file components and formats of the KGX data.
 from typing import Optional
-from os import urandom
+
 from uuid import UUID, uuid4
-from ..kgx import KGX
 
-class DataSetId(UUID):
-    def __init__(self):
-        # emulates uuid4() via the UUID constructor
-        # TODO: can I make a variant with UUID input argument?
-        UUID.__init__(self, bytes=urandom(16), version=4)
+class DataSource:
+    def __init__(
+            self, infores: Optional[str] = None,
+            name: Optional[str] = None
+    ):
+        """
+        Constructor of a reference object for a DataSource.
+        :param infores: (optional) infores of external provider of the DataSet. If provided, it must be well-formatted.
+        :param name:  (optional) name of the DataSet.
+        """
+        # basic QA sanity check (doesn't prove infores existence, though...)
+        assert infores is None or infores.startswith("infores:")
+        self._infores = infores
+        self._name = name
+
+    def get_infores(self) -> Optional[str]:
+        return self._infores
+
+    def get_name(self) -> Optional[str]:
+        return self._name
 
 
-# TODO: this class is just a stub proxy for some real data, so very incomplete!
+class DataSetId:
+    """
+    Abstraction wrapper for specific dataset identification.
+    """
+    def __init__(
+            self,
+            data_source: Optional[DataSource] = None,
+            urn: Optional[str] = None,
+            version: Optional[str] = None
+    ):
+        """
+
+        :param data_source: (Optional) DataSource instance describing the concrete external provider of the DataSet.
+        :param urn: (Optional) UUID urn string (of an existing dataset)
+        :param version: (Optional) versioning of a dataset, specific to a given DataSource
+        """
+        self._identifier = UUID(urn) if urn is not None else uuid4()
+        self._data_source = data_source
+        self._version = version
+
+
+    def get_data_source(self) -> Optional[DataSource]:
+        """
+        :return: DataSource instance describing the concrete external provider of the DataSet.
+        """
+        return self._data_source
+
+    def get_uuid(self) -> UUID:
+        """
+        :return: UUID-formatted object of the Dataset identifier
+        """
+        return self._identifier
+
+    def get_urn(self) -> str:
+        """
+        :return: UUID URN string representation of the DataSet identifier
+        """
+        return self._identifier.urn
+
+    def get_version(self) -> Optional[str]:
+        """
+        The version string return is idiosyncratic to the DataSource,
+        i.e., it could be a timestamp, date string or a Semantic Version, Git version/branch/tag, etc.
+        :return: (Optional) string specifying the version of a dataset (identifier)
+        """
+        return self._version
+
+
+# TODO: this class is just a stub proxy for some real data, so very incomplete,
+#       and may be subclassed for specific major file formats (e.g. KGX file set)
 class DataSet:
 
     def __init__(self, dataset_id: Optional[DataSetId] = None):
         """
-        Constructor for initialization of an empty dataset. Issues a new DataSetId for the DataSet
-        if an existing DataSetId is not provided in as an argument to the construction.
+        Constructor for initialization of an empty dataset.
+        Issues a new anonymous DataSetId for the DataSet if an existing
+        DataSetId is not provided in as an argument to the construction.
+        For most formal existing datasets, it is preferable to construct and input
+        a valid DataSetId for the existing dataset, before binding it to the DataSet.
         """
         # A dataset_id may be provided if the dataset already exists somewhere...
         self._dataset_id = dataset_id if dataset_id is not None else DataSetId()
-
-        # ... however, we defer initialization of the KGX dataset to a later time
-        self._kgx: Optional[KGX] = None
-
-    def set_kgx(self, kgx:KGX):
-        self._kgx = kgx
-
-    def get_kgx(self):
-        return self._kgx
 
     def get_id(self) -> DataSetId:
         """
         :return: Returns the direct internal Python representation of the dataset identifier
         """
         return self._dataset_id
-
-    def get_curie(self) -> str:
-        """
-        Gets the CURIE string format of the DataSet identifier for data documentation purposes.
-        however, most of the software within the project  (e.g. storage access methods) will generally want to use
-        the get_id() method to use the direct internal Python representation of the dataset identifier.
-        :return: CURIE string representation of the DataSet identifier
-        """
-        return self._dataset_id.urn
