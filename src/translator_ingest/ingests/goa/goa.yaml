@@ -1,7 +1,7 @@
 name: goa
 reader:
   format: csv
-  delimiter: "	"
+  delimiter: \t
   comment_char: "!"
   header_mode: none
   files:
@@ -58,4 +58,3 @@ writer:
     - aggregator_knowledge_source
     - knowledge_level
     - agent_type
-
