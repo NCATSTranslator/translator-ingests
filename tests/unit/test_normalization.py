@@ -1,5 +1,6 @@
 # Unit tests for normalizations of nodes and edges, based on Pydantic models
-from typing import Optional, Dict
+from typing import Optional, Union, List, Dict
+from copy import deepcopy
 
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -14,7 +15,7 @@ from src.translator_ingest.util.normalize import Normalizer
 
 #################### MOCK Node Normalizer result data ###################
 
-MOCK_NN_GENE_DATA = {
+MOCK_NN_GENE_ONLY_DATA: Dict[str, Union[List[Union[str, Dict[str,str]]], Dict[str,str], int]] = {
     "equivalent_identifiers": [
       {
         "identifier": "NCBIGene:7486",
@@ -34,24 +35,6 @@ MOCK_NN_GENE_DATA = {
       {
         "identifier": "UMLS:C1337007",
         "label": "WRN gene"
-      },
-      {
-        "identifier": "UniProtKB:Q14191",
-        "label": "WRN_HUMAN Bifunctional 3'-5' exonuclease/ATP-dependent helicase WRN (sprot)"
-      },
-      {
-        "identifier": "PR:Q14191",
-        "label": "bifunctional 3'-5' exonuclease/ATP-dependent helicase WRN (human)"
-      },
-      {
-        "identifier": "ENSEMBL:ENSP00000298139"
-      },
-      {
-        "identifier": "ENSEMBL:ENSP00000298139.5"
-      },
-      {
-        "identifier": "UMLS:C0388246",
-        "label": "WRN protein, human"
       }
     ],
     "id": {
@@ -70,13 +53,41 @@ MOCK_NN_GENE_DATA = {
       "biolink:ThingWithTaxon",
       "biolink:NamedThing",
       "biolink:PhysicalEssenceOrOccurrent",
-      "biolink:MacromolecularMachineMixin",
+      "biolink:MacromolecularMachineMixin"
+    ]
+  }
+
+MOCK_NN_GP_CONFLATED_GENE_DATA = deepcopy(MOCK_NN_GENE_ONLY_DATA)
+MOCK_NN_GP_CONFLATED_GENE_DATA["equivalent_identifiers"].extend(
+    [
+      {
+        "identifier": "UniProtKB:Q14191",
+        "label": "WRN_HUMAN Bifunctional 3'-5' exonuclease/ATP-dependent helicase WRN (sprot)"
+      },
+      {
+        "identifier": "PR:Q14191",
+        "label": "bifunctional 3'-5' exonuclease/ATP-dependent helicase WRN (human)"
+      },
+      {
+        "identifier": "ENSEMBL:ENSP00000298139"
+      },
+      {
+        "identifier": "ENSEMBL:ENSP00000298139.5"
+      },
+      {
+        "identifier": "UMLS:C0388246",
+        "label": "WRN protein, human"
+      }
+    ]
+)
+MOCK_NN_GP_CONFLATED_GENE_DATA["type"].extend(
+    [
       "biolink:Protein",
       "biolink:GeneProductMixin",
       "biolink:Polypeptide",
       "biolink:ChemicalEntityOrProteinOrPolypeptide"
     ]
-  }
+)
 
 MOCK_NN_DISEASE_DATA = {
     "equivalent_identifiers": [
@@ -136,6 +147,130 @@ MOCK_NN_DISEASE_DATA = {
       "biolink:NamedThing"
     ]
   }
+
+MOCK_NN_CHEMICAL_ONLY_DATA = {
+    "id": {
+      "identifier": "CHEBI:15377",
+      "label": "Water"
+    },
+    "equivalent_identifiers": [
+      {
+        "identifier": "CHEBI:15377",
+        "label": "water"
+      },
+      {
+        "identifier": "UNII:059QF0KO0R",
+        "label": "WATER"
+      },
+      {
+        "identifier": "PUBCHEM.COMPOUND:962",
+        "label": "Water"
+      },
+      {
+        "identifier": "CHEMBL.COMPOUND:CHEMBL1098659",
+        "label": "WATER"
+      },
+      {
+        "identifier": "DRUGBANK:DB09145",
+        "label": "Water"
+      },
+      {
+        "identifier": "MESH:D014867",
+        "label": "Water"
+      },
+      {
+        "identifier": "CAS:231-791-2"
+      },
+      {
+        "identifier": "CAS:7732-18-5"
+      },
+      {
+        "identifier": "HMDB:HMDB0002111",
+        "label": "Water"
+      },
+      {
+        "identifier": "KEGG.COMPOUND:C00001",
+        "label": "H2O"
+      },
+      {
+        "identifier": "INCHIKEY:XLYOFNOQVPJJNP-UHFFFAOYSA-N"
+      },
+      {
+        "identifier": "UMLS:C0043047",
+        "label": "water"
+      },
+      {
+        "identifier": "RXCUI:11295"
+      }
+    ],
+    "type": [
+      "biolink:SmallMolecule",
+      "biolink:MolecularEntity",
+      "biolink:ChemicalEntity",
+      "biolink:PhysicalEssence",
+      "biolink:ChemicalOrDrugOrTreatment",
+      "biolink:ChemicalEntityOrGeneOrGeneProduct",
+      "biolink:ChemicalEntityOrProteinOrPolypeptide",
+      "biolink:NamedThing",
+      "biolink:PhysicalEssenceOrOccurrent"
+    ],
+    "information_content": 47.7
+  }
+
+
+MOCK_NN_DC_CONFLATED_CHEMICAL_DATA = deepcopy(MOCK_NN_CHEMICAL_ONLY_DATA)
+MOCK_NN_DC_CONFLATED_CHEMICAL_DATA["equivalent_identifiers"].extend(
+    [
+      {
+        "identifier": "CHEBI:33813",
+        "label": "((18)O)water"
+      },
+      {
+        "identifier": "UNII:7QV8F8BYNJ",
+        "label": "WATER O-18"
+      },
+      {
+        "identifier": "PUBCHEM.COMPOUND:105142",
+        "label": "Water-18O"
+      },
+      {
+        "identifier": "MESH:C000615259",
+        "label": "Oxygen-18"
+      },
+      {
+        "identifier": "CAS:14314-42-2"
+      },
+      {
+        "identifier": "CAS:14797-71-8"
+      },
+      {
+        "identifier": "INCHIKEY:XLYOFNOQVPJJNP-NJFSPNSNSA-N"
+      },
+      {
+        "identifier": "UMLS:C4546909",
+        "label": "Oxygen-18"
+      },
+      {
+        "identifier": "UNII:63M8RYN44N",
+        "label": "WATER O-15"
+      },
+      {
+        "identifier": "PUBCHEM.COMPOUND:10129877",
+        "label": "Water O-15"
+      }
+      # The real server returns alot more stuff but who cares?
+    ]
+)
+MOCK_NN_DC_CONFLATED_CHEMICAL_DATA["type"].extend(
+    [
+      "biolink:Drug",
+      "biolink:OntologyClass",
+      "biolink:MolecularMixture",
+      "biolink:ChemicalMixture"
+    ]
+)
+
+
 #################### End of MOCK Node Normalizer result data ###################
 
 @pytest.fixture(scope="module")
@@ -143,13 +278,22 @@ def mock_nn_query():
     # return Normalizer().get_normalized_nodes
     def mock_node_normalizer_query(query: Dict) -> Dict[str, Optional[Dict]]:
         # Fixture sanity check for a well-formed query input
-        assert query and "curies" in query
+        assert query
+        assert "curies" in query
         result: Dict[str, Optional[Dict]] = dict()
         for identifier in query["curies"]:
             if identifier in ["HGNC:12791", "NCBIGene:7486", "UniProtKB:Q14191"]:
-                result[identifier] = MOCK_NN_GENE_DATA
+                if "conflate" in query and query["conflate"] is True:
+                    result[identifier] = MOCK_NN_GP_CONFLATED_GENE_DATA
+                else:
+                    result[identifier] = MOCK_NN_GENE_ONLY_DATA
             elif identifier == "DOID:5688":
                 result[identifier] = MOCK_NN_DISEASE_DATA
+            elif identifier == "MESH:D014867":
+                if "drug_chemical_conflate" in query and query["drug_chemical_conflate"] is True:
+                    result[identifier] = MOCK_NN_DC_CONFLATED_CHEMICAL_DATA
+                else:
+                    result[identifier] = MOCK_NN_CHEMICAL_ONLY_DATA
             else:
                 result[identifier] = None
         return result
@@ -164,7 +308,9 @@ def test_convert_to_preferred(mock_nn_query):
     assert result == "UniProtKB:Q14191"
 
 
-# def normalize_identifiers(self, curies: List[str]) -> Dict[str, str]
+# def normalize_identifiers(
+#       self, curies: List[str], gp_conflate: bool = False, dc_conflate: bool = False
+# ) -> Dict[str, str]
 def test_normalize_identifiers(mock_nn_query):
     normalizer = Normalizer(endpoint=mock_nn_query)
     result: Dict[str,str] = normalizer.normalize_identifiers(curies=["HGNC:12791","DOID:5688"])
@@ -172,8 +318,17 @@ def test_normalize_identifiers(mock_nn_query):
     assert result["HGNC:12791"] == "NCBIGene:7486"
     assert result["DOID:5688"] == "MONDO:0010196"
     with pytest.raises(AssertionError):
-        # Empty curies list not permitted
+        # Empty curies list is not permitted
         normalizer.normalize_identifiers(curies=[])
+
+    # conflate gene and proteins
+    result = normalizer.normalize_identifiers(curies=["HGNC:12791"])
+
+    # conflate drugs and chemicals
+    assert result["HGNC:12791"] == "NCBIGene:7486"
+    result = normalizer.normalize_identifiers(curies=["HGNC:12791", "DOID:5688"])
+    assert result["HGNC:12791"] == "NCBIGene:7486"
+
 
 # normalize_node(node: NamedThing, mock_nn_query) -> Optional[NamedThing]
 def test_normalize_missing_node(mock_nn_query):
@@ -201,28 +356,93 @@ def test_normalize_node(mock_nn_query):
     assert "OMIM:604611" in result.xref
     # ... but not the canonical identifier in xrefs (already used in node id)
     assert "NCBIGene:7486" not in result.xref
+    # Gene-protein conflation is off by default
+    assert "UniProtKB:Q14191" not in result.xref
     # should include original node name field value as a synonym
     assert "Werner Syndrome Locus" in result.synonym
     # should include additional names as synonyms...
-    assert "WRN protein, human" in result.synonym
+    assert "WRN (Hsap)" in result.synonym
+    # Gene-protein conflation is off by default
+    assert "WRN protein, human" not in result.synonym
     # .. but not the canonical name
     assert "WRN" not in result.synonym
 
-    # Another example, with a canonical description returned
+def test_gene_protein_conflated_normalize_node(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
     node = NamedThing(
-        id="DOID:5688",
-        name="Werner Syndrome",
+        id="HGNC:12791",
+        name="Werner Syndrome Locus",
         category=["biolink:NamedThing"],
         **{}
     )
-    result = normalizer.normalize_node(node)
+    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node), gp_conflate=False)
     # Valid input query identifier, so should return a result
     assert result is not None
     # ... should be the canonical identifier and name
-    assert result.id == "MONDO:0010196"
-    assert result.name == "Werner syndrome"
-    assert result.description.startswith("A rare inherited syndrome characterized by premature aging")
+    assert result.id == "NCBIGene:7486"
+    # Gene-protein conflation is 'off' so protein identifiers...
+    assert "UniProtKB:Q14191" not in result.xref
+    # ... and names should NOT be visible
+    assert "WRN protein, human" not in result.synonym
 
+    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node))  # default is gp_conflate=False
+    # Valid input query identifier, so should return a result
+    assert result is not None
+    # ... should be the canonical identifier and name
+    assert result.id == "NCBIGene:7486"
+    # Gene-protein conflation is 'off' so protein identifiers...
+    assert "UniProtKB:Q14191" not in result.xref
+    # ... and names should NOT be visible
+    assert "WRN protein, human" not in result.synonym
+
+    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node), gp_conflate=True)
+    # Valid input query identifier, so should return a result
+    assert result is not None
+    # ... should be the canonical identifier and name
+    assert result.id == "NCBIGene:7486"
+    # Gene-protein conflation is 'on' so protein identifiers...
+    assert "UniProtKB:Q14191" in result.xref
+    # ... and names should now be visible
+    assert "WRN protein, human" in result.synonym
+
+def test_drug_chemical_conflated_normalize_node(mock_nn_query):
+    normalizer = Normalizer(endpoint=mock_nn_query)
+    node = NamedThing(
+        id="MESH:D014867",
+        name="Water",
+        category=["biolink:NamedThing"],
+        **{}
+    )
+
+    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node), dc_conflate=False)
+    # Valid input query identifier, so should return a result
+    assert result is not None
+    # ... should be the canonical identifier and name
+    assert result.id == "CHEBI:15377"
+    # Drug-chemical conflation is 'on' so additional chemical identifiers should be returned
+    assert "CHEBI:33813" not in result.xref
+    # ... and names should now be visible
+    assert "((18)O)water" not in result.synonym
+
+    result = normalizer.normalize_node(deepcopy(node))  # default is dc_conflate=False
+    # Valid input query identifier, so should return a result
+    assert result is not None
+    # ... should be the canonical identifier and name
+    assert result.id == "CHEBI:15377"
+    # Drug-chemical conflation is 'on' so additional chemical identifiers should be returned
+    assert "CHEBI:33813" not in result.xref
+    # ... and names should now be visible
+    assert "((18)O)water" not in result.synonym
+
+    result = normalizer.normalize_node(deepcopy(node), dc_conflate=True)
+    # Valid input query identifier, so should return a result
+    assert result is not None
+    # ... should be the canonical identifier and name
+    assert result.id == "CHEBI:15377"
+    # Drug-chemical conflation is 'on' so additional chemical identifiers should be returned
+    assert "CHEBI:33813" in result.xref
+    # ... and names should now be visible
+    assert "((18)O)water" in result.synonym
 
 def test_normalize_node_already_canonical(mock_nn_query):
     normalizer = Normalizer(endpoint=mock_nn_query)

@@ -22,7 +22,7 @@
 # how the normalization - of the two distinct but interrelated collections
 # containing KGX-coded Biolink entities - is best coordinated.
 #
-from typing import Optional, List, Dict, Callable
+from typing import Optional, Union, List, Dict, Callable
 import logging
 
 from .http import post_query
@@ -87,7 +87,9 @@ class Normalizer:
         """
         assert curies, "normalize_identifiers(curies): empty list of CURIE identifiers?"
 
-        query = {'curies': curies}
+        query: Dict[str, Union[List[str], str]] = {'curies': curies}
+
+
         result = self.node_normalizer(query=query)
         assert result, "normalize_identifiers(curies): no result returned from the Node Normalizer?"
 
@@ -115,21 +117,39 @@ class Normalizer:
         return mappings
 
 
-    def normalize_node(self, node: NamedThing) -> Optional[NamedThing]:
+    def normalize_node(
+            self,
+            node: NamedThing,
+            gp_conflate: bool = False,
+            dc_conflate: bool = False
+    ) -> Optional[NamedThing]:
         """
         Calls the Node Normalizer ("NN") with the identifier of the given node
         and updates the node contents with NN resolved values for canonical identifier,
-        node categories, and cross-references.
+        node categories, and cross-references. Optional flags may be set to True to force
+        either gene-protein or drug-chemical conflation.
 
         Known limitation: this method does NOT reset the node.category field values at this time.
 
         :param node: target instance of a class object in the NameThing hierarchy
+        :param gp_conflate: bool, apply Gene-Protein conflation (default: False)
+        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
         :return: rewritten node entry; None, if a node cannot be resolved in NN
         """
 
         assert node.id, "normalize_node(node): empty node identifier?"
 
         query = {'curies': [node.id], 'description': True}
+        if gp_conflate:
+            query["conflate"] = True
+        else:
+            query["conflate"] = False
+
+        if dc_conflate:
+            query["drug_chemical_conflate"] = True
+        else:
+            query["drug_chemical_conflate"] = False
+
         result = self.node_normalizer(query=query)
 
         # Sanity check about regular NN operation for all queries
