@@ -53,7 +53,7 @@ rule version_rename:
     output:
         "datafile-{ver}.txt"
     shell:
-        "mv {input} {output}"
+        "[ -f {output} ] || mv {input} {output}"
 
 rule output:
     input:
@@ -61,7 +61,7 @@ rule output:
     output:
         "outputfile-{ver}.txt"
     shell:
-        "echo '11 22 33 44 55 66 77 88 99 00' > {output}"
+        "[ -f {output} ] || echo '11 22 33 44 55 66 77 88 99 00' > {output}"
 
 rule normalize:
     input:
@@ -69,7 +69,7 @@ rule normalize:
     output:
         "normalizedfile-{ver}.txt"
     shell:
-        "echo '99 00 77 88 55 66 33 44 11 22' > {output}"
+        "[ -f {output} ] || echo '99 00 77 88 55 66 33 44 11 22' > {output}"
 
 
 rule finalize:
