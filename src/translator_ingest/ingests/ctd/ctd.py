@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterator, Dict
+from typing import Iterable
 
 import requests
 
@@ -7,7 +7,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
-    Entity,
+    NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     Association
@@ -32,14 +32,14 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 """
-def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
+def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
     # prepare is just a function that gets run before transform or transform_record ie to seed a database
     # return an iterator of dicts if that makes sense,
     # or we could use env vars to just provide access to the data/db in transform()
     return records
 """
 
-def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
+def transform_record(record: dict) -> (Iterable[NamedThing], Iterable[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -58,7 +58,7 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
 
 """
 this is just an example of the interface, using transform() offers the opportunity to do something more efficient
-def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
     for record in records:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])

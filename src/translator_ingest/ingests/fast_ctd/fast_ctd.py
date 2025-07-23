@@ -1,4 +1,4 @@
-from typing import Iterator, Dict
+from typing import Iterator, Iterable
 
 import requests
 import pandas
@@ -8,7 +8,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
-    Entity,
+    NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     Association
@@ -21,7 +21,6 @@ import translator_ingest.ingests.fast_ctd.ingest_utils as iu
 # loader which is probably the bottleneck, so it's not much faster.
 
 
-# ideally we'll use a predicate enum, maybe an infores enum?
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 INFORES_CTD = "infores:ctd"
 
@@ -39,12 +38,12 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
     df = pandas.DataFrame(records)
     return iter([(iter(get_nodes(df)), iter(get_edges(df)))])
 
 
-def get_nodes(ctd_df: pandas.DataFrame) -> tuple[Entity]:
+def get_nodes(ctd_df: pandas.DataFrame) -> tuple[NamedThing]:
     return itertools.chain.from_iterable(map(lambda args: iu.make_nodes(ctd_df, *args),
                                                    [("ChemicalID", "ChemicalName", ChemicalEntity),
                                                     ("DiseaseID", "DiseaseName", Disease)]))
