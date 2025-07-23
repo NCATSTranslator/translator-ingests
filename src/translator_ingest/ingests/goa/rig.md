@@ -14,7 +14,7 @@ The Gene Ontology Annotation (GOA) project provides high-quality, manually curat
 
 ### Terms of Use
 
-Gene Ontology’s annotations are made available under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See: [https://geneontology.org/docs/go-citation-policy/](https://geneontology.org/docs/go-citation-policy/)
+Gene Ontology's annotations are made available under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See: [https://geneontology.org/docs/go-citation-policy/](https://geneontology.org/docs/go-citation-policy/)
 
 CC BY 4.0: [https://creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
 
@@ -70,13 +70,13 @@ GOA provides the definitive manually curated and electronically inferred associa
 
 | File                           | Included Content                                             | Columns Mapped (->)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `goa_human.gaf.gz` / `mgi.gaf` | All human and mouse annotations with evidence and provenance | `DB Object ID` -> `GeneProduct.id` (biolink\:GeneProduct)<br>`DB Object Symbol` -> `symbol`<br>`Relation` -> maps to `predicate` or `negated` slots (e.g., 'NOT' sets `negated=true`; 'contributes\_to' refines `predicate`)<br>`GO ID` -> `OntologyClass.id` (biolink\:OntologyClass)<br>`DB:Reference(s)` -> `publications`<br>`Evidence Code` -> `has_evidence`<br>`Aspect` -> maps to `predicate` slot: `biolink:participates_in` / `biolink:enables` / `biolink:located_in`<br>`Date` -> `creation_date`<br>`Taxon` -> `in_taxon`<br>`Annotation Extension` -> qualifier slots if needed<br>`Gene Product Form ID` -> form/variant qualifiers (future) |
+| `goa_human.gaf.gz` / `mgi.gaf` | All human and mouse annotations with evidence and provenance | `DB Object ID` -> `Gene.id` (biolink\:Gene)<br>`DB Object Symbol` -> `name`<br>`Qualifier` -> maps to `negated` slot (e.g., 'NOT' sets `negated=true`)<br>`GO ID` -> `NamedThing.id` (biolink\:NamedThing)<br>`DB:Reference(s)` -> `publications`<br>`Evidence Code` -> `has_evidence`<br>`Aspect` -> maps to `predicate` slot: `biolink:participates_in` / `biolink:enables` / `biolink:located_in`<br>`Taxon` -> `in_taxon`<br>`Annotation Extension` -> qualifier slots if needed<br>`Gene Product Form ID` -> form/variant qualifiers (future) |
 
 #### Excluded Content
 
 | File      | Excluded Content                                                                                                                                                               | Rationale                                                                                    |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| GAF files | Header comment lines (`!gaf-version`, `!generated-by`, etc.);<br>`DB`;<br>`DB Object Name`;<br>`DB Object Synonym`;<br>`DB Object Type`;<br>`With (or) From`;<br>`Assigned By` | Non-core provenance or redundant context; optional context handled via qualifiers if needed. |
+| GAF files | Header comment lines (`!gaf-version`, `!generated-by`, etc.);<br>`DB`;<br>`DB Object Name`;<br>`DB Object Synonym`;<br>`DB Object Type`;<br>`With (or) From`;<br>`Assigned By`;<br>`Date` | Non-core provenance or redundant context; optional context handled via qualifiers if needed. |
 
 #### Future Considerations
 
@@ -94,16 +94,35 @@ GOA provides the definitive manually curated and electronically inferred associa
 
 | # | Association                      | Biolink MetaEdge          | Slots                                                 | UI Explanation                                                                   |
 | - | -------------------------------- | ------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 1 | GeneProduct -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `in_taxon` | Captures that a gene product **participates in** a biological process (Aspect P) |
-| 2 | GeneProduct -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `in_taxon` | Indicates a gene product **enables** a molecular function (Aspect F)             |
-| 3 | GeneProduct -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `in_taxon` | Specifies a gene product is **located in** a cellular component (Aspect C)       |
+| 1 | Gene -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Captures that a gene **participates in** a biological process (Aspect P) |
+| 2 | Gene -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Indicates a gene **enables** a molecular function (Aspect F)             |
+| 3 | Gene -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Specifies a gene is **located in** a cellular component (Aspect C)       |
 
 ### Node Types
 
 | Biolink Category       | Source ID Type(s)                   | Notes                                   |
 | ---------------------- | ----------------------------------- | --------------------------------------- |
-| biolink\:GeneProduct   | UniProtKB accession, MGI primary ID | Represents proteins and gene products.  |
-| biolink\:OntologyClass | GO term ID                          | Represents GO terms across all aspects. |
+| biolink\:Gene          | UniProtKB accession, MGI primary ID | Represents genes and gene products.     |
+| biolink\:NamedThing    | GO term ID                          | Represents GO terms across all aspects. Note: Uses NamedThing instead of OntologyClass due to Koza framework compatibility. |
+
+---
+
+## Implementation Notes
+
+### Framework Compatibility
+- **Koza Framework**: Uses Koza for ingest orchestration and output generation
+- **Biolink Pydantic Model**: Leverages biolink pydantic models for validation and structure
+- **Node Type Limitation**: Uses `NamedThing` for GO terms instead of `OntologyClass` due to Koza's KGX converter only supporting `NamedThing` and `Association` entities
+
+### Evidence Code Mapping
+- **Hardcoded Mapping**: Uses hardcoded evidence code to knowledge level/agent type mapping for simplicity and performance
+- **Biolink Enums**: Leverages `KnowledgeLevelEnum` and `AgentTypeEnum` for type safety and validation
+- **Fallback Values**: Unknown evidence codes default to `not_provided` for both knowledge level and agent type
+
+### Taxon Modeling
+- **Node-Level Only**: `in_taxon` is only set on gene nodes, not on associations
+- **Framework Constraint**: GeneToGoTermAssociation doesn't include the 'thing with taxon' mixin in the biolink model
+- **Inference**: Taxon information can be inferred from the subject node's `in_taxon` property
 
 ---
 
