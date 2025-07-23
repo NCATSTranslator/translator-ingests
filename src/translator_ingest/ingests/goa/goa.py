@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Iterable, Dict, List
+from typing import Iterable, Dict, List, Optional, Type, Tuple
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -8,6 +8,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
+    # OntologyClass, while OntologyClass would be semantically more appropriate, Koza's KGX converter only supports NamedThing and Association entities for proper serialization.
     Association,
 )
 
@@ -16,19 +17,28 @@ INFORES_GOA = "infores:goa"
 INFORES_BIOLINK = "infores:biolink"
 
 # Mappings
+# Note: Biolink pydantic model doesn't expose predicate constants programmatically from the YAML slots section,
+# so we use hardcoded mappings. This could be enhanced if biolink-model adds predicate registry in future versions.
+# The YAML file contains predicate definitions like "participates in:", "enables:", "located in:" in the slots section,
+# but these are not exposed as constants in the generated biolink pydantic model.
 ASPECT_TO_PREDICATE = {
-    "P": "biolink:participates_in",
-    "F": "biolink:enables",
-    "C": "biolink:located_in",
+    "P": "biolink:participates_in",  # Biological Process
+    "F": "biolink:enables",          # Molecular Function  
+    "C": "biolink:located_in",       # Cellular Component
 }
 
+# All GO aspects use the same association class for consistency
+# This allows predicate-based differentiation rather than association class differentiation
 ASPECT_TO_ASSOCIATION = {
     "P": GeneToGoTermAssociation,
     "F": GeneToGoTermAssociation,
     "C": GeneToGoTermAssociation,
 }
 
-GOA_EVIDENCE_CODE_TO_KL_AT = {
+# GO evidence codes mapped to biolink knowledge levels and agent types
+# Note: Using hardcoded mapping instead of JSON config for simplicity and performance
+# The biolink model provides KnowledgeLevelEnum and AgentTypeEnum for validation
+EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE = {
     "EXP": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "IDA": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "IPI": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
@@ -59,12 +69,15 @@ GOA_EVIDENCE_CODE_TO_KL_AT = {
 
 def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Association]):
     """
-    Transforms a single GAF record into Biolink nodes and edges.
+    Transforms a single GAF record into Biolink nodes and edges using the pydantic model directly.
+    
+    This function leverages the biolink pydantic model for validation and structure,
+    keeping the code simple and biolink-centered while maintaining readability.
     """
     nodes: List[NamedThing] = []
     associations: List[Association] = []
 
-    # parse gene and taxon info
+    # Parse GAF record fields
     db_object_id = record["DB_Object_ID"]
     go_id = record["GO_ID"]
     aspect = record["Aspect"]
@@ -73,9 +86,10 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
     publications = record["DB_Reference"].split("|")
     evidence_code = record["Evidence_Code"]
     taxon = record["Taxon"]
-    creation_date = record["Date"]
 
-    # create nodes for gene and go term
+    # Create gene node using biolink pydantic model
+    # Biolink pydantic model centric: Uses Gene class from biolink model for automatic validation of required fields,
+    # proper type checking, and biolink-compliant structure
     gene = Gene(
         id=f"UniProtKB:{db_object_id}",
         name=db_object_symbol,
@@ -84,62 +98,71 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
     )
     nodes.append(gene)
 
-    go_term = NamedThing(id=go_id, category=["biolink:NamedThing"])
+    # Create GO term node using biolink pydantic model
+    # Biolink pydantic model centric: Uses NamedThing for GO terms due to Koza framework compatibility.
+    
+    # Biolink pydantic model centric: Uses OntologyClass for GO terms since they are ontology concepts,
+    # not physical entities. This is semantically correct and I assume follows biolink model design principles.
+    # go_term = OntologyClass(
+    #     id=go_id
+    # )
+
+    # While OntologyClass would be semantically more appropriate, Koza's KGX converter only supports
+    # NamedThing and Association entities for proper serialization. This is a limitation of the Koza framework.
+    go_term = NamedThing(
+        id=go_id,
+        category=["biolink:NamedThing"]
+    )
     nodes.append(go_term)
 
-    # skip if aspect is missing or not relevant
+    # Get predicate and association class from mappings
+    # Biolink pydantic model centric: Uses biolink predicate IRIs from hardcoded mapping since biolink model 
+    # doesn't expose predicate constants from YAML slots section
     predicate = ASPECT_TO_PREDICATE.get(aspect)
     if not predicate:
         logging.warning(f"Unknown aspect '{aspect}' for record: {record}")
         return [], []
 
-    # get eco evidence code
-    knowledge_level, agent_type = GOA_EVIDENCE_CODE_TO_KL_AT.get(
-        evidence_code, (KnowledgeLevelEnum.not_provided, AgentTypeEnum.not_provided)
+    # Biolink-centric: Uses biolink association class for proper structure and validation
+    association_class = ASPECT_TO_ASSOCIATION.get(aspect, GeneToGoTermAssociation)
+
+    # Get knowledge level and agent type from evidence code mapping
+    # Biolink-centric: Uses biolink KnowledgeLevelEnum and AgentTypeEnum for type safety
+    # and automatic validation of biolink-compliant knowledge metadata
+    knowledge_level, agent_type = EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE.get(
+        evidence_code, 
+        (KnowledgeLevelEnum.not_provided, AgentTypeEnum.not_provided)
     )
 
-    # fallback if eco term missing
-    if not knowledge_level or not agent_type:
-        logging.warning(f"Unknown evidence code '{evidence_code}' for record: {record}")
-        knowledge_level = KnowledgeLevelEnum.not_provided
-        agent_type = AgentTypeEnum.not_provided
+    # Format publications as CURIEs using biolink conventions
+    # Biolink pydantic model centric: Formats publication IDs as proper CURIEs following biolink model conventions
+    # for consistent identifier representation across the knowledge graph
+    publications_list = []
+    for p in publications:
+        if p:
+            if p.startswith("PMID:"):
+                publications_list.append(p)
+            else:
+                publications_list.append(f"PMID:{p}")
 
-    # get predicate from qualifier or aspect
-    if "NOT" in qualifier:
-        predicate = "biolink:negatively_regulates"
-
-    # skip if predicate missing
-    if not predicate:
-        logging.warning(f"Missing predicate for record: {record}")
-        return [], []
-
-    # format knowledge source
-    primary_source = INFORES_GOA
-    aggregator_sources = [INFORES_BIOLINK]
-
-    # format publications
-    publications_list = [f"PMID:{p}" for p in publications if p]
-
-    # create association edge (see note above for in_taxon)
-    association = GeneToGoTermAssociation(
+    # Create association using biolink pydantic model directly
+    # Biolink pydantic model centric: Uses biolink association class constructor for automatic validation,
+    # proper field type checking, and biolink-compliant association structure
+    # Note: in_taxon is not used on associations because GeneToGoTermAssociation 
+    # doesn't include the 'thing with taxon' mixin in the biolink model.
+    # The taxon information is captured on the gene node instead.
+    association = association_class(
         id=str(uuid.uuid4()),
         subject=gene.id,
         predicate=predicate,
         object=go_term.id,
         negated="NOT" in qualifier,
-        has_evidence=[f"ECO:{evidence_code}"],
+        has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
         publications=publications_list,
-        primary_knowledge_source=primary_source,
-        aggregator_knowledge_source=aggregator_sources,
+        primary_knowledge_source=INFORES_GOA,
+        aggregator_knowledge_source=[INFORES_BIOLINK],
         knowledge_level=knowledge_level,
         agent_type=agent_type,
-        # in_taxon=[taxon.replace("taxon:", "NCBITaxon:")],
-        # NOTE: Although the Biolink Model spec (and some documentation) suggests that `in_taxon` can be used on associations,
-        # in the current local biolink-model.yaml, and in the `biolink-model.datamodel.pydanticmodel_v2`  `GeneToGoTermAssociation` (and its parent classes) do NOT include the
-        # 'thing with taxon' mixin. Only classes with this mixin are allowed to have the `in_taxon` slot.
-        # Therefore, per the actual YAML and the generated Python Pydantic models, `in_taxon` is NOT allowed on edges/associations.
-        # So I use `in_taxon` on nodes (e.g., Gene, GeneProduct). This is why it is commented out here.
-        # The taxon of the association can be inferred from the subject node's in_taxon property.
     )
     associations.append(association)
 
