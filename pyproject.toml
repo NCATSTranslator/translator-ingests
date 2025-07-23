@@ -10,8 +10,7 @@ dependencies = [
     "kghub-downloader>=0.4.1",
     "koza",
     "beautifulsoup4>=4.13.4",
-    "pronto",
-    "importlib-metadata"
+    "pronto"
 ]
 
 [dependency-groups]
