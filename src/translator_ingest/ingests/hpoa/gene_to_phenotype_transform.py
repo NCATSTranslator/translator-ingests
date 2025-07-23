@@ -1,8 +1,14 @@
+"""
+The [Human Phenotype Ontology](https://hpo.jax.org/) group
+curates and assembles over 115,000 annotations to hereditary diseases
+using the HPO ontology. Here we create Biolink associations
+between genes and associated phenotypes.
+"""
 import uuid
-from typing import Dict, Iterator
+from typing import Dict, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    Entity,
+    NamedThing,
     Association,
     Gene,
     PhenotypicFeature,
@@ -29,14 +35,8 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
     return records
 """
 
-
-# TO DO: Once biolink is updated with the disease_context_qualifier
-# slot we need to update the association we make
-# https://github.com/biolink/biolink-model/pull/1524
-
 #
 ##### ORIGINAL Koza-centric ingest code
-#
 #
 # # Initiate koza app and mondo map from sssom file
 # koza_app = get_koza_app("hpoa_gene_to_phenotype")
@@ -105,7 +105,7 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 #       the subsequent Normalization step might fix this?
 # mondo_map = koza_app.get_map('mondo_map')
 
-def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
+def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Association]):
 
     gene_id = "NCBIGene:" + record["ncbi_gene_id"]
     gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
@@ -137,9 +137,6 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
         subject=gene_id,
         predicate="biolink:has_phenotype",
         object=hpo_id,
-        primary_knowledge_source="infores:hpo-annotations",
-        knowledge_level=KnowledgeLevelEnum.logical_entailment,
-        agent_type=AgentTypeEnum.automated_agent,
         frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
         has_percentage=frequency.has_percentage,
         has_quotient=frequency.has_quotient,
@@ -158,21 +155,50 @@ def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
 
 """
 this is just an example of the interface, using transform() offers the opportunity to do something more efficient
-def transform(records: Iterator[Dict]) -> Iterator[tuple[Iterator[Entity], Iterator[Association]]]:
+def transform(records: Iterator[Dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
     for record in records:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
-            subject=chemical.id,
-            predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
-            object=disease.id,
-            publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
-            # is this code/repo an aggregator in this context? feels like no, but maybe yes?
-            # aggregator_knowledge_source=["infores:???"],
-            primary_knowledge_source=INFORES_CTD,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
+        gene_id = "NCBIGene:" + record["ncbi_gene_id"]
+        gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
+    
+        hpo_id = record["hpo_id"]
+        assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
+        phenotype = PhenotypicFeature(id=hpo_id, **{})
+    
+        # No frequency data provided
+        if record["frequency"] == "-":
+            frequency = Frequency()
+        else:
+            # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
+            frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+    
+        # Convert to mondo id if possible, otherwise leave as is
+        dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
+    
+        # TODO: Need to uncomment this once the MONDO map access
+        #       is sorted out here (see above comment). This
+        #       "normalization" of the disease context could be sorted out in a later pipeline step?
+        # if dis_id in mondo_map:
+        #     dis_id = mondo_map[dis_id]['subject_id']
+    
+        publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
+    
+        association = GeneToPhenotypicFeatureAssociation(
+            id="uuid:" + str(uuid.uuid1()),
+            subject=gene_id,
+            predicate="biolink:has_phenotype",
+            object=hpo_id,
+            frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
+            has_percentage=frequency.has_percentage,
+            has_quotient=frequency.has_quotient,
+            has_count=frequency.has_count,
+            has_total=frequency.has_total,
+            disease_context_qualifier=dis_id,
+            publications=publications,
+            primary_knowledge_source="infores:hpo-annotations",
+            knowledge_level=KnowledgeLevelEnum.logical_entailment,
+            agent_type=AgentTypeEnum.automated_agent,
+            **{}
         )
-        yield [chemical, disease], [association]
+    
+        yield [gene, phenotype],[association]
 """
