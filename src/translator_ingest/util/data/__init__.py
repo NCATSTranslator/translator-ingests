@@ -1,21 +1,20 @@
-# Abstract encapsulation of Translator Ingest process datasets
-# The wrapper is agnostic about the specific content of the dataset
-# which rather can (or should) be specified in a child class override.
-# For example, a 'KgxDataSet 'would precisely define the specific
-# file components and formats of the KGX data.
+from abc import ABC, abstractmethod
 from typing import Optional
-from abc import ABC, abstractmethod  # see https://docs.python.org/3/library/abc.html
 from uuid import UUID, uuid4
 
-class DataSource:
+class DataSourceException(Exception):
+    pass
+
+class DataSource(ABC):
     def __init__(
             self, infores: Optional[str] = None,
             name: Optional[str] = None
     ):
         """
         Constructor of a reference object for a DataSource.
-        :param infores: (optional) infores of external provider of the DataSet. If provided, it must be well-formatted.
-        :param name:  (optional) name of the DataSet.
+        :param infores: Optional[str] infores for an external provider of
+                        the DataSet. If provided, it must be well-formatted.
+        :param name: Optional[str] name of the DataSet.
         """
         # basic QA sanity check (doesn't prove infores existence, though...)
         assert infores is None or infores.startswith("infores:")
@@ -34,14 +33,46 @@ class DataSource:
         """
         return self._name
 
+    @abstractmethod
     def get_dataset(
             self,
             urn: Optional[str] = None,
             version: Optional[str] = None,
             create: bool = False
     ) -> Optional[UUID]:
+        """
+        Access or possibly create ("register") a DataSource-hosted DataSet.
+
+        :param urn: Optional[str] uniform resource name of the DataSet to be accessed.
+        :param version: Optional[str] of a DataSet version (of specific DataSource-specified format)
+        :param create: bool, flag triggering creation of a new DataSet (default: False)
+        :return: UUID identifier of the required DataSet (if available).
+        :raises DataSourceException if the DataSet cannot be identified.
+
+        The procedure of DataSet access (or creation) is guided by user-specified arguments as follows:
+
+        1. Identify or create a DataSet by 'urn' which is not None.
+
+        1.1 If 'create' is False, then raise a DataSourceException
+            if a DataSet with the given urn does not exist.
+
+        1.2 If 'create' is True, then create a new DataSet identified by specified urn.
+            If the version is not None, set DataSet 'version' accordingly;
+            If the version is None, set the 'version' in accordance with the DataSource versioning policy.
+
+        2. Identify DataSet by 'version' only (the 'urn' is None).
+
+        2.1 If 'create' is False, and a non-empty 'version' is given, attempt to access that 'version'.
+            If the 'version' is set to None, attempt to return a suitable default current release of the data.
+            Raise a DataSourceException in either case if a DataSet with indicative 'version' does not exist.
+
+        2.2 If 'create' is True, create new DataSet, assigning it a new ad hoc UUID identifier.
+            If the specified 'version' value is not None, set the 'version' of the new DataSet to that value.
+            Otherwise, generate a 'version' label following the 'version' format policy of the given DataSource.
+        """
         pass
 
+    @abstractmethod
     def get_version(self, dataset_id: Optional[UUID]) -> Optional[str]:
         """
         In some instances, the DataSource may already know how to retrieve
@@ -49,7 +80,7 @@ class DataSource:
         The trivial case of a None input identifier, returns None.
         The case where the DataSource cannot identify a version by its identifier, also returns None.
         Otherwise, a suitable version string is returned in a DataSource idiosyncratic format (e.g., date, SemVer, etc.)
-        
+
         :param dataset_id: Optional[UUID], identifier of DataSet whose version is being retrieved.
         :return: Optional[str], DataSource resolved version of an identified DataSet
         """
@@ -70,25 +101,22 @@ class DataSetId:
         """
         Constructor of a DataSet Identifier.
 
-        May also trigger the registration of a new DataSet if the DataSource is not None
-        and a DataSet urn and/or version is specified, with the 'create' flag set to True.
+        May also trigger the registration of a new DataSet in the associated DataSource
+        if the latter is provided and a DataSet urn and/or version is specified
+        when the 'create' flag is set to True;
+        Otherwise, a DataSourceException may be raised, if the DataSet doesn't already exist
         Creation and loading of the DataSet itself is deferred until it is accessed.
 
         :param data_source: (Optional) DataSource instance describing the concrete external provider of the DataSet.
-        :param urn: (Optional) UUID urn string (of an existing dataset)
+        :param urn: (Optional) UUID4-compliant urn string (of an existing dataset)
         :param version: (Optional) versioning of a dataset, specific to a given DataSource
         :param create: bool, creates a DataSet if it does not exist (ignored if DataSet already exists; default: False)
         """
         self._data_source = data_source
+        self._identifier: UUID
         self._version: Optional[str] = version
         if data_source is not None:
-            if urn is not None:
-                # Get an existing dataset by dataset UUID urn
-                self._identifier = data_source.get_dataset(urn=urn, version=version, create=create)
-            else:
-                # Otherwise, try to identify or create a dataset by version or,
-                # if the version is None, identify a default dataset of a DataSource
-                self._identifier: Optional[UUID] = data_source.get_dataset(version=version, create=create)
+            self._identifier = data_source.get_dataset(urn=urn, version=version, create=create)
 
             # The version may be reset here if it is known,
             # i.e., as determined by the DataSource by the DataSet identifier
@@ -99,7 +127,7 @@ class DataSetId:
                 # The user specified UUID urn is directly used as the DataSet identifier
                 self._identifier = UUID(urn)
             else:
-                # Otherwise, just create a valid new identifier (but without registering the DataSet anywhere)
+                # Otherwise, create an 'ad hoc' valid new identifier (but without DataSource registration)
                 # (The version is already set above to whatever one the user gave above (possibly None)
                 self._identifier = uuid4()
 
@@ -130,8 +158,6 @@ class DataSetId:
         return self._version
 
 
-# TODO: this class is just a stub proxy for some real data, so very incomplete,
-#       and may be subclassed for specific major file formats (e.g. KGX file set)
 class DataSet(ABC):
 
     def __init__(self, dataset_id: Optional[DataSetId] = None):
@@ -150,3 +176,11 @@ class DataSet(ABC):
         :return: Returns the direct internal Python representation of the dataset identifier
         """
         return self._dataset_id
+
+    @abstractmethod
+    def add_file(self, file, label: Optional[str] = None):
+        pass
+
+    @abstractmethod
+    def add_metadata(self, tag: str, value: str):
+        pass

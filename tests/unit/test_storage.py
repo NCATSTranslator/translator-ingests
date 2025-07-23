@@ -1,9 +1,9 @@
 import pytest
 
+from src.translator_ingest.util.data.core import TextDataSet
 from src.translator_ingest.util.storage import (
     StorageType,
     Storage,
-    DataSet,
     MemoryStorage,
     FileStorage,
     CloudStorage
@@ -28,7 +28,7 @@ def test_database_access():
     config = dict()
     storage_handle = Storage.get_handle(StorageType.IN_MEMORY, **config)
     # new empty ab initio dataset created
-    dataset = DataSet()
+    dataset = TextDataSet()
     storage_handle.store(dataset)
     data = storage_handle.retrieve(dataset.get_id())
     assert data is not None, "IN_MEMORY Stored dataset was not returned"
@@ -38,7 +38,7 @@ def test_file_storage_access():
     config = dict()
     storage_handle = Storage.get_handle(StorageType.FILE, **config)
     # new empty ab initio dataset created
-    dataset = DataSet()
+    dataset = TextDataSet()
     storage_handle.store(dataset)
     data = storage_handle.retrieve(dataset.get_id())
     assert data is not None, "FILE Stored dataset was not returned"
@@ -49,7 +49,7 @@ def test_cloud_storage_access():
     config = dict()
     storage_handle = Storage.get_handle(StorageType.CLOUD, **config)
     # new empty ab initio dataset created
-    dataset = DataSet()
+    dataset = TextDataSet()
     storage_handle.store(dataset)
     data = storage_handle.retrieve(dataset.get_id())
     assert data is not None, "CLOUD Stored dataset was not returned"

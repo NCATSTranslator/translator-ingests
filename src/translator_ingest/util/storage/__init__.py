@@ -9,7 +9,7 @@ from typing import Optional
 from enum import Enum
 from abc import ABC, abstractmethod  # see https://docs.python.org/3/library/abc.html
 
-from .dataset import DataSetId, DataSet
+from src.translator_ingest.util.data import DataSetId, DataSet
 
 from .memory_storage import MemoryStorage
 from .file_storage import FileStorage

@@ -25,10 +25,7 @@
 from typing import Optional, Dict
 from .http import post_query
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    KnowledgeLevelEnum,
-    Literal, NamedThing, Association, Gene
-)
+from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association
 
 
 NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"
