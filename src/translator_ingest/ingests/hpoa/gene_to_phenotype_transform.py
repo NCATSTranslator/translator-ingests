@@ -17,9 +17,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-# from koza.cli_utils import get_koza_app
-from koza.runner import KozaTransform
-
 from phenotype_ingest_utils import Frequency, phenotype_frequency_to_hpo_term
 
 # All HPOA ingest submodules share one
