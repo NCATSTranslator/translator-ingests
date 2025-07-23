@@ -90,26 +90,6 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
 #     else:
 #         logger.warning(f"HPOA ID field value '{str(hpo_id)}' is missing or an invalid disease mode of inheritance?")
 
-#
-## Sample template record parser (from CTD); used as a guide for coding (to be delated later)
-#
-# def transform_record(record: Dict) -> (Iterator[Entity], Iterator[Association]):
-#     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-#     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-#     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-#         id=str(uuid.uuid4()),
-#         subject=chemical.id,
-#         predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
-#         object=disease.id,
-#         publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
-#         # is this code/repo an aggregator in this context? feels like no, but maybe yes?
-#         # aggregator_knowledge_source=["infores:???"],
-#         primary_knowledge_source=INFORES_CTD,
-#         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-#         agent_type=AgentTypeEnum.manual_agent,
-#     )
-#     return [chemical, disease], [association]
-
 
 # Read hpo mode of inheritance terms into memory using the
 # pronto library + hp.obo file + HP:0000005 (Mode of Inheritance) root term
