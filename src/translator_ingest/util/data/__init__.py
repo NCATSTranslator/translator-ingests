@@ -39,14 +39,14 @@ class DataSource(ABC):
             urn: Optional[str] = None,
             version: Optional[str] = None,
             create: bool = False
-    ) -> Optional[UUID]:
+    ) -> UUID:
         """
         Access or possibly create ("register") a DataSource-hosted DataSet.
 
         :param urn: Optional[str] uniform resource name of the DataSet to be accessed.
         :param version: Optional[str] of a DataSet version (of specific DataSource-specified format)
         :param create: bool, flag triggering creation of a new DataSet (default: False)
-        :return: UUID identifier of the required DataSet (if available).
+        :return: UUID identifier of the requested DataSet.
         :raises DataSourceException if the DataSet cannot be identified.
 
         The procedure of DataSet access (or creation) is guided by user-specified arguments as follows:
@@ -77,7 +77,9 @@ class DataSource(ABC):
         """
         In some instances, the DataSource may already know how to retrieve
         the version specification of a given DataSet identified by its identifier.
+
         The trivial case of a None input identifier, returns None.
+
         The case where the DataSource cannot identify a version by its identifier, also returns None.
         Otherwise, a suitable version string is returned in a DataSource idiosyncratic format (e.g., date, SemVer, etc.)
 
