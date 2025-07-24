@@ -133,17 +133,27 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
             if frequency_field.startswith("HP:"):
                 hpo_term = get_hpo_term(hpo_id=frequency_field)
 
-            elif frequency_field.endswith("%"):
-                percentage = float(frequency_field.removesuffix("%"))
-                quotient = percentage / 100.0
-
             else:
-                # assume a ratio
-                ratio_parts = frequency_field.split("/")
-                has_count = int(ratio_parts[0])
-                has_total = int(ratio_parts[1])
-                quotient = float(has_count / has_total)
-                percentage = quotient * 100.0
+                if frequency_field.endswith("%"):
+                    percentage = float(frequency_field.removesuffix("%"))
+                    # TODO: is this semantically correct to also assign
+                    #       the identical float value to 'has_quotient'
+                    quotient = percentage / 100.0
+
+                else:
+                    # assume a ratio
+                    ratio_parts = frequency_field.split("/")
+                    has_count = int(ratio_parts[0])
+                    has_total = int(ratio_parts[1])
+                    quotient = float(has_count / has_total)
+                    # TODO: is this semantically correct to also assign
+                    #       the identical float value to 'has_percentage'
+                    percentage = quotient * 100.0
+
+                # TODO: is it feasible (and desirable) to map a given
+                #       percentage and/or quotient into the range of
+                #       a frequency ('hpo_term_to_frequency') HPO term
+                # hpo_term = ???
 
         except Exception:
             # the expected ratio is not recognized
