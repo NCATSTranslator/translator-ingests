@@ -12,6 +12,7 @@ This parser only processes out the "phenotypic anomaly" (aspect == 'P') annotati
 """
 
 from typing import Optional, List, Dict, Iterable
+from loguru import logger
 import uuid
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -24,7 +25,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from phenotype_ingest_utils import (
+from .phenotype_ingest_utils import (
     evidence_to_eco,
     sex_format,
     sex_to_pato,
@@ -131,76 +132,87 @@ def get_supporting_knowledge_source(disease_id: str) -> str:
 
 def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Association]):
 
-    # Nodes
-    disease_id = record["database_id"]
-    disease = Disease(id=disease_id, **{})
+    try:
+        # TODO: this record filter condition was declared externally in the original Monarch ingest;
+        #       should this be done again in the Translator Ingest framework
+        if not record["aspect"] or record["aspect"] != "P":
+            # Skip this record
+            return [],[]
 
-    predicate = "biolink:has_phenotype"
+        # Nodes
+        disease_id = record["database_id"]
+        disease = Disease(id=disease_id, **{})
 
-    hpo_id = record["hpo_id"]
-    assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
-    phenotype = PhenotypicFeature(id=hpo_id, **{})
+        predicate = "biolink:has_phenotype"
 
-    # Predicate negation
-    negated: Optional[bool]
-    if record["qualifier"] == "NOT":
-        negated = True
-    else:
-        negated = False
+        hpo_id = record["hpo_id"]
+        assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
+        phenotype = PhenotypicFeature(id=hpo_id, **{})
 
-    # Annotations
+        # Predicate negation
+        negated: Optional[bool]
+        if record["qualifier"] == "NOT":
+            negated = True
+        else:
+            negated = False
 
-    # Translations to curies
-    # Three letter ECO code to ECO class based on hpo documentation
-    evidence_curie = evidence_to_eco[record["evidence"]]
+        # Annotations
 
-    # female -> PATO:0000383
-    # male -> PATO:0000384
-    sex: Optional[str] = record["sex"]  # may be translated by local table
-    sex_qualifier = sex_to_pato[sex_format[sex]] if sex in sex_format else None
-    #sex_qualifier = sex_format[sex] if sex in sex_format else None
+        # Translations to curies
+        # Three letter Evidence Code Ontology ("ECO") term to ECO class based on hpo documentation
+        evidence_curie = evidence_to_eco[record["evidence"]]
 
-    onset = record["onset"]
+        # female -> PATO:0000383
+        # male -> PATO:0000384
+        sex: Optional[str] = record["sex"] if record["sex"] else None  # may be translated by local table
+        sex_qualifier = sex_to_pato[sex_format[sex]] if sex and sex in sex_format else None
+        #sex_qualifier = sex_format[sex] if sex in sex_format else None
 
-    # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-    frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+        onset = record["onset"] if record["onset"] else None
 
-    # Publications
-    publications_field: str = record["reference"]
-    publications: List[str] = publications_field.split(";")
+        # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
+        frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
-    # don't populate the reference with the database_id / disease id
-    publications = [p for p in publications if not p == record["database_id"]]
+        # Publications
+        references: str = record["reference"]
+        publications: List[str] = references.split(";")
 
-    supporting_knowledge_source = get_supporting_knowledge_source(disease_id)
+        # don't populate the reference with the database_id / disease id
+        publications = [p for p in publications if not p == record["database_id"]]
 
-    # Association/Edge
-    association = DiseaseToPhenotypicFeatureAssociation(
-        id="uuid:" + str(uuid.uuid1()),
-        subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
-        predicate=predicate,
-        negated=negated,
-        object=hpo_id,
-        publications=publications,
-        has_evidence=[evidence_curie],
-        sex_qualifier=sex_qualifier,
-        onset_qualifier=onset,
-        has_percentage=frequency.has_percentage,
-        has_quotient=frequency.has_quotient,
-        frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
-        has_count=frequency.has_count,
-        has_total=frequency.has_total,
-        # TODO: the Biolink Model for edge provenance is under some revision,
-        #       deprecating the use of direct *_knowledge_source tags
-        primary_knowledge_source="infores:hpo-annotations",
-        # supporting_knowledge_source=supporting_knowledge_source,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        **{}
-    )
+        supporting_knowledge_source = get_supporting_knowledge_source(disease_id)
 
-    return [disease,phenotype], [association]
+        # Association/Edge
+        association = DiseaseToPhenotypicFeatureAssociation(
+            id="uuid:" + str(uuid.uuid1()),
+            subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
+            predicate=predicate,
+            negated=negated,
+            object=hpo_id,
+            publications=publications,
+            has_evidence=[evidence_curie],
+            sex_qualifier=sex_qualifier,
+            onset_qualifier=onset,
+            has_percentage=frequency.has_percentage,
+            has_quotient=frequency.has_quotient,
+            frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
+            has_count=frequency.has_count,
+            has_total=frequency.has_total,
+            # TODO: the Biolink Model for edge provenance is under some revision,
+            #       deprecating the use of direct *_knowledge_source tags
+            primary_knowledge_source="infores:hpo-annotations",
+            # supporting_knowledge_source=supporting_knowledge_source,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            **{}
+        )
 
+        return [disease,phenotype], [association]
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(str(e))
+        return [], []
 
 
 """
