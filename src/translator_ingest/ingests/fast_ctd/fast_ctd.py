@@ -1,8 +1,9 @@
-from typing import Iterator, Iterable
+from typing import Iterable
 
 import requests
 import pandas
 import itertools
+import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -38,8 +39,9 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
-    df = pandas.DataFrame(records)
+@koza.transform()
+def transform(koza: koza.KozaTransform) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
+    df = pandas.DataFrame(koza.data)
     return iter([(iter(get_nodes(df)), iter(get_edges(df)))])
 
 

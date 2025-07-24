@@ -1,7 +1,8 @@
 import uuid
-from typing import Iterable
+from typing import Iterable, Any
 
 import requests
+import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -32,14 +33,22 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 """
-def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
-    # prepare is just a function that gets run before transform or transform_record ie to seed a database
-    # return an iterator of dicts if that makes sense,
-    # or we could use env vars to just provide access to the data/db in transform()
-    return records
+Functions decorated with @koza.on_data_begin() run before transform or transform_record
+
+koza.state is a dictionary that can be used to store arbitrary variables
+@koza.on_data_begin()
+def prepare(koza: koza.KozaTransform) -> None:
+    koza.state['example_counter'] = 1
+
+Functions decorated with @koza.on_data_end() run after transform or transform_record
+@koza.on_data_end()
+def clean_up(koza: koza.KozaTransform) -> None:
+    if koza.state['example_counter'] > 0:
+        koza.log(f'Uh oh, {koza.state['example_counter']} things happened!', level="WARNING")
 """
 
-def transform_record(record: dict) -> (Iterable[NamedThing], Iterable[Association]):
+@koza.transform_record()
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -55,24 +64,3 @@ def transform_record(record: dict) -> (Iterable[NamedThing], Iterable[Associatio
         agent_type=AgentTypeEnum.manual_agent,
     )
     return [chemical, disease], [association]
-
-"""
-this is just an example of the interface, using transform() offers the opportunity to do something more efficient
-def transform(records: Iterator[dict]) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
-    for record in records:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
-            subject=chemical.id,
-            predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
-            object=disease.id,
-            publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
-            # is this code/repo an aggregator in this context? feels like no, but maybe yes?
-            # aggregator_knowledge_source=["infores:???"],
-            primary_knowledge_source=INFORES_CTD,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        yield [chemical, disease], [association]
-"""
