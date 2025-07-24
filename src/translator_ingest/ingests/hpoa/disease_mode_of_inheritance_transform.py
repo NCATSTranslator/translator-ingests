@@ -5,6 +5,10 @@ using the HPO ontology. Here we create Biolink associations
 between diseases and their mode of inheritance.
 
 This parser only processes out the "inheritance" (aspect == 'I') annotation records.
+
+Ideally, the Translator Ingest pipeline runner can prefilter
+using ingest YAML directives (like in Monarch) but for now,
+we implement the filtering here.
 """
 
 from typing import List, Dict, Iterable
@@ -99,55 +103,66 @@ modes_of_inheritance = read_ontology_to_exclusion_terms(
 
 def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Association]):
 
-    # Object: Actually a Genetic Inheritance (as should be specified by a suitable HPO term)
-    # TODO: perhaps load the proper (Genetic Inheritance) node concepts into the Monarch Graph (simply as Ontology terms?).
-    hpo_id = record["hpo_id"]
+    try:
+        # TODO: this record filter condition was declared externally in the original Monarch ingest;
+        #       should this be done again in the Translator Ingest framework
+        if not record["aspect"] or record["aspect"] != "I":
+            # Skip this record
+            return [],[]
 
-    # We ignore records that don't map to a known HPO term for Genetic Inheritance
-    # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
-    if hpo_id and hpo_id in modes_of_inheritance:
+        # Object: Actually a Genetic Inheritance (as should be specified by a suitable HPO term)
+        # TODO: perhaps load the proper (Genetic Inheritance) node concepts into the Monarch Graph (simply as Ontology terms?).
+        hpo_id = record["hpo_id"]
 
-        # Nodes
+        # We ignore records that don't map to a known HPO term for Genetic Inheritance
+        # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
+        if hpo_id and hpo_id in modes_of_inheritance:
 
-        # Subject: Disease
-        disease_id = record["database_id"]
-        disease = Disease(id=disease_id,**{})
+            # Nodes
 
-        # Predicate (canonical direction)
-        predicate = "biolink:has_mode_of_inheritance"
+            # Subject: Disease
+            disease_id = record["database_id"]
+            disease = Disease(id=disease_id,**{})
 
-        # Object: PhenotypicFeature defined by HPO
-        phenotype = PhenotypicFeature(id=hpo_id,**{})
+            # Predicate (canonical direction)
+            predicate = "biolink:has_mode_of_inheritance"
 
-        # Annotations
+            # Object: PhenotypicFeature defined by HPO
+            phenotype = PhenotypicFeature(id=hpo_id,**{})
 
-        # Three letter ECO code to ECO class based on HPO documentation
-        evidence_curie = evidence_to_eco[record["evidence"]]
+            # Annotations
 
-        # Publications
-        publications_field: str = record["reference"]
-        publications: List[str] = publications_field.split(";")
+            # Three letter ECO code to ECO class based on HPO documentation
+            evidence_curie = evidence_to_eco[record["evidence"]]
 
-        # Filter out some weird NCBI web endpoints
-        publications = [p for p in publications if not p.startswith("http")]
+            # Publications
+            publications_field: str = record["reference"]
+            publications: List[str] = publications_field.split(";")
 
-        # Association/Edge
-        association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(
-            id="uuid:" + str(uuid.uuid1()),
-            subject=disease_id,
-            predicate=predicate,
-            object=hpo_id,
-            publications=publications,
-            has_evidence=[evidence_curie],
-            primary_knowledge_source="infores:hpo-annotations",
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-            **{}
-        )
-        return [disease, phenotype], [association]
+            # Filter out some weird NCBI web endpoints
+            publications = [p for p in publications if not p.startswith("http")]
 
-    else:
-        logger.warning(f"HPOA ID field value '{str(hpo_id)}' is missing or an invalid disease mode of inheritance?")
+            # Association/Edge
+            association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(
+                id="uuid:" + str(uuid.uuid1()),
+                subject=disease_id,
+                predicate=predicate,
+                object=hpo_id,
+                publications=publications,
+                has_evidence=[evidence_curie],
+                primary_knowledge_source="infores:hpo-annotations",
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                **{}
+            )
+            return [disease, phenotype], [association]
+
+        else:
+            raise RuntimeWarning(f"HPOA ID field value '{str(hpo_id)}' is missing or an invalid disease mode of inheritance?")
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(str(e))
         return [], []
 
 

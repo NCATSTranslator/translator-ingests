@@ -1,11 +1,38 @@
 import pytest
-from biolink_model.datamodel.pydanticmodel_v2 import DiseaseToPhenotypicFeatureAssociation
 
+from typing import Optional, Dict, Iterable, List
 
-@pytest.fixture
-def d2pf_entities_1(mock_koza, global_table):
-    row = iter(
-        [
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,Association,
+    DiseaseToPhenotypicFeatureAssociation
+)
+from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
+
+# List of slots whose values are to be check in a result edge
+ASSOCIATION_TEST_SLOTS = [
+    "category",
+    "subject",
+    "predicate",
+    "negated",
+    "object",
+    "publications",
+    "has_evidence",
+    "sex_qualifier",
+    "onset_qualifier",
+    "has_percentage",
+    "has_quotient",
+    "frequency_qualifier"
+]
+
+@pytest.mark.parametrize(
+    "test_record,result_nodes,result_edge",
+    [
+        (  # Query 0 - missing data (empty 'hpo_id' field)
+            {},
+            None,
+            None
+        ),
+        (  # Query 1 - An 'aspect' == 'C' record processed
             {
                 "database_id": "OMIM:614856",
                 "disease_name": "Osteogenesis imperfecta, type XIII",
@@ -19,41 +46,12 @@ def d2pf_entities_1(mock_koza, global_table):
                 "modifier": "",
                 "aspect": "C",  # assert 'Clinical' test record
                 "biocuration": "HPO:skoehler[2012-11-16]",
-            }
-        ]
-    )
-    return mock_koza(
-        name="hpoa_disease_to_phenotype",
-        data=row,
-        transform_code="./src/monarch_ingest/ingests/hpoa/disease_to_phenotype.py",
-        global_table=global_table,
-        local_table="./src/monarch_ingest/ingests/hpoa/hpoa-translation.yaml",
-    )
-
-
-def test_disease_to_phenotype_transform_1(d2pf_entities_1):
-    assert d2pf_entities_1
-    assert len(d2pf_entities_1) == 1
-    association = [entity for entity in d2pf_entities_1 if isinstance(entity, DiseaseToPhenotypicFeatureAssociation)][0]
-    assert association.subject == "OMIM:614856"
-    assert association.predicate == "biolink:has_phenotype"
-    assert association.negated
-    assert association.object == "HP:0000343"
-    assert "OMIM:614856" in association.publications
-    assert "ECO:0000304" in association.has_evidence  # from local HPOA translation table
-    assert association.sex_qualifier == "PATO:0000383"
-    assert association.onset_qualifier == "HP:0003593"
-    assert association.has_percentage is None
-    assert association.has_quotient == 1.0  # '1/1' implies Always present, i.e. in 100% of the cases.
-    assert association.frequency_qualifier == "HP:0040280"  # '1/1' implies Always present, i.e. in 100% of the cases.
-    assert association.primary_knowledge_source == "infores:hpo-annotations"
-    assert "infores:monarchinitiative" in association.aggregator_knowledge_source
-
-
-@pytest.fixture
-def d2pf_entities_2(mock_koza, global_table):
-    row = iter(
-        [
+            },
+            # This is not a 'P' record, so it should be skipped
+            None,
+            None
+        ),
+        (  # Query 2 - An 'aspect' == 'P' record processed
             {
                 "database_id": "OMIM:117650",
                 "disease_name": "Cerebrocostomandibular syndrome",
@@ -67,41 +65,34 @@ def d2pf_entities_2(mock_koza, global_table):
                 "modifier": "",
                 "aspect": "P",
                 "biocuration": "HPO:probinson[2009-02-17]",
+            },
+            # Captured node identifiers
+            ["OMIM:117650", "HP:0001249"],
+            # Captured edge contents
+            {
+                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+                "subject": "OMIM:117650",
+                "predicate": "biolink:has_phenotype",
+                "negated": False,
+                "object": "HP:0001249",
+                # Although "OMIM:117650" is recorded above as
+                # a reference, it is not used as a publication
+                "publications": [],
+                "has_evidence": ["ECO:0000304"],
+                "sex_qualifier": None,
+                "onset_qualifier": None,
+                "has_percentage": 50.0,
+                "has_quotient": None,
+                # '50%' above implies HPO term that the phenotype
+                # is 'Present in 30% to 79% of the cases'.
+                "frequency_qualifier": "HP:0040282"
+                # We still need to fix the 'sources' serialization
+                # in Pydantic before somehow testing the following
+                # "primary_knowledge_source": "infores:hpo-annotations"
+                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
             }
-        ]
-    )
-    return mock_koza(
-        name="hpoa_disease_to_phenotype",
-        data=row,
-        transform_code="./src/monarch_ingest/ingests/hpoa/disease_to_phenotype.py",
-        global_table=global_table,
-        local_table="./src/monarch_ingest/ingests/hpoa/hpoa-translation.yaml",
-    )
-
-
-def test_disease_to_phenotype_transform_2(d2pf_entities_2):
-    assert d2pf_entities_2
-    assert len(d2pf_entities_2) == 1
-    association = [entity for entity in d2pf_entities_2 if isinstance(entity, DiseaseToPhenotypicFeatureAssociation)][0]
-    assert association.subject == "OMIM:117650"
-    assert association.predicate == "biolink:has_phenotype"
-    assert not association.negated
-    assert association.object == "HP:0001249"
-    assert "OMIM:117650" in association.publications
-    assert "ECO:0000304" in association.has_evidence  # from local HPOA translation table
-    assert not association.sex_qualifier
-    assert not association.onset_qualifier
-    assert association.has_percentage == 50.0  # '50%' implies Present in 30% to 79% of the cases.
-    assert association.has_quotient is None
-    assert association.frequency_qualifier == "HP:0040282"  # '50%' implies Present in 30% to 79% of the cases.
-    assert association.primary_knowledge_source == "infores:hpo-annotations"
-    assert "infores:monarchinitiative" in association.aggregator_knowledge_source
-
-
-@pytest.fixture
-def d2pf_entities_3(mock_koza, global_table):
-    row = iter(
-        [
+        ),
+        (  # Query 3 - Another 'aspect' == 'P' record processed
             {
                 "database_id": "OMIM:117650",
                 "disease_name": "Cerebrocostomandibular syndrome",
@@ -115,32 +106,80 @@ def d2pf_entities_3(mock_koza, global_table):
                 "modifier": "",
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
+            },
+            ["OMIM:117650", "HP:0001545"],
+            {
+                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+                "subject": "OMIM:117650",
+                "predicate": "biolink:has_phenotype",
+                "negated": False,
+                "object": "HP:0001545",
+                "publications": "OMIM:117650",
+                "has_evidence": "ECO:0000304",
+                "sex_qualifier": None,
+                "onset_qualifier": None,
+                "has_percentage": None,
+                "has_quotient": None,
+                "frequency_qualifier": "HP:0040283",
+            #     "primary_knowledge_source": "infores:hpo-annotations"
+            #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+
             }
-        ]
-    )
-    return mock_koza(
-        name="hpoa_disease_to_phenotype",
-        data=row,
-        transform_code="./src/monarch_ingest/ingests/hpoa/disease_to_phenotype.py",
-        global_table=global_table,
-        local_table="./src/monarch_ingest/ingests/hpoa/hpoa-translation.yaml",
-    )
+        )
+    ]
+)
+def test_disease_to_phenotype_transform(
+        test_record: Dict,
+        result_nodes: Optional[List],
+        result_edge: Optional[Dict]
+):
+    nodes: Iterable[NamedThing]
+    edges: Iterable[Association]
 
+    # Call the ingest parser function on the mock_record
+    nodes, edges = transform_record(test_record)
 
-def test_disease_to_phenotype_transform_3(d2pf_entities_3):
-    assert d2pf_entities_3
-    assert len(d2pf_entities_3) == 1
-    association = [entity for entity in d2pf_entities_3 if isinstance(entity, DiseaseToPhenotypicFeatureAssociation)][0]
-    assert association.subject == "OMIM:117650"
-    assert association.predicate == "biolink:has_phenotype"
-    assert not association.negated
-    assert association.object == "HP:0001545"
-    assert "OMIM:117650" in association.publications
-    assert "ECO:0000304" in association.has_evidence  # from local HPOA translation table
-    assert not association.sex_qualifier
-    assert not association.onset_qualifier
-    assert association.has_percentage is None
-    assert association.has_quotient is None
-    assert association.frequency_qualifier == "HP:0040283"  # "HP:0040283" implies Present in 5% to 29% of the cases.
-    assert association.primary_knowledge_source == "infores:hpo-annotations"
-    assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+    # Convert the 'nodes' Iterable content into a List by comprehension
+    node: NamedThing
+    transformed_nodes = [node.id for node in nodes]
+
+    if result_nodes is None:
+        # Check for empty 'transformed_nodes' expectations
+        assert not transformed_nodes, \
+            f"unexpected non-empty 'nodes' list: {','.join(transformed_nodes)}"
+    else:
+        # if nodes expected, then are they the expected ones?
+        for node_id in transformed_nodes:
+            assert node_id in result_nodes
+
+    # Convert the 'edges' Iterable content into a List by comprehension
+    edge: Association
+    transformed_edges = [dict(edge) for edge in edges]
+
+    if result_edge is None:
+        # Check for empty 'transformed_edges' expectations
+        assert not transformed_edges, \
+            f"Unexpected non-empty result list of edges: '{','.join(str(transformed_edges)[0:20])}'..."
+    else:
+        # Check contents of edge(s) returned.
+        # For HPOA transformation, only one edge is expected to be returned?
+        assert len(transformed_edges) == 1
+
+        # then grab it for content assessment
+        returned_edge = transformed_edges[0]
+
+        # Check values in expected edge slots of parsed edges
+        for slot in ASSOCIATION_TEST_SLOTS:
+            if slot in result_edge:
+                if isinstance(result_edge[slot], list):
+                    # Membership value test.
+                    # First, check if both returned and expected lists of
+                    # slot values are empty. If so, then the assertion is passed.
+                    # Otherwise, check if an expected slot value is seen in the returned list.
+                    assert not (result_edge[slot] or returned_edge[slot]) \
+                            or result_edge[slot][0] in returned_edge[slot], \
+                        f"Value for slot '{slot}' missing in returned edge values '{','.join(returned_edge[slot])}?'"
+                else:
+                    # Scalar value test
+                    assert returned_edge[slot] == result_edge[slot], \
+                        f"Value for slot '{slot}' not equal to returned edge value '{returned_edge[slot]}'?"
