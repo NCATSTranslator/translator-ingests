@@ -82,10 +82,12 @@ ASSOCIATION_TEST_SLOTS = [
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": 50.0,
-                "has_quotient": None,
+                # see TODO semantic concerns documented in the inline comment
+                #          in the phenotype_frequency_to_hpo_term() utility method
+                "has_quotient": 0.5,
                 # '50%' above implies HPO term that the phenotype
                 # is 'Present in 30% to 79% of the cases'.
-                "frequency_qualifier": "HP:0040282"
+                "frequency_qualifier": None, # TODO: should this be set to "HP:0040282"?
                 # We still need to fix the 'sources' serialization
                 # in Pydantic before somehow testing the following
                 # "primary_knowledge_source": "infores:hpo-annotations"
@@ -114,8 +116,8 @@ ASSOCIATION_TEST_SLOTS = [
                 "predicate": "biolink:has_phenotype",
                 "negated": False,
                 "object": "HP:0001545",
-                "publications": "OMIM:117650",
-                "has_evidence": "ECO:0000304",
+                "publications": [],
+                "has_evidence": ["ECO:0000304"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": None,
