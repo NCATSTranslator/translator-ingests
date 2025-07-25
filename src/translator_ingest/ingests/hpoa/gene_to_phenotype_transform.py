@@ -66,7 +66,12 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
         # if dis_id in mondo_map:
         #     dis_id = mondo_map[dis_id]['subject_id']
 
-        publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
+        # TODO: there are no direct publications in the record but the
+        #       'gene_to_phenotype_publications.py" script has some code
+        #       to generate the relationships; however, this procedure
+        #       is not fully automated and for now, we ignore them
+        #       perhaps, deferring the task to a later HPOA edge merging step?
+        # publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
         association = GeneToPhenotypicFeatureAssociation(
             id="uuid:" + str(uuid.uuid1()),
@@ -79,7 +84,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
             has_count=frequency.has_count,
             has_total=frequency.has_total,
             disease_context_qualifier=dis_id,
-            publications=publications,
+            # publications=publications,  # see comment about 'publications' above
             primary_knowledge_source="infores:hpo-annotations",
             knowledge_level=KnowledgeLevelEnum.logical_entailment,
             agent_type=AgentTypeEnum.automated_agent,
