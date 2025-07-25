@@ -43,7 +43,7 @@ def get_edges(edges_filename):
 			formatted_edges[subject_id] = list()
 		formatted_edges[subject_id].append((predicate, object_id))
 
-    kg2_util.end_read_jsonlines(edges_read_jsonlines_info)
+	kg2_util.end_read_jsonlines(edges_read_jsonlines_info)
 
 	return formatted_edges
 
