@@ -6,7 +6,8 @@ from typing import Optional, Dict, Iterable, List, Tuple
 
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing,Association
 
-# List of slots whose values are to be check in a result edge
+# List of slots whose values are
+# to be checked in a result edge
 ASSOCIATION_TEST_SLOTS = [
     "category",
     "subject",
@@ -20,6 +21,7 @@ ASSOCIATION_TEST_SLOTS = [
     "has_percentage",
     "has_quotient",
     "frequency_qualifier",
+    "disease_context_qualifier",
     # "sources",
     "knowledge_level",
     "agent_type"

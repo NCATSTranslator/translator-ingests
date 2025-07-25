@@ -11,7 +11,7 @@ from . import transform_test_runner
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - missing data (empty 'hpo_id' field)
+        (  # Query 0 - missing data (empty record, hence, missing fields)
             {},
             None,
             None
@@ -52,6 +52,7 @@ from . import transform_test_runner
             },
             # Captured node identifiers
             ["OMIM:117650", "HP:0001249"],
+
             # Captured edge contents
             {
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
