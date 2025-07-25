@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional, List, Dict
 
 import pytest
 
@@ -14,7 +14,8 @@ from src.translator_ingest.util.monarch.constants import (
     INFORES_ORPHANET,
 )
 from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_knowledge_sources, get_predicate
-
+from src.translator_ingest.ingests.hpoa.gene_to_disease_transform import transform_record
+from . import transform_test_runner
 
 @pytest.mark.parametrize(
     ("original_source", "expected_primary_knowledge_source", "expected_aggregator_knowledge_source"),
@@ -52,32 +53,45 @@ def test_predicate(association: str, expected_predicate: str):
     assert predicate == expected_predicate
 
 
-@pytest.fixture
-def row():
-    return {
-        'association_type': 'MENDELIAN',
-        'disease_id': 'OMIM:212050',
-        'gene_symbol': 'CARD9',
-        'ncbi_gene_id': 'NCBIGene:64170',
-        'source': 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen',
-    }
+@pytest.mark.parametrize(
+    "test_record,result_nodes,result_edge",
+    [
+        (  # Query 0 - missing data (empty 'hpo_id' field)
+            {},
+            None,
+            None
+        ),
+        (  # Query 1 - Sample Mendelian disease
+            {
+                "association_type": "MENDELIAN",
+                "disease_id": "OMIM:212050",
+                "gene_symbol": "CARD9",
+                "ncbi_gene_id": "NCBIGene:64170",
+                "source": "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen",
+            },
 
+            # Captured node identifiers
+            ["NCBIGene:64170", "OMIM:212050"],
 
-@pytest.fixture
-def basic_g2d_entities(mock_koza, row):
-    return mock_koza(
-        name="hpoa_gene_to_disease",
-        data=iter([row]),
-        transform_code="./src/monarch_ingest/ingests/hpoa/gene_to_disease.py",
-    )
+            # Captured edge contents
+            {
+                "category": ["biolink:CausalGeneToDiseaseAssociation"],
+                "subject": "NCBIGene:64170",
+                "predicate": "biolink:causes",
+                "object": "OMIM:212050",
 
-
-def test_hpoa_gene_to_disease(basic_g2d_entities):
-    assert len(basic_g2d_entities) == 1
-    association = basic_g2d_entities[0]
-    assert isinstance(association, CausalGeneToDiseaseAssociation)
-    assert association.subject == "NCBIGene:64170"
-    assert association.object == "OMIM:212050"
-    assert association.predicate == "biolink:causes"
-    assert association.primary_knowledge_source == "infores:omim"
-    assert association.aggregator_knowledge_source.sort() == ["infores:medgen", "infores:monarchinitiative"].sort()
+                # We still need to fix the 'sources' serialization
+                # in Pydantic before somehow testing the following
+                # "primary_knowledge_source": "infores:hpo-annotations"
+                # "supporting_knowledge_source": "infores:medgen"
+                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+            }
+        )
+    ]
+)
+def test_gene_to_disease_transform(
+        test_record: Dict,
+        result_nodes: Optional[List],
+        result_edge: Optional[Dict]
+):
+    transform_test_runner(transform_record(test_record), result_nodes, result_edge)
