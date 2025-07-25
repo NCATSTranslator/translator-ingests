@@ -1,6 +1,7 @@
 from typing import List
 
 import pytest
+
 from biolink_model.datamodel.pydanticmodel_v2 import GeneToDiseaseAssociation, CausalGeneToDiseaseAssociation
 
 from src.translator_ingest.util.monarch.constants import (
