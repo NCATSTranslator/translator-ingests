@@ -31,13 +31,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from .phenotype_ingest_utils import (
+    HPO_FILE_PATH,
     evidence_to_eco,
     sex_format,
     sex_to_pato,
     phenotype_frequency_to_hpo_term,
-    Frequency,
-    read_ontology_to_exclusion_terms
+    Frequency
 )
+from ...util.ontology import read_ontology_to_exclusion_terms
 
 # All HPOA ingest submodules share one
 # simplistic ingest versioning (for now)
@@ -54,7 +55,7 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
 
 # Read hpo mode of inheritance terms into memory using the
 # pronto library + hp.obo file + HP:0000005 (Mode of Inheritance) root term
-modes_of_inheritance = read_ontology_to_exclusion_terms()
+modes_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
 
 def get_supporting_knowledge_source(disease_id: str) -> str:
     if disease_id.startswith("OMIM"):

@@ -13,6 +13,7 @@ class HPOADataSource:
     """
     MVP Implementation of an HPOA DataSource wrapper
     """
+
     @classmethod
     def get_version(cls) -> str:
         # Hardcoded mock implementation, HPOA release, published as of July 23, 2025
