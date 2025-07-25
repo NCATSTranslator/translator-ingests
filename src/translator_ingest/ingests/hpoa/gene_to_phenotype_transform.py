@@ -84,7 +84,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
             has_count=frequency.has_count,
             has_total=frequency.has_total,
             disease_context_qualifier=dis_id,
-            # publications=publications,  # see comment about 'publications' above
+            # publications=publications,
             primary_knowledge_source="infores:hpo-annotations",
             knowledge_level=KnowledgeLevelEnum.logical_entailment,
             agent_type=AgentTypeEnum.automated_agent,
