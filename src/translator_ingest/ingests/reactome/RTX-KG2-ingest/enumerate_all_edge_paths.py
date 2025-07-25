@@ -6,6 +6,7 @@ import argparse
 def make_arg_parser():
 	arg_parser = argparse.ArgumentParser(description='build-kg2: builds the KG2 knowledge graph for the RTX system')
 	arg_parser.add_argument('inputEdgesFile', type=str)
+	arg_parser.add_argument('outputPathsFile', type=str)
 	return arg_parser
 
 def get_sample_edges():
@@ -47,13 +48,11 @@ def get_edges(edges_filename):
 
 	return formatted_edges
 
-def find_all_paths(graph):
-	paths_by_subject = dict()
+def find_all_paths(graph, output_paths):
 	for subject_id in graph:
 		subject_paths = find_all_subject_paths(graph, subject_id, [], [])
-		paths_by_subject[subject_id] = subject_paths
 
-	return paths_by_subject
+		output_paths.write({subject_id: subject_paths})
 
 def find_all_subject_paths(graph, subject_id, paths, current_path):
 	for (predicate, object_id) in graph.get(subject_id, []):
@@ -106,15 +105,21 @@ def print_paths(paths):
 if __name__ == '__main__':
 	args = make_arg_parser().parse_args()
 	input_edges_file_name = args.inputEdgesFile
+	output_paths_file_name = args.outputPathsFile
 
 	graph = get_edges(input_edges_file_name)
 
-	paths = find_all_paths(graph)
+	output_paths_writer = kg2_util.create_single_jsonlines()
+	output_paths = output_paths_writer[0]
 
-	paths_between_two_nodes = all_paths_between_two_nodes(paths)
-	for two_nodes in paths_between_two_nodes:
-		print(two_nodes)
-		for path in paths_between_two_nodes[two_nodes]:
-			print_path(path)
+	paths = find_all_paths(graph, output_paths)
 
-		print("--------\n\n")
+	kg2_util.close_single_jsonlines(output_paths_writer, output_paths_file_name)
+
+	# paths_between_two_nodes = all_paths_between_two_nodes(paths)
+	# for two_nodes in paths_between_two_nodes:
+	# 	print(two_nodes)
+	# 	for path in paths_between_two_nodes[two_nodes]:
+	# 		print_path(path)
+
+	# 	print("--------\n\n")
