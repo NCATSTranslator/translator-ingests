@@ -1,11 +1,7 @@
 import pytest
 
-from typing import Optional, Dict, Iterable, List
+from typing import Optional, Dict, List
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,Association,
-    DiseaseToPhenotypicFeatureAssociation
-)
 from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
 from . import transform_test_runner
 
