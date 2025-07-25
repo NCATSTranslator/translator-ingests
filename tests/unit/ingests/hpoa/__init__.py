@@ -1,15 +1,9 @@
 """
 Shared HPOA testing code
-"""
-import pytest
 
 from typing import Optional, Dict, Iterable, List, Tuple
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,Association,
-    DiseaseToPhenotypicFeatureAssociation
-)
-from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
+from biolink_model.datamodel.pydanticmodel_v2 import NamedThing,Association
 
 # List of slots whose values are to be check in a result edge
 ASSOCIATION_TEST_SLOTS = [
@@ -36,6 +30,8 @@ def transform_test_runner(
     nodes: Iterable[NamedThing] = result[0]
     edges: Iterable[Association] = result[1]
 
+    # TODO: how can we generalize this to also test here for node annotation,
+    #      e.g., like the value of the slot 'name'?
     # Convert the 'nodes' Iterable content into a List by comprehension
     node: NamedThing
     transformed_nodes = [node.id for node in nodes]
