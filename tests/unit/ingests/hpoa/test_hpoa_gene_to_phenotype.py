@@ -1,0 +1,179 @@
+from typing import Optional, List, Dict
+
+import pytest
+
+from typing import Optional, Dict, List
+
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+
+from src.translator_ingest.ingests.hpoa.gene_to_phenotype_transform import transform_record
+
+from . import transform_test_runner
+
+
+@pytest.mark.parametrize(
+    "test_record,result_nodes,result_edge",
+    [
+        (   # Query 0 - missing data (empty record (hence, missing fields)
+            {},
+            None,
+            None
+        ),
+        (   # Query 1 - Full record, with empty ("-") frequency field
+            {
+                "ncbi_gene_id": "8086",
+                "gene_symbol": "AAAS",
+                "hpo_id": "HP:0000252",
+                "hpo_name": "Microcephaly",
+                "frequency": "-",
+                "disease_id": "OMIM:231550"
+            },
+
+            # Captured node identifiers
+            ["NCBIGene:8086", "HP:0000252"],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
+                "subject": "NCBIGene:8086",
+                "predicate": "biolink:has_phenotype",
+                "object": "HP:0000252",
+
+                "frequency_qualifier": None,
+                "has_percentage":  None,
+                "has_quotient":  None,
+                "has_count":  None,
+                "has_total": None,
+                "disease_context_qualifier": "OMIM:231550", # this ought to be MONDO in the future
+
+                # We still need to fix the 'sources' serialization
+                # in Pydantic before somehow testing the following
+                # "primary_knowledge_source": "infores:hpo-annotations"
+                # "supporting_knowledge_source": "infores:medgen"
+                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+
+                "knowledge_level": KnowledgeLevelEnum.logical_entailment,
+                "agent_type": AgentTypeEnum.automated_agent
+            }
+        ),
+        (   # Query 2 - Full record, with a HPO term defined frequency field value
+            {
+                "ncbi_gene_id": "8120",
+                "gene_symbol": "AP3B2",
+                "hpo_id": "HP:0001298",
+                "hpo_name": "Encephalopathy",
+                "frequency": "HP:0040281",
+                "disease_id": "ORPHA:442835"
+            },
+
+            # Captured node identifiers
+            ["NCBIGene:8120", "HP:0001298"],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
+                "subject": "NCBIGene:8120",
+                "predicate": "biolink:has_phenotype",
+                "object": "HP:0001298",
+
+                "frequency_qualifier": "HP:0040281",
+                "has_percentage":  None,
+                "has_quotient":  None,
+                "has_count":  None,
+                "has_total": None,
+                "disease_context_qualifier": "Orphanet:442835", # this ought to be MONDO in the future
+
+                # We still need to fix the 'sources' serialization
+                # in Pydantic before somehow testing the following
+                # "primary_knowledge_source": "infores:hpo-annotations"
+                # "supporting_knowledge_source": "infores:medgen"
+                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+
+                "knowledge_level": KnowledgeLevelEnum.logical_entailment,
+                "agent_type": AgentTypeEnum.automated_agent
+            }
+        ),
+        (   # Query 3 - Full record, with a ratio ("quotient") frequency field value
+            {
+                "ncbi_gene_id": "8192",
+                "gene_symbol": "CLPP",
+                "hpo_id": "HP:0000013",
+                "hpo_name": "Hypoplasia of the uterus",
+                "frequency": "3/9",
+                "disease_id": "OMIM:614129"
+            },
+
+            # Captured node identifiers
+            ["NCBIGene:8192", "HP:0000013"],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
+                "subject": "NCBIGene:8192",
+                "predicate": "biolink:has_phenotype",
+                "object": "HP:0000013",
+
+                "frequency_qualifier": None,
+                "has_percentage":  33.33333333333333,
+                "has_quotient":  0.3333333333333333,
+                "has_count":  3,
+                "has_total": 9,
+                "disease_context_qualifier": "OMIM:614129", # this ought to be MONDO in the future
+
+                # We still need to fix the 'sources' serialization
+                # in Pydantic before somehow testing the following
+                # "primary_knowledge_source": "infores:hpo-annotations"
+                # "supporting_knowledge_source": "infores:medgen"
+                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+
+                "knowledge_level": KnowledgeLevelEnum.logical_entailment,
+                "agent_type": AgentTypeEnum.automated_agent
+            }
+        ),
+
+        (   # Query 3 - Full record, with a percentage frequency field value
+            # 8929	PHOX2B	HP:0003005	Ganglioneuroma	5%	OMIM:613013
+            {
+                "ncbi_gene_id": "8929",
+                "gene_symbol": "PHOX2B",
+                "hpo_id": "HP:0003005",
+                "hpo_name": "Ganglioneuroma",
+                "frequency": "5%",
+                "disease_id": "OMIM:613013"
+            },
+
+            # Captured node identifiers
+            ["NCBIGene:8929", "HP:0003005"],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
+                "subject": "NCBIGene:8929",
+                "predicate": "biolink:has_phenotype",
+                "object": "HP:0003005",
+
+                "frequency_qualifier": None,
+                "has_percentage":  5,
+                "has_quotient":  0.05,
+                "has_count":  None,
+                "has_total": None,
+                "disease_context_qualifier": "OMIM:613013", # this ought to be MONDO in the future
+
+                # We still need to fix the 'sources' serialization
+                # in Pydantic before somehow testing the following
+                # "primary_knowledge_source": "infores:hpo-annotations"
+                # "supporting_knowledge_source": "infores:medgen"
+                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+
+                "knowledge_level": KnowledgeLevelEnum.logical_entailment,
+                "agent_type": AgentTypeEnum.automated_agent
+            }
+        )
+    ]
+)
+def test_gene_to_disease_transform(
+        test_record: Dict,
+        result_nodes: Optional[List],
+        result_edge: Optional[Dict]
+):
+    transform_test_runner(transform_record(test_record), result_nodes, result_edge)
