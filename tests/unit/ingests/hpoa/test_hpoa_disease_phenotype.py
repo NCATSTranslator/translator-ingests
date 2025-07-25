@@ -69,9 +69,9 @@ from . import transform_test_runner
                 "has_quotient": 0.5,
                 # '50%' above implies HPO term that the phenotype
                 # is 'Present in 30% to 79% of the cases'.
-                "frequency_qualifier": None, # TODO: should this be set to "HP:0040282"?
-                # We still need to fix the 'sources' serialization
-                # in Pydantic before somehow testing the following
+                "frequency_qualifier": None, # TODO: should perhaps this be set to "HP:0040282"?
+                # TODO: We still need to fix the 'sources' serialization
+                #       in Pydantic before somehow testing the following
                 # "primary_knowledge_source": "infores:hpo-annotations"
                 # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
             }
