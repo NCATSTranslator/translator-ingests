@@ -1,7 +1,7 @@
 """
 Tests of HPOA Utils methods
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import pytest
 
@@ -12,6 +12,10 @@ from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     map_percentage_frequency_to_hpo_term,
     phenotype_frequency_to_hpo_term,
 )
+from translator_ingest.ingests.hpoa import get_latest_version
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_knowledge_sources
+from translator_ingest.util.monarch.constants import INFORES_OMIM, INFORES_MEDGEN, INFORES_MONARCHINITIATIVE, \
+    INFORES_ORPHANET
 
 
 def test_get_hpo_term():
@@ -123,3 +127,30 @@ def test_map_percentage_frequency_to_hpo_term(query: Tuple[int, Optional[Frequen
 def test_phenotype_frequency_to_hpo_term(query: Optional[str], frequency: Optional[Frequency]):
     result: Optional[Frequency]  = phenotype_frequency_to_hpo_term(query)
     assert result == frequency
+
+
+@pytest.mark.parametrize(
+    ("original_source", "expected_primary_knowledge_source", "expected_aggregator_knowledge_source"),
+    [
+        (
+            "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen",
+            INFORES_OMIM,
+            [INFORES_MEDGEN, INFORES_MONARCHINITIATIVE],
+        ),
+        ("http://www.orphadata.org/data/xml/en_product6.xml", INFORES_ORPHANET, [INFORES_MONARCHINITIATIVE]),
+    ],
+)
+def test_knowledge_source(
+    original_source: str, expected_primary_knowledge_source: str, expected_aggregator_knowledge_source: List[str]
+):
+    primary_knowledge_source, aggregator_knowledge_source = get_knowledge_sources(
+        original_source, INFORES_MONARCHINITIATIVE
+    )
+
+    assert primary_knowledge_source == expected_primary_knowledge_source
+    assert aggregator_knowledge_source.sort() == expected_aggregator_knowledge_source.sort()
+
+
+def test_hpoa_version():
+    version = get_latest_version()
+    assert version is not None and version == "2025-05-06"
