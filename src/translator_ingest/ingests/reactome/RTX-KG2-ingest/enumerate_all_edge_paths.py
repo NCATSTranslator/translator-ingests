@@ -56,7 +56,7 @@ def find_all_paths(graph):
 	return paths_by_subject
 
 def find_all_subject_paths(graph, subject_id, paths, current_path):
-	for (predicate, object_id) in graph[subject_id]:
+	for (predicate, object_id) in graph.get(subject_id, []):
 		edge = (subject_id, predicate, object_id)
 
 		# Avoid cycles
