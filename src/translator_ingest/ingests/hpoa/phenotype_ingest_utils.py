@@ -3,7 +3,6 @@ HPOA processing utility methods
 """
 from os import sep
 from typing import Optional, List, Dict
-from pronto import Ontology
 
 from loguru import logger
 from pydantic import BaseModel
@@ -212,44 +211,9 @@ def get_predicate(original_predicate: str) -> str:
     else:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 
+# This is deprecated... We now use pronto + hp.obo ontology file to pull these terms in dynamically
+# from hp ontology using the util.ontology 'read_ontology_to_exclusion_terms' function
 
-# General function to read an .obo ontology file into memory
-# using pronto to gather all terms that do not fall under a particular parent class
-def read_ontology_to_exclusion_terms(
-        ontology_obo_file=HPO_FILE_PATH,
-        umbrella_term="HP:0000005",  # "HP:0000118"
-        include=True  # False
-):
-    
-    # Read the ontology file into memory
-    onto = Ontology(ontology_obo_file)
-    exclude_terms = {}
-    term_count = len(list(onto.terms()))
-    
-    for term in onto.terms():
-        
-        # Gather ancestor terms and update our filtering data structure accordingly
-        parent_terms = {ancestor.id: ancestor.name for ancestor in term.superclasses()}
-        if not include:
-            if umbrella_term not in parent_terms:
-                exclude_terms.update({term.id:term.name})
-
-        elif umbrella_term in parent_terms:
-            exclude_terms.update({term.id:term.name})
-    
-    logger.info(
-        "- Terms from ontology found that "
-        "do not belong to parent class {} {}/{}".format(
-            umbrella_term,
-            format(len(exclude_terms)),
-            format(term_count)
-        )
-    )
-    return exclude_terms
-
-
-# This is deprecated... We now use pronto + hp.obo file to pull these terms in dynamically
-# from hp ontology using the read_ontology_to_exclusion_terms function above
 # # HPO "Mode of Inheritance" terms - https://www.ebi.ac.uk/ols4/ontologies/hp
 # hpo_to_mode_of_inheritance: Dict = {"HP:0001417": "X-linked inheritance",
 #                                     "HP:0000005": "Mode of inheritance",
