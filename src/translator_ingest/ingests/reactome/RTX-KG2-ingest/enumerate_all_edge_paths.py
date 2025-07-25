@@ -50,11 +50,10 @@ def get_edges(edges_filename):
 
 def find_all_paths(graph, output_paths):
 	for subject_id in graph:
-		subject_paths = find_all_subject_paths(graph, subject_id, [], [], output_paths)
+		find_all_subject_paths(graph, subject_id, [], output_paths)
 
-		output_paths.write({subject_id: subject_paths})
 
-def find_all_subject_paths(graph, subject_id, paths, current_path, output_paths):
+def find_all_subject_paths(graph, subject_id, current_path, output_paths):
 	for (predicate, object_id) in graph.get(subject_id, []):
 		edge = (subject_id, predicate, object_id)
 
@@ -66,9 +65,8 @@ def find_all_subject_paths(graph, subject_id, paths, current_path, output_paths)
 
 		output_paths.write(longer_path)
 
-		find_all_subject_paths(graph, object_id, paths, longer_path)
+		find_all_subject_paths(graph, object_id, longer_path, output_paths)
 
-	return paths
 
 def all_paths_between_two_nodes(paths):
 	paths_between_two_nodes = dict()
