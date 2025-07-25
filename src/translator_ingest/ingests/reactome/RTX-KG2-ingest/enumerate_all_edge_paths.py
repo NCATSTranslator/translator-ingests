@@ -31,7 +31,7 @@ def get_sample_edges():
 def get_edges(edges_filename):
 	formatted_edges = dict()
 
-	edges_read_jsonlines_info = kg2_util.start_read_jsonlines(edges_file_name)
+	edges_read_jsonlines_info = kg2_util.start_read_jsonlines(edges_filename)
 	input_edges = edges_read_jsonlines_info[0]
 
 	for input_edge in input_edges:
