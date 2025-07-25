@@ -14,9 +14,9 @@ This parser only processes out "phenotypic anomaly" (aspect == 'P')
 and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
-
-from typing import Optional, List, Dict, Iterable
 from loguru import logger
+from typing import Optional, List, Dict, Iterable
+
 import uuid
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -32,7 +32,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from src.translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 
-from .phenotype_ingest_utils import (
+from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     HPO_FILE_PATH,
     evidence_to_eco,
     sex_format,
@@ -41,11 +41,8 @@ from .phenotype_ingest_utils import (
     Frequency
 )
 
-
-# All HPOA ingest submodules share one
-# simplistic ingest versioning (for now)
-from . import get_latest_version
-
+# All HPOA ingest submodules share one simplistic ingest versioning (for now)
+from src.translator_ingest.ingests.hpoa import get_latest_version
 
 """
 def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
@@ -180,6 +177,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
                     publications=publications,
                     has_evidence=[evidence_curie],
                     primary_knowledge_source="infores:hpo-annotations",
+                    # supporting_knowledge_source=supporting_knowledge_source,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     **{}
