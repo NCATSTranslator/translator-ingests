@@ -67,7 +67,11 @@ def transform_test_runner(
 
         # Check values in expected edge slots of parsed edges
         for slot in ASSOCIATION_TEST_SLOTS:
-            if slot in expected_edge:
+            # I only bother with this if the slot is included in the
+            # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
+            # and is also in the list of slots in the 'expected_edge' test data.
+            if slot in returned_edge and\
+                    slot in expected_edge:
                 if isinstance(expected_edge[slot], list):
                     # Membership value test.
                     # First, check if both returned and expected lists of
@@ -79,4 +83,5 @@ def transform_test_runner(
                 else:
                     # Scalar value test
                     assert returned_edge[slot] == expected_edge[slot], \
-                        f"Value for slot '{slot}' not equal to returned edge value '{returned_edge[slot]}'?"
+                        f"Value '{expected_edge[slot]}' for slot '{slot}' not equal to "+\
+                        f"returned edge value '{returned_edge[slot]}'?"

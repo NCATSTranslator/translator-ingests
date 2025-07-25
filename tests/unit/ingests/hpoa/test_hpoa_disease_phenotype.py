@@ -84,7 +84,9 @@ from . import transform_test_runner
             {
                 "database_id": "OMIM:117650",
                 "disease_name": "Cerebrocostomandibular syndrome",
-                "qualifier": "",
+                # "qualifier" was actually empty in the original Monarch test data;
+                # however, we want to trigger a test of the negation, so we lie!
+                "qualifier": "NOT",
                 "hpo_id": "HP:0001545",
                 "reference": "OMIM:117650",
                 "evidence": "TAS",
@@ -100,7 +102,7 @@ from . import transform_test_runner
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                "negated": True,
                 "object": "HP:0001545",
                 "publications": [],
                 "has_evidence": ["ECO:0000304"],
@@ -112,6 +114,37 @@ from . import transform_test_runner
             #     "primary_knowledge_source": "infores:hpo-annotations"
             #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
 
+            }
+        ),
+        (  # Query 4 - Disease inheritance 'aspect' == 'I' record processed
+            {
+                "database_id": "OMIM:300425",
+                "disease_name": "Autism susceptibility, X-linked 1",
+                "hpo_id": "HP:0001417",
+                "reference": "OMIM:300425",
+                "evidence": "IEA",
+                "onset": "",
+                "frequency": "",
+                "sex": "",
+                "modifier": "",
+                "aspect": "I",  # assert 'Inheritance' test record
+                "biocuration": "HPO:iea[2009-02-17]",
+            },
+            ["OMIM:300425", "HP:0001417"],
+            {
+                "category": ["biolink:DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation"],
+                "subject": "OMIM:300425",
+                "predicate": "biolink:has_mode_of_inheritance",
+                "object": "HP:0001417",
+                "publications": [],
+                "has_evidence": ["ECO:0000501"],
+                "sex_qualifier": None,
+                "onset_qualifier": None,
+                "has_percentage": None,
+                "has_quotient": None,
+                "frequency_qualifier": None,
+            #     "primary_knowledge_source": "infores:hpo-annotations"
+            #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
             }
         )
     ]
