@@ -1,8 +1,9 @@
 """
 Translator Ingest Globally Shared Code and parameters
 """
-from os.path import abspath, sep
+from os.path import abspath, dirname, join, sep
 from loguru import logger
 
-PRIMARY_DATA_PATH = abspath(f"..{sep}..{sep}data")
+TI_PACKAGE_PATH = abspath(dirname(__file__))
+PRIMARY_DATA_PATH = join(TI_PACKAGE_PATH, f"..{sep}..{sep}data")
 logger.info("Primary data path: {}".format(PRIMARY_DATA_PATH))
