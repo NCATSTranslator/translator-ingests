@@ -7,22 +7,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     DiseaseToPhenotypicFeatureAssociation
 )
 from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
+from . import transform_test_runner
 
-# List of slots whose values are to be check in a result edge
-ASSOCIATION_TEST_SLOTS = [
-    "category",
-    "subject",
-    "predicate",
-    "negated",
-    "object",
-    "publications",
-    "has_evidence",
-    "sex_qualifier",
-    "onset_qualifier",
-    "has_percentage",
-    "has_quotient",
-    "frequency_qualifier"
-]
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
@@ -135,53 +121,4 @@ def test_disease_to_phenotype_transform(
         result_nodes: Optional[List],
         result_edge: Optional[Dict]
 ):
-    nodes: Iterable[NamedThing]
-    edges: Iterable[Association]
-
-    # Call the ingest parser function on the mock_record
-    nodes, edges = transform_record(test_record)
-
-    # Convert the 'nodes' Iterable content into a List by comprehension
-    node: NamedThing
-    transformed_nodes = [node.id for node in nodes]
-
-    if result_nodes is None:
-        # Check for empty 'transformed_nodes' expectations
-        assert not transformed_nodes, \
-            f"unexpected non-empty 'nodes' list: {','.join(transformed_nodes)}"
-    else:
-        # if nodes expected, then are they the expected ones?
-        for node_id in transformed_nodes:
-            assert node_id in result_nodes
-
-    # Convert the 'edges' Iterable content into a List by comprehension
-    edge: Association
-    transformed_edges = [dict(edge) for edge in edges]
-
-    if result_edge is None:
-        # Check for empty 'transformed_edges' expectations
-        assert not transformed_edges, \
-            f"Unexpected non-empty result list of edges: '{','.join(str(transformed_edges)[0:20])}'..."
-    else:
-        # Check contents of edge(s) returned.
-        # For HPOA transformation, only one edge is expected to be returned?
-        assert len(transformed_edges) == 1
-
-        # then grab it for content assessment
-        returned_edge = transformed_edges[0]
-
-        # Check values in expected edge slots of parsed edges
-        for slot in ASSOCIATION_TEST_SLOTS:
-            if slot in result_edge:
-                if isinstance(result_edge[slot], list):
-                    # Membership value test.
-                    # First, check if both returned and expected lists of
-                    # slot values are empty. If so, then the assertion is passed.
-                    # Otherwise, check if an expected slot value is seen in the returned list.
-                    assert not (result_edge[slot] or returned_edge[slot]) \
-                            or result_edge[slot][0] in returned_edge[slot], \
-                        f"Value for slot '{slot}' missing in returned edge values '{','.join(returned_edge[slot])}?'"
-                else:
-                    # Scalar value test
-                    assert returned_edge[slot] == result_edge[slot], \
-                        f"Value for slot '{slot}' not equal to returned edge value '{returned_edge[slot]}'?"
+    transform_test_runner(transform_record(test_record), result_nodes, result_edge)
