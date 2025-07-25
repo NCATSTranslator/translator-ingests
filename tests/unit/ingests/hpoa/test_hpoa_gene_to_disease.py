@@ -33,7 +33,7 @@ def test_predicate(association: str, expected_predicate: str):
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - missing data (empty 'hpo_id' field)
+        (  # Query 0 - missing data (empty record, hence, missing fields)
             {},
             None,
             None
