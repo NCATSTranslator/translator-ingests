@@ -18,13 +18,6 @@ header: 4
 format: 'csv'
 delimiter: '\t'
 
-# We only concern ourselves with Aspect == 'P' (phenotypic anomalies) records in this ingest.
-filters:
-  - inclusion: 'include'
-    column: 'aspect'
-    filter_code: 'eq'
-    value: 'P'
-
 # For a csv/tsv file, list expected columns
 columns:
   - 'database_id'
@@ -40,15 +33,22 @@ columns:
   - 'aspect'
   - 'biocuration'
 
-# DiseaseToPhenotypicFeatureAssociation
+# Core Biolink slots common to both the
+# 'DiseaseOrPhenotypicFeatureToModeOfGeneticInheritanceAssociation', and
+# 'DiseaseToPhenotypicFeatureAssociation' Associations
 edge_properties:
   - 'id'
   - 'category'
   - 'subject'
   - 'predicate'
-  - 'negated'
   - 'object'
   - 'publications'
+  - 'has_evidence'
+  - 'sources'  # primary & supporting
+  - 'knowledge_level'
+  - 'agent_type'
+  # Additional annotation specific to DiseaseToPhenotypicFeatureAssociation
+  - 'negated'
   - 'onset_qualifier'
   - 'frequency_qualifier'
   - 'has_count'
@@ -56,8 +56,3 @@ edge_properties:
   - 'has_percentage'
   - 'has_quotient'
   - 'sex_qualifier'
-  - 'has_evidence'
-  - 'aggregator_knowledge_source'
-  - 'primary_knowledge_source'
-  - 'knowledge_level'
-  - 'agent_type'
