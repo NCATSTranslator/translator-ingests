@@ -1,5 +1,6 @@
 """
 Shared HPOA testing code
+"""
 
 from typing import Optional, Dict, Iterable, List, Tuple
 
