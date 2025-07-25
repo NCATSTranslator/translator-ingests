@@ -6,7 +6,6 @@ between genes and associated diseases.
 """
 from loguru import logger
 from typing import Dict, Iterable
-
 import uuid
 
 from biolink_model.datamodel.pydanticmodel_v2 import (

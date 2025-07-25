@@ -19,7 +19,10 @@ ASSOCIATION_TEST_SLOTS = [
     "onset_qualifier",
     "has_percentage",
     "has_quotient",
-    "frequency_qualifier"
+    "frequency_qualifier",
+    # "sources",
+    "knowledge_level",
+    "agent_type"
 ]
 
 

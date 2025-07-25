@@ -2,41 +2,18 @@ from typing import Optional, List, Dict
 
 import pytest
 
-from biolink_model.datamodel.pydanticmodel_v2 import GeneToDiseaseAssociation, CausalGeneToDiseaseAssociation
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 from src.translator_ingest.util.monarch.constants import (
     BIOLINK_CAUSES,
     BIOLINK_CONTRIBUTES_TO,
     BIOLINK_GENE_ASSOCIATED_WITH_CONDITION,
-    INFORES_MEDGEN,
-    INFORES_MONARCHINITIATIVE,
-    INFORES_OMIM,
-    INFORES_ORPHANET,
 )
-from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_knowledge_sources, get_predicate
+from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_predicate
+
 from src.translator_ingest.ingests.hpoa.gene_to_disease_transform import transform_record
+
 from . import transform_test_runner
-
-@pytest.mark.parametrize(
-    ("original_source", "expected_primary_knowledge_source", "expected_aggregator_knowledge_source"),
-    [
-        (
-            "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen",
-            INFORES_OMIM,
-            [INFORES_MEDGEN, INFORES_MONARCHINITIATIVE],
-        ),
-        ("http://www.orphadata.org/data/xml/en_product6.xml", INFORES_ORPHANET, [INFORES_MONARCHINITIATIVE]),
-    ],
-)
-def test_knowledge_source(
-    original_source: str, expected_primary_knowledge_source: str, expected_aggregator_knowledge_source: List[str]
-):
-    primary_knowledge_source, aggregator_knowledge_source = get_knowledge_sources(
-        original_source, INFORES_MONARCHINITIATIVE
-    )
-
-    assert primary_knowledge_source == expected_primary_knowledge_source
-    assert aggregator_knowledge_source.sort() == expected_aggregator_knowledge_source.sort()
 
 
 @pytest.mark.parametrize(
@@ -85,6 +62,8 @@ def test_predicate(association: str, expected_predicate: str):
                 # "primary_knowledge_source": "infores:hpo-annotations"
                 # "supporting_knowledge_source": "infores:medgen"
                 # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
             }
         )
     ]

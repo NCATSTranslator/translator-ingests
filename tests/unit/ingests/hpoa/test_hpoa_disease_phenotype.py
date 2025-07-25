@@ -2,9 +2,11 @@ import pytest
 
 from typing import Optional, Dict, List
 
-from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
-from . import transform_test_runner
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
+from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
+
+from . import transform_test_runner
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
@@ -29,7 +31,7 @@ from . import transform_test_runner
                 "aspect": "C",  # assert 'Clinical' test record
                 "biocuration": "HPO:skoehler[2012-11-16]",
             },
-            # This is not a 'P' record, so it should be skipped
+            # This is not a 'P' nor 'I' record, so it should be skipped
             None,
             None
         ),
@@ -74,6 +76,8 @@ from . import transform_test_runner
                 #       in Pydantic before somehow testing the following
                 # "primary_knowledge_source": "infores:hpo-annotations"
                 # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
             }
         ),
         (  # Query 3 - Another 'aspect' == 'P' record processed
@@ -109,7 +113,8 @@ from . import transform_test_runner
                 "frequency_qualifier": "HP:0040283",
             #     "primary_knowledge_source": "infores:hpo-annotations"
             #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
-
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
             }
         ),
         (  # Query 4 - Disease inheritance 'aspect' == 'I' record processed
@@ -141,6 +146,8 @@ from . import transform_test_runner
                 "frequency_qualifier": None,
             #     "primary_knowledge_source": "infores:hpo-annotations"
             #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
             }
         )
     ]
