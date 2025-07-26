@@ -20,12 +20,15 @@ Files:
 
 Rows:
 - complete duplicates (some rows were found in multiple files)
-- no value in `disease_mim` column: we chose this column to be the source of disease node IDs
-- had the value `disputed` or `refuted` in the `confidence` column: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation)
+- no value in `disease_mim` column: we currently use only this column as the source of disease IDs
+- have the values `limited`, `disputed`, or `refuted` in the `confidence` column:
+  - `limited`: the last sentence of the [definition](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) is "The majority are probably false associations. (previously labelled as possible)." We've decided that these may not be "real" associations, so we do not want to ingest them
+  - `disputed` and `refuted`: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation). **This decision to exclude could be revisited once Translator can model/handle negation better**.   
 - **had NodeNorm mapping failures for the node IDs (only diseases in this case)**
 
 Columns:
-- disease_MONDO
+- `disease_MONDO`: **may revisit during this ingest process** because resource has been working to improve this data
+- `confidence`: currently not including as an edge property, because [more data-modeling in biolink-model](https://github.com/biolink/biolink-model/issues/1583) is needed. **Could revisit once this issue is addressed**
 - **Seem harder to get into Translator, potentially useful**: 
   - `molecular_mechanism_categorisation`: "qualifies" the `molecular_mechanism` column's value (seems to say how molecular mechanism was decided: "inferred" or "evidence") 
     - tricky since it's like "how knowledge was obtained" for a specific part of edge (I'm using molecular_mechanism to adjust the subject qualifier) 
@@ -45,11 +48,8 @@ Columns:
 
 ## Rationale for Edge Types
 
-
-
-- `Gene` - `causes` - `Disease`: used for associations with [`confidence` values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) **"moderate", "strong", or "definitive"**. These values mean there's moderate-to-definitive evidence that the gene DOES HAVE a causal role in this disease. 
-- `Gene` - `related_to` - `Disease`: used for associations with the [`confidence` value](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) **"limited"**. We interpret the definition of "limited" as saying there is AN association - it's just not causal (as far as we know) and it's unclear how "real"/important it is. So we use a very general predicate. 
-- every edge has a qualifier on Gene (`subject_form_or_variant_qualifier`) because every association has an allelic_requirement value and molecular_mechanism value - theese [terms](https://www.ebi.ac.uk/gene2phenotype/about/terminology) imply the gene's mutations are being considered here. The molecular_mechanism values are mapped to the qualifier enum values:
+- `Gene` - `causes` - `Disease`: the association has the [`confidence` value](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) **"moderate", "strong", or "definitive"**, which mean there's moderate-to-definitive evidence that the gene DOES HAVE a causal role in this disease. 
+- every edge has a qualifier on Gene (`subject_form_or_variant_qualifier`) because every association has an `allelic_requirement` value and `molecular_mechanism` value - these [terms](https://www.ebi.ac.uk/gene2phenotype/about/terminology) imply the gene's mutations are being considered here. The `molecular_mechanism` values are mapped to the qualifier values (enum):
   - "loss of function" => `loss_of_function_variant_form`
   - "undetermined" => `genetic_variant_form`
   - "gain of function" => `gain_of_function_variant_form`
