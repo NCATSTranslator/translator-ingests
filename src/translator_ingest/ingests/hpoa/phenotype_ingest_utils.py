@@ -7,9 +7,9 @@ from typing import Optional, List, Dict
 from loguru import logger
 from pydantic import BaseModel
 
-from src.translator_ingest import PRIMARY_DATA_PATH
+from translator_ingest import PRIMARY_DATA_PATH
 
-from src.translator_ingest.util.monarch.constants import (INFORES_MEDGEN,
+from translator_ingest.util.monarch.constants import (INFORES_MEDGEN,
                                INFORES_OMIM,
                                INFORES_ORPHANET,
                                BIOLINK_CAUSES,

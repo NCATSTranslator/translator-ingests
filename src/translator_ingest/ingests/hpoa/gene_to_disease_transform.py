@@ -19,14 +19,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from src.translator_ingest.util.monarch.constants import (
+from translator_ingest.util.monarch.constants import (
     INFORES_MONARCHINITIATIVE,
     BIOLINK_CAUSES
 )
-from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_knowledge_sources, get_predicate
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_knowledge_sources, get_predicate
 
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from src.translator_ingest.ingests.hpoa import get_latest_version
+from translator_ingest.util.biolink import build_association_sources
 
 """
 def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
@@ -61,6 +62,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
             predicate=predicate,
             object=disease_id,
             primary_knowledge_source=primary_knowledge_source,
+            sources=build_association_sources(),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
             **{}
