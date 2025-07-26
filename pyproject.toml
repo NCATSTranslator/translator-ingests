@@ -10,7 +10,7 @@ dependencies = [
     "bmt>=1.4.5",
     "kghub-downloader>=0.4.1",
     "koza",
-    "pronto>=2.7.0",
+    "pronto>=2.7.0"
 ]
 
 [dependency-groups]
