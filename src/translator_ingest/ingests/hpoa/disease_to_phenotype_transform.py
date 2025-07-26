@@ -30,9 +30,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from src.translator_ingest.util.ontology import read_ontology_to_exclusion_terms
+from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 
-from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     HPO_FILE_PATH,
     evidence_to_eco,
     sex_format,
@@ -42,7 +42,8 @@ from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 )
 
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
-from src.translator_ingest.ingests.hpoa import get_latest_version
+from translator_ingest.ingests.hpoa import get_latest_version
+from translator_ingest.util.biolink import build_association_sources
 
 """
 def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
@@ -152,8 +153,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
                 frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
                 has_count=frequency.has_count,
                 has_total=frequency.has_total,
-                # TODO: the Biolink Model for edge provenance is under some revision,
-                #       deprecating the use of direct *_knowledge_source tags
+                sources=build_association_sources(),
                 primary_knowledge_source="infores:hpo-annotations",
                 # supporting_knowledge_source=supporting_knowledge_source,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
@@ -178,6 +178,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
                     has_evidence=[evidence_curie],
                     primary_knowledge_source="infores:hpo-annotations",
                     # supporting_knowledge_source=supporting_knowledge_source,
+                    sources=build_association_sources(),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     **{}
