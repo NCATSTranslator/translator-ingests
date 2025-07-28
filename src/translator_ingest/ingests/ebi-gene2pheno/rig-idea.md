@@ -58,3 +58,11 @@ Columns:
 ## Rationale for knowledge level (KL) / agent type (AT)
 
 - `knowledge_assertion` / `manual_agent`: because the associations are curated from literature by UK disease domain experts and consultant clinical geneticists. 
+
+## Misc
+
+We **may want to REVISIT** how we handle the `molecular mechanism` and `variant types` columns VS the **biolink-model qualifier options**:
+- There could be a separate qualifier for "genetic mechanisms" that would have the different effects of genetics on function like "loss of function", "dominant negative". And `molecular mechanism` terms could map to this.
+- `form_or_variant_qualifier` could have a lot of structural variant terms. Then `variant types` terms could map to this. **One problem is variant_types is multivalued (when a biolink model qualifier is not).** Other notes: 
+  - this column has a lot of missing values
+  - resource doesn't provide a file with all possible terms and their mappings to SO terms, making the parsing/maintenance of any mapping trickier
