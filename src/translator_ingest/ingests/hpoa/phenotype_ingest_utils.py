@@ -4,17 +4,83 @@ HPOA processing utility methods
 from os import sep
 from typing import Optional, List, Dict
 
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 from loguru import logger
 from pydantic import BaseModel
 
 from translator_ingest import PRIMARY_DATA_PATH
+from translator_ingest.util.biolink import build_association_knowledge_sources
 
-from translator_ingest.util.monarch.constants import (INFORES_MEDGEN,
-                               INFORES_OMIM,
-                               INFORES_ORPHANET,
-                               BIOLINK_CAUSES,
-                               BIOLINK_CONTRIBUTES_TO,
-                               BIOLINK_GENE_ASSOCIATED_WITH_CONDITION)
+from translator_ingest.util.biolink import (
+    INFORES_MEDGEN,
+    INFORES_OMIM,
+    INFORES_ORPHANET,
+    INFORES_DECIFER,
+    INFORES_HPOA,
+    BIOLINK_CAUSES,
+    BIOLINK_CONTRIBUTES_TO,
+    BIOLINK_GENE_ASSOCIATED_WITH_CONDITION
+)
+
+
+# DRY cache of supporting_knowledge_source-specific
+# Disease-to-Phenotype RetrievalSource specifications
+hpoa_sources: Dict[str, List[RetrievalSource]] = {
+    INFORES_MEDGEN: build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_MEDGEN, INFORES_OMIM]
+        ),
+    INFORES_OMIM: build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_OMIM]
+        ),
+    INFORES_ORPHANET: build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_ORPHANET]
+        ),
+    INFORES_DECIFER: build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_DECIFER]
+        ),
+}
+
+
+def get_hpoa_association_sources(source: str) -> List[RetrievalSource]:
+    """
+    The primary knowledge source may either be inferred from 'source' string
+    matching a characteristic port of a HPOA-coded record['source'] encoded URI
+    or from the CURIE namespace of a 'source' string, which is a disease identifier.
+
+    :param source: HPOA data field value encoding primary knowledge source
+    :return:
+    """
+    if "medgen" in source:
+        return build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_MEDGEN, INFORES_OMIM]
+        )
+
+    elif source.startswith("OMIM"):
+        return build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_OMIM]
+        )
+
+    elif "orphadata" in source or source.startswith("ORPHA") or "orpha" in source.lower():
+        return build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_ORPHANET]
+        )
+
+    elif source.startswith("DECIPHER"):
+        return build_association_knowledge_sources(
+            primary=INFORES_HPOA,
+            supporting=[INFORES_DECIFER]
+        )
+
+    else:
+        raise ValueError(f"Unknown source '{source}' value, can't set the primary knowledge source")
+
 
 # Human Phenotype Ontology local file path
 # TODO: this path should be dynamically resolved by
@@ -176,29 +242,7 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
     )
 
 
-def get_knowledge_sources(original_source: str, additional_source: str) -> (str, List[str]):
-    """
-    Return a tuple of the primary_knowledge_source and original_knowledge_source
-    """
-    _primary_knowledge_source: str = ""
-    _aggregator_knowledge_source: List[str] = []
-
-    if additional_source is not None:
-        _aggregator_knowledge_source.append(additional_source)
-
-    if "medgen" in original_source:
-        _aggregator_knowledge_source.append(INFORES_MEDGEN)
-        _primary_knowledge_source = INFORES_OMIM
-    elif "orphadata" in original_source:
-        _primary_knowledge_source = INFORES_ORPHANET
-
-    if _primary_knowledge_source == "":
-        raise ValueError(f"Unknown knowledge source: {original_source}")
-
-    return _primary_knowledge_source, _aggregator_knowledge_source
-
-
-def get_predicate(original_predicate: str) -> str:
+def get_hpoa_genetic_predicate(original_predicate: str) -> str:
     """
     Convert the association column into a Biolink Model predicate
     """

@@ -4,12 +4,12 @@ import pytest
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
-from src.translator_ingest.util.monarch.constants import (
+from src.translator_ingest.util.biolink import (
     BIOLINK_CAUSES,
     BIOLINK_CONTRIBUTES_TO,
     BIOLINK_GENE_ASSOCIATED_WITH_CONDITION,
 )
-from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_predicate
+from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
 
 from src.translator_ingest.ingests.hpoa.gene_to_disease_transform import transform_record
 
@@ -25,7 +25,7 @@ from . import transform_test_runner
     ],
 )
 def test_predicate(association: str, expected_predicate: str):
-    predicate = get_predicate(association)
+    predicate = get_hpoa_genetic_predicate(association)
 
     assert predicate == expected_predicate
 

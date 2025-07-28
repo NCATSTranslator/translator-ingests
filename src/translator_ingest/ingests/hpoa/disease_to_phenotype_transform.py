@@ -29,7 +29,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
-
 from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
@@ -38,12 +37,12 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     sex_format,
     sex_to_pato,
     phenotype_frequency_to_hpo_term,
-    Frequency
+    Frequency,
+    get_hpoa_association_sources
 )
 
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from translator_ingest.ingests.hpoa import get_latest_version
-from translator_ingest.util.biolink import build_association_sources
 
 """
 def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
@@ -58,15 +57,6 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
 # TODO: how do I best configure this for mock data for unit testing?
 modes_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
 
-def get_supporting_knowledge_source(disease_id: str) -> str:
-    if disease_id.startswith("OMIM"):
-        return "infores:omim"
-    elif disease_id.startswith("ORPHA") or "orpha" in disease_id.lower():
-        return "infores:orphanet"
-    elif disease_id.startswith("DECIPHER"):
-        return "infores:decipher"
-    else:
-        raise ValueError(f"Unknown disease ID prefix for {disease_id}, can't set primary_knowledge_source")
 
 def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Association]):
     """
@@ -80,9 +70,6 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
         ## Subject: Disease
         disease_id = record["database_id"]
         disease: Disease = Disease(id=disease_id, **{})
-
-        # Track the original source of the disease-phenotype/inheritance relationship
-        supporting_knowledge_source = get_supporting_knowledge_source(disease_id)
 
         ## Object: PhenotypicFeature defined by an HPO term
         hpo_id = record["hpo_id"]
@@ -153,9 +140,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
                 frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
                 has_count=frequency.has_count,
                 has_total=frequency.has_total,
-                sources=build_association_sources(),
-                primary_knowledge_source="infores:hpo-annotations",
-                # supporting_knowledge_source=supporting_knowledge_source,
+                sources=get_hpoa_association_sources(disease_id),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 **{}
@@ -176,9 +161,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
                     object=hpo_id,
                     publications=publications,
                     has_evidence=[evidence_curie],
-                    primary_knowledge_source="infores:hpo-annotations",
-                    # supporting_knowledge_source=supporting_knowledge_source,
-                    sources=build_association_sources(),
+                    sources=get_hpoa_association_sources(disease_id),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     **{}
