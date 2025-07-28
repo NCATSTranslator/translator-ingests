@@ -23,28 +23,6 @@ from translator_ingest.util.biolink import (
 )
 
 
-# DRY cache of supporting_knowledge_source-specific
-# Disease-to-Phenotype RetrievalSource specifications
-hpoa_sources: Dict[str, List[RetrievalSource]] = {
-    INFORES_MEDGEN: build_association_knowledge_sources(
-            primary=INFORES_HPOA,
-            supporting=[INFORES_MEDGEN, INFORES_OMIM]
-        ),
-    INFORES_OMIM: build_association_knowledge_sources(
-            primary=INFORES_HPOA,
-            supporting=[INFORES_OMIM]
-        ),
-    INFORES_ORPHANET: build_association_knowledge_sources(
-            primary=INFORES_HPOA,
-            supporting=[INFORES_ORPHANET]
-        ),
-    INFORES_DECIFER: build_association_knowledge_sources(
-            primary=INFORES_HPOA,
-            supporting=[INFORES_DECIFER]
-        ),
-}
-
-
 def get_hpoa_association_sources(source: str) -> List[RetrievalSource]:
     """
     The primary knowledge source may either be inferred from 'source' string
