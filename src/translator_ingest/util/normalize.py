@@ -26,8 +26,7 @@ from typing import Optional, Dict
 from .http import post_query
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    KnowledgeLevelEnum,
-    Literal, NamedThing, Association, Gene
+    NamedThing, Association
 )
 
 

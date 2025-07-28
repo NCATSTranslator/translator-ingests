@@ -1,24 +1,54 @@
 import uuid
+from typing import Iterable, Any
+
+import requests
+import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
+    NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    Association
 )
-
-from koza.runner import KozaTransform
+from bs4 import BeautifulSoup
 
 # ideally we'll use a predicate enum, maybe an infores enum?
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 INFORES_CTD = "infores:ctd"
 
-# hack because koza doesn't yet have a feature to avoid rewriting nodes
-seen_nodes = set()
 
+def get_latest_version():
+    # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
+    # with a version on it. Fetch the html and parse it to determine the current version.
+    html_page: requests.Response = requests.get('http://ctdbase.org/about/dataStatus.go')
+    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    version_header: BeautifulSoup.Tag = resp.find(id='pgheading')
+    if version_header is not None:
+        # pgheading looks like "Data Status: July 2025", convert it to "July_2025"
+        return version_header.text.split(':')[1].strip().replace(' ', '_')
+    else:
+        raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
-def transform_record(koza: KozaTransform, record: dict):
+"""
+Functions decorated with @koza.on_data_begin() run before transform or transform_record
+
+koza.state is a dictionary that can be used to store arbitrary variables
+@koza.on_data_begin()
+def prepare(koza: koza.KozaTransform) -> None:
+    koza.state['example_counter'] = 1
+
+Functions decorated with @koza.on_data_end() run after transform or transform_record
+@koza.on_data_end()
+def clean_up(koza: koza.KozaTransform) -> None:
+    if koza.state['example_counter'] > 0:
+        koza.log(f'Uh oh, {koza.state['example_counter']} things happened!', level="WARNING")
+"""
+
+@koza.transform_record()
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -33,14 +63,4 @@ def transform_record(koza: KozaTransform, record: dict):
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
-
-    # todo: don't write conflicting associations, out of scope for this demo
-    to_write = [association]
-    # todo: an inline hack to avoid rewriting nodes, koza needs support to do this explicitly
-    if chemical.id not in seen_nodes:
-        to_write.append(chemical)
-        seen_nodes.add(chemical.id)
-    if disease.id not in seen_nodes:
-        to_write.append(disease)
-        seen_nodes.add(disease.id)
-    koza.write(*to_write)
+    return [chemical, disease], [association]
