@@ -2,8 +2,6 @@ from typing import Optional, List, Dict
 
 import pytest
 
-from typing import Optional, Dict, List
-
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 from src.translator_ingest.ingests.hpoa.gene_to_phenotype_transform import transform_record

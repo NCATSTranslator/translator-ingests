@@ -19,13 +19,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
+from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_HPOA
+
 from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     Frequency,
     phenotype_frequency_to_hpo_term
 )
 
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
-from src.translator_ingest.ingests.hpoa import get_latest_version
+from translator_ingest.ingests.hpoa import get_latest_version
 
 """
 def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
@@ -85,7 +87,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
             has_total=frequency.has_total,
             disease_context_qualifier=dis_id,
             # publications=publications,
-            primary_knowledge_source="infores:hpo-annotations",
+            sources=build_association_knowledge_sources(primary=INFORES_HPOA),
             knowledge_level=KnowledgeLevelEnum.logical_entailment,
             agent_type=AgentTypeEnum.automated_agent,
             **{}
