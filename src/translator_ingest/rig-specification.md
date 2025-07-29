@@ -56,7 +56,7 @@ Describe and define the subset of data from the source that is included in this 
   A table listing all files (or API endpoints or database tables) that contain ingested or pertinent content to the defined scope of ingest, with (markdown clickable) url of each and a brief description.
   | File / Endpoint / Table | Description (o) |
   |----------|----------|
-  | **`["file/endpoint/table name"]("url")`** |  | 
+  |  |  | 
   |  |  | 
 
   
@@ -80,7 +80,7 @@ Notes about additions or changes to consider in future iterations of this ingest
 The infores identifier assigned to the Translator resource that will be created from the ingested content. 
    
 ### Edge Types
-A table describing the types of edges created in the KG produced by this ingest. Provides the Biolink Association type, a meta-edge representation, KL/AT assigned to each edge type, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users.
+A table describing the types of edges created in the KG produced by this ingest. Provides the Biolink Association type, a meta-edge representation, KL/AT assigned to each edge type, edge properties included, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users.
 
 | Subject Category | Predicate | Object Category | Qualifier Types (o) | AT / KL | Edge Properties | UI Explanation |
 |------------------|-----------|-----------------|---------------------|---------|-----------------|----------------|
@@ -88,7 +88,7 @@ A table describing the types of edges created in the KG produced by this ingest.
 |                  |           |                 |                     |         |                 |                |
 
 **Notes/Rationale (o)**:
-Optional additional information about the modeling/mapping rationale for a specific edge type in the table above (can use the # for a given entry in the table to reference/further describe it here).
+Optional additional information about the modeling/mapping rationale for a specific edge type in the table above.
    
 ### Node Types
 A table describing the high-level Biolink categories of nodes produced from this ingest as assigned by ingestors. Note however that downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
