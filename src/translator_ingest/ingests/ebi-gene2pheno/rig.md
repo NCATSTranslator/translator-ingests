@@ -70,7 +70,7 @@ Records from relevant files that are not included in the ingest.
   | G2P_all_[date].csv |  Records with NodeNorm mapping failures for the node IDs | Failed normalization means that the node would not be connected to other data/nodes in Translator graphs. |
 
      
-### Future Considerations (o):
+### Future Content Considerations (o):
 - Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better
 - Lots of additional qualifiers and edge properties we could include in future iterations (see example record [here](https://www.ebi.ac.uk/gene2phenotype/lgd/G2P03700)):
    - confidence level values when we improve/refactor modeling of confidence in Biolink
@@ -91,7 +91,8 @@ infores:translator-ebi-gene2phenotype-kgx
 |----------|----------|----------|----------|---------|----------|---------|
 | Gene | associated_with | Disease  |  qualified_predicate: causes, subject_form_or_variant_qualifier: CausalMechanismQualifierEnum, allelic_requirement_qualifier: regex (constrains to HP id syntax) |  manual_agent, knowledge_assertion | none | EBI G2P curators follow rigorous evidence interpretation guidelines to determine what specific types of mutations in a given gene are causal for a specific disease or phenotype, which Biolink models using the 'causes' predicate to connect a variant form of a Gene to the resulting condition. |
 
-**Notes/Rationale (o)**:
+**Additional Notes/Rationale (o)**:
+- n/a
 
 ### Node Types
 
@@ -103,7 +104,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 | Disease | MONDO, MIM|  |  |
 
 
-### Future Considerations (o)
+### Future Modeling Considerations (o)
 - Revisit modeling of constraints on allelic_requirement_qualifier values (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values). See PR linked below for more details.
 
 
