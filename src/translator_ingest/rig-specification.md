@@ -26,7 +26,7 @@ One or more of the following categories, describing the kind of source being ing
   | **Node Properties Only Provider** | Provides only information that is used to annotate nodes of a particular kind in Translator graphs |
   | **Other/Unknown** | Used when the information provided by a source is not known, or does not fit into the defined categories above |
 
-### Citation
+### Citation (o)
 (Optional) literature citation(s) officially/originally publishing or describing the source.
 
 ### Terms of Use
@@ -60,28 +60,17 @@ Describe and define the subset of data from the source that is included in this 
   |  |  | 
 
   
-  #### Included Content:
-  A table describing the content that is ingested from each relevant file/endpoint/table. 
-  | File | Included Content | Fields Used (o) |
-  |----------|----------|----------|
+  #### Ingested Content:
+  A table describing the content that is ingested from each relevant file/endpoint/table above, and what records are filtered/excluded in the ingest process. As possible, describe the rationale behind any filtering rules or exclusion criteria.
+  Note that there is no need to list source files from which no content was ingested, or the fields from ingested files that were not used.  
+  | File | Included Content | Fields Used| Filtered / Excluded Content | Rationale |
+  |----------|----------|----------|----------|----------|
   |  |  |  | 
   |  |  |  | 
 
-  #### Filtered Records (o):
-  A table describing records that are filtered out during processing/ingest of the source. As possible, describe the rationale behind any filtering rules or exclusion criteria.
-  Note that there is no need to list all files from which no content was ingested, or the fields from ingested files that were not used.  
-  The goal here is to indicate if some subset of records *from ingested files* were filtered out, and why (e.g. lack of relevance, low quality data, deferred to future ingest, etc). 
-  | File | Excluded Content | Rationale |
-  |----------|----------|----------|
-  |  |  |  |
-  |  |  |  | 
 
-  #### Future Considerations (o):
-  A table describing data that was excluded but may be useful to include in future ingests.
-  | File | Content |  Rationale |
-  |----------|----------|----------|
-  |  |  |  |
-  |  |  |  | 
+### Future Considerations (o) 
+Notes about additions or changes to consider in future iterations of this ingest. 
   
 -----------------
 
@@ -93,25 +82,28 @@ The infores identifier assigned to the Translator resource that will be created 
 ### Edge Types
 A table describing the types of edges created in the KG produced by this ingest. Provides the Biolink Association type, a meta-edge representation, KL/AT assigned to each edge type, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users.
 
-| # | Association Type | Subject Category | Predicate | Object Category | Qualifier Types (o) | AT / KL | Edge Properties (o) | UI Explanation |
-|---|------------------|------------------|-----------|-----------------|-----------------|---------|-----------------|----------------|
-|   |                  |                  |           |                 |                 |                       |         |                |
+| Subject Category | Predicate | Object Category | Qualifier Types (o) | AT / KL | Edge Properties | UI Explanation |
+|------------------|-----------|-----------------|---------------------|---------|-----------------|----------------|
+|                  |           |                 |                     |         |                 |                |
+|                  |           |                 |                     |         |                 |                |
 
-**Rationale (o)**:
+**Notes/Rationale (o)**:
 Optional additional information about the modeling/mapping rationale for a specific edge type in the table above (can use the # for a given entry in the table to reference/further describe it here).
    
 ### Node Types
 A table describing the high-level Biolink categories of nodes produced from this ingest as assigned by ingestors. Note however that downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
-| Biolink Category |  Source Identifier Type(s) (o) | Notes (o) |
+| Biolink Category |  Source Identifier Type(s) | Notes |
 |------------------|----------------------------|--------|
 |  |  |  |
 |  |  |  |
 
+### Future Considerations (o)
+  
 ------------------
 
 ## Section IV: Provenance Information 
 
-### Ingest Contributors
+### Ingest Contributors (o)
 A list of people who contributed to this ingest and the role they played. Use the following terms to describe roles. 
 
 | Role | Description |
@@ -121,7 +113,7 @@ A list of people who contributed to this ingest and the role they played. Use th
 | **domain expertise** | provision of expertise / advice in the subject area relevant to the source |
 | **data modeling** | drafting of models and mapping/transform definitions that were implemented by ingest code |
 
-### Artifacts
+### Artifacts (o)
 
 ### Additional Notes (o)
 Optional, additional considerations or notes about why/how data was ingested, transformed, annotated during the ingest process.
