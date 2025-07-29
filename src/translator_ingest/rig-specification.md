@@ -1,6 +1,11 @@
 # Instructions for Populating Reference Ingest Guides (RIGs)
-Complete the sections described below to document the scope and rationale of a source ingest. Optional sections are marked with an "(o)".
-An example of a completed RIG for the Comparative Toxicogenomics Database (CTD) ingest can be found here. 
+- RIGs document the scope, rationale, and modeling for a single source ingest. 
+- Below we define and provide guidance for populating each section of a RIG. 
+- Optional sections are marked with an "(o)".
+
+An informative example of a completed RIG for the Comparative Toxicogenomics Database (CTD) ingest can be found [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md).  
+
+New RIGs can be created by copying and overwriting the markdown content of this CTD RIG in a new document. 
 
 ---------------
 
@@ -52,22 +57,32 @@ Description of the general rationale for ingesting selected content from this so
 ### Scope
 Describe and define the subset of data from the source that is included in this ingest.
 
-  #### Relevant Files:
-  A table listing all files (or API endpoints or database tables) that contain ingested or pertinent content to the defined scope of ingest, with (markdown clickable) url of each and a brief description.
-  | File / Endpoint / Table | Description (o) |
-  |----------|----------|
-  |  |  | 
-  |  |  | 
 
-  
-  #### Ingested Content:
-  A table describing the content that is ingested from each relevant file/endpoint/table above, and what records are filtered/excluded in the ingest process. As possible, describe the rationale behind any filtering rules or exclusion criteria.
+### Relevant Files
+Source files (or API endpoints or database tables) with content we aim to ingest.
+
+  | File / Endpoint / Table | Location | Description |
+  |----------|----------|----------|
+  |  |  |  |
+  |  |  |  |  
+### Included Content
+Records from relevant files/endpoints/tables above that are included in this ingest.
+
+  | File | Included Records | Fields Used | 
+  |----------|----------|----------|
+  |  |  |  |
+  |  |  |  |  
+
+
+### Filtered Content
+Records from relevant files that are not included in the ingest.
+As possible, describe the rationale behind any filtering rules or exclusion criteria.
   Note that there is no need to list source files from which no content was ingested, or the fields from ingested files that were not used.  
-  | File | Included Content | Fields Used| Filtered / Excluded Content | Rationale |
-  |----------|----------|----------|----------|----------|
-  |  |  |  | 
-  |  |  |  | 
 
+  | File | Filtered  Records | Rationale |
+  |----------|----------|----------|
+  |  |  |  |
+  |  |  |  |
 
 ### Future Considerations (o) 
 Notes about additions or changes to consider in future iterations of this ingest. 
@@ -97,7 +112,8 @@ A table describing the high-level Biolink categories of nodes produced from this
 |  |  |  |
 |  |  |  |
 
-### Future Considerations (o)
+### Future Considerations (o) 
+Notes about mapping/modeling changes to consider in future iterations of this ingest. 
   
 ------------------
 
@@ -114,6 +130,7 @@ A list of people who contributed to this ingest and the role they played. Use th
 | **data modeling** | drafting of models and mapping/transform definitions that were implemented by ingest code |
 
 ### Artifacts (o)
+Links to external artifacts withmore information about / discussion of this ingest. 
 
 ### Additional Notes (o)
 Optional, additional considerations or notes about why/how data was ingested, transformed, annotated during the ingest process.
