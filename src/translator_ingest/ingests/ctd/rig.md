@@ -57,7 +57,7 @@ This initial ingest of CTD covers curated Chemical to Disease associations that 
   |----------|----------|----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Curated therapeutic and marker/mechanism associations (rows where a "DirectEvidence" value is populated with type "T" or "M"), as well as inferred associtions (rows lacking a value in the DirectEvidence column)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs | None | Currently taking all records with no publication count or inference score cutoffs - but these may be added in future iterations |
 
-  #### Future Considerations (o):
+### Future Considerations (o)
 - While the current ingest includes only Chemical-Disease Asociations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table here: https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0 for more details. 
 - Also consider ingesting additional chemical-disease edges reporting statistical correlations from environmental exposure studies from CTD_exposure_events.tsv.gz. This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not yet clear.
 - Consider adding publication count or inference score cutoffs to filter lower quality / confidence records.
