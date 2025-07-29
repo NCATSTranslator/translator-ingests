@@ -67,7 +67,7 @@ Records from relevant files that are not included in the ingest.
   | CTD_chemicals_diseases.tsv.gz  | None | Currently taking all records with no publication count or inference score cutoffs - but these may be added in future iterations |
 
 
-### Future Considerations (o)
+### Future Content Considerations (o)
 - While the current ingest includes only Chemical-Disease Asociations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table here: https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0 for more details. 
 - Also consider ingesting additional chemical-disease edges reporting statistical correlations from environmental exposure studies from CTD_exposure_events.tsv.gz. This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not yet clear.
 - Consider adding publication count or inference score cutoffs to filter lower quality / confidence records.
@@ -87,7 +87,7 @@ Records from relevant files that are not included in the ingest.
 | ChemicalEntity | 'correlates_with_or_contributes_to' | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate 'correlates_with_or_contributes_to'. |
 | ChemicalEntity | 'associated_with' | DiseaseOrPhenotypicFeature  |  n/a  |  data_analysis_pipeline, statisitcal_association  | has_confidence_score |  CTD Chemical-Disease records with an inference score indicate a statistically significant number of shared gene associations that suggest a biological relationship may exist. The statistical basis of this relationship maps to the Biolink 'assocaited_with' predicate. |
 
-**Notes/Rationale (o)**:
+**Additional Notes/Rationale (o)**:
 - For source records that include an inference score but no 'T' or 'M' flag one edge will be created ('associated_with')
 - For source records that include either a 'T' or an 'M' flag nd no inference score, one edge will be created ('treats_or_studied_or_applied_to_treat' or 'correlates_with_or_contributes_to')
 - For source records that include an inference score and either a 'T' or an 'M' flag, two edges will be created ('treats_or_studied_or_applied_to_treat' or 'correlates_with_or_contributes_to', and 'associated_with')
@@ -106,7 +106,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 -  The chemical ID row is expected to need a 'MESH:' prefix added, with the disease identifier used as-is.
   
-### Future Considerations (o)
+### Future Modeling Considerations (o)
 - Revisit use of 'has_confidence_score' edge property if/when we refactor this part of the Biolink Model
 - Revisit 'correlates_with_or_contributes_to' and 'treats_or_studied_or_applied_to_treat' predicates if/when we refactor modeling or conventions here. 
 
