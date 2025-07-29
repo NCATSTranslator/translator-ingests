@@ -65,6 +65,8 @@ Source files (or API endpoints or database tables) with content we aim to ingest
   |----------|----------|----------|
   |  |  |  |
   |  |  |  |  
+
+  
 ### Included Content
 Records from relevant files/endpoints/tables above that are included in this ingest.
 
@@ -84,8 +86,8 @@ As possible, describe the rationale behind any filtering rules or exclusion crit
   |  |  |  |
   |  |  |  |
 
-### Future Considerations (o) 
-Notes about additions or changes to consider in future iterations of this ingest. 
+### Future Content Considerations (o) 
+Notes about content additions or changes to consider in future iterations of this ingest. 
   
 -----------------
 
@@ -102,7 +104,7 @@ A table describing the types of edges created in the KG produced by this ingest.
 |                  |           |                 |                     |         |                 |                |
 |                  |           |                 |                     |         |                 |                |
 
-**Notes/Rationale (o)**:
+**Additional Notes/Rationale (o)**:
 Optional additional information about the modeling/mapping rationale for a specific edge type in the table above.
    
 ### Node Types
@@ -112,7 +114,7 @@ A table describing the high-level Biolink categories of nodes produced from this
 |  |  |  |
 |  |  |  |
 
-### Future Considerations (o) 
+### Future Modeling Considerations (o) 
 Notes about mapping/modeling changes to consider in future iterations of this ingest. 
   
 ------------------
