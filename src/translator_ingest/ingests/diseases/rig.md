@@ -76,7 +76,7 @@ Records from relevant files that are not included in the ingest.
   | human_disease_knowledge_filtered.tsv | Had NodeNorm mapping failure on gene or disease ID | need node IDs that NodeNorm successfully maps to entities. |
 
   
-### Future Considerations (o)
+### Future Content Considerations (o)
 - Revisit modeling of confidence score and z-score if/when we refactor these parts of the Biolink Model.
 - Consider filtering some of the lower scoring text-mined associations if we can define a threshold/cutoff.
 
@@ -95,8 +95,9 @@ Records from relevant files that are not included in the ingest.
 | Gene, Protein | occurs_together_in_literature_with | Disease  |  n/a  |  text-mining agent, statistical association | has_confidence_score, z-score, original_subject, original_object | The DISEASES text-mining method generates associations based on statistically significant co-occurrence of gene and disease concepts in the literature - which is consistent with the definition of the Biolink occurs_together_in_literature_with predicate. |
 | Gene, Protein | associated_with | Disease |  n/a  |  manual_agent, knowledge_assertion  | has_confidence_score, original_subject, original_object | DISEASES does not report the types of gene-disease relationships that it aggregates from curated sources, so the Biolink associated_with predicate is the most precise predicate we are able to use here. | 
 
-**Notes/Rationale (o)**:
-
+**Additional Notes/Rationale (o)**:
+- n/a
+- 
 ### Node Types
 
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
@@ -107,7 +108,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 | Disease| DOID |  |  |
 
 
-### Future Considerations (o)
+### Future Modeling Considerations (o)
 - Revisit use of 'associated_with' predicate for curated edges after we refactor the 'associated_with' and/or 'gene-disease-relationship' branches of the Biolink predicate hierarchy (if we reserve this predicate for statistically-based relationships, we may need to use 'related_to')
 - Revisit modeling of confidence scores/levels if/when we refactor this part of the Biolink Model.
 
