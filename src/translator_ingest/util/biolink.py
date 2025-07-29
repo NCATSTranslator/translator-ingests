@@ -1,6 +1,6 @@
 """ Biolink Model support for Translator Ingests """
 from typing import Optional, List, Dict
-from biolink_model.datamodel.model import RetrievalSource
+from biolink_model.datamodel.model import RetrievalSource, ResourceRoleEnum
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -26,41 +26,45 @@ def build_association_knowledge_sources(
     This function attempts to build a List of well-formed Biolink Model RetrievalSource
     of Association 'sources' annotation from the specified knowledge source parameters.
     :param primary: str, infores identifier of the primary knowledge source of an Association
-    :param supporting: List[str], infores identifiers of the primary knowledge sources (default: None)
-    :param aggregating: Dict[str, List[str]] with infores identifiers of the aggregating knowledge sources as keys,
-                        and List[str] of upstream knowledge source infores identifiers (default: None)
-    :return:
+    :param supporting: Optional[List[str]], infores identifiers of the supporting data sources (default: None)
+    :param aggregating: Optional[Dict[str, List[str]]] with infores identifiers of the aggregating knowledge sources
+                        as keys, and List[str] of upstream knowledge source infores identifiers (default: None)
+    :return: List[RetrievalSource] not guaranteed in any given order, except that
+                                   the first entry may be the primary knowledge source
     """
     #
     # RetrievalSource fields of interest
-    #     id: Union[str, RetrievalSourceId] = None
-    #     category: Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]] = None
     #     resource_id: Union[str, URIorCURIE] = None
     #     resource_role: Union[str, "ResourceRoleEnum"] = None
     #     upstream_resource_ids: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
+    #     TODO: current use case doesn't use source_record_urls, but...
     #     source_record_urls: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
-    #     xref: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
     #
     sources: List[RetrievalSource] = list()
+    primary_knowledge_source: Optional[RetrievalSource] = None
     if primary:
-        sources.append(
-            RetrievalSource(
-                primary
-            )
+        primary_knowledge_source = RetrievalSource(
+            resource_id=primary,
+            resource_role=ResourceRoleEnum.primary_knowledge_source
         )
+        sources.append(primary_knowledge_source)
+
     if supporting:
         for source_id in supporting:
-            sources.append(
-                RetrievalSource(
-                    source_id
-                )
+            supporting_knowledge_source = RetrievalSource(
+                    resource_id=source_id,
+                    resource_role=ResourceRoleEnum.supporting_data_source
             )
+            sources.append(supporting_knowledge_source)
+            if primary_knowledge_source:
+                primary_knowledge_source.upstream_resource_ids.append(source_id)
     if aggregating:
-        # TODO: how should upstream ids etc. be handled?
         for source_id,upstream_ids in aggregating.items():
-            sources.append(
-                RetrievalSource(
-                    source_id
-                )
+            aggregating_knowledge_source = RetrievalSource(
+                    resource_id=source_id,
+                    resource_role=ResourceRoleEnum.aggregating_knowledge_source
             )
+            aggregating_knowledge_source.upstream_resource_ids = upstream_ids
+            sources.append(aggregating_knowledge_source)
+
     return sources
