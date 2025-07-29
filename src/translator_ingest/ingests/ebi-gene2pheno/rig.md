@@ -89,7 +89,7 @@ infores:translator-ebi-gene2phenotype-kgx
 
 | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|---------|----------|---------|
-| Gene | associated_with | Disease  |  qualified_predicate: causes, subject_form_or_variant_qualifier: CausalMechanismQualifierEnum, allelic_requirement_qualifier: regex (constrains to HP id syntax) |  manual_agent, knowledge_assertion | none | EBI G2P curators follow rigorous evidence interpretation guidelines to determine what specific types of mutations in a given gene are causal for a specific disease or phenotype, which Biolink models using the 'causes' predicate to connect a variant form of a Gene to the resulting condition. |
+| Gene | associated_with | Disease  |  qualified_predicate: causes, subject_form_or_variant_qualifier: ChemicalOrGeneOrGeneProductFormOrVariantEnum, allelic_requirement_qualifier: regex (constrains to HP id syntax) |  manual_agent, knowledge_assertion | none | EBI G2P curators follow rigorous evidence interpretation guidelines to determine what specific types of mutations in a given gene are causal for a specific disease or phenotype, which Biolink models using the 'causes' predicate to connect a variant form of a Gene to the resulting condition. |
 
 **Additional Notes/Rationale (o)**:
 - n/a
