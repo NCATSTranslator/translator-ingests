@@ -25,7 +25,7 @@ Create an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.
    - Assess modeling generally in light of current state of Biolink model and approaches
    - If >1 KP, identify, assess, and resolve  differences in representation of same /related content
 
-## 3. Scope and Specify Re-Ingest Details (document in a RIG)
+## 3. Scope and Specify Re-Ingest Details
 Create a **Reference Ingest Guide (RIG)** like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md).
 
 ### Assess Source Utility
