@@ -71,9 +71,9 @@ This ingest covers text-mined co-occurrence associations, and manually curated a
 ### Edge Types
 
 | # | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
-|----------|----------|----------|----------|----------|---------|----------|---------|
-| 1 | Gene, Protein | occurs_together_in_literature_with | Disease  |  n/a  |  text-mining agent, statistical association | has_confidence_score, z-score, original_subject, original_object | The DISEASES text-mining method generates associations based on statistically significant co-occurrence of gene and disease concepts in the literature - which is consistent with the definition of the Biolink occurs_together_in_literature_with predicate. |
-| 2 | Gene, Protein | associated_with | Disease |  n/a  |  manual_agent, knowledge_assertion  | has_confidence |  DISEASES does to attempt to report more specific types of gene-disease relationships that it aggregates from curated soruces, so the Biolink associated_with predicate is the most precise predicate we are able to use here. | 
+|----------|----------|----------|----------|---------|----------|---------|
+| Gene, Protein | occurs_together_in_literature_with | Disease  |  n/a  |  text-mining agent, statistical association | has_confidence_score, z-score, original_subject, original_object | The DISEASES text-mining method generates associations based on statistically significant co-occurrence of gene and disease concepts in the literature - which is consistent with the definition of the Biolink occurs_together_in_literature_with predicate. |
+| Gene, Protein | associated_with | Disease |  n/a  |  manual_agent, knowledge_assertion  | has_confidence |  DISEASES does to attempt to report more specific types of gene-disease relationships that it aggregates from curated soruces, so the Biolink associated_with predicate is the most precise predicate we are able to use here. | 
 
 **Notes/Rationale (o)**:
 
