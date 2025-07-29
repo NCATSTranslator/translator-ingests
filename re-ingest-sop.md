@@ -2,14 +2,16 @@
 Below we define general tasks that should be done for each re-ingest. It assumes the source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
 
 ## 1. Establish / Organize Owners and Contributors
+Use the **Ingest Assignment Table** [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
 - Determine who will perform and contribute to each re-ingest. We are currently using the s/s [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
 - As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
 
-## 2. Understand and Compare Phase 2 Ingest Review
+## 2. Understand and Compare Phase 2 Ingests 
+Create an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0).
 
 ### Prepare
 - Reps for each KP that ingested a source should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
-- As appropriate (in particular for sources ingested by multiple KPs), we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) for CTD - to help surface and resolve any differneces in what and how source data is ingested, filtered, and modeled across KP graphs. This will help the 'Compare' task described below. 
+- As appropriate (in particular for sources ingested by multiple KPs), we strongly recommend each KP populates an Ingest Survey Spreadsheet like the one for CTD linked above - to help identify and resolve any differneces in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below. 
     
 ### Compare
 - What teams/KPs ingested the source?
@@ -24,6 +26,7 @@ Below we define general tasks that should be done for each re-ingest. It assumes
    - If >1 KP, identify, assess, and resolve  differences in representation of same /related content
 
 ## 3. Scope and Specify Re-Ingest Details (document in a RIG)
+Create a **Reference Ingest Guide (RIG)** like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md).
 
 ### Assess Source Utility
 - Is the source as a whole worth ingesting?
@@ -41,7 +44,7 @@ Below we define general tasks that should be done for each re-ingest. It assumes
 - Note what content is excluded, and why?*
    - Be sure to document any content left behind that should be revisited/ingested in future iterations*.
 
-### Modeling Work
+### Mapping and Modeling
 - What types of Biolink edges will be created (define SPOQ patterns to be used) - and capture rationale for this representation*
 - What node/edge properties and patterns should be used to capture metadata?
 - Is re-modeling of Phase 2 patterns needed?
@@ -56,7 +59,7 @@ Below we define general tasks that should be done for each re-ingest. It assumes
 
 ## 4. Write Ingest Code
 - Follow specification documented in the RIG . . . 
-- Implementation details of shared pipeline t,b,d. 
+- Implementation details of the shared pipeline are still t.b.d. 
 
 ## 5. Execute Ingests to Produce KGX Files
 - Create nodes, edges, ingest-metadata KGX files
