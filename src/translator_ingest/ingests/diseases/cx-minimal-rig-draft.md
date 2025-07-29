@@ -35,8 +35,8 @@ Columns (note I named these columns, original files didn't have any headers):
 
 ## Rationale for Edge Types
 
-- `Gene` - `occurs together in literature with` - `Disease`: used for associations from "text mining channel" file. These are based on co-mentions in biomedical literature, and we cannot put a more specific predicate on the relationship. 
-- `Gene` - `genetically associated with` - `Disease`: used for associations from "knowledge channel" file. The [paper](https://doi.org/10.1093/database/baac019) does not explain the relationship types of these associations, so we used a "general" gene-disease predicate. 
+- `Gene / Protein` - `occurs together in literature with` - `Disease`: used for associations from "text mining channel" file. These are based on co-mentions in biomedical literature, and we cannot put a more specific predicate on the relationship. 
+- `Gene / Protein` - `associated with` - `Disease`: used for associations from "knowledge channel" file. The [paper](https://doi.org/10.1093/database/baac019) does not explain the relationship types of these associations, so we used a "general" predicate. 
 
 ## Rationale for knowledge level (KL) / agent type (AT)
 
