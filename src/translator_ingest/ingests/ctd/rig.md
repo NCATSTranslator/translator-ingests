@@ -68,9 +68,18 @@ Records from relevant files that are not included in the ingest.
 
 
 ### Future Content Considerations (o)
-- While the current ingest includes only Chemical-Disease Asociations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table here: https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0 for more details. 
-- Also consider ingesting additional chemical-disease edges reporting statistical correlations from environmental exposure studies from CTD_exposure_events.tsv.gz. This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not yet clear.
-- Consider adding publication count or inference score cutoffs to filter lower quality / confidence records.
+
+- **Edges**
+   - While the current ingest includes only Chemical-Disease Asociations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table here: https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0 for more details.
+  - Also consider ingesting additional chemical-disease edges reporting statistical correlations from environmental exposure studies from CTD_exposure_events.tsv.gz. This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not yet clear.
+  - Consider adding publication count or inference score cutoffs to filter lower quality / confidence records.
+
+- **Node Properties**
+  - n/a
+    
+- **Edge Properties/EPC Metadata**
+  - n/a
+
   
 -----------------
 
