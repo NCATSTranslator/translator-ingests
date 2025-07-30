@@ -70,14 +70,20 @@ Records from relevant files that are not included in the ingest.
   | G2P_all_[date].csv |  Records with NodeNorm mapping failures for the node IDs | Failed normalization means that the node would not be connected to other data/nodes in Translator graphs. |
 
      
-### Future Content Considerations (o):
-- Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better
-- Lots of additional qualifiers and edge properties we could include in future iterations (see example record [here](https://www.ebi.ac.uk/gene2phenotype/lgd/G2P03700)):
-   - confidence level values when we improve/refactor modeling of confidence in Biolink
-   - more granular 'variant type' information (SO terms)
-   - rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications.
+### Future Content Considerations (o)
 
-
+- **Edges**
+  - Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better
+    
+- **Node Properties**
+  - n/a
+    
+- **Edge Properties / EPC Metadata**
+  - Lots of additional qualifiers and edge properties we could include in future iterations (see example record [here](https://www.ebi.ac.uk/gene2phenotype/lgd/G2P03700)):
+     - confidence level values when we improve/refactor modeling of confidence in Biolink
+     - more granular 'variant type' information (SO terms)
+     - rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications.
+    
 -----------------
 
 ##  Target Information
