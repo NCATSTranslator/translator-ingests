@@ -75,10 +75,17 @@ Records from relevant files that are not included in the ingest.
   | human_disease_knowledge_filtered.tsv | No ENSP ID in gene ID column or no DOID in disease ID column | Need node IDs that are in NodeNorm's scope. Other values are non-ID strings (based on string-searches, a little manual review) or IDs that wouldn't be resolved by NodeNorm (AmyCo). |
   | human_disease_knowledge_filtered.tsv | Had NodeNorm mapping failure on gene or disease ID | need node IDs that NodeNorm successfully maps to entities. |
 
-  
+
 ### Future Content Considerations (o)
-- Revisit modeling of confidence score and z-score if/when we refactor these parts of the Biolink Model.
-- Consider filtering some of the lower scoring text-mined associations if we can define a threshold/cutoff.
+
+- **Edges**
+  - Consider filtering some of the lower scoring text-mined associations if we can define a threshold/cutoff.
+    
+- **Node Properties**
+  - n/a
+    
+- **Edge Properties/EPC Metadata**
+  - n/a
 
 
 -----------------
@@ -110,7 +117,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 ### Future Modeling Considerations (o)
 - Revisit use of 'associated_with' predicate for curated edges after we refactor the 'associated_with' and/or 'gene-disease-relationship' branches of the Biolink predicate hierarchy (if we reserve this predicate for statistically-based relationships, we may need to use 'related_to')
-- Revisit modeling of confidence scores/levels if/when we refactor this part of the Biolink Model.
+- Revisit modeling of confidence score/levels and z-score if/when we refactor these parts of the Biolink Model.
 
 
 ------------------
