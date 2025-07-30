@@ -87,8 +87,17 @@ As possible, describe the rationale behind any filtering rules or exclusion crit
   |  |  |  |
 
 ### Future Content Considerations (o) 
-Notes about content additions or changes to consider in future iterations of this ingest. 
-  
+Notes about content additions or changes to consider in future iterations of this ingest. Specifically, consdier Edge content, Node PRoperty content, and Edge Propert / EPC content in different sections.  
+
+- **Edges**
+   - ...
+
+- **Node Properties**
+  - ...
+    
+- **Edge Properties/EPC Metadata**
+  - ...
+    
 -----------------
 
 ##  Section III. Target Information
