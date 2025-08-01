@@ -1,0 +1,3 @@
+---
+- url: https://raw.githubusercontent.com/geneontology/go-causal-activity-models/master/models/
+  local_name: gocam_models_combined.jsonl

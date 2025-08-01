@@ -1,0 +1,22 @@
+name: go_cam_gene_to_molecular_function
+
+reader:
+  format: jsonl
+  files:
+    - ../../../../data/go_cam/gocam_models_combined.jsonl
+
+writer:
+  node_properties:
+    - id
+    - name
+    - category
+  edge_properties:
+    - id
+    - category
+    - subject
+    - predicate
+    - object
+    - publications
+    - primary_knowledge_source
+    - knowledge_level
+    - agent_type
