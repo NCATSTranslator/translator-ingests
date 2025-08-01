@@ -15,9 +15,6 @@ Dates can be used for versioning: this would be the creation/download date for o
 
 ## Excluded Content 
 
-Files:
-- ".csv.gz.md5": didn't use the checksum files
-
 Rows:
 - complete duplicates (some rows were found in multiple files)
 - no value in `disease mim` column: we currently use only this column as the source of disease IDs
@@ -47,7 +44,8 @@ Columns:
 
 ## Rationale for Edge Types
 
-- `Gene` - `causes` - `Disease`: the association has the [`confidence` value](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) **"moderate", "strong", or "definitive"**, which mean there's moderate-to-definitive evidence that the gene DOES HAVE a causal role in this disease. 
+- `Gene` - `associated_with` - `Disease`: the gene doesn't cause the disease, so the stronger statement is moved to the qualifier set and a general predicate is used here
+- every edge has the `qualified_predicate` `biolink:causes`: the association has the [`confidence` value](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) **"moderate", "strong", or "definitive"**, which mean there's moderate-to-definitive evidence that the gene DOES HAVE a causal role in this disease.  
 - every edge has a qualifier on Gene (`subject_form_or_variant_qualifier`) because every association has an `allelic requirement` value and `molecular mechanism` value - these [terms](https://www.ebi.ac.uk/gene2phenotype/about/terminology) imply the gene's mutations are being considered here. The `molecular mechanism` values are mapped to these qualifier values (enum):
   - "loss of function" => `loss_of_function_variant_form`
   - "undetermined" => `genetic_variant_form`
