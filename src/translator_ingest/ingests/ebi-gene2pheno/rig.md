@@ -9,33 +9,34 @@
 
 ### Description
 EBI's Gene2Phenotype dataset contains high-quality gene-disease associations curated by UK disease domain experts and consultant clinical geneticists. 
-It integrates data on genes, variants and phenotypes for example relating to developmental disorders. 
-It is constructed from published literature, and is primarily an inclusion list to allow targeted filtering of genome-wide data for diagnostic purposes. 
-Each entry associates a gene with a disease phenotype via an evidence level, inheritance mechanism and mutation consequence. 
+It integrates data on genes, their variants, and related disorders. 
+It is constructed by experts reviewing published literature, and it is primarily an inclusion list to allow targeted filtering of genome-wide data for diagnostic purposes. 
+Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism.
 
 ### Source Category(ies)
 - Primary Knowledge Provider
 
 ### Citation (o)
+- https://doi.org/10.1186/s13073-024-01398-1
 - https://www.nature.com/articles/s41467-019-10016-3
 
 ### Terms of Use
-- Minimal terms of use described on Downloads page [here](https://www.ebi.ac.uk/gene2phenotype/download). No formal license. 
-- Key language:
-  - "The data from G2P is freely available and interested parties can get in touch via g2p-help@ebi.ac.uk for further information."
-  - "If you use these data in your work please cite the data version and Thorman et al 2019 (https://www.nature.com/articles/s41467-019-10016-3)  "
+- Unsure, but likely uses [EMBL-EBI terms of use](https://www.ebi.ac.uk/about/terms-of-use/#general) (linked in the [website](https://www.ebi.ac.uk/gene2phenotype/) footer). Don't see a formal license.
+- Various webpages ([project](https://www.ebi.ac.uk/gene2phenotype/about/project), [downloads](https://www.ebi.ac.uk/gene2phenotype/download)) say that all data is "freely available"
+- Also, various webpages ([downloads](https://www.ebi.ac.uk/gene2phenotype/download), [publications](https://www.ebi.ac.uk/gene2phenotype/publications)) say to please cite the date accessed/data version and [Thorman et al 2019](https://www.nature.com/articles/s41467-019-10016-3)
 
 ### Data Access Locations
-- Latest data is provided [here](https://www.ebi.ac.uk/gene2phenotype/download).
+- Latest data is provided [here](https://www.ebi.ac.uk/gene2phenotype/download) (downloads created on-the-fly).
 - Archived static releases provided on the FTP site [here](https://ftp.ebi.ac.uk/pub/databases/gene2phenotype/G2P_data_downloads/). 
    
 ### Provision Mechanisms and Formats
 - Mechanism(s): File Download
-- Formats: csv
+- Formats: csv (on-the-fly downloads) or csv.gz (FTP static releases)
    
 ### Releases and Versioning
 - Releases cut and archived roughly every 1-2 months
-- Dates are used for versioning
+- on-the-fly downloads: creation/download date are the same and can be used for versioning. Note that the date in the filename may differ from the date in your timezone.
+- static releases: creation date (shown on FTP site and in folder/file names) can be used for versioning
   
 ----------------
 
@@ -49,7 +50,7 @@ Source files with content we aim to ingest.
 
   | File | Location | Description |
   |----------|----------|----------|
-  | G2P_all_[date].csv | https://www.ebi.ac.uk/gene2phenotype/download | Associations for all disease categories. Didn't use the checksum files.  | 
+  | G2P_all_[date].csv | https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/ | Associations from all panels (disease categories) | 
 
 
 ### Included Content
@@ -57,7 +58,7 @@ Records from relevant files that are included in this ingest.
 
   | File | Included Records | Fields Used | 
   |----------|----------|----------|
-  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate'  |  gene mim, hgnc id, disease mim, disease MONDO, confidence, allelic requirement, molecular mechanism |
+  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, allelic requirement, confidence, molecular mechanism, publications, date of last review |
  
        
 ### Filtered Content
@@ -65,7 +66,7 @@ Records from relevant files that are not included in the ingest.
 
   | File | Filtered  Records | Rationale |
   |----------|----------|----------|
-  | G2P_all_[date].csv |  Records where 'confidence' value is 'limited', 'disputed', or 'refuted' | Evidence level not sufficient for inclusion, and/or not enough records to bother including. |
+  | G2P_all_[date].csv |  Records where 'confidence' value is 'limited', 'disputed', or 'refuted' | Evidence level not sufficient for inclusion. |
   | G2P_all_[date].csv |  Records with no value in 'disease mim' column | We currently use only this column as the source of disease IDs |
   | G2P_all_[date].csv |  Records with NodeNorm mapping failures for the node IDs | Failed normalization means that the node would not be connected to other data/nodes in Translator graphs. |
 
@@ -79,10 +80,10 @@ Records from relevant files that are not included in the ingest.
   - n/a
     
 - **Edge Properties / EPC Metadata**
-  - Lots of additional qualifiers and edge properties we could include in future iterations (see example record [here](https://www.ebi.ac.uk/gene2phenotype/lgd/G2P03700)):
-     - confidence level values when we improve/refactor modeling of confidence in Biolink
-     - more granular 'variant type' information (SO terms)
-     - rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications.
+  - Lots of additional edge-level information that we could include in future iterations (see example record [here](https://www.ebi.ac.uk/gene2phenotype/lgd/G2P03700)):
+     - 'confidence' level values when we improve/refactor modeling of confidence in Biolink
+     - variant information ('variant consequence', 'variant types' columns). The values map to SO terms.
+     - Matt's note: rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications).
     
 -----------------
 
@@ -95,7 +96,11 @@ infores:translator-ebi-gene2phenotype-kgx
 
 | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|---------|----------|---------|
-| Gene | associated_with | Disease  |  qualified_predicate: causes, subject_form_or_variant_qualifier: ChemicalOrGeneOrGeneProductFormOrVariantEnum, allelic_requirement_qualifier: regex (constrains to HP id syntax) |  manual_agent, knowledge_assertion | none | EBI G2P curators follow rigorous evidence interpretation guidelines to determine what specific types of mutations in a given gene are causal for a specific disease or phenotype, which Biolink models using the 'causes' predicate to connect a variant form of a Gene to the resulting condition. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: loss_of_function_variant_form | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators determined this gene has a causal role in this disease and assigned a confidence of 'definitive', 'strong', or 'moderate' to this association. They recorded the effects of gene variants (molecular mechanism) as 'loss of function'. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: genetic_variant_form | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators determined this gene has a causal role in this disease and assigned a confidence of 'definitive', 'strong', or 'moderate' to this association. They recorded the effects of gene variants (molecular mechanism) as 'undetermined'. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: gain_of_function_variant_form | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators determined this gene has a causal role in this disease and assigned a confidence of 'definitive', 'strong', or 'moderate' to this association. They recorded the effects of gene variants (molecular mechanism) as 'gain of function'. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: dominant_negative_variant_form | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators determined this gene has a causal role in this disease and assigned a confidence of 'definitive', 'strong', or 'moderate' to this association. They recorded the effects of gene variants (molecular mechanism) as 'dominant negative'. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: non_loss_of_function_variant_form | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators determined this gene has a causal role in this disease and assigned a confidence of 'definitive', 'strong', or 'moderate' to this association. They recorded the effects of gene variants (molecular mechanism) as 'undetermined non-loss-of-function'. |
 
 **Additional Notes/Rationale (o)**:
 - n/a
@@ -106,12 +111,14 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 | Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
 |------------------|----------------------------|--------|---------|
-| Gene | 	HGNC, MIM  |  |  |
-| Disease | MONDO, MIM|  |  |
+| Gene | 	HGNC  |  |  |
+| Disease | OMIM, orphanet |  |  |
 
 
 ### Future Modeling Considerations (o)
-- Revisit modeling of constraints on allelic_requirement_qualifier values (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values). See PR linked below for more details.
+- Revisit 'disease MONDO' column (re-analyze) because resource has been working to improve the reliability of this data
+- May want to revisit how we handle the 'molecular mechanism' and 'variant types' columns VS the biolink-model qualifier options 
+- Revisit modeling of allelic_requirement (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values). See PR linked below for more details.
 
 
 ------------------
@@ -121,22 +128,22 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 ### Ingest Contributors (o)
 - **Colleen Xu**: code author, data modeling
 - **Andrew Su**: domain expertise
-- **Sierra Moxon**: code support, domain expertise
+- **Sierra Moxon**: domain expertise
 - **Matthew Brush**: data modeling, domain expertise
 
 ### Artifacts(o)
-- Github Ticket: https://github.com/biolink/biolink-model/issues/1581
-- PR: https://github.com/biolink/biolink-model/pull/1576
+- Github Ticket on confidence 'limited' value: https://github.com/biolink/biolink-model/issues/1581
+- PR on biolink allelic_requirement: https://github.com/biolink/biolink-model/pull/1576
 
 
 ### Additional Notes (o)
 - **Source Confidence values**:
       - `limited`: the last sentence of the [definition](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) is "The majority are probably false associations. (previously labelled as possible)." We've decided that these may not be "real" associations, so we do not want to ingest them
-      - `disputed` and `refuted`: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation).
+      - `disputed` and `refuted`: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation). **This decision to exclude could be revisited once Translator can model/handle negation better.**
 
 - **Source Columns**:
-     - `disease MONDO`: may revisit during this ingest process because resource has been working to improve this data
-     - `confidence`: currently not including as an edge property, because [more data-modeling in biolink-model](https://github.com/biolink/biolink-model/issues/1583) is needed. Could revisit once this issue is addressed.
+     - `disease MONDO`: **may revisit during this ingest process** because resource has been working to improve this data
+     - `confidence`: currently not including as an edge property, because [more data-modeling in biolink-model](https://github.com/biolink/biolink-model/issues/1583) is needed. **Could revisit once this issue is addressed.**
      - **Seem harder to get into Translator, potentially useful**: 
        - `molecular mechanism categorisation`: "qualifies" the `molecular mechanism` column's value (seems to say how molecular mechanism was decided: "inferred" or "evidence") 
            - tricky since it's like "how knowledge was obtained" for a specific part of edge (I'm using `molecular mechanism` to adjust the subject qualifier) 
