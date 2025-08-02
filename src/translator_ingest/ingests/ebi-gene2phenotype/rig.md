@@ -96,7 +96,7 @@ infores:translator-ebi-gene2phenotype-kgx
 
 | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|---------|----------|---------|
-| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: ChemicalOrGeneOrGeneProductFormOrVariantEnum | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators manually determined through the evaluation of differnet types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: ChemicalOrGeneOrGeneProductFormOrVariantEnum | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease. |
 
 
 **Additional Notes/Rationale (o)**:
