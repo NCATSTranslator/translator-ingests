@@ -11,7 +11,7 @@
 CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides knowledge, manually curated from the literature, about chemicals and their relationship to other biological entities: chemical to gene/protein interactions plus chemical to disease and gene to disease relationships. These data are integrated with functional and pathway data to aid in the development of hypotheses about the mechanisms underlying environmentally influenced diseases. It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
    
 ### Source Category(ies)
-- [Primary Knowledge Source](https://biolink.github.io/biolink-model/primary_knowledge_source/)   
+- Primary Knowledge Source 
 
 ### Citation (o)
 Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD): update 2023. Nucleic Acids Res. 2022 Sep 28.
@@ -92,8 +92,8 @@ Records from relevant files that are not included in the ingest.
 
 |  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|---------|----------|
-| ChemicalEntity | treats_or_applied_or_studied_to_treat | DiseaseOrPhenotypic Feature  |  n/a  |  manual_agent, knowledge_assertion  |   |  CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate 'treats_or_applied_or_studied_to_treat'. |
-| ChemicalEntity | 'correlates_with_or_contributes_to' | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate 'correlates_with_or_contributes_to'. |
+| ChemicalEntity | treats_or_applied_or_studied_to_treat | DiseaseOrPhenotypic Feature  |  n/a  |  manual_agent, knowledge_assertion  | publications  |  CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate 'treats_or_applied_or_studied_to_treat'. |
+| ChemicalEntity | 'correlates_with_or_contributes_to' | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  | publications  |  CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate 'correlates_with_or_contributes_to'. |
 | ChemicalEntity | 'associated_with' | DiseaseOrPhenotypicFeature  |  n/a  |  data_analysis_pipeline, statisitcal_association  | has_confidence_score |  CTD Chemical-Disease records with an inference score indicate a statistically significant number of shared gene associations that suggest a biological relationship may exist. The statistical basis of this relationship maps to the Biolink 'assocaited_with' predicate. |
 
 **Additional Notes/Rationale (o)**:
