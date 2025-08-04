@@ -1,3 +1,5 @@
 ---
-- url: https://raw.githubusercontent.com/geneontology/go-causal-activity-models/master/models/
-  local_name: gocam_models_combined.jsonl
+# Custom GO-CAM downloader - this gets handled by download.py wrapper
+- url: "custom://go-cam-models"
+  local_name: "models"
+  custom_downloader: "python src/translator_ingest/ingests/go_cam/download.py"

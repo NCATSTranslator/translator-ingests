@@ -1,6 +1,8 @@
 import uuid
 from typing import Iterable, Any
 
+import requests
+import ijson
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -66,14 +68,79 @@ def get_entity_class_and_category(entity_id: str, entity_type: str = None):
 
 INFORES_GO_CAM = "infores:go-cam"
 
+# Create a persistent session for connection pooling
+session = requests.Session()
+session.headers.update({'User-Agent': 'GO-CAM-Ingest/1.0'})
+
+# Configure connection pooling
+adapter = requests.adapters.HTTPAdapter(
+    pool_connections=20,
+    pool_maxsize=100,
+    max_retries=3
+)
+session.mount('https://', adapter)
+
+
+def fetch_go_cam_model_streaming(model_id: str) -> dict:
+    """Fetch and stream parse a single GO-CAM model by ID from S3."""
+    url = f"https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/{model_id}.json"
+    
+    try:
+        with session.get(url, stream=True, timeout=30) as response:
+            response.raise_for_status()
+            
+            # Use ijson to parse streaming JSON
+            parser = ijson.parse(response.raw)
+            
+            # Build the model data structure from streaming events
+            model_data = {}
+            current_path = []
+            
+            for prefix, event, value in parser:
+                if event == 'start_map':
+                    if not current_path:
+                        model_data = {}
+                elif event == 'map_key':
+                    current_path.append(value)
+                elif event == 'end_map':
+                    if current_path:
+                        current_path.pop()
+                elif event in ('string', 'number', 'boolean', 'null'):
+                    # Build nested structure
+                    current_dict = model_data
+                    for key in current_path[:-1]:
+                        if key not in current_dict:
+                            current_dict[key] = {}
+                        current_dict = current_dict[key]
+                    
+                    if current_path:
+                        current_dict[current_path[-1]] = value
+                        current_path.pop()
+            
+            return model_data
+            
+    except requests.RequestException as e:
+        raise Exception(f"Failed to fetch model {model_id}: {e}")
+    except Exception as e:
+        # Fallback to regular JSON parsing if streaming fails
+        response = session.get(url, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
 
 @koza.transform_record()
 def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
+    # Each record is now a single GO-CAM model JSON file
+    entities_batch, associations_batch = process_single_model(record)
+    return entities_batch, associations_batch
+
+
+def process_single_model(model_data: dict) -> (list[NamedThing], list[Association]):
+    """Process a single GO-CAM model and return entities and associations."""
     entities = []
     associations = []
     entities_written = set()
     
-    model_data = record
     model_id = model_data.get('id')
     title = model_data.get('title', '')
     

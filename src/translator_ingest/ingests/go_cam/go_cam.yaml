@@ -1,9 +1,9 @@
 name: go_cam_gene_to_molecular_function
 
 reader:
-  format: jsonl
+  format: json
   files:
-    - ../../../../data/go_cam/gocam_models_combined.jsonl
+    - ../../../../data/go_cam/models/*.json
 
 writer:
   node_properties:
