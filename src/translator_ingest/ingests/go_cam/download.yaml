@@ -1,5 +1,7 @@
 ---
-# Custom GO-CAM downloader - this gets handled by download.py wrapper
-- url: "custom://go-cam-models"
-  local_name: "models"
-  custom_downloader: "python src/translator_ingest/ingests/go_cam/download.py"
+# GO-CAM models using kghub-downloader's native index scheme
+- url: "index://go-cam-models"
+  index_url: "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/provider-to-model.json"
+  url_pattern: "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/{ID}.json"
+  id_path: ""
+  local_name: "model.json"
