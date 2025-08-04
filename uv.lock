@@ -184,7 +184,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13.4" },
     { name = "biolink-model", specifier = ">=4.2.5" },
     { name = "bmt", specifier = ">=1.4.5" },
-    { name = "kghub-downloader", specifier = ">=0.4.1" },
+    { name = "kghub-downloader", specifier = ">=0.4.2rc1" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests-2" },
 ]
 
@@ -812,7 +812,7 @@ wheels = [
 
 [[package]]
 name = "kghub-downloader"
-version = "0.4.1"
+version = "0.4.2rc1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -826,9 +826,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/ea/2938d6801ac76cc4e7bff4141555f465482780b33f1840af7d941989734e/kghub_downloader-0.4.1.tar.gz", hash = "sha256:4e92736aacd1d6d2fc4f403546465e0682c6301df0b27c33c331e146783cbb32", size = 12548 }
+sdist = { url = "https://files.pythonhosted.org/packages/0d/19/a34cb98bf18759eff0e459fbeb778cf51027bff20bdc2eebc260c3ade294/kghub_downloader-0.4.2rc1.tar.gz", hash = "sha256:c0f2c6728c17290b422975d38a62c6f6c7c8b46f0ab9988e2b3d3378d859234c", size = 14217 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/51/4c738dee61178faa37d5681c7e9fcb1853b45cd14af11593172be8ef4291/kghub_downloader-0.4.1-py3-none-any.whl", hash = "sha256:518ffb94db3a7774c58e87234267a1894144f01d130c6080db8a96c69759f90b", size = 13447 },
+    { url = "https://files.pythonhosted.org/packages/0e/83/4c9cb5117e6e4f011750a3435a8fa5b282588b496f44aa6235c7a6bc979d/kghub_downloader-0.4.2rc1-py3-none-any.whl", hash = "sha256:ffcf97a190af388baec737735f91e8d92f70604e8d496822fc0c7975bb717043", size = 15532 },
 ]
 
 [[package]]
