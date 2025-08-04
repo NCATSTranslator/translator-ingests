@@ -6,7 +6,7 @@ Below we define general tasks that should be performed and artifacts to be creat
 2. [Source Ingest Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22): Records contributor questions and discussions about the ingest
 3. [Ingest Survey](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0): Describes any current ingests of the source from Phase 2 KPs to facilaitate comparison and alignment.
 4. [Reference Ingest Guide (RIG)](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md): Documents final scope, content, and modeling decisions for the ingest.
-5. [Ingst Code](): Python code sued to execute the ingest as specified in the RIG
+5. [Ingst Code](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd.py): Python code sued to execute the ingest as specified in the RIG
 6. [KGX Files](): Knowledge graphs and ingest metadata output by ingest code
 
 ## Task Details
