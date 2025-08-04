@@ -5,8 +5,8 @@ reader:
   comment_char: "!"
   header_mode: none
   files:
-    - data/goa/goa_human.gaf.gz
-    - data/goa/mgi.gaf.gz
+    - ../../../../data/goa/goa_human.gaf.gz
+    - ../../../../data/goa/mgi.gaf.gz
   columns:
     - DB
     - DB_Object_ID
@@ -27,7 +27,7 @@ reader:
     - Gene_Product_Form_ID
 
 transform:
-  code: src/translator_ingest/ingests/goa/goa.py
+  code: goa.py
   filters:
     - inclusion: include
       column: Taxon
@@ -58,3 +58,4 @@ writer:
     - aggregator_knowledge_source
     - knowledge_level
     - agent_type
+    - category

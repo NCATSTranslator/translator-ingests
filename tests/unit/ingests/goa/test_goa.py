@@ -1,18 +1,21 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
+    Protein,
     GeneToGoTermAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
-    OntologyClass,
+    Association,
+    BiologicalProcess,
+    MolecularActivity,
+    CellularComponent,
 )
 
 from src.translator_ingest.ingests.goa.goa import (
     transform_record,
     ASPECT_TO_PREDICATE,
-    ASPECT_TO_ASSOCIATION,
     EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE,
 )
 
@@ -22,7 +25,11 @@ class TestGOATransform:
 
     def test_transform_record_basic(self):
         """Test basic record transformation."""
+        # Create a mock Koza context
+        mock_koza = MagicMock()
+        
         record = {
+            "DB": "UniProtKB",  # Database source determines biolink class
             "DB_Object_ID": "P12345",
             "GO_ID": "GO:0006915",
             "Aspect": "P",
@@ -32,27 +39,28 @@ class TestGOATransform:
             "Evidence_Code": "EXP",
             "Taxon": "taxon:9606",
             "Date": "20230101",
+            "DB_Object_Name": "Test Gene",
         }
 
-        nodes, associations = transform_record(record)
+        nodes, associations = transform_record(mock_koza, record)
 
         # Check nodes
         assert len(nodes) == 2
-        gene_node = next(n for n in nodes if isinstance(n, Gene))
-        go_node = next(n for n in nodes if isinstance(n, NamedThing) and n.id.startswith("GO:"))
+        protein_node = next(n for n in nodes if isinstance(n, Protein))
+        go_node = next(n for n in nodes if isinstance(n, BiologicalProcess) and n.id.startswith("GO:"))
 
-        assert gene_node.id == "UniProtKB:P12345"
-        assert gene_node.name == "APAF1"
-        assert gene_node.category == ["biolink:Gene"]
-        assert gene_node.in_taxon == ["NCBITaxon:9606"]
+        assert protein_node.id == "UniProtKB:P12345"
+        assert protein_node.name == "APAF1"
+        assert protein_node.category == ["biolink:Protein"]
+        assert protein_node.in_taxon == ["NCBITaxon:9606"]
 
         assert go_node.id == "GO:0006915"
-        assert go_node.category == ["biolink:NamedThing"]
+        assert go_node.category == ["biolink:BiologicalProcess"]
 
         # Check association
         assert len(associations) == 1
         association = associations[0]
-        assert isinstance(association, GeneToGoTermAssociation)
+        assert isinstance(association, Association)  # Generic Association for Protein
         assert association.subject == "UniProtKB:P12345"
         assert association.object == "GO:0006915"
         assert association.predicate == "biolink:participates_in"
@@ -66,32 +74,42 @@ class TestGOATransform:
 
     def test_transform_record_negated(self):
         """Test record transformation with negation."""
+        # Create a mock Koza context
+        mock_koza = MagicMock()
+        
         record = {
-            "DB_Object_ID": "P12345",
+            "DB": "MGI",  # Use MGI to get Gene class
+            "DB_Object_ID": "MGI:12345",
             "GO_ID": "GO:0006915",
             "Aspect": "P",
-            "DB_Object_Symbol": "APAF1",
+            "DB_Object_Symbol": "Apaf1",
             "Qualifier": "NOT",
             "DB_Reference": "PMID:12345",
             "Evidence_Code": "EXP",
-            "Taxon": "taxon:9606",
+            "Taxon": "taxon:10090",
             "Date": "20230101",
+            "DB_Object_Name": "Test Gene",
         }
 
-        nodes, associations = transform_record(record)
+        nodes, associations = transform_record(mock_koza, record)
         association = associations[0]
         assert association.negated is True
+        assert isinstance(association, GeneToGoTermAssociation)  # Specific association for Gene
 
     def test_transform_record_different_aspects(self):
         """Test record transformation for different GO aspects."""
+        # Create a mock Koza context
+        mock_koza = MagicMock()
+        
         test_cases = [
-            ("P", "biolink:participates_in"),
-            ("F", "biolink:enables"),
-            ("C", "biolink:located_in"),
+            ("P", "biolink:participates_in", BiologicalProcess),
+            ("F", "biolink:enables", MolecularActivity),
+            ("C", "biolink:located_in", CellularComponent),
         ]
 
-        for aspect, expected_predicate in test_cases:
+        for aspect, expected_predicate, expected_go_class in test_cases:
             record = {
+                "DB": "UniProtKB",
                 "DB_Object_ID": "P12345",
                 "GO_ID": "GO:0006915",
                 "Aspect": aspect,
@@ -101,15 +119,26 @@ class TestGOATransform:
                 "Evidence_Code": "EXP",
                 "Taxon": "taxon:9606",
                 "Date": "20230101",
+                "DB_Object_Name": "Test Gene",
             }
 
-            nodes, associations = transform_record(record)
+            nodes, associations = transform_record(mock_koza, record)
+            
+            # Check GO term node has correct class
+            go_node = next(n for n in nodes if n.id.startswith("GO:"))
+            assert isinstance(go_node, expected_go_class)
+            
+            # Check predicate
             association = associations[0]
             assert association.predicate == expected_predicate
 
     def test_transform_record_unknown_aspect(self):
         """Test record transformation with unknown aspect."""
+        # Create a mock Koza context
+        mock_koza = MagicMock()
+        
         record = {
+            "DB": "UniProtKB",
             "DB_Object_ID": "P12345",
             "GO_ID": "GO:0006915",
             "Aspect": "X",  # Unknown aspect
@@ -119,14 +148,20 @@ class TestGOATransform:
             "Evidence_Code": "EXP",
             "Taxon": "taxon:9606",
             "Date": "20230101",
+            "DB_Object_Name": "Test Gene",
         }
 
-        nodes, associations = transform_record(record)
-        assert len(nodes) == 0
-        assert len(associations) == 0
+        nodes, associations = transform_record(mock_koza, record)
+        
+        # Should return empty lists for unknown aspect
+        assert nodes == []
+        assert associations == []
 
     def test_transform_record_different_evidence_codes(self):
         """Test record transformation with different evidence codes."""
+        # Create a mock Koza context
+        mock_koza = MagicMock()
+        
         test_cases = [
             ("EXP", KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
             ("IEA", KnowledgeLevelEnum.prediction, AgentTypeEnum.automated_agent),
@@ -136,6 +171,7 @@ class TestGOATransform:
 
         for evidence_code, expected_knowledge_level, expected_agent_type in test_cases:
             record = {
+                "DB": "UniProtKB",
                 "DB_Object_ID": "P12345",
                 "GO_ID": "GO:0006915",
                 "Aspect": "P",
@@ -145,16 +181,21 @@ class TestGOATransform:
                 "Evidence_Code": evidence_code,
                 "Taxon": "taxon:9606",
                 "Date": "20230101",
+                "DB_Object_Name": "Test Gene",
             }
 
-            nodes, associations = transform_record(record)
+            nodes, associations = transform_record(mock_koza, record)
             association = associations[0]
             assert association.knowledge_level == expected_knowledge_level
             assert association.agent_type == expected_agent_type
 
     def test_transform_record_empty_publications(self):
         """Test record transformation with empty publications."""
+        # Create a mock Koza context
+        mock_koza = MagicMock()
+        
         record = {
+            "DB": "UniProtKB",
             "DB_Object_ID": "P12345",
             "GO_ID": "GO:0006915",
             "Aspect": "P",
@@ -164,31 +205,26 @@ class TestGOATransform:
             "Evidence_Code": "EXP",
             "Taxon": "taxon:9606",
             "Date": "20230101",
+            "DB_Object_Name": "Test Gene",
         }
 
-        nodes, associations = transform_record(record)
+        nodes, associations = transform_record(mock_koza, record)
         association = associations[0]
-        assert association.publications == []
+        assert association.publications == []  # Should be empty list
 
     def test_mappings_consistency(self):
-        """Test that mappings are consistent and complete."""
+        """Test that mappings are consistent."""
         # Test aspect to predicate mapping
-        assert "P" in ASPECT_TO_PREDICATE
-        assert "F" in ASPECT_TO_PREDICATE
-        assert "C" in ASPECT_TO_PREDICATE
         assert ASPECT_TO_PREDICATE["P"] == "biolink:participates_in"
         assert ASPECT_TO_PREDICATE["F"] == "biolink:enables"
         assert ASPECT_TO_PREDICATE["C"] == "biolink:located_in"
-
-        # Test aspect to association mapping
-        assert "P" in ASPECT_TO_ASSOCIATION
-        assert "F" in ASPECT_TO_ASSOCIATION
-        assert "C" in ASPECT_TO_ASSOCIATION
-        assert ASPECT_TO_ASSOCIATION["P"] == GeneToGoTermAssociation
-        assert ASPECT_TO_ASSOCIATION["F"] == GeneToGoTermAssociation
-        assert ASPECT_TO_ASSOCIATION["C"] == GeneToGoTermAssociation
-
+        
         # Test evidence code mapping
-        assert "EXP" in EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE
-        assert "IEA" in EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE
-        assert "ND" in EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE 
+        assert EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE["EXP"] == (
+            KnowledgeLevelEnum.knowledge_assertion, 
+            AgentTypeEnum.manual_agent
+        )
+        assert EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE["IEA"] == (
+            KnowledgeLevelEnum.prediction, 
+            AgentTypeEnum.automated_agent
+        ) 
