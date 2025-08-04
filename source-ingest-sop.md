@@ -1,19 +1,39 @@
-# Standard Operating Procedure for a Source Re-Ingest
-Below we define general tasks that should be done for each re-ingest. It assumes the source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
+# Standard Operating Procedure for a Source Ingest
+Below we define general tasks that should be performed and artifacts to be created for each source ingest. It assumes the source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
 
-## 1. Establish / Organize Owners and Contributors
-Use the **Ingest Assignment Table** [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
-- Determine who will perform and contribute to each re-ingest. We are currently using the s/s [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
-- As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
+## Key Artifacts
+1. [Ingest Assignment Table](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Assigns owners  and contributors for the ingest
+2. [Source Ingest Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22): Records contributor questions and discussions about the ingest
+3. [Ingest Survey](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0): Describes any current ingests of the source from Phase 2 KPs to facilaitate comparison and alignment.
+4. [Reference Ingest Guide (RIG)](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md): Documents final scope, content, and modeling decisions for the ingest.
+5. [Ingst Code](): Python code sued to execute the ingest as specified in the RIG
+6. [KGX Files](): Knowledge graphs and ingest metadata output by ingest code
 
-## 2. Understand and Compare Phase 2 Ingests 
+## Task Details
+
+### 1. Establish / Organize Owners and Contributors
+Determine who will perform and contribute to each ingest. We are currently using the **Ingest Assignment Table** [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
+
+As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
+
+### 2. Create a Source Ingest Ticket in DINGO Repository
+This ticket will capture questions and discussion related to ingest of a specific source - including assessment of terms of use, content and modeling issues, and notes for future iterations of the ingest. 
+
+Simply copy content from an [existing source ingest ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22) and overwrite with info for the new source. Be sure to add a "source ingest" label.
+
+### 3. Assess Terms of Use 
+Find and evaluate license / terms of use information for the source, and document this info and our assessment in the Source Ingest Ticket as described above. 
+
+See existing tickets for examples.
+
+### 3. Understand and Compare Phase 2 Ingests 
 Create an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0).
 
-### Prepare
+#### Prepare
 - Reps for each KP that ingested a source should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
 - As appropriate (in particular for sources ingested by multiple KPs), we strongly recommend each KP populates an Ingest Survey Spreadsheet like the one for CTD linked above - to help identify and resolve any differneces in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below. 
     
-### Compare
+#### Compare
 - What teams/KPs ingested the source?
 - What source files / versions were ingested by each KP (alt, which database tables, API endpoints, etc)?
 - What content from these files was included  (e.g.  specific columns)
@@ -25,15 +45,15 @@ Create an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.
    - Assess modeling generally in light of current state of Biolink model and approaches
    - If >1 KP, identify, assess, and resolve  differences in representation of same /related content
 
-## 3. Scope and Specify Re-Ingest Details
+### 5. Scope and Specify Re-Ingest Details
 Create a **Reference Ingest Guide (RIG)** like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md).
 
-### Assess Source Utility
+#### Assess Source Utility
 - Is the source as a whole worth ingesting?
 - Perhaps not if overall quality/utility is low, or there is a better alternative for this type of data?
 - Consider findings from the 'Translator Results Analysis' that quantifies how often different types of edges from different sources are surfaced in query results (as answer edges, or support path edges)
 
-### Select Content to Ingest
+#### Select Content to Ingest
 - Make final decisions on what content will be included in the initial re-ingest
     - What knowledge (edges), concepts (nodes) are of high enough quality and utility to include in the ingest?*
     - Remember to consider ingest of nodes not participating in ingested edges
@@ -44,7 +64,7 @@ Create a **Reference Ingest Guide (RIG)** like the one [here](https://github.com
 - Note what content is excluded, and why?*
    - Be sure to document any content left behind that should be revisited/ingested in future iterations*.
 
-### Mapping and Modeling
+#### Mapping and Modeling
 - What types of Biolink edges will be created (define SPOQ patterns to be used) - and capture rationale for this representation*
 - What node/edge properties and patterns should be used to capture metadata?
 - Is re-modeling of Phase 2 patterns needed?
@@ -52,15 +72,15 @@ Create a **Reference Ingest Guide (RIG)** like the one [here](https://github.com
 - Are new Biolink classes/properties needed?
 - Map to / define association types in Biolink as appropriate?
 
-### Ingest/Infores Partitioning
+#### Ingest/Infores Partitioning
  - Decide if it make sense to split ingest of source into separate ingests, with separate inforeses
  - Mint and document an infores for each ingest in the infores catalog
      - Assumes each KGX output will warrant a new infores once DAWG stands up a Tier 1 service that provisions this content . . . we can mint and define an infores stub (status: draft) in anticipation of this.
 
-## 4. Write Ingest Code
+### 6. Write Ingest Code
 - Follow specification documented in the RIG . . . 
 - Implementation details of the shared pipeline are still t.b.d. 
 
-## 5. Execute Ingests to Produce KGX Files
+### 7. Execute Ingests to Produce KGX Files
 - Create nodes, edges, ingest-metadata KGX files
 - t.b.d. where these will be stored
