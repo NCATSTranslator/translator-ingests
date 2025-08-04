@@ -308,7 +308,7 @@ This provides detailed performance analysis including:
 
 #### Good Examples
 
-**✅ Good Protein Node** (UniProtKB entity):
+**Good Protein Node** (UniProtKB entity):
 ```json
 {
   "id": "UniProtKB:A0A075B6H9",
@@ -319,7 +319,7 @@ This provides detailed performance analysis including:
 }
 ```
 
-**✅ Good Gene Node** (MGI entity):
+**Good Gene Node** (MGI entity):
 ```json
 {
   "id": "MGI:1918911",
@@ -330,7 +330,7 @@ This provides detailed performance analysis including:
 }
 ```
 
-**✅ Good MacromolecularComplex Node** (ComplexPortal entity):
+**Good MacromolecularComplex Node** (ComplexPortal entity):
 ```json
 {
   "id": "ComplexPortal:CPX-990",
@@ -341,7 +341,7 @@ This provides detailed performance analysis including:
 }
 ```
 
-**✅ Good BiologicalProcess Node** (GO term):
+**Good BiologicalProcess Node** (GO term):
 ```json
 {
   "id": "GO:0005634",
@@ -349,7 +349,7 @@ This provides detailed performance analysis including:
 }
 ```
 
-**✅ Good Association Edge** (with real PMID and manual evidence):
+**Good Association Edge** (with real PMID and manual evidence):
 ```json
 {
   "id": "dcb842c6-d91e-43db-b8d5-6d89ee6fb5c3",
@@ -368,7 +368,7 @@ This provides detailed performance analysis including:
 
 #### Bad Examples
 
-**❌ Bad Gene Node** (missing essential properties):
+**Bad Gene Node** (missing essential properties):
 ```json
 {
   "id": "GO:0003723",
@@ -377,7 +377,7 @@ This provides detailed performance analysis including:
 ```
 *Rationale: GO term nodes lack name and taxon information, making them less useful for downstream analysis.*
 
-**❌ Bad Association Edge** (with GO_REF instead of real PMID):
+**Bad Association Edge** (with GO_REF instead of real PMID):
 ```json
 {
   "id": "179b0a8f-d8d2-438b-8b75-d0043da89d9e",

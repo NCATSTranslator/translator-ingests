@@ -145,8 +145,17 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Itera
     # Create entity node using appropriate Biolink class
     # Biolink pydantic model centric: Uses appropriate class from biolink model for automatic validation of required fields,
     # proper type checking, and biolink-compliant structure
+    
+    # Handle entity ID creation - some databases already include the prefix in DB_Object_ID
+    if db_object_id.startswith(f"{db_source}:"):
+        # DB_Object_ID already includes the database prefix (e.g., "MGI:101757")
+        entity_id = db_object_id
+    else:
+        # DB_Object_ID doesn't include prefix, so we add it (e.g., "A0A024RBG1" -> "UniProtKB:A0A024RBG1")
+        entity_id = f"{db_source}:{db_object_id}"
+    
     entity = biolink_class(
-        id=f"{db_source}:{db_object_id}",
+        id=entity_id,
         name=db_object_symbol,
         category=biolink_class.model_fields['category'].default,  # Dynamic category from Biolink model
         in_taxon=[taxon.replace("taxon:", "NCBITaxon:")],  # Convert GO taxon format to Biolink NCBI format
