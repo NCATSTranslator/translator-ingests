@@ -95,22 +95,23 @@ Records from relevant files that are not included in the ingest.
 
 |  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|---------|----------|
-| Disease  | has_phenotype  | PhenotypicFeature  | negated, onset_qualifier, frequency_qualifier, sex_qualifier  | manual agent, knowledge assertion   | has_count, has_total, has_percentage, has_quotient, publications, has_evidence |  to do |
-| Gene  | gene_associated_with_condition  | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes  | manual agent, knowledge assertion  | n/a  | to do |
-| Gene  | gene_associated_with_condition  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: contributes_to | manual agent, knowledge assertion  | n/a  |  to do  |
-| Gene  | gene_associated_with_condition | Disease  | n/a | manual agent, knowledge assertion  | n/a  | to do | 
-| Gene  | gene_associated_with_condition | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | to do |
-| Gene  | has_phenotype | Phenotypic Feature | frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent  | has_count, has_total, has_percentage, has_quotient, publications, has_evidence | to do | 
+| Disease  | has_phenotype  | PhenotypicFeature  | negated, onset_qualifier, frequency_qualifier, sex_qualifier  | manual agent, knowledge assertion   | has_count, has_total, has_percentage, has_quotient, publications, has_evidence | HPO curators manually review clinical data and published evidence to determine phenotypes that manifest in a Disease, which are reported using the has_phenotype predicate. |
+| Gene  | gene_associated_with_condition  | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes  | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' the disease. |
+| Gene  | gene_associated_with_condition  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: contributes_to | manual agent, knowledge assertion  | n/a  |  HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes, we report that a genetic variant form of the gene 'contributes to' the disease. |
+| Gene  | gene_associated_with_condition | Disease  | n/a | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. When the genetic etiology of the diseases is not sufficiently specified, the relationship is reported using the 'gene_associated_with_condition' predicate. |
+| Gene  | gene_associated_with_condition | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | HPOA provides direct Gene-Phenotype associations between genes with variants causing or contributing to a disease, and each phenotype associated with the disease. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' each of the phenotypes associated with the disease. |
+| Gene  | has_phenotype | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent  | has_count, has_total, has_percentage, has_quotient, publications, has_evidence | to do | 
 | Disease | has_mode_of_inheritance | PhenotypicFeature  |  publications | manual agent, knowledge assertion  | n/a  | to do |
 
 [*] Gene-to-Phenotype knowledge assertions are two hop knowledge inferences from the dataset.
 
-#### Alternative proposal for rows 2, 3, and 5 above:
+#### Alternative proposal for rows 2 - 5 above:
 |  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|---------|----------|
-| Gene  | causes | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  | to do |
-| Gene  | contributes_to  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  |  to do  |
-| Gene  | causes | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | to do |
+| Gene  | causes | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' the disease. |
+| Gene  | contributes_to  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes, we report that a genetic variant form of the gene 'contributes to' the disease.  |
+| Gene  | gene_associated_with_condition | Disease  | n/a | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. When the genetic etiology of the diseases is not sufficiently specified, the relationship is reported using the 'gene_associated_with_condition' predicate. | 
+| Gene  | causes | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | HPOA provides direct Gene-Phenotype associations between genes with variants causing or contributing to a disease, and each phenotype associated with the disease. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' each of the phenotypes associated with the disease. |
 
    
 ### Node Types
