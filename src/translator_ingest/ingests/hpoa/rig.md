@@ -16,7 +16,7 @@ The Human Phenotype Ontology group curates and assembles over 115,000 HPO-relate
 There are four HPOA ingests ('disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-phenotype' and 'gene-to-disease') that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
    
 ### Source Category(ies)
-- Primary Knowledge Source
+- Primary Knowledge Provider
   
 ### Citation
 - https://doi.org/10.1093/nar/gkaa1043
@@ -58,12 +58,12 @@ Covers curated Disease, Phenotype and Genes relationships annotated with Human P
 
   | File   | Included Content   | Fields Used  |
   |--------|--------------|-----------------|
-  | phenotype.hpoa   | Disease to Phenotype relationships (i.e., rows with 'aspect' == 'P')                                                                                                            | database_id, qualifier, hpo_id, reference, evidence, onset, frequency, sex, aspect |
-  | phenotype.hpoa    | Disease "Mode of Inheritance" relationships (i.e., rows with 'aspect' == 'I')                                                                                                   | database_id, hpo_id, reference, evidence, aspect |
-  | genes_to_disease.txt  | Mendelian Gene to Disease relationships (i.e., rows with 'association_type' == 'MENDELIAN')                                                                                      | ncbi_gene_id, gene_symbol, association_type, disease_id, source  |
-  | genes_to_disease.txt  | Polygenic Gene to Disease relationships (i.e., rows with 'association_type' == 'POLYGENIC')                                                                                      | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
-  | genes_to_disease.txt  | General Gene Contributions to Disease relationships (i.e., rows with 'association_type' == 'UNKNOWN')                                                                            | ncbi_gene_id, gene_symbol, association_type, disease_id, source  |
-  | genes_to_phenotype.txt | Records where we determine that the reported G-P association was inferred over a G-D associated type with the value "MENDELIAN"                                                 | ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id   |
+  | phenotype.hpoa   | Disease to Phenotype relationships (i.e., rows with 'aspect' == 'P') | database_id, qualifier, hpo_id, reference, evidence, onset, frequency, sex, aspect |
+  | phenotype.hpoa    | Disease "Mode of Inheritance" relationships (i.e., rows with 'aspect' == 'I')  | database_id, hpo_id, reference, evidence, aspect |
+  | genes_to_disease.txt  | Mendelian Gene to Disease relationships (i.e., rows with 'association_type' == 'MENDELIAN')  | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
+  | genes_to_disease.txt  | Polygenic Gene to Disease relationships (i.e., rows with 'association_type' == 'POLYGENIC')  | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
+  | genes_to_disease.txt  | General Gene Contributions to Disease relationships (i.e., rows with 'association_type' == 'UNKNOWN')  | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
+  | genes_to_phenotype.txt | Records where we determine that the reported G-P association was inferred over a G-D associated type with the value "MENDELIAN"  | ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id |
 
 
 ### Filtered Content
@@ -95,15 +95,23 @@ Records from relevant files that are not included in the ingest.
 
 |  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|---------|----------|
-| Disease  | has_phenotype    | PhenotypicFeature  | negated, onset_qualifier, frequency_qualifier, sex_qualifier  | manual agent, knowledge assertion   | has_count, has_total, has_percentage, has_quotient, publications, has_evidence |  to do |
-| Gene  | causes  | Disease  |  subject_form_or_variant_qualifier, qualified_predicate  | manual agent, knowledge assertion  | n/a  | to do |
-| Gene  | contributes_to   | Disease |  subject_form_or_variant_qualifier, qualified_predicate   | manual agent, knowledge assertion  | n/a  |  to do  |
+| Disease  | has_phenotype  | PhenotypicFeature  | negated, onset_qualifier, frequency_qualifier, sex_qualifier  | manual agent, knowledge assertion   | has_count, has_total, has_percentage, has_quotient, publications, has_evidence |  to do |
+| Gene  | gene_associated_with_condition  | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes  | manual agent, knowledge assertion  | n/a  | to do |
+| Gene  | gene_associated_with_condition  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: contributes_to | manual agent, knowledge assertion  | n/a  |  to do  |
 | Gene  | gene_associated_with_condition | Disease  | n/a | manual agent, knowledge assertion  | n/a  | to do | 
-| Gene  | causes | Phenotypic Feature | subject_form_or_variant_qualifier, frequency_qualifier, disease_context_qualifier |  logical entailment, automated_agent [*] | n/a | to do |
+| Gene  | gene_associated_with_condition | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | to do |
 | Gene  | has_phenotype | Phenotypic Feature | frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent  | has_count, has_total, has_percentage, has_quotient, publications, has_evidence | to do | 
 | Disease | has_mode_of_inheritance | PhenotypicFeature  |  publications | manual agent, knowledge assertion  | n/a  | to do |
 
-[*] Gene-to-disease knowledge assertions are two hop knowledge inferences from the dataset.
+[*] Gene-to-Phenotype knowledge assertions are two hop knowledge inferences from the dataset.
+
+#### Alternative proposal for rows 2, 3, and 5 above:
+|  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
+|----------|----------|----------|----------|----------|---------|----------|
+| Gene  | causes | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  | to do |
+| Gene  | contributes_to  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  |  to do  |
+| Gene  | causes | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | to do |
+
    
 ### Node Types
 
@@ -120,7 +128,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 ### Future Modeling Considerations (o)
 - Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations where we place more semantics into predicates, per https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22
 - Should we consider creating support paths in our data/graphs, for the G-D-P hops over which HPO infers G-P associations?
-   -  e.g. `GENE1 -causes->  DISEASE1 -has_phenotype->  PHENO1	  ---->    GENE1 -causes-> PHENO1`
+   -  e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1	  ---->    GENE1 -causes-> PHENO1`
 
 -----------------
 
@@ -134,7 +142,8 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 ### Artifacts (o)
 - [Ingest Survey](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
-- [Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22)
+- [Ingest Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/24)
+- [Modeling Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22)
   
 ### Additional Notes (o)
 
