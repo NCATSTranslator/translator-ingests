@@ -12,6 +12,8 @@ GO Annotations connect genes to a Gene Ontology term that describes a molecular 
 Most are produced through rigorous manual curation of the literature, although some are based on automated pipelines that assign GO terms based on things like orthology or sequence similarity. 
 
 ### Source Category(ies)
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+
 - Primary Knowledge Provider
 
 ### Citation (o)
@@ -48,7 +50,6 @@ GOA is a rich source of manually curated knowledge about gene function with broa
 This initial ingest of GOA covers molecular function, biological process, and cellular component annotations about human and mouse genes only, including manually curated and electronically inferred content, from GAF files (GPAD and GPI formats not ingested). 
 Other species may be added in future updates to the ingest. 
 
-
 ### Relevant Files
 Source files with content we aim to ingest.
 
@@ -57,10 +58,10 @@ Source files with content we aim to ingest.
   | goa_human.gaf | https://current.geneontology.org/products/pages/downloads.html|  Human gene-product to GO term associations (GAF 2.2)  | 
   | mgi.gaf | https://current.geneontology.org/products/pages/downloads.html | Mouse gene-product to GO term associations (GAF 2.2)  | 
   
-### Included Content
-Records from the relevant files that are included, and a list of fields in the data that are part of or inform the ingest. 
+### Included Content / Records
+Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
 
-  | File | Included Records | Fields Used | 
+  | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
   | goa_human.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Type, Taxon |
   | mgi.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Type, Taxon |
@@ -68,10 +69,11 @@ Records from the relevant files that are included, and a list of fields in the d
 ### Filtered Content
 Records from relevant files that are not included in the ingest.
 
-n/a - no recrods are filtered from the source data sets listed above. 
+n/a - no records are filtered from the source data sets listed above. 
 
 
 ### Future Content Considerations (o)
+Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Consider ingesting Gene/Product to GO Term annotations from other taxon
@@ -135,9 +137,9 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 -----------------
 
-## Provenance Information
+## Provenance Information (o)
 
-### Ingest Contributors
+### Ingest Contributors (o)
 - **Adilbek Bazarkulov**: code author
 - **Evan Morris**: code support
 - **Adilbek Bazarkulov**: code support, domain expertise
