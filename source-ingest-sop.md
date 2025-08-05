@@ -4,10 +4,10 @@ Below we define general tasks that should be performed and artifacts to be creat
 ## Key Artifacts
 1. **Ingest Assignment Table**: Records owner and contributor assignments for each ingest ([link](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496))
 2. **Source Ingest Tickets**: Tracks contributor questions and discussions about the ingest ([CTD Example](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22))
-3. **Ingest Surveys**: Describe any current ingests of the source from Phase 2 KPs to facilaitate comparison and alignment. ([CTD Example)](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
+3. **Ingest Surveys**: Describe any current ingests of the source from Phase 2 KPs to facilaitate comparison and alignment. ([Examples)](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
 4. **Reference Ingest Guides (RIGs)**: Document scope, content, and modeling decisions for an ingest. ([CTD Example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md)) ([Instructions](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md)) ([Template](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/rig-template.md))
 5. **Ingst Code**: Python code used to execute an ingest as described in a RIG. ([CTD Example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd.py))
-6. **KGX Files**: The final knowledge graphs and ingest metadata that is produced by ingest code. (CTD Example - TO DO)
+6. **KGX Files**: The final knowledge graphs and ingest metadata that is produced by ingest code. ([CTD Example]() - TO DO)
 
 ## Task Details
 
