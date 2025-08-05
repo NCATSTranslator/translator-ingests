@@ -7,10 +7,12 @@
 ### Infores
  - [infores:ctd](https://w3id.org/information-resource-registry/ctd)
 
-### Description
+### Description (o)
 CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides knowledge, manually curated from the literature, about chemicals and their relationship to other biological entities: chemical to gene/protein interactions plus chemical to disease and gene to disease relationships. These data are integrated with functional and pathway data to aid in the development of hypotheses about the mechanisms underlying environmentally influenced diseases. It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
    
 ### Source Category(ies)
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+
 - Primary Knowledge Provider
 
 ### Citation (o)
@@ -52,14 +54,14 @@ Source files with content we aim to ingest.
   | CTD_chemicals_diseases.tsv.gz  | http://ctdbase.org/downloads/ |  Manually curated and computationally inferred associations between chemicals and diseases | 
   | CTD_exposure_events.tsv.gz  | http://ctdbase.org/downloads/ |  Descriptions of statistical studies of how exposure to chemicals affects a particular population, with some records providing outcomes| 
   
-### Included Content
-Records from the relevant files that are included, and a list of fields in the data that are part of or inform the ingest. 
+### Included Content / Records
+Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
 
-  | File | Included Records | Fields Used | 
+  | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
   | CTD_chemicals_diseases.tsv.gz  | Curated therapeutic and marker/mechanism associations (records where a "DirectEvidence" value is populated with type "T" or "M"), as well as inferred associtionas (recrods lacking a value in the DirectEvidence column)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
 
-### Filtered Content
+### Filtered Content / Records
 Records from relevant files that are not included in the ingest.
 
   | File | Filtered Records | Rationale |
@@ -68,6 +70,7 @@ Records from relevant files that are not included in the ingest.
 
 
 ### Future Content Considerations (o)
+Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
    - While the current ingest includes only Chemical-Disease Asociations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table linked below for more details.
@@ -108,10 +111,10 @@ Records from relevant files that are not included in the ingest.
 
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
 
-| Biolink Category |  Source Identifier Type(s) | Notes |
-|------------------|----------------------------|--------|
-| ChemicalEntity |  MeSH  | Majority are Biolink SmallMolecules |
-| DiseaseOrPhenotypicFeature| MeSH | |
+| Biolink Category |  Source Identifier Type(s) | Node Properties  | Notes |
+|------------------|----------------------------|------------------|-------|
+| ChemicalEntity |  MeSH  |  none  |Majority are Biolink SmallMolecules |
+| DiseaseOrPhenotypicFeature| MeSH | none  |  |
 
 -  The chemical ID row is expected to need a 'MESH:' prefix added, with the disease identifier used as-is.
   
@@ -122,9 +125,9 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 -----------------
 
-## Provenance Information
+## Provenance Information (o)
 
-### Ingest Contributors
+### Ingest Contributors (o)
 - **Kevin Schaper**: code author
 - **Evan Morris**: code support
 - **Sierra Moxon**: code support
@@ -133,5 +136,6 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 ### Artifacts (o)
 - [Ingest Survey](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
+- [Ingest Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/23)
 
 ### Additional Notes (o)
