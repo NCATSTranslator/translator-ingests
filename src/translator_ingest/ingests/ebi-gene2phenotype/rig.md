@@ -14,7 +14,7 @@ It is constructed by experts reviewing published literature, and it is primarily
 Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism.
 
 ### Source Category(ies)
-Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
 
 - Primary Knowledge Provider
 
