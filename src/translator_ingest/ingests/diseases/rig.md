@@ -11,7 +11,7 @@
 The DISEASES database is a web resource that integrates knowledge on gene-disease associations. It generates de novo associations through automated text mining, and aggregates associations from external sources of manually curated knowledge and GWAS-based study results. The associations are assigned a confidence score to facilitate comparisons across data types and sources.   
 
 ### Source Category(ies)
-Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
 
 - Primary Knowledge Provider
 - Aggregation Provider
