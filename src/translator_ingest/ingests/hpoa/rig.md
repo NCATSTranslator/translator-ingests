@@ -16,6 +16,8 @@ The Human Phenotype Ontology group curates and assembles over 115,000 HPO-relate
 There are four HPOA ingests ('disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-phenotype' and 'gene-to-disease') that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
    
 ### Source Category(ies)
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+
 - Primary Knowledge Provider
   
 ### Citation
