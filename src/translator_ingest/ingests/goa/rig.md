@@ -1,127 +1,156 @@
-# Gene Ontology Annotation (GOA) Reference Ingest Guide (RIG)
+# GO Annotations (GOA) Reference Ingest Guide (RIG)
 
----
+---------------
 
 ## Source Information
 
 ### Infores
-
-* **`infores:goa`**
+ - [infores:goa](https://w3id.org/information-resource-registry/goa)
 
 ### Description
+GO Annotations connect genes to a Gene Ontology term that describes a molecular function it enables, a biological process in which it participates, or a cellular component in which it is located. 
+Most are produced through rigorous manual curation of the literature, although some are based on automated pipelines that assign GO terms based on things like orthology or sequence similarity. 
 
-The Gene Ontology Annotation (GOA) project provides high-quality, manually curated associations between gene products and GO terms—covering molecular functions, biological processes, and cellular components—with evidence codes and literature references.
+### Source Category(ies)
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+
+- Primary Knowledge Provider
+
+### Citation (o)
+- Data Archive: https://zenodo.org/records/10536401
+- Publication: https://doi.org/10.1093/nar/gky1055
 
 ### Terms of Use
-
-Gene Ontology's annotations are made available under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See: [https://geneontology.org/docs/go-citation-policy/](https://geneontology.org/docs/go-citation-policy/)
-
-CC BY 4.0: [https://creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
+- https://geneontology.org/docs/go-citation-policy/
+- Uses the [CC BY 4.0 license](https://creativecommons.org/licenses/by/4.0/legalcode#s3a1),
 
 ### Data Access Locations
-
-GOA files, with embedded release dates in headers (e.g. `!Generated: 2025-06-01`), can be downloaded from the Gene Ontology FTP or HTTP release site:
-
-* **Catalog page:** [https://current.geneontology.org/products/pages/downloads.html](https://current.geneontology.org/products/pages/downloads.html)
-* **Bulk annotation directory:** [https://current.geneontology.org/annotations/](https://current.geneontology.org/annotations/)
-* **Human GAF (2025-06-01 release):**
-
-  * `goa_human.gaf.gz` (993,520 annotations)
-* **Mouse GAF:**
-
-  * `mgi.gaf` (mouse GOA GAF 2.2)
-
+- All downloads: https://geneontology.org/docs/download-go-annotations/
+- Commonly studied organisms: https://current.geneontology.org/products/pages/downloads.html
+   
 ### Provision Mechanisms and Formats
+- Mechanism(s): File download.
+- Formats: tsv in GAF format (17 columns)
 
-* **Mechanism:** File download (GAF, GPAD, GPI) or API access (REST endpoints)
-* **Formats:**
-
-  * **GAF 2.2** (`.gaf`, `.gaf.gz`): Tab-delimited 17-column format. Header lines start with `!`.
-  * **GPAD 2.0** (`.gpad`, `.gpad.gz`)
-  * **GPI 2.0** (`.gpi`, `.gpi.gz`)
-
+   
 ### Releases and Versioning
-
 * **Release cadence:** Approximately every four weeks, synchronized with UniProtKB.
-* **Versioning:** Each GAF header includes a `!Generated: YYYY-MM-DD` line.
+* **Versioning:** By date - each GAF header includes a `!Generated: YYYY-MM-DD` line.
 * **Release notes:** [https://geneontology.org/docs/download-go-annotations/](https://geneontology.org/docs/download-go-annotations/) and [https://geneontology.org/docs/go-annotation-file-gaf-format-2.2/](https://geneontology.org/docs/go-annotation-file-gaf-format-2.2/)
+* **Release archive**: https://release.geneontology.org/
 
----
+----------------
 
 ## Ingest Information
-
+    
 ### Utility
-
-GOA provides the definitive manually curated and electronically inferred associations between human and mouse gene products (UniProtKB entries and MGI identifiers) and GO terms, with evidence codes and literature references.
+GOA is a rich source of manually curated knowledge about gene function with broad relevance to all Translator queries and use cases. 
 
 ### Scope
+This initial ingest of GOA covers molecular function, biological process, and cellular component annotations about human and mouse genes only, including manually curated and electronically inferred content, from GAF files (GPAD and GPI formats not ingested). 
+Other species may be added in future updates to the ingest. 
 
-* **Primary ingest:** human (`goa_human.gaf.gz`) and mouse (`mgi.gaf`) GOA GAF 2.2 files, capturing all three annotation aspects (P, F, C) with manual (e.g., IDA, IMP) and electronic (IEA) evidence codes, including the `Taxon` column to differentiate species via the `in_taxon` slot.
-* **Excluded:** GPAD and GPI formats; multi-species GAF (`goa_uniprot_all.gaf.gz`) earmarked for future broader taxonomic coverage.
+### Relevant Files
+Source files with content we aim to ingest.
 
-#### Relevant Files
+  | File | Location | Description |
+  |----------|----------|----------|
+  | goa_human.gaf | https://current.geneontology.org/products/pages/downloads.html|  Human gene-product to GO term associations (GAF 2.2)  | 
+  | mgi.gaf | https://current.geneontology.org/products/pages/downloads.html | Mouse gene-product to GO term associations (GAF 2.2)  | 
+  
+### Included Content / Records
+Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
 
-| File               | Description                                          |
-| ------------------ | ---------------------------------------------------- |
-| `goa_human.gaf.gz` | Human gene-product to GO term associations (GAF 2.2) |
-| `mgi.gaf`          | Mouse gene-product to GO term associations (GAF 2.2) |
+  | File | Included Records | Fields Used (o) | 
+  |----------|----------|----------|
+  | goa_human.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Type, Taxon |
+  | mgi.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Type, Taxon |
+  
+### Filtered Content
+Records from relevant files that are not included in the ingest.
 
-#### Included Content
+n/a - no records are filtered from the source data sets listed above. 
 
-| File                           | Included Content                                             | Columns Mapped (->)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `goa_human.gaf.gz` / `mgi.gaf` | All human and mouse annotations with evidence and provenance | `DB` -> determines biolink class (Gene/Protein/Complex/RNA)<br>`DB Object ID` -> `Entity.id` (dynamic biolink class)<br>`DB Object Symbol` -> `name`<br>`DB Object Name` -> `description`<br>`Qualifier` -> maps to `negated` slot (e.g., 'NOT' sets `negated=true`)<br>`GO ID` -> `GO_Term.id` (dynamic biolink class based on aspect)<br>`DB:Reference(s)` -> `publications`<br>`Evidence Code` -> `has_evidence`<br>`Aspect` -> maps to `predicate` slot: `biolink:participates_in` / `biolink:enables` / `biolink:located_in`<br>`Taxon` -> `in_taxon`<br>`Annotation Extension` -> qualifier slots if needed<br>`Gene Product Form ID` -> form/variant qualifiers (future) |
 
-#### Excluded Content
+### Future Content Considerations (o)
+Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
-| File      | Excluded Content                                                                                                                                                               | Rationale                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| GAF files | Header comment lines (`!gaf-version`, `!generated-by`, etc.);<br>`DB Object Synonym`;<br>`DB Object Type`;<br>`With (or) From`;<br>`Assigned By`;<br>`Date` | Non-core provenance or redundant context; optional context handled via qualifiers if needed. |
+- **Edges**
+  - Consider ingesting Gene/Product to GO Term annotations from other taxon
+  - Consider inclusion of qualifying information (as may be found in the Annotation Extensions, or With or From columns) to existing and new Gene/Product to GO Term annotations 
+  - Consider ingesting associations between two GO Terms, per the specification [here](https://wiki.geneontology.org/index.php/Annotation_Relations#Standard_Annotation:_Annotation_Extension_Relations)
 
-#### Future Considerations
+- **Node Properties**
+  - t.b.d. if we will bring in taxon info about gene/gene product nodes from GOA, or rely on other gene property authorities for this information (e.g. ncbigene)
+    
+- **Edge Properties/EPC Metadata**
+  - n/a
 
-| File                     | Content                   | Rationale                                  |
-| ------------------------ | ------------------------- | ------------------------------------------ |
-| `goa_human.gpad.gz`      | Detailed qualifiers       | Enables modeling of annotation extensions  |
-| `goa_human.gpi.gz`       | Gene product metadata     | Enriches node attributes (names, synonyms) |
-| `goa_uniprot_all.gaf.gz` | Multi-species annotations | Broadens taxonomic coverage                |
+  
+-----------------
 
----
+##  Target Information
 
-## Target Information
-
+### Infores:
+ - infores:translator-goa-kgx
+   
 ### Edge Types
 
-| # | Association                      | Biolink MetaEdge          | Slots                                                 | UI Explanation                                                                   |
-| - | -------------------------------- | ------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 1 | Gene -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Captures that a gene **participates in** a biological process (Aspect P) |
-| 2 | Gene -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Indicates a gene **enables** a molecular function (Aspect F)             |
-| 3 | Gene -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Specifies a gene is **located in** a cellular component (Aspect C)       |
-| 4 | Protein -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Captures that a protein **participates in** a biological process (Aspect P) |
-| 5 | Protein -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Indicates a protein **enables** a molecular function (Aspect F)             |
-| 6 | Protein -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Specifies a protein is **located in** a cellular component (Aspect C)       |
-| 7 | MacromolecularComplex -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Captures that a complex **participates in** a biological process (Aspect P) |
-| 8 | MacromolecularComplex -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Indicates a complex **enables** a molecular function (Aspect F)             |
-| 9 | MacromolecularComplex -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Specifies a complex is **located in** a cellular component (Aspect C)       |
-| 10 | RNAProduct -> BiologicalProcess | biolink\:participates\_in | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Captures that an RNA product **participates in** a biological process (Aspect P) |
-| 11 | RNAProduct -> MolecularFunction | biolink\:enables          | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Indicates an RNA product **enables** a molecular function (Aspect F)             |
-| 12 | RNAProduct -> CellularComponent | biolink\:located\_in      | `negated`, `has_evidence`, `publications`, `knowledge_level`, `agent_type` | Specifies an RNA product is **located in** a cellular component (Aspect C)       |
+|  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
+|----------|----------|----------|----------|----------|---------|----------|
+|  Gene, Protein, MacromolecularComplex, RNAProduct  | enables |  MolecularFunction | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' | A GO Annotation uses 'enables' predicate when a gene product is solely capable of executing the reported function. |
+|  MacromolecularComplex | contributes_to |  MolecularFunction | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' | A GO Annotation uses 'contributes_to' predicate when a gene product is required as part of a macromelecular complex for executing the reported function. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct | involved_in |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' | A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct | acts_upstream_of_or_within |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' | A GO Annotation uses 'acts_upstream_of_or_within' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, as is the directionality of its effect on the process. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct | acts_upstream_of_or_within_positive_effect |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' | A GO Annotation uses 'acts_upstream_of_or_within_positive_effect' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, but the activity of the gene product has a positive effect on the process. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct | acts_upstream_of_or_within_negative_effect |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' |A GO Annotation uses 'acts_upstream_of_or_within_negative_effect' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, but the activity of the gene product has a negative effect on the process. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct | acts_upstream_of |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' |A GO Annotation uses 'acts_upstream_of' predicate when the a gene product acts through a known mechanism upstream of the reported biological process, does not regualte the process, and the directionality of its effect on the process is not known.  |
+|  Gene, Protein, MacromolecularComplex, RNAProduct | acts_upstream_of_positive_effect |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' | A GO Annotation uses 'acts_upstream_of_positive_effect' predicate when a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the activity of the gene product is requred for the process but does not regulate it.|
+|  Gene, Protein, MacromolecularComplex, RNAProduct | acts_upstream_of_negative_effect |  BiologicalProcess | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications'  | A GO Annotation uses 'acts_upstream_of_negative_effect' predicate when a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the activity of the gene product prevents or reduces the process but does not regulate it. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct  | is_active_in |  CellularComponent | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' |  A GO Annotation uses 'is_active_in' predicate when a gene product is present in and performs its molecular function in the reported cellular component. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct  | located_in |  CellularComponent | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' |  A GO Annotation uses 'located_in' predicate when a gene product enables is detected in the reported cellular component.|
+|  Gene, Protein, RNAProduct | part_of |  MacromolecularComplex | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' |  A GO Annotation uses 'part_of' predicate when a gene product is a component of the reported macromolecular complex. |
+|  Gene, Protein, MacromolecularComplex, RNAProduct  | colocalizes_with |  CellularComponent | n/a | varies, depending on mappings from GO evidence codes   | 'negated', 'has_evidence', 'publications' |  A GO Annotation uses 'cplocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component.|
 
+
+**Additional Notes/Rationale (o)**:
+- NOTE that where we can identify annotations that were imported/re-structured from GO-CAM, we can keep infores:goa as the primary source for these edges, but indicate infores:go-cam as a 'supporting_data_provider'
+   
 ### Node Types
+High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
 
-| Biolink Category       | Source ID Type(s)                   | Notes                                   |
-| ---------------------- | ----------------------------------- | --------------------------------------- |
-| biolink\:Gene          | MGI, SGD, RGD, ZFIN, FB, WB, TAIR primary IDs | Represents genes with full biolink validation. |
-| biolink\:Protein       | UniProtKB accession                 | Represents proteins with full biolink validation. |
-| biolink\:MacromolecularComplex | ComplexPortal IDs              | Represents protein complexes with full biolink validation. |
-| biolink\:RNAProduct    | RNAcentral IDs                     | Represents RNA products with full biolink validation. |
-| biolink\:BiologicalProcess | GO term IDs (Aspect P)         | Represents biological processes. Uses specific biolink class instead of generic NamedThing. |
-| biolink\:MolecularActivity | GO term IDs (Aspect F)        | Represents molecular functions. Uses specific biolink class instead of generic NamedThing. |
-| biolink\:CellularComponent | GO term IDs (Aspect C)       | Represents cellular components. Uses specific biolink class instead of generic NamedThing. |
 
----
+| Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
+|------------------|----------------------------|----------------|--------|
+| Gene          | MGI  |  none  |   |
+| Protein       | UniProtKB accession  | none  |   |
+| MacromolecularComplex | ComplexPortal IDs  |  none  |   |
+| RNAProduct    | RNAcentral IDs  | none  |   |
+| BiologicalProcess | Gene Ontology IDs (Aspect P)  | none |   |
+| MolecularActivity | Gene Ontology IDs (Aspect F)  | none |   |
+| CellularComponent | Gene Ontology IDs (Aspect C) | none |   |
 
-## Implementation Notes
+  
+### Future Modeling Considerations (o)
+- Introduce qualifier-based representation if/when we decide to ingest any qualifying context on GO annotations
+- If we end up ingesting taxon info for gene nodes, we may have to update the Biolink Model to support this (currently in_taxon is represented as a predicate, and species_context_qualifier as an edge property - but there is no taxon node property) 
+
+-----------------
+
+## Provenance Information (o)
+
+### Ingest Contributors (o)
+- **Adilbek Bazarkulov**: code author
+- **Evan Morris**: code support
+- **Adilbek Bazarkulov**: code support, domain expertise
+- **Sierra Moxon**: data modeling, domain expertise
+- **Matthew Brush**: data modeling, domain expertise
+
+### Artifacts (o)
+- [Ingest Survey](https://docs.google.com/spreadsheets/d/18wGm2a0W1oIXm7cn8TZ99xn_aAMJ91SgAsuPDcV-lII/edit?gid=325339947#gid=325339947)
+- [Ingest Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/8)
+
+### Additional Notes (o)
 
 ### Framework Integration
 - **Koza Framework**: Uses `@koza.transform_record()` decorator for record-by-record processing
@@ -155,26 +184,7 @@ GOA provides the definitive manually curated and electronically inferred associa
 - **Biolink Compliance**: Uses specific association when available, falls back to generic Association
 - **Extensibility**: Can easily add specific associations for Protein, MacromolecularComplex, etc. when they become available
 
-### Qualifier Handling
-- **Primary Mapping**: Uses `QUALIFIER_TO_PREDICATE` mapping for specific GO qualifiers (e.g., `part_of`, `contributes_to`, `colocalizes_with`)
-- **NOT Qualifier Support**: Handles `NOT|` prefix in qualifiers by extracting base qualifier and setting `negated=true`
-- **Fallback Logic**: Falls back to `ASPECT_TO_PREDICATE` mapping when qualifier is not recognized
-- **Logging**: Logs when fallback predicates are used for transparency
-
-### Entity ID Creation
-- **Double Prefix Prevention**: Checks if `DB_Object_ID` already contains database prefix to prevent double prefixes (e.g., `MGI:MGI:101760`)
-- **Conditional Logic**: Uses `DB_Object_ID` directly if it already has prefix, otherwise prepends database source
-- **Examples**: 
-  - `MGI:101757` (already has prefix) → `MGI:101757`
-  - `A0A024RBG1` (no prefix) → `UniProtKB:A0A024RBG1`
-
 ### Taxon Modeling
 - **Node-Level Only**: `in_taxon` is only set on entity nodes, not on associations
 - **Framework Constraint**: GeneToGoTermAssociation doesn't include the 'thing with taxon' mixin in the biolink model
 - **Inference**: Taxon information can be inferred from the subject node's `in_taxon` property
-
----
-
-## Ingest Contributors
-
-* **Adilbek Bazarkulov**
