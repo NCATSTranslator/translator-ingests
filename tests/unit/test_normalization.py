@@ -278,12 +278,14 @@ def mock_nn_query():
     # return Normalizer().get_normalized_nodes
     def mock_node_normalizer_query(query: Dict) -> Dict[str, Optional[Dict]]:
         # Fixture sanity check for a well-formed query input
+        # I am also mimicking the default "conflate" and "drug_chemical_conflate" modes here
         assert query
         assert "curies" in query
         result: Dict[str, Optional[Dict]] = dict()
         for identifier in query["curies"]:
             if identifier in ["HGNC:12791", "NCBIGene:7486", "UniProtKB:Q14191"]:
-                if "conflate" in query and query["conflate"] is True:
+                if "conflate" not in query or query["conflate"] is True:
+                    # if the flag not provided, the "conflate" default is "True"
                     result[identifier] = MOCK_NN_GP_CONFLATED_GENE_DATA
                 else:
                     result[identifier] = MOCK_NN_GENE_ONLY_DATA
@@ -293,6 +295,7 @@ def mock_nn_query():
                 if "drug_chemical_conflate" in query and query["drug_chemical_conflate"] is True:
                     result[identifier] = MOCK_NN_DC_CONFLATED_CHEMICAL_DATA
                 else:
+                    # if the flag is not provided, the "drug_chemical_conflate" default is "False"
                     result[identifier] = MOCK_NN_CHEMICAL_ONLY_DATA
             else:
                 result[identifier] = None
