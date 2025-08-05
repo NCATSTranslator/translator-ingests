@@ -22,15 +22,16 @@
 - To create a new ticket, copy content from an [existing source ingest ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22) and overwrite with info for the new source. Be sure to add a "source ingest" label.
 
 ### 3. Assess Terms of Use 
-- Find and evaluate license / terms of use information for the source, and document this info and our assessment in the Source Ingest Ticket as described above. 
-- See [existing tickets](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22) for examples.
+- Find and evaluate license / terms of use information for the source.
+- Document this info and our assessment in a [Source Ingest Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22) as described above. 
+- See the  [CTD Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/23) and [EBI G2P Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/25) for examples.
 
 ### 4. Assess Utility
-- Is the source as a whole worth ingesting?... perhaps not if overall quality/utility is low, or there is a better alternative for this type of data?
+- Determine if the source as a whole worth ingesting... perhaps not if overall quality/utility is low, or there is a better alternative for this type of data?
 - Consider findings from the 'Translator Results Analysis' that quantifies how often different types of edges from different sources are surfaced in actual query results.
 
 ### 5. Understand and Compare Phase 2 Ingests 
-Assuming a source passes terms of use and utility assessments, proceed with the ingest. 
+Assuming a source passes **terms of use** and **utility** assessments, proceed with the ingest by reviewing/comparing Phase 2 ingests:
 
 #### Prepare
 - Reps for each KP that ingested a source in Phase 2 should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
