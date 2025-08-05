@@ -155,6 +155,19 @@ GOA provides the definitive manually curated and electronically inferred associa
 - **Biolink Compliance**: Uses specific association when available, falls back to generic Association
 - **Extensibility**: Can easily add specific associations for Protein, MacromolecularComplex, etc. when they become available
 
+### Qualifier Handling
+- **Primary Mapping**: Uses `QUALIFIER_TO_PREDICATE` mapping for specific GO qualifiers (e.g., `part_of`, `contributes_to`, `colocalizes_with`)
+- **NOT Qualifier Support**: Handles `NOT|` prefix in qualifiers by extracting base qualifier and setting `negated=true`
+- **Fallback Logic**: Falls back to `ASPECT_TO_PREDICATE` mapping when qualifier is not recognized
+- **Logging**: Logs when fallback predicates are used for transparency
+
+### Entity ID Creation
+- **Double Prefix Prevention**: Checks if `DB_Object_ID` already contains database prefix to prevent double prefixes (e.g., `MGI:MGI:101760`)
+- **Conditional Logic**: Uses `DB_Object_ID` directly if it already has prefix, otherwise prepends database source
+- **Examples**: 
+  - `MGI:101757` (already has prefix) → `MGI:101757`
+  - `A0A024RBG1` (no prefix) → `UniProtKB:A0A024RBG1`
+
 ### Taxon Modeling
 - **Node-Level Only**: `in_taxon` is only set on entity nodes, not on associations
 - **Framework Constraint**: GeneToGoTermAssociation doesn't include the 'thing with taxon' mixin in the biolink model

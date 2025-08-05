@@ -15,6 +15,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from src.translator_ingest.ingests.goa.goa import (
     transform_record,
+    QUALIFIER_TO_PREDICATE,
     ASPECT_TO_PREDICATE,
     EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE,
 )
@@ -214,7 +215,15 @@ class TestGOATransform:
 
     def test_mappings_consistency(self):
         """Test that mappings are consistent."""
-        # Test aspect to predicate mapping
+        # Test qualifier to predicate mapping
+        assert QUALIFIER_TO_PREDICATE["enables"] == "biolink:enables"
+        assert QUALIFIER_TO_PREDICATE["part_of"] == "biolink:part_of"
+        assert QUALIFIER_TO_PREDICATE["located_in"] == "biolink:located_in"
+        assert QUALIFIER_TO_PREDICATE["involved_in"] == "biolink:participates_in"
+        assert QUALIFIER_TO_PREDICATE["contributes_to"] == "biolink:contributes_to"
+        assert QUALIFIER_TO_PREDICATE["colocalizes_with"] == "biolink:colocalizes_with"
+        
+        # Test aspect to predicate mapping (fallback)
         assert ASPECT_TO_PREDICATE["P"] == "biolink:participates_in"
         assert ASPECT_TO_PREDICATE["F"] == "biolink:enables"
         assert ASPECT_TO_PREDICATE["C"] == "biolink:located_in"

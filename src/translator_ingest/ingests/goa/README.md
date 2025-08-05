@@ -127,8 +127,17 @@ GO_ASPECT_TO_BIOLINK_CLASS = {
 # Create entity node using appropriate Biolink class
 # Biolink pydantic model centric: Uses appropriate class from biolink model for automatic validation of required fields,
 # proper type checking, and biolink-compliant structure
+
+# Handle entity ID creation - some databases already include the prefix in DB_Object_ID
+if db_object_id.startswith(f"{db_source}:"):
+    # DB_Object_ID already includes the database prefix (e.g., "MGI:101757")
+    entity_id = db_object_id
+else:
+    # DB_Object_ID doesn't include prefix, so we add it (e.g., "A0A024RBG1" -> "UniProtKB:A0A024RBG1")
+    entity_id = f"{db_source}:{db_object_id}"
+
 entity = biolink_class(
-    id=f"{db_source}:{db_object_id}",
+    id=entity_id,
     name=db_object_symbol,
     category=biolink_class.model_fields['category'].default,  # Dynamic category from Biolink model
     in_taxon=[taxon.replace("taxon:", "NCBITaxon:")],  # Convert GO taxon format to Biolink NCBI format
@@ -150,9 +159,32 @@ go_term = go_biolink_class(
 
 ### 5. **Predicate Mapping**
 
-**Rationale**: Biolink pydantic model doesn't expose predicate constants from the YAML slots section, so hardcoded mappings are used.
+**Rationale**: Uses qualifier-based mapping with fallback to aspect-based mapping for comprehensive coverage.
 
 ```python
+# Mappings for GO qualifiers to Biolink predicates
+# The qualifier field in GAF contains the actual relationship type
+# This mapping converts GO qualifiers to appropriate biolink predicates
+QUALIFIER_TO_PREDICATE = {
+    # Standard qualifiers
+    "enables": "biolink:enables",
+    "located_in": "biolink:located_in", 
+    "part_of": "biolink:part_of",
+    "involved_in": "biolink:participates_in",
+    "contributes_to": "biolink:contributes_to",
+    "colocalizes_with": "biolink:colocalizes_with",
+    "is_active_in": "biolink:is_active_in",
+    
+    # Upstream qualifiers
+    "acts_upstream_of": "biolink:acts_upstream_of",
+    "acts_upstream_of_or_within": "biolink:acts_upstream_of_or_within",
+    "acts_upstream_of_positive_effect": "biolink:acts_upstream_of_positive_effect",
+    "acts_upstream_of_negative_effect": "biolink:acts_upstream_of_negative_effect",
+    "acts_upstream_of_or_within_positive_effect": "biolink:acts_upstream_of_or_within_positive_effect",
+    "acts_upstream_of_or_within_negative_effect": "biolink:acts_upstream_of_or_within_negative_effect",
+}
+
+# Fallback mapping for aspect-based predicates (used when qualifier is not recognized)
 ASPECT_TO_PREDICATE = {
     "P": "biolink:participates_in",  # Biological Process
     "F": "biolink:enables",          # Molecular Function  
@@ -160,7 +192,36 @@ ASPECT_TO_PREDICATE = {
 }
 ```
 
-### 6. **Evidence Code Mapping**
+### 6. **Qualifier and Predicate Handling**
+
+**Rationale**: Uses qualifier-based mapping with fallback to aspect-based mapping for comprehensive coverage.
+
+```python
+# Get predicate from qualifier mapping (primary) or aspect mapping (fallback)
+# The qualifier field contains the actual relationship type, which is more specific than the aspect
+# Handle NOT qualifiers by extracting the base qualifier
+base_qualifier = qualifier.replace("NOT|", "") if qualifier.startswith("NOT|") else qualifier
+
+# Try to get predicate from qualifier first
+predicate = QUALIFIER_TO_PREDICATE.get(base_qualifier)
+
+# Fallback to aspect-based predicate if qualifier not recognized
+if not predicate:
+    predicate = ASPECT_TO_PREDICATE.get(aspect)
+    if not predicate:
+        koza.log(f"Unknown qualifier '{qualifier}' and aspect '{aspect}' for record: {record}", level="WARNING")
+        return [], []
+    else:
+        koza.log(f"Using fallback predicate for qualifier '{qualifier}' -> aspect '{aspect}' -> '{predicate}'", level="INFO")
+```
+
+**Key Features**:
+- **NOT Qualifier Support**: Handles `NOT|` prefix by extracting base qualifier and setting `negated=true`
+- **Primary Mapping**: Uses `QUALIFIER_TO_PREDICATE` for specific GO qualifiers
+- **Fallback Logic**: Falls back to `ASPECT_TO_PREDICATE` when qualifier not recognized
+- **Logging**: Logs when fallback predicates are used for transparency
+
+### 7. **Evidence Code Mapping**
 
 **Rationale**: Uses hardcoded mapping for simplicity and performance, with biolink enums providing validation.
 
@@ -177,7 +238,7 @@ EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE = {
 - **Biolink Enums**: Uses `KnowledgeLevelEnum` and `AgentTypeEnum` for type safety
 - **Fallback Values**: Unknown codes default to `not_provided`
 
-### 7. **Dynamic Association Creation**
+### 8. **Dynamic Association Creation**
 
 ```python
 # Create association dynamically based on the biolink class
@@ -264,7 +325,28 @@ else:
 - **Framework Compliance**: Follows biolink model design principles
 - **Inference**: Taxon information can be inferred from subject node's `in_taxon` property
 
-### 6. **Koza Transform Record Approach**
+### 6. **Qualifier-Based Predicate Mapping**
+
+**Decision**: Use qualifier-based mapping with fallback to aspect-based mapping
+
+**Why**:
+- **Semantic Precision**: GO qualifiers provide more specific relationship information than aspects
+- **Comprehensive Coverage**: Handles specific qualifiers like `part_of`, `contributes_to`, `colocalizes_with`
+- **NOT Support**: Properly handles negative associations via `NOT|` prefix
+- **Fallback Safety**: Aspect-based mapping ensures coverage for unrecognized qualifiers
+- **Transparency**: Logs when fallback predicates are used
+
+### 7. **Entity ID Creation Logic**
+
+**Decision**: Check for existing database prefix to prevent double prefixes
+
+**Why**:
+- **Data Quality**: Prevents malformed IDs like `MGI:MGI:101760`
+- **Flexibility**: Handles different database ID formats (with/without prefixes)
+- **Robustness**: Works with various database sources that may have different ID formats
+- **Consistency**: Ensures all entity IDs follow proper CURIE format
+
+### 8. **Koza Transform Record Approach**
 
 **Decision**: Use `@koza.transform_record()` decorator
 
@@ -359,6 +441,23 @@ This provides detailed performance analysis including:
   "negated": false,
   "publications": ["PMID:33961781"],
   "has_evidence": ["ECO:IPI"],
+  "primary_knowledge_source": "infores:goa",
+  "aggregator_knowledge_source": ["infores:biolink"],
+  "knowledge_level": "knowledge_assertion",
+  "agent_type": "manual_agent"
+}
+```
+
+**Good Association Edge with Qualifier** (using specific qualifier mapping):
+```json
+{
+  "id": "abc123-def456-ghi789",
+  "subject": "MGI:101757",
+  "predicate": "biolink:part_of",
+  "object": "GO:0005634",
+  "negated": false,
+  "publications": ["PMID:12345678"],
+  "has_evidence": ["ECO:IDA"],
   "primary_knowledge_source": "infores:goa",
   "aggregator_knowledge_source": ["infores:biolink"],
   "knowledge_level": "knowledge_assertion",

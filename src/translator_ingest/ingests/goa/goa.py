@@ -55,11 +55,29 @@ DB_TO_BIOLINK_CLASS = {
     "RNAcentral": RNAProduct,       # RNAcentral contains RNA products
 }
 
-# Mappings for GO aspects to Biolink predicates
-# Note: Biolink pydantic model doesn't expose predicate constants programmatically from the YAML slots section,
-# so we use hardcoded mappings. This could be enhanced if biolink-model adds predicate registry in future versions.
-# The YAML file contains predicate definitions like "participates in:", "enables:", "located in:" in the slots section,
-# but these are not exposed as constants in the generated biolink pydantic model.
+# Mappings for GO qualifiers to Biolink predicates
+# The qualifier field in GAF contains the actual relationship type
+# This mapping converts GO qualifiers to appropriate biolink predicates
+QUALIFIER_TO_PREDICATE = {
+    # Standard qualifiers
+    "enables": "biolink:enables",
+    "located_in": "biolink:located_in", 
+    "part_of": "biolink:part_of",
+    "involved_in": "biolink:participates_in",
+    "contributes_to": "biolink:contributes_to",
+    "colocalizes_with": "biolink:colocalizes_with",
+    "is_active_in": "biolink:is_active_in",
+    
+    # Upstream qualifiers
+    "acts_upstream_of": "biolink:acts_upstream_of",
+    "acts_upstream_of_or_within": "biolink:acts_upstream_of_or_within",
+    "acts_upstream_of_positive_effect": "biolink:acts_upstream_of_positive_effect",
+    "acts_upstream_of_negative_effect": "biolink:acts_upstream_of_negative_effect",
+    "acts_upstream_of_or_within_positive_effect": "biolink:acts_upstream_of_or_within_positive_effect",
+    "acts_upstream_of_or_within_negative_effect": "biolink:acts_upstream_of_or_within_negative_effect",
+}
+
+# Fallback mapping for aspect-based predicates (used when qualifier is not recognized)
 ASPECT_TO_PREDICATE = {
     "P": "biolink:participates_in",  # Biological Process
     "F": "biolink:enables",          # Molecular Function  
@@ -171,13 +189,22 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Itera
         category=go_biolink_class.model_fields['category'].default  # Dynamic category from Biolink model
     )
 
-    # Get predicate from aspect mapping
-    # Biolink pydantic model centric: Uses biolink predicate IRIs from hardcoded mapping since biolink model 
-    # doesn't expose predicate constants from YAML slots section
-    predicate = ASPECT_TO_PREDICATE.get(aspect)
+    # Get predicate from qualifier mapping (primary) or aspect mapping (fallback)
+    # The qualifier field contains the actual relationship type, which is more specific than the aspect
+    # Handle NOT qualifiers by extracting the base qualifier
+    base_qualifier = qualifier.replace("NOT|", "") if qualifier.startswith("NOT|") else qualifier
+    
+    # Try to get predicate from qualifier first
+    predicate = QUALIFIER_TO_PREDICATE.get(base_qualifier)
+    
+    # Fallback to aspect-based predicate if qualifier not recognized
     if not predicate:
-        koza.log(f"Unknown aspect '{aspect}' for record: {record}", level="WARNING")
-        return [], []
+        predicate = ASPECT_TO_PREDICATE.get(aspect)
+        if not predicate:
+            koza.log(f"Unknown qualifier '{qualifier}' and aspect '{aspect}' for record: {record}", level="WARNING")
+            return [], []
+        else:
+            koza.log(f"Using fallback predicate for qualifier '{qualifier}' -> aspect '{aspect}' -> '{predicate}'", level="INFO")
 
     # Get knowledge level and agent type from evidence code mapping
     # Biolink-centric: Uses biolink KnowledgeLevelEnum and AgentTypeEnum for type safety
