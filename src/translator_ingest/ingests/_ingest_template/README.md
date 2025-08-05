@@ -6,7 +6,13 @@ Make a copy of this directory and change the name of the directory, ingest-templ
 
 Populate the files with implementation details specific to that knowledge source. Avoid implementing major functionalities that seem like they should be shared across multiple ingests; instead consult translator_ingest maintainers with questions or suggestions.
 
-## Ingest Template Reference Ingest Guide (RIG)
+## Reference Ingest Guide (RIG)
 
-### TODO - Information about RIGs.
+RIGs document the scope, rationale, and modeling approach for ingesting content from a single source.
+
+A **new RIG** can be created by copying and overwriting the markdown content of the [rig-template](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/rig-template.md).
+
+**Instructions** for populating a RIG can be found [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md).
+
+An **informative example** of a completed RIG for the CTD ingest can be found [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md).
 
