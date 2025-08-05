@@ -74,8 +74,9 @@ n/a - no recrods are filtered from the source data sets listed above.
 ### Future Content Considerations (o)
 
 - **Edges**
-  - ingest annotations from other taxon
-  - include qualifying information (as may be found in the Annotation Extensions, or With or From columns)
+  - Consider ingesting Gene/Product to GO Term annotations from other taxon
+  - Consider inclusion of qualifying information (as may be found in the Annotation Extensions, or With or From columns) to existing and new Gene/Product to GO Term annotations 
+  - Consider ingesting associations between two GO Terms, per the specification [here](https://wiki.geneontology.org/index.php/Annotation_Relations#Standard_Annotation:_Annotation_Extension_Relations)
 
 - **Node Properties**
   - t.b.d. if we will bring in taxon info about gene/gene product nodes from GOA, or rely on other gene property authorities for this information (e.g. ncbigene)
