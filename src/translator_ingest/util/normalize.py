@@ -30,7 +30,10 @@ import logging
 
 from .http import post_query
 
-from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    Literal, NamedThing, Association, Gene
+)
 
 logger = logging.getLogger(__name__)
 
