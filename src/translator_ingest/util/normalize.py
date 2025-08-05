@@ -10,18 +10,21 @@
 #
 # Specifically:
 #
-# - A node normalization method will take an "original" (Primary Knowledge Source-published)
-# node and record its canonical identifier and associated node annotation from the node normalizer.
+# - The convert_to_preferred() method can convert a single curie into a preferred namespace
 #
-# - An edge normalization method would take an edge and return the edge
-# normalized with subject and object identifiers normalized to their
-# canonical identifiers identified by the node normalizer.
+# - The normalize_identifiers() method can convert a list of input curies into their canonical identifiers
 #
-# Although edge normalization could trigger normalization of the dereferenced nodes
-# from the edge subject and object. However, some thought will need to be given for
-# how the normalization - of the two distinct but interrelated collections
-# containing KGX-coded Biolink entities - is best coordinated.
+# - A node normalization method - normalize_node() - will take an "original" (Primary Knowledge Source-published)
+#   (Pydantic NamedThing structured) node and record its canonical identifier and
+#   associated node annotation from the node normalizer.
 #
+# - An edge normalization method - normalize_edge() - would take an edge and return
+#   the edge normalized with subject and object identifiers normalized to their
+#   canonical identifiers identified by the node normalizer.
+#
+# All of the above methods can use gene-to-protein and drug-to-chemical conflation to
+# modify their results. The code defaults are for gene-to-protein conflation to be applied,
+# but drug-to-chemical conflation to be avoided.
 from typing import Optional, Union, List, Dict, Callable
 import logging
 
@@ -273,16 +276,32 @@ class Normalizer:
         # return the normalized node
         return node
 
-    def normalize_edge(self, edge: Association) -> Optional[Association]:
+    def normalize_edge(
+            self,
+            edge: Association,
+            gp_conflate: bool = True,
+            dc_conflate: bool = False
+    ) -> Optional[Association]:
         """
         Rewrites the Association subject and object identifiers with their Node Normalizer canonical identifiers.
 
         :param edge: target instance of a class object in the Association hierarchy
+        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
+        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
 
-        :return: rewritten edge Association entry; None, if edge subject or object identifier cannot be resolved in NN
+        :return: rewritten edge Association entry; None, if edge subject or object identifier
+                 cannot be resolved by the Node Normalizer.
         """
-        edge_subject = self.normalize_node(NamedThing(id=edge.subject, **{}))
-        edge_object = self.normalize_node(NamedThing(id=edge.object, **{}))
+        edge_subject = self.normalize_node(
+            NamedThing(id=edge.subject, **{}),
+            gp_conflate=gp_conflate,
+            dc_conflate=dc_conflate
+        )
+        edge_object = self.normalize_node(
+            NamedThing(id=edge.object, **{}),
+            gp_conflate=gp_conflate,
+            dc_conflate=dc_conflate
+        )
         if not (edge_subject and edge_object):
             return None
         edge.subject = edge_subject.id
