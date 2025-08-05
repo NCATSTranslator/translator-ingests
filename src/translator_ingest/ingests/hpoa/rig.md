@@ -16,7 +16,7 @@ The Human Phenotype Ontology group curates and assembles over 115,000 HPO-relate
 There are four HPOA ingests ('disease-to-phenotype', 'disease-to-mode-of-inheritance', 'gene-to-phenotype' and 'gene-to-disease') that parse out records from the [HPO Phenotype Annotation File](http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
    
 ### Source Category(ies)
-Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
 
 - Primary Knowledge Provider
   
@@ -63,7 +63,7 @@ Covers curated Disease, Phenotype and Genes relationships annotated with Human P
   | File   | Included Content   | Fields Used  |
   |--------|--------------|-----------------|
   | phenotype.hpoa   | Disease to Phenotype relationships (i.e., rows with 'aspect' == 'P') | database_id, qualifier, hpo_id, reference, evidence, onset, frequency, sex, aspect |
-  | phenotype.hpoa    | Disease "Mode of Inheritance" relationships (i.e., rows with 'aspect' == 'I')  | database_id, hpo_id, reference, evidence, aspect |
+  | phenotype.hpoa    | Disease "Mode of Inheritance" relationships (i.e., rows with 'aspect' == 'I')  - represented as node properties rather than edges | database_id, hpo_id, reference, evidence, aspect |
   | genes_to_disease.txt  | Mendelian Gene to Disease relationships (i.e., rows with 'association_type' == 'MENDELIAN')  | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
   | genes_to_disease.txt  | Polygenic Gene to Disease relationships (i.e., rows with 'association_type' == 'POLYGENIC')  | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
   | genes_to_disease.txt  | General Gene Contributions to Disease relationships (i.e., rows with 'association_type' == 'UNKNOWN')  | ncbi_gene_id, gene_symbol, association_type, disease_id, source |
@@ -101,12 +101,11 @@ Content addditions/changes to consider for future iterations (consider edge cont
 |  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|----------|---------|----------|
 | Disease  | has_phenotype  | PhenotypicFeature  | negated, onset_qualifier, frequency_qualifier, sex_qualifier  | manual agent, knowledge assertion   | has_count, has_total, has_percentage, has_quotient, publications, has_evidence | HPO curators manually review clinical data and published evidence to determine phenotypes that manifest in a Disease, which are reported using the has_phenotype predicate. |
-| Gene  | gene_associated_with_condition  | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes  | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' the disease. |
-| Gene  | gene_associated_with_condition  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: contributes_to | manual agent, knowledge assertion  | n/a  |  HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes, we report that a genetic variant form of the gene 'contributes to' the disease. |
-| Gene  | gene_associated_with_condition | Disease  | n/a | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. When the genetic etiology of the diseases is not sufficiently specified, the relationship is reported using the 'gene_associated_with_condition' predicate. |
-| Gene  | gene_associated_with_condition | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | HPOA provides direct Gene-Phenotype associations between genes with variants causing or contributing to a disease, and each phenotype associated with the disease. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' each of the phenotypes associated with the disease. |
+| Gene  | associated_with | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes  | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene and DECIPHER. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' the disease. |
+| Gene  | associated_with  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: contributes_to | manual agent, knowledge assertion  | n/a  |  HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes, we report that a genetic variant form of the gene 'contributes to' the disease. |
+| Gene  | associated_with | Disease  | n/a | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. When the genetic etiology of the diseases is not sufficiently specified, the relationship is reported using the 'associated_with' predicate. |
+| Gene  | associated_with | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | HPOA provides direct Gene-Phenotype associations between genes with variants causing or contributing to a disease, and each phenotype associated with the disease. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' each of the phenotypes associated with the disease. |
 | Gene  | has_phenotype | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, qualified_predicate: causes, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent  | has_count, has_total, has_percentage, has_quotient, publications, has_evidence | to do | 
-| Disease | has_mode_of_inheritance | PhenotypicFeature  |  publications | manual agent, knowledge assertion  | n/a  | to do |
 
 [*] Gene-to-Phenotype knowledge assertions are two hop knowledge inferences from the dataset.
 
@@ -115,7 +114,7 @@ Content addditions/changes to consider for future iterations (consider edge cont
 |----------|----------|----------|----------|----------|---------|----------|
 | Gene  | causes | Disease  |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' the disease. |
 | Gene  | contributes_to  | Disease |  subject_form_or_variant_qualifier: genetic_variant_form | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes, we report that a genetic variant form of the gene 'contributes to' the disease.  |
-| Gene  | gene_associated_with_condition | Disease  | n/a | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. When the genetic etiology of the diseases is not sufficiently specified, the relationship is reported using the 'gene_associated_with_condition' predicate. | 
+| Gene  | associated_with | Disease  | n/a | manual agent, knowledge assertion  | n/a  | HPOA aggregates manually curated Gene-Disease associations from sources like Orphanet and MIM2Gene. When the genetic etiology of the diseases is not sufficiently specified, the relationship is reported using the 'associated_with' predicate. | 
 | Gene  | causes | Phenotypic Feature | subject_form_or_variant_qualifier: genetic_variant_form, frequency_qualifier, disease_context_qualifier | logical entailment, automated_agent [*] | n/a | HPOA provides direct Gene-Phenotype associations between genes with variants causing or contributing to a disease, and each phenotype associated with the disease. For Mendelian diseases with a single causal gene, we report that a genetic variant form of the gene 'causes' each of the phenotypes associated with the disease. |
 
    
@@ -125,7 +124,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 | Biolink Category    | Source Identifier Type(s) | Node Properties |  Notes (o) |
 |---------------------|---------------------------|-----------------|--------|
-| Disease             | OMIM, ORPHANET, DECIPHER  |  none |  |
+| Disease             | OMIM, ORPHANET, DECIPHER  |  Mode of Inheritance |  |
 | PhenotypicFeature   | HPO                       |  none  |  | 
 | Gene                | NCBI Gene                 |  none  |  |
 | Mode of Inheritance | HPO                       |  none  |  |
@@ -152,125 +151,3 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 - [Modeling Ticket](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22)
   
 ### Additional Notes (o)
-
-#### Example Transformations: Disease to Phenotype
-
-Example Source Data
-
-```json
-{
-  "database_id": "OMIM:117650",
-  "disease_name": "Cerebrocostomandibular syndrome",
-  "qualifier": "",
-  "hpo_id": "HP:0001249",
-  "reference": "OMIM:117650",
-  "evidence": "TAS",
-  "onset": "",
-  "frequency": "50%",
-  "sex": "",
-  "modifier": "",
-  "aspect": "P"
-}
-```
-
-Example Transformed Data
-
-```json
-{
-  "id": "uuid:...",
-  "subject": "OMIM:117650",
-  "predicate": "biolink:has_phenotype",
-  "object": "HP:0001249",
-  "frequency_qualifier": 50.0,
-  "has_evidence": ["ECO:0000033"],
-  "primary_knowledge_source": "infores:hpo-annotations"
-}
-```
-
-#### Example Transformations: Disease to Mode of Inheritance
-
-Example Source Data
-
-```json
-{
-  "database_id": "OMIM:300425",
-  "disease_name": "Autism susceptibility, X-linked 1",
-  "qualifier": "",
-  "hpo_id": "HP:0001417",
-  "reference": "OMIM:300425",
-  "evidence": "IEA",
-  "aspect": "I"
-}
-```
-
-Example Transformed Data
-
-```json
-{
-  "id": "uuid:...",
-  "subject": "OMIM:300425",
-  "predicate": "biolink:has_mode_of_inheritance",
-  "object": "HP:0001417",
-  "has_evidence": ["ECO:0000501"],
-  "primary_knowledge_source": "infores:hpo-annotations"
-}
-```
-
-#### Example Transformations: Gene to Disease
-
-Example Source Data
-
-```json
-{
-  "association_type": "MENDELIAN",
-  "disease_id": "OMIM:212050",
-  "gene_symbol": "CARD9",
-  "ncbi_gene_id": "NCBIGene:64170",
-  "source": "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen"
-}
-```
-
-Example Transformed Data
-
-```json
-{
-  "id": "uuid:...",
-  "subject": "NCBIGene:64170",
-  "predicate": "biolink:causes",
-  "object": "OMIM:212050",
-  "primary_knowledge_source": "infores:hpo-annotations",
-  "supporting_knowledge_source": ["infores:medgen"]
-}
-```
-
-#### Example Transformations: Gene to Phenotype
-
-Example Source Data
-
-```json
-{
-  "ncbi_gene_id": "8192",
-  "gene_symbol": "CLPP",
-  "hpo_id": "HP:0000252",
-  "hpo_name": "Microcephaly",
-  "publications": "PMID:1234567;OMIM:614129",
-  "frequency": "3/10",
-  "disease_id": "OMIM:614129"
-}
-```
-
-Example Transformed Data
-
-```json
-{
-  "id": "uuid:...",
-  "subject": "NCBIGene:8192",
-  "predicate": "biolink:has_phenotype",
-  "object": "HP:0000252",
-  "publications": ["PMID:1234567","OMIM:614129"],
-  "frequency_qualifier": 30.0,
-  "in_taxon": "NCBITaxon:9606",
-  "primary_knowledge_source": "infores:hpo-annotations",
-}
-```
-
