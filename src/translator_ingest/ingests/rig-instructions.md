@@ -1,5 +1,5 @@
 # Instructions for Populating Reference Ingest Guides (RIGs)
-- RIGs document the scope, rationale, and modeling for a single source ingest. 
+- RIGs document the scope, rationale, and modeling approach for ingesting content from a single source.
 - Below we define and provide guidance for populating each section of a RIG. Optional sections are marked with an "(o)".
 - **New RIGs** can be created by copying and overwriting the markdown content of this [rig-template.md](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/rig-template.md).
 - An **informative example** of a completed RIG for the CTD ingest can be found [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md).
