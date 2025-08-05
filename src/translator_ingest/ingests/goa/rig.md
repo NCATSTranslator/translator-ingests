@@ -78,7 +78,7 @@ n/a - no recrods are filtered from the source data sets listed above.
   - include qualifying information (as may be found in the Annotation Extensions, or With or From columns)
 
 - **Node Properties**
-  - n/a
+  - t.b.d. if we will bring in taxon info about gene/gene product nodes from GOA, or rely on other gene property authorities for this information (e.g. ncbigene)
     
 - **Edge Properties/EPC Metadata**
   - n/a
@@ -111,25 +111,26 @@ n/a - no recrods are filtered from the source data sets listed above.
 
 
 **Additional Notes/Rationale (o)**:
-n/a 
+- NOTE that where we can identify annotations that were imported/re-structured from GO-CAM, we can keep infores:goa as the primary source for these edges, but indicate infores:go-cam as a 'supporting_data_provider'
    
 ### Node Types
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
 
 
-| Biolink Category |  Source Identifier Type(s) | Notes |
-|------------------|----------------------------|--------|
-| Gene          | MGI  |    |
-| Protein       | UniProtKB accession  |    |
-| MacromolecularComplex | ComplexPortal IDs  |    |
-| RNAProduct    | RNAcentral IDs  |   |
-| BiologicalProcess | Gene Ontology IDs (Aspect P)   |  |
-| MolecularActivity | Gene Ontology IDs (Aspect F)   |  |
-| CellularComponent | Gene Ontology IDs  (Aspect C)  |  |
+| Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
+|------------------|----------------------------|----------------|--------|
+| Gene          | MGI  |  none  |   |
+| Protein       | UniProtKB accession  | none  |   |
+| MacromolecularComplex | ComplexPortal IDs  |  none  |   |
+| RNAProduct    | RNAcentral IDs  | none  |   |
+| BiologicalProcess | Gene Ontology IDs (Aspect P)  | none |   |
+| MolecularActivity | Gene Ontology IDs (Aspect F)  | none |   |
+| CellularComponent | Gene Ontology IDs (Aspect C) | none |   |
 
   
 ### Future Modeling Considerations (o)
 - Introduce qualifier-based representation if/when we decide to ingest any qualifying context on GO annotations
+- If we end up ingesting taxon info for gene nodes, we may have to update the Biolink Model to support this (currently in_taxon is represented as a predicate, and species_context_qualifier as an edge property - but there is no taxon node property) 
 
 -----------------
 
