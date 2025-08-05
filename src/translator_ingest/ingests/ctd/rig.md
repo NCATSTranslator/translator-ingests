@@ -11,7 +11,7 @@
 CTD is a robust, publicly available database that aims to advance understanding about how environmental exposures affect human health. It provides knowledge, manually curated from the literature, about chemicals and their relationship to other biological entities: chemical to gene/protein interactions plus chemical to disease and gene to disease relationships. These data are integrated with functional and pathway data to aid in the development of hypotheses about the mechanisms underlying environmentally influenced diseases. It also generates novel inferences by further analyzing the knowledge they curate/create - based on statistically significant connections with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations with a common set of genes).
    
 ### Source Category(ies)
-Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
 
 - Primary Knowledge Provider
 
