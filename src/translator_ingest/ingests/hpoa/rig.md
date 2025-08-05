@@ -7,7 +7,7 @@
 ### Infores
  - [infores:hpo-annotations](https://w3id.org/information-resource-registry/hpo-annotations)
 
-### Description
+### Description (o)
  
 The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides standard vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. The HPO project and others have developed software for phenotype-driven differential diagnostics, genomic diagnostics, and translational research. 
 
@@ -20,7 +20,7 @@ Use terms from the enumerated list [here](https://github.com/NCATSTranslator/tra
 
 - Primary Knowledge Provider
   
-### Citation
+### Citation (o)
 - https://doi.org/10.1093/nar/gkaa1043
 
 ### Terms of Use
@@ -49,6 +49,7 @@ The HPO and associated annotations are a flagship product of the [Monarch Initia
 Covers curated Disease, Phenotype and Genes relationships annotated with Human Phenotype Ontology terms. 
 
   #### Relevant Files:
+  Source files with content we aim to ingest.
   
   | File      |       Location            |   Description   |
   |-----------|---------------------------|-----------------|
@@ -56,7 +57,8 @@ Covers curated Disease, Phenotype and Genes relationships annotated with Human P
   | genes_to_disease.txt   | https://hpo.jax.org/data/annotations | gene to HPO disease annotations   | 
   | genes_to_phenotype.txt  |  https://hpo.jax.org/data/annotations  | gene to HPO phenotype annotations  |
 
-  #### Included Content:
+  #### Included Content / Records:
+  Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
 
   | File   | Included Content   | Fields Used  |
   |--------|--------------|-----------------|
@@ -68,7 +70,7 @@ Covers curated Disease, Phenotype and Genes relationships annotated with Human P
   | genes_to_phenotype.txt | Records where we determine that the reported G-P association was inferred over a G-D associated type with the value "MENDELIAN"  | ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id |
 
 
-### Filtered Content
+### Filtered Content / Records
 Records from relevant files that are not included in the ingest.
 
   | File | Filtered Records | Rationale |
@@ -76,6 +78,7 @@ Records from relevant files that are not included in the ingest.
   | genes_to_phenotype.txt  | Records where we determine that the reported G-P association was inferred over a G-D associated type with the value "POLYGENIC" or "UNKNOWN" | HPO will infer a Gene-Phenotype association G1-P1 in cases where G1 causes, contributes_to, or is associated with D1, and D1 is associated with a Phenotype P1. This logic holds for Mendelian disease where a single gene is causal and thus responsible for all associated phenotypes.  It does not necessarily hold for Polygenic or Unknown diseases where the gene may be one of many contributing factors, and thus does not necessarily contribute to or have an association with each phenotype of the disease. |
 
 ### Future Content Considerations (o)
+Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
    - Consider bringing back G-P associations based on inferences over Polygenic or Unknown Diseases if we establish a confidence annotation paradigm that lets us indicate these inferences to be weaker than those inferred over Mendelian diseases where the Gene is individually causal for the disease and all of its phenotypes.  
@@ -120,12 +123,12 @@ Records from relevant files that are not included in the ingest.
 
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
 
-| Biolink Category    | Source Identifier Type(s) | 
-|---------------------|---------------------------|
-| Disease             | OMIM, ORPHANET, DECIPHER  |
-| PhenotypicFeature   | HPO                       |
-| Gene                | NCBI Gene                 |
-| Mode of Inheritance | HPO                       |
+| Biolink Category    | Source Identifier Type(s) | Node Properties |  Notes (o) |
+|---------------------|---------------------------|-----------------|--------|
+| Disease             | OMIM, ORPHANET, DECIPHER  |  none |  |
+| PhenotypicFeature   | HPO                       |  none  |  | 
+| Gene                | NCBI Gene                 |  none  |  |
+| Mode of Inheritance | HPO                       |  none  |  |
 
 
 ### Future Modeling Considerations (o)
@@ -135,9 +138,9 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 -----------------
 
-## Provenance Information
+## Provenance Information (o)
 
-### Ingest Contributors
+### Ingest Contributors (o)
 - **Richard Bruskiewich**: code author
 - **Kevin Schaper**: code author
 - **Sierra Moxon**: data modeling, domain expertise, code support
