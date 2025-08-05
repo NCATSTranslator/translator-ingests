@@ -12,7 +12,7 @@ GO Annotations connect genes to a Gene Ontology term that describes a molecular 
 Most are produced through rigorous manual curation of the literature, although some are based on automated pipelines that assign GO terms based on things like orthology or sequence similarity. 
 
 ### Source Category(ies)
-Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
 
 - Primary Knowledge Provider
 
