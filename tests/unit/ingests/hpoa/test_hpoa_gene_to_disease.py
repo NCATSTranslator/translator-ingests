@@ -7,7 +7,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTy
 from src.translator_ingest.util.biolink import (
     BIOLINK_CAUSES,
     BIOLINK_CONTRIBUTES_TO,
-    BIOLINK_GENE_ASSOCIATED_WITH_CONDITION,
+    BIOLINK_ASSOCIATED_WITH,
 )
 from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
 
@@ -21,7 +21,7 @@ from . import transform_test_runner
     [
         ("MENDELIAN", BIOLINK_CAUSES),
         ("POLYGENIC", BIOLINK_CONTRIBUTES_TO),
-        ("UNKNOWN", BIOLINK_GENE_ASSOCIATED_WITH_CONDITION),
+        ("UNKNOWN", BIOLINK_ASSOCIATED_WITH),
     ],
 )
 def test_predicate(association: str, expected_predicate: str):
