@@ -305,7 +305,11 @@ def mock_nn_query():
 def test_convert_to_preferred(mock_nn_query):
     normalizer = Normalizer(endpoint=mock_nn_query)
     result: str = normalizer.convert_to_preferred(curie="HGNC:12791", allowed_list=["UniProtKB"])
+    # Gene-protein conflation is on by default so...
     assert result == "UniProtKB:Q14191"
+    result = normalizer.convert_to_preferred(curie="HGNC:12791", allowed_list=["UniProtKB"], gp_conflate=False)
+    # but if I explicitly turn it off now...it will not be found!
+    assert result is None
 
 
 # def normalize_identifiers(
@@ -356,14 +360,14 @@ def test_normalize_node(mock_nn_query):
     assert "OMIM:604611" in result.xref
     # ... but not the canonical identifier in xrefs (already used in node id)
     assert "NCBIGene:7486" not in result.xref
-    # Gene-protein conflation is off by default
-    assert "UniProtKB:Q14191" not in result.xref
+    # Gene-protein conflation is on by default
+    assert "UniProtKB:Q14191" in result.xref
     # should include original node name field value as a synonym
     assert "Werner Syndrome Locus" in result.synonym
     # should include additional names as synonyms...
     assert "WRN (Hsap)" in result.synonym
-    # Gene-protein conflation is off by default
-    assert "WRN protein, human" not in result.synonym
+    # Gene-protein conflation is on by default
+    assert "WRN protein, human" in result.synonym
     # .. but not the canonical name
     assert "WRN" not in result.synonym
 
@@ -385,7 +389,7 @@ def test_gene_protein_conflated_normalize_node(mock_nn_query):
     # ... and names should NOT be visible
     assert "WRN protein, human" not in result.synonym
 
-    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node))  # default is gp_conflate=False
+    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node), gp_conflate=False)  # default is gp_conflate=False
     # Valid input query identifier, so should return a result
     assert result is not None
     # ... should be the canonical identifier and name
@@ -395,7 +399,7 @@ def test_gene_protein_conflated_normalize_node(mock_nn_query):
     # ... and names should NOT be visible
     assert "WRN protein, human" not in result.synonym
 
-    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node), gp_conflate=True)
+    result: Optional[NamedThing] = normalizer.normalize_node(deepcopy(node))
     # Valid input query identifier, so should return a result
     assert result is not None
     # ... should be the canonical identifier and name

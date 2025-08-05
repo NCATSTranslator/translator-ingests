@@ -38,6 +38,34 @@ class Normalizer:
 
     NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"
 
+    @staticmethod
+    def _query(
+        curies: List[str],
+        description: bool = False,
+        gp_conflate: bool = True,
+        dc_conflate: bool = False
+    ) -> Dict[str, Union[str, List[str], bool]]:
+        """
+        Compose a well formed input query dictionary for the Node Normalization "get_normalized_nodes" endpoint.
+        :param curies: List[str] of curies to be matched for normalization.
+        :param description: bool, if True, return description associated with identifier (default False)
+        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
+        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
+        :return: Dict[str, Union[str, List[str], bool]] well-formed "get_normalized_nodes" query parameter
+        """
+        query = {'curies': curies, 'description': description}
+        if gp_conflate:
+            query["conflate"] = True
+        else:
+            query["conflate"] = False
+
+        if dc_conflate:
+            query["drug_chemical_conflate"] = True
+        else:
+            query["drug_chemical_conflate"] = False
+        return query
+
+
     @classmethod
     def get_normalized_nodes(cls, query: Dict) -> Optional[Dict]:
         """
@@ -57,18 +85,35 @@ class Normalizer:
 
     # I'm not sure that this method is needed... copied from the
     # reasoner-validator library, just to help thinking about NN
-    def convert_to_preferred(self, curie: str, allowed_list: List[str]):
+    def convert_to_preferred(
+            self,
+            curie: str,
+            allowed_list: List[str],
+            gp_conflate: bool = True,
+            dc_conflate: bool = False
+    ) -> Optional[str]:
         """
         Given an input CURIE, consults the Node Normalizer
-         to identify an acceptable CURIE match with prefix
-          as requested in the input 'allowed_list' of prefixes.
+        to identify an acceptable CURIE match with prefix
+        as requested in the input 'allowed_list' of prefixes.
 
         :param curie: str CURIE identifier of interest to convert to a preferred namespace
+        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
+        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
         :param allowed_list: List[str] of one or more acceptable CURIE
                namespaces from which to find at least one equivalent identifier
+        :return: Optional[str] curie if found, within the allowable list of prefix namespaces
         """
-        query = {'curies': [curie]}
-        result = self.node_normalizer(query=query)
+        assert curie, "curie must be non-empty string"
+
+        result = self.node_normalizer(
+            query=self._query(
+                curies=[curie],
+                gp_conflate=gp_conflate,
+                dc_conflate=dc_conflate
+            )
+        )
+
         if not (result and curie in result and result[curie] and 'equivalent_identifiers' in result[curie]):
             return None
         new_ids = [v['identifier'] for v in result[curie]['equivalent_identifiers']]
@@ -77,20 +122,31 @@ class Normalizer:
                 return nid
         return None
 
-    def normalize_identifiers(self, curies: List[str]) -> Dict[str, Optional[str]]:
+    def normalize_identifiers(
+            self,
+            curies: List[str],
+            gp_conflate: bool = True,
+            dc_conflate: bool = False
+    ) -> Dict[str, Optional[str]]:
         """
         Calls the Node Normalizer ("NN") with a list of curies,
         returning a dictionary of canonical identifier mappings.
 
         :param curies: non-empty list of CURIE identifiers to be normalized
+        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
+        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
         :return: dictionary mappings of input identifiers to canonical identifiers (None if unknown)
         """
         assert curies, "normalize_identifiers(curies): empty list of CURIE identifiers?"
 
-        query: Dict[str, Union[List[str], str]] = {'curies': curies}
+        result = self.node_normalizer(
+            query=self._query(
+                curies=curies,
+                gp_conflate=gp_conflate,
+                dc_conflate=dc_conflate
+            )
+        )
 
-
-        result = self.node_normalizer(query=query)
         assert result, "normalize_identifiers(curies): no result returned from the Node Normalizer?"
 
         mappings: Dict[str, Optional[str]] = {}
@@ -120,37 +176,34 @@ class Normalizer:
     def normalize_node(
             self,
             node: NamedThing,
-            gp_conflate: bool = False,
+            gp_conflate: bool = True,
             dc_conflate: bool = False
     ) -> Optional[NamedThing]:
         """
         Calls the Node Normalizer ("NN") with the identifier of the given node
         and updates the node contents with NN resolved values for canonical identifier,
         node categories, and cross-references. Optional flags may be set to True to force
-        either gene-protein or drug-chemical conflation.
+        either gene-protein or drug-chemical conflation. The node returned also can have
+        a fully updated node description as returned by the Node Normalizer.567890-
 
         Known limitation: this method does NOT reset the node.category field values at this time.
 
         :param node: target instance of a class object in the NameThing hierarchy
-        :param gp_conflate: bool, apply Gene-Protein conflation (default: False)
+        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
         :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
         :return: rewritten node entry; None, if a node cannot be resolved in NN
         """
 
         assert node.id, "normalize_node(node): empty node identifier?"
 
-        query = {'curies': [node.id], 'description': True}
-        if gp_conflate:
-            query["conflate"] = True
-        else:
-            query["conflate"] = False
-
-        if dc_conflate:
-            query["drug_chemical_conflate"] = True
-        else:
-            query["drug_chemical_conflate"] = False
-
-        result = self.node_normalizer(query=query)
+        result = self.node_normalizer(
+            query=self._query(
+                curies=[node.id],
+                description=True,
+                gp_conflate=gp_conflate,
+                dc_conflate=dc_conflate
+            )
+        )
 
         # Sanity check about regular NN operation for all queries
         # that returns a result with key equal to the input node identifier
