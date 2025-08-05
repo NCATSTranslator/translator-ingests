@@ -19,7 +19,7 @@ from translator_ingest.util.biolink import (
     INFORES_HPOA,
     BIOLINK_CAUSES,
     BIOLINK_CONTRIBUTES_TO,
-    BIOLINK_GENE_ASSOCIATED_WITH_CONDITION
+    BIOLINK_ASSOCIATED_WITH
 )
 
 
@@ -229,7 +229,7 @@ def get_hpoa_genetic_predicate(original_predicate: str) -> str:
     elif original_predicate == 'POLYGENIC':
         return BIOLINK_CONTRIBUTES_TO
     elif original_predicate == 'UNKNOWN':
-        return BIOLINK_GENE_ASSOCIATED_WITH_CONDITION
+        return BIOLINK_ASSOCIATED_WITH
     else:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 
