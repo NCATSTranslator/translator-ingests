@@ -76,22 +76,21 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.2.5"
-source = { registry = "https://pypi.org/simple" }
+version = "4.2.6rc5.post114.dev0+d62df06d"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#d62df06d0cddb73aac821d041ee9b4090e9368c6" }
 dependencies = [
     { name = "beautifulsoup4" },
+    { name = "click" },
     { name = "curies" },
+    { name = "linkml" },
     { name = "linkml-runtime" },
     { name = "path" },
     { name = "prefixmaps" },
     { name = "pytest" },
     { name = "pyyaml" },
+    { name = "requests" },
     { name = "stringcase" },
     { name = "yamllint" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/71/64/7647614058c5bab81c1ac86113e162a9d6487bae435377e2e14432ae40fc/biolink_model-4.2.5.tar.gz", hash = "sha256:1b8eb43ccbe133da52efacc90dd9599edc02db9d9be985e02cfd7b66b9d27d0b", size = 766629, upload-time = "2024-11-11T20:48:43.348Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/03/20dc9427835b099bda3f2fea57ef0b432ddf8000614e20ab501a752e87b8/biolink_model-4.2.5-py3-none-any.whl", hash = "sha256:949079f33daa57d1a212fc756621bcc12746ec24bd85fd7fe2587848d18e4896", size = 236090, upload-time = "2024-11-11T20:48:42.034Z" },
 ]
 
 [[package]]
@@ -163,8 +162,9 @@ wheels = [
 [[package]]
 name = "bridge"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "biolink-model" },
     { name = "bmt" },
     { name = "kghub-downloader" },
@@ -180,10 +180,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "biolink-model", specifier = ">=4.2.5" },
+    { name = "beautifulsoup4", specifier = ">=4.13.4" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
     { name = "bmt", specifier = ">=1.4.5" },
     { name = "kghub-downloader", specifier = ">=0.4.1" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests-2" },
 ]
 
 [package.metadata.requires-dev]
@@ -266,14 +267,14 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.2.1"
+version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/60/6c/8ca2efa64cf75a977a0d7fac081354553ebe483345c734fb6b6515d96bbc/click-8.2.1.tar.gz", hash = "sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202", size = 286342, upload-time = "2025-05-20T23:19:49.832Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593, upload-time = "2024-12-21T18:38:44.339Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/32/10bb5764d90a8eee674e9dc6f4db6a0ab47c8c4d0d83c27f7c39ac415a4d/click-8.2.1-py3-none-any.whl", hash = "sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b", size = 102215, upload-time = "2025-05-20T23:19:47.796Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/d4/7ebdbd03970677812aac39c869717059dbb71a4cfc033ca6e5221787892c/click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2", size = 98188, upload-time = "2024-12-21T18:38:41.666Z" },
 ]
 
 [[package]]
@@ -810,7 +811,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new#4d5bc95a496cabf67cad4a5a0452e8fd933c2d1f" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests-2#bd4dc1517f39c1c19ff7ad8aaed9e7ee31d1e2a2" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
