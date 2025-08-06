@@ -1,0 +1,7 @@
+---
+# GO-CAM models using kghub-downloader's native index scheme
+- url: "index://go-cam-models"
+  index_url: "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/provider-to-model.json"
+  url_pattern: "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/{ID}.json"
+  id_path: ""
+  local_name: "model.json"
