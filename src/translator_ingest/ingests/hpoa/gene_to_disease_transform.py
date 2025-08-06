@@ -6,7 +6,6 @@ between genes and associated diseases.
 """
 from loguru import logger
 from typing import Dict, Iterable
-import uuid
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
@@ -19,7 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from translator_ingest.util.biolink import BIOLINK_CAUSES
+from translator_ingest.util.biolink import entity_id, BIOLINK_CAUSES
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_hpoa_genetic_predicate,
@@ -54,7 +53,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
             association_class = CorrelatedGeneToDiseaseAssociation
 
         association = association_class(
-            id="uuid:" + str(uuid.uuid1()),
+            id=entity_id(),
             subject=gene_id,
             predicate=predicate,
             object=disease_id,
