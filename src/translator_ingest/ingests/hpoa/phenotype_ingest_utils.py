@@ -3,10 +3,10 @@ HPOA processing utility methods
 """
 from os import sep
 from typing import Optional, List, Dict
-
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 from loguru import logger
+
 from pydantic import BaseModel
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 
 from translator_ingest import PRIMARY_DATA_PATH
 from translator_ingest.util.biolink import build_association_knowledge_sources
@@ -207,17 +207,18 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
             # the expected ratio is not recognized
             logger.error(f"hpoa_frequency(): invalid frequency ratio '{frequency_field}'")
             return None
+
+        return Frequency(
+            frequency_qualifier=hpo_term.curie if hpo_term else None,
+            has_percentage=percentage,
+            has_quotient=quotient,
+            has_count=has_count,
+            has_total=has_total,
+        )
+
     else:
         # may be None if original field was empty or has an invalid value
         return None
-
-    return Frequency(
-        frequency_qualifier=hpo_term.curie if hpo_term else None,
-        has_percentage=percentage,
-        has_quotient=quotient,
-        has_count=has_count,
-        has_total=has_total,
-    )
 
 
 def get_hpoa_genetic_predicate(original_predicate: str) -> str:

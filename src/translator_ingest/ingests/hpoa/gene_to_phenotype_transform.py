@@ -7,7 +7,7 @@ between genes and associated phenotypes.
 from loguru import logger
 from typing import Dict, Iterable
 
-import uuid
+from translator_ingest.util.biolink import entity_id
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
@@ -76,7 +76,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
         # publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
         association = GeneToPhenotypicFeatureAssociation(
-            id="uuid:" + str(uuid.uuid1()),
+            id=entity_id(),
             subject=gene_id,
             predicate="biolink:has_phenotype",
             object=hpo_id,

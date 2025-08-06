@@ -17,8 +17,6 @@ Association to "remarkable normality" may be added later.
 from loguru import logger
 from typing import Optional, List, Dict, Iterable
 
-import uuid
-
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
@@ -29,6 +27,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
+from translator_ingest.util.biolink import entity_id
 from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
@@ -126,7 +125,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
 
             # Association/Edge
             association = DiseaseToPhenotypicFeatureAssociation(
-                id="uuid:" + str(uuid.uuid1()),
+                id=entity_id(),
                 subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
                 predicate="biolink:has_phenotype",
                 negated=negated,
@@ -155,7 +154,7 @@ def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Associatio
 
                 # Association/Edge
                 association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(
-                    id="uuid:" + str(uuid.uuid1()),
+                    id=entity_id(),
                     subject=disease_id,
                     predicate="biolink:has_mode_of_inheritance", # Predicate (canonical direction)
                     object=hpo_id,
