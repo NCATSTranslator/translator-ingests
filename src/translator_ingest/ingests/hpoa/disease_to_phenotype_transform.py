@@ -15,7 +15,7 @@ and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
 from loguru import logger
-from typing import Optional, List, Dict, Iterable
+from typing import Optional, Tuple, List, Dict, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
@@ -57,11 +57,11 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
 modes_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
 
 
-def transform_record(record: Dict) -> (Iterable[NamedThing], Iterable[Association]):
+def transform_record(record: Dict) -> Tuple[Iterable[NamedThing], Iterable[Association]]:
     """
     Transform a 'phenotype.hpoa' data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
-    :param record: Dictionary of the contents of a single input data record
+    :param record: Dict of the contents of a single input data record
     :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
     """
     try:

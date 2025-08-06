@@ -73,10 +73,16 @@ from . import transform_test_runner
                 # '50%' above implies HPO term that the phenotype
                 # is 'Present in 30% to 79% of the cases'.
                 "frequency_qualifier": None, # TODO: should perhaps this be set to "HP:0040282"?
-                # TODO: We still need to fix the 'sources' serialization
-                #       in Pydantic before somehow testing the following
-                # "primary_knowledge_source": "infores:hpo-annotations"
-                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                       "resource_role": "primary_knowledge_source",
+                       "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                       "resource_role": "supporting_data_source",
+                       "resource_id": "infores:omim"
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
@@ -112,8 +118,16 @@ from . import transform_test_runner
                 "has_percentage": None,
                 "has_quotient": None,
                 "frequency_qualifier": "HP:0040283",
-            #     "primary_knowledge_source": "infores:hpo-annotations"
-            #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                       "resource_role": "primary_knowledge_source",
+                       "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                       "resource_role": "supporting_data_source",
+                       "resource_id": "infores:omim"
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
@@ -145,8 +159,16 @@ from . import transform_test_runner
                 "has_percentage": None,
                 "has_quotient": None,
                 "frequency_qualifier": None,
-            #     "primary_knowledge_source": "infores:hpo-annotations"
-            #     assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                       "resource_role": "primary_knowledge_source",
+                       "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                       "resource_role": "supporting_data_source",
+                       "resource_id": "infores:omim"
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
