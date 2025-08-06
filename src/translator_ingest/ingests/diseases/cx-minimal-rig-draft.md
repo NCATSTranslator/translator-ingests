@@ -9,8 +9,9 @@ These associations could be used in MVP1 ("may treat disease X") or Pathfinder q
 
 ## Source Releases and Versioning
 
-They claim to have weekly updates (ref: [resource's "About" page](https://diseases.jensenlab.org/About), 
-[paper](https://doi.org/10.1093/database/baac019)), perhaps every weekend (paper: "The corpus in DISEASES is updated every weekend"). 
+DISEASES has weekly updates on Fridays, according to the current maintainer Qingyao Huang (email exchange 2025-08-05). 
+(It's unclear to me if the update is posted on Fridays or if the update process starts then. It sounds like the update process takes several days). 
+
 The paper reports the resource version as "2.0", but the resource's website does not provide versioning or 
 dates for the data downloads (ref: [resource's "Downloads" page](https://diseases.jensenlab.org/Downloads)).
 
