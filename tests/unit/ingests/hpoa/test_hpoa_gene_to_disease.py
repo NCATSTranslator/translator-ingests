@@ -57,11 +57,21 @@ def test_predicate(association: str, expected_predicate: str):
                 "predicate": "biolink:causes",
                 "object": "OMIM:212050",
 
-                # We still need to fix the 'sources' serialization
-                # in Pydantic before somehow testing the following
-                # "primary_knowledge_source": "infores:hpo-annotations"
-                # "supporting_knowledge_source": "infores:medgen"
-                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                        "resource_role": "supporting_data_source",
+                        "resource_id": "infores:medgen"
+                    },
+                    {
+                        "resource_role": "supporting_data_source",
+                        "resource_id": "infores:omim"
+                    }
+                ],
+
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }

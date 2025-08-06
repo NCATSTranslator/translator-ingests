@@ -159,6 +159,7 @@ from . import transform_test_runner
                 "has_percentage": None,
                 "has_quotient": None,
                 "frequency_qualifier": None,
+
                 "sources": [
                     {
                        "resource_role": "primary_knowledge_source",
@@ -169,6 +170,7 @@ from . import transform_test_runner
                        "resource_id": "infores:omim"
                     }
                 ],
+
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
