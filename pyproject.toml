@@ -5,11 +5,11 @@ description = "Translator Phase 3 Data Ingest Pipeline"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "biolink-model>=4.2.5",
+    "beautifulsoup4>=4.13.4",
+    "biolink-model",
     "bmt>=1.4.5",
     "kghub-downloader>=0.4.1",
-    "koza",
-    "beautifulsoup4>=4.13.4"
+    "koza"
 ]
 
 [dependency-groups]
