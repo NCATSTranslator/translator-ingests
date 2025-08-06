@@ -2,7 +2,7 @@
 from typing import Optional, List, Dict
 from uuid import uuid4
 
-from biolink_model.datamodel.model import RetrievalSource, ResourceRoleEnum
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, ResourceRoleEnum
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -52,7 +52,8 @@ def build_association_knowledge_sources(
         primary_knowledge_source = RetrievalSource(
             id=entity_id(),
             resource_id=primary,
-            resource_role=ResourceRoleEnum.primary_knowledge_source
+            resource_role=ResourceRoleEnum.primary_knowledge_source,
+            **{}
         )
         sources.append(primary_knowledge_source)
 
@@ -61,17 +62,21 @@ def build_association_knowledge_sources(
             supporting_knowledge_source = RetrievalSource(
                 id=entity_id(),
                 resource_id=source_id,
-                resource_role=ResourceRoleEnum.supporting_data_source
+                resource_role=ResourceRoleEnum.supporting_data_source,
+                **{}
             )
             sources.append(supporting_knowledge_source)
             if primary_knowledge_source:
+                if primary_knowledge_source.upstream_resource_ids is None:
+                    primary_knowledge_source.upstream_resource_ids = list()
                 primary_knowledge_source.upstream_resource_ids.append(source_id)
     if aggregating:
         for source_id,upstream_ids in aggregating.items():
             aggregating_knowledge_source = RetrievalSource(
                 id=entity_id(),
                 resource_id=source_id,
-                resource_role=ResourceRoleEnum.aggregating_knowledge_source
+                resource_role=ResourceRoleEnum.aggregator_knowledge_source,
+                **{}
             )
             aggregating_knowledge_source.upstream_resource_ids = upstream_ids
             sources.append(aggregating_knowledge_source)
