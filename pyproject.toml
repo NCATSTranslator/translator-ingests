@@ -10,6 +10,7 @@ dependencies = [
     "kghub-downloader>=0.4.2rc1",
     "koza",
     "beautifulsoup4>=4.13.4",
+    "gocam>=0.5.2",
 ]
 
 [dependency-groups]

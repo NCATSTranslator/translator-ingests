@@ -168,6 +168,7 @@ dependencies = [
     { name = "beautifulsoup4" },
     { name = "biolink-model" },
     { name = "bmt" },
+    { name = "gocam" },
     { name = "kghub-downloader" },
     { name = "koza" },
 ]
@@ -184,6 +185,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13.4" },
     { name = "biolink-model", specifier = ">=4.2.5" },
     { name = "bmt", specifier = ">=1.4.5" },
+    { name = "gocam", specifier = ">=0.5.2" },
     { name = "kghub-downloader", specifier = ">=0.4.2rc1" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests-2" },
 ]
@@ -493,6 +495,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/09/6a/37e6b70c5bda3161e40265861e63b64a86bfc6ca6a8f1c35328a675c84fd/gdown-5.2.0.tar.gz", hash = "sha256:2145165062d85520a3cd98b356c9ed522c5e7984d408535409fd46f94defc787", size = 284647 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/70/e07c381e6488a77094f04c85c9caf1c8008cdc30778f7019bc52e5285ef0/gdown-5.2.0-py3-none-any.whl", hash = "sha256:33083832d82b1101bdd0e9df3edd0fbc0e1c5f14c9d8c38d2a35bf1683b526d6", size = 18235 },
+]
+
+[[package]]
+name = "gocam"
+version = "0.5.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "linkml-runtime" },
+    { name = "prefixmaps" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/43/47417fd89f8e5bb1d4f8d1d96e3bf44c2802f24c56fd2117043199df483e/gocam-0.5.2.tar.gz", hash = "sha256:5b411f3e320ff2ac8e53f39bcf976adbde2ed19c53e32e33e29c90dceef4e851", size = 98899 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/53/2c3300bf4fd205c970385cac651c8272febceda4d6f4b9778f0aca0695dc/gocam-0.5.2-py3-none-any.whl", hash = "sha256:a7143950755ca4a2fe88d20c7c0edff416ca50aa065f4750bd1ca917c457ec85", size = 52480 },
 ]
 
 [[package]]
