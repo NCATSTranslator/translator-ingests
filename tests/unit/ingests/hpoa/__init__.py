@@ -41,7 +41,13 @@ def validate_sources(expected: Dict[str, str], returned: List[Dict[str, str]]) -
     :param returned: List[Dict[str, str]] key fields extracted from sources associated with an edge
     :return: bool, True if validation passed
     """
-    return True
+    return any(
+        [
+            expected["resource_id"] in entry["resource_id"] and
+            expected["resource_role"] in entry["resource_role"]
+            for entry in returned
+        ]
+    )
 
 
 def transform_test_runner(
@@ -83,6 +89,8 @@ def transform_test_runner(
         # then grab it for content assessment
         returned_edge = transformed_edges[0]
 
+        returned_sources: Optional[List[Dict[str, str]]]
+
         # Check values in expected edge slots of parsed edges
         for slot in ASSOCIATION_TEST_SLOTS:
             # I only bother with this if the slot is included in the
@@ -98,7 +106,7 @@ def transform_test_runner(
                         f"Unexpected return values '{slot_values}' for slot '{slot}' in edge"
                     # ...but we only specifically validate non-empty expectations
                     if expected_edge[slot]:
-                        returned_sources: Optional[List[Dict[str, str]]] = None
+                        returned_sources = None
                         for entry in expected_edge[slot]:
                             if isinstance(entry, str):
                                 # Simple Membership value test.

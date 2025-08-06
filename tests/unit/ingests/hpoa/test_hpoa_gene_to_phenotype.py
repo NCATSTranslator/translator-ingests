@@ -44,11 +44,16 @@ from . import transform_test_runner
                 "has_total": None,
                 "disease_context_qualifier": "OMIM:231550", # this ought to be MONDO in the future
 
-                # We still need to fix the 'sources' serialization
-                # in Pydantic before somehow testing the following
-                # "primary_knowledge_source": "infores:hpo-annotations"
-                # "supporting_knowledge_source": "infores:medgen"
-                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                        "resource_role": "supporting_data_source",
+                        "resource_id": "infores:medgen"
+                    }
+                ],
 
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.automated_agent
@@ -81,11 +86,16 @@ from . import transform_test_runner
                 "has_total": None,
                 "disease_context_qualifier": "Orphanet:442835", # this ought to be MONDO in the future
 
-                # We still need to fix the 'sources' serialization
-                # in Pydantic before somehow testing the following
-                # "primary_knowledge_source": "infores:hpo-annotations"
-                # "supporting_knowledge_source": "infores:medgen"
-                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                        "resource_role": "supporting_data_source",
+                        "resource_id": "infores:medgen"
+                    }
+                ],
 
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.automated_agent
@@ -118,11 +128,16 @@ from . import transform_test_runner
                 "has_total": 9,
                 "disease_context_qualifier": "OMIM:614129", # this ought to be MONDO in the future
 
-                # We still need to fix the 'sources' serialization
-                # in Pydantic before somehow testing the following
-                # "primary_knowledge_source": "infores:hpo-annotations"
-                # "supporting_knowledge_source": "infores:medgen"
-                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                        "resource_role": "supporting_data_source",
+                        "resource_id": "infores:medgen"
+                    }
+                ],
 
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.automated_agent
@@ -157,11 +172,16 @@ from . import transform_test_runner
                 "has_total": None,
                 "disease_context_qualifier": "OMIM:613013", # this ought to be MONDO in the future
 
-                # We still need to fix the 'sources' serialization
-                # in Pydantic before somehow testing the following
-                # "primary_knowledge_source": "infores:hpo-annotations"
-                # "supporting_knowledge_source": "infores:medgen"
-                # assert "infores:monarchinitiative" in association.aggregator_knowledge_source
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                        "resource_role": "supporting_data_source",
+                        "resource_id": "infores:medgen"
+                    }
+                ],
 
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.automated_agent
@@ -169,7 +189,7 @@ from . import transform_test_runner
         )
     ]
 )
-def test_gene_to_disease_transform(
+def test_gene_to_phenotype_transform(
         test_record: Dict,
         result_nodes: Optional[List],
         result_edge: Optional[Dict]
