@@ -31,8 +31,7 @@ https://diseases.jensenlab.org/Downloads
 - Formats: tsv
    
 ### Releases and Versioning
- - Updated weekly (ref: [resource's "About" page](https://diseases.jensenlab.org/About), 
-[paper](https://doi.org/10.1093/database/baac019)), perhaps every weekend (paper: "The corpus in DISEASES is updated every weekend").  
+ - Updated weekly on Fridays, according to current maintainer 2025-08-05 (not sure if this is when the update posts or when it starts - the update process may take days).
  - Website offers only download of latest version. It does not include a version or creation date for this download.
  - Old, versioned releases archived at https://figshare.com/authors/Lars_Juhl_Jensen/96428
 
