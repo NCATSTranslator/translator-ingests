@@ -77,7 +77,7 @@ wheels = [
 [[package]]
 name = "biolink-model"
 version = "4.2.6rc5.post114.dev0+d62df06d"
-source = { git = "https://github.com/biolink/biolink-model?branch=master#d62df06d0cddb73aac821d041ee9b4090e9368c6" }
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#d62df06d0cddb73aac821d041ee9b4090e9368c6" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -182,11 +182,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13.4" },
-    { name = "biolink-model", git = "https://github.com/biolink/biolink-model?branch=master" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
     { name = "bmt", specifier = ">=1.4.5" },
     { name = "kghub-downloader", specifier = ">=0.4.1" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new" },
-    { name = "pronto" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests-2" },
+    { name = "pronto", specifier = ">=2.7.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -831,7 +831,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=koza-api-new#4d5bc95a496cabf67cad4a5a0452e8fd933c2d1f" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=koza-for-translator-ingests-2#bd4dc1517f39c1c19ff7ad8aaed9e7ee31d1e2a2" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
