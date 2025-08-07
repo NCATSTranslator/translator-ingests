@@ -5,7 +5,7 @@ using the HPO ontology. Here we create Biolink associations
 between genes and associated phenotypes.
 """
 from loguru import logger
-from typing import Tuple, Dict, Iterable
+from typing import Iterable
 
 from translator_ingest.util.biolink import entity_id
 
@@ -42,7 +42,7 @@ def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
 #       the subsequent Normalization step might fix this?
 # mondo_map = koza_app.get_map('mondo_map')
 
-def transform_record(record: Dict) -> Tuple[Iterable[NamedThing], Iterable[Association]]:
+def transform_record(record: dict) -> tuple[Iterable[NamedThing], Iterable[Association]]:
 
     try:
         gene_id = "NCBIGene:" + record["ncbi_gene_id"]
