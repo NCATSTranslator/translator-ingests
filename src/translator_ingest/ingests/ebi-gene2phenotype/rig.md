@@ -14,6 +14,8 @@ It is constructed by experts reviewing published literature, and it is primarily
 Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism.
 
 ### Source Category(ies)
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
+
 - Primary Knowledge Provider
 
 ### Citation (o)
@@ -53,10 +55,10 @@ Source files with content we aim to ingest.
   | G2P_all_[date].csv | https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/ | Associations from all panels (disease categories) | 
 
 
-### Included Content
-Records from relevant files that are included in this ingest.
+### Included Content / Records
+Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
 
-  | File | Included Records | Fields Used | 
+  | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
   | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, allelic requirement, confidence, molecular mechanism, publications, date of last review |
  
@@ -72,6 +74,7 @@ Records from relevant files that are not included in the ingest.
 
      
 ### Future Content Considerations (o)
+Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better
@@ -108,8 +111,8 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 | Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
 |------------------|----------------------------|--------|---------|
-| Gene | 	HGNC  |  |  |
-| Disease | OMIM, orphanet |  |  |
+| Gene | 	HGNC  | none |  |
+| Disease | OMIM, orphanet | none |  |
 
 
 ### Future Modeling Considerations (o)
@@ -120,7 +123,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 ------------------
 
-## Ingest Provenance
+## Ingest Provenance (o)
 
 ### Ingest Contributors (o)
 - **Colleen Xu**: code author, data modeling
