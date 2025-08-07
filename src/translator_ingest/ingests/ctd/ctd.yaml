@@ -1,30 +1,83 @@
 name: ctd_chemical_to_disease
+metadata: !include './metadata.yaml'
 
-reader:
-  format: csv
-  delimiter: \t
-  header_mode: 27
-  header_prefix: '#'
-  files:
-    - ../../../../data/ctd/CTD_chemicals_diseases.tsv.gz
-  columns:
-    - ChemicalName
-    - ChemicalID
-    - CasRN
-    - DiseaseName
-    - DiseaseID
-    - DirectEvidence
-    - InferenceGeneSymbol
-    - InferenceScore
-    - OmimIDs
-    - PubMedIDs
+readers:
+  chemical_to_disease:
+    format: csv
+    delimiter: \t
+    header_mode: 27
+    header_prefix: '#'
+    files:
+      - ../../../../data/ctd/CTD_chemicals_diseases.tsv.gz
+    columns:
+      - ChemicalName
+      - ChemicalID
+      - CasRN
+      - DiseaseName
+      - DiseaseID
+      - DirectEvidence
+      - InferenceGeneSymbol
+      - InferenceScore
+      - OmimIDs
+      - PubMedIDs
+    filters:
+      - inclusion: include
+        column: DirectEvidence
+        filter_code: eq
+        value: therapeutic
+  exposure_events:
+    format: csv
+    delimiter: \t
+    header_mode: 26
+    header_prefix: '#'
+    files:
+      - ../../../../data/ctd/CTD_exposure_events.tsv.gz
+    columns:
+      - exposurestressorname
+      - exposurestressorid
+      - stressorsourcecategory
+      - stressorsourcedetails
+      - numberofstressorsamples
+      - stressornotes
+      - numberofreceptors
+      - receptors
+      - receptornotes
+      - smokingstatus
+      - age
+      - ageunitsofmeasurement
+      - agequalifier
+      - sex
+      - race
+      - methods
+      - detectionlimit
+      - detectionlimituom
+      - detectionfrequency
+      - medium
+      - exposuremarker
+      - exposuremarkerid
+      - markerlevel
+      - markerunitsofmeasurement
+      - markermeasurementstatistic
+      - assaynotes
+      - studycountries
+      - stateorprovince
+      - citytownregionarea
+      - exposureeventnotes
+      - outcomerelationship
+      - diseasename
+      - diseaseid
+      - phenotypename
+      - phenotypeid
+      - phenotypeactiondegreetype
+      - anatomy
+      - exposureoutcomenotes
+      - reference
+      - associatedstudytitles
+      - enrollmentstartyear
+      - enrollmentendyear
+      - studyfactors
 
 transform:
-  filters:
-    - inclusion: include
-      column: DirectEvidence
-      filter_code: eq
-      value: therapeutic
 
 writer:
   node_properties:
