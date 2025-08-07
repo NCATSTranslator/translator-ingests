@@ -2,7 +2,7 @@
 HPOA processing utility methods
 """
 from os import sep
-from typing import Optional, List, Dict
+from typing import Optional
 from loguru import logger
 
 from pydantic import BaseModel
@@ -23,7 +23,7 @@ from translator_ingest.util.biolink import (
 )
 
 
-def get_hpoa_association_sources(source: str) -> List[RetrievalSource]:
+def get_hpoa_association_sources(source: str) -> list[RetrievalSource]:
     """
     The primary knowledge source may either be inferred from 'source' string
     matching a characteristic port of a HPOA-coded record['source'] encoded URI
@@ -66,18 +66,18 @@ def get_hpoa_association_sources(source: str) -> List[RetrievalSource]:
 HPO_FILE_PATH = f"{PRIMARY_DATA_PATH}{sep}hpoa{sep}hp.obo"
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
-evidence_to_eco: Dict = {"IEA": "ECO:0000501", # "inferred from electronic annotation",
+evidence_to_eco: dict = {"IEA": "ECO:0000501", # "inferred from electronic annotation",
                          "PCS": "ECO:0006017", # "published clinical study evidence",
                          "TAS": "ECO:0000304", # "traceable author statement",
                          "ICE": "ECO:0006019"} # "individual clinical experience evidence"
 
 # Sex (right now both all uppercase and all lowercase
-sex_format: Dict = {"male": "male",
+sex_format: dict = {"male": "male",
                     "MALE": "male",
                     "female": "female",
                     "FEMALE": "female"}
 
-sex_to_pato: Dict = {"female": "PATO:0000383",
+sex_to_pato: dict = {"female": "PATO:0000383",
                      "male":   "PATO:0000384"}
 
 
@@ -103,7 +103,7 @@ class Frequency(BaseModel):
 
 
 # HPO "HP:0040279": representing the frequency of phenotypic abnormalities within a patient cohort.
-hpo_term_to_frequency: Dict = {"HP:0040280": FrequencyHpoTerm(curie="HP:0040280", 
+hpo_term_to_frequency: dict = {"HP:0040280": FrequencyHpoTerm(curie="HP:0040280",
                                                               name="Obligate", 
                                                               lower=100.0, 
                                                               upper=100.0), # Always present, i.e., 100% of the cases.

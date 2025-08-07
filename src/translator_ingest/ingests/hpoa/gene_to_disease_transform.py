@@ -5,7 +5,7 @@ using the HPO ontology. Here we create Biolink associations
 between genes and associated diseases.
 """
 from loguru import logger
-from typing import Tuple, Dict, Iterable
+from typing import Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
@@ -36,7 +36,7 @@ def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
     return records
 """
 
-def transform_record(record: Dict) -> Tuple[Iterable[NamedThing], Iterable[Association]]:
+def transform_record(record: dict) -> tuple[Iterable[NamedThing], Iterable[Association]]:
 
     try:
         gene_id = record["ncbi_gene_id"]
