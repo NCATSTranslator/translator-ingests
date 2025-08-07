@@ -48,10 +48,6 @@ from . import transform_test_runner
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations"
-                    },
-                    {
-                        "resource_role": "supporting_data_source",
-                        "resource_id": "infores:medgen"
                     }
                 ],
 
@@ -90,10 +86,6 @@ from . import transform_test_runner
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations"
-                    },
-                    {
-                        "resource_role": "supporting_data_source",
-                        "resource_id": "infores:medgen"
                     }
                 ],
 
@@ -132,10 +124,6 @@ from . import transform_test_runner
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations"
-                    },
-                    {
-                        "resource_role": "supporting_data_source",
-                        "resource_id": "infores:medgen"
                     }
                 ],
 
@@ -176,10 +164,6 @@ from . import transform_test_runner
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations"
-                    },
-                    {
-                        "resource_role": "supporting_data_source",
-                        "resource_id": "infores:medgen"
                     }
                 ],
 
