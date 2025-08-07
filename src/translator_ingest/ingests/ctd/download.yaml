@@ -1,3 +1,5 @@
 ---
 - url: https://ctdbase.org/reports/CTD_chemicals_diseases.tsv.gz
   local_name: CTD_chemicals_diseases.tsv.gz
+- url: https://ctdbase.org/reports/CTD_exposure_events.tsv.gz
+  local_name: CTD_exposure_events.tsv.gz
