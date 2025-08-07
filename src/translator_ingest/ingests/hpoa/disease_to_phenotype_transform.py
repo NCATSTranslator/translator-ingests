@@ -15,7 +15,7 @@ and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
 from loguru import logger
-from typing import Optional, Iterable
+from typing import Optional, Any, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
@@ -27,6 +27,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
+
+import koza
+
 from translator_ingest.util.biolink import entity_id
 from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 
@@ -43,21 +46,17 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from translator_ingest.ingests.hpoa import get_latest_version
 
-"""
-def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
-    # prepare is just a function that gets run before transform or transform_record ie to seed a database
-    # return an iterator of dicts if that makes sense,
-    # or we could use env vars to just provide access to the data/db in transform()
-    return records
-"""
-
 # Read hpo mode of inheritance terms into memory using the
 # pronto library + hp.obo file + HP:0000005 (Mode of Inheritance) root term
 # TODO: how do I best configure this for mock data for unit testing?
 modes_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
 
 
-def transform_record(record: dict) -> tuple[Iterable[NamedThing], Iterable[Association]]:
+@koza.transform_record()
+def transform_record(
+        koza: koza.KozaTransform,
+        record: dict[str, Any]
+) -> tuple[Iterable[NamedThing], Iterable[Association]]:
     """
     Transform a 'phenotype.hpoa' data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.

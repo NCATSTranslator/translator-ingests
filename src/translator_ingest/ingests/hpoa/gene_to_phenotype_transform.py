@@ -5,7 +5,7 @@ using the HPO ontology. Here we create Biolink associations
 between genes and associated phenotypes.
 """
 from loguru import logger
-from typing import Iterable
+from typing import Any, Iterable
 
 from translator_ingest.util.biolink import entity_id
 
@@ -19,6 +19,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
+import koza
+
 from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_HPOA
 
 from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
@@ -29,20 +31,12 @@ from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from translator_ingest.ingests.hpoa import get_latest_version
 
-"""
-def prepare(records: Iterator[Dict] = None) -> Iterator[Dict] | None:
-    # prepare is just a function that gets run before transform or transform_record ie to seed a database
-    # return an iterator of dicts if that makes sense,
-    # or we could use env vars to just provide access to the data/db in transform()
-    return records
-"""
 
-# TODO: Initialize MONDO map from sssom file;
-#       alternately, don't worry about this since
-#       the subsequent Normalization step might fix this?
-# mondo_map = koza_app.get_map('mondo_map')
-
-def transform_record(record: dict) -> tuple[Iterable[NamedThing], Iterable[Association]]:
+@koza.transform_record()
+def transform_record(
+        koza: koza.KozaTransform,
+        record: dict[str, Any]
+) -> tuple[Iterable[NamedThing], Iterable[Association]]:
 
     try:
         gene_id = "NCBIGene:" + record["ncbi_gene_id"]
@@ -61,12 +55,6 @@ def transform_record(record: dict) -> tuple[Iterable[NamedThing], Iterable[Assoc
 
         # Convert to mondo id if possible, otherwise leave as is
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
-
-        # TODO: Need to uncomment this once the MONDO map access
-        #       is sorted out here (see above comment). This
-        #       "normalization" of the disease context could be sorted out in a later pipeline step?
-        # if dis_id in mondo_map:
-        #     dis_id = mondo_map[dis_id]['subject_id']
 
         # TODO: there are no direct publications in the record but the
         #       'gene_to_phenotype_publications.py" script has some code

@@ -5,7 +5,7 @@ using the HPO ontology. Here we create Biolink associations
 between genes and associated diseases.
 """
 from loguru import logger
-from typing import Iterable
+from typing import Any, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
@@ -18,6 +18,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
+import koza
+
 from translator_ingest.util.biolink import entity_id, BIOLINK_CAUSES
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
@@ -28,16 +30,11 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from translator_ingest.ingests.hpoa import get_latest_version
 
-"""
-def prepare(records: Iterator[dict] = None) -> Iterator[dict] | None:
-    # prepare is just a function that gets run before transform or transform_record ie to seed a database
-    # return an iterator of dicts if that makes sense,
-    # or we could use env vars to just provide access to the data/db in transform()
-    return records
-"""
-
-def transform_record(record: dict) -> tuple[Iterable[NamedThing], Iterable[Association]]:
-
+@koza.transform_record()
+def transform_record(
+        koza: koza.KozaTransform,
+        record: dict[str, Any]
+) -> tuple[Iterable[NamedThing], Iterable[Association]]:
     try:
         gene_id = record["ncbi_gene_id"]
         gene = Gene(id=gene_id, name=record["gene_symbol"],**{})

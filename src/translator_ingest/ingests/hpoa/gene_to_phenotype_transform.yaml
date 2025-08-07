@@ -13,9 +13,6 @@ metadata: "src/translator_ingest/ingests/hpoa/metadata.yaml"
 files:
   - 'data/hpoa/genes_to_phenotype_with_publications.tsv'
 
-depends_on:
-  - 'src/translator_ingests/ingests/mondo/mondo_sssom_config.yaml'
-
 header: 0
 format: 'csv'
 delimiter: '\t'
