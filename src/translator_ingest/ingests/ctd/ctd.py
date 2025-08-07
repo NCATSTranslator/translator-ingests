@@ -48,7 +48,7 @@ def clean_up(koza: koza.KozaTransform) -> None:
 """
 
 @koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> tuple[Iterable[NamedThing], Iterable[Association]]:
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
