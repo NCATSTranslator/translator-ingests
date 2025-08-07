@@ -1,6 +1,6 @@
 import uuid
 import koza
-from typing import Iterable, Tuple
+from typing import Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -45,7 +45,7 @@ def clean_up(koza: koza.KozaTransform) -> None:
 # row in a source data file, and returns a tuple of NamedThings and Associations. Any number of NamedThings and/or
 # Associations can be returned.
 @koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict) -> (Iterable[NamedThing], Iterable[Association]):
+def transform_record(koza: koza.KozaTransform, record: dict) -> tuple[Iterable[NamedThing], Iterable[Association]]:
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
@@ -67,7 +67,7 @@ def transform_record(koza: koza.KozaTransform, record: dict) -> (Iterable[NamedT
 # and/or Associations can be returned in as many separate tuples as desired. This offers flexibility for ingest
 # implementers. Results can be returned all at once, in batches, or using a generator for streaming.
 @koza.transform()
-def transform(koza: koza.KozaTransform) -> Iterable[Tuple[Iterable[NamedThing], Iterable[Association]]]:
+def transform(koza: koza.KozaTransform) -> Iterable[tuple[Iterable[NamedThing], Iterable[Association]]]:
     for record in koza.data:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
