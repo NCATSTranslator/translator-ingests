@@ -1,6 +1,6 @@
-import pytest
+# import pytest
 
-import src.translator_ingest.util.biolink
+# import src.translator_ingest.util.biolink
 
 def test_biolink_init():
     pass

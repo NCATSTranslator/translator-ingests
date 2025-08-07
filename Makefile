@@ -1,5 +1,6 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
+SOURCE_ID = ctd
 
 ### Help ###
 
@@ -20,7 +21,10 @@ define HELP
 │                                                           │
 │     install             install python requirements       │
 │     download            Download data                     │
-│     run                 Run the transform                 │
+│     transform           Transform data into KGX           │
+│     normalize           Normalize the KGX files           │
+│     validate            Validate the normalized KGX files │
+│     run                 Run the whole pipeline            │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
@@ -54,7 +58,7 @@ install: python
 ### Testing ###
 
 .PHONY: test
-test: download
+test:
 	$(RUN) pytest tests
 
 
@@ -62,12 +66,22 @@ test: download
 
 .PHONY: download
 download:
-	$(RUN) downloader
+	$(RUN) downloader --output-dir $(ROOTDIR)/data/$(SOURCE_ID) src/translator_ingest/ingests/$(SOURCE_ID)/download.yaml
+
+.PHONY: transform
+transform: download
+	$(RUN) koza transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
+
+.PHONY: normalize
+normalize: transform
+	echo "Normalization placeholder"
+
+.PHONY: validate
+validate: normalize
+	echo "Validation placeholder"
 
 .PHONY: run
-run: download
-	# TODO: this should probably go out and find every yaml config under src/translator_ingest/ingests/*/
-	$(RUN) koza transform src/translator_ingest/ingests/ctd/ctd.yaml --output-format jsonl
+run: download transform normalize validate
 
 ### Linting, Formatting, and Cleaning ###
 
