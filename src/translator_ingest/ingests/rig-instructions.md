@@ -9,13 +9,13 @@
 ## Section I: Source Information
 
 ### Infores
-The infores identifier of the source from which content is being ingested. Ideally, the value of this field will have a link pointing to the corresponding Infores Registry entry, e.g. [CTD](https://w3id.org/information-resource-registry/ctd) for the Comparative Toxicogenomics Database infores.
+The infores identifier of the source from which content is being ingested. The value of this field should embed a link pointing to the corresponding Infores Registry entry, e.g. [infores:ctd](https://w3id.org/information-resource-registry/ctd) for the Comparative Toxicogenomics Database infores.
   
 ### Description (o)
-(Optional) A short description of the source, focused on info relevant to its ingest into Translator.
+(Optional) A short description of the source, focused on info relevant to its ingest into Translator. May include links to pages with more information. 
 
 ### Source Category(ies)
-One or more of the following categories, describing the kind of source being ingested:
+One or more of the following categories indicating the type of source being ingested, from the perspective of the ingesting system,
 
   | Category | Description |
   |----------|-------------|
@@ -29,19 +29,19 @@ One or more of the following categories, describing the kind of source being ing
   | **Other/Unknown** | Used when the information provided by a source is not known, or does not fit into the defined categories above |
 
 ### Citation (o)
-(Optional) Literature citation(s) officially/originally publishing or describing the source.
+(Optional) Citation(s) to publications officially/originally describing the source.
 
 ### Terms of Use
-Information about the conditions for use of the ingested source - minimally the name of a community license type (e.g. `CC-BY 4.0`), and/or a link to a "terms of use" or license information web page (e.g. `https://ctdbase.org/about/legal.jsp`).
+Information about the conditions for use of the ingested source - minimally the name of a community license (e.g. `CC-BY 4.0`), and/or a link to a "terms of use" or license information web page (e.g. `https://ctdbase.org/about/legal.jsp`).
 
 ### Data Access Locations
-URL(s) where the source data that is being ingested can be accessed - (and optionally documentation about the data and how to understand/use it (e.g. data dictionaries. data models).
+Descriptions of where the source data that is being ingested can be accessed, provided as links with optional descriptions of what each link provides. 
    
 ### Provision Mechanisms and Formats
-How the source distributes their data (file download, API endpoints, database), and a brief description of each (e.g. formats, scope of data provided, other considerations). As possible, provide links to  documentation about the data and how to understand/use it (e.g. data dictionaries, data models).
+How the source distributes their data (file download, API endpoints, database dump), and the formatis in which the data is serialized. As appropriate, provide links to documentation about the data and how to understand/use it (e.g. data dictionaries, data models).
    
 ### Releases and Versioning
-Description of how releases are managed by the source (e.g. general approach, frequency, any important considerations) - and/or links to web pages describing such information. 
+Description of how releases are versioned and managed by the source (e.g. general approach, frequency, other important considerations) - and/or links to web pages describing such information. 
 
 
 ----------------
@@ -49,10 +49,10 @@ Description of how releases are managed by the source (e.g. general approach, fr
 ## Section II. Ingest Information
     
 ### Utility 
-Brief description of why we ingest this source, and the utility of the data it provides for Translator use cases. 
+Brief description of whythe source was ingested, and the utility of the data it provides for Translator use cases. 
 
 ### Scope
-A high-level summary of the types of knowledge that is and is not included in this ingest.
+A short, high-level narrative describing of the types of knowledge content that is included and exculded in this ingest.
 
 
 ### Relevant Files
@@ -86,7 +86,7 @@ Note that there is no need to list source files from which no content was ingest
   |  |  |  |
 
 ### Future Content Considerations (o) 
-(Optional) Notes about content additions or changes to consider in future iterations of this ingest. Specifically, consdier Edge content, Node Property content, and Edge Property / EPC content.  
+(Optional) Notes about content additions or changes to consider in future iterations of this ingest. Specifically, consdier content that will be captured as Edges, as Node Properties content, and as Edge Properties / EPC metadata.  
 
 - **Edges**
    - ...

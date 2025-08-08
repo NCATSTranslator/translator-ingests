@@ -1,0 +1,80 @@
+ReferenceIngestGuide:
+  source_info: 
+    infores_id:  # (required, range = UriOrCurie)
+    description:  # (optional, range = string)
+    citation:  # (optional, range = string)
+    terms_of_use:  # (required, range = string)
+    data_access_locations:  # (optional, multivalued, range = string)
+      - 
+    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
+      - 
+    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+      - 
+    data_versioning_and_releases:  # (optional, range = string)
+    additional_notes:  # (optional, range = string)
+
+    
+  ingest_info:
+    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
+      - 
+    utility:  # (required, range = string)
+    scope:  # (optional, range = string)
+
+    relevant_files:  # (required, multivalued, range = RelevantFiles)
+      - file_name:  # (required, range = string)
+        location:  # (required, range = UriOrCurie)
+        description:  # (optional, range = string)
+
+    included_content:  # (optional, multivalued, range = IncludedContent)
+      - file_name:  # (required, range = string)
+        included_records:  # (required, range = string)
+        fields_used:  # (optional, range = string)
+
+    filtered_content:  # (optional, multivalued, range = FilteredContent)
+      - file_name:  # (required, range = string)
+        filtered_records:  # (required, range = string)
+        rationale:  # (required, range = string)
+
+    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations)
+      - category:  # (required, range = ContentCategoryEnum: edges | node_properties | edge_properties | other)
+        description:  # (required, range = string)
+        relevant_files:  # (optional, range = string)
+      
+    additional_notes:  # (optional, range = string)
+  
+  target_info:
+    infores_id:  # (required, range = UriOrCurie)
+
+    edge_types:  # (required, range = EdgeTypesInfo)
+      - subject_category:  # (required, range = string)
+        predicate:  # (required, range = string)
+        object_category:  # (required, range = string)
+        qualified_predicate:  # (optional, range = string)
+        biolink_qualifier_1:  # (optional, range = string)
+        biolink_qualifier_1_value:  # (optional, range = string)
+        biolink_qualifier_2:  # (optional, range = string)
+        biolink_qualifier_2_value:  # (optional, range = string)
+        biolink_qualifier_3:  # (optional, range = string)
+        biolink_qualifier_3_value:  # (optional, range = string)
+        knowledge_level:  # (required, range = KnowledgeLevelEnum: low | medium | high)
+        agent_type:  # (required, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_automated_agent | not_provided | varies)
+        edge_properties:  # (required, range = string)
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+
+    node_types:  # (required, range = NodeTypesInfo)
+      - node_categories:  # (required, range = string)
+        source_identifier_types:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+
+    future_considerations:  # (optional, range = FutureModelingConsiderations)
+      - category:  # (required, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
+        description:  # (required, range = string)
+        relevant_biolink_elements:  # (optional, range = string)
+      
+    additional_notes:  # (optional, range = string)
+
+  
+  provenance_info:  # (optiona, range = ProvenanceInfo)
+    contributions:  # (required, range = string)
+    artifacts:  # (optional, range = string)
