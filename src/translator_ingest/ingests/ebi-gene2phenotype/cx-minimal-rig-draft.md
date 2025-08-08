@@ -16,15 +16,13 @@ Dates can be used for versioning: this would be the creation/download date for o
 ## Excluded Content 
 
 Rows:
-- complete duplicates (some rows were found in multiple files)
-- no value in `disease mim` column: we currently use only this column as the source of disease IDs
+- No IDs in both `disease mim` and `disease MONDO` columns
 - have the values `limited`, `disputed`, or `refuted` in the `confidence` column:
   - `limited`: the last sentence of the [definition](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) is "The majority are probably false associations. (previously labelled as possible)." We've decided that these may not be "real" associations, so we do not want to ingest them
   - `disputed` and `refuted`: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation). **This decision to exclude could be revisited once Translator can model/handle negation better**.   
 - **had NodeNorm mapping failures for the node IDs (only diseases in this case)**
 
 Columns:
-- `disease MONDO`: **may revisit during this ingest process** because resource has been working to improve this data
 - `confidence`: currently not including as an edge property, because [more data-modeling in biolink-model](https://github.com/biolink/biolink-model/issues/1583) is needed. **Could revisit once this issue is addressed**
 - **Seem harder to get into Translator, potentially useful**: 
   - `cross cutting modifier`: additional info on inheritance. Limited set of terms BUT "; "- delimited. Some terms may map to "HPO inheritance qualifier terms" (didn't try). Lots of missing data (NA). 
@@ -65,6 +63,8 @@ Columns:
 - `knowledge_assertion` / `manual_agent`: because the associations are curated from literature by UK disease domain experts and consultant clinical geneticists. 
 
 ## Misc
+
+Only using `disease MONDO` value when row doesn't have `disease mim` value.
 
 We **may want to REVISIT** how we handle the `molecular mechanism` and `variant types` columns VS the **biolink-model qualifier options**:
 - There could be a separate qualifier for "genetic mechanisms" that would have the different effects of genetics on function like "loss of function", "dominant negative". And `molecular mechanism` terms could map to this.
