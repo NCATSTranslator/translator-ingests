@@ -1,4 +1,5 @@
 ReferenceIngestGuide:
+  name: # (optional, range = string)
   source_info: 
     infores_id:  # (required, range = UriOrCurie)
     description:  # (optional, range = string)
