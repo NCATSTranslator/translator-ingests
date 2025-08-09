@@ -9,14 +9,15 @@ dependencies = [
     "biolink-model",
     "bmt>=1.4.5",
     "kghub-downloader>=0.4.1",
-    "koza"
+    "koza",
+    "pronto>=2.7.0"
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=7.4.0",
     "black>=24.1.0",
-    "ruff>=0.1.9",
+    "ruff>=0.1.9"
 ]
 
 [tool.pytest.ini_options]
