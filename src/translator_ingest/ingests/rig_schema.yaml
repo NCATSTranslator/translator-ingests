@@ -230,7 +230,7 @@ classes:
 		will be represented in the target graph (e.g. "Edges", 'Node Properties", "Edge Properties").
         range: ContentCategoryEnum
         required: true
-      description:
+      consideration:
 	    description: A description of what additional content should be considered and why. 
         range: string
         required: true
@@ -402,17 +402,6 @@ classes:
         range: string
         
   FutureModelingConsiderations:
-    description: Considerations for future model development
-    attributes:
-      category:
-        range: ModelingCategoryEnum
-        required: true
-      description:
-        range: string
-        required: true
-      relevant_biolink_elements:
-        range: string
-
     description: >-
 	  A structure for collecting discrete considerations about modeling changes to consider in future iterations
       of this ingest. Create and categorize separate objects for each distinct consideration.
@@ -421,7 +410,7 @@ classes:
 	    description: >-
 	      An optional general category for the modeling consideration (e.g. "spoq_pattern", "edge_properties")
         range: ModelingCategoryEnum
-      description:
+      consideration:
 	    description: A description of the modeling changes to consider, and why. 
         range: string
         required: true
@@ -435,11 +424,13 @@ classes:
 	    description: >-
 	      The name of a person making a contribution, and the type of contribution made.
 	      e.g. "code author", "code support", "data modeling", "domain expertise".
+	    multivalued: true
         range: string
       artifacts:
 	    description: >-
 	      Links to and descriptions of external artifacts related to the provenance of the ingest, such as
 	      Github issues, surveys of prior ingests of the source, etc.
+	    multivalued: true
         range: string
 	
 enums:	
