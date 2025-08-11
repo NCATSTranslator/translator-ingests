@@ -67,7 +67,8 @@ classes:
 	    description: >-
 	      One ore more citations to publications describing the source. May be a identifier
 	      (e.g a pmid or doi), a url to the published document, or a free-text citation. 
-        range: string      
+        range: string
+		multivalued: true
       terms_of_use:
 	    description: >-
 		  Information about conditions for use of the ingested source. May be the
@@ -148,14 +149,14 @@ classes:
          if some but not all records it contains are included in the ingest - to document what subset
 		 was excluded, and why. 
         range: FilteredContent
-        multivalued: true		
+        multivalued: true
       future_considerations:
 	    description: >-
 		  Notes about content additions or changes to consider in future iterations of this ingest.
 		  Separately consider content that will be represented as Edges vs Node Properties vs Edge
 	      Properties in the target knowledge graph. 
         range: FutureContentConsiderations
-        multivalued: true	
+        multivalued: true
       additional_notes:
 	    description: >-
 		  Additional notes, considerations or resources relevant to source content ingest, that were not
@@ -256,14 +257,16 @@ classes:
 	      was deemed appropriate to represent the source data (to be displayed for end users in a UI system).
         range: EdgeType
         required: true
+		multivalued: true
       node_type_info:
-        range: NodeType
 		description: >-
           A description of each type of node created in the target knowledge graph by this ingest, in terms of
 		  the high-level Biolink categor(ies) of nodes as assumed or assigned by ingestors. 
 	      Note however that downstream normalization of node identifiers may result in new/different categories
 	      ultimately being assigned in the final graph.
-        required: true
+        range: NodeType
+		required: true
+		multivalued: true		
       future_considerations:
         description: >-
 		  Notes about mapping/modeling changes to consider in future iterations of this ingest. 
@@ -280,7 +283,7 @@ classes:
 	  including what types of edge properties it holds, and a brief explanation of why this modeling pattern
 	  was deemed appropriate to represent the source data (for display to end users in a UI system).
     attributes:
-      subject_category:
+      subject_categories:
 	    description: >-
 	      The Biolink category of the subject node of this edge type. e.g. "biolink:SmallMolecule".
 	    comment: >-
@@ -296,7 +299,7 @@ classes:
 	    description: The Biolink predicate that defines this type of edge (e.g. "biolink:treats)
         range: UriOrCurie
         required: true
-      object_category:
+      object_categories:
 	    description: >-
 	      The Biolink category of the object node of this edge type. e.g. "biolink:Disease".
 	    comment: >-
@@ -307,6 +310,7 @@ classes:
 	      subject categories (Disease and PhenotypicFeature)
         range: UriOrCurie
         required: true
+		multivalued: true
       qualified_predicate:
 	    description:  >-
 	      The Biolink predicate used in a "qualified" reading of a statement expressed by an Edge (i.e. one that
@@ -357,7 +361,6 @@ classes:
 	    description: A list of one or more Biolink edge properties used in instances of this edge type in the data. 
         range: UriOrCurie
 		multivalued: true
-        required: true
       ui_explanation:
 	    description: >-
 	      A brief explanation of why this modeling pattern was deemed appropriate to represent the source data
@@ -393,8 +396,7 @@ classes:
 	  node_properties:
         description: A list of one or more Biolink node properties used in instances of this node type in the data. 
         range: UriOrCurie
-		multivalued: true
-        required: true     
+		multivalued: true   
       additional_notes:
 	    description: >-
 	      Additional notes, considerations, or explanations concerning this node type, that were not otherwise
@@ -457,9 +459,9 @@ enums:
   ContentCategoryEnum:
     description: Categories of content for future considerations
     permissible_values:
-      edges
-      node_properties
-      edge_properties
+      edge_content
+      node_property_content
+      edge_property_content
 	  other
 	  
   KnowledgeLevelEnum:
