@@ -156,10 +156,18 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 ## Provenance Information
 
 ### Ingest Contributors
-- **Sierra Moxon**: code, model development
+- **Sierra Moxon**: code
 - **Matthew Brush**: data modeling, domain expertise
 
 ### Artifacts (o)
 - [Ingest Survey](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
 
 ### Additional Notes (o)
+
+Use cases for Translator usage of this data:
+
+
+chemical to disease but put g2g in there then more pathways are available.
+gene to chemical target then to a secondary disease
+drugmechdb <-- how do all drugs interact with a target that treats a disease or the disease itself
+drug treats aspirin - but not useful if you put genes into it 

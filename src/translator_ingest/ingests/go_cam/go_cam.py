@@ -1,9 +1,14 @@
 import uuid
-from typing import Iterable, Any
+import os
+import json
+from pathlib import Path
+from typing import Iterable, Any, Tuple
 
 import requests
 import ijson
 import koza
+from kghub_downloader import index_based_download
+from gocam.translation.networkx import ModelNetworkTranslator
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Entity,
@@ -13,58 +18,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     NamedThing,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum,
+    GeneToGeneAssociation
 )
-
-
-def extract_curie_prefix(curie: str) -> str:
-    """Extract the prefix from a CURIE (e.g., 'GO' from 'GO:0003674')."""
-    return curie.split(':')[0] if ':' in curie else ''
-
-
-def determine_node_category(entity_id: str, entity_type: str = None) -> list:
-    """Determine the biolink category for an entity based on its ID prefix."""
-    prefix = extract_curie_prefix(entity_id)
-
-    if prefix in ['ZFIN', 'MGI', 'RGD', 'SGD', 'FlyBase', 'WormBase', 'TAIR']:
-        return ["biolink:Gene"]
-    elif prefix == 'GO':
-        if entity_type and 'molecular_function' in entity_type.lower():
-            return ["biolink:MolecularActivity"]
-        elif entity_type and 'biological_process' in entity_type.lower():
-            return ["biolink:BiologicalProcess"]
-        else:
-            return ["biolink:Entity"]
-    elif prefix == 'ECO':
-        return ["biolink:EvidenceType"]
-    elif prefix == 'PMID':
-        return ["biolink:Publication"]
-    elif prefix == 'NCBITaxon':
-        return ["biolink:OrganismTaxon"]
-    elif 'gomodel:' in entity_id:
-        return ["biolink:BiologicalProcessOrActivity"]
-    else:
-        return ["biolink:Entity"]
-
-
-def get_entity_class_and_category(entity_id: str, entity_type: str = None):
-    """Get the appropriate biolink class and category for an entity."""
-    prefix = extract_curie_prefix(entity_id)
-
-    if prefix in ['ZFIN', 'MGI', 'RGD', 'SGD', 'FlyBase', 'WormBase', 'TAIR']:
-        return Gene, ["biolink:Gene"]
-    elif prefix == 'GO':
-        if entity_type and 'molecular_function' in entity_type.lower():
-            return MolecularActivity, ["biolink:MolecularActivity"]
-        elif entity_type and 'biological_process' in entity_type.lower():
-            return BiologicalProcessOrActivity, ["biolink:BiologicalProcessOrActivity"]
-        else:
-            return Entity, ["biolink:Entity"]
-    elif 'gomodel:' in entity_id:
-        return BiologicalProcessOrActivity, ["biolink:BiologicalProcessOrActivity"]
-    else:
-        return Entity, ["biolink:Entity"]
-
 
 INFORES_GO_CAM = "infores:go-cam"
 
@@ -72,188 +28,146 @@ INFORES_GO_CAM = "infores:go-cam"
 session = requests.Session()
 session.headers.update({'User-Agent': 'GO-CAM-Ingest/1.0'})
 
-# Configure connection pooling
-adapter = requests.adapters.HTTPAdapter(
-    pool_connections=20,
-    pool_maxsize=100,
-    max_retries=3
-)
-session.mount('https://', adapter)
+def extract_curie_prefix(curie: str) -> str:
+    """Extract the prefix from a CURIE (e.g., 'GO' from 'GO:0003674')."""
+    return curie.split(':')[0] if ':' in curie else ''
+
+def determine_node_category(entity_id: str, entity_type: str = None) -> list:
+    """Determine the biolink category for an entity based on its ID prefix."""
+    prefix = extract_curie_prefix(entity_id)
+    return ["biolink:Gene"]
+
+def get_entity_class_and_category(entity_id: str, entity_type: str = None):
+    """Get the appropriate biolink class and category for an entity."""
+    return Gene, ["biolink:Gene"]
 
 
-def fetch_go_cam_model_streaming(model_id: str) -> dict:
-    """Fetch and stream parse a single GO-CAM model by ID from S3."""
-    url = f"https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/{model_id}.json"
+def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
+    """Map RO causal predicates to Biolink predicates."""
+    predicate_mapping = {
+        "RO:0002629": "biolink:directly_positively_regulates",  # directly positively regulates
+        "RO:0002630": "biolink:directly_negatively_regulates",  # directly negatively regulates
+        "RO:0002213": "biolink:positively_regulates",           # positively regulates
+        "RO:0002212": "biolink:negatively_regulates",           # negatively regulates
+        "RO:0002211": "biolink:regulates",                      # regulates
+    }
+    return predicate_mapping.get(causal_predicate, "biolink:related_to")
+
+
+def download_all_gocam_models(output_dir: str = "data/go_cam") -> list[str]:
+    """Download all GO-CAM models using kghub-downloader index_based_download."""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Define the index configuration for GO-CAM models
+    index_config = {
+        "index_url": "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/provider-to-model.json",
+        "url_pattern": "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/{ID}.json",
+        "id_path": "",
+        "local_name_pattern": "{ID}.json"
+    }
+    
+    # Download all models
+    downloaded_files = index_based_download(
+        index_url=index_config["index_url"],
+        url_pattern=index_config["url_pattern"],
+        output_dir=output_dir,
+        local_name_pattern=index_config["local_name_pattern"]
+    )
+    
+    return downloaded_files
+
+
+def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[Association]]:
+    """Process a single GO-CAM model file and extract gene-gene relationships."""
+    nodes = []
+    associations = []
     
     try:
-        with session.get(url, stream=True, timeout=30) as response:
-            response.raise_for_status()
+        with open(model_file_path, 'r') as f:
+            model_data = json.load(f)
+        
+        # Use ModelNetworkTranslator to extract gene2gene relationships
+        translator = ModelNetworkTranslator()
+        gene_edges = translator.translate_model_to_gene_gene_edges(model_data)
+        
+        # Track processed genes to avoid duplicates
+        processed_genes = set()
+        
+        for edge in gene_edges:
+            source_id = edge.get('source')
+            target_id = edge.get('target')
+            causal_predicate = edge.get('causal_predicate')
+            model_id = edge.get('model_id')
             
-            # Use ijson to parse streaming JSON
-            parser = ijson.parse(response.raw)
+            if not all([source_id, target_id, causal_predicate]):
+                continue
+                
+            # Create Gene nodes if not already processed
+            for gene_id in [source_id, target_id]:
+                if gene_id not in processed_genes:
+                    gene_node = Gene(
+                        id=gene_id,
+                        category=["biolink:Gene"]
+                    )
+                    nodes.append(gene_node)
+                    processed_genes.add(gene_id)
             
-            # Build the model data structure from streaming events
-            model_data = {}
-            current_path = []
+            # Map causal predicate to biolink predicate
+            biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
             
-            for prefix, event, value in parser:
-                if event == 'start_map':
-                    if not current_path:
-                        model_data = {}
-                elif event == 'map_key':
-                    current_path.append(value)
-                elif event == 'end_map':
-                    if current_path:
-                        current_path.pop()
-                elif event in ('string', 'number', 'boolean', 'null'):
-                    # Build nested structure
-                    current_dict = model_data
-                    for key in current_path[:-1]:
-                        if key not in current_dict:
-                            current_dict[key] = {}
-                        current_dict = current_dict[key]
-                    
-                    if current_path:
-                        current_dict[current_path[-1]] = value
-                        current_path.pop()
+            # Create the gene-to-gene association
+            association = GeneToGeneAssociation(
+                id=f"gocam:{uuid.uuid4()}",
+                subject=source_id,
+                predicate=biolink_predicate,
+                object=target_id,
+
+                primary_knowledge_source=INFORES_GO_CAM,
+                aggregator_knowledge_source=["infores:translator-gocam-kgx"],
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                # Add edge properties from the original edge
+                **{k: v for k, v in edge.items() if k not in ['source', 'target', 'causal_predicate']}
+            )
             
-            return model_data
+            associations.append(association)
             
-    except requests.RequestException as e:
-        raise Exception(f"Failed to fetch model {model_id}: {e}")
     except Exception as e:
-        # Fallback to regular JSON parsing if streaming fails
-        response = session.get(url, timeout=30)
-        response.raise_for_status()
-        return response.json()
+        print(f"Error processing model {model_file_path}: {e}")
+        
+    return nodes, associations
+
+
+def process_all_gocam_models(model_dir: str = "data/go_cam") -> Tuple[list[NamedThing], list[Association]]:
+    """Process all downloaded GO-CAM models."""
+    all_nodes = []
+    all_associations = []
+    processed_genes = set()
+    
+    model_files = list(Path(model_dir).glob("*.json"))
+    
+    for model_file in model_files:
+        print(f"Processing {model_file}")
+        nodes, associations = process_single_model(str(model_file))
+        
+        # Add nodes, avoiding duplicates
+        for node in nodes:
+            if node.id not in processed_genes:
+                all_nodes.append(node)
+                processed_genes.add(node.id)
+        
+        all_associations.extend(associations)
+    
+    return all_nodes, all_associations
 
 
 @koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
-    # Each record is now a single GO-CAM model JSON file
-    entities_batch, associations_batch = process_single_model(record)
-    return entities_batch, associations_batch
-
-
-def process_single_model(model_data: dict) -> (list[NamedThing], list[Association]):
-    """Process a single GO-CAM model and return entities and associations."""
-    entities = []
-    associations = []
-    entities_written = set()
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Tuple[Iterable[NamedThing], Iterable[Association]]:
+    """Main transform function for Koza framework."""
+    # Download all GO-CAM models
+    downloaded_files = download_all_gocam_models()
     
-    model_id = model_data.get('id')
-    title = model_data.get('title', '')
+    # Process all models
+    nodes, associations = process_all_gocam_models()
     
-    # Process objects section for entity metadata
-    objects_dict = {}
-    if 'objects' in model_data:
-        for obj in model_data['objects']:
-            obj_id = obj.get('id')
-            if obj_id:
-                objects_dict[obj_id] = {
-                    'label': obj.get('label', ''),
-                    'type': obj.get('type', '')
-                }
-
-    # Process activities
-    if 'activities' in model_data:
-        for activity in model_data['activities']:
-            activity_id = activity.get('id')
-            if not activity_id:
-                continue
-
-            # Create activity node
-            if activity_id not in entities_written:
-                entity_class, category = get_entity_class_and_category(activity_id)
-                activity_entity = entity_class(
-                    id=activity_id,
-                    name=f"Activity from {title}",
-                    category=category
-                )
-                entities.append(activity_entity)
-                entities_written.add(activity_id)
-
-            # Process enabled_by relationship
-            if 'enabled_by' in activity:
-                enabled_by = activity['enabled_by']
-                gene_id = enabled_by.get('term')
-
-                if gene_id:
-                    # Create gene entity
-                    if gene_id not in entities_written:
-                        gene_label = objects_dict.get(gene_id, {}).get('label', gene_id)
-                        entity_class, category = get_entity_class_and_category(gene_id)
-                        gene_entity = entity_class(
-                            id=gene_id,
-                            name=gene_label,
-                            category=category
-                        )
-                        entities.append(gene_entity)
-                        entities_written.add(gene_id)
-
-                    # Create enabled_by association
-                    evidence_info = enabled_by.get('evidence', [{}])[0] if enabled_by.get('evidence') else {}
-
-                    enabled_by_assoc = Association(
-                        id=str(uuid.uuid4()),
-                        subject=activity_id,
-                        predicate="biolink:enabled_by",
-                        object=gene_id,
-                        category=["biolink:Association"],
-                        primary_knowledge_source=INFORES_GO_CAM,
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent
-                    )
-
-                    # Add evidence if present
-                    if evidence_info.get('reference'):
-                        enabled_by_assoc.publications = [evidence_info['reference']]
-
-                    associations.append(enabled_by_assoc)
-
-            # Process molecular_function relationship
-            if 'molecular_function' in activity:
-                mf = activity['molecular_function']
-                mf_term = mf.get('term')
-
-                if mf_term:
-                    # Create molecular activity entity
-                    if mf_term not in entities_written:
-                        mf_label = objects_dict.get(mf_term, {}).get('label', mf_term)
-                        mf_type = objects_dict.get(mf_term, {}).get('type', '')
-                        entity_class, category = get_entity_class_and_category(mf_term, mf_type)
-                        mf_entity = entity_class(
-                            id=mf_term,
-                            name=mf_label,
-                            category=category
-                        )
-                        entities.append(mf_entity)
-                        entities_written.add(mf_term)
-
-                    # Create molecular function association
-                    mf_assoc = Association(
-                        id=str(uuid.uuid4()),
-                        subject=activity_id,
-                        predicate="biolink:has_molecular_function",
-                        object=mf_term,
-                        category=["biolink:Association"],
-                        primary_knowledge_source=INFORES_GO_CAM,
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent
-                    )
-
-                    associations.append(mf_assoc)
-
-    # Process any remaining objects not yet written
-    for obj_id, obj_data in objects_dict.items():
-        if obj_id not in entities_written:
-            entity_class, category = get_entity_class_and_category(obj_id, obj_data.get('type'))
-            entity = entity_class(
-                id=obj_id,
-                name=obj_data.get('label', obj_id),
-                category=category
-            )
-            entities.append(entity)
-            entities_written.add(obj_id)
-
-    return entities, associations
+    return nodes, associations
