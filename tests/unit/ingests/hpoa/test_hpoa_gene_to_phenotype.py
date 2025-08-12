@@ -19,7 +19,7 @@ from . import transform_test_runner
             None,
             None
         ),
-        (   # Query 1 - Full record, with empty ("-") frequency field
+        (   # Query 1 - Full record, with the empty ("-") frequency field
             {
                 "ncbi_gene_id": "8086",
                 "gene_symbol": "AAAS",
@@ -44,8 +44,8 @@ from . import transform_test_runner
                 "has_quotient":  None,
                 "has_count":  None,
                 "has_total": None,
-                "disease_context_qualifier": "OMIM:231550", # this ought to be MONDO in the future
-
+                "disease_context_qualifier": "OMIM:231550",
+                "gene_to_disease_association_types": "MENDELIAN",
                 "sources": [
                     {
                         "resource_role": "primary_knowledge_source",
@@ -64,7 +64,8 @@ from . import transform_test_runner
                 "hpo_id": "HP:0001298",
                 "hpo_name": "Encephalopathy",
                 "frequency": "HP:0040281",
-                "disease_id": "ORPHA:442835"
+                "disease_id": "ORPHA:442835",
+                "gene_to_disease_association_types": "MENDELIAN"
             },
 
             # Captured node identifiers
@@ -102,7 +103,8 @@ from . import transform_test_runner
                 "hpo_id": "HP:0000013",
                 "hpo_name": "Hypoplasia of the uterus",
                 "frequency": "3/9",
-                "disease_id": "OMIM:614129"
+                "disease_id": "OMIM:614129",
+                "gene_to_disease_association_types": "MENDELIAN",
             },
 
             # Captured node identifiers
@@ -142,7 +144,8 @@ from . import transform_test_runner
                 "hpo_id": "HP:0003005",
                 "hpo_name": "Ganglioneuroma",
                 "frequency": "5%",
-                "disease_id": "OMIM:613013"
+                "disease_id": "OMIM:613013",
+                "gene_to_disease_association_types": "MENDELIAN"
             },
 
             # Captured node identifiers
