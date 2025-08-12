@@ -35,10 +35,6 @@ transform:
       value:
         - taxon:9606 # Homo Sapiens
         - taxon:10090 # Mouse
-    - inclusion: exclude
-      column: Qualifier
-      filter_code: eq
-      value: NOT
 
 writer:
   node_properties:

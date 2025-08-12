@@ -146,7 +146,10 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Itera
     aspect = record["Aspect"]             # P (Process), F (Function), C (Component)
     db_object_symbol = record["DB_Object_Symbol"]  # Gene symbol
     qualifier = record["Qualifier"]       # Can contain "NOT" for negative associations
-    publications = record["DB_Reference"].split("|")  # Pipe-separated publication references
+    # Pipe-separated publication references
+    # Only retain valid PMIDs per RIG guidance (exclude GO_REF, ISBN, Reactome, etc.)
+    db_references_raw = record.get("DB_Reference", "")
+    publications = db_references_raw.split("|") if db_references_raw else []
     evidence_code = record["Evidence_Code"]  # GO evidence code (EXP, IEA, etc.)
     taxon = record["Taxon"]              # NCBI taxonomy identifier
     db_object_name = record["DB_Object_Name"]  # Full gene name/description
@@ -220,12 +223,19 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Itera
     # Biolink pydantic model centric: Formats publication IDs as proper CURIEs following biolink model conventions
     # for consistent identifier representation across the knowledge graph
     publications_list = []
-    for p in publications:
-        if p and p.strip():
-            if p.startswith("PMID:"):
-                publications_list.append(p)
-            else:
-                publications_list.append(f"PMID:{p}")
+    for ref in publications:
+        if not ref:
+            continue
+        token = ref.strip()
+        if not token:
+            continue
+        # Accept only PMIDs of the form PMID:12345678 or bare numeric which we normalize to PMID:12345678
+        if token.startswith("PMID:"):
+            pmid_part = token[len("PMID:") :].strip()
+            if pmid_part.isdigit():
+                publications_list.append(f"PMID:{pmid_part}")
+        elif token.isdigit():
+            publications_list.append(f"PMID:{token}")
 
     # Create association dynamically based on the biolink class
     # Biolink pydantic model centric: Uses appropriate association class based on the entity type
