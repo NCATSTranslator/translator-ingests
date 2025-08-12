@@ -4,7 +4,7 @@
 - As written in assumes source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
 
 ## Key Artifacts
-1. **Ingest Assignment Tables**: Records owner and contributor assignments for each ingest. ([Sheet 1](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) ([Sheet 2](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496)) 
+1. **Ingest Assignment Tables**: Records owner and contributor assignments for each ingest. ([Ingest Suggestions](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) ([Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496)) 
 2. **Source Ingest Tickets**: Tracks contributor questions and discussions about the ingest. ([Tickets](https://github.com/orgs/NCATSTranslator/projects/33/views/1?layout=board)) ([Project Board](https://github.com/orgs/NCATSTranslator/projects/33/views/1?layout=board)) ([CTD Example](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22))
 3. **Ingest Surveys**: Describe current ingests of a source from Phase 2 to facilitate comparison and alignment. ([Directory](https://drive.google.com/drive/folders/1temEMKNvfMXKkC-6G4ssXG06JXYXY4gT)) ([CTD Example)](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
 4. **Reference Ingest Guides (RIGs)**: Document scope, content, and modeling decisions for an ingest. ([Instructions](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md))  ([md Template](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/rig-template.md)) ([md CTD Example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md)) ([yaml schema](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig_schema.yaml))  ([yaml template](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig_template.yaml)) ([yaml CTD example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd-rig.yaml)) 
@@ -14,7 +14,10 @@
 ## Task Details
 
 ### 1. Establish / Organize Owners and Contributors
-- Determine who will perform and contribute to each ingest. We are currently using the **Ingest Assignment Table** [here](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496).
+- Determine who will perform and contribute to each ingest. We are currently using the following tables:
+   - [Ingest Suggestion Table](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936): provides info to assess each unique source ingested in Phase 2, and columns to recommend ingest owners.
+   - [Ingest Assignment Table](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Captures final owners and contributors for each Phase 3 re-ingest.
+   - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): One row per Phase 2 ingest of a soruce by a KP - reporting which / how many KPs ingeted each source. 
 - As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
 
 ### 2. Create a Source Ingest Ticket in DINGO Repository
