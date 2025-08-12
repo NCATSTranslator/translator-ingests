@@ -11,7 +11,7 @@ dependencies = [
     "kghub-downloader>=0.4.2",
     "koza",
     "pronto>=2.7.0",
-    "linkml<=1.9.2"
+    "linkml",
 ]
 
 [dependency-groups]
