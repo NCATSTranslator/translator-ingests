@@ -1,0 +1,208 @@
+ReferenceIngestGuide:
+  name: TTD Reference Ingest Guide  # (optional, range = string)
+
+# Information about the Source of the ingest
+  source_info:  # (required, range = SourceInfo)
+    infores_id: infores:ttd  # (required, range = UriOrCurie)
+    description:  # (optional, range = string)
+    citations:  # (optional, multivalued, range = string)
+      - "2024: https://doi.org/10.1093/nar/gkad751"
+      - "2022: https://doi.org/10.1093/nar/gkab953"
+      - "2020: https://doi.org/10.1093/nar/gkz981"
+      - "2018: https://doi.org/10.1093/nar/gkx1076"
+      - "2016: https://doi.org/10.1093/nar/gkv1230"
+      - "2014: https://doi.org/10.1093/nar/gkt1129"
+      - "2012: https://doi.org/10.1093/nar/gkr797"
+      - "2010: https://doi.org/10.1093/nar/gkp1014"
+      - "2002 first paper: https://doi.org/10.1093/nar/30.1.412"
+    terms_of_use: >-  # (required, range = string)
+      No formal license. Andrew Su has emailed developers and gotten positive response for
+      use with 'proper attribution'. Citations describe resource as 'freely accessible to
+      all users'.
+    data_access_locations:  # (optional, multivalued, range = string)
+      - "Downloads page: https://db.idrblab.net/ttd/full-data-download"
+    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
+      - file_download
+    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+      - other
+    data_versioning_and_releases: >-  # (optional, range = string)
+      New release ~ every 2 years. Versioning is a little complicated.
+      Some files have a header with a semantic version number and date (these dates can differ a lot). Others don't.
+      The Downloads page has a "Last update by" section with a date, but it's unclear if all
+      files without versioning in their header should use that date as their version or not.
+    additional_notes:  # (optional, range = string)
+
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+  ingest_info:  # (required, range = IngestInfo)
+    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
+      - 
+    utility:  # (required, range = string)
+    scope:  # (optional, range = string)
+
+    relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest. 
+      - file_name: P1-05-Drug_disease.txt  # (required, range = string)
+        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
+        description: >-  # (optional, range = string)
+          Downloads page says "Drug to disease mapping with ICD identifiers".
+          Has chemical - disease associations.
+          Uses TTD drug IDs, needs mapping using other file
+      - file_name: P1-06-Target_disease.txt  # (required, range = string)
+        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
+        description: >-  # (optional, range = string)
+          Downloads page says "Target to disease mapping with ICD identifiers".
+          Has protein - disease associations.
+          Uses TTD target IDs, needs mapping using other file
+      - file_name: P1-03-TTD_crossmatching.txt  # (required, range = string)
+        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
+        description: >-  # (optional, range = string)
+          Downloads page says "Cross-matching ID between TTD drugs and public databases".
+          Has TTD drug ID => PUBCHEM.COMPOUND, CAS, CHEBI. Unclear if all entries have all ID fields
+      - file_name: P2-01-TTD_uniprot_all.txt  # (required, range = string)
+        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
+        description: >-  # (optional, range = string)
+          Downloads page says "Download Uniprot IDs for all targets". Has TTD target ID -> UNIPROT NAME (not ID).
+
+
+
+
+    included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest.
+      - file_name:  # (required, range = string)
+        included_records:  # (required, range = string)
+        fields_used:  # (optional, range = string)
+
+    filtered_content:  # (optional, multivalued, range = FilteredContent)  Records from relevant files that are not included in the ingest, and why.
+      - file_name:  # (required, range = string)
+        filtered_records:  # (required, range = string)
+        rationale:  # (required, range = string)
+
+    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations)  Content addditions/changes to consider for future iterations.
+      - category:  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+        consideration:  # (required, range = string)
+        relevant_files:  # (optional, range = string)
+
+    additional_notes:  # (optional, range = string)
+
+# Information about the Graph Output by the ingest 
+  target_info:  # (required, range = TargetInfo)
+    infores_id:  # (optional, range = UriOrCurie)
+
+    edge_type_info:  # (required, multivalued, range = EdgeType)
+      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+          - ChemicalEntity
+        predicate: treats  # (required, range = UriOrCurie)
+        object_categories:  # (required, multivalued, range = UriOrCurie)
+          - Disease
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          - 
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          - 
+        edge_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+          - ChemicalEntity
+        predicate: studied_to_treat  # (required, range = UriOrCurie)
+        object_categories:  # (required, multivalued, range = UriOrCurie)
+          - Disease
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          - 
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          - 
+        edge_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+          - ChemicalEntity
+        predicate: in_preclinical_trials_for  # (required, range = UriOrCurie)
+        object_categories:  # (required, multivalued, range = UriOrCurie)
+          - Disease
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          - 
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          - 
+        edge_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+          - ChemicalEntity
+        predicate: in_clinical_trials_for  # (required, range = UriOrCurie)
+        object_categories:  # (required, multivalued, range = UriOrCurie)
+          - Disease
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          - 
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          - 
+        edge_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+          - Gene
+          - Protein
+        predicate: target_for  # (required, range = UriOrCurie)
+        object_categories:  # (required, multivalued, range = UriOrCurie)
+          - Disease
+        qualified_predicate:  # (optional, range = UriOrCurie)
+        biolink_qualifier_1:  # (optional, range = UriOrCurie)
+        biolink_qualifier_1_value_type:  # (optional, range = UriOrCurie)
+        biolink_qualifier_2:  # (optional, range = UriOrCurie)
+        biolink_qualifier_2_value_type:  # (optional, range = UriOrCurie)
+        biolink_qualifier_3:  # (optional, range = UriOrCurie)
+        biolink_qualifier_3_value_type:  # (optional, range = UriIrCurie)
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          - 
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          - 
+        edge_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+
+
+
+
+    node_type_info:  # (required, multivalued, range = NodeType)
+      - node_category: "biolink:ChemicalEntity" # (required, range = UriOrCurie)
+        source_identifier_types: "PUBCHEM.COMPOUND, CAS, CHEBI" # (required, range = string)
+        node_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        additional_notes: >-  # (optional, range = string)
+          Original ID is TTD drug ID. Used mapping file TTD provides to get the ID we use.
+      - node_category: "biolink:Disease" # (required, range = UriOrCurie)
+        source_identifier_types: "icd11" # (required, range = string)
+        node_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        additional_notes:  # (optional, range = string)
+      - node_category: "biolink:Gene" # (required, range = UriOrCurie)
+        source_identifier_types: "UNIPROTKB" # (required, range = string)
+        node_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        additional_notes: >-  # (optional, range = string)
+          Original ID is TTD target ID. Used mapping file TTD provides to get the Uniprot name. Then used NameResolver to get the UniProt ID we use.
+      - node_category: "biolink:Protein" # (required, range = UriOrCurie)
+        source_identifier_types: "UNIPROTKB" # (required, range = string)
+        node_properties:  # (optional, multivalued, range = UriOrCurie)
+          - 
+        additional_notes: >-  # (optional, range = string)
+          Original ID is TTD target ID. Used mapping file TTD provides to get the Uniprot name. Then used NameResolver to get the UniProt ID we use.
+
+
+
+
+    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteratiosn of the ingest
+      - category:  # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
+        consideration:  # (required, range = string)
+
+    additional_notes:  # (optional, range = string)
+
+
+# Information about the how the ingest was specified and performed
+  provenance_info:  # (optional, range = ProvenanceInfo)
+    contributions:  # (optional, multivalued, range = string)
+      - 
+    artifacts:  # (optional, multivalued, range = string)
+      - 
