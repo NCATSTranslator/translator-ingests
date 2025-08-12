@@ -56,12 +56,7 @@ def transform_record(
         # Convert to mondo id if possible, otherwise leave as is
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
 
-        # TODO: there are no direct publications in the record but the
-        #       'gene_to_phenotype_publications.py" script has some code
-        #       to generate the relationships; however, this procedure
-        #       is not fully automated and for now, we ignore them
-        #       perhaps, deferring the task to a later HPOA edge merging step?
-        # publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
+        publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
         association = GeneToPhenotypicFeatureAssociation(
             id=entity_id(),
@@ -74,7 +69,7 @@ def transform_record(
             has_count=frequency.has_count,
             has_total=frequency.has_total,
             disease_context_qualifier=dis_id,
-            # publications=publications,
+            publications=publications,
             sources=build_association_knowledge_sources(primary=INFORES_HPOA),
             knowledge_level=KnowledgeLevelEnum.logical_entailment,
             agent_type=AgentTypeEnum.automated_agent,

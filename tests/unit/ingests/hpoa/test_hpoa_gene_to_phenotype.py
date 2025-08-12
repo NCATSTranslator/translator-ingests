@@ -25,8 +25,10 @@ from . import transform_test_runner
                 "gene_symbol": "AAAS",
                 "hpo_id": "HP:0000252",
                 "hpo_name": "Microcephaly",
+                "publications": "PMID:11062474",
                 "frequency": "-",
-                "disease_id": "OMIM:231550"
+                "disease_id": "OMIM:231550",
+                "gene_to_disease_association_types": "MENDELIAN"
             },
 
             # Captured node identifiers
@@ -45,7 +47,8 @@ from . import transform_test_runner
                 "has_count":  None,
                 "has_total": None,
                 "disease_context_qualifier": "OMIM:231550",
-                "gene_to_disease_association_types": "MENDELIAN",
+                "publications": ["PMID:11062474"],
+
                 "sources": [
                     {
                         "resource_role": "primary_knowledge_source",
@@ -63,6 +66,7 @@ from . import transform_test_runner
                 "gene_symbol": "AP3B2",
                 "hpo_id": "HP:0001298",
                 "hpo_name": "Encephalopathy",
+                "publications": "",
                 "frequency": "HP:0040281",
                 "disease_id": "ORPHA:442835",
                 "gene_to_disease_association_types": "MENDELIAN"
@@ -84,6 +88,7 @@ from . import transform_test_runner
                 "has_count":  None,
                 "has_total": None,
                 "disease_context_qualifier": "Orphanet:442835", # this ought to be MONDO in the future
+                "publications": [],
 
                 "sources": [
                     {
@@ -102,6 +107,7 @@ from . import transform_test_runner
                 "gene_symbol": "CLPP",
                 "hpo_id": "HP:0000013",
                 "hpo_name": "Hypoplasia of the uterus",
+                "publications": "PMID:23541340",
                 "frequency": "3/9",
                 "disease_id": "OMIM:614129",
                 "gene_to_disease_association_types": "MENDELIAN",
@@ -123,6 +129,7 @@ from . import transform_test_runner
                 "has_count":  3,
                 "has_total": 9,
                 "disease_context_qualifier": "OMIM:614129", # this ought to be MONDO in the future
+                "publications": ["PMID:23541340"],
 
                 "sources": [
                     {
@@ -136,13 +143,14 @@ from . import transform_test_runner
             }
         ),
 
-        (   # Query 3 - Full record, with a percentage frequency field value
+        (   # Query 4 - Full record, with a percentage frequency field value
             # 8929	PHOX2B	HP:0003005	Ganglioneuroma	5%	OMIM:613013
             {
                 "ncbi_gene_id": "8929",
                 "gene_symbol": "PHOX2B",
                 "hpo_id": "HP:0003005",
                 "hpo_name": "Ganglioneuroma",
+                "publications": "PMID:23541340;PMID:12345678",
                 "frequency": "5%",
                 "disease_id": "OMIM:613013",
                 "gene_to_disease_association_types": "MENDELIAN"
@@ -164,6 +172,7 @@ from . import transform_test_runner
                 "has_count":  None,
                 "has_total": None,
                 "disease_context_qualifier": "OMIM:613013", # this ought to be MONDO in the future
+                "publications": ["PMID:23541340", "PMID:12345678"],
 
                 "sources": [
                     {
