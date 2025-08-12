@@ -63,8 +63,8 @@ Records from the relevant files that are included, and optionally a list of fiel
 
   | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
-  | goa_human.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Type, Taxon |
-  | mgi.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Type, Taxon |
+  | goa_human.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon |
+  | mgi.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon |
   
 ### Filtered Content
 Records from relevant files that are not included in the ingest.
