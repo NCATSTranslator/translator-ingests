@@ -105,8 +105,7 @@ Note that there is no need to list source files from which no content was ingest
 The infores identifier assigned to the Translator resource that will be created from the ingested content. 
    
 ### Edge Types
-A table describing the types of edges created in the KG produced by this ingest. Provides the Biolink Association type, a meta-edge representation, KL/AT assigned to each edge type, edge properties included, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users.
-If there are not any qualifiers and/or edge properties to report, simply indicate 'n/a' or 'none'.
+A table describing the types of edges created in the KG produced by this ingest. Provides a meta-edge representation, KL/AT assigned to each edge type, edge properties included, and a brief explanation of why the modeling pattern/predicate was deemed appropriate to represent the source data - for the UI to consume and display to end users. If there are not any qualifiers and/or edge properties to report, simply indicate 'n/a' or 'none'.
 
 | Subject Category | Predicate | Object Category | Qualifier Types (o) | AT / KL | Edge Properties | UI Explanation |
 |------------------|-----------|-----------------|---------------------|---------|-----------------|----------------|

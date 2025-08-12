@@ -15,32 +15,37 @@ imports:
 
 classes:
   ReferenceIngestGuide:
-    description: >-
+	description: >-
 	  A container that holds attributes for the discrete sections of information comprising
 	  a Reference Ingest Guide.
     attributes:
+	  name: 
+	    description: A human readable name for the RIG
+        range: string
       source_info:
         description: >-
-		  A container for capturing information about the source of the ingest. 
+		  Information about the source from which content is ingested. 
 		range: SourceInfo
         required: true
       ingest_info:
         description: >-
-		  A container for capturing information about the target dataset / knoweldge graph produced
-		  by the ingest, including what types of edges and nodes were produced, modeling rationale, 
-		  and what modeling changes might be considered in future iterations. 
+		  Information about the rationale and scope of an ingest, including what source
+	      content was included and excluded from the ingest, and what additional content
+	      might be considered in future iterations. 
 		range: IngestInfo
         required: true
       target_info:
         description: >-
-		  A container for capturing information about the rationale and scope of an ingest,
-		  including what source content that was included and excluded from the ingest. 
+	      Information about the dataset / knowledge graph output by the ingest, 
+	      including what types of edges and nodes were produced, modeling rationale, 
+		  and what modeling changes might be considered in future iterations. 
 		range: TargetInfo
         required: true
-      provenance:
+      provenance_info:
 	    description: >-
-		  A container holding information about the provenance of the ingest, including who
-		  contributed and how, and links to external provenance artifacts. 
+		  Information about the provenance of the ingest, including who contributed and how,
+	      and links to external provenance-related artifacts (e.g. Github tickets,  ingest
+	      surveys, etc. 
         range: ProvenanceInfo
         
   SourceInfo:
@@ -55,26 +60,27 @@ classes:
       description:
 	    description: >-
 		  A short description of the source, focused on info relevant to its ingest
-		  into the target system.  May include links to pages with more information
-         (e.g. documentation about the data and how to understand/use it).		  
+		  into the target system. May include links to source pages with more information
+         (e.g. documentation about the data and how to understand/use it).
         range: string
-      citation:
+      citations:
 	    description: >-
-	      Citation(s) to publications officially/originally describing the source. 
-		  May be a identifier (e.g a pmid or doi), a url to the published document, 
-		  or a free-text citation. 
-        range: string      
+	      One ore more citations to publications describing the source. May be a identifier
+	      (e.g a pmid or doi), a url to the published document, or a free-text citation. 
+        range: string
+		multivalued: true
       terms_of_use:
 	    description: >-
-		  Information about the conditions for use of the ingested source - minimally the
-		  name of a community license (e.g. `CC-BY 4.0`), and/or a link to a "terms of use"
-		  or license information web page (e.g. `https://ctdbase.org/about/legal.jsp`).
+		  Information about conditions for use of the ingested source. May be the
+		  name of a community license (e.g. `CC-BY 4.0`), a link to a "terms of use"
+		  or license information web page (e.g. `https://ctdbase.org/about/legal.jsp`), or
+	      a free-text summary of key terms of use.
         range: string
         required: true
       data_access_locations:
 	    description: >-
-		  Descriptions of where the source data that is being ingested can be accessed,
-		  provided as links with optional descriptions of what each link provides. 
+		  Where the source data that is being ingested can be accessed. Provide one or more URLs, 
+	      along with optional descriptions of what each URL provides. 
         range: string
         multivalued: true
       data_provision_mechanisms:
@@ -84,13 +90,13 @@ classes:
         multivalued: true
       data_formats:
 	    description: >-
-		  The format(s) in which the data is serialized.
+		  The format(s) in which the data is serialized for retrieval and use.
         range: DataFormatEnum
         multivalued: true
       data_versioning_and_releases:
 	    description: >-
 		  A description of how releases are versioned and managed by the source (e.g. general
-		  approach, frequency, other important considerations) - and/or links to web pages
+		  approach, frequency, other important considerations). May also include links to web pages
 		  describing such information. 
 		range: string
         multivalued: false
@@ -100,89 +106,93 @@ classes:
   IngestInfo:
     description: >-
       A container for capturing information about the rationale and scope of an ingest,
-	  including what source content that was included and excluded from the ingest, and what
-	  content might be considered in future iterations. 
+	  including what source content was included and excluded from the ingest, and what
+	  additional content might be considered in future iterations. 
     attributes:
       ingest_categories:
 	    description: >- 
 		  A term or terms indicating the type of source being ingested, from the perspective
-		  of the ingesting system.
+		  of the ingesting system (e.g. primary knowledge provider, supporting data provider,
+	      ontology/terminology provider).
         range: IngestCategoryEnum
         multivalued: true
       utility:
 	    description: >-
 		  Brief description of why the source was ingested, and the utility of the data
-		  it provides for ingestor use cases. 
+		  it provides for target system use cases. 
         range: string
         required: true
       scope:
 	    description: >-
-		  A short, high-level narrative describing of the types of knowledge content that
-		  is included and exculded in this ingest.
+		  A short, high-level narrative describing of the types of knowledge form the source that
+		  are included and excluded in this ingest.
         range: string
       relevant_files:
 	    description: >-
-		  A description of the source files (or API endpoints or database tables) that contain
-		  content we aim to ingest.
+		  A description of each source file (or API endpoint, database, or table) that contains
+		  content in scope for the ingest. Source files containing which content is not retrieved 
+	      in this ingest need not be listed or described. 
         range: RelevantFiles
         multivalued: true
         required: true		
       included_content:
 	    description: >-
-		  A description of the records from relevant files/endpoints/tables above that are
-		  included in this ingest, and optionally a list of fields in the data that are part
-		  of or inform the ingest.
+		  A description of what types of records from relevant files/endpoints/tables above are
+		  included in this ingest, and optionally a list of fields from these records that are part
+		  of the ingest or used to inform it.
         range: IncludedContent
         multivalued: true
       filtered_content:
 	    description: >-
-		 A description of records from the relevant files that are not included in the
-		 ingest, and the rationale for any filtering rules or exclusion criteria.
-		 Note that there is no need to list source files from which no content was ingested,
-		 or the fields from ingested files that were not used.
+		 A description of what types of records from each relevant file are not included in the
+		 ingest, and the rationale for any filtering rules or exclusion criteria. Only list a file
+         if some but not all records it contains are included in the ingest - to document what subset
+		 was excluded, and why. 
         range: FilteredContent
-        multivalued: true		
+        multivalued: true
       future_considerations:
 	    description: >-
 		  Notes about content additions or changes to consider in future iterations of this ingest.
-		  Separately considers content that will be captured as Edges, as Node Properties,
-		  and as Edge Properties / EPC metadata. 
+		  Separately consider content that will be represented as Edges vs Node Properties vs Edge
+	      Properties in the target knowledge graph. 
         range: FutureContentConsiderations
-        multivalued: true	
+        multivalued: true
       additional_notes:
 	    description: >-
-		  Any additional notes or considerations or resources reelvant to the ingest, that was not
-		  captured in dedicated attributes.
+		  Additional notes, considerations or resources relevant to source content ingest, that were not
+		  otherwise captured in dedicated attributes.
         range: string
 		
   RelevantFiles:
     description: >-
-	  A description of each source file (or API endpoint, or database table) that contains content 
-	  to be ingested.
+      A structure for describing each source file (or API endpoint, database, or table) that contains
+      content in scope for the ingest. Source files containing which content is not retrieved 
+	  in this ingest need not be listed or described. 
     attributes:
       file_name:
 	    description: The name of the relevant file (or endpoint, or table).
         range: string
         required: true
       location:
-	    description: The URL where the file (or endpoint or table) was accessed.
+	    description: The URL of a web page or ftp site where the indicated file (or endpoint or table) was accessed.
         range: UriOrCurie
         required: true
       description:
-	    description: A brief description of the content and/or utility of the file (or endpoint or table)
+	    description: An optional brief description of the content and/or utility of the file (or endpoint or table)
         range: string
         
   IncludedContent:
     description: >-
-	  A description of the records from relevant files/endpoints/tables above that are included
-	  in this ingest, and optionally a list of fields in the data that are part of or inform the ingest.
+	  A structure for describing the types of records from relevant files/endpoints/tables are
+      included in this ingest, and optionally a list of fields from these records that are part
+	  of the ingest or used to inform it.
     attributes:
       file_name:
 	    description: The name of the relevant file (or endpoint, or table) from which content is included.
         range: string
         required: true
       included_records:
-	    description: A description of the records that are included in the ingest. 
+	    description: A description of the types of records that are included in the ingest. 
         range: string
         required: true
       fields_used:
@@ -191,37 +201,37 @@ classes:
         
   FilteredContent:
     description: >-
-	   A description of records from the relevant files that are not included in the
-		 ingest, and the rationale for any filtering rules or exclusion criteria.
-		 Note that there is no need to list source files from which no content was ingested,
-		 or the fields from ingested files that were not used.
+	  A structure for describing the types of records from each relevant file/endpoint/table not included
+      in the ingest, and the rationale for any filtering rules or exclusion criteria. Only list a file
+      if some but not all records it contains are included in the ingest - to document what subset was excluded,
+	  and why. 
     attributes:
       file_name:
 	    description: The name of the relevant file (or endpoint, or table) form which content was filtered.
         range: string
         required: true
       filtered_records:
-	    description: A description of what records were excluded from the ingest, in terms of filtering rules / 
-		exclusion criteria.
+	    description: A description of what types of records were excluded from the ingest, in terms of filtering
+	      rules or exclusion criteria.
         range: string
         required: true
       rationale:
-	    description: A description of rationale for excluding the indicated content.
+	    description: The rationale for excluding the indicated content (why this subset of records was filtered out). 
         range: string
         required: true
 
   FutureContentConsiderations:
     description: >-
-	  Notes about content additions or changes to consider in future iterations of this ingest.
-	  Separately considers content that will be captured as Edges, as Node Properties, and as 
-	  Edge Properties / EPC metadata.
+	  A structure for collecting notes about content additions or changes to consider in future iterations
+      of this ingest. Create separate objects for each distinct consideration, and indicate if it relates to 
+      content that will be captured as Edges, Node Properties, or Edge Properties in the target knowledge graph.
     attributes:
       category:
-	    description: The category of content described by a given consideration, in terms of how the content
+	    description: The category of content described by a given consideration, based on how the content
 		will be represented in the target graph (e.g. "Edges", 'Node Properties", "Edge Properties").
         range: ContentCategoryEnum
         required: true
-      description:
+      consideration:
 	    description: A description of what additional content should be considered and why. 
         range: string
         required: true
@@ -231,105 +241,203 @@ classes:
 
   TargetInfo:
     description: >-
-	  A container for capturing information about the target dataset / knoweldge graph
-	  produced by the ingest, including what types of edges and nodes were produced,
-	  modeling rationale, and what modeling changes might be considered in future iterations. 
+	  A sturcture for capturing information about the target dataset / knowledge graph
+	  output by the ingest, including what types of edges and nodes were produced,
+	  modeling rationale, and what modeling changes might be considered in future iterations.
     attributes:
       infores_id:
+	    description: >-
+	      An infores identifier assigned to the target resource that will be created from the
+	      ingested content.
         range: UriOrCurie
+      edge_type_info:
+	    description: >-
+	      A description of each type of edge (metaedge) created in the target knowledge graph by this ingest,
+	      including what types of edge properties it holds, and a brief explanation of why this modeling pattern
+	      was deemed appropriate to represent the source data (to be displayed for end users in a UI system).
+        range: EdgeType
         required: true
-      edge_types:
-        range: EdgeTypesInfo
-        required: true
-      node_types:
-        range: NodeTypesInfo
-        required: true
+		multivalued: true
+      node_type_info:
+		description: >-
+          A description of each type of node created in the target knowledge graph by this ingest, in terms of
+		  the high-level Biolink categor(ies) of nodes as assumed or assigned by ingestors. 
+	      Note however that downstream normalization of node identifiers may result in new/different categories
+	      ultimately being assigned in the final graph.
+        range: NodeType
+		required: true
+		multivalued: true		
       future_considerations:
-        range: FutureModelingConsiderations
-        
+        description: >-
+		  Notes about mapping/modeling changes to consider in future iterations of this ingest. 
+		range: FutureModelingConsiderations
       additional_notes:
-        range: string
-        
+	    description: 
+	      Additional notes, considerations or resources relevant to mapping or modeling source data
+	      to the target model, that were not otherwise captured in dedicated attributes.
+        range: string        
 
-  EdgeTypesInfo:
-    description: Edge types for the target data model
+  EdgeType:
+    description: >-
+	  A structure for describing each type of edge (metaedge) created in the target knowledge graph by this ingest,
+	  including what types of edge properties it holds, and a brief explanation of why this modeling pattern
+	  was deemed appropriate to represent the source data (for display to end users in a UI system).
     attributes:
-      subject_category:
-        range: string
+      subject_categories:
+	    description: >-
+	      The Biolink category of the subject node of this edge type. e.g. "biolink:SmallMolecule".
+	    comment: >-
+	      If two edge types differ only in their subject category, but use the same predicate, object_category, 
+	      edge properties, and general provenance, they can be described together in a single NodeType object
+	      that captures the alternative subject categories. e.g. if a source provides SmallMolecule-treats-Disease and 
+	      MolecularMixture-treats-Disease edge types, these can be described in a single EdgeType object with two
+	      subject categories (SmallMolecule and MolecularMixture)
+        range: UriOrCurie
+		multivalued: true
         required: true
       predicate:
-        range: string
+	    description: The Biolink predicate that defines this type of edge (e.g. "biolink:treats)
+        range: UriOrCurie
         required: true
-      object_category:
-        range: string
+      object_categories:
+	    description: >-
+	      The Biolink category of the object node of this edge type. e.g. "biolink:Disease".
+	    comment: >-
+	      If two edge types differ only in their object category, but use the same predicate, subject_category, 
+	      edge properties, and general provenance, they can be described together in a single NodeType object
+	      that captures the alternative object categories. e.g. if a source provides Gene-associated_with-Disease and 
+	      Gene-associated_with-PhenotypicFeature edge types, these can be described in a single EdgeType object with two
+	      subject categories (Disease and PhenotypicFeature)
+        range: UriOrCurie
         required: true
+		multivalued: true
       qualified_predicate:
-        range: string
+	    description:  >-
+	      The Biolink predicate used in a "qualified" reading of a statement expressed by an Edge (i.e. one that
+	      considers the semantics added by subject and/or object qualifiers)
+        range: UriOrCurie
       biolink_qualifier_1:
-        range: string
-      biolink_qualifier_1_value:
-        range: string
+	    description: >-
+	      If relevant, a Biolink qualifier property that defines this edge type. e.g. "biolink:subject_form_or_variant_qualifier".
+        range: UriOrCurie
+      biolink_qualifier_1_value_type:
+	    description: >-
+	      The type of the value taken by the first qualifier type. Can be reported as the name of a Biolink class, enumeration,
+	      or data type, as appropriate. e.g. "biolink:Disease", "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum", "biolink:string".
+        range: UriOrCurie
       biolink_qualifier_2:
-        range: string
-      biolink_qualifier_2_value:
-        range: string
+	    description: >-
+	      If relevant, a second Biolink qualifier property that defines this edge type. e.g. "biolink:subject_aspect_qualifier".
+        range: UriOrCurie
+      biolink_qualifier_2_value_type:
+	    description: >-
+	      The type of the value taken by the second qualifier type. Can be reported as the name of a Biolink class, enumeration,
+	      or data type, as appropriate. e.g. "biolink:Disease", "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum", "biolink:string".
+        range: UriOrCurie
       biolink_qualifier_3:
-        range: string
-      biolink_qualifier_3_value:
-        range: string
+	    description: >-
+	      IF relevant, a third Biolink qualifier property that defines this edge type. e.g. "biolink:object_direction_qualifier".
+        range: UriOrCurie
+      biolink_qualifier_3_value_type:
+	    description: >-
+	      The type of the value taken by the third qualifier type. Can be reported as the name of a Biolink class, enumeration,
+	      or data type, as appropriate. e.g. "biolink:Disease", "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum", "biolink:string".
+        range: UriIrCurie
       knowledge_level:
+	    description: >-
+	      The knowledge level (or levels) relevant to this type of edge. Multivalued only if instances of this type of edge
+	      can have different knowledge levels in the data. 
         range: KnowledgeLevelEnum
+		multivalued: true
         required: true
       agent_type:
+	    description: >-
+	 	  The agent type (or types) relevant to this type of edge. Multivalued only if instances of this type of edge
+	      can have different agent types in the data. 
         range: AgentTypeEnum
+		multivalued: true
         required: true
       edge_properties:
-        range: string
-        required: true
+	    description: A list of one or more Biolink edge properties used in instances of this edge type in the data. 
+        range: UriOrCurie
+		multivalued: true
       ui_explanation:
+	    description: >-
+	      A brief explanation of why this modeling pattern was deemed appropriate to represent the source data
+	     (for display to end users in a UI system).
         range: string
         required: true
       additional_notes:
+	    description: >-
+	      Additional notes, considerations, or explanations of modeling patterns used for this edge type, that were
+	      not otherwise captured in dedicated attributes.	  
         range: string
         
-  NodeTypesInfo:
-    description: Node types for the target data model
+  NodeType:
+    description: >-
+	  A structured object describing each type of node created in the target knowledge graph by this ingest.
     attributes:
-      node_categories:
-        range: string
+      node_category:
+	    description: >- 
+	      The high-level Biolink category of nodes as assumed or assigned by ingestors. e.g. "biolink:Gene".
+	   comment: >-
+	     Note that downstream normalization of node identifiers may result in new/different categories
+	     ultimately being assigned in the final graph.
+        range: UriOrCurie
         required: true
       source_identifier_types:
+	    description: >- 
+	      The type of identifier(s) used for this category of entity by the source system. Report as a prefix
+	      for an identifier system where appropriate/possible (preferably a prefix as cataloged in the Biolink
+	      prefix registry). e.g. "MESH", "CTD", "ECTO". But can be a free text description if needed. e.g. "The
+	      source uses entity names but does not assign identifiers".
         range: string
         required: true
+	  node_properties:
+        description: A list of one or more Biolink node properties used in instances of this node type in the data. 
+        range: UriOrCurie
+		multivalued: true   
       additional_notes:
+	    description: >-
+	      Additional notes, considerations, or explanations concerning this node type, that were not otherwise
+	     captured in dedicated attributes.		  
         range: string
         
   FutureModelingConsiderations:
-    description: Considerations for future model development
+    description: >-
+	  A structure for collecting discrete considerations about modeling changes to consider in future iterations
+      of this ingest. Create and categorize separate objects for each distinct consideration.
     attributes:
       category:
+	    description: >-
+	      An optional general category for the modeling consideration (e.g. "spoq_pattern", "edge_properties")
         range: ModelingCategoryEnum
-        required: true
-      description:
+      consideration:
+	    description: A description of the modeling changes to consider, and why. 
         range: string
         required: true
-      relevant_biolink_elements:
-        range: string
-        
+
   ProvenanceInfo:
     description: >-
 	  A container holding information about the provenance of the ingest, including who
 	  contributed and how, and links to external provenance artifacts. 
     attributes:
       contributions:
+	    description: >-
+	      The name of a person making a contribution, and the type of contribution made.
+	      e.g. "code author", "code support", "data modeling", "domain expertise".
+	    multivalued: true
         range: string
-        required: true
       artifacts:
+	    description: >-
+	      Links to and descriptions of external artifacts related to the provenance of the ingest, such as
+	      Github issues, surveys of prior ingests of the source, etc.
+	    multivalued: true
         range: string
 	
 enums:	
   ProvisionMechanismEnum:
-    description: Data provision mechanisms
+    description: Ways in which data can be made accessible for retrieval.
     permissible_values:
       file_download
       api_endpoint
@@ -337,7 +445,7 @@ enums:
 	  other
 	  
   DataFormatEnum:
-    description: Data formats for the data
+    description: Formats in which data is serialized.
     permissible_values:
       tsv
       xml
@@ -351,13 +459,13 @@ enums:
   ContentCategoryEnum:
     description: Categories of content for future considerations
     permissible_values:
-      edges
-      node_properties
-      edge_properties
+      edge_content
+      node_property_content
+      edge_property_content
 	  other
 	  
   KnowledgeLevelEnum:
-    description: Knowledge level assigned to edges of this type 
+    description: Knowledge levels relevant to edges of a particular type.
     permissible_values:
       knowledge_assertion
 	  logical_entailment
@@ -366,10 +474,10 @@ enums:
 	  observation
 	  not_provided
 	  varies
-	    description: use when there may be differnt knowledge level for different instances of this type of edge.
+	    description: use when there may be different knowledge level for different instances of this type of edge.
 	  
   AgentTypeEnum:
-    description: Agent type assigned to edges of this type
+    description:  Agent types relevant to edges of a particular type.
     permissible_values:
       manual_agent
       automated_agent
@@ -380,11 +488,11 @@ enums:
 	  manual_validation_of_ automated_agent
 	  not_provided
 	  varies
-	    description: use when there may be differnt agent type for different instances of this type of edge.
+	    description: use when there may be different agent type for different instances of this type of edge.
 	  
 	  
   ModelingCategoryEnum:
-    description: Categories of future modeling considerations
+    description: Categories of future modeling considerations (what type of modeling the consideration is about).
     permissible_values:
       spoq_pattern
       predicates
