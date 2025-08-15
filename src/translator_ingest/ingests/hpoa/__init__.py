@@ -11,9 +11,13 @@ from translator_ingest.util.github import GitHubReleases
 
 from translator_ingest import PRIMARY_DATA_PATH
 
-PHENOTYPE_HPOA_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
+HPOA_PHENOTYPE_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
+HPOA_GENES_TO_DISEASE_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt"))
+HPOA_GENES_TO_PHENOTYPE_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
+HPOA_GENES_TO_PHENOTYPE_PREPROCESSED_FILE: str = \
+    abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype_preprocessed.tsv"))
 
-def get_version(file_path=PHENOTYPE_HPOA_FILE) -> str:
+def get_version(file_path=HPOA_PHENOTYPE_FILE) -> str:
     with open(file_path, "r") as phf:
         line = phf.readline()
         while not line.startswith("#version:"):

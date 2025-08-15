@@ -7,6 +7,14 @@ between genes and associated phenotypes.
 from loguru import logger
 from typing import Any, Iterable
 
+import duckdb
+
+from translator_ingest.ingests.hpoa import (
+    HPOA_PHENOTYPE_FILE,
+    HPOA_GENES_TO_DISEASE_FILE,
+    HPOA_GENES_TO_PHENOTYPE_FILE,
+    HPOA_GENES_TO_PHENOTYPE_PREPROCESSED_FILE
+)
 from translator_ingest.util.biolink import entity_id
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -30,6 +38,45 @@ from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from translator_ingest.ingests.hpoa import get_latest_version
+
+
+@koza.on_data_begin()
+def prepare(koza: koza.KozaTransform) -> None:
+    """
+    For HPOA, we need to preprocess data to join data from two files: phenotype.hpoa and genes_to_phenotype.txt
+    :param koza: koza.KozaTransform
+    :return: None
+    """
+    db = duckdb.connect(":memory:", read_only=False)
+    # TODO: Fix these paths which are relative to the root of the repo
+    db.execute(f"""
+    copy (
+    with
+      hpoa as (select * from read_csv('{HPOA_PHENOTYPE_FILE}')),
+      g2p as (select * from read_csv('{HPOA_GENES_TO_DISEASE_FILE}')),
+      g2d as (select 
+        replace(ncbi_gene_id, 'NCBIGene:', '') as ncbi_gene_id_clean,
+        disease_id, 
+        association_type 
+        from read_csv('{HPOA_GENES_TO_PHENOTYPE_FILE}')),
+      g2d_grouped as (select 
+        ncbi_gene_id_clean,
+        disease_id,
+        array_to_string(list(distinct association_type), ';') as association_types
+        from g2d 
+        group by ncbi_gene_id_clean, disease_id)
+    select g2p.*, 
+           array_to_string(list(hpoa.reference),';') as publications,
+           coalesce(g2d_grouped.association_types, '') as gene_to_disease_association_types
+    from g2p
+         left outer join hpoa on hpoa.hpo_id = g2p.hpo_id
+                     and g2p.disease_id = hpoa.database_id
+    		             and hpoa.frequency = g2p.frequency
+         left outer join g2d_grouped on g2p.ncbi_gene_id = g2d_grouped.ncbi_gene_id_clean
+                     and g2p.disease_id = g2d_grouped.disease_id
+    group by all
+    ) to '{HPOA_GENES_TO_PHENOTYPE_PREPROCESSED_FILE}' (delimiter '\t', header true)
+    """)
 
 
 @koza.transform_record()
