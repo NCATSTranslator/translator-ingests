@@ -48,7 +48,6 @@ def prepare(koza: koza.KozaTransform) -> None:
     :return: None
     """
     db = duckdb.connect(":memory:", read_only=False)
-    # TODO: Fix these paths which are relative to the root of the repo
     db.execute(f"""
     copy (
     with
