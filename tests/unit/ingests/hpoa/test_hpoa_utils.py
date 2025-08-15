@@ -7,14 +7,15 @@ from re import compile
 
 import pytest
 
-from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
+from src.translator_ingest.util.github import GitHubReleases
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     FrequencyHpoTerm,
     Frequency,
     get_hpo_term,
     map_percentage_frequency_to_hpo_term,
     phenotype_frequency_to_hpo_term,
 )
-from translator_ingest.ingests.hpoa import get_version, get_latest_version
+from translator_ingest.ingests.hpoa import get_version
 
 vre = compile(pattern=r"^20\d\d-\d\d-\d\d$")
 
@@ -24,7 +25,8 @@ def test_hpoa_version():
     assert version is not None and version == "2025-05-06"
 
 def test_hpoa_latest_version():
-    version = get_latest_version()
+    ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
+    version = ghr.get_latest_version()
     assert version is not None and vre.match(version)
 
 def test_get_hpo_term():

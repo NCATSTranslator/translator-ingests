@@ -8,7 +8,7 @@ except ImportError:
 
 class GitHubReleases:
 
-    def __init__(self, git_org: str, git_repo: str, version_cache_file: str):
+    def __init__(self, git_org: str, git_repo: str, version_cache_file: Optional[str] = None):
         """
         Construct a GitHub repository-specific releases tracking object.
         :param git_org:
@@ -17,7 +17,9 @@ class GitHubReleases:
         """
         self.git_org: str = git_org
         self.git_repo: str = git_repo
-        self.version_cache_file: str = version_cache_file
+        self.version_cache_file: str = version_cache_file \
+            if version_cache_file \
+            else f"{git_org}-{git_repo}-releases.yaml"
         self._release_catalog: Optional[List[str]] = None
 
     def get_release_catalog(self, refresh: bool = False):
@@ -42,10 +44,17 @@ class GitHubReleases:
     def get_releases(self) -> List[str]:
         """
         Get the catalog of currently available project releases.
-        :return:
+        :return: List of release version strings
         """
         if self._release_catalog is None:
             self.get_release_catalog()
         return self._release_catalog
 
-
+    def get_latest_version(self) -> str:
+        """
+        Get the latest GitHub repository release
+        :return: Version string (without any leading "v")
+        """
+        response = requests.get(f"https://api.github.com/repos/{self.git_org}/{self.git_repo}/releases/latest")
+        release_data = response.json()
+        return release_data["tag_name"].strip("v")
