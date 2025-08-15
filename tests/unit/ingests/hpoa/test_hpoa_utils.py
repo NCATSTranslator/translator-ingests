@@ -2,6 +2,8 @@
 Tests of HPOA Utils methods
 """
 from typing import Optional, Tuple
+from os.path import abspath, join, dirname
+from re import compile
 
 import pytest
 
@@ -12,7 +14,18 @@ from src.translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     map_percentage_frequency_to_hpo_term,
     phenotype_frequency_to_hpo_term,
 )
-from translator_ingest.ingests.hpoa import get_latest_version
+from translator_ingest.ingests.hpoa import get_version, get_latest_version
+
+vre = compile(pattern=r"^20\d\d-\d\d-\d\d$")
+
+def test_hpoa_version():
+    sph: str = abspath(join(dirname(__file__), "data", "stub_phenotype.hpoa"))
+    version = get_version(file_path=sph)
+    assert version is not None and version == "2025-05-06"
+
+def test_hpoa_latest_version():
+    version = get_latest_version()
+    assert version is not None and vre.match(version)
 
 def test_get_hpo_term():
     assert get_hpo_term("HP:0040282") == FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79)
@@ -123,8 +136,3 @@ def test_map_percentage_frequency_to_hpo_term(query: Tuple[int, Optional[Frequen
 def test_phenotype_frequency_to_hpo_term(query: Optional[str], frequency: Optional[Frequency]):
     result: Optional[Frequency]  = phenotype_frequency_to_hpo_term(query)
     assert result == frequency
-
-
-def test_hpoa_version():
-    version = get_latest_version()
-    assert version is not None and version == "2025-05-06"

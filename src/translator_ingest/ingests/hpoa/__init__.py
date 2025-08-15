@@ -1,5 +1,6 @@
-"""translator_ingest.ingests.hpoa package."""
 """
+translator_ingest.ingests.hpoa package.
+
 Stub implementation of a wrapper for the 
 Human Phenotype Ontology Annotation (HPOA) as a DataSource,
 just to allow for temporary mock implementation of
@@ -7,19 +8,20 @@ expected Translator Ingest pipeline features, like version capture.
 Should generally be replaced by a shared code implementation
 (currently a design work-in-progress within DINGO)
 """
-from typing import Optional
+from os.path import join, abspath
+import requests
+from translator_ingest import PRIMARY_DATA_PATH
 
-class HPOADataSource:
-    """
-    MVP Implementation of an HPOA DataSource wrapper
-    """
+PHENOTYPE_HPOA_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
 
-    @classmethod
-    def get_version(cls) -> str:
-        # Hardcoded mock implementation, HPOA release, published as of July 23, 2025
-        # TODO: replace with dynamically discovery of data source version
-        #       as will be implemented by shared code in system (T.B.A.)
-        return "2025-05-06"
+def get_latest_version() -> str:
+    response = requests.get(f"https://api.github.com/repos/obophenotype/human-phenotype-ontology/releases/latest")
+    release_data = response.json()
+    return release_data["tag_name"].strip("v")
 
-def get_latest_version() -> Optional[str]:
-    return HPOADataSource.get_version()
+def get_version(file_path=PHENOTYPE_HPOA_FILE) -> str:
+    with open(file_path, "r") as phf:
+        line = phf.readline()
+        while not line.startswith("#version:"):
+            line = phf.readline()
+        return line.split(":")[1].strip()

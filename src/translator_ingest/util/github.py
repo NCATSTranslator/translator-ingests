@@ -1,50 +1,51 @@
-from typing import Optional, List, Dict
-from os import environ
-from os.path import join, abspath, dirname
+from typing import Optional, List
+
 import requests
 try:
     from yaml import dump, load, CLoader as Loader
 except ImportError:
     from yaml import dump, load, Loader
 
-# Undocumented possible local environmental variable
-# override of the ReasonerAPI schema access endpoint
-GIT_ORG = environ.setdefault('GIT_ORGANIZATION', "NCATSTranslator")
-GIT_REPO = environ.setdefault('GIT_REPOSITORY', "ReasonerAPI")
+class GitHubReleases:
 
-VERSION_CACHE_FILE: str = abspath(join(dirname(__file__), "versions.yaml"))
+    def __init__(self, git_org: str, git_repo: str, version_cache_file: str):
+        """
+        Construct a GitHub repository-specific releases tracking object.
+        :param git_org:
+        :param git_repo:
+        :param version_cache_file:
+        """
+        self.git_org: str = git_org
+        self.git_repo: str = git_repo
+        self.version_cache_file: str = version_cache_file
+        self._release_catalog: Optional[List[str]] = None
 
-_version_catalog: Optional[Dict[str, List[str]]] = None
+    def get_release_catalog(self, refresh: bool = False):
+        """
+        Retrieve the GitHub release catalog.
+        :param refresh: True if the catalog should be refreshed, False otherwise.
+        :return: None but the internal cache of GitHubReleases is loaded with the catalog.
+        """
+        if refresh:
+
+            response = requests.get(f"https://api.github.com/repos/{self.git_org}/{self.git_repo}/releases")
+            release_data = response.json()
+            version_data: List[str] = [release_tag["tag_name"] for release_tag in release_data]
+
+            with open(self.version_cache_file, "w") as version_cache:
+                dump(data=version_data, stream=version_cache)
+
+        with open(self.version_cache_file, "r") as version_cache:
+            # is now a two-level YAML catalog of "releases" and "branches"
+            self._release_catalog = load(version_cache, Loader=Loader)
+
+    def get_releases(self) -> List[str]:
+        """
+        Get the catalog of currently available project releases.
+        :return:
+        """
+        if self._release_catalog is None:
+            self.get_release_catalog()
+        return self._release_catalog
 
 
-def get_releases(refresh: bool = False):
-    global _version_catalog
-    if refresh:
-
-        version_data: Dict[str, List[str]] = dict()
-
-        response = requests.get(f"https://api.github.com/repos/{GIT_ORG}/{GIT_REPO}/releases")
-        release_data = response.json()
-        version_data["releases"] = [release_tag["tag_name"] for release_tag in release_data]
-
-        response = requests.get(f"https://api.github.com/repos/{GIT_ORG}/{GIT_REPO}/branches")
-        branch_data = response.json()
-        version_data["branches"] = [branch_tag["name"] for branch_tag in branch_data]
-
-        with open(VERSION_CACHE_FILE, "w") as version_cache:
-            dump(data=version_data, stream=version_cache)
-
-    with open(VERSION_CACHE_FILE, "r") as version_cache:
-        # is now a two-level YAML catalog of "releases" and "branches"
-        _version_catalog = load(version_cache, Loader=Loader)
-
-
-def get_versions() -> Dict:
-    """
-    Get the catalog of currently available TRAPI (GitHub) releases and branches.
-    :return:
-    """
-    global _version_catalog
-    if _version_catalog is None:
-        get_releases()
-    return _version_catalog
