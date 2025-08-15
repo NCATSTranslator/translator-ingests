@@ -21,6 +21,10 @@ BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_st
 
 
 def entity_id() -> str:
+    """
+    Generate a unique identifier for a Biolink Model entity.
+    :return: str, unique identifier
+    """
     return uuid4().urn
 
 def build_association_knowledge_sources(
