@@ -1,12 +1,9 @@
 """
 translator_ingest.ingests.hpoa package.
 
-Stub implementation of a wrapper for the 
-Human Phenotype Ontology Annotation (HPOA) as a DataSource,
-just to allow for temporary mock implementation of
-expected Translator Ingest pipeline features, like version capture.
-Should generally be replaced by a shared code implementation
-(currently a design work-in-progress within DINGO)
+Shared utilities for HPOA ingest:
+
+    get_version() - get version from phenotype.hpoa file
 """
 from os.path import join, abspath
 
