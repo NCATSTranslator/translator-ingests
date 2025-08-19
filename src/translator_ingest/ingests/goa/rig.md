@@ -75,7 +75,7 @@ n/a - no records are filtered from the source data sets listed above.
 
 
 ### Future Content Considerations (o)
-Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Consider ingesting Gene/Product to GO Term annotations from other taxon (beyond human, mouse, and rat)
