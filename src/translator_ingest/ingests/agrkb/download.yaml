@@ -1,8 +1,25 @@
-# Specify the file that needs to be downloaded for this ingest
-# The download.yaml file format is defined and used by the KGHub Downloader to download files.
-# https://monarch-initiative.github.io/kghub-downloader/
-#
-# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
 ---
-- url: https://example_url.io/Example_Source_File.tsv.gz
-  local_name: Example_Saved_File.tsv.gz
+
+# Alliance Genotype Data
+
+## Mouse
+- url: https://fms.alliancegenome.org/download/AGM_MGI.json.gz
+  local_name: data/AGM_MGI.json.gz
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
+
+## Zebrafish
+- url: https://fms.alliancegenome.org/download/AGM_ZFIN.json.gz
+  local_name: data/AGM_ZFIN.json.gz
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
+
+## Rat
+- url: https://fms.alliancegenome.org/download/AGM_RGD.json.gz
+  local_name: data/AGM_RGD.json.gz
+- url : https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz

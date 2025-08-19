@@ -1,0 +1,67 @@
+# Config file for transforming Alliance allele data
+# See additional/optional config parameters at https://koza.monarchinitiative.org/Ingests/source_config/
+
+name: "alliance_allele"
+metadata: "./src/alliance_genotype/metadata.yaml"
+format: "csv" # Format of the data files (csv or json)
+files:
+  - "./data/VARIANT-ALLELE_NCBITaxon10090.tsv.gz"
+  - "./data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz"
+  - "./data/VARIANT-ALLELE_NCBITaxon7955.tsv.gz"
+
+columns:
+  - Taxon
+  - SpeciesName
+  - AlleleId
+  - AlleleSymbol
+  - AlleleSynonyms
+  - VariantId
+  - VariantSymbol
+  - VariantSynonyms
+  - VariantCrossReferences
+  - AlleleAssociatedGeneId
+  - AlleleAssociatedGeneSymbol
+  - VariantAffectedGeneId
+  - VariantAffectedGeneSymbol
+  - Category
+  - VariantsTypeId
+  - VariantsTypeName
+  - VariantsHgvsNames
+  - Assembly
+  - Chromosome
+  - StartPosition
+  - EndPosition
+  - SequenceOfReference
+  - SequenceOfVariant
+  - MostSevereConsequenceName
+  - VariantInformationReference
+  - HasDiseaseAnnotations
+  - HasPhenotypeAnnotations
+
+node_properties:
+  - id
+  - category
+  - name
+  - symbol
+  - in_taxon
+  - in_taxon_label
+  - description
+  - synonyms
+
+edge_properties:
+  - id
+  - category
+  - subject
+  - predicate
+  - original_predicate
+  - object
+  - primary_knowledge_source
+  - aggregator_knowledge_source
+  - knowledge_level
+  - agent_type
+
+min_node_count: 10
+min_edge_count: 5
+
+### CSV specific parameters
+delimiter: "\t" # Delimiter for csv files

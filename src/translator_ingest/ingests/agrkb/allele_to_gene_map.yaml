@@ -1,0 +1,21 @@
+name: 'allele_to_gene'
+
+metadata:
+  description: 'Mapping file for lookup from allele ID to gene ID'
+
+delimiter: '\t'
+
+# This is generated from the VariantAllele file using scripts/generate-allele-to-gene-map.py
+files:
+  - './data/allele_to_gene.tsv'
+
+header: 'none'
+
+columns:
+  - 'AlleleId'
+  - 'AlleleAssociatedGeneId'
+
+key: 'AlleleId'
+
+values:
+  - 'AlleleAssociatedGeneId'

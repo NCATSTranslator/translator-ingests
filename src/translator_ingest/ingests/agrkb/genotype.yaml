@@ -1,0 +1,66 @@
+# Config file for transforming data from a source
+# See additional/optional config parameters at https://koza.monarchinitiative.org/Ingests/source_config/
+
+name: "alliance_genotype"
+metadata: "./src/alliance_genotype/metadata.yaml"
+format: "json" # Format of the data files (csv or json)
+files:
+  - "./data/AGM_MGI.json.gz"
+  - "./data/AGM_ZFIN.json.gz"
+  - "./data/AGM_RGD.json.gz"
+
+json_path: ["data"]
+
+required_properties:
+  - primaryID
+  - name
+  - taxonId
+
+depends_on:
+  - 'src/alliance_genotype/allele_to_gene_map.yaml'
+
+node_properties:
+  - id
+  - category
+  - name
+  - type
+  - in_taxon
+  - in_taxon_label
+
+edge_properties:
+ - id
+ - category
+ - subject
+ - predicate
+ - object
+ - qualifier
+ - primary_knowledge_source
+ - aggregator_knowledge_source
+ - knowledge_level
+ - agent_type
+
+
+
+### Optional parameters - uncomment to use, or remove to ignore
+
+min_node_count: 10
+min_edge_count: 5
+# sssom_config: List of SSSOM config options
+# columns: List of columns to include
+# field_type_map: Dict of field names and their type (using the FieldType enum)
+# filters: List of filters to apply
+# required_properties: List of properties which must be in json data files
+# json_path: List of paths within JSON object containing data to process
+# transform_code: Path to a python file to transform the data
+# transform_mode: Which mode to use to process the transform file
+# global_table: Path to a global table file
+# local_table: Path to a local table file
+
+### CSV specific parameters
+
+delimiter: "\t" # Delimiter for csv files (REQUIRED if format is csv)
+# header: Header row index
+# header_delimiter: Delimiter for header in csv files
+# header_prefix: Prefix for header in csv files
+# comment_char: Comment character for csv files
+# skip_blank_lines: Boolean - whether to skip blank lines in csv files
