@@ -1,0 +1,14 @@
+# Metadata for the project
+# Uncomment and edit the fields you want to include in the metadata
+# See metadata properties at https://koza.monarchinitiative.org/Ingests/source_config/
+
+id:  'CURIE for the project'
+name: 'alliance_disease'
+ingest_title: 'alliance_disease_ingest'
+ingest_url: 'https://github.com/monarch-initiative/alliance-disease-association-ingest'
+description: 'Transformation of the alliance gene, allele and model/genotype to disease associations'
+# source: 'Possibly replaced by provided_by'
+provided_by: 'alliance'
+# One of license and rights is possibly redundant
+license: 'Link to license'
+rights: 'Link to rights' 

@@ -23,3 +23,9 @@
   local_name: data/AGM_RGD.json.gz
 - url : https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
   local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
+
+# Alliance Disease Data
+
+- url: https://fms.alliancegenome.org/download/DISEASE-ALLIANCE_COMBINED.tsv.gz
+  local_name: data/DISEASE-ALLIANCE_COMBINED.tsv.gz
+
