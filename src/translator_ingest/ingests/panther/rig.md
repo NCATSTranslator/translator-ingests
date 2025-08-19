@@ -5,7 +5,7 @@
 ## Source Information
 
 ### Infores
- - [infores:XXX](https://w3id.org/information-resource-registry/XXX)
+ - [infores:panther](https://w3id.org/information-resource-registry/panther)
 
 ### Description (o)
 
