@@ -3,14 +3,11 @@ import os
 import json
 import tarfile
 import tempfile
-import multiprocessing
-import signal
 import sys
 import shutil
 import atexit
 from pathlib import Path
 from typing import Iterable, Any, Tuple
-from concurrent.futures import ProcessPoolExecutor
 
 import koza
 
@@ -28,6 +25,13 @@ INFORES_GO_CAM = "infores:go-cam"
 # Global variable to track temporary directories for cleanup
 _temp_directories = []
 
+
+
+def extract_value(value):
+    """Extract a single value from either a string or a list containing one string."""
+    if isinstance(value, list):
+        return value[0] if value else None
+    return value
 
 
 def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
@@ -69,11 +73,6 @@ def extract_tar_gz(tar_path: str) -> str:
     return extract_dir
 
 
-def signal_handler(signum, frame):
-    """Handle Ctrl+C gracefully."""
-    print("\nReceived interrupt signal. Cleaning up and shutting down...")
-    cleanup_temp_directories()
-    sys.exit(0)
 
 
 # Register cleanup function to run at exit
@@ -81,10 +80,7 @@ atexit.register(cleanup_temp_directories)
 
 
 def process_all_gocam_models_from_directory() -> Tuple[list[NamedThing], list[Association]]:
-    """Extract and process all GO-CAM models from downloaded tar.gz file in parallel."""
-    # Set up signal handler for Ctrl+C
-    signal.signal(signal.SIGINT, signal_handler)
-    
+    """Extract and process all GO-CAM models from downloaded tar.gz file sequentially."""
     # Path to the downloaded tar.gz file (from kghub-downloader)
     tar_path = "data/go_cam/go-cam-networkx.tar.gz"
     
@@ -95,36 +91,25 @@ def process_all_gocam_models_from_directory() -> Tuple[list[NamedThing], list[As
     json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
     print(f"Found {len(json_files)} networkx JSON files to process")
     
-    # Process files in parallel
-    max_workers = min(multiprocessing.cpu_count(), len(json_files))
-    print(f"Processing with {max_workers} parallel workers")
-    print("Press Ctrl+C to interrupt processing...")
-    
     all_nodes = []
     all_associations = []
     processed_genes = set()
     
-    try:
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            # Process files in parallel
-            results = list(executor.map(process_single_model, [str(f) for f in json_files]))
+    # Process files sequentially
+    for i, json_file in enumerate(json_files):
+        print(f"Processing file {i+1}/{len(json_files)}: {json_file.name}")
+        nodes, associations = process_single_model(str(json_file))
         
-        # Merge results from all processes
-        for nodes, associations in results:
-            # Add nodes, avoiding duplicates
-            for node in nodes:
-                if node.id not in processed_genes:
-                    all_nodes.append(node)
-                    processed_genes.add(node.id)
-            
-            all_associations.extend(associations)
+        # Add nodes, avoiding duplicates
+        for node in nodes:
+            if node.id not in processed_genes:
+                all_nodes.append(node)
+                processed_genes.add(node.id)
         
-        print(f"Processed {len(json_files)} files, generated {len(all_nodes)} unique nodes and {len(all_associations)} associations")
-        
-    except KeyboardInterrupt:
-        print("\nProcessing interrupted by user. Returning partial results...")
-        # Return whatever we have processed so far
-        
+        all_associations.extend(associations)
+    
+    print(f"Processed {len(json_files)} files, generated {len(all_nodes)} unique nodes and {len(all_associations)} associations")
+    
     return all_nodes, all_associations
 
 
@@ -145,9 +130,10 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
 
         # Process edges directly from the networkx JSON
         for edge in model_data.get('edges', []):
-            source_id = edge.get('source')
-            target_id = edge.get('target')
-            causal_predicate = edge.get('causal_predicate')
+            # Extract values that might be strings or lists
+            source_id = extract_value(edge.get('source'))
+            target_id = extract_value(edge.get('target'))
+            causal_predicate = extract_value(edge.get('causal_predicate'))
 
             if not all([source_id, target_id, causal_predicate]):
                 continue
@@ -168,10 +154,13 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
             
-            # Extract publications from references
+            # Extract publications from references - this field is always expected to be a list
             publications = edge.get('causal_predicate_has_reference', [])
+            # Ensure publications is a list, handle case where it might be a single string
+            if isinstance(publications, str):
+                publications = [publications]
             if publications and isinstance(publications, list):
-                publications = [pub for pub in publications if pub.startswith('PMID:')]
+                publications = [pub for pub in publications if isinstance(pub, str) and pub.startswith('PMID:')]
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
@@ -195,11 +184,27 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
 
 
 
+# Flag to ensure we only process once
+_has_processed = False
+
 @koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Tuple[Iterable[NamedThing], Iterable[Association]]:
-    """Main transform function for Koza framework."""
-    # Download, extract and process all models in one step
-    # We ignore the record since we process all data ourselves
-    nodes, associations = process_all_gocam_models_from_directory()
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
+    """Main transform function for Koza framework - but we only process once."""
+    global _has_processed
     
-    return nodes, associations
+    # Only process on the first record, ignore all subsequent records
+    if not _has_processed:
+        print("Processing all GO-CAM models from data source...")
+        nodes, associations = process_all_gocam_models_from_directory()
+        print(f"Finished processing. Found {len(nodes)} nodes and {len(associations)} associations.")
+        
+        # Write all nodes and associations to koza
+        for node in nodes:
+            koza.write(node)
+        for association in associations:
+            koza.write(association)
+        
+        _has_processed = True
+    else:
+        # Skip processing for subsequent records
+        pass
