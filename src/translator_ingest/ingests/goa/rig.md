@@ -47,7 +47,7 @@ Use terms from the enumerated list [here](https://github.com/NCATSTranslator/tra
 GOA is a rich source of manually curated knowledge about gene function with broad relevance to all Translator queries and use cases. 
 
 ### Scope
-This initial ingest of GOA covers molecular function, biological process, and cellular component annotations about human and mouse genes only, including manually curated and electronically inferred content, from GAF files (GPAD and GPI formats not ingested). 
+This initial ingest of GOA covers molecular function, biological process, and cellular component annotations about human, mouse, and rat genes, including manually curated and electronically inferred content, from GAF files (GPAD and GPI formats not ingested). 
 Other species may be added in future updates to the ingest. 
 
 ### Relevant Files
@@ -56,7 +56,8 @@ Source files with content we aim to ingest.
   | File | Location | Description |
   |----------|----------|----------|
   | goa_human.gaf | https://current.geneontology.org/products/pages/downloads.html|  Human gene-product to GO term associations (GAF 2.2)  | 
-  | mgi.gaf | https://current.geneontology.org/products/pages/downloads.html | Mouse gene-product to GO term associations (GAF 2.2)  | 
+  | mgi.gaf | https://current.geneontology.org/products/pages/downloads.html | Mouse gene-product to GO term associations (GAF 2.2)  |
+  | rgd.gaf | https://current.geneontology.org/products/pages/downloads.html | Rat gene-product to GO term associations (GAF 2.2)  | 
   
 ### Included Content / Records
 Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
@@ -65,6 +66,7 @@ Records from the relevant files that are included, and optionally a list of fiel
   |----------|----------|----------|
   | goa_human.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon |
   | mgi.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon |
+  | rgd.gaf | All records included | DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon |
   
 ### Filtered Content
 Records from relevant files that are not included in the ingest.
@@ -76,7 +78,7 @@ n/a - no records are filtered from the source data sets listed above.
 Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
-  - Consider ingesting Gene/Product to GO Term annotations from other taxon
+  - Consider ingesting Gene/Product to GO Term annotations from other taxon (beyond human, mouse, and rat)
   - Consider inclusion of qualifying information (as may be found in the Annotation Extensions, or With or From columns) to existing and new Gene/Product to GO Term annotations 
   - Consider ingesting associations between two GO Terms, per the specification [here](https://wiki.geneontology.org/index.php/Annotation_Relations#Standard_Annotation:_Annotation_Extension_Relations)
 
@@ -122,7 +124,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 | Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
 |------------------|----------------------------|----------------|--------|
-| Gene          | MGI  |  none  |   |
+| Gene          | MGI, RGD  |  none  |   |
 | Protein       | UniProtKB accession  | none  |   |
 | MacromolecularComplex | ComplexPortal IDs  |  none  |   |
 | RNAProduct    | RNAcentral IDs  | none  |   |
@@ -161,7 +163,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 ### Database Source Mapping
 - **Dynamic Selection**: Database source determines biolink class:
   - `UniProtKB` -> `Protein`
-  - `MGI`, `SGD`, `RGD`, `ZFIN`, `FB`, `WB`, `TAIR` -> `Gene`
+  - `MGI`, `RGD`, `SGD`, `ZFIN`, `FB`, `WB`, `TAIR` -> `Gene`
   - `ComplexPortal` -> `MacromolecularComplex`
   - `RNAcentral` -> `RNAProduct`
 - **Extensibility**: Easy to add new database sources and their corresponding biolink classes
