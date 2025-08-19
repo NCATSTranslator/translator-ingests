@@ -31,29 +31,27 @@
 
 # Alliance Phenotype Data
 
--
-  url: https://fms.alliancegenome.org/download/PHENOTYPE_RGD.json.gz
+- url: https://fms.alliancegenome.org/download/PHENOTYPE_RGD.json.gz
   local_name: data/PHENOTYPE_RGD.json.gz
--
-  url: https://fms.alliancegenome.org/download/PHENOTYPE_MGI.json.gz
+
+- url: https://fms.alliancegenome.org/download/PHENOTYPE_MGI.json.gz
   local_name: data/PHENOTYPE_MGI.json.gz
--
-  url: https://fms.alliancegenome.org/download/PHENOTYPE_WB.json.gz
+
+- url: https://fms.alliancegenome.org/download/PHENOTYPE_WB.json.gz
   local_name: data/PHENOTYPE_WB.json.gz
 
+## Gene files
 
-# Gene files
--
-  url: https://fms.alliancegenome.org/download/BGI_MGI.json.gz
+- url: https://fms.alliancegenome.org/download/BGI_MGI.json.gz
   local_name: data/BGI_MGI.json.gz
--
-  url: https://fms.alliancegenome.org/download/BGI_RGD.json.gz
+
+- url: https://fms.alliancegenome.org/download/BGI_RGD.json.gz
   local_name: data/BGI_RGD.json.gz
--
-  url: https://fms.alliancegenome.org/download/BGI_WB.json.gz
+
+- url: https://fms.alliancegenome.org/download/BGI_WB.json.gz
   local_name: data/BGI_WB.json.gz
 
-# Allele files
+## Allele files
 -
   url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
   local_name: data/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
@@ -64,10 +62,27 @@
   url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
   local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
 
-# AGM / Genotype files
+## AGM / Genotype files
 -
   url: https://fms.alliancegenome.org/download/AGM_MGI.json.gz
   local_name: data/AGM_MGI.json.gz
 -
   url: https://fms.alliancegenome.org/download/AGM_RGD.json.gz
   local_name: data/AGM_RGD.json.gz
+
+# Variant-Allele files
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7227.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon7227.tsv.gz
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz

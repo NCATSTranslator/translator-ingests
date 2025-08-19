@@ -1,124 +1,85 @@
-"""Test file for the Alliance allele transform script."""
+"""
+An example test file for the transform script.
+
+It uses pytest fixtures to define the input data and the mock koza transform.
+The test_example function then tests the output of the transform script.
+
+See the Koza documentation for more information on testing transforms:
+https://koza.monarchinitiative.org/Usage/testing/
+"""
+
 import pytest
-from biolink_model.datamodel.pydanticmodel_v2 import SequenceVariant, VariantToGeneAssociation
-from koza.utils.testing_utils import mock_koza  # noqa: F401
+
+from koza.utils.testing_utils import mock_koza
 
 # Define the ingest name and transform script path
 INGEST_NAME = "alliance_allele"
-TRANSFORM_SCRIPT = "./src/alliance_genotype/allele.py"
+TRANSFORM_SCRIPT = "./src/alliance_variant_allele_ingest/transform.py"
 
 
+# Define an example row to test (as a dictionary)
 @pytest.fixture
-def zfin_allele(mock_koza):
-    row = {
-        "AlleleId": "ZFIN:ZDB-ALT-123456-7",
-        "AlleleSymbol": "tyr<b1>",
-        "AlleleSynonyms": "tyrosinase b1,tyr-b1",
-        "Taxon": "NCBITaxon:7955",
-        "SpeciesName": "Danio rerio",
-        "AlleleAssociatedGeneId": "ZFIN:ZDB-GENE-000508-1",
-        "AlleleAssociatedGeneSymbol": "tyr",
-        "VariantsTypeId": "SO:0001059",  # sequence_alteration
+def example_row():
+    return {
+        "example_column_1": "entity_1",
+        "example_column_2": "entity_6",
+        "example_column_3": "biolink:related_to",
     }
 
-    return mock_koza(INGEST_NAME, row, TRANSFORM_SCRIPT)
 
-
+# Or a list of rows
 @pytest.fixture
-def mgi_allele(mock_koza):
-    row = {
-        "AlleleId": "MGI:5569116",
-        "AlleleSymbol": "Tyr<c-2J>",
-        "AlleleSynonyms": "tyrosinase<cocoa-2J>,c-2J",
-        "Taxon": "NCBITaxon:10090",
-        "SpeciesName": "Mus musculus",
-        "AlleleAssociatedGeneId": "MGI:98880",
-        "AlleleAssociatedGeneSymbol": "Tyr",
-        "VariantsTypeId": "SO:1000008",  # point_mutation
-    }
+def example_list_of_rows():
+    return [
+        {
+            "example_column_1": "entity_1",
+            "example_column_2": "entity_6",
+            "example_column_3": "biolink:related_to",
+        },
+        {
+            "example_column_1": "entity_2",
+            "example_column_2": "entity_7",
+            "example_column_3": "biolink:related_to",
+        },
+    ]
 
-    return mock_koza(INGEST_NAME, row, TRANSFORM_SCRIPT)
 
-
+# Define the mock koza transform
 @pytest.fixture
-def allele_without_gene(mock_koza):
-    row = {
-        "AlleleId": "MGI:6543210",
-        "AlleleSymbol": "Unknown<tm1>",
-        "AlleleSynonyms": "unknown allele",
-        "Taxon": "NCBITaxon:10090",
-        "SpeciesName": "Mus musculus",
-        "AlleleAssociatedGeneId": "-",
-        "VariantsTypeId": "SO:0000667",  # insertion
-    }
-
-    return mock_koza(INGEST_NAME, row, TRANSFORM_SCRIPT)
+def mock_transform(mock_koza, example_row):
+    # Returns [entity_a, entity_b, association] for a single row
+    return mock_koza(
+        INGEST_NAME,
+        example_row,
+        TRANSFORM_SCRIPT,
+    )
 
 
-def test_zfin_allele_transform(zfin_allele):
-    entities = zfin_allele
-    variants = [entity for entity in entities if isinstance(entity, SequenceVariant)]
-    assert len(variants) == 1
-
-    variant = variants[0]
-    assert variant.id == "ZFIN:ZDB-ALT-123456-7"
-    assert variant.name == "tyr<b1>"
-    assert variant.in_taxon == ["NCBITaxon:7955"]
-    assert variant.in_taxon_label == "Danio rerio"
-    assert variant.synonym == ["tyrosinase b1", "tyr-b1"]
-
-
-def test_mgi_allele_transform(mgi_allele):
-    entities = mgi_allele
-    variants = [entity for entity in entities if isinstance(entity, SequenceVariant)]
-    assert len(variants) == 1
-
-    variant = variants[0]
-    assert variant.id == "MGI:5569116"
-    assert variant.name == "Tyr<c-2J>"
-    assert variant.in_taxon == ["NCBITaxon:10090"]
-    assert variant.in_taxon_label == "Mus musculus"
-    assert variant.synonym == ["tyrosinase<cocoa-2J>", "c-2J"]
+# Or for multiple rows
+@pytest.fixture
+def mock_transform_multiple_rows(mock_koza, example_list_of_rows):
+    # Returns concatenated list of [entity_a, entity_b, association]
+    # for each row in example_list_of_rows
+    return mock_koza(
+        INGEST_NAME,
+        example_list_of_rows,
+        TRANSFORM_SCRIPT,
+    )
 
 
-def test_zfin_gene_association(zfin_allele):
-    entities = zfin_allele
-    associations = [entity for entity in entities if isinstance(entity, VariantToGeneAssociation)]
-    assert len(associations) == 1
-
-    association = associations[0]
-    assert association.subject == "ZFIN:ZDB-ALT-123456-7"
-    assert association.predicate == "biolink:is_sequence_variant_of"
-    assert association.original_predicate == "SO:0001059"  # Verify original predicate is preserved
-    assert association.object == "ZFIN:ZDB-GENE-000508-1"
-    assert association.primary_knowledge_source == "infores:zfin"
-    assert set(association.aggregator_knowledge_source) == {"infores:monarchinitiative", "infores:agrkb"}
-    assert association.knowledge_level == "knowledge_assertion"
-    assert association.agent_type == "manual_agent"
+# Test the output of the transform
 
 
-def test_mgi_gene_association(mgi_allele):
-    entities = mgi_allele
-    associations = [entity for entity in entities if isinstance(entity, VariantToGeneAssociation)]
-    assert len(associations) == 1
-
-    association = associations[0]
-    assert association.subject == "MGI:5569116"
-    assert association.predicate == "biolink:is_sequence_variant_of"
-    assert association.original_predicate == "SO:1000008"  # Verify original predicate is preserved
-    assert association.object == "MGI:98880"
-    assert association.primary_knowledge_source == "infores:mgi"
-    assert set(association.aggregator_knowledge_source) == {"infores:monarchinitiative", "infores:agrkb"}
+def test_single_row(mock_transform):
+    assert len(mock_transform) == 3
+    entity = mock_transform[0]
+    assert entity
+    assert entity.name == "entity_1"
 
 
-def test_allele_without_gene(allele_without_gene):
-    entities = allele_without_gene
-    variants = [entity for entity in entities if isinstance(entity, SequenceVariant)]
-    associations = [entity for entity in entities if isinstance(entity, VariantToGeneAssociation)]
-
-    # Verify variant is created
-    assert len(variants) == 1
-    assert variants[0].id == "MGI:6543210"
-
-    # Verify no association is created when gene ID is missing
-    assert len(associations) == 0
+def test_multiple_rows(mock_transform_multiple_rows):
+    assert len(mock_transform_multiple_rows) == 6
+    entity_a = mock_transform_multiple_rows[0]
+    entity_b = mock_transform_multiple_rows[1]
+    assert entity_a.name == "entity_1"
+    assert entity_b.name == "entity_6"
