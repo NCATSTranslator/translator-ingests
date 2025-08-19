@@ -1,11 +1,11 @@
-# [Source Name] Reference Ingest Guide (RIG)
+# Alliance Genomic Resources Knowledge Base Reference Ingest Guide (RIG)
 
 ---------------
 
 ## Source Information
 
 ### Infores
- - [infores:XXX](https://w3id.org/information-resource-registry/XXX)
+ - [infores:agrkb](https://w3id.org/information-resource-registry/agrkb)
 
 ### Description (o)
 
