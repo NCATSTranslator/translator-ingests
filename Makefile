@@ -97,11 +97,19 @@ clobber:
 	@echo "Nothing to remove. Add files to remove to clobber target."
 
 .PHONY: lint
-lint: 
+lint:
 	$(RUN) ruff check --diff --exit-zero
 	$(RUN) black -l 120 --check --diff src tests
 
 .PHONY: format
-format: 
+format:
 	$(RUN) ruff check --fix --exit-zero
 	$(RUN) black -l 120 src tests
+
+.PHONY: transform-go-cam
+transform-go-cam:
+	$(RUN) downloader --output-dir $(ROOTDIR)/data/go_cam src/translator_ingest/ingests/go_cam/download.yaml
+	$(RUN) koza transform src/translator_ingest/ingests/go_cam/go_cam.yaml --output-dir $(ROOTDIR)/data/go_cam --output-format jsonl
+
+.PHONY: run-go-cam
+run-go-cam: transform-go-cam

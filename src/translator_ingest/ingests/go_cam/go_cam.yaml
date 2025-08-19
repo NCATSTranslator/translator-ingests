@@ -1,9 +1,9 @@
-name: go_cam_gene_to_molecular_function
+name: go_cam_gene_to_gene
 
 reader:
   format: json
   files:
-    - ../../../../data/go_cam/models/*.json
+    - ../../../../data/go_cam/go-cam-networkx.tar.gz
 
 writer:
   node_properties:

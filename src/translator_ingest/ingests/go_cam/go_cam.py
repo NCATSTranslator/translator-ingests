@@ -1,22 +1,23 @@
 import uuid
 import os
 import json
+import tarfile
+import tempfile
+import multiprocessing
+import signal
+import sys
+import shutil
+import atexit
 from pathlib import Path
 from typing import Iterable, Any, Tuple
+from concurrent.futures import ProcessPoolExecutor
 
-import requests
-import ijson
 import koza
-from kghub_downloader import index_based_download
-from gocam.translation.networkx import ModelNetworkTranslator
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    Entity,
     Gene,
-    BiologicalProcessOrActivity,
-    MolecularActivity,
-    Association,
     NamedThing,
+    Association,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     GeneToGeneAssociation
@@ -24,22 +25,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 INFORES_GO_CAM = "infores:go-cam"
 
-# Create a persistent session for connection pooling
-session = requests.Session()
-session.headers.update({'User-Agent': 'GO-CAM-Ingest/1.0'})
+# Global variable to track temporary directories for cleanup
+_temp_directories = []
 
-def extract_curie_prefix(curie: str) -> str:
-    """Extract the prefix from a CURIE (e.g., 'GO' from 'GO:0003674')."""
-    return curie.split(':')[0] if ':' in curie else ''
-
-def determine_node_category(entity_id: str, entity_type: str = None) -> list:
-    """Determine the biolink category for an entity based on its ID prefix."""
-    prefix = extract_curie_prefix(entity_id)
-    return ["biolink:Gene"]
-
-def get_entity_class_and_category(entity_id: str, entity_type: str = None):
-    """Get the appropriate biolink class and category for an entity."""
-    return Gene, ["biolink:Gene"]
 
 
 def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
@@ -54,120 +42,164 @@ def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
     return predicate_mapping.get(causal_predicate, "biolink:related_to")
 
 
-def download_all_gocam_models(output_dir: str = "data/go_cam") -> list[str]:
-    """Download all GO-CAM models using kghub-downloader index_based_download."""
-    os.makedirs(output_dir, exist_ok=True)
+def cleanup_temp_directories():
+    """Clean up all temporary directories created during processing."""
+    global _temp_directories
+    for temp_dir in _temp_directories:
+        if os.path.exists(temp_dir):
+            print(f"Cleaning up temporary directory: {temp_dir}")
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    _temp_directories.clear()
+
+
+def extract_tar_gz(tar_path: str) -> str:
+    """Extract tar.gz file to a temporary directory and return the path."""
+    global _temp_directories
     
-    # Define the index configuration for GO-CAM models
-    index_config = {
-        "index_url": "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/provider-to-model.json",
-        "url_pattern": "https://go-data-product-live-go-cam.s3.us-east-1.amazonaws.com/product/json/{ID}.json",
-        "id_path": "",
-        "local_name_pattern": "{ID}.json"
-    }
+    # Clean up any existing temp directories first
+    cleanup_temp_directories()
     
-    # Download all models
-    downloaded_files = index_based_download(
-        index_url=index_config["index_url"],
-        url_pattern=index_config["url_pattern"],
-        output_dir=output_dir,
-        local_name_pattern=index_config["local_name_pattern"]
-    )
+    extract_dir = tempfile.mkdtemp(prefix="go_cam_extract_")
+    _temp_directories.append(extract_dir)
     
-    return downloaded_files
+    print(f"Extracting {tar_path} to {extract_dir}")
+    with tarfile.open(tar_path, 'r:gz') as tar:
+        tar.extractall(extract_dir)
+    
+    return extract_dir
+
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C gracefully."""
+    print("\nReceived interrupt signal. Cleaning up and shutting down...")
+    cleanup_temp_directories()
+    sys.exit(0)
+
+
+# Register cleanup function to run at exit
+atexit.register(cleanup_temp_directories)
+
+
+def process_all_gocam_models_from_directory() -> Tuple[list[NamedThing], list[Association]]:
+    """Extract and process all GO-CAM models from downloaded tar.gz file in parallel."""
+    # Set up signal handler for Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # Path to the downloaded tar.gz file (from kghub-downloader)
+    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
+    
+    # Extract the tar.gz file
+    extracted_path = extract_tar_gz(tar_path)
+    
+    # Find all JSON files
+    json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
+    print(f"Found {len(json_files)} networkx JSON files to process")
+    
+    # Process files in parallel
+    max_workers = min(multiprocessing.cpu_count(), len(json_files))
+    print(f"Processing with {max_workers} parallel workers")
+    print("Press Ctrl+C to interrupt processing...")
+    
+    all_nodes = []
+    all_associations = []
+    processed_genes = set()
+    
+    try:
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Process files in parallel
+            results = list(executor.map(process_single_model, [str(f) for f in json_files]))
+        
+        # Merge results from all processes
+        for nodes, associations in results:
+            # Add nodes, avoiding duplicates
+            for node in nodes:
+                if node.id not in processed_genes:
+                    all_nodes.append(node)
+                    processed_genes.add(node.id)
+            
+            all_associations.extend(associations)
+        
+        print(f"Processed {len(json_files)} files, generated {len(all_nodes)} unique nodes and {len(all_associations)} associations")
+        
+    except KeyboardInterrupt:
+        print("\nProcessing interrupted by user. Returning partial results...")
+        # Return whatever we have processed so far
+        
+    return all_nodes, all_associations
 
 
 def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[Association]]:
     """Process a single GO-CAM model file and extract gene-gene relationships."""
     nodes = []
     associations = []
-    
+
     try:
         with open(model_file_path, 'r') as f:
             model_data = json.load(f)
-        
-        # Use ModelNetworkTranslator to extract gene2gene relationships
-        translator = ModelNetworkTranslator()
-        gene_edges = translator.translate_model_to_gene_gene_edges(model_data)
-        
+
         # Track processed genes to avoid duplicates
         processed_genes = set()
         
-        for edge in gene_edges:
+        # Get model info
+        model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
+
+        # Process edges directly from the networkx JSON
+        for edge in model_data.get('edges', []):
             source_id = edge.get('source')
             target_id = edge.get('target')
             causal_predicate = edge.get('causal_predicate')
-            model_id = edge.get('model_id')
-            
+
             if not all([source_id, target_id, causal_predicate]):
                 continue
-                
+
             # Create Gene nodes if not already processed
             for gene_id in [source_id, target_id]:
                 if gene_id not in processed_genes:
+                    # Find the corresponding node data for the label
+                    node_data = next((n for n in model_data.get('nodes', []) if n.get('id') == gene_id), {})
                     gene_node = Gene(
                         id=gene_id,
+                        name=node_data.get('label'),
                         category=["biolink:Gene"]
                     )
                     nodes.append(gene_node)
                     processed_genes.add(gene_id)
-            
+
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
             
+            # Extract publications from references
+            publications = edge.get('causal_predicate_has_reference', [])
+            if publications and isinstance(publications, list):
+                publications = [pub for pub in publications if pub.startswith('PMID:')]
+
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
-                id=f"gocam:{uuid.uuid4()}",
+                id=f"gocam:{model_id}:{source_id}-{biolink_predicate.replace('biolink:', '')}-{target_id}",
                 subject=source_id,
                 predicate=biolink_predicate,
                 object=target_id,
-
+                publications=publications if publications else None,
                 primary_knowledge_source=INFORES_GO_CAM,
-                aggregator_knowledge_source=["infores:translator-gocam-kgx"],
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                # Add edge properties from the original edge
-                **{k: v for k, v in edge.items() if k not in ['source', 'target', 'causal_predicate']}
             )
-            
+
             associations.append(association)
-            
+
     except Exception as e:
         print(f"Error processing model {model_file_path}: {e}")
-        
+
     return nodes, associations
 
 
-def process_all_gocam_models(model_dir: str = "data/go_cam") -> Tuple[list[NamedThing], list[Association]]:
-    """Process all downloaded GO-CAM models."""
-    all_nodes = []
-    all_associations = []
-    processed_genes = set()
-    
-    model_files = list(Path(model_dir).glob("*.json"))
-    
-    for model_file in model_files:
-        print(f"Processing {model_file}")
-        nodes, associations = process_single_model(str(model_file))
-        
-        # Add nodes, avoiding duplicates
-        for node in nodes:
-            if node.id not in processed_genes:
-                all_nodes.append(node)
-                processed_genes.add(node.id)
-        
-        all_associations.extend(associations)
-    
-    return all_nodes, all_associations
 
 
 @koza.transform_record()
 def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Tuple[Iterable[NamedThing], Iterable[Association]]:
     """Main transform function for Koza framework."""
-    # Download all GO-CAM models
-    downloaded_files = download_all_gocam_models()
-    
-    # Process all models
-    nodes, associations = process_all_gocam_models()
+    # Download, extract and process all models in one step
+    # We ignore the record since we process all data ourselves
+    nodes, associations = process_all_gocam_models_from_directory()
     
     return nodes, associations
