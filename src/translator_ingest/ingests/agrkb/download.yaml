@@ -4,26 +4,6 @@
 ### For more information, see https://github.com/monarch-initiative/kghub-downloader
 ---
 
-# Alliance Genotype Data
-
-## Mouse
-- url: https://fms.alliancegenome.org/download/AGM_MGI.json.gz
-  local_name: data/AGM_MGI.json.gz
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
-
-## Zebrafish
-- url: https://fms.alliancegenome.org/download/AGM_ZFIN.json.gz
-  local_name: data/AGM_ZFIN.json.gz
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
-
-## Rat
-- url: https://fms.alliancegenome.org/download/AGM_RGD.json.gz
-  local_name: data/AGM_RGD.json.gz
-- url : https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
-
 # Alliance Disease Data
 
 - url: https://fms.alliancegenome.org/download/DISEASE-ALLIANCE_COMBINED.tsv.gz
@@ -51,38 +31,38 @@
 - url: https://fms.alliancegenome.org/download/BGI_WB.json.gz
   local_name: data/BGI_WB.json.gz
 
-## Allele files
--
-  url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
--
-  url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
--
-  url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
+# Alliance Genotype Data
 
-## AGM / Genotype files
--
-  url: https://fms.alliancegenome.org/download/AGM_MGI.json.gz
+## Mouse
+
+- url: https://fms.alliancegenome.org/download/AGM_MGI.json.gz
   local_name: data/AGM_MGI.json.gz
--
-  url: https://fms.alliancegenome.org/download/AGM_RGD.json.gz
-  local_name: data/AGM_RGD.json.gz
-
-# Variant-Allele files
-
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
-
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
-
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7227.tsv.gz
-  local_name: data/VARIANT-ALLELE_NCBITaxon7227.tsv.gz
 
 - url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
   local_name: data/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
 
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
+## Zebrafish
+
+- url: https://fms.alliancegenome.org/download/AGM_ZFIN.json.gz
+  local_name: data/AGM_ZFIN.json.gz
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon7955.tsv.gz
+
+## Rat
+
+- url: https://fms.alliancegenome.org/download/AGM_RGD.json.gz
+  local_name: data/AGM_RGD.json.gz
+
+- url : https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
   local_name: data/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
+
+## Drosophila melanogaster
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon7227.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon7227.tsv.gz
+
+## Caenorhabditis elegans
+
+- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
+  local_name: data/VARIANT-ALLELE_NCBITaxon6239.tsv.gz
