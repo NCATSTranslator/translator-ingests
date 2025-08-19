@@ -9,8 +9,7 @@ from pydantic import BaseModel
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 
 from translator_ingest import PRIMARY_DATA_PATH
-from translator_ingest.util.biolink import build_association_knowledge_sources
-
+from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 from translator_ingest.util.biolink import (
     INFORES_MEDGEN,
     INFORES_OMIM,
@@ -19,17 +18,18 @@ from translator_ingest.util.biolink import (
     INFORES_HPOA,
     BIOLINK_CAUSES,
     BIOLINK_CONTRIBUTES_TO,
-    BIOLINK_ASSOCIATED_WITH
+    BIOLINK_ASSOCIATED_WITH,
+    build_association_knowledge_sources
 )
 
 
 def get_hpoa_association_sources(source: str) -> list[RetrievalSource]:
     """
-    The primary knowledge source may either be inferred from 'source' string
+    The primary knowledge source may either be inferred from the 'source' string
     matching a characteristic port of a HPOA-coded record['source'] encoded URI
     or from the CURIE namespace of a 'source' string, which is a disease identifier.
 
-    :param source: HPOA data field value encoding primary knowledge source
+    :param source: HPOA data field value encoding the primary knowledge source
     :return:
     """
     if "medgen" in source:
@@ -59,11 +59,6 @@ def get_hpoa_association_sources(source: str) -> list[RetrievalSource]:
     else:
         raise ValueError(f"Unknown source '{source}' value, can't set the primary knowledge source")
 
-
-# Human Phenotype Ontology local file path
-# TODO: this path should be dynamically resolved by
-#         the Translator Ingest pipeline (Koza?) library
-HPO_FILE_PATH = f"{PRIMARY_DATA_PATH}{sep}hpoa{sep}hp.obo"
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
 evidence_to_eco: dict = {"IEA": "ECO:0000501", # "inferred from electronic annotation",
@@ -234,39 +229,53 @@ def get_hpoa_genetic_predicate(original_predicate: str) -> str:
     else:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 
-# This is deprecated... We now use pronto + hp.obo ontology file to pull these terms in dynamically
-# from hp ontology using the util.ontology 'read_ontology_to_exclusion_terms' function
+## MODES OF INHERITANCE
 
-# # HPO "Mode of Inheritance" terms - https://www.ebi.ac.uk/ols4/ontologies/hp
-# hpo_to_mode_of_inheritance: Dict = {"HP:0001417": "X-linked inheritance",
-#                                     "HP:0000005": "Mode of inheritance",
-#                                     "HP:0001423": "X-linked dominant inheritance",
-#                                     "HP:0010982": "Polygenic inheritance",
-#                                     "HP:0010984": "Digenic inheritance",
-#                                     "HP:0001450": "Y-linked inheritance",
-#                                     "HP:0001475": "Male-limited autosomal dominant",
-#                                     "HP:0032384": "Uniparental isodisomy",
-#                                     "HP:0001426": "Multifactorial inheritance",
-#                                     "HP:0000006": "Autosomal dominant inheritance",
-#                                     "HP:0032113": "Semidominant inheritance",
-#                                     "HP:0032382": "Uniparental disomy",
-#                                     "HP:0032383": "Uniparental heterodisomy",
-#                                     "HP:0001452": "Autosomal dominant contiguous gene syndrome",
-#                                     "HP:0003745": "Sporadic",
-#                                     "HP:0001425": "Heterogeneous",
-#                                     "HP:0001466": "Contiguous gene syndrome",
-#                                     "HP:0003744": "Genetic anticipation with paternal anticipation bias",
-#                                     "HP:0012274": "Autosomal dominant inheritance with paternal imprinting",
-#                                     "HP:0000007": "Autosomal recessive inheritance",
-#                                     "HP:0003743": "Genetic anticipation",
-#                                     "HP:0001419": "X-linked recessive inheritance",
-#                                     "HP:0001442": "Somatic mosaicism",
-#                                     "HP:0001428": "Somatic mutation",
-#                                     "HP:0010983": "Oligogenic inheritance",
-#                                     "HP:0001444": "Autosomal dominant somatic cell mutation",
-#                                     "HP:0031362": "Sex-limited autosomal recessive inheritance",
-#                                     "HP:0025352": "Autosomal dominant germline de novo mutation",
-#                                     "HP:0001470": "Sex-limited autosomal dominant",
-#                                     "HP:0012275": "Autosomal dominant inheritance with maternal imprinting",
-#                                     "HP:0001427": "Mitochondrial inheritance",
-#                                     "HP:0010985": "Gonosomal inheritance"}
+#
+# Although Option 1 was adopted by Monarch, option 2 is still used in the initial (August 2025)
+# Translator Ingest pipeline HPOA ingest implementation, for practical convenience (for now)
+#
+# Option 1: Read hpo mode of inheritance terms into memory using the
+#           pronto library + hp.obo file + HP:0000005 (Mode of Inheritance) root term
+#           from hp ontology using the util.ontology 'read_ontology_to_exclusion_terms' function
+#
+# Human Phenotype Ontology local file path
+# TODO: this path should perhaps be dynamically resolved by the Translator Ingest pipeline (Koza?) library
+# HPO_FILE_PATH = f"{PRIMARY_DATA_PATH}{sep}hpoa{sep}hp.obo"
+# hpo_to_mode_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
+
+# Option 2: Hardcoded table of HPO "Mode of Inheritance" terms - https://www.ebi.ac.uk/ols4/ontologies/hp
+hpo_to_mode_of_inheritance: dict = {
+    "HP:0001417": "X-linked inheritance",
+    "HP:0000005": "Mode of inheritance",
+    "HP:0001423": "X-linked dominant inheritance",
+    "HP:0010982": "Polygenic inheritance",
+    "HP:0010984": "Digenic inheritance",
+    "HP:0001450": "Y-linked inheritance",
+    "HP:0001475": "Male-limited autosomal dominant",
+    "HP:0032384": "Uniparental isodisomy",
+    "HP:0001426": "Multifactorial inheritance",
+    "HP:0000006": "Autosomal dominant inheritance",
+    "HP:0032113": "Semidominant inheritance",
+    "HP:0032382": "Uniparental disomy",
+    "HP:0032383": "Uniparental heterodisomy",
+    "HP:0001452": "Autosomal dominant contiguous gene syndrome",
+    "HP:0003745": "Sporadic",
+    "HP:0001425": "Heterogeneous",
+    "HP:0001466": "Contiguous gene syndrome",
+    "HP:0003744": "Genetic anticipation with paternal anticipation bias",
+    "HP:0012274": "Autosomal dominant inheritance with paternal imprinting",
+    "HP:0000007": "Autosomal recessive inheritance",
+    "HP:0003743": "Genetic anticipation",
+    "HP:0001419": "X-linked recessive inheritance",
+    "HP:0001442": "Somatic mosaicism",
+    "HP:0001428": "Somatic mutation",
+    "HP:0010983": "Oligogenic inheritance",
+    "HP:0001444": "Autosomal dominant somatic cell mutation",
+    "HP:0031362": "Sex-limited autosomal recessive inheritance",
+    "HP:0025352": "Autosomal dominant germline de novo mutation",
+    "HP:0001470": "Sex-limited autosomal dominant",
+    "HP:0012275": "Autosomal dominant inheritance with maternal imprinting",
+    "HP:0001427": "Mitochondrial inheritance",
+    "HP:0010985": "Gonosomal inheritance"
+}

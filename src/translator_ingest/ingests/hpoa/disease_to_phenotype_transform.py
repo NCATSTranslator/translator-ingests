@@ -31,10 +31,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 import koza
 
 from translator_ingest.util.biolink import entity_id
-from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
-    HPO_FILE_PATH,
+    hpo_to_mode_of_inheritance,
     evidence_to_eco,
     sex_format,
     sex_to_pato,
@@ -45,11 +44,6 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 
 # All HPOA ingest submodules share one simplistic ingest versioning (for now)
 from translator_ingest.ingests.hpoa import get_latest_version
-
-# Read hpo mode of inheritance terms into memory using the
-# pronto library + hp.obo file + HP:0000005 (Mode of Inheritance) root term
-# TODO: how do I best configure this for mock data for unit testing?
-modes_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
 
 
 @koza.transform_record()
@@ -149,7 +143,7 @@ def transform_record(
 
             # We ignore records that don't map to a known HPO term for Genetic Inheritance
             # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
-            if hpo_id and hpo_id in modes_of_inheritance:
+            if hpo_id and hpo_id in hpo_to_mode_of_inheritance:
 
                 # Association/Edge
                 association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(
