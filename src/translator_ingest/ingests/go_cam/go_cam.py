@@ -79,38 +79,6 @@ def extract_tar_gz(tar_path: str) -> str:
 atexit.register(cleanup_temp_directories)
 
 
-def process_all_gocam_models_from_directory() -> Tuple[list[NamedThing], list[Association]]:
-    """Extract and process all GO-CAM models from downloaded tar.gz file sequentially."""
-    # Path to the downloaded tar.gz file (from kghub-downloader)
-    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
-    
-    # Extract the tar.gz file
-    extracted_path = extract_tar_gz(tar_path)
-    
-    # Find all JSON files
-    json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
-    print(f"Found {len(json_files)} networkx JSON files to process")
-    
-    all_nodes = []
-    all_associations = []
-    processed_genes = set()
-    
-    # Process files sequentially
-    for i, json_file in enumerate(json_files):
-        print(f"Processing file {i+1}/{len(json_files)}: {json_file.name}")
-        nodes, associations = process_single_model(str(json_file))
-        
-        # Add nodes, avoiding duplicates
-        for node in nodes:
-            if node.id not in processed_genes:
-                all_nodes.append(node)
-                processed_genes.add(node.id)
-        
-        all_associations.extend(associations)
-    
-    print(f"Processed {len(json_files)} files, generated {len(all_nodes)} unique nodes and {len(all_associations)} associations")
-    
-    return all_nodes, all_associations
 
 
 def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[Association]]:
@@ -184,27 +152,39 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
 
 
 
-# Flag to ensure we only process once
-_has_processed = False
+@koza.prepare_data()
+def prepare_data(koza: koza.KozaTransform, data):
+    """Extract tar.gz and yield each JSON file as a separate record for processing."""
+    print("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
+    
+    # Path to the downloaded tar.gz file (from kghub-downloader)
+    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
+    
+    # Extract the tar.gz file
+    extracted_path = extract_tar_gz(tar_path)
+    
+    # Find all JSON files
+    json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
+    print(f"Found {len(json_files)} networkx JSON files to process")
+    
+    # Yield each JSON file path as a record
+    for json_file in json_files:
+        yield {"model_file_path": str(json_file)}
+
 
 @koza.transform_record()
 def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
-    """Main transform function for Koza framework - but we only process once."""
-    global _has_processed
+    """Process a single GO-CAM model file."""
+    model_file_path = record["model_file_path"]
+    model_name = Path(model_file_path).name
     
-    # Only process on the first record, ignore all subsequent records
-    if not _has_processed:
-        print("Processing all GO-CAM models from data source...")
-        nodes, associations = process_all_gocam_models_from_directory()
-        print(f"Finished processing. Found {len(nodes)} nodes and {len(associations)} associations.")
-        
-        # Write all nodes and associations to koza
-        for node in nodes:
-            koza.write(node)
-        for association in associations:
-            koza.write(association)
-        
-        _has_processed = True
-    else:
-        # Skip processing for subsequent records
-        pass
+    print(f"Processing model: {model_name}")
+    
+    # Process this single model file
+    nodes, associations = process_single_model(model_file_path)
+    
+    # Write all nodes and associations from this model to koza
+    for node in nodes:
+        koza.write(node)
+    for association in associations:
+        koza.write(association)
