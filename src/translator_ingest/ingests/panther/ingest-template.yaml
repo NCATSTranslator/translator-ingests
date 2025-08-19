@@ -1,0 +1,44 @@
+name: ingest_template
+
+reader:
+  format: csv
+  delimiter: \t
+  header_mode: 27
+  header_prefix: '#'
+  files:
+    - Example_Saved_File.tsv.gz
+  columns:
+    - ChemicalName
+    - ChemicalID
+    - CasRN
+    - DiseaseName
+    - DiseaseID
+    - DirectEvidence
+    - InferenceGeneSymbol
+    - InferenceScore
+    - OmimIDs
+    - PubMedIDs
+
+transform:
+  filters:
+    - inclusion: include
+      column: DirectEvidence
+      filter_code: eq
+      value: therapeutic
+
+# This writer section is not intended to be used and will be removed soon, but it's functionally required for now
+writer:
+  node_properties:
+    - id
+    - name
+    - category
+  edge_properties:
+    - id
+    - category
+    - subject
+    - predicate
+    - object
+    - publications
+    - primary_knowledge_source
+    - knowledge_level
+    - agent_type
