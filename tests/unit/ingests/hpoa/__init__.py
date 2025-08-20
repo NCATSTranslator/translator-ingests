@@ -2,7 +2,7 @@
 Shared HPOA testing code
 """
 
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
 
@@ -58,20 +58,21 @@ def transform_test_runner(
     nodes: Iterable[NamedThing] = result[0]
     edges: Iterable[Association] = result[1]
 
-    # TODO: how can we generalize this to also test here for node annotation,
-    #      e.g., like the value of the slot 'name'?
-    # Convert the 'nodes' Iterable content into a list by comprehension
+    # Convert the 'nodes' Iterable NamedThing content into
+    # a list of Python dictionaries by comprehension
     node: NamedThing
-    transformed_nodes = [node.id for node in nodes]
+    transformed_nodes: list[dict[str,Any]] = [dict(node) for node in nodes]
 
     if expected_nodes is None:
         # Check for empty 'transformed_nodes' expectations
         assert not transformed_nodes, \
-            f"unexpected non-empty 'nodes' list: {','.join(transformed_nodes)}"
+            (f"unexpected non-empty set of nodes: "
+             f"{','.join([str(dict(node)) for node in transformed_nodes])}")
     else:
-        # if nodes expected, then are they the expected ones?
-        for node_id in transformed_nodes:
-            assert node_id in expected_nodes
+        # if nodes are expected, then are they the expected ones?
+        node_details: dict[str,Any]
+        for node_details in transformed_nodes:
+            assert node_details["id"] in expected_nodes
 
     # Convert the 'edges' Iterable content into a list by comprehension
     edge: Association
