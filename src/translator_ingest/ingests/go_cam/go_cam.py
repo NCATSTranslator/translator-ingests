@@ -1,4 +1,5 @@
 import json
+import logging
 import tarfile
 import tempfile
 from pathlib import Path
@@ -17,6 +18,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 INFORES_GO_CAM = "infores:go-cam"
 INFORES_REACTOME = "infores:reactome"
+
+logger = logging.getLogger(__name__)
 
 
 def extract_value(value):
@@ -42,7 +45,7 @@ def extract_tar_gz(tar_path: str) -> str:
     """Extract tar.gz file to a temporary directory and return the path."""
     extract_dir = tempfile.mkdtemp(prefix="go_cam_extract_")
 
-    print(f"Extracting {tar_path} to {extract_dir}")
+    logger.info(f"Extracting {tar_path} to {extract_dir}")
     with tarfile.open(tar_path, 'r:gz') as tar:
         tar.extractall(extract_dir)
 
@@ -63,7 +66,7 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
 
         # Get model info
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
-        
+
         # Determine knowledge sources based on model_id
         if model_id and 'R-HSA-' in model_id:
             # Reactome model (identified by R-HSA pattern in model_id)
@@ -124,15 +127,15 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
             associations.append(association)
 
     except Exception as e:
-        print(f"Error processing model {model_file_path}: {e}")
+        logger.error(f"Error processing model {model_file_path}: {e}")
 
     return nodes, associations
 
 
 @koza.on_data_begin()
 def prepare_go_cam_data(koza: koza.KozaTransform) -> None:
-    """Extract tar.gz and prepare list of JSON files for processing."""
-    print("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
+    """Extract tar.gz and prepare a list of JSON files for processing."""
+    logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
 
     # Path to the downloaded tar.gz file (from kghub-downloader)
     tar_path = "data/go_cam/go-cam-networkx.tar.gz"
@@ -142,7 +145,7 @@ def prepare_go_cam_data(koza: koza.KozaTransform) -> None:
 
     # Find all JSON files
     json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
-    print(f"Found {len(json_files)} networkx JSON files to process")
+    logger.info(f"Found {len(json_files)} networkx JSON files to process")
 
     # Store the list of JSON files in koza.state for processing
     koza.state['json_files'] = [str(f) for f in json_files]
@@ -151,7 +154,7 @@ def prepare_go_cam_data(koza: koza.KozaTransform) -> None:
 
 @koza.transform_record()
 def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
-    """Process a single GO-CAM model file - ignoring input record, using prepared file list."""
+    """Process a single GO-CAM model file using the prepared file list."""
     # Get the list of files from state (prepared by on_data_begin)
     json_files = koza.state.get('json_files', [])
     current_index = koza.state.get('current_file_index', 0)
@@ -161,7 +164,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
         model_file_path = json_files[current_index]
         model_name = Path(model_file_path).name
 
-        print(f"Processing model {current_index + 1}/{len(json_files)}: {model_name}")
+        logger.info(f"Processing model {current_index + 1}/{len(json_files)}: {model_name}")
 
         # Process this single model file
         nodes, associations = process_single_model(model_file_path)
@@ -174,6 +177,3 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
 
         # Increment the file index for next call
         koza.state['current_file_index'] = current_index + 1
-    else:
-        # We've processed all files, skip this record
-        pass
