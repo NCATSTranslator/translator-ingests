@@ -55,6 +55,15 @@ def transform_test_runner(
         expected_nodes: Optional[list],
         expected_edge: Optional[dict]
 ):
+    """
+    A generic method for testing the result of a single
+    transform_record() method invocation, against expectations.
+    :param result: The output from a single transform_record() method call to be tested
+    :param expected_nodes: An optional list of expected nodes
+    :param expected_edge: An optional expected edge (as a Python dictionary of field slot names and values)
+    :return: None
+    :raises: AssertionError if expectations are not met
+    """
     nodes: Iterable[NamedThing] = result[0]
     edges: Iterable[Association] = result[1]
 
