@@ -1,7 +1,7 @@
 """
 Tests of HPOA Utils methods
 """
-from typing import Optional, Tuple
+from typing import Optional
 from os.path import abspath, join, dirname
 from re import compile
 
@@ -48,7 +48,7 @@ def test_get_hpo_term():
         (101, None),
     ],
 )
-def test_map_percentage_frequency_to_hpo_term(query: Tuple[int, Optional[FrequencyHpoTerm]]):
+def test_map_percentage_frequency_to_hpo_term(query: tuple[int, Optional[FrequencyHpoTerm]]):
     assert map_percentage_frequency_to_hpo_term(query[0]) == query[1]
 
 

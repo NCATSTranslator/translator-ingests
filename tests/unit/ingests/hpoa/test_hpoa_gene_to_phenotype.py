@@ -5,7 +5,7 @@ Note that the implementation has a 'prepare' file data merging step for which te
 Thus, our test data is actually an artificially preprocessed version of the original data.
 """
 
-from typing import Optional, List, Dict
+from typing import Optional
 
 import pytest
 
@@ -196,8 +196,8 @@ from . import transform_test_runner
 )
 def test_gene_to_phenotype_transform(
         mock_koza_transform: koza.KozaTransform,
-        test_record: Dict,
-        result_nodes: Optional[List],
-        result_edge: Optional[Dict]
+        test_record: dict,
+        result_nodes: Optional[list],
+        result_edge: Optional[dict]
 ):
     transform_test_runner(transform_record(mock_koza_transform, test_record), result_nodes, result_edge)

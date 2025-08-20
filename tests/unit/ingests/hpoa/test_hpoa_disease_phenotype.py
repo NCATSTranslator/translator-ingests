@@ -1,6 +1,6 @@
 import pytest
 
-from typing import Optional, Dict, List
+from typing import Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
@@ -156,8 +156,8 @@ from . import transform_test_runner
 )
 def test_disease_to_phenotype_transform(
         mock_koza_transform: koza.KozaTransform,
-        test_record: Dict,
-        result_nodes: Optional[List],
-        result_edge: Optional[Dict]
+        test_record: dict,
+        result_nodes: Optional[list],
+        result_edge: Optional[dict]
 ):
     transform_test_runner(transform_record(mock_koza_transform, test_record), result_nodes, result_edge)

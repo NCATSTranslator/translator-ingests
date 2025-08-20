@@ -2,11 +2,11 @@
 Shared HPOA testing code
 """
 
-from typing import Optional, Dict, Iterable, List, Tuple
+from typing import Optional, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
 
-# List of slots whose values are
+# list of slots whose values are
 # to be checked in a result edge
 ASSOCIATION_TEST_SLOTS = [
     "category",
@@ -27,18 +27,18 @@ ASSOCIATION_TEST_SLOTS = [
     "agent_type"
 ]
 
-def flatten_sources(sources: List[RetrievalSource]) -> List[Dict[str, str]]:
-    flat_sources: List[Dict[str, str]] = []
+def flatten_sources(sources: list[RetrievalSource]) -> list[dict[str, str]]:
+    flat_sources: list[dict[str, str]] = []
     source: RetrievalSource
     for source in sources:
         flat_sources.append({"resource_id": source.resource_id, "resource_role": source.resource_role})
     return flat_sources
 
-def validate_sources(expected: Dict[str, str], returned: List[Dict[str, str]]) -> bool:
+def validate_sources(expected: dict[str, str], returned: list[dict[str, str]]) -> bool:
     """
     Validates selected field content of Association.sources list of RetrievalSource instances.
-    :param expected: Dict[str, str] of (selective) expected field values
-    :param returned: List[Dict[str, str]] key fields extracted from sources associated with an edge
+    :param expected: dict[str, str] of (selective) expected field values
+    :param returned: list[dict[str, str]] key fields extracted from sources associated with an edge
     :return: bool, True if validation passed
     """
     return any(
@@ -51,16 +51,16 @@ def validate_sources(expected: Dict[str, str], returned: List[Dict[str, str]]) -
 
 
 def transform_test_runner(
-        result: Tuple[Iterable[NamedThing], Iterable[Association]],
-        expected_nodes: Optional[List],
-        expected_edge: Optional[Dict]
+        result: tuple[Iterable[NamedThing], Iterable[Association]],
+        expected_nodes: Optional[list],
+        expected_edge: Optional[dict]
 ):
     nodes: Iterable[NamedThing] = result[0]
     edges: Iterable[Association] = result[1]
 
     # TODO: how can we generalize this to also test here for node annotation,
     #      e.g., like the value of the slot 'name'?
-    # Convert the 'nodes' Iterable content into a List by comprehension
+    # Convert the 'nodes' Iterable content into a list by comprehension
     node: NamedThing
     transformed_nodes = [node.id for node in nodes]
 
@@ -73,7 +73,7 @@ def transform_test_runner(
         for node_id in transformed_nodes:
             assert node_id in expected_nodes
 
-    # Convert the 'edges' Iterable content into a List by comprehension
+    # Convert the 'edges' Iterable content into a list by comprehension
     edge: Association
     transformed_edges = [dict(edge) for edge in edges]
 
@@ -89,7 +89,7 @@ def transform_test_runner(
         # then grab it for content assessment
         returned_edge = transformed_edges[0]
 
-        returned_sources: Optional[List[Dict[str, str]]]
+        returned_sources: Optional[list[dict[str, str]]]
 
         # Check values in expected edge slots of parsed edges
         for slot in ASSOCIATION_TEST_SLOTS:

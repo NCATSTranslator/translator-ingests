@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional
 
 import pytest
 
@@ -82,8 +82,8 @@ def test_predicate(association: str, expected_predicate: str):
 )
 def test_gene_to_disease_transform(
         mock_koza_transform: koza.KozaTransform,
-        test_record: Dict,
-        result_nodes: Optional[List],
-        result_edge: Optional[Dict]
+        test_record: dict,
+        result_nodes: Optional[list],
+        result_edge: Optional[dict]
 ):
     transform_test_runner(transform_record(mock_koza_transform, test_record), result_nodes, result_edge)
