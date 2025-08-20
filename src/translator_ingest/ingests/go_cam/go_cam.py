@@ -13,7 +13,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    GeneToGeneAssociation
+    GeneToGeneAssociation,
+    RetrievalSource,
+    ResourceRoleEnum
 )
 
 INFORES_GO_CAM = "infores:go-cam"
@@ -68,14 +70,32 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
 
         # Determine knowledge sources based on model_id
+        sources = []
         if model_id and 'R-HSA-' in model_id:
             # Reactome model (identified by R-HSA pattern in model_id)
-            primary_knowledge_source = INFORES_REACTOME
-            aggregator_knowledge_source = [INFORES_GO_CAM]
+            # Primary source is Reactome
+            primary_source = RetrievalSource(
+                id=INFORES_REACTOME,
+                resource_id=INFORES_REACTOME,
+                resource_role=ResourceRoleEnum.primary_knowledge_source
+            )
+            sources.append(primary_source)
+            
+            # Aggregator source is GO-CAM
+            aggregator_source = RetrievalSource(
+                id=INFORES_GO_CAM,
+                resource_id=INFORES_GO_CAM,
+                resource_role=ResourceRoleEnum.aggregator_knowledge_source
+            )
+            sources.append(aggregator_source)
         else:
-            # GO-CAM model
-            primary_knowledge_source = INFORES_GO_CAM
-            aggregator_knowledge_source = None
+            # GO-CAM model - only primary source
+            primary_source = RetrievalSource(
+                id=INFORES_GO_CAM,
+                resource_id=INFORES_GO_CAM,
+                resource_role=ResourceRoleEnum.primary_knowledge_source
+            )
+            sources.append(primary_source)
 
         # Process edges directly from the networkx JSON
         for edge in model_data.get('edges', []):
@@ -118,8 +138,7 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
                 predicate=biolink_predicate,
                 object=target_id,
                 publications=publications if publications else None,
-                primary_knowledge_source=primary_knowledge_source,
-                aggregator_knowledge_source=aggregator_knowledge_source,
+                sources=sources,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
