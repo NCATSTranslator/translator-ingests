@@ -1,13 +1,8 @@
-import uuid
-import os
 import json
 import tarfile
 import tempfile
-import sys
-import shutil
-import atexit
 from pathlib import Path
-from typing import Iterable, Any, Tuple
+from typing import Any, Tuple
 
 import koza
 
@@ -21,10 +16,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 INFORES_GO_CAM = "infores:go-cam"
-
-# Global variable to track temporary directories for cleanup
-_temp_directories = []
-
 
 
 def extract_value(value):
@@ -46,37 +37,15 @@ def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
     return predicate_mapping.get(causal_predicate, "biolink:related_to")
 
 
-def cleanup_temp_directories():
-    """Clean up all temporary directories created during processing."""
-    global _temp_directories
-    for temp_dir in _temp_directories:
-        if os.path.exists(temp_dir):
-            print(f"Cleaning up temporary directory: {temp_dir}")
-            shutil.rmtree(temp_dir, ignore_errors=True)
-    _temp_directories.clear()
-
-
 def extract_tar_gz(tar_path: str) -> str:
     """Extract tar.gz file to a temporary directory and return the path."""
-    global _temp_directories
-    
-    # Clean up any existing temp directories first
-    cleanup_temp_directories()
-    
     extract_dir = tempfile.mkdtemp(prefix="go_cam_extract_")
-    _temp_directories.append(extract_dir)
     
     print(f"Extracting {tar_path} to {extract_dir}")
     with tarfile.open(tar_path, 'r:gz') as tar:
         tar.extractall(extract_dir)
     
     return extract_dir
-
-
-
-
-# Register cleanup function to run at exit
-atexit.register(cleanup_temp_directories)
 
 
 
