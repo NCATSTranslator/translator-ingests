@@ -16,6 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 INFORES_GO_CAM = "infores:go-cam"
+INFORES_REACTOME = "infores:reactome"
 
 
 def extract_value(value):
@@ -40,14 +41,12 @@ def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
 def extract_tar_gz(tar_path: str) -> str:
     """Extract tar.gz file to a temporary directory and return the path."""
     extract_dir = tempfile.mkdtemp(prefix="go_cam_extract_")
-    
+
     print(f"Extracting {tar_path} to {extract_dir}")
     with tarfile.open(tar_path, 'r:gz') as tar:
         tar.extractall(extract_dir)
-    
+
     return extract_dir
-
-
 
 
 def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[Association]]:
@@ -61,9 +60,19 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
 
         # Track processed genes to avoid duplicates
         processed_genes = set()
-        
+
         # Get model info
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
+        
+        # Determine knowledge sources based on model_id
+        if model_id and 'R-HSA-' in model_id:
+            # Reactome model (identified by R-HSA pattern in model_id)
+            primary_knowledge_source = INFORES_REACTOME
+            aggregator_knowledge_source = [INFORES_GO_CAM]
+        else:
+            # GO-CAM model
+            primary_knowledge_source = INFORES_GO_CAM
+            aggregator_knowledge_source = None
 
         # Process edges directly from the networkx JSON
         for edge in model_data.get('edges', []):
@@ -90,7 +99,7 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
 
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
-            
+
             # Extract publications from references - this field is always expected to be a list
             publications = edge.get('causal_predicate_has_reference', [])
             # Ensure publications is a list, handle case where it might be a single string
@@ -106,7 +115,8 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
                 predicate=biolink_predicate,
                 object=target_id,
                 publications=publications if publications else None,
-                primary_knowledge_source=INFORES_GO_CAM,
+                primary_knowledge_source=primary_knowledge_source,
+                aggregator_knowledge_source=aggregator_knowledge_source,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -119,23 +129,21 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
     return nodes, associations
 
 
-
-
 @koza.on_data_begin()
 def prepare_go_cam_data(koza: koza.KozaTransform) -> None:
     """Extract tar.gz and prepare list of JSON files for processing."""
     print("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
-    
+
     # Path to the downloaded tar.gz file (from kghub-downloader)
     tar_path = "data/go_cam/go-cam-networkx.tar.gz"
-    
+
     # Extract the tar.gz file
     extracted_path = extract_tar_gz(tar_path)
-    
+
     # Find all JSON files
     json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
     print(f"Found {len(json_files)} networkx JSON files to process")
-    
+
     # Store the list of JSON files in koza.state for processing
     koza.state['json_files'] = [str(f) for f in json_files]
     koza.state['current_file_index'] = 0
@@ -147,23 +155,23 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
     # Get the list of files from state (prepared by on_data_begin)
     json_files = koza.state.get('json_files', [])
     current_index = koza.state.get('current_file_index', 0)
-    
+
     # Only process if we have files and haven't processed them all
     if current_index < len(json_files):
         model_file_path = json_files[current_index]
         model_name = Path(model_file_path).name
-        
+
         print(f"Processing model {current_index + 1}/{len(json_files)}: {model_name}")
-        
+
         # Process this single model file
         nodes, associations = process_single_model(model_file_path)
-        
+
         # Write all nodes and associations from this model to koza
         for node in nodes:
             koza.write(node)
         for association in associations:
             koza.write(association)
-        
+
         # Increment the file index for next call
         koza.state['current_file_index'] = current_index + 1
     else:
