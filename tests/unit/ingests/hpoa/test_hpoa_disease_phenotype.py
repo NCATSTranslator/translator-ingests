@@ -149,34 +149,8 @@ from . import transform_test_runner
                 "aspect": "I",  # assert 'Inheritance' test record
                 "biocuration": "HPO:iea[2009-02-17]",
             },
-            ["OMIM:300425", "HP:0001417"],
-            {
-                "category": ["biolink:DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation"],
-                "subject": "OMIM:300425",
-                "predicate": "biolink:has_mode_of_inheritance",
-                "object": "HP:0001417",
-                "publications": [],
-                "has_evidence": ["ECO:0000501"],
-                "sex_qualifier": None,
-                "onset_qualifier": None,
-                "has_percentage": None,
-                "has_quotient": None,
-                "frequency_qualifier": None,
-
-                "sources": [
-                    {
-                       "resource_role": "primary_knowledge_source",
-                       "resource_id": "infores:hpo-annotations"
-                    },
-                    {
-                       "resource_role": "supporting_data_source",
-                       "resource_id": "infores:omim"
-                    }
-                ],
-
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
+            ["OMIM:300425"],
+            None  # no edge is created for this record
         )
     ]
 )

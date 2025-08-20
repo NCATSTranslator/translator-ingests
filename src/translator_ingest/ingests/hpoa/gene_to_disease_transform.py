@@ -32,9 +32,17 @@ from translator_ingest.ingests.hpoa import get_latest_version
 
 @koza.transform_record()
 def transform_record(
-        koza: koza.KozaTransform,
+        koza_transform: koza.KozaTransform,
         record: dict[str, Any]
 ) -> tuple[Iterable[NamedThing], Iterable[Association]]:
+    """
+    Transform an HPOA 'genes_to_disease.txt' data entry into a
+    (Pydantic encapsulated) Biolink knowledge graph statement.
+
+    :param koza_transform: KozaTransform object (unused in this implementation)
+    :param record: Dict contents of a single input data record
+    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    """
     try:
         gene_id = record["ncbi_gene_id"]
         gene = Gene(id=gene_id, name=record["gene_symbol"],**{})

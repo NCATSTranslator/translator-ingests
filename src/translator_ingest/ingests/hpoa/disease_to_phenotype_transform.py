@@ -23,7 +23,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Disease,
     PhenotypicFeature,
     DiseaseToPhenotypicFeatureAssociation,
-    DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -48,50 +47,39 @@ from translator_ingest.ingests.hpoa import get_latest_version
 
 @koza.transform_record()
 def transform_record(
-        koza: koza.KozaTransform,
+        koza_transform: koza.KozaTransform,
         record: dict[str, Any]
 ) -> tuple[Iterable[NamedThing], Iterable[Association]]:
     """
     Transform a 'phenotype.hpoa' data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
-    :param record: Dict of the contents of a single input data record
+
+    :param koza_transform: KozaTransform object (unused in this implementation)
+    :param record: Dict contents of a single input data record
     :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
     """
     try:
-        # Nodes
         ## Subject: Disease
+
         disease_id = record["database_id"]
-        disease: Disease = Disease(id=disease_id, **{})
+        disease_name = record["disease_name"]
+        disease: Disease = Disease(
+            id=disease_id,
+            name=disease_name,
+            provided_by=get_hpoa_association_sources(source_id=disease_id, as_list=True),
+            **{}
+        )
 
         ## Object: PhenotypicFeature defined by an HPO term
         hpo_id = record["hpo_id"]
         assert hpo_id, "HPOA phenotype annotation record has missing HP ontology ('HPO_ID') field identifier?"
-        phenotype: PhenotypicFeature = PhenotypicFeature(id=hpo_id, **{})
-
-        # Edge
-
-        ## Edge annotation common to all 'aspect' types
-
-        ## Evidence Code
-        # Three letter Evidence Code Ontology ("ECO") term translated
-        # to ECO class CURIE based on HPO documentation
-        evidence_curie = evidence_to_eco[record["evidence"]]
-
-        ## Publications
-        references: str = record["reference"]
-        publications: list[str] = references.split(";")
-
-        ## don't populate the reference with the database_id / disease id
-        publications = [p for p in publications if not p == record["database_id"]]
-
-        ## Filter out NCBI web publication endpoints
-        publications = [p for p in publications if not p.startswith("http")]
-
-        association: Association
 
         if record["aspect"] == "P":
 
             # Disease to Phenotypic anomaly relationship
+
+            ## Object: PhenotypicFeature
+            phenotype: PhenotypicFeature = PhenotypicFeature(id=hpo_id, **{})
 
             ## Annotations
 
@@ -116,8 +104,23 @@ def transform_record(
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
             frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
+            ## Evidence Code
+            # Three letter Evidence Code Ontology ("ECO") term translated
+            # to ECO class CURIE based on HPO documentation
+            evidence_curie = evidence_to_eco[record["evidence"]]
+
+            ## Publications
+            references: str = record["reference"]
+            publications: list[str] = references.split(";")
+
+            ## don't populate the reference with the database_id / disease id
+            publications = [p for p in publications if not p == record["database_id"]]
+
+            ## Filter out NCBI web publication endpoints
+            publications = [p for p in publications if not p.startswith("http")]
+
             # Association/Edge
-            association = DiseaseToPhenotypicFeatureAssociation(
+            association: Association = DiseaseToPhenotypicFeatureAssociation(
                 id=entity_id(),
                 subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
                 predicate="biolink:has_phenotype",
@@ -137,36 +140,27 @@ def transform_record(
                 agent_type=AgentTypeEnum.manual_agent,
                 **{}
             )
+            return [disease, phenotype], [association]
 
         elif record["aspect"] == "I":
-            # Potential statement specifying Disease Genetic Inheritance
 
             # We ignore records that don't map to a known HPO term for Genetic Inheritance
             # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
             if hpo_id and hpo_id in hpo_to_mode_of_inheritance:
 
-                # Association/Edge
-                association = DiseaseOrPhenotypicFeatureToGeneticInheritanceAssociation(
-                    id=entity_id(),
-                    subject=disease_id,
-                    predicate="biolink:has_mode_of_inheritance", # Predicate (canonical direction)
-                    object=hpo_id,
-                    publications=publications,
-                    has_evidence=[evidence_curie],
-                    sources=get_hpoa_association_sources(disease_id),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    **{}
-                )
+                # Rather than an association, we simply record a
+                # genetic inheritance node property directly on the disease node...
+                disease.inheritance = hpo_to_mode_of_inheritance[hpo_id]
+
             else:
                 raise RuntimeWarning(
-                    f"HPOA ID field value '{str(hpo_id)}' is missing or an invalid disease mode of inheritance?")
+                    f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?")
 
+            # ...only the disease node - annotated with its inheritance - is returned
+            return [disease], []
         else:
             # Specified record 'aspect' is not of interest to us at this time
             return [], []
-
-        return [disease,phenotype], [association]
 
     except Exception as e:
         # Catch and report all errors here with messages
