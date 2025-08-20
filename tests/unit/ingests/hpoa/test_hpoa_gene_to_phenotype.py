@@ -1,3 +1,10 @@
+"""
+Tests against translator_ingest.ingests.hpoa.gene_to_phenotype_transform.transform_record
+
+Note that the implementation has a 'prepare' file data merging step for which testing is tricky.
+Thus, our test data is actually an artificially preprocessed version of the original data.
+"""
+
 from typing import Optional, List, Dict
 
 import pytest
@@ -6,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTy
 
 import koza
 
-from src.translator_ingest.ingests.hpoa.gene_to_phenotype_transform import transform_record
+from translator_ingest.ingests.hpoa.gene_to_phenotype_transform import transform_record
 
 from . import transform_test_runner
 

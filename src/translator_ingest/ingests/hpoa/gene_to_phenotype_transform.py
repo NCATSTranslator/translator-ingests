@@ -43,7 +43,8 @@ from translator_ingest.ingests.hpoa import get_latest_version
 @koza.on_data_begin()
 def prepare(koza: koza.KozaTransform) -> None:
     """
-    For HPOA, we need to preprocess data to join data from two files: phenotype.hpoa and genes_to_phenotype.txt
+    For HPOA, we need to preprocess data to join data
+    from two files: phenotype.hpoa and genes_to_phenotype.txt
     :param koza: koza.KozaTransform
     :return: None
     """
@@ -80,14 +81,14 @@ def prepare(koza: koza.KozaTransform) -> None:
 
 @koza.transform_record()
 def transform_record(
-        koza_transform: koza.KozaTransform,
+        koza: koza.KozaTransform,
         record: dict[str, Any]
 ) -> tuple[Iterable[NamedThing], Iterable[Association]]:
     """
     Transform a (preprocessed) genes_to_disease.txt data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
 
-    :param koza_transform: KozaTransform object (unused in this implementation)
+    :param koza: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
     :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
     """

@@ -6,7 +6,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTy
 
 import koza
 
-from src.translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
+from translator_ingest.ingests.hpoa.disease_to_phenotype_transform import transform_record
 
 from . import transform_test_runner
 
