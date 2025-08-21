@@ -38,13 +38,13 @@ def get_latest_version():
 @koza.on_data_begin(tag="chemical_to_disease")
 def on_begin_chemical_to_disease(koza: koza.KozaTransform) -> None:
     koza.state['example_error_counter'] = 1
-    koza.log(f'On Data Begin... chemical_to_disease', level="INFO")
+    koza.log('On Data Begin... chemical_to_disease', level="INFO")
 
 
 #Functions decorated with @koza.on_data_end() run after transform or transform_record
 @koza.on_data_end(tag="chemical_to_disease")
 def on_end_chemical_to_disease(koza: koza.KozaTransform) -> None:
-    koza.log(f'On Data End... chemical_to_disease', level="INFO")
+    koza.log('On Data End... chemical_to_disease', level="INFO")
     if koza.state['example_error_counter'] > 1:
         koza.log(f'Uh oh, {koza.state['example_error_counter']} things happened!', level="WARNING")
 
@@ -72,7 +72,7 @@ def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[
 
 @koza.on_data_begin(tag="exposure_events")
 def on_begin_exposure_events(koza: koza.KozaTransform) -> None:
-    koza.log(f'On Data Begin... exposure_events', level="INFO")
+    koza.log('On Data Begin... exposure_events', level="INFO")
     koza.state['missing_predicate'] = 0
     koza.state['missing_disease'] = 0
     koza.state['all_predicates_labels'] = set()
@@ -81,7 +81,7 @@ def on_begin_exposure_events(koza: koza.KozaTransform) -> None:
 #Functions decorated with @koza.on_data_end() run after transform or transform_record
 @koza.on_data_end(tag="exposure_events")
 def on_end_exposure_events(koza: koza.KozaTransform) -> None:
-    koza.log(f'On Data End.. exposure_events', level="INFO")
+    koza.log('On Data End.. exposure_events', level="INFO")
     koza.log(f'all CTD predicate values: {koza.state['all_predicates_labels']}', level="INFO")
 
 
