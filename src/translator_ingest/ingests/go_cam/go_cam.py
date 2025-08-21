@@ -105,24 +105,32 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
 @koza.transform()
 def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[Any]:
-    """Process all GO-CAM model data."""
+    """Process all GO-CAM model data with linked node/edge validation."""
     for model_data in data:
         file_path = model_data.get('_file_path', 'unknown')
         model_name = Path(file_path).name
         
         logger.info(f"Processing model: {model_name}")
 
-        # Process edges directly from the model data
-        processed_genes = set()
-        
-        # Get model info
+        # Get model info (taxon filtering already done in prepare_data)
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
+        taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
+
+        # Build lookup of valid gene nodes from the model
+        valid_gene_nodes = {}
+        for node in model_data.get('nodes', []):
+            node_id = node.get('id')
+            if node_id and node_id.startswith(('UniProtKB:', 'MGI:', 'HGNC:', 'ENSEMBL:')):
+                valid_gene_nodes[node_id] = {
+                    'id': node_id,
+                    'name': node.get('label'),
+                    'taxon': taxon
+                }
 
         # Determine knowledge sources based on model_id
         sources = []
         if model_id and 'R-HSA-' in model_id:
             # Reactome model (identified by R-HSA pattern in model_id)
-            # Primary source is Reactome
             primary_source = RetrievalSource(
                 id=INFORES_REACTOME,
                 resource_id=INFORES_REACTOME,
@@ -146,35 +154,43 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             )
             sources.append(primary_source)
 
-        # Process edges directly from the networkx JSON
+        # Track which genes we've yielded to avoid duplicates
+        yielded_genes = set()
+
+        # Process edges with linked validation
         for edge in model_data.get('edges', []):
             # Extract values that might be strings or lists
             source_id = extract_value(edge.get('source'))
             target_id = extract_value(edge.get('target'))
             causal_predicate = extract_value(edge.get('causal_predicate'))
 
+            # Skip edge if missing required data
             if not all([source_id, target_id, causal_predicate]):
                 continue
 
-            # Create Gene nodes if not already processed
+            # Skip edge if either gene is not in our valid gene nodes
+            if source_id not in valid_gene_nodes or target_id not in valid_gene_nodes:
+                logger.debug(f"Skipping edge {source_id}->{target_id}: gene(s) not found in valid gene nodes")
+                continue
+
+            # Yield gene nodes for this edge (if not already yielded)
             for gene_id in [source_id, target_id]:
-                if gene_id not in processed_genes:
-                    # Find the corresponding node data for the label
-                    node_data = next((n for n in model_data.get('nodes', []) if n.get('id') == gene_id), {})
+                if gene_id not in yielded_genes:
+                    gene_info = valid_gene_nodes[gene_id]
                     gene_node = Gene(
-                        id=gene_id,
-                        name=node_data.get('label'),
-                        category=["biolink:Gene"]
+                        id=gene_info['id'],
+                        name=gene_info['name'],
+                        category=["biolink:Gene"],
+                        in_taxon=[gene_info['taxon']] if gene_info['taxon'] else None
                     )
                     yield gene_node
-                    processed_genes.add(gene_id)
+                    yielded_genes.add(gene_id)
 
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
 
-            # Extract publications from references - this field is always expected to be a list
+            # Extract publications from references
             publications = edge.get('causal_predicate_has_reference', [])
-            # Ensure publications is a list, handle case where it might be a single string
             if isinstance(publications, str):
                 publications = [publications]
             if publications and isinstance(publications, list):

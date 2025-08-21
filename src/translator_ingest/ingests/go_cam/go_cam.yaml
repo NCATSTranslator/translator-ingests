@@ -10,6 +10,7 @@ writer:
     - id
     - name
     - category
+    - in_taxon
   edge_properties:
     - id
     - category
