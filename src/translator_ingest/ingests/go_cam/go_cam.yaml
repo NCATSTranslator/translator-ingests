@@ -16,6 +16,9 @@ writer:
     - subject
     - predicate
     - object
+    - original_subject
+    - original_predicate
+    - original_object
     - publications
     - sources
     - knowledge_level
