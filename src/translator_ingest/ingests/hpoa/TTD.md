@@ -1,4 +1,4 @@
 # HPOA Ingest Things to Do
 
-- maybe try to have the transform_test_runner() check node slot values? (Perhaps too nit-picky for now!)
+- review rig.md once more to see if expectations are fully met in the ingest
 - convert rig.md to rig.yaml
