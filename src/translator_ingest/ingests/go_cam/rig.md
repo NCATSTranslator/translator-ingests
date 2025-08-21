@@ -62,6 +62,7 @@ Records from relevant files that are not included in the ingest.
   |----------|----------|----------|
   | GO-CAM models | GO Term nodes and non-gene entities | Initial focus on gene-gene relationships; GO Terms and other entity types will be included in future iterations |
   | GO-CAM models | Edges without clear causal predicates | Only including edges with explicit causal relationship predicates to ensure high-quality causal assertions |
+  | GO-CAM models | Non-human/mouse models | Species filtering applied to include only human (NCBITaxon:9606) and mouse (NCBITaxon:10090) models based on model_info.taxon field |
 ### Future Content Considerations (o)
 
 - **Edges**
@@ -143,7 +144,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 | Biolink Category |  Source Identifier Type(s) | Notes |
 |------------------|----------------------------|--------|
-| Gene |  UniProtKB, WormBase, FlyBase, SGD, MGI, etc.  | Gene identifiers from various model organism databases |
+| Gene |  UniProtKB, MGI, etc.  | Gene identifiers from human and mouse models only (NCBITaxon:9606, NCBITaxon:10090) |
 
 ### Future Modeling Considerations (o)
 - Consider including GO Term nodes and their relationships to genes in future iterations

@@ -57,7 +57,7 @@ def extract_tar_gz(tar_path: str) -> str:
 
 @koza.prepare_data()
 def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    """Extract tar.gz and yield JSON model data for processing."""
+    """Extract tar.gz and yield JSON model data for processing, filtering for human and mouse only."""
     logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
 
     # Path to the downloaded tar.gz file (from kghub-downloader)
@@ -70,16 +70,37 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
     logger.info(f"Found {len(json_files)} networkx JSON files to process")
 
-    # Yield the content of each JSON file as a record
+    # Target species for filtering
+    target_taxa = {'NCBITaxon:9606', 'NCBITaxon:10090'}  # Human and Mouse
+    
+    models_processed = 0
+    models_filtered = 0
+
+    # Yield the content of each JSON file as a record, filtering by species
     for json_file in json_files:
         try:
             with open(json_file, 'r') as f:
                 model_data = json.load(f)
-            # Add file path for reference
-            model_data['_file_path'] = str(json_file)
-            yield model_data
+            
+            models_processed += 1
+            
+            # Get taxon from model_info
+            taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
+            
+            # Only process human and mouse models
+            if taxon in target_taxa:
+                # Add file path for reference
+                model_data['_file_path'] = str(json_file)
+                yield model_data
+                models_filtered += 1
+            else:
+                # Skip non-human/mouse models
+                logger.debug(f"Skipping model {Path(json_file).name} with taxon: {taxon}")
+                
         except Exception as e:
             logger.error(f"Error reading JSON file {json_file}: {e}")
+    
+    logger.info(f"Filtered {models_filtered} human/mouse models out of {models_processed} total models")
 
 
 @koza.transform()
