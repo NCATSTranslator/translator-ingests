@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterable, Any
+from typing import Any
 
 import requests
 import koza
@@ -9,10 +9,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
-    Entity
+    AgentTypeEnum
 )
 from bs4 import BeautifulSoup
+from koza.model.graphs import KnowledgeGraph
 
 # ideally we'll use a predicate enum, maybe an infores enum?
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
@@ -50,22 +50,23 @@ def on_end_chemical_to_disease(koza: koza.KozaTransform) -> None:
 
 
 @koza.transform_record(tag="chemical_to_disease")
-def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterable[Entity] | None:
+def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
         id=str(uuid.uuid4()),
         subject=chemical.id,
         predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
         object=disease.id,
-        publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
+        publications=publications,
         # is this code/repo an aggregator in this context? feels like no, but maybe yes?
         # aggregator_knowledge_source=["infores:???"],
         primary_knowledge_source=INFORES_CTD,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
-    return [chemical, disease, association]
+    return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
 
 
 
@@ -85,7 +86,7 @@ def on_end_exposure_events(koza: koza.KozaTransform) -> None:
 
 
 @koza.transform_record(tag="exposure_events")
-def transform_record_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterable[Entity] | None:
+def transform_record_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     disease_id = f'MESH:{record['diseaseid']}'
     if not disease_id:
         koza.state['missing_disease'] += 1
@@ -97,7 +98,5 @@ def transform_record_exposure_events(koza: koza.KozaTransform, record: dict[str,
     koza.state['all_predicates_labels'].add(predicate_label)
     return None
 
-    exposure_id = f'MESH:{record['exposurestressorid']}'
-    publications = f'PMID:{record['reference']}'
-
-    return None
+    # exposure_id = f'MESH:{record['exposurestressorid']}'
+    # publications = f'PMID:{record['reference']}'
