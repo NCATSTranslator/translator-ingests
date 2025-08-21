@@ -184,7 +184,7 @@ requires-dist = [
     { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
     { name = "bmt", specifier = ">=1.4.5" },
     { name = "kghub-downloader", specifier = ">=0.4.1" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=prepare-data" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
 ]
 
 [package.metadata.requires-dev]
@@ -811,7 +811,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=prepare-data#79676485a2df89fa31f09dfb8b22d5a73bc17b74" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests#e421c6fbbde9ee4a683f88f2be11b58500fcbbce" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
