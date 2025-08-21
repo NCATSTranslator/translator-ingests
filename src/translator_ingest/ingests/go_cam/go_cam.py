@@ -3,7 +3,7 @@ import logging
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Tuple, Iterable
 
 import koza
 
