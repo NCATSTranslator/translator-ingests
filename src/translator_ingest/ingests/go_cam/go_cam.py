@@ -72,7 +72,7 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
     # Target species for filtering
     target_taxa = {'NCBITaxon:9606', 'NCBITaxon:10090'}  # Human and Mouse
-    
+
     models_processed = 0
     models_filtered = 0
 
@@ -81,25 +81,24 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
         try:
             with open(json_file, 'r') as f:
                 model_data = json.load(f)
-            
+
             models_processed += 1
-            
+
             # Get taxon from model_info
             taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
-            
+
             # Only process human and mouse models
             if taxon in target_taxa:
-                # Add file path for reference
                 model_data['_file_path'] = str(json_file)
                 yield model_data
                 models_filtered += 1
             else:
                 # Skip non-human/mouse models
                 logger.debug(f"Skipping model {Path(json_file).name} with taxon: {taxon}")
-                
+
         except Exception as e:
             logger.error(f"Error reading JSON file {json_file}: {e}")
-    
+
     logger.info(f"Filtered {models_filtered} human/mouse models out of {models_processed} total models")
 
 
@@ -109,19 +108,27 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
     for model_data in data:
         file_path = model_data.get('_file_path', 'unknown')
         model_name = Path(file_path).name
-        
+
         logger.info(f"Processing model: {model_name}")
 
-        # Get model info (taxon filtering already done in prepare_data)
+        # Get model info and check taxon
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
         taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
+        
+        # Target species for filtering
+        target_taxa = {'NCBITaxon:9606', 'NCBITaxon:10090'}  # Human and Mouse
+        
+        # Skip if not human or mouse
+        if taxon not in target_taxa:
+            logger.debug(f"Skipping model {model_name} with taxon: {taxon}")
+            continue
 
-        # Build lookup of valid gene nodes from the model
-        valid_gene_nodes = {}
+        # Build lookup of nodes for label/name resolution
+        node_lookup = {}
         for node in model_data.get('nodes', []):
             node_id = node.get('id')
-            if node_id and node_id.startswith(('UniProtKB:', 'MGI:', 'HGNC:', 'ENSEMBL:')):
-                valid_gene_nodes[node_id] = {
+            if node_id:
+                node_lookup[node_id] = {
                     'id': node_id,
                     'name': node.get('label'),
                     'taxon': taxon
@@ -137,7 +144,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 resource_role=ResourceRoleEnum.primary_knowledge_source
             )
             sources.append(primary_source)
-            
+
             # Aggregator source is GO-CAM
             aggregator_source = RetrievalSource(
                 id=INFORES_GO_CAM,
@@ -168,15 +175,15 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             if not all([source_id, target_id, causal_predicate]):
                 continue
 
-            # Skip edge if either gene is not in our valid gene nodes
-            if source_id not in valid_gene_nodes or target_id not in valid_gene_nodes:
-                logger.debug(f"Skipping edge {source_id}->{target_id}: gene(s) not found in valid gene nodes")
+            # Skip edge if either node is not in our node lookup
+            if source_id not in node_lookup or target_id not in node_lookup:
+                logger.debug(f"Skipping edge {source_id}->{target_id}: node(s) not found in model")
                 continue
 
             # Yield gene nodes for this edge (if not already yielded)
             for gene_id in [source_id, target_id]:
                 if gene_id not in yielded_genes:
-                    gene_info = valid_gene_nodes[gene_id]
+                    gene_info = node_lookup[gene_id]
                     gene_node = Gene(
                         id=gene_info['id'],
                         name=gene_info['name'],
