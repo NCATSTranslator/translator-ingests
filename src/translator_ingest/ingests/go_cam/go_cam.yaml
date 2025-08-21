@@ -17,6 +17,6 @@ writer:
     - predicate
     - object
     - publications
-    - primary_knowledge_source
+    - sources
     - knowledge_level
     - agent_type

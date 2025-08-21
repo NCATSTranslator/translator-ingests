@@ -3,7 +3,7 @@ import logging
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import Any, Tuple, Iterable
+from typing import Any, Iterable
 
 import koza
 
@@ -54,18 +54,46 @@ def extract_tar_gz(tar_path: str) -> str:
     return extract_dir
 
 
-def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[Association]]:
-    """Process a single GO-CAM model file and extract gene-gene relationships."""
-    nodes = []
-    associations = []
 
-    try:
-        with open(model_file_path, 'r') as f:
-            model_data = json.load(f)
+@koza.prepare_data()
+def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    """Extract tar.gz and yield JSON model data for processing."""
+    logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
 
-        # Track processed genes to avoid duplicates
+    # Path to the downloaded tar.gz file (from kghub-downloader)
+    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
+
+    # Extract the tar.gz file
+    extracted_path = extract_tar_gz(tar_path)
+
+    # Find all JSON files
+    json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
+    logger.info(f"Found {len(json_files)} networkx JSON files to process")
+
+    # Yield the content of each JSON file as a record
+    for json_file in json_files:
+        try:
+            with open(json_file, 'r') as f:
+                model_data = json.load(f)
+            # Add file path for reference
+            model_data['_file_path'] = str(json_file)
+            yield model_data
+        except Exception as e:
+            logger.error(f"Error reading JSON file {json_file}: {e}")
+
+
+@koza.transform()
+def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[Any]:
+    """Process all GO-CAM model data."""
+    for model_data in data:
+        file_path = model_data.get('_file_path', 'unknown')
+        model_name = Path(file_path).name
+        
+        logger.info(f"Processing model: {model_name}")
+
+        # Process edges directly from the model data
         processed_genes = set()
-
+        
         # Get model info
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
 
@@ -117,7 +145,7 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
                         name=node_data.get('label'),
                         category=["biolink:Gene"]
                     )
-                    nodes.append(gene_node)
+                    yield gene_node
                     processed_genes.add(gene_id)
 
             # Map causal predicate to biolink predicate
@@ -143,56 +171,4 @@ def process_single_model(model_file_path: str) -> Tuple[list[NamedThing], list[A
                 agent_type=AgentTypeEnum.manual_agent,
             )
 
-            associations.append(association)
-
-    except Exception as e:
-        logger.error(f"Error processing model {model_file_path}: {e}")
-
-    return nodes, associations
-
-
-@koza.on_data_begin()
-def prepare_go_cam_data(koza: koza.KozaTransform) -> None:
-    """Extract tar.gz and prepare a list of JSON files for processing."""
-    logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
-
-    # Path to the downloaded tar.gz file (from kghub-downloader)
-    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
-
-    # Extract the tar.gz file
-    extracted_path = extract_tar_gz(tar_path)
-
-    # Find all JSON files
-    json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
-    logger.info(f"Found {len(json_files)} networkx JSON files to process")
-
-    # Store the list of JSON files in koza.state for processing
-    koza.state['json_files'] = [str(f) for f in json_files]
-    koza.state['current_file_index'] = 0
-
-
-@koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
-    """Process a single GO-CAM model file using the prepared file list."""
-    # Get the list of files from state (prepared by on_data_begin)
-    json_files = koza.state.get('json_files', [])
-    current_index = koza.state.get('current_file_index', 0)
-
-    # Only process if we have files and haven't processed them all
-    if current_index < len(json_files):
-        model_file_path = json_files[current_index]
-        model_name = Path(model_file_path).name
-
-        logger.info(f"Processing model {current_index + 1}/{len(json_files)}: {model_name}")
-
-        # Process this single model file
-        nodes, associations = process_single_model(model_file_path)
-
-        # Write all nodes and associations from this model to koza
-        for node in nodes:
-            koza.write(node)
-        for association in associations:
-            koza.write(association)
-
-        # Increment the file index for next call
-        koza.state['current_file_index'] = current_index + 1
+            yield association

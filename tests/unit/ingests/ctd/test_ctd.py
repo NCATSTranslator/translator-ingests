@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
@@ -5,8 +7,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Disease,
 )
 from koza.io.writer.writer import KozaWriter
-from koza.runner import KozaRunner
-from src.translator_ingest.ingests.ctd.ctd import transform_record as ctd_transform
+from koza.runner import KozaRunner, KozaTransformHooks
+from src.translator_ingest.ingests.ctd.ctd import transform_record_chemical_to_disease as ctd_transform
 
 
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
@@ -18,6 +20,12 @@ class MockWriter(KozaWriter):
 
     def write(self, entities):
         self.items += entities
+
+    def write_nodes(self, nodes: Iterable):
+        self.items += nodes
+
+    def write_edges(self, edges: Iterable):
+        self.items += edges
 
     def finalize(self):
         pass
@@ -38,7 +46,7 @@ def therapeutic_output():
         "OmimIDs": "",
         "PubMedIDs": "17516704|123",
     }
-    runner = KozaRunner(data=iter([record]), writer=writer, transform_record=ctd_transform)
+    runner = KozaRunner(data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[ctd_transform]))
     runner.run()
     return writer.items
 
