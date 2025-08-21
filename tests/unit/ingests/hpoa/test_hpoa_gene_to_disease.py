@@ -49,8 +49,18 @@ def test_predicate(association: str, expected_predicate: str):
                 "source": "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen",
             },
 
-            # Captured node identifiers
-            ["NCBIGene:64170", "OMIM:212050"],
+            # Captured node contents
+            [
+                {
+                    "id": "NCBIGene:64170",
+                    "name": "CARD9",
+                    "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "OMIM:212050",
+                    "category": ["biolink:Disease"]
+                }
+            ],
 
             # Captured edge contents
             {

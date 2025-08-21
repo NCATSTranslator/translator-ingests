@@ -54,7 +54,18 @@ from . import transform_test_runner
                 "biocuration": "HPO:probinson[2009-02-17]",
             },
             # Captured node identifiers
-            ["OMIM:117650", "HP:0001249"],
+            [
+                {
+                    "id": "OMIM:117650",
+                    "name": "Cerebrocostomandibular syndrome",
+                    "category": ["biolink:Disease"],
+                    "provided_by": ["infores:hpo-annotations", 'infores:omim'],
+                },
+                {
+                    "id": "HP:0001249",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+            ],
 
             # Captured edge contents
             {
@@ -107,7 +118,18 @@ from . import transform_test_runner
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
-            ["OMIM:117650", "HP:0001545"],
+            [
+                {
+                    "id": "OMIM:117650",
+                    "name": "Cerebrocostomandibular syndrome",
+                    "category": ["biolink:Disease"],
+                    "provided_by": ["infores:hpo-annotations", 'infores:omim'],
+                 },
+                {
+                    "id": "HP:0001545",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+            ],
             {
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
@@ -149,7 +171,15 @@ from . import transform_test_runner
                 "aspect": "I",  # assert 'Inheritance' test record
                 "biocuration": "HPO:iea[2009-02-17]",
             },
-            ["OMIM:300425"],
+            [
+                {
+                    "id": "OMIM:300425",
+                    "name": "Autism susceptibility, X-linked 1",
+                    "category": ["biolink:Disease"],
+                    "provided_by": ["infores:hpo-annotations", 'infores:omim'],
+                    "inheritance": "X-linked inheritance"
+                 }
+            ],
             None  # no edge is created for this record
         )
     ]

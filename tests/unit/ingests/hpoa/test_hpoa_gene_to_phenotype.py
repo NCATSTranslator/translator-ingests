@@ -38,8 +38,18 @@ from . import transform_test_runner
                 "gene_to_disease_association_types": "MENDELIAN"
             },
 
-            # Captured node identifiers
-            ["NCBIGene:8086", "HP:0000252"],
+            # Captured node contents
+            [
+                {
+                    "id": "NCBIGene:8086",
+                    "name": "AAAS",
+                    "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "HP:0000252",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+            ],
 
             # Captured edge contents
             {
@@ -79,8 +89,18 @@ from . import transform_test_runner
                 "gene_to_disease_association_types": "MENDELIAN"
             },
 
-            # Captured node identifiers
-            ["NCBIGene:8120", "HP:0001298"],
+            # Captured node contents
+            [
+                {
+                    "id": "NCBIGene:8120",
+                    "name": "AP3B2",
+                    "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "HP:0001298",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+            ],
 
             # Captured edge contents
             {
@@ -120,8 +140,18 @@ from . import transform_test_runner
                 "gene_to_disease_association_types": "MENDELIAN",
             },
 
-            # Captured node identifiers
-            ["NCBIGene:8192", "HP:0000013"],
+            # Captured node contents
+            [
+                {
+                    "id": "NCBIGene:8192",
+                    "name": "CLPP",
+                    "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "HP:0000013",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+            ],
 
             # Captured edge contents
             {
@@ -163,8 +193,19 @@ from . import transform_test_runner
                 "gene_to_disease_association_types": "MENDELIAN"
             },
 
-            # Captured node identifiers
-            ["NCBIGene:8929", "HP:0003005"],
+            # Captured node contents
+            [
+                {
+                    "id": "NCBIGene:8929",
+                    "name": "PHOX2B",
+                    "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "HP:0003005",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+
+            ],
 
             # Captured edge contents
             {

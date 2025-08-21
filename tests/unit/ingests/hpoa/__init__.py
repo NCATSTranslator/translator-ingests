@@ -7,6 +7,16 @@ from typing import Optional, Iterable, Any
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
 
 # list of slots whose values are
+# to be checked in a result node
+NODE_TEST_SLOTS = [
+    "id",
+    "name",
+    "category",
+    "provided_by",
+    "inheritance"
+]
+
+# list of slots whose values are
 # to be checked in a result edge
 ASSOCIATION_TEST_SLOTS = [
     "category",
@@ -49,6 +59,15 @@ def validate_sources(expected: dict[str, str], returned: list[dict[str, str]]) -
         ]
     )
 
+def _compare_slot_values(returned_value, expected_value):
+    return (
+        returned_value == expected_value
+        or (
+            isinstance(returned_value, list) and
+            isinstance(expected_value, list) and
+            set(returned_value) == set(expected_value)
+        )
+    )
 
 def transform_test_runner(
         result: tuple[Iterable[NamedThing], Iterable[Association]],
@@ -75,15 +94,38 @@ def transform_test_runner(
     if expected_nodes is None:
         # Check for empty 'transformed_nodes' expectations
         assert not transformed_nodes, \
-            (f"unexpected non-empty set of nodes: "
-             f"{','.join([str(dict(node)) for node in transformed_nodes])}")
+            f"unexpected non-empty set of nodes: {','.join([str(dict(node)) for node in transformed_nodes])}!"
     else:
-        # if nodes are expected, then are they the expected ones?
-        node_details: dict[str,Any]
-        for node_details in transformed_nodes:
-            assert node_details["id"] in expected_nodes
+        assert transformed_nodes, f"Expected a non-empty set of nodes to be returned!"
 
-    # Convert the 'edges' Iterable content into a list by comprehension
+        # if nodes are returned, then are they the expected ones?
+        # for uniformity in checking details, we convert the
+        # expected_nodes to a list of node content dictionaries
+        # if 'node' is not a string, it needs to be a dictionary otherwise this fails!
+        expected_nodes_list: list[dict[str,Any]] = list()
+        for node in expected_nodes:
+            if isinstance(node, str):
+                expected_nodes_list.append({"id": node})
+            elif isinstance(node, dict):
+                expected_nodes_list.append(node)
+            else:
+                assert False, f"Unexpected value type in the list of expected nodes: '{str(node)}'"
+
+        for node_property in NODE_TEST_SLOTS:
+            for expected_node in expected_nodes_list:
+                if node_property not in expected_node:
+                    continue
+                expected_node_value = expected_node[node_property]
+                assert any(
+                    [
+                        _compare_slot_values(returned_node[node_property], expected_node_value)
+                        for returned_node in transformed_nodes if node_property in returned_node
+                    ]
+                ), (f"Expected node value '{expected_node_value}' for slot '{node_property}'"
+                    f" not returned in transformed list of nodes: '{transformed_nodes}' ")
+
+    # Convert the 'edges' Iterable content
+    # into a list by comprehension
     edge: Association
     transformed_edges = [dict(edge) for edge in edges]
 
@@ -102,38 +144,38 @@ def transform_test_runner(
         returned_sources: Optional[list[dict[str, str]]]
 
         # Check values in expected edge slots of parsed edges
-        for slot in ASSOCIATION_TEST_SLOTS:
+        for association_slot in ASSOCIATION_TEST_SLOTS:
             # I only bother with this if the slot is included in the
             # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
             # and is also in the list of slots in the 'expected_edge' test data.
-            if slot in returned_edge and \
-                    slot in expected_edge:
-                slot_values = str(returned_edge.get(slot,"Empty!"))
-                if isinstance(expected_edge[slot], list):
+            if association_slot in returned_edge and \
+                    association_slot in expected_edge:
+                slot_values = str(returned_edge.get(association_slot,"Empty!"))
+                if isinstance(expected_edge[association_slot], list):
                     # We only pass things through if *both* of the returned and the
-                    # expected lists of slot values are or are not empty (i.e. not XOR).
-                    assert not (bool(expected_edge[slot]) ^ bool(returned_edge[slot])), \
-                        f"Unexpected return values '{slot_values}' for slot '{slot}' in edge"
+                    # expected list of slot values are or are not empty (namely not XOR).
+                    assert not (bool(expected_edge[association_slot]) ^ bool(returned_edge[association_slot])), \
+                        f"Unexpected return values '{slot_values}' for slot '{association_slot}' in edge"
                     # ...but we only specifically validate non-empty expectations
-                    if expected_edge[slot]:
+                    if expected_edge[association_slot]:
                         returned_sources = None
-                        for entry in expected_edge[slot]:
+                        for entry in expected_edge[association_slot]:
                             if isinstance(entry, str):
                                 # Simple Membership value test.
-                                assert entry in returned_edge[slot], \
-                                    f"Value '{entry}' for slot '{slot}' is missing in returned edge values '{slot_values}?'"
+                                assert entry in returned_edge[association_slot], \
+                                    f"Value '{entry}' for slot '{association_slot}' is missing in returned edge values '{slot_values}?'"
                             elif isinstance(entry, dict):
                                 # A more complex validation of field
                                 # content, e.g. Association.sources
-                                if slot == 'sources':
+                                if association_slot == 'sources':
                                     if returned_sources is None:
-                                        returned_sources = flatten_sources(returned_edge[slot])
+                                        returned_sources = flatten_sources(returned_edge[association_slot])
                                     assert validate_sources(expected=entry, returned=returned_sources), \
                                         f"Invalid returned sources '{returned_sources}'"
                             else:
-                                assert False, f"Unexpected value type for {str(expected_edge[slot])} for slot '{slot}'"
+                                assert False, f"Unexpected value type for {str(expected_edge[association_slot])} for slot '{association_slot}'"
                 else:
                     # Scalar value test
-                    assert returned_edge[slot] == expected_edge[slot], \
-                        f"Value '{expected_edge[slot]}' for slot '{slot}' not equal to "+\
-                        f"returned edge value '{returned_edge[slot]}'?"
+                    assert returned_edge[association_slot] == expected_edge[association_slot], \
+                        f"Value '{expected_edge[association_slot]}' for slot '{association_slot}' not equal to "+\
+                        f"returned edge value '{returned_edge[association_slot]}'?"
