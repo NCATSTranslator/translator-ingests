@@ -78,7 +78,7 @@ normalize: transform
 
 .PHONY: validate
 validate: normalize
-	echo "Validation placeholder"
+	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
 
 .PHONY: run
 run: download transform normalize validate

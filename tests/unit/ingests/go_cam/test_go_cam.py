@@ -1,4 +1,5 @@
 from typing import Iterable
+import json
 
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -8,6 +9,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from koza.io.writer.writer import KozaWriter
 from koza.runner import KozaRunner, KozaTransformHooks
 from src.translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
+from pathlib import Path
+from unittest.mock import MagicMock
 
 
 class MockWriter(KozaWriter):
@@ -124,3 +127,48 @@ def test_gocam_entities(gocam_output):
     primary_source = [s for s in association.sources if s.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == "infores:go-cam"
 
+
+def test_node_edge_consistency():
+    """Test that all nodes referenced in edges are yielded as nodes using real test data."""
+    # Load test data
+    test_file = Path(__file__).parent / "input" / "67b1629100002092_networkx.json"
+    with open(test_file) as f:
+        model_data = json.load(f)
+    
+    # Add file path for processing
+    model_data['_file_path'] = str(test_file)
+    
+    # Mock koza transform
+    mock_koza = MagicMock()
+    
+    # Collect all yielded items
+    yielded_items = list(transform_go_cam_models(mock_koza, [model_data]))
+    
+    # Separate nodes and edges
+    nodes = [item for item in yielded_items if hasattr(item, 'category') and 'biolink:Gene' in item.category]
+    edges = [item for item in yielded_items if hasattr(item, 'category') and 'biolink:GeneToGeneAssociation' in item.category]
+    
+    # Extract node IDs
+    node_ids = {node.id for node in nodes}
+    
+    # Extract node IDs referenced in edges
+    edge_node_refs = set()
+    for edge in edges:
+        edge_node_refs.add(edge.subject)
+        edge_node_refs.add(edge.object)
+    
+    # Find missing nodes
+    missing_nodes = edge_node_refs - node_ids
+    
+    print(f"Nodes yielded: {len(nodes)}")
+    print(f"Edges yielded: {len(edges)}")
+    print(f"Unique node IDs in nodes: {len(node_ids)}")
+    print(f"Unique node IDs referenced by edges: {len(edge_node_refs)}")
+    
+    if missing_nodes:
+        print(f"Missing nodes: {missing_nodes}")
+        for node_id in missing_nodes:
+            print(f"Missing node {node_id} found in source nodes: {node_id in [n['id'] for n in model_data.get('nodes', [])]}")
+    
+    # Assert no missing nodes
+    assert len(missing_nodes) == 0, f"Missing nodes referenced in edges: {missing_nodes}"

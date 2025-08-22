@@ -180,18 +180,28 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 logger.debug(f"Skipping edge {source_id}->{target_id}: node(s) not found in model")
                 continue
 
-            # Yield gene nodes for this edge (if not already yielded)
+            # Create and yield gene nodes for this edge (if not already yielded)
+            edge_failed = False
             for gene_id in [source_id, target_id]:
                 if gene_id not in yielded_genes:
-                    gene_info = node_lookup[gene_id]
-                    gene_node = Gene(
-                        id=gene_info['id'],
-                        name=gene_info['name'],
-                        category=["biolink:Gene"],
-                        in_taxon=[gene_info['taxon']] if gene_info['taxon'] else None
-                    )
-                    yield gene_node
-                    yielded_genes.add(gene_id)
+                    try:
+                        gene_info = node_lookup[gene_id]
+                        gene_node = Gene(
+                            id=gene_info['id'],
+                            name=gene_info['name'],
+                            category=["biolink:Gene"],
+                            in_taxon=[gene_info['taxon']] if gene_info['taxon'] else None
+                        )
+                        yield gene_node
+                        yielded_genes.add(gene_id)
+                    except Exception as e:
+                        logger.error(f"Failed to create gene node {gene_id}: {e}")
+                        edge_failed = True
+                        break
+            
+            # Skip creating the association if any node failed
+            if edge_failed:
+                continue
 
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
