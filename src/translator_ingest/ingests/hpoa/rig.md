@@ -122,12 +122,12 @@ Content addditions/changes to consider for future iterations (consider edge cont
 
 High-level Biolink categories of nodes produced from this ingest as assigned by ingestors are listed below - however downstream normalization of node identifiers may result in new/different categories ultimately being assigned.
 
-| Biolink Category    | Source Identifier Type(s) | Node Properties |  Notes (o) |
-|---------------------|---------------------------|-----------------|--------|
-| Disease             | OMIM, ORPHANET, DECIPHER  |  Mode of Inheritance |  |
-| PhenotypicFeature   | HPO                       |  none  |  | 
-| Gene                | NCBI Gene                 |  none  |  |
-| Mode of Inheritance | HPO                       |  none  |  |
+| Biolink Category   | Source Identifier Type(s) | Node Properties | Notes (o) |
+|--------------------|---------------------------|-----------------|-----------|
+| Disease            | OMIM, ORPHANET, DECIPHER  | Inheritance     |           |
+| PhenotypicFeature  | HP                        | none            |           | 
+| Gene               | NCBIGene                  | none            |           |
+| GeneticInheritance | HP                        | none            |           |
 
 
 ### Future Modeling Considerations (o)
