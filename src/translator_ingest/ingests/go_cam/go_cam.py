@@ -2,6 +2,7 @@ import json
 import logging
 import tarfile
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -17,11 +18,16 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum
 )
+from koza.model.graphs import KnowledgeGraph
 
 INFORES_GO_CAM = "infores:go-cam"
 INFORES_REACTOME = "infores:reactome"
 
 logger = logging.getLogger(__name__)
+
+
+def get_latest_version() -> str:
+    return "v1"
 
 
 def extract_value(value):
@@ -103,7 +109,7 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
 
 @koza.transform()
-def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[Any]:
+def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     """Process all GO-CAM model data with linked node/edge validation."""
     for model_data in data:
         file_path = model_data.get('_file_path', 'unknown')
@@ -161,7 +167,9 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             )
             sources.append(primary_source)
 
-        # Track which genes we've yielded to avoid duplicates
+        # Track nodes and edges for this model
+        nodes = []
+        edges = []
         yielded_genes = set()
 
         # Process edges with linked validation
@@ -180,7 +188,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 logger.debug(f"Skipping edge {source_id}->{target_id}: node(s) not found in model")
                 continue
 
-            # Create and yield gene nodes for this edge (if not already yielded)
+            # Create gene nodes for this edge (if not already created)
             edge_failed = False
             for gene_id in [source_id, target_id]:
                 if gene_id not in yielded_genes:
@@ -192,7 +200,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                             category=["biolink:Gene"],
                             in_taxon=[gene_info['taxon']] if gene_info['taxon'] else None
                         )
-                        yield gene_node
+                        nodes.append(gene_node)
                         yielded_genes.add(gene_id)
                     except Exception as e:
                         logger.error(f"Failed to create gene node {gene_id}: {e}")
@@ -215,7 +223,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
-                id=f"gocam:{model_id}:{source_id}-{biolink_predicate.replace('biolink:', '')}-{target_id}",
+                id=str(uuid.uuid4()),
                 subject=source_id,
                 predicate=biolink_predicate,
                 object=target_id,
@@ -228,4 +236,8 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 agent_type=AgentTypeEnum.manual_agent,
             )
 
-            yield association
+            edges.append(association)
+
+        # Yield a KnowledgeGraph for this model if there are any edges
+        if edges:
+            yield KnowledgeGraph(nodes=nodes, edges=edges)
