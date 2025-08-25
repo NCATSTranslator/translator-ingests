@@ -47,7 +47,6 @@ def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
         "RO:0002211": "biolink:regulates",                      # regulates
         "RO:0002233": "biolink:has_input",                     # has input
         "RO:0002234": "biolink:has_output",                    # has output
-        "RO:0002434": "biolink:enabled_by",                    #
     }
     return predicate_mapping.get(causal_predicate, "biolink:related_to")
 
