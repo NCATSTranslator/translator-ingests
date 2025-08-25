@@ -1,7 +1,10 @@
 from typing import Iterable
 import json
+import logging
 
 import pytest
+
+logger = logging.getLogger(__name__)
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneAssociation,
     Gene
@@ -160,15 +163,15 @@ def test_node_edge_consistency():
     # Find missing nodes
     missing_nodes = edge_node_refs - node_ids
     
-    print(f"Nodes yielded: {len(nodes)}")
-    print(f"Edges yielded: {len(edges)}")
-    print(f"Unique node IDs in nodes: {len(node_ids)}")
-    print(f"Unique node IDs referenced by edges: {len(edge_node_refs)}")
+    logger.info(f"Nodes yielded: {len(nodes)}")
+    logger.info(f"Edges yielded: {len(edges)}")
+    logger.info(f"Unique node IDs in nodes: {len(node_ids)}")
+    logger.info(f"Unique node IDs referenced by edges: {len(edge_node_refs)}")
     
     if missing_nodes:
-        print(f"Missing nodes: {missing_nodes}")
+        logger.info(f"Missing nodes: {missing_nodes}")
         for node_id in missing_nodes:
-            print(f"Missing node {node_id} found in source nodes: {node_id in [n['id'] for n in model_data.get('nodes', [])]}")
+            logger.info(f"Missing node {node_id} found in source nodes: {node_id in [n['id'] for n in model_data.get('nodes', [])]}")
     
     # Assert no missing nodes
     assert len(missing_nodes) == 0, f"Missing nodes referenced in edges: {missing_nodes}"
