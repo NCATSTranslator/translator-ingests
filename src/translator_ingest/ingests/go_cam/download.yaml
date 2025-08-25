@@ -1,0 +1,4 @@
+---
+# GO-CAM models using preprocessed networkx format from the Gene Ontology Consortium
+- url: http://current.geneontology.org/products/json/go-cam-networkx.tar.gz
+  local_name: go-cam-networkx.tar.gz

@@ -34,3 +34,63 @@ Within the root project direction inside the Windows PowerShell, execute the fol
 3. **`uv sync`** to install all the Python library dependencies specified in the project's current uv.lock
 
 All of the above should create an environment visible to the Windows PyCharm IDE, while still allowing the parallel Ubuntu environment to run the system.
+
+## Running and Validating Ingests
+
+The project supports multiple data ingests that can be run individually or together. By default, all available sources are processed.
+
+### Available Sources
+
+- `ctd` - Comparative Toxicogenomics Database
+- `go_cam` - Gene Ontology Causal Activity Models  
+- `goa` - Gene Ontology Annotations
+- `fast_ctd` - Fast CTD variant
+
+### Running All Sources (Default)
+
+```bash
+# Run the complete pipeline for all sources
+make run
+
+# Validate all sources in the data directory
+make validate
+```
+
+### Running Single Sources
+
+To run or validate a specific source, use the `SOURCES` parameter:
+
+```bash
+# Run pipeline for a single source
+make run SOURCES="go_cam"
+
+# Validate a single source
+make validate SOURCES="go_cam"
+
+# Run pipeline for multiple specific sources
+make run SOURCES="ctd go_cam"
+
+# Validate multiple specific sources  
+make validate SOURCES="ctd go_cam"
+```
+
+### Pipeline Steps
+
+The `make run` command executes the following steps:
+1. **Download** - Retrieves source data files
+2. **Transform** - Converts data to KGX format using Koza
+3. **Normalize** - Applies normalization (placeholder)
+4. **Validate** - Generates structured validation reports
+
+### Validation Reports
+
+Validation generates JSON reports stored in timestamped directories:
+```
+data/validation/validation_results_MMDDYY/validation_report_YYYYMMDD_HHMMSS.json
+```
+
+The reports include:
+- Node/edge consistency validation
+- Missing reference detection
+- Orphaned node identification
+- Statistics and summaries for each source

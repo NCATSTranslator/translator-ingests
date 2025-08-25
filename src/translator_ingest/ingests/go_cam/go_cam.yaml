@@ -1,0 +1,26 @@
+name: go_cam_gene_to_gene
+
+reader:
+  format: json
+  files:
+    - ../../../../data/go_cam/go-cam-networkx.tar.gz
+
+writer:
+  node_properties:
+    - id
+    - name
+    - category
+    - in_taxon
+  edge_properties:
+    - id
+    - category
+    - subject
+    - predicate
+    - object
+    - original_subject
+    - original_predicate
+    - original_object
+    - publications
+    - sources
+    - knowledge_level
+    - agent_type
