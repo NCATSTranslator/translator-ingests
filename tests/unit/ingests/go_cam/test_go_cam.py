@@ -145,8 +145,8 @@ def test_node_edge_consistency():
     yielded_items = list(transform_go_cam_models(mock_koza, [model_data]))
     
     # Separate nodes and edges
-    nodes = [item for item in yielded_items if hasattr(item, 'category') and 'biolink:Gene' in item.category]
-    edges = [item for item in yielded_items if hasattr(item, 'category') and 'biolink:GeneToGeneAssociation' in item.category]
+    nodes = [item for item in yielded_items if isinstance(item, Gene)]
+    edges = [item for item in yielded_items if isinstance(item, GeneToGeneAssociation)]
     
     # Extract node IDs
     node_ids = {node.id for node in nodes}
