@@ -19,6 +19,7 @@ define HELP
 │     all                 Install everything and test       │
 │     fresh               Clean and install everything      │
 │     clean               Clean up build artifacts          │
+│     clean-reports       Clean up validation reports       │
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
@@ -104,6 +105,12 @@ clean:
 	rm -f `find . -type f -name '*.py[co]' `
 	rm -rf `find . -name __pycache__` \
 		.venv .ruff_cache .pytest_cache **/.ipynb_checkpoints
+
+.PHONY: clean-reports
+clean-reports:
+	@echo "Cleaning validation reports..."
+	rm -rf $(ROOTDIR)/data/validation
+	@echo "All validation reports removed."
 
 .PHONY: clobber
 clobber:
