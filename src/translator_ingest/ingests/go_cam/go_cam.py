@@ -45,6 +45,9 @@ def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
         "RO:0002213": "biolink:positively_regulates",           # positively regulates
         "RO:0002212": "biolink:negatively_regulates",           # negatively regulates
         "RO:0002211": "biolink:regulates",                      # regulates
+        "RO:0002233": "biolink:has_input",                     # has input
+        "RO:0002234": "biolink:has_output",                    # has output
+        "RO:0002434": "biolink:enabled_by",                    #
     }
     return predicate_mapping.get(causal_predicate, "biolink:related_to")
 
@@ -120,10 +123,10 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         # Get model info and check taxon
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
         taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
-        
+
         # Target species for filtering
         target_taxa = {'NCBITaxon:9606', 'NCBITaxon:10090'}  # Human and Mouse
-        
+
         # Skip if not human or mouse
         if taxon not in target_taxa:
             logger.debug(f"Skipping model {model_name} with taxon: {taxon}")
@@ -206,7 +209,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                         logger.error(f"Failed to create gene node {gene_id}: {e}")
                         edge_failed = True
                         break
-            
+
             # Skip creating the association if any node failed
             if edge_failed:
                 continue
