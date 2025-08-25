@@ -68,11 +68,17 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     """Extract tar.gz and yield JSON model data for processing, filtering for human and mouse only."""
     logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
 
-    # Path to the downloaded tar.gz file (from kghub-downloader)
-    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
+    # Get the tar.gz file path from Koza's configured source files
+    # Koza handles file path resolution relative to the base directory
+    source_files = koza.source.reader_config.files
+    if not source_files:
+        raise ValueError("No source files configured in Koza")
+    
+    tar_path = source_files[0]  # Use the first (and expected only) configured file
+    logger.info(f"Using configured tar.gz file: {tar_path}")
 
     # Extract the tar.gz file
-    extracted_path = extract_tar_gz(tar_path)
+    extracted_path = extract_tar_gz(str(tar_path))
 
     # Find all JSON files
     json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
