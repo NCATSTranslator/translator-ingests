@@ -29,7 +29,7 @@ gocams by identifier, and then iterates one by one through the identifers, downl
 - Formats: json
    
 ### Releases and Versioning
- - New GO-CAMs are added to the index weekl.
+ - New GO-CAMs are added to the index weekly.
  - Releases page / change log: https://geneontology.org/docs/download-go-cams/
  - Latest status page: https://geneontology.org/docs/go-cam-overview/
 
