@@ -172,7 +172,6 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         # Track nodes and edges for this model
         nodes = []
         edges = []
-        yielded_genes = set()
 
         # Process edges with linked validation
         for edge in model_data.get('edges', []):
@@ -190,24 +189,22 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 logger.debug(f"Skipping edge {source_id}->{target_id}: node(s) not found in model")
                 continue
 
-            # Create gene nodes for this edge (if not already created)
+            # Create gene nodes for this edge
             edge_failed = False
             for gene_id in [source_id, target_id]:
-                if gene_id not in yielded_genes:
-                    try:
-                        gene_info = node_lookup[gene_id]
-                        gene_node = Gene(
-                            id=gene_info['id'],
-                            name=gene_info['name'],
-                            category=["biolink:Gene"],
-                            in_taxon=[gene_info['taxon']] if gene_info['taxon'] else None
-                        )
-                        nodes.append(gene_node)
-                        yielded_genes.add(gene_id)
-                    except Exception as e:
-                        logger.error(f"Failed to create gene node {gene_id}: {e}")
-                        edge_failed = True
-                        break
+                try:
+                    gene_info = node_lookup[gene_id]
+                    gene_node = Gene(
+                        id=gene_info['id'],
+                        name=gene_info['name'],
+                        category=["biolink:Gene"],
+                        in_taxon=[gene_info['taxon']] if gene_info['taxon'] else None
+                    )
+                    nodes.append(gene_node)
+                except Exception as e:
+                    logger.error(f"Failed to create gene node {gene_id}: {e}")
+                    edge_failed = True
+                    break
 
             # Skip creating the association if any node failed
             if edge_failed:
