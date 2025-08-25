@@ -1,6 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
-SOURCE_ID = ctd
+# Configure which sources to process (default: all available sources)
+SOURCES ?= ctd go_cam goa fast_ctd
 
 ### Help ###
 
@@ -10,6 +11,7 @@ define HELP
 │ ───────────────────────────────────────────────────────── │
 │ Usage:                                                    │
 │     make <target>                                         │
+│     make <target> SOURCES="ctd go_cam"                    │
 │                                                           │
 │ Targets:                                                  │
 │     help                Print this help message           │
@@ -20,16 +22,22 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     download            Download data                     │
-│     transform           Transform data into KGX           │
-│     normalize           Normalize the KGX files           │
-│     validate            Validate the normalized KGX files │
-│     run                 Run the whole pipeline            │
+│     run                 Run pipeline for all sources      │
+│     validate            Validate all sources in data/     │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
 │     lint                Lint all code                     │
 │     format              Format all code                   │
+│                                                           │
+│ Configuration:                                            │
+│     SOURCES             Space-separated list of sources   │
+│                         Default: ctd go_cam goa fast_ctd  │
+│                                                           │
+│ Examples:                                                 │
+│     make run                                              │
+│     make validate SOURCES="ctd go_cam"                    │
+│     make run SOURCES="go_cam"                             │
 ╰───────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -66,15 +74,21 @@ test:
 
 .PHONY: download
 download:
-	$(RUN) downloader --output-dir $(ROOTDIR)/data/$(SOURCE_ID) src/translator_ingest/ingests/$(SOURCE_ID)/download.yaml
+	@for source in $(SOURCES); do \
+		echo "Downloading $$source..."; \
+		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
+	done
 
 .PHONY: transform
 transform: download
-	$(RUN) koza transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
+	@for source in $(SOURCES); do \
+		echo "Transforming $$source..."; \
+		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
+	done
 
 .PHONY: normalize
 normalize: transform
-	echo "Normalization placeholder"
+	@echo "Normalization placeholder for sources: $(SOURCES)"
 
 .PHONY: validate
 validate: normalize
