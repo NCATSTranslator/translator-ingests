@@ -10,7 +10,6 @@ dependencies = [
     "bmt>=1.4.5",
     "kghub-downloader>=0.4.2",
     "koza",
-    "beautifulsoup4>=4.13.4",
 ]
 
 [dependency-groups]
