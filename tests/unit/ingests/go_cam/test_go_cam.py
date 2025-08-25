@@ -8,7 +8,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from koza.io.writer.writer import KozaWriter
 from koza.runner import KozaRunner, KozaTransformHooks
-from src.translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
+from translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
 from pathlib import Path
 from unittest.mock import MagicMock
 
