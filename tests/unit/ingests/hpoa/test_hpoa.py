@@ -1,10 +1,12 @@
 import pytest
 
-from typing import Optional
+from typing import Optional, Iterator, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
+from koza.transform import Record, Mappings
+from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.util.biolink import (
     BIOLINK_CAUSES,
@@ -20,6 +22,51 @@ from translator_ingest.ingests.hpoa.hpoa import (
 )
 
 from tests.unit.ingests import transform_test_runner
+
+class MockKozaWriter(KozaWriter):
+    """
+    Mock "do nothing" implementation of a KozaWriter
+    """
+    def write(self, entities: Iterable):
+        pass
+
+    def finalize(self):
+        pass
+
+    def write_edges(self, edges: Iterable):
+        pass
+
+    def write_nodes(self, nodes: Iterable):
+        pass
+
+
+class MockKozaTransform(koza.KozaTransform):
+    """
+    Mock "do nothing" implementation of a KozaTransform
+    """
+    @property
+    def current_reader(self) -> str:
+        return ""
+
+    @property
+    def data(self) -> Iterator[Record]:
+        record: Record = dict()
+        yield record
+
+# test mondo_map for the gene_to_phenotype
+# disease_id to disease_context_qualifier mappings
+mock_mondo_sssom_map: dict[str, dict[str, str]] = {
+    "OMIM:231550": {"subject_id": "MONDO:0009279"},
+    "Orphanet:442835": {"subject_id": "MONDO:0018614"},
+    "OMIM:614129": {"subject_id": "MONDO:0013588"},
+    "OMIM:613013": {"subject_id": "MONDO:0700041"}
+}
+
+@pytest.fixture(scope="package")
+def mock_koza_transform() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = {"mondo_map": mock_mondo_sssom_map}
+    return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
 
 # list of slots whose values are
 # to be checked in a result node
@@ -370,7 +417,7 @@ def test_gene_to_disease_transform(
                 "has_quotient":  None,
                 "has_count":  None,
                 "has_total": None,
-                "disease_context_qualifier": "OMIM:231550",
+                "disease_context_qualifier": "MONDO:0009279",
                 "publications": ["PMID:11062474"],
 
                 "sources": [
@@ -421,7 +468,7 @@ def test_gene_to_disease_transform(
                 "has_quotient":  None,
                 "has_count":  None,
                 "has_total": None,
-                "disease_context_qualifier": "Orphanet:442835", # this ought to be MONDO in the future
+                "disease_context_qualifier": "MONDO:0018614",
                 "publications": [],
 
                 "sources": [
@@ -472,7 +519,7 @@ def test_gene_to_disease_transform(
                 "has_quotient":  0.3333333333333333,
                 "has_count":  3,
                 "has_total": 9,
-                "disease_context_qualifier": "OMIM:614129", # this ought to be MONDO in the future
+                "disease_context_qualifier": "MONDO:0013588",
                 "publications": ["PMID:23541340"],
 
                 "sources": [
@@ -526,7 +573,7 @@ def test_gene_to_disease_transform(
                 "has_quotient":  0.05,
                 "has_count":  None,
                 "has_total": None,
-                "disease_context_qualifier": "OMIM:613013", # this ought to be MONDO in the future
+                "disease_context_qualifier": "MONDO:0700041",
                 "publications": ["PMID:23541340", "PMID:12345678"],
 
                 "sources": [
