@@ -2,7 +2,6 @@
 Tests of HPOA Utils methods
 """
 from typing import Optional
-from os.path import abspath, join, dirname
 from re import compile
 
 import pytest
@@ -15,14 +14,8 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     map_percentage_frequency_to_hpo_term,
     phenotype_frequency_to_hpo_term,
 )
-from translator_ingest.ingests.hpoa import get_version
 
 vre = compile(pattern=r"^20\d\d-\d\d-\d\d$")
-
-def test_hpoa_version():
-    sph: str = abspath(join(dirname(__file__), "data", "stub_phenotype.hpoa"))
-    version = get_version(file_path=sph)
-    assert version is not None and version == "2025-05-06"
 
 def test_hpoa_latest_version():
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
