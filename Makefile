@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd go_cam goa fast_ctd
+SOURCES ?= ctd go_cam goa
 
 ### Help ###
 
@@ -34,7 +34,7 @@ define HELP
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │
-│                         Default: ctd go_cam goa fast_ctd  │
+│                         Default: ctd go_cam goa           │
 │                                                           │
 │ Examples:                                                 │
 │     make run                                              │
