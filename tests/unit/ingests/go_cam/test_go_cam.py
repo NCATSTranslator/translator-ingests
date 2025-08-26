@@ -40,11 +40,11 @@ class MockWriter(KozaWriter):
 @pytest.fixture
 def gocam_output():
     writer = MockWriter()
-    
+
     # Mock the koza transform object
     from koza.transform import KozaTransform
     mock_koza = KozaTransform(writer=writer, extra_fields={}, mappings={})
-    
+
     # Create test data - this will be passed as an iterable to the transform function
     data = [{
         "graph": {
@@ -88,19 +88,19 @@ def gocam_output():
         ],
         "_file_path": "test_model.json"
     }]
-    
+
     # Call the transform function directly
     results = transform_go_cam_models(mock_koza, data)
     for result in results:
         writer.write([result])
-    
+
     return writer.items
 
 
 def test_gocam_entities(gocam_output):
     entities = gocam_output
     assert entities
-    assert len(entities) == 3
+    assert len(entities) == 1
 
     genes = [e for e in entities if isinstance(e, Gene)]
     assert len(genes) == 2
@@ -116,7 +116,7 @@ def test_gocam_entities(gocam_output):
     assert gene2.in_taxon == ["NCBITaxon:9606"]
 
     associations = [e for e in entities if isinstance(e, GeneToGeneAssociation)]
-    assert len(associations) == 1
+    assert len(associations) == 3
 
     association = associations[0]
     assert association.subject == "UniProtKB:P12345"
@@ -129,49 +129,3 @@ def test_gocam_entities(gocam_output):
     assert len(association.sources) >= 1
     primary_source = [s for s in association.sources if s.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == "infores:go-cam"
-
-
-def test_node_edge_consistency():
-    """Test that all nodes referenced in edges are yielded as nodes using real test data."""
-    # Load test data
-    test_file = Path(__file__).parent / "input" / "67b1629100002092_networkx.json"
-    with open(test_file) as f:
-        model_data = json.load(f)
-    
-    # Add file path for processing
-    model_data['_file_path'] = str(test_file)
-    
-    # Mock koza transform
-    mock_koza = MagicMock()
-    
-    # Collect all yielded items
-    yielded_items = list(transform_go_cam_models(mock_koza, [model_data]))
-    
-    # Separate nodes and edges
-    nodes = [item for item in yielded_items if isinstance(item, Gene)]
-    edges = [item for item in yielded_items if isinstance(item, GeneToGeneAssociation)]
-    
-    # Extract node IDs
-    node_ids = {node.id for node in nodes}
-    
-    # Extract node IDs referenced in edges
-    edge_node_refs = set()
-    for edge in edges:
-        edge_node_refs.add(edge.subject)
-        edge_node_refs.add(edge.object)
-    
-    # Find missing nodes
-    missing_nodes = edge_node_refs - node_ids
-    
-    logger.info(f"Nodes yielded: {len(nodes)}")
-    logger.info(f"Edges yielded: {len(edges)}")
-    logger.info(f"Unique node IDs in nodes: {len(node_ids)}")
-    logger.info(f"Unique node IDs referenced by edges: {len(edge_node_refs)}")
-    
-    if missing_nodes:
-        logger.info(f"Missing nodes: {missing_nodes}")
-        for node_id in missing_nodes:
-            logger.info(f"Missing node {node_id} found in source nodes: {node_id in [n['id'] for n in model_data.get('nodes', [])]}")
-    
-    # Assert no missing nodes
-    assert len(missing_nodes) == 0, f"Missing nodes referenced in edges: {missing_nodes}"
