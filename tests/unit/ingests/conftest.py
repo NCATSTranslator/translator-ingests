@@ -1,3 +1,8 @@
+"""
+This conftest module contains basic (NOP) MockKoza* fixtures
+that can be used across all 'ingest' unit tests.
+"""
+
 from typing import Iterator, Iterable
 
 import pytest
