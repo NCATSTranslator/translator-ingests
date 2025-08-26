@@ -39,13 +39,6 @@ All of the above should create an environment visible to the Windows PyCharm IDE
 
 The project supports multiple data ingests that can be run individually or together. By default, all available sources are processed.
 
-### Available Sources
-
-- `ctd` - Comparative Toxicogenomics Database
-- `go_cam` - Gene Ontology Causal Activity Models  
-- `goa` - Gene Ontology Annotations
-- `fast_ctd` - Fast CTD variant
-
 ### Running All Sources (Default)
 
 ```bash
@@ -88,9 +81,3 @@ Validation generates JSON reports stored in timestamped directories:
 ```
 data/validation/validation_results_MMDDYY/validation_report_YYYYMMDD_HHMMSS.json
 ```
-
-The reports include:
-- Node/edge consistency validation
-- Missing reference detection
-- Orphaned node identification
-- Statistics and summaries for each source
