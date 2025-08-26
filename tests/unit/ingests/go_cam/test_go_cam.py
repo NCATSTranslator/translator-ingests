@@ -101,8 +101,15 @@ def test_gocam_entities(gocam_output):
     entities = gocam_output
     assert entities
     assert len(entities) == 1
+    
+    # Extract nodes and edges from KnowledgeGraph
+    kg = entities[0]
+    from koza.model.graphs import KnowledgeGraph
+    assert isinstance(kg, KnowledgeGraph)
+    
+    all_entities = kg.nodes + kg.edges
 
-    genes = [e for e in entities if isinstance(e, Gene)]
+    genes = [e for e in all_entities if isinstance(e, Gene)]
     assert len(genes) == 2
 
     gene1 = [g for g in genes if g.id == "UniProtKB:P12345"][0]
@@ -115,8 +122,8 @@ def test_gocam_entities(gocam_output):
     assert gene2.category == ["biolink:Gene"]
     assert gene2.in_taxon == ["NCBITaxon:9606"]
 
-    associations = [e for e in entities if isinstance(e, GeneToGeneAssociation)]
-    assert len(associations) == 3
+    associations = [e for e in all_entities if isinstance(e, GeneToGeneAssociation)]
+    assert len(associations) == 1
 
     association = associations[0]
     assert association.subject == "UniProtKB:P12345"
