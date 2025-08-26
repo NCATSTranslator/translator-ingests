@@ -3,6 +3,10 @@ The [Human Phenotype Ontology](https://hpo.jax.org/) group
 curates and assembles over 115,000 annotations to hereditary diseases
 using the HPO ontology. Here we create Biolink associations
 between genes and associated diseases.
+
+The general design of this code comes from the Monarch Initiative, in particular,
+https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
+
 """
 from loguru import logger
 from typing import Any, Iterable

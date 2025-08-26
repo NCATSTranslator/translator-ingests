@@ -3,6 +3,9 @@ The [Human Phenotype Ontology](https://hpo.jax.org/) group
 curates and assembles over 115,000 annotations to hereditary diseases
 using the HPO ontology. Here we create Biolink associations
 between genes and associated phenotypes.
+
+The general design of this code comes from the Monarch Initiative, in particular,
+https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 """
 from loguru import logger
 from typing import Any, Iterable
@@ -28,6 +31,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 import koza
+from koza.utils.exceptions import MapItemException
 
 from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_HPOA
 
@@ -108,8 +112,15 @@ def transform_record(
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
             frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
-        # Convert to mondo id if possible, otherwise leave as is
+
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
+        # Convert disease identifier to mondo term identifier if possible...
+        try:
+            dis_id = koza.lookup(name=dis_id, map_column="subject_id", map_name="mondo_map")
+        except MapItemException:
+            # ...otherwise leave as is
+            pass
+
 
         publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
