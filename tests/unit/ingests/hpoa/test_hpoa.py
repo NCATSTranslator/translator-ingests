@@ -19,7 +19,38 @@ from translator_ingest.ingests.hpoa.hpoa import (
     transform_record_gene_to_phenotype
 )
 
-from . import transform_test_runner
+from tests.unit.ingests import transform_test_runner
+
+# list of slots whose values are
+# to be checked in a result node
+NODE_TEST_SLOTS = [
+    "id",
+    "name",
+    "category",
+    "provided_by",
+    "inheritance"
+]
+
+# list of slots whose values are
+# to be checked in a result edge
+ASSOCIATION_TEST_SLOTS = [
+    "category",
+    "subject",
+    "predicate",
+    "negated",
+    "object",
+    "publications",
+    "has_evidence",
+    "sex_qualifier",
+    "onset_qualifier",
+    "has_percentage",
+    "has_quotient",
+    "frequency_qualifier",
+    "disease_context_qualifier",
+    "sources",
+    "knowledge_level",
+    "agent_type"
+]
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
@@ -203,7 +234,9 @@ def test_disease_to_phenotype_transform(
     transform_test_runner(
         result=transform_record_disease_to_phenotype(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge
+        expected_edge=result_edge,
+        node_test_slots=NODE_TEST_SLOTS,
+        association_test_slots=ASSOCIATION_TEST_SLOTS
     )
 
 @pytest.mark.parametrize(
@@ -287,7 +320,9 @@ def test_gene_to_disease_transform(
     transform_test_runner(
         result=transform_record_gene_to_disease(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge
+        expected_edge=result_edge,
+        node_test_slots=NODE_TEST_SLOTS,
+        association_test_slots=ASSOCIATION_TEST_SLOTS
     )
 
 @pytest.mark.parametrize(
@@ -516,5 +551,7 @@ def test_gene_to_phenotype_transform(
     transform_test_runner(
         result=transform_record_gene_to_phenotype(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge
+        expected_edge=result_edge,
+        node_test_slots=NODE_TEST_SLOTS,
+        association_test_slots=ASSOCIATION_TEST_SLOTS
     )

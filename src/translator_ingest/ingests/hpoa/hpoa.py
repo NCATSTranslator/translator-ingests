@@ -306,10 +306,9 @@ def transform_record_gene_to_phenotype(
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
             frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
-
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
-        # Convert disease identifier to mondo term identifier if possible...
         try:
+            # Convert disease identifier to mondo term identifier if possible...
             dis_id = koza_transform.lookup(name=dis_id, map_column="subject_id", map_name="mondo_map")
         except MapItemException:
             # ...otherwise leave as is
