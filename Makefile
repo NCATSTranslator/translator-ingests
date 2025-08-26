@@ -23,8 +23,9 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     run                 Run pipeline for all sources      │
+│     run                 Run pipeline (download→transform→normalize) │
 │     validate            Validate all sources in data/     │
+│     validate-single     Validate only specified sources   │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
@@ -95,8 +96,15 @@ normalize: transform
 validate: normalize
 	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
 
+.PHONY: validate-single
+validate-single: normalize
+	@for source in $(SOURCES); do \
+		echo "Validating $$source..."; \
+		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
+	done
+
 .PHONY: run
-run: download transform normalize validate
+run: download transform normalize
 
 ### Linting, Formatting, and Cleaning ###
 

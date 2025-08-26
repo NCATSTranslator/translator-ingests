@@ -65,17 +65,11 @@ def extract_tar_gz(tar_path: str) -> str:
 
 @koza.prepare_data()
 def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    """Extract tar.gz and yield JSON model data for processing, filtering for human and mouse only."""
+    """Extract tar.gz and yield JSON model data, filtering by taxon from configuration."""
     logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
 
-    # Get the tar.gz file path from Koza's configured source files
-    # Koza handles file path resolution relative to the base directory
-    source_files = koza.source.reader_config.files
-    if not source_files:
-        raise ValueError("No source files configured in Koza")
-    
-    tar_path = source_files[0]  # Use the first (and expected only) configured file
-    logger.info(f"Using configured tar.gz file: {tar_path}")
+    # Path to the downloaded tar.gz file (from kghub-downloader)
+    tar_path = "data/go_cam/go-cam-networkx.tar.gz"
 
     # Extract the tar.gz file
     extracted_path = extract_tar_gz(str(tar_path))
@@ -84,13 +78,24 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     json_files = list(Path(extracted_path).glob("**/*_networkx.json"))
     logger.info(f"Found {len(json_files)} networkx JSON files to process")
 
-    # Target species for filtering
-    target_taxa = {'NCBITaxon:9606', 'NCBITaxon:10090'}  # Human and Mouse
+    # Get filter configuration from Koza's extra_fields (from YAML transform.filters)
+    filters = koza.extra_fields.get('filters', [])
+    target_taxa = set()
+    
+    # Extract target taxa from filter configuration
+    for filter_config in filters:
+        if (filter_config.get('column') == 'taxon' and 
+            filter_config.get('filter_code') == 'in' and
+            filter_config.get('inclusion') == 'include'):
+            target_taxa = set(filter_config.get('value', []))
+            break
+    
+    logger.info(f"Filtering for taxa: {target_taxa}")
 
     models_processed = 0
     models_filtered = 0
 
-    # Yield the content of each JSON file as a record, filtering by species
+    # Yield the content of each JSON file, filtering by species from config
     for json_file in json_files:
         try:
             with open(json_file, 'r') as f:
@@ -98,22 +103,29 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
             models_processed += 1
 
-            # Get taxon from model_info
+            # Extract taxon from nested structure
             taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
-
-            # Only process human and mouse models
-            if taxon in target_taxa:
+            
+            # Apply filtering based on configuration
+            if target_taxa and taxon in target_taxa:
+                model_data['taxon'] = taxon  # Expose for consistency
+                model_data['_file_path'] = str(json_file)
+                yield model_data
+                models_filtered += 1
+            elif not target_taxa:
+                # No filter configured, include all
+                model_data['taxon'] = taxon
                 model_data['_file_path'] = str(json_file)
                 yield model_data
                 models_filtered += 1
             else:
-                # Skip non-human/mouse models
+                # Skip models that don't match filter
                 logger.debug(f"Skipping model {Path(json_file).name} with taxon: {taxon}")
 
         except Exception as e:
             logger.error(f"Error reading JSON file {json_file}: {e}")
 
-    logger.info(f"Filtered {models_filtered} human/mouse models out of {models_processed} total models")
+    logger.info(f"Filtered {models_filtered} models out of {models_processed} total models")
 
 
 @koza.transform()
@@ -125,17 +137,9 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
         logger.info(f"Processing model: {model_name}")
 
-        # Get model info and check taxon
+        # Get model info (filtering is now handled by Koza filters in YAML)
         model_id = model_data.get('graph', {}).get('model_info', {}).get('id', '')
         taxon = model_data.get('graph', {}).get('model_info', {}).get('taxon', '')
-
-        # Target species for filtering
-        target_taxa = {'NCBITaxon:9606', 'NCBITaxon:10090'}  # Human and Mouse
-
-        # Skip if not human or mouse
-        if taxon not in target_taxa:
-            logger.debug(f"Skipping model {model_name} with taxon: {taxon}")
-            continue
 
         # Build lookup of nodes for label/name resolution
         node_lookup = {}

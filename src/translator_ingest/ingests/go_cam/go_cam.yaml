@@ -5,6 +5,17 @@ reader:
   files:
     - ../../../../data/go_cam/go-cam-networkx.tar.gz
 
+transform:
+  code: go_cam.py
+  filters:
+    - inclusion: include
+      column: taxon
+      filter_code: in
+      value:
+        - NCBITaxon:9606  # Human
+        - NCBITaxon:10090 # Mouse
+        - NCBITaxon:10116 # Rat
+
 writer:
   node_properties:
     - id
