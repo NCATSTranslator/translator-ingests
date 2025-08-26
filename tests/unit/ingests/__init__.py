@@ -1,5 +1,5 @@
 """
-Generic utility code for use in ingest unit tests.
+Generic utility code for use in the ingest unit tests.
 
 The main function of interest is transform_test_runner(), which is used to test
 the output of a single transform_record() method invocation, looking for the
@@ -58,9 +58,12 @@ def transform_test_runner(
     transform_record() method invocation result, against
     test-defined node and edge slot content expectations.
 
-    :param result: The output from a single transform_record() method call to be tested
-    :param expected_nodes: An optional list of expected nodes
-    :param expected_edge: An optional expected edge (as a Python dictionary of field slot names and values)
+    :param result: The outputs from a single transform_record() method call to be tested
+    :param expected_nodes: An optional list of expected nodes. The list values can be scalar
+                           (node identifiers expected) or dictionary of expected node property values.
+    :param expected_edge: An optional expected edge (as a Python dictionary of field slot names and values).
+                          The expected slot values can be scalar or list of dictionaries that are edge sources to match.
+
     :param node_test_slots: string list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
     :param association_test_slots: string list of edge slots to be tested (default: None - no edge slots are tested)
     :return: None
@@ -138,7 +141,7 @@ def transform_test_runner(
                     slot_values = str(returned_edge.get(association_slot, "Empty!"))
                     if isinstance(expected_edge[association_slot], list):
                         # We only pass things through if *both* of the returned and the
-                        # expected list of slot values are or are not empty (namely not XOR).
+                        # expected the lists of slot values are or are not empty (namely not XOR).
                         assert not (bool(expected_edge[association_slot]) ^ bool(returned_edge[association_slot])), \
                             f"Unexpected return values '{slot_values}' for slot '{association_slot}' in edge"
                         # ...but we only specifically validate non-empty expectations
