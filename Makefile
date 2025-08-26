@@ -1,6 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
-SOURCE_ID = ctd
+# Configure which sources to process (default: all available sources)
+SOURCES ?= ctd go_cam goa
 
 ### Help ###
 
@@ -10,6 +11,7 @@ define HELP
 │ ───────────────────────────────────────────────────────── │
 │ Usage:                                                    │
 │     make <target>                                         │
+│     make <target> SOURCES="ctd go_cam"                    │
 │                                                           │
 │ Targets:                                                  │
 │     help                Print this help message           │
@@ -17,19 +19,27 @@ define HELP
 │     all                 Install everything and test       │
 │     fresh               Clean and install everything      │
 │     clean               Clean up build artifacts          │
+│     clean-reports       Clean up validation reports       │
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     download            Download data                     │
-│     transform           Transform data into KGX           │
-│     normalize           Normalize the KGX files           │
-│     validate            Validate the normalized KGX files │
-│     run                 Run the whole pipeline            │
+│     run                 Run pipeline (download→transform→normalize) │
+│     validate            Validate all sources in data/     │
+│     validate-single     Validate only specified sources   │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
 │     lint                Lint all code                     │
 │     format              Format all code                   │
+│                                                           │
+│ Configuration:                                            │
+│     SOURCES             Space-separated list of sources   │
+│                         Default: ctd go_cam goa           │
+│                                                           │
+│ Examples:                                                 │
+│     make run                                              │
+│     make validate SOURCES="ctd go_cam"                    │
+│     make run SOURCES="go_cam"                             │
 ╰───────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -66,22 +76,35 @@ test:
 
 .PHONY: download
 download:
-	$(RUN) downloader --output-dir $(ROOTDIR)/data/$(SOURCE_ID) src/translator_ingest/ingests/$(SOURCE_ID)/download.yaml
+	@for source in $(SOURCES); do \
+		echo "Downloading $$source..."; \
+		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
+	done
 
 .PHONY: transform
 transform: download
-	$(RUN) koza transform src/translator_ingest/ingests/$(SOURCE_ID)/$(SOURCE_ID).yaml --output-dir $(ROOTDIR)/data/$(SOURCE_ID) --output-format jsonl
+	@for source in $(SOURCES); do \
+		echo "Transforming $$source..."; \
+		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
+	done
 
 .PHONY: normalize
 normalize: transform
-	echo "Normalization placeholder"
+	@echo "Normalization placeholder for sources: $(SOURCES)"
 
 .PHONY: validate
 validate: normalize
-	echo "Validation placeholder"
+	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+
+.PHONY: validate-single
+validate-single: normalize
+	@for source in $(SOURCES); do \
+		echo "Validating $$source..."; \
+		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
+	done
 
 .PHONY: run
-run: download transform normalize validate
+run: download transform normalize
 
 ### Linting, Formatting, and Cleaning ###
 
@@ -91,17 +114,23 @@ clean:
 	rm -rf `find . -name __pycache__` \
 		.venv .ruff_cache .pytest_cache **/.ipynb_checkpoints
 
+.PHONY: clean-reports
+clean-reports:
+	@echo "Cleaning validation reports..."
+	rm -rf $(ROOTDIR)/data/validation
+	@echo "All validation reports removed."
+
 .PHONY: clobber
 clobber:
 	# Add any files to remove here
 	@echo "Nothing to remove. Add files to remove to clobber target."
 
 .PHONY: lint
-lint: 
+lint:
 	$(RUN) ruff check --diff --exit-zero
 	$(RUN) black -l 120 --check --diff src tests
 
 .PHONY: format
-format: 
+format:
 	$(RUN) ruff check --fix --exit-zero
 	$(RUN) black -l 120 src tests

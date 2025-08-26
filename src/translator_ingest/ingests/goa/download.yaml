@@ -1,0 +1,6 @@
+- url: https://current.geneontology.org/annotations/goa_human.gaf.gz
+  local_name: goa_human.gaf.gz
+- url: https://current.geneontology.org/annotations/mgi.gaf.gz
+  local_name: mgi.gaf.gz
+- url: https://current.geneontology.org/annotations/rgd.gaf.gz
+  local_name: rgd.gaf.gz 

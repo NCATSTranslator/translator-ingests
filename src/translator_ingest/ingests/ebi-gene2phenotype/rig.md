@@ -60,7 +60,7 @@ Records from the relevant files that are included, and optionally a list of fiel
 
   | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
-  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, allelic requirement, confidence, molecular mechanism, publications, date of last review |
+  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, disease MONDO, allelic requirement, confidence, molecular mechanism, publications, date of last review |
  
        
 ### Filtered Content
@@ -69,12 +69,12 @@ Records from relevant files that are not included in the ingest.
   | File | Filtered  Records | Rationale |
   |----------|----------|----------|
   | G2P_all_[date].csv |  Records where 'confidence' value is 'limited', 'disputed', or 'refuted' | Evidence level not sufficient for inclusion. |
-  | G2P_all_[date].csv |  Records with no value in 'disease mim' column | We currently use only this column as the source of disease IDs |
+  | G2P_all_[date].csv |  Records with no values in both 'disease mim' and 'disease MONDO' columns | No IDs to use for disease nodes |
   | G2P_all_[date].csv |  Records with NodeNorm mapping failures for the node IDs | Failed normalization means that the node would not be connected to other data/nodes in Translator graphs. |
 
      
 ### Future Content Considerations (o)
-Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better
@@ -112,11 +112,10 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 | Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
 |------------------|----------------------------|--------|---------|
 | Gene | 	HGNC  | none |  |
-| Disease | OMIM, orphanet | none |  |
+| Disease | OMIM, orphanet, MONDO | none | 'disease mim' column is source of OMIM and orphanet IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column |
 
 
 ### Future Modeling Considerations (o)
-- Revisit 'disease MONDO' column (re-analyze) because resource has been working to improve the reliability of this data
 - May want to revisit how we handle the 'molecular mechanism' and 'variant types' columns VS the biolink-model qualifier options 
 - Revisit modeling of allelic_requirement (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values). See PR linked below for more details.
 
@@ -142,7 +141,6 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
       - `disputed` and `refuted`: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation). **This decision to exclude could be revisited once Translator can model/handle negation better.**
 
 - **Source Columns**:
-     - `disease MONDO`: **may revisit during this ingest process** because resource has been working to improve this data
      - `confidence`: currently not including as an edge property, because [more data-modeling in biolink-model](https://github.com/biolink/biolink-model/issues/1583) is needed. **Could revisit once this issue is addressed.**
      - **Seem harder to get into Translator, potentially useful**: 
        - `cross cutting modifier`: additional info on inheritance. Limited set of terms BUT "; "- delimited. Some terms may map to "HPO inheritance qualifier terms" (didn't try). Lots of missing data (NA)

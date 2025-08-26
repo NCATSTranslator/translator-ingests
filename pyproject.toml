@@ -12,7 +12,11 @@ dependencies = [
     "koza",
     "pronto>=2.7.0",
     "linkml",
+    "click>=8.0.0",
 ]
+
+[project.scripts]
+validate-kgx = "translator_ingest.util.validate_kgx:main"
 
 [dependency-groups]
 dev = [
