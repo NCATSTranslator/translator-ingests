@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Set, Dict, List, Optional
-import argparse
+import click
 
 logger = logging.getLogger(__name__)
 
@@ -219,29 +219,47 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     return validation_report
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Validate KGX node/edge consistency")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--data-dir", type=Path, help="Path to data directory containing subdirectories with KGX files")
-    group.add_argument("--files", nargs=2, metavar=("NODES_FILE", "EDGES_FILE"),
-                      help="Specific nodes and edges files to validate")
+@click.command()
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    help="Path to data directory containing subdirectories with KGX files"
+)
+@click.option(
+    "--files",
+    nargs=2,
+    metavar="NODES_FILE EDGES_FILE",
+    help="Specific nodes and edges files to validate"
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    default=Path("data"),
+    help="Output directory for validation reports (default: data)"
+)
+@click.option(
+    "--no-save",
+    is_flag=True,
+    help="Don't save validation report to file"
+)
+def main(data_dir, files, output_dir, no_save):
+    """Validate KGX node/edge consistency."""
     
-    parser.add_argument("--output-dir", type=Path, default=Path("data"),
-                       help="Output directory for validation reports (default: data)")
-    parser.add_argument("--no-save", action="store_true",
-                       help="Don't save validation report to file")
-
-    args = parser.parse_args()
-
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    
+    # Validate that exactly one of data_dir or files is provided
+    if not data_dir and not files:
+        raise click.UsageError("Must specify either --data-dir or --files")
+    if data_dir and files:
+        raise click.UsageError("Cannot specify both --data-dir and --files")
 
-    if args.data_dir:
-        output_dir = None if args.no_save else args.output_dir
-        validation_report = validate_data_directory(args.data_dir, output_dir)
+    if data_dir:
+        output_dir_to_use = None if no_save else output_dir
+        validation_report = validate_data_directory(data_dir, output_dir_to_use)
         validation_passed = validation_report.get("summary", {}).get("overall_status") == "PASSED"
     else:
-        nodes_file, edges_file = Path(args.files[0]), Path(args.files[1])
+        nodes_file, edges_file = Path(files[0]), Path(files[1])
         if not nodes_file.exists():
             logger.error(f"Nodes file not found: {nodes_file}")
             sys.exit(1)
@@ -253,7 +271,7 @@ def main():
         validation_passed = single_report.get("validation_status") == "PASSED"
         
         # Save single file report if requested
-        if not args.no_save:
+        if not no_save:
             # Create a minimal report structure for single file validation
             validation_report = {
                 "timestamp": datetime.now().isoformat(),
@@ -266,7 +284,7 @@ def main():
                     "overall_status": "PASSED" if validation_passed else "FAILED"
                 }
             }
-            save_validation_report(validation_report, args.output_dir)
+            save_validation_report(validation_report, output_dir)
 
     sys.exit(0 if validation_passed else 1)
 

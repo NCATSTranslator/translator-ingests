@@ -8,9 +8,13 @@ dependencies = [
     "beautifulsoup4>=4.13.4",
     "biolink-model",
     "bmt>=1.4.5",
+    "click>=8.0.0",
     "kghub-downloader>=0.4.2",
     "koza",
 ]
+
+[project.scripts]
+validate-kgx = "translator_ingest.util.validate_kgx:main"
 
 [dependency-groups]
 dev = [
