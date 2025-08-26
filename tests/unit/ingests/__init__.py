@@ -1,5 +1,10 @@
 """
-Generic utility functions for the ingest unit tests
+Generic utility code for use in ingest unit tests.
+
+The main function of interest is transform_test_runner(), which is used to test
+the output of a single transform_record() method invocation, looking for the
+expected content in node and edge slots, with test expectations defined by
+'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
 
 from typing import Optional, Iterable, Any
@@ -50,7 +55,8 @@ def transform_test_runner(
 ):
     """
     A generic method for testing the result of a single
-    transform_record() method invocation, against expectations.
+    transform_record() method invocation result, against
+    test-defined node and edge slot content expectations.
 
     :param result: The output from a single transform_record() method call to be tested
     :param expected_nodes: An optional list of expected nodes
