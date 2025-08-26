@@ -127,7 +127,7 @@ EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE = {
 }
 
 @koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterable[Any]:
     """
     Transform a single GAF record into Biolink nodes and edges.
     
@@ -272,4 +272,4 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Itera
             agent_type=agent_type,
         )
 
-    return [entity, go_term], [association]
+    return [entity, go_term, association]
