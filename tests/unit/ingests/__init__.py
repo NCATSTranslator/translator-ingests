@@ -67,11 +67,10 @@ def transform_test_runner(
                            (node identifiers expected) or dictionary of expected node property values.
     :param expected_edge: An optional expected edge (as a Python dictionary of field slot names and values).
                           The expected slot values can be scalar or list of dictionaries that are edge sources to match.
-
     :param node_test_slots: String list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
     :param association_test_slots: String list of edge slots to be tested (default: None - no edge slots are tested)
     :return: None
-    :raises: AssertionError if expectations are not met
+    :raises: various AssertionError conditions if result expectations are not met
     """
     if result is None:
         if expected_nodes is None and expected_edge is None:
