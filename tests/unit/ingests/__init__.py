@@ -7,9 +7,11 @@ expected content in node and edge slots, with test expectations defined by
 'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
 
-from typing import Optional, Iterable, Any
+from typing import Optional, Iterable, Any, Union
 
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
+
+from koza.model.graphs import KnowledgeGraph
 
 def flatten_sources(sources: list[RetrievalSource]) -> list[dict[str, str]]:
     flat_sources: list[dict[str, str]] = []
@@ -47,7 +49,7 @@ def _compare_slot_values(returned_value, expected_value):
 
 
 def transform_test_runner(
-        result: tuple[Iterable[NamedThing], Iterable[Association]],
+        result: Union[Optional[Iterable[KnowledgeGraph]],tuple[Iterable[NamedThing], Iterable[Association]]],
         expected_nodes: Optional[list],
         expected_edge: Optional[dict],
         node_test_slots: list[str] = "id",
@@ -58,19 +60,34 @@ def transform_test_runner(
     transform_record() method invocation result, against
     test-defined node and edge slot content expectations.
 
-    :param result: The outputs from a single transform_record() method call to be tested
+    :param result: The outputs from a single transform_record() method call to be tested; in this implementation,
+                   the result is a tuple of two Iterables: one of NamedThing and one of Association instances;
+                   The result may alternately be an Iterable[koza.model.graphs.KnowledgeGraph]
     :param expected_nodes: An optional list of expected nodes. The list values can be scalar
                            (node identifiers expected) or dictionary of expected node property values.
     :param expected_edge: An optional expected edge (as a Python dictionary of field slot names and values).
                           The expected slot values can be scalar or list of dictionaries that are edge sources to match.
 
-    :param node_test_slots: string list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
-    :param association_test_slots: string list of edge slots to be tested (default: None - no edge slots are tested)
+    :param node_test_slots: String list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
+    :param association_test_slots: String list of edge slots to be tested (default: None - no edge slots are tested)
     :return: None
     :raises: AssertionError if expectations are not met
     """
-    nodes: Iterable[NamedThing] = result[0]
-    edges: Iterable[Association] = result[1]
+    if result is None:
+        if expected_nodes is None and expected_edge is None:
+            return  # we're good! No result was expected.
+        else:
+            assert False, "Unexpected None result from transform_record() method call!"
+
+    nodes: Optional[Iterable[NamedThing]]
+    edges: Optional[Iterable[Association]]
+    if isinstance(result, KnowledgeGraph):
+        nodes = result.nodes
+        edges = result.edges
+    else:
+        # Assume that the result is a tuple of two Iterables
+        nodes: Iterable[NamedThing] = result[0]
+        edges: Iterable[Association] = result[1]
 
     # Convert the 'nodes' Iterable NamedThing content into
     # a list of Python dictionaries by comprehension
