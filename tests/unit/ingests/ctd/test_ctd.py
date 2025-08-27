@@ -4,7 +4,7 @@ import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntity,
-    Disease,
+    Disease, RetrievalSource,
 )
 from koza.io.writer.writer import KozaWriter
 from koza.runner import KozaRunner, KozaTransformHooks
@@ -60,7 +60,10 @@ def test_therapeutic_entities(therapeutic_output):
     assert association.predicate == BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT
     assert "PMID:17516704" in association.publications
     assert "PMID:123" in association.publications
-    assert association.primary_knowledge_source == "infores:ctd"
+
+    assert association.sources and \
+           isinstance(association.sources[0], RetrievalSource) and \
+           association.sources[0].resource_id == "infores:ctd"
 
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MESH:D004827"
