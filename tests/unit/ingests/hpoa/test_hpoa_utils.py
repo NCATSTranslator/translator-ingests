@@ -48,84 +48,123 @@ def test_map_percentage_frequency_to_hpo_term(query: tuple[int, Optional[Frequen
 @pytest.mark.parametrize(
     "query,frequency",
     [
-        # Frequency(
-        #         frequency_qualifier=hpo_term.curie if hpo_term else None,
-        #         has_percentage=percentage,
-        #         has_quotient=quotient,
-        #         has_count=has_count,
-        #         has_total=has_total
-        # )
         (None, None),          # query 0 - None input
         ("", None),            # query 1 - empty string input
         ("0", None),           # query 2 - not a raw number... has to be tagged as a percentage?
         ("HP:0040279", Frequency()),  # query 3 - the sub-ontology term below HP:0040279, outside HPO term
-        #
-        # TODO: Need to fix these test data, carry over from an older method protocol
-        # (   # query 4 - exact matches to global lower bounds should be sent back accurately
-        #     "0%",
-        #     FrequencyHpoTerm(curie="HP:0040285", name="Excluded", lower=0, upper=0),
-        #     0.0,
-        #     None
-        #     # Frequency(
-        #     #         frequency_qualifier=hpo_term.curie if hpo_term else None,
-        #     #         has_percentage=percentage,
-        #     #         has_quotient=quotient,
-        #     #         has_count=has_count,
-        #     #         has_total=has_total
-        #     # )
-        # ),
-        # (   # query 5 - exact matches to lower bounds should be sent back accurately
-        #     "5%",
-        #     FrequencyHpoTerm(curie="HP:0040283", name="Occasional", lower=5, upper=29),
-        #     5.0,
-        #     None
-        # ),
-        # (   # query 6 - matches within percentage range bounds should be sent back accurately
-        #     "17%",
-        #     FrequencyHpoTerm(curie="HP:0040283", name="Occasional", lower=5, upper=29),
-        #     17.0,
-        #     None
-        # ),
-        # (   # query 7 - exact matches to upper bounds should be sent back accurately
-        #     "29%",
-        #     FrequencyHpoTerm(curie="HP:0040283", name="Occasional", lower=5, upper=29),
-        #     29.0,
-        #     None
-        # ),
-        # (   # query 8 - exact matches to global upper bounds should be sent back accurately
-        #     "100%",
-        #     FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
-        #     100.0,
-        #     None
-        # ),
-        # (   # query 9 - if a valid 'Frequency' HPO subontology term already, should be sent back
-        #     "HP:0040282",
-        #     FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
-        #     None,
-        #     None
-        # ),
-        # (   # query 10 - division ratios converted to percentages (i.e., 7/13 ~ 53.8%) that match
-        #     # within a specific percentage range should be sent back accurately
-        #     "7/13",
-        #     FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
-        #     None,
-        #     0.54
-        # ),
-        # (  # query 11 - obligate percentage value
-        #     "1/1",
-        #     FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
-        #     None,
-        #     1.0,
-        # ),
-        # (  # query 12 - still an obligate percentage value
-        #     "2/2",
-        #     FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
-        #     None,
-        #     1.0,
-        # ),
-        # (   # query 13 - frequent percentage value
-        #     "1/2", FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79), None, 0.5
-        # ),
+        (   # query 4 - exact matches to global lower bounds should be sent back accurately
+            "0%",
+            # FrequencyHpoTerm(curie="HP:0040285", name="Excluded", lower=0, upper=0),
+            Frequency(
+                frequency_qualifier="HP:0040285",
+                has_percentage=0.0,
+                has_quotient=0.0,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 5 - exact matches to lower bounds should be sent back accurately
+            "5%",
+            # FrequencyHpoTerm(curie="HP:0040283", name="Occasional", lower=5, upper=29),
+            Frequency(
+                frequency_qualifier="HP:0040283",
+                has_percentage=5.0,
+                has_quotient=0.05,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 6 - matches within percentage range bounds should be sent back accurately
+            "17%",
+            # FrequencyHpoTerm(curie="HP:0040283", name="Occasional", lower=5, upper=29),
+            Frequency(
+                frequency_qualifier="HP:0040283",
+                has_percentage=17.0,
+                has_quotient=0.17,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 7 - exact matches to upper bounds should be sent back accurately
+            "29%",
+            # FrequencyHpoTerm(curie="HP:0040283", name="Occasional", lower=5, upper=29),
+            Frequency(
+                frequency_qualifier="HP:0040283",
+                has_percentage=29.0,
+                has_quotient=0.29,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 8 - exact matches to global upper bounds should be sent back accurately
+            "100%",
+            # FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
+            Frequency(
+                frequency_qualifier="HP:0040280",
+                has_percentage=100.0,
+                has_quotient=1.0,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 9 - if a valid 'Frequency' HP ontology term is
+            #           already given, then it should be sent back,
+            #           but without any indicative ranges
+            "HP:0040282",
+            # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
+            Frequency(
+                frequency_qualifier="HP:0040282",
+                has_percentage=None,
+                has_quotient=None,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 10 - division ratios converted to percentages (i.e., 7/13 ~ 53.8%) that match
+            # within a specific percentage range should be sent back accurately
+            "7/13",
+            # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
+            Frequency(
+                frequency_qualifier="HP:0040282",
+                has_percentage=54.0,
+                has_quotient=0.54,
+                has_count=7,
+                has_total=13
+            )
+        ),
+        (  # query 11 - obligate percentage value
+            "1/1",
+            # FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
+            Frequency(
+                frequency_qualifier="HP:0040280",
+                has_percentage=100.0,
+                has_quotient=1.0,
+                has_count=1,
+                has_total=1
+            )
+        ),
+        (  # query 12 - still an obligate percentage value
+            "2/2",
+            # FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
+            Frequency(
+                frequency_qualifier="HP:0040280",
+                has_percentage=100.0,
+                has_quotient=1.0,
+                has_count=2,
+                has_total=2
+            )
+        ),
+        (   # query 13 - frequent ratio/percentage value
+            "1/2",
+            # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
+            Frequency(
+                frequency_qualifier="HP:0040282",
+                has_percentage=50.0,
+                has_quotient=0.5,
+                has_count=1,
+                has_total=2
+            )
+        ),
     ],
 )
 def test_phenotype_frequency_to_hpo_term(query: Optional[str], frequency: Optional[Frequency]):
