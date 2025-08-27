@@ -12,6 +12,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association
 )
+from translator_ingest.util.biolink import (
+    INFORES_CTD,
+    BIOLINK_RELATED_TO,
+    entity_id,
+    build_association_knowledge_sources
+)
 from koza.model.graphs import KnowledgeGraph
 
 
@@ -25,11 +31,6 @@ from koza.model.graphs import KnowledgeGraph
 # "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
 # yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
 
-
-# Biolink predicates and infores identifiers will eventually be imported from automatically updated modules,
-# but for now use hardcoded constants.
-BIOLINK_RELATED_TO = "biolink:related_to"
-INFORES_CTD = "infores:ctd"
 
 # Always implement a function that returns a string representing the latest version of the source data.
 # Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
@@ -99,14 +100,14 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=chemical.id,
         predicate=BIOLINK_RELATED_TO,
         object=disease.id,
         publications=publications,
-        primary_knowledge_source=INFORES_CTD,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
+        agent_type=AgentTypeEnum.manual_agent
     )
     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
 

@@ -8,7 +8,10 @@ import koza
 from koza.transform import Record, Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests._ingest_template._ingest_template import transform_ingest_by_record
+from translator_ingest.ingests._ingest_template._ingest_template import (
+    on_begin_ingest_by_record,
+    transform_ingest_by_record
+)
 
 from tests.unit.ingests import transform_test_runner
 
@@ -43,19 +46,11 @@ class MockKozaTransform(koza.KozaTransform):
         record: Record = dict()
         yield record
 
-# test mondo_map for the gene_to_phenotype
-# disease_id to disease_context_qualifier mappings
-mock_mondo_sssom_map: dict[str, dict[str, str]] = {
-    "OMIM:231550": {"subject_id": "MONDO:0009279"},
-    "Orphanet:442835": {"subject_id": "MONDO:0018614"},
-    "OMIM:614129": {"subject_id": "MONDO:0013588"},
-    "OMIM:613013": {"subject_id": "MONDO:0700041"}
-}
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = {"mondo_map": mock_mondo_sssom_map}
+    mappings: Mappings = dict()
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
 
 # list of slots whose values are
@@ -63,9 +58,7 @@ def mock_koza_transform() -> koza.KozaTransform:
 NODE_TEST_SLOTS = [
     "id",
     "name",
-    "category",
-    "provided_by",
-    "inheritance"
+    "category"
 ]
 
 # list of slots whose values are
@@ -77,103 +70,71 @@ ASSOCIATION_TEST_SLOTS = [
     "negated",
     "object",
     "publications",
-    "has_evidence",
-    "sex_qualifier",
-    "onset_qualifier",
-    "has_percentage",
-    "has_quotient",
-    "frequency_qualifier",
-    "disease_context_qualifier",
     "sources",
     "knowledge_level",
     "agent_type"
 ]
 
-#
-# CTD record fields:
-#
-# - ChemicalName
-# - ChemicalID
-# - CasRN
-# - DiseaseName
-# - DiseaseID
-# - DirectEvidence
-# - InferenceGeneSymbol
-# - InferenceScore
-# - OmimIDs
-# - PubMedIDs
-#
-# def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-#
-#     # here is an example of skipping a record based off of some condition
-#     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-#     if not publications:
-#         koza.state['example_counter'] += 1
-#         return None
-#
-#     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-#     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-#     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-#         id=str(uuid.uuid4()),
-#         subject=chemical.id,
-#         predicate=BIOLINK_RELATED_TO,
-#         object=disease.id,
-#         publications=publications,
-#         primary_knowledge_source=INFORES_CTD,
-#         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-#         agent_type=AgentTypeEnum.manual_agent,
-#     )
-#     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - missing data (empty record, hence, missing fields)
-            {},
+        (  # Query 0 - Missing PubMedIDs - returns None
+            {
+                "ChemicalName": "10074-G5",
+                "ChemicalID": "C534883",
+                "CasRN": "",
+                "DiseaseName": "Burkitt Lymphoma",
+                "DiseaseID": "MESH:D002051",
+                "DirectEvidence": "",
+                "InferenceGeneSymbol": "MYC",
+                "InferenceScore": "",
+                "OmimIDs": "113970",
+                "PubMedIDs": "",  # empty expected field, hence, parse doesn't return a knowledge graph
+            },
             None,
             None
         ),
-        (  # Query 1 - Sample Mendelian disease
+        (  # Query 1 - Another record complete with PubMedIDs
             {
-                "association_type": "MENDELIAN",
-                "disease_id": "OMIM:212050",
-                "gene_symbol": "CARD9",
-                "ncbi_gene_id": "NCBIGene:64170",
-                "source": "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen",
+
+                "ChemicalName": "10074-G5",
+                "ChemicalID": "C534883",
+                "CasRN": "",
+                "DiseaseName": "Androgen-Insensitivity Syndrome",
+                "DiseaseID": "MESH:D013734",
+                "DirectEvidence": "",
+                "InferenceGeneSymbol": "AR",
+                "InferenceScore": "6.89",
+                "OmimIDs": "300068|312300",
+                "PubMedIDs": "1303262|8281139",
             },
 
             # Captured node contents
             [
                 {
-                    "id": "NCBIGene:64170",
-                    "name": "CARD9",
-                    "category": ["biolink:Gene"]
+                    "id": "MESH:C534883",
+                    "name": "10074-G5",
+                    "category": ["biolink:ChemicalEntity"]
                 },
                 {
-                    "id": "OMIM:212050",
+                    "id": "MESH:D013734",
+                    "name": "Androgen-Insensitivity Syndrome",
                     "category": ["biolink:Disease"]
                 }
             ],
 
             # Captured edge contents
             {
-                "category": ["biolink:CausalGeneToDiseaseAssociation"],
-                "subject": "NCBIGene:64170",
-                "predicate": "biolink:causes",
-                "object": "OMIM:212050",
-
+                "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
+                "subject": "MESH:C534883",
+                "predicate": "biolink:related_to",
+                "object": "MESH:D013734",
+                "publications": ["PMID:1303262", "PMID:8281139"],
                 "sources": [
                     {
                         "resource_role": "primary_knowledge_source",
-                        "resource_id": "infores:hpo-annotations"
-                    },
-                    {
-                        "resource_role": "supporting_data_source",
-                        "resource_id": "infores:medgen"
-                    },
-                    {
-                        "resource_role": "supporting_data_source",
-                        "resource_id": "infores:omim"
+                        "resource_id": "infores:ctd"
                     }
                 ],
 
@@ -189,6 +150,7 @@ def test_ingest_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
+    on_begin_ingest_by_record(mock_koza_transform)
     transform_test_runner(
         result=transform_ingest_by_record(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
