@@ -64,7 +64,7 @@ def build_association_knowledge_sources(
     #     resource_id: Union[str, URIorCURIE] = None
     #     resource_role: Union[str, "ResourceRoleEnum"] = None
     #     upstream_resource_ids: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
-    #     TODO: current use case doesn't use source_record_urls, but...
+    #     Limitation: the current use case doesn't use source_record_urls, but...
     #     source_record_urls: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
     #
     sources: list[RetrievalSource] = list()

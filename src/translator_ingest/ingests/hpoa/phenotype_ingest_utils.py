@@ -254,7 +254,7 @@ def get_hpoa_genetic_predicate(original_predicate: str) -> str:
 #           from hp ontology using the util.ontology 'read_ontology_to_exclusion_terms' function
 #
 # Human Phenotype Ontology local file path
-# TODO: this path should perhaps be dynamically resolved by the Translator Ingest pipeline (Koza?) library
+# This path should perhaps be dynamically resolved by the Translator Ingest pipeline (Koza?) library
 # HPO_FILE_PATH = f"{PRIMARY_DATA_PATH}{sep}hpoa{sep}hp.obo"
 # hpo_to_mode_of_inheritance = read_ontology_to_exclusion_terms(ontology_obo_file=HPO_FILE_PATH)
 
