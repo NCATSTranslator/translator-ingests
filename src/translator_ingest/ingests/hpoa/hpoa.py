@@ -10,17 +10,16 @@ https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 """
 
 from loguru import logger
-from typing import Optional, Any, Iterable
+from typing import Optional, Any
 from os.path import join, abspath
 
 import duckdb
 
 import koza
 from koza.utils.exceptions import MapItemException
+from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,
-    Association,
     Gene,
     Disease,
     PhenotypicFeature,
@@ -74,7 +73,7 @@ Association to "remarkable normality" may be added later.
 def transform_record_disease_to_phenotype(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
-) -> tuple[Iterable[NamedThing], Iterable[Association]]:
+) -> KnowledgeGraph | None:
     """
     Transform a 'phenotype.hpoa' data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
@@ -145,7 +144,7 @@ def transform_record_disease_to_phenotype(
             publications = [p for p in publications if not p.startswith("http")]
 
             # Association/Edge
-            association: Association = DiseaseToPhenotypicFeatureAssociation(
+            association = DiseaseToPhenotypicFeatureAssociation(
                 id=entity_id(),
                 subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
                 predicate="biolink:has_phenotype",
@@ -165,7 +164,7 @@ def transform_record_disease_to_phenotype(
                 agent_type=AgentTypeEnum.manual_agent,
                 **{}
             )
-            return [disease, phenotype], [association]
+            return KnowledgeGraph(nodes=[disease, phenotype], edges=[association])
 
         elif record["aspect"] == "I":
 
@@ -182,21 +181,21 @@ def transform_record_disease_to_phenotype(
                     f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?")
 
             # ...only the disease node - annotated with its inheritance - is returned
-            return [disease], []
+            return KnowledgeGraph(nodes=[disease])
         else:
             # Specified record 'aspect' is not of interest to us at this time
-            return [], []
+            return None
 
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(str(e))
-        return [], []
+        return None
 
 @koza.transform_record(tag="gene_to_disease")
 def transform_record_gene_to_disease(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
-) -> tuple[Iterable[NamedThing], Iterable[Association]]:
+) -> KnowledgeGraph | None:
     """
     Transform an HPOA 'genes_to_disease.txt' data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
@@ -230,13 +229,12 @@ def transform_record_gene_to_disease(
             **{}
         )
 
-        return [gene, disease],[association]
+        return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(str(e))
-        return [], []
-
+        return None
 
 @koza.on_data_begin(tag="gene_to_phenotype")
 def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform) -> None:
@@ -281,7 +279,7 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform) -> None:
 def transform_record_gene_to_phenotype(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
-) -> tuple[Iterable[NamedThing], Iterable[Association]]:
+) -> KnowledgeGraph | None:
     """
     Transform a (preprocessed) genes_to_disease.txt data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
@@ -334,9 +332,9 @@ def transform_record_gene_to_phenotype(
             **{}
         )
 
-        return [gene, phenotype],[association]
+        return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
 
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(str(e))
-        return [], []
+        return None
