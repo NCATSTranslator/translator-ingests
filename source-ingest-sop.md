@@ -1,6 +1,6 @@
 # Standard Operating Procedure for a Source Ingest
 - Below we define general tasks that should be performed and artifacts to be created for each source ingest. 
-- The present SOP is focused on **re-ingest** of soruces included in Phase 2 work - as this is our foucs through 2025.
+- The present SOP is focused on **re-ingest** of sources included in Phase 2 work - as this is our focus through 2025.
 - As written in assumes source data is provisioned via file download, but analogous tasks can be envisioned for data provided through API endpoints, database access, etc.
 
 ## Key Artifacts
@@ -17,7 +17,7 @@
 - Determine who will perform and contribute to each ingest. We are currently using the following tables:
    - [Ingest Suggestion Table](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936): provides info to assess each unique source ingested in Phase 2, and columns to recommend ingest owners.
    - [Ingest Assignment Table](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Captures final owners and contributors for each Phase 3 re-ingest.
-   - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): One row per Phase 2 ingest of a soruce by a KP - reporting which / how many KPs ingeted each source. 
+   - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): One row per Phase 2 ingest of a source by a KP - reporting which / how many KPs ingeted each source. 
 - As appropriate, schedule a Planning Call for all contributors to collaboratively address/document the questions/tasks below.
 
 ### 2. Create a Source Ingest Ticket in DINGO Repository
@@ -38,7 +38,7 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
 
 #### Prepare
 - Reps for each KP that ingested a source in Phase 2 should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
-- In particular for sources ingested by multiple KPs, we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) like the one for CTD linked above - to help identify and resolve any differneces in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below.
+- In particular for sources ingested by multiple KPs, we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) like the one for CTD linked above - to help identify and resolve any differences in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below.
     
 #### Compare
 - What KPs ingested the source in Phase 2?
@@ -53,10 +53,10 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
    - If >1 KP, identify, assess, and resolve differences in representation of same /related content
 
 ### 6. Source Data Exploration
-- Programmatic exploration of a source is often perfomred by developers as part of the ingest process, to understand its content and inform how to best ingest and transform the data.
+- Programmatic exploration of a source is often performed by developers as part of the ingest process, to understand its content and inform how to best ingest and transform the data.
 - This may be performed as needed by lead develoeprs for an ingest.
   - Note that key outcomes/conclusions from this work can be documented in a RIG where useful (see below), to explain content or modeling decisions.
-  - And key artifacts genrated through this process (e.g. Jupyter Notebooks, summary sprreadshets can be described in and linked to from the RIG.
+  - And key artifacts generated through this process (e.g. Jupyter Notebooks, summary sprreadshets can be described in and linked to from the RIG.
   
 ### 7. Document Ingest Decisions in a RIG
 RIGs like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/rig.md) document these scope, content, and modeling decisions for a source ingest.
@@ -65,7 +65,7 @@ Note that we are exploring the idea of authoring in yaml instead of markdown, fo
 #### Describe Content Decisions
 - Document final decisions on what content will be included in the initial re-ingest
     - What knowledge (edges), concepts (nodes) are of high enough quality and utility to include in the ingest?
-    - Remember to consider ingest of nodes not participating in ingested edges - if there are valueable node properties provided for them.
+    - Remember to consider ingest of nodes not participating in ingested edges - if there are valuable node properties provided for them.
 - Consider what node/edge metadata are of high enough quality and utility to include in the ingest?
     - Asses EPC use cases in particular, and remember to carefully assess and include KL/AT annotations.
    -  UI and O&O are also keenly interested in including Evidence Type annotations on all edges possible. These may be provided by a source (e.g. GOA), or as added by ingestors based on our understanding of the source
@@ -78,7 +78,7 @@ Note that we are exploring the idea of authoring in yaml instead of markdown, fo
 
 #### Describe Content/Modeling to Reconsdier in Future Iterations
 - Be sure to document any content left behind that should be revisited/ingested in future iterations*.
-- Document areas wehre we might consider refactored modeling in the future - so we can return to and update the ingest. 
+- Document areas where we might consider refactored modeling in the future - so we can return to and update the ingest. 
 
 
 ### 8. Write Ingest Code

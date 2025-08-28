@@ -21,6 +21,7 @@ dev = [
     "pytest>=7.4.0",
     "black>=24.1.0",
     "ruff>=0.1.9",
+    "codespell>=2.2.0",
 ]
 
 [tool.pytest.ini_options]
