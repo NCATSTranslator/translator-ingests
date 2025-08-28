@@ -81,12 +81,12 @@ def transform_test_runner(
     nodes: Optional[Iterable[NamedThing]]
     edges: Optional[Iterable[Association]]
     if isinstance(result, KnowledgeGraph):
-        nodes = result.nodes
-        edges = result.edges
+        nodes = result.nodes if result.nodes is not None else []
+        edges = result.edges if result.edges is not None else []
     else:
-        # Assume that the result is a tuple of two Iterables
-        nodes: Iterable[NamedThing] = result[0]
-        edges: Iterable[Association] = result[1]
+        # Assume that the result is a tuple of the two Iterables which are not None
+        nodes = result[0]
+        edges = result[1]
 
     # Convert the 'nodes' Iterable NamedThing content into
     # a list of Python dictionaries by comprehension
