@@ -11,8 +11,12 @@ INFORES_ORPHANET = "infores:orphanet"
 INFORES_MEDGEN = "infores:medgen"
 INFORES_DECIFER = "infores:decifer"
 INFORES_HPOA = "infores:hpo-annotations"
+INFORES_CTD = "infores:ctd"
+INFORES_GOA = "infores:goa"
+INFORES_BIOLINK = "infores:biolink"
 
 # hard-coded predicates
+BIOLINK_RELATED_TO = "biolink:related_to"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_CONTRIBUTES_TO = "biolink:contributes_to"
