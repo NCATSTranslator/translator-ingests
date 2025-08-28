@@ -1,0 +1,23 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+# For genes_to_phenotype
+- url: http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt
+  local_name: data/hpoa/genes_to_phenotype.txt
+
+- url: https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv
+  local_name: data/mondo/mondo.sssom.tsv
+
+# For genes_to_disease
+- url: http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt
+  local_name: data/hpoa/genes_to_disease.txt
+
+# For disease_to_phenotype and mode of inheritance
+- url: http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa
+  local_name: data/hpoa/phenotype.hpoa
+
+# Allows us to filter / select hp terms based on subontology structures
+- url: http://purl.obolibrary.org/obo/hp.obo
+  local_name: data/hpoa/hp.obo
