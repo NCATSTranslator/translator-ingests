@@ -22,7 +22,7 @@
 # how the normalization - of the two distinct but interrelated collections
 # containing KGX-coded Biolink entities - is best coordinated.
 #
-from typing import Optional, Dict
+from typing import Optional
 from .http import post_query
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -32,11 +32,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"
 
-def node_normalizer_query(query: Dict) -> Optional[Dict]:
+def node_normalizer_query(query: dict) -> Optional[dict]:
     """
     Wrapper for Node Normalizer http POST query request.
     :param query: JSON query input, as a Python dictionary
-    :return: Optional[Dict] JSON-like result as multi-level Python dictionary
+    :return: Optional[dict] JSON-like result as multi-level Python dictionary
     """
     return post_query(url=NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
 
