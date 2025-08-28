@@ -18,10 +18,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     MacromolecularComplex,
     RNAProduct
 )
+from translator_ingest.util.biolink import (
+    INFORES_GOA,
+    INFORES_BIOLINK,
+    BIOLINK_RELATED_TO,
+    entity_id,
+    build_association_knowledge_sources
+)
 
-# Constants
-INFORES_GOA = "infores:goa"
-INFORES_BIOLINK = "infores:biolink"
 
 # Dynamic category assignments from Biolink pydantic models
 # This ensures the categories are always in sync with the Biolink model
@@ -77,7 +81,7 @@ QUALIFIER_TO_PREDICATE = {
     "acts_upstream_of_or_within_negative_effect": "biolink:acts_upstream_of_or_within_negative_effect",
 }
 
-# Fallback mapping for aspect-based predicates (used when qualifier is not recognized)
+# Fallback mapping for aspect-based predicates (used when the qualifier is not recognized)
 ASPECT_TO_PREDICATE = {
     "P": "biolink:participates_in",  # Biological Process
     "F": "biolink:enables",          # Molecular Function  
@@ -170,20 +174,20 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     # Handle entity ID creation - some databases already include the prefix in DB_Object_ID
     if db_object_id.startswith(f"{db_source}:"):
         # DB_Object_ID already includes the database prefix (e.g., "MGI:101757")
-        entity_id = db_object_id
+        node_id = db_object_id
     else:
         # DB_Object_ID doesn't include prefix, so we add it (e.g., "A0A024RBG1" -> "UniProtKB:A0A024RBG1")
-        entity_id = f"{db_source}:{db_object_id}"
+        node_id = f"{db_source}:{db_object_id}"
     
     entity = biolink_class(
-        id=entity_id,
+        id=node_id,
         name=db_object_symbol,
         category=biolink_class.model_fields['category'].default,  # Dynamic category from Biolink model
         in_taxon=[taxon.replace("taxon:", "NCBITaxon:")],  # Convert GO taxon format to Biolink NCBI format
         description=db_object_name if db_object_name else None,  # Include full entity name as description
     )
 
-    # Create GO term node using appropriate biolink class based on aspect
+    # Create GO term node using the appropriate biolink class based on aspect
     # GO aspects map to specific biolink classes for proper semantic categorization:
     # P (Process) -> BiologicalProcess, F (Function) -> MolecularActivity, C (Component) -> CellularComponent
     go_biolink_class = GO_ASPECT_TO_BIOLINK_CLASS.get(aspect, NamedThing)
@@ -204,10 +208,13 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     if not predicate:
         predicate = ASPECT_TO_PREDICATE.get(aspect)
         if not predicate:
-            koza.log(f"Unknown qualifier '{qualifier}' and aspect '{aspect}' for record: {record}", level="WARNING")
+            koza.log(msg=f"Unknown qualifier '{qualifier}' and aspect '{aspect}' for record: {record}", level="WARNING")
             return [], []
         else:
-            koza.log(f"Using fallback predicate for qualifier '{qualifier}' -> aspect '{aspect}' -> '{predicate}'", level="INFO")
+            koza.log(
+                msg=f"Using fallback predicate for " +
+                    f"qualifier '{qualifier}' -> aspect '{aspect}' -> '{predicate}'", level="INFO"
+            )
 
     # Get knowledge level and agent type from evidence code mapping
     # Biolink-centric: Uses biolink KnowledgeLevelEnum and AgentTypeEnum for type safety
@@ -244,30 +251,34 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     if biolink_class == Gene:
         # Use GeneToGoTermAssociation for gene entities
         association = GeneToGoTermAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=entity.id,
             predicate=predicate,
             object=go_term.id,
-            negated="NOT" in qualifier,  # Handle negative associations from GAF qualifier field
+            negated="NOT" in qualifier,  # Handle negative associations from the GAF qualifier field
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
-            primary_knowledge_source=INFORES_GOA,  # GOA as the primary source
-            aggregator_knowledge_source=[INFORES_BIOLINK],  # This repository as aggregator
+            sources=build_association_knowledge_sources(
+                primary=INFORES_GOA, # GOA as the primary source
+                aggregating={INFORES_BIOLINK:[INFORES_GOA]} # This repository as the aggregator
+            ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
         )
     else:
         # Use generic Association for protein, complex, and RNA entities since there are no specific associations
         association = Association(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=entity.id,
             predicate=predicate,
             object=go_term.id,
-            negated="NOT" in qualifier,  # Handle negative associations from GAF qualifier field
+            negated="NOT" in qualifier,  # Handle negative associations from the GAF qualifier field
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
-            primary_knowledge_source=INFORES_GOA,  # GOA as the primary source
-            aggregator_knowledge_source=[INFORES_BIOLINK],  # This repository as aggregator
+            sources=build_association_knowledge_sources(
+                primary=INFORES_GOA,  # GOA as the primary source
+                aggregating={INFORES_BIOLINK: [INFORES_GOA]}  # This repository as the aggregator
+            ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
         )
