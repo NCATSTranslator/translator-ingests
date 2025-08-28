@@ -1,0 +1,30 @@
+---
+name: Codespell
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+    - opened
+    - reopened
+    - synchronize
+    - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  codespell:
+    name: Check for spelling errors
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Codespell
+        uses: codespell-project/actions-codespell@v2
+        with:
+          skip: ./data/*
+          ignore_words_file: .codespellignore
+

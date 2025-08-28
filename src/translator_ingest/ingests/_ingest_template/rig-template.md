@@ -65,7 +65,7 @@ Records from relevant files that are not included in the ingest.
   |  |  |  | 
 
 ### Future Content Considerations (o)
-Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - ...
