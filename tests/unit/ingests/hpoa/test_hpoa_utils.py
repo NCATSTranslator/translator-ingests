@@ -10,7 +10,7 @@ from src.translator_ingest.util.github import GitHubReleases
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     FrequencyHpoTerm,
     Frequency,
-    get_hpo_term,
+    get_frequency_hpo_term,
     map_percentage_frequency_to_hpo_term,
     phenotype_frequency_to_hpo_term,
 )
@@ -23,13 +23,11 @@ def test_hpoa_latest_version():
     assert version is not None and vre.match(version)
 
 def test_get_hpo_term():
-    assert get_hpo_term("HP:0040282") == FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79)
-
+    assert get_frequency_hpo_term("HP:0040282") == FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79)
 
 @pytest.mark.parametrize(
     "query",
     [
-        (-1, None),
         (0, FrequencyHpoTerm(curie="HP:0040285", name="Excluded", lower=0, upper=0)),
         (1, FrequencyHpoTerm(curie="HP:0040284", name="Very rare", lower=1, upper=4)),
         (2, FrequencyHpoTerm(curie="HP:0040284", name="Very rare", lower=1, upper=4)),
@@ -38,11 +36,19 @@ def test_get_hpo_term():
         (50, FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79)),
         (85, FrequencyHpoTerm(curie="HP:0040281", name="Very frequent", lower=80, upper=99)),
         (100, FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100)),
-        (101, None),
     ],
 )
 def test_map_percentage_frequency_to_hpo_term(query: tuple[int, Optional[FrequencyHpoTerm]]):
     assert map_percentage_frequency_to_hpo_term(query[0]) == query[1]
+
+
+@pytest.mark.parametrize(
+    "query",
+    [-1, 101]
+)
+def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
+    with pytest.raises(ValueError):
+        map_percentage_frequency_to_hpo_term(query)
 
 
 @pytest.mark.parametrize(

@@ -169,12 +169,10 @@ ASSOCIATION_TEST_SLOTS = [
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": 50.0,
-                # see TODO semantic concerns documented in the inline comment
-                #          in the phenotype_frequency_to_hpo_term() utility method
                 "has_quotient": 0.5,
                 # '50%' above implies HPO term that the phenotype
                 # is 'Present in 30% to 79% of the cases'.
-                "frequency_qualifier": None, # TODO: should perhaps this be set to "HP:0040282"?
+                "frequency_qualifier": "HP:0040282",
                 "sources": [
                     {
                        "resource_role": "primary_knowledge_source",
@@ -514,9 +512,9 @@ def test_gene_to_disease_transform(
                 "predicate": "biolink:has_phenotype",
                 "object": "HP:0000013",
 
-                "frequency_qualifier": None,
-                "has_percentage":  33.33333333333333,
-                "has_quotient":  0.3333333333333333,
+                "frequency_qualifier": "HP:0040282",
+                "has_percentage":  33.0,
+                "has_quotient":  0.33,
                 "has_count":  3,
                 "has_total": 9,
                 "disease_context_qualifier": "MONDO:0013588",
@@ -568,7 +566,7 @@ def test_gene_to_disease_transform(
                 "predicate": "biolink:has_phenotype",
                 "object": "HP:0003005",
 
-                "frequency_qualifier": None,
+                "frequency_qualifier": "HP:0040283",
                 "has_percentage":  5,
                 "has_quotient":  0.05,
                 "has_count":  None,

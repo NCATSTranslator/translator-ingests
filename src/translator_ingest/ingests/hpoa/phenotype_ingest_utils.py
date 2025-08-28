@@ -139,28 +139,32 @@ hpo_term_to_frequency: dict = {"HP:0040280": FrequencyHpoTerm(curie="HP:0040280"
                                                               lower=0.0, 
                                                               upper=0.0)}  # Present in 0% of the cases.
 
-def get_hpo_term(hpo_id: str) -> Optional[FrequencyHpoTerm]:
+
+def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm:
     """
-    Leverages the global hpo_term_to_frequency dict to grab the relevant object
+    :param hpo_id: Candidate "frequency" HPO ID to be looked up
+    :return: FrequencyHpoTerm defined by the HPO ID (if available)
+    :raise ValueError: when no valid FrequencyHpoTerm is found
     """
     if hpo_id:
         return hpo_term_to_frequency[hpo_id] if hpo_id in hpo_term_to_frequency else None
     else:
-        return None
+        raise ValueError(f"Invalid HPO ID: {hpo_id}")
 
 
-def map_percentage_frequency_to_hpo_term(percentage: Optional[float]) -> Optional[str]:
+def map_percentage_frequency_to_hpo_term(percentage: Optional[float]) -> FrequencyHpoTerm:
     """
     Map phenotypic percentage frequency to a corresponding HPO term corresponding to (HP:0040280 to HP:0040285).
 
     :param percentage: The float number should be in range 0.0 to 100.0 (otherwise, returns None)
-    :return: String CURIE of HPO term mapping onto the percentage range of the term definition.
+    :return: FrequencyHpoTerm mapping onto the percentage range of the term definition
+    :raise ValueError: when percentage lies outside any valid FrequencyHpoTerm range
     """
-    if percentage:
+    if percentage is not None:
         for hpo_id, fht in hpo_term_to_frequency.items():
             if fht.lower <= percentage <= fht.upper:
-                return hpo_id
-    return None
+                return fht
+    raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage}")
 
 
 def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[Frequency]:
@@ -188,31 +192,29 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
         try:
 
             if frequency_field.startswith("HP:"):
-                hpo_term = get_hpo_term(hpo_id=frequency_field)
+                hpo_term = get_frequency_hpo_term(hpo_id=frequency_field)
 
             else:
                 if frequency_field.endswith("%"):
-                    percentage = float(frequency_field.removesuffix("%"))
-                    # TODO: is this semantically correct to also assign
-                    #       the identical float value to 'has_quotient'
-                    quotient = percentage / 100.0
+                    percentage = round(float(frequency_field.removesuffix("%")),1)
+                    quotient = round(percentage / 100.0, 2)
 
                 else:
                     # assume a ratio
                     ratio_parts = frequency_field.split("/")
+                    assert len(ratio_parts) == 2, \
+                        f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
                     has_count = int(ratio_parts[0])
                     has_total = int(ratio_parts[1])
-                    quotient = float(has_count / has_total)
-                    # TODO: is this semantically correct to also assign
-                    #       the identical float value to 'has_percentage'
-                    percentage = quotient * 100.0
+                    quotient = round(float(has_count / has_total), 2)
+                    percentage = round(quotient * 100.0, 1)
 
                 # This should map onto a non-null HPO term
                 hpo_term = map_percentage_frequency_to_hpo_term(percentage)
 
         except Exception:
             # the expected ratio is not recognized
-            logger.error(f"hpoa_frequency(): invalid frequency ratio '{frequency_field}'")
+            logger.error(f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'")
             return None
 
         return Frequency(
