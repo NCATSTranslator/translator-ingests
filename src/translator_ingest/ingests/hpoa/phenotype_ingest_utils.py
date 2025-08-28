@@ -18,9 +18,6 @@ from translator_ingest.util.biolink import (
     INFORES_ORPHANET,
     INFORES_DECIFER,
     INFORES_HPOA,
-    BIOLINK_CAUSES,
-    BIOLINK_CONTRIBUTES_TO,
-    BIOLINK_ASSOCIATED_WITH,
     build_association_knowledge_sources
 )
 
@@ -235,11 +232,11 @@ def get_hpoa_genetic_predicate(original_predicate: str) -> str:
     Convert the association column into a Biolink Model predicate
     """
     if original_predicate == 'MENDELIAN':
-        return BIOLINK_CAUSES
+        return "biolink:causes"
     elif original_predicate == 'POLYGENIC':
-        return BIOLINK_CONTRIBUTES_TO
+        return "biolink:contributes_to"
     elif original_predicate == 'UNKNOWN':
-        return BIOLINK_ASSOCIATED_WITH
+        return "biolink:associated_with"
     else:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 

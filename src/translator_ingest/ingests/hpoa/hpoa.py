@@ -35,7 +35,6 @@ from translator_ingest import PRIMARY_DATA_PATH
 from translator_ingest.util.github import GitHubReleases
 from translator_ingest.util.biolink import (
     INFORES_HPOA,
-    BIOLINK_CAUSES,
     entity_id,
     build_association_knowledge_sources
 )
@@ -213,7 +212,7 @@ def transform_record_gene_to_disease(
         disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
         disease = Disease(id=disease_id, **{})
 
-        if predicate == BIOLINK_CAUSES:
+        if predicate == "biolink:causes":
             association_class = CausalGeneToDiseaseAssociation
         else:
             association_class = CorrelatedGeneToDiseaseAssociation

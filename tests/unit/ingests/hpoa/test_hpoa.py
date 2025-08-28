@@ -8,11 +8,6 @@ import koza
 from koza.transform import Record, Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.util.biolink import (
-    BIOLINK_CAUSES,
-    BIOLINK_CONTRIBUTES_TO,
-    BIOLINK_ASSOCIATED_WITH,
-)
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
 
 from translator_ingest.ingests.hpoa.hpoa import (
@@ -287,9 +282,9 @@ def test_disease_to_phenotype_transform(
 @pytest.mark.parametrize(
     ("association", "expected_predicate"),
     [
-        ("MENDELIAN", BIOLINK_CAUSES),
-        ("POLYGENIC", BIOLINK_CONTRIBUTES_TO),
-        ("UNKNOWN", BIOLINK_ASSOCIATED_WITH),
+        ("MENDELIAN", "biolink:causes"),
+        ("POLYGENIC", "biolink:contributes_to"),
+        ("UNKNOWN", "biolink:associated_with"),
     ],
 )
 def test_predicate(association: str, expected_predicate: str):

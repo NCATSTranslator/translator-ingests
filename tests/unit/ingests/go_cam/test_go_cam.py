@@ -1,5 +1,4 @@
 from typing import Iterable
-import json
 import logging
 
 import pytest
@@ -10,10 +9,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene
 )
 from koza.io.writer.writer import KozaWriter
-from koza.runner import KozaRunner, KozaTransformHooks
 from translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
-from pathlib import Path
-from unittest.mock import MagicMock
 
 
 class MockWriter(KozaWriter):

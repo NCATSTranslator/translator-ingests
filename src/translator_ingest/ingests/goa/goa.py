@@ -1,4 +1,3 @@
-import uuid
 import koza
 from typing import Iterable, Any
 
@@ -21,7 +20,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.util.biolink import (
     INFORES_GOA,
     INFORES_BIOLINK,
-    BIOLINK_RELATED_TO,
     entity_id,
     build_association_knowledge_sources
 )
