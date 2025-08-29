@@ -15,7 +15,7 @@
 ## - "source_publication_date": DISEASES doesn't provide a publication/creation date for their download files
 ## - "source_data_files": seems redundant with source_access_urls in this case (we only downloaded files we used)
 "source_infores_id": "infores:diseases"          # infores identifier of the source                   |   1..1 iriOrCurie
-"source_license": "CC BY 4.0"                    # license / terms of use for the ingested source.    |   0..1 string      TO DO: Provide additional guidance on how to populate. Consider a more cosntrained or richer model of licenses (see proposal 2 below)
+"source_license": "CC BY 4.0"                    # license / terms of use for the ingested source.    |   0..1 string      TO DO: Provide additional guidance on how to populate. Consider a more constrained or richer model of licenses (see proposal 2 below)
 "source_access_date": "2025-07-17"               # date that data from the resource was accessed and downloaded into the ingest system.   |    0..1 date
 "source_access_urls":                            # urls or urls where source data was accessed / downloaded / queried        |    0..m iriOrCURIE
   - "https://download.jensenlab.org/human_disease_textmining_filtered.tsv"

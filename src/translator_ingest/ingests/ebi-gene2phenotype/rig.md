@@ -14,6 +14,8 @@ It is constructed by experts reviewing published literature, and it is primarily
 Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism.
 
 ### Source Category(ies)
+Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/rig-instructions.md#source-categoryies).
+
 - Primary Knowledge Provider
 
 ### Citation (o)
@@ -53,12 +55,12 @@ Source files with content we aim to ingest.
   | G2P_all_[date].csv | https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/ | Associations from all panels (disease categories) | 
 
 
-### Included Content
-Records from relevant files that are included in this ingest.
+### Included Content / Records
+Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest. 
 
-  | File | Included Records | Fields Used | 
+  | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
-  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, allelic requirement, confidence, molecular mechanism, publications, date of last review |
+  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, disease MONDO, allelic requirement, confidence, molecular mechanism, publications, date of last review |
  
        
 ### Filtered Content
@@ -67,11 +69,12 @@ Records from relevant files that are not included in the ingest.
   | File | Filtered  Records | Rationale |
   |----------|----------|----------|
   | G2P_all_[date].csv |  Records where 'confidence' value is 'limited', 'disputed', or 'refuted' | Evidence level not sufficient for inclusion. |
-  | G2P_all_[date].csv |  Records with no value in 'disease mim' column | We currently use only this column as the source of disease IDs |
+  | G2P_all_[date].csv |  Records with no values in both 'disease mim' and 'disease MONDO' columns | No IDs to use for disease nodes |
   | G2P_all_[date].csv |  Records with NodeNorm mapping failures for the node IDs | Failed normalization means that the node would not be connected to other data/nodes in Translator graphs. |
 
      
 ### Future Content Considerations (o)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better
@@ -108,19 +111,18 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 | Biolink Category |  Source Identifier Type(s) | Node Properties | Notes |
 |------------------|----------------------------|--------|---------|
-| Gene | 	HGNC  |  |  |
-| Disease | OMIM, orphanet |  |  |
+| Gene | 	HGNC  | none |  |
+| Disease | OMIM, orphanet, MONDO | none | 'disease mim' column is source of OMIM and orphanet IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column |
 
 
 ### Future Modeling Considerations (o)
-- Revisit 'disease MONDO' column (re-analyze) because resource has been working to improve the reliability of this data
 - May want to revisit how we handle the 'molecular mechanism' and 'variant types' columns VS the biolink-model qualifier options 
 - Revisit modeling of allelic_requirement (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values). See PR linked below for more details.
 
 
 ------------------
 
-## Ingest Provenance
+## Ingest Provenance (o)
 
 ### Ingest Contributors (o)
 - **Colleen Xu**: code author, data modeling
@@ -139,18 +141,24 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
       - `disputed` and `refuted`: these [values](https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section) mean there's strong evidence that there ISN'T an association (negation). **This decision to exclude could be revisited once Translator can model/handle negation better.**
 
 - **Source Columns**:
-     - `disease MONDO`: **may revisit during this ingest process** because resource has been working to improve this data
      - `confidence`: currently not including as an edge property, because [more data-modeling in biolink-model](https://github.com/biolink/biolink-model/issues/1583) is needed. **Could revisit once this issue is addressed.**
      - **Seem harder to get into Translator, potentially useful**: 
-       - `molecular mechanism categorisation`: "qualifies" the `molecular mechanism` column's value (seems to say how molecular mechanism was decided: "inferred" or "evidence") 
-           - tricky since it's like "how knowledge was obtained" for a specific part of edge (I'm using `molecular mechanism` to adjust the subject qualifier) 
        - `cross cutting modifier`: additional info on inheritance. Limited set of terms BUT "; "- delimited. Some terms may map to "HPO inheritance qualifier terms" (didn't try). Lots of missing data (NA)
           - would be a new edge/node property or qualifier. But complicated because EBI gene2pheno has custom terms, not just from HPO inheritance qualifiers. 
        - `variant consequence`: row can have multiple values ("; "- delimited). Limited set of terms already mapped to SO.
           - seems like aspect qualifier, but this can be a list for a gene-disease edge - and I'm not sure how to handle this (not that comfortable splitting into multiple edges)
-       - `variant types`: row can have multiple values ("; "- delimited). 30+ set of terms, already mapped to SO. Lots of missing data (NA)
-       - `molecular mechanism evidence`: treat as free text? very complicated string 
+       - `variant types`: row can have multiple values ("; "- delimited). Medium set of terms already mapped to SO. Lots of missing data (NA). **>100 UNIQUE VALUES (SINGLE, MIX OF TERMS). I don't think using this as a qualifier is a good idea - it's confusing**
+          - would be a new edge/node property or qualifier (somewhat modeled as predicates, for variant-gene relationships).
+       - `molecular mechanism support` (**new Aug 2025**): "qualifies" the molecular_mechanism (seems to say how molecular mechanism was decided: "inferred" or "evidence"). 
+          - **Doesn't seem to show up on single-record webpage** (compared rows with value "evidence" / no "molecular_mechanism_categorisation" value to their webpages; the webpages don't have the string "evidence").
+          - tricky since it's like "how knowledge was obtained" for a specific part of edge (I'm using molecular_mechanism to adjust the subject qualifier) 
+       - `molecular mechanism categorisation` (**new Aug 2025**): more detailed mechanism info, structured (displayed in single-record webpage as a table). 
+          - VERY SPARSE (LOTS OF NA), multivalued, more complex structure
+       - `molecular mechanism evidence`: "types of evidence available to support reported mechanism", according to Data download format txt. complicated structure, is displayed in single-record webpages as a table. Lots of NA. 
+          - VERY SPARSE (LOTS OF NA), multivalued, very complex structure with custom terms that aren't defined/explained anywhere yet
        - `comments`: treat as free text
+       - `review` (**new Aug 2025**): indicates when record is under review (according to Data_download_format txt file). Don't know what the possible values are (boolean?) because I've only seen the column be all NA so far.
+          - interesting concept idea, but not sure if we want it in Translator or not (also may change in source quickly and we'll be outdated
     - Not useful to get into Translator:
        - `gene mim`: using `hgnc id` column as the source of gene node IDs instead
        - `gene symbol`, `previous gene symbols`, `disease name`: nodes will ultimately use human-readable labels from NodeNorm
@@ -162,3 +170,4 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
   - `form_or_variant_qualifier` could have a lot of structural variant terms. Then `variant types` terms could map to this. **One problem is variant_types is multivalued (when a biolink model qualifier is not).** Other notes: 
     - this column has a lot of missing values
     - resource doesn't provide a file with all possible terms and their mappings to SO terms, making the parsing/maintenance of any mapping trickier
+    - **>100 UNIQUE VALUES (SINGLE, MIX OF TERMS). I don't think using this as a qualifier is a good idea - it's confusing**
