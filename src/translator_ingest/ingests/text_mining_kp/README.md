@@ -12,23 +12,6 @@ This ingest provides a mechanism to process pre-existing KGX files from the Text
 4. **Provenance**: Maintains or enhances knowledge source attribution
 5. **Pipeline Integration**: Leverages existing pipeline infrastructure for logging, monitoring, and quality control
 
-## Processing Functions
-
-The pass-through ingest performs the following operations:
-
-### Node Processing
-- Validates required fields (id, category)
-- Ensures proper Biolink category assignment
-- Preserves node properties (name, description, synonyms, xrefs)
-- Creates typed Biolink objects (Gene, Protein, Disease, etc.)
-
-### Edge Processing
-- Validates required fields (id, subject, predicate, object)
-- Ensures proper knowledge level and agent type attribution
-- Optionally filters based on confidence scores
-- Preserves evidence and publication information
-- Maintains qualifiers and other edge properties
-
 ### Optional Transformations
 - **Confidence Filtering**: Remove low-confidence associations
 - **Category Normalization**: Ensure Biolink-compliant categories
@@ -49,7 +32,6 @@ The pass-through ingest performs the following operations:
 - **Files**:
   - `text_mining_kp_nodes.jsonl`: Processed nodes
   - `text_mining_kp_edges.jsonl`: Processed edges
-- **Enhancements**: Validated, normalized, and optionally filtered
 
 ## Configuration
 
@@ -109,7 +91,6 @@ make validate INGEST=text_mining_kp
 ### When NOT to Use
 - Creating KGX from non-KGX sources (use standard ingests)
 - Simple file copying without processing
-- One-time validation checks (use validation utilities directly)
 
 ## Monitoring and Logging
 
@@ -120,12 +101,3 @@ The ingest provides detailed logging including:
 - Processing statistics
 
 Logs are written to the standard Koza output and can be monitored for quality control.
-
-## Future Enhancements
-
-Potential improvements for this pass-through ingest:
-1. Advanced filtering based on node/edge properties
-2. Batch processing for very large KGX files
-3. Parallel processing of nodes and edges
-4. Custom validation rules via configuration
-5. Integration with specific TMKP metadata standards
