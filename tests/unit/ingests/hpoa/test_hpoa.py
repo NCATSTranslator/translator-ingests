@@ -13,6 +13,7 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genet
 from translator_ingest.ingests.hpoa.hpoa import (
     transform_record_disease_to_phenotype,
     transform_record_gene_to_disease,
+    prepare_data_gene_to_phenotype,
     transform_record_gene_to_phenotype
 )
 
@@ -58,7 +59,7 @@ mock_mondo_sssom_map: dict[str, dict[str, str]] = {
 }
 
 @pytest.fixture(scope="package")
-def mock_koza_transform() -> koza.KozaTransform:
+def mock_koza_transform_1() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = {"mondo_map": mock_mondo_sssom_map}
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
@@ -266,13 +267,13 @@ ASSOCIATION_TEST_SLOTS = [
     ]
 )
 def test_disease_to_phenotype_transform(
-        mock_koza_transform: koza.KozaTransform,
+        mock_koza_transform_1: koza.KozaTransform,
         test_record: dict,
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
     transform_test_runner(
-        result=transform_record_disease_to_phenotype(mock_koza_transform, test_record),
+        result=transform_record_disease_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
@@ -352,18 +353,35 @@ def test_predicate(association: str, expected_predicate: str):
     ]
 )
 def test_gene_to_disease_transform(
-        mock_koza_transform: koza.KozaTransform,
+        mock_koza_transform_1: koza.KozaTransform,
         test_record: dict,
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
     transform_test_runner(
-        result=transform_record_gene_to_disease(mock_koza_transform, test_record),
+        result=transform_record_gene_to_disease(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
+
+
+@pytest.fixture(scope="package")
+def mock_koza_transform_2() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    extra_fields: dict[str, Any] = {}
+    return MockKozaTransform(extra_fields=extra_fields, writer=writer, mappings=dict())
+
+# @koza.prepare_data(tag="gene_to_phenotype")
+# def prepare_data_gene_to_phenotype(
+#         koza_transform: koza.KozaTransform,
+#         data: Iterable[dict[str, Any]]
+# ) -> Iterable[dict[str, Any]] | None:
+def test_transform_record_disease_to_phenotype(mock_koza_transform_1: koza.KozaTransform):
+    result: Iterable[dict[str, Any]] | None = prepare_data_gene_to_phenotype(mock_koza_transform_2, [])
+    assert result is not None
+
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
@@ -583,13 +601,13 @@ def test_gene_to_disease_transform(
     ]
 )
 def test_gene_to_phenotype_transform(
-        mock_koza_transform: koza.KozaTransform,
+        mock_koza_transform_1: koza.KozaTransform,
         test_record: dict,
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
     transform_test_runner(
-        result=transform_record_gene_to_phenotype(mock_koza_transform, test_record),
+        result=transform_record_gene_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
         node_test_slots=NODE_TEST_SLOTS,

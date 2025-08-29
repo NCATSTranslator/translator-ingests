@@ -251,12 +251,12 @@ def prepare_data_gene_to_phenotype(
     return db.execute(f"""
     with
       hpoa as (select * from read_csv('{HPOA_PHENOTYPE_FILE}')),
-      g2p as (select * from read_csv('{HPOA_GENES_TO_DISEASE_FILE}')),
+      g2p as (select * from read_csv('{HPOA_GENES_TO_PHENOTYPE_FILE}')),
       g2d as (select 
         replace(ncbi_gene_id, 'NCBIGene:', '') as ncbi_gene_id_clean,
         disease_id, 
         association_type 
-        from read_csv('{HPOA_GENES_TO_PHENOTYPE_FILE}')),
+        from read_csv('{HPOA_GENES_TO_DISEASE_FILE}')),
       g2d_grouped as (select 
         ncbi_gene_id_clean,
         disease_id,
