@@ -77,12 +77,12 @@ or via `make` commands:
 ```bash
 # 1. Skip download (using existing KGX files)
 # 2. Transform with pass-through
-make transform INGEST=text_mining_kp
+make transform SOURCE="text_mining_kp"
 
 # 3. Normalize nodes
-make normalize INGEST=text_mining_kp
+make normalize SOURCE="text_mining_kp"
 
 # 4. Validate output
-make validate INGEST=text_mining_kp
+make validate SOURCE="text_mining_kp"
 ```
 
