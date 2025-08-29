@@ -10,7 +10,7 @@ https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 """
 
 from loguru import logger
-from typing import Optional, Any
+from typing import Optional, Any, Iterable
 from os.path import join, abspath
 
 import duckdb
@@ -235,17 +235,20 @@ def transform_record_gene_to_disease(
         logger.warning(str(e))
         return None
 
-@koza.on_data_begin(tag="gene_to_phenotype")
-def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform) -> None:
+@koza.prepare_data(tag="gene_to_phenotype")
+def prepare_data_gene_to_phenotype(
+        koza_transform: koza.KozaTransform,
+        data: Iterable[dict[str, Any]]
+) -> Iterable[dict[str, Any]] | None:
     """
     For HPOA, we need to preprocess data to join data
     from two files: phenotype.hpoa and genes_to_phenotype.txt
     :param koza_transform: koza.KozaTransform
-    :return: None
+    :param data: Iterable[dict[str, Any]]
+    :return: Iterable[dict[str, Any]] | None
     """
     db = duckdb.connect(":memory:", read_only=False)
-    db.execute(f"""
-    copy (
+    return db.execute(f"""
     with
       hpoa as (select * from read_csv('{HPOA_PHENOTYPE_FILE}')),
       g2p as (select * from read_csv('{HPOA_GENES_TO_DISEASE_FILE}')),
@@ -266,13 +269,11 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform) -> None:
     from g2p
          left outer join hpoa on hpoa.hpo_id = g2p.hpo_id
                      and g2p.disease_id = hpoa.database_id
-    		             and hpoa.frequency = g2p.frequency
+                        and hpoa.frequency = g2p.frequency
          left outer join g2d_grouped on g2p.ncbi_gene_id = g2d_grouped.ncbi_gene_id_clean
                      and g2p.disease_id = g2d_grouped.disease_id
     group by all
-    ) to '{HPOA_GENES_TO_PHENOTYPE_PREPROCESSED_FILE}' (delimiter '\t', header true)
     """)
-
 
 @koza.transform_record(tag="gene_to_phenotype")
 def transform_record_gene_to_phenotype(
