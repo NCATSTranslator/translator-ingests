@@ -81,3 +81,38 @@ Validation generates JSON reports stored in timestamped directories:
 ```
 data/validation/validation_results_MMDDYY/validation_report_YYYYMMDD_HHMMSS.json
 ```
+
+## Code Quality Tools
+
+The project includes several code quality tools that can be run via make commands:
+
+### Spell Checking
+
+The project uses `codespell` to check for common spelling errors. It's configured to:
+- Skip the `data/` directory 
+- Ignore specific words listed in `.codespellignore` (e.g., HDA, ND)
+
+To check for spelling errors (run automatically as part of `make test`):
+```bash
+make test
+```
+
+To interactively fix spelling errors:
+```bash
+make spell-fix
+```
+
+The interactive mode will:
+- Show you each spelling error found
+- Ask for confirmation before making changes
+- Let you choose between multiple suggestions when available
+
+### Linting and Formatting
+
+```bash
+# Check code style without making changes
+make lint
+
+# Automatically format code
+make format
+```

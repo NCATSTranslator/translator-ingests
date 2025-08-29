@@ -59,7 +59,7 @@ Records from the relevant files that are included, and optionally a list of fiel
 
   | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
-  | CTD_chemicals_diseases.tsv.gz  | Curated therapeutic and marker/mechanism associations (records where a "DirectEvidence" value is populated with type "T" or "M"), as well as inferred associtionas (recrods lacking a value in the DirectEvidence column)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
+  | CTD_chemicals_diseases.tsv.gz  | Curated therapeutic and marker/mechanism associations (records where a "DirectEvidence" value is populated with type "T" or "M"), as well as inferred associtionas (records lacking a value in the DirectEvidence column)  | ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs |
 
 ### Filtered Content / Records
 Records from relevant files that are not included in the ingest.
@@ -70,10 +70,10 @@ Records from relevant files that are not included in the ingest.
 
 
 ### Future Content Considerations (o)
-Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
-   - While the current ingest includes only Chemical-Disease Asociations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table linked below for more details.
+   - While the current ingest includes only Chemical-Disease Associations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table linked below for more details.
   - Consider ingesting additional chemical-disease edges reporting statistical correlations from environmental exposure studies from CTD_exposure_events.tsv.gz. This is a unique/novel source for this kind of knowledge, but there is not a lot of data here, and utility is not yet clear.
   - Consider adding some threshold / cutoff to remove lower quality/confidence inferences (e.g. based on shared gene count, publication count, or inference score. At present we include even inferences based on a single shared gene/pub - which is not really meaningful.
 
@@ -102,7 +102,7 @@ Content addditions/changes to consider for future iterations (consider edge cont
 **Additional Notes/Rationale (o)**:
 - CTD_chemicals_diseases.tsv. data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores.
    - Separate edges will be created for each type of association reported between a chemical and a given disease, according to the mappings described above.
-   - All "shared gene" rows in the source data file for a given C-D pair will be aggregated into a single 'associated_with' edge that reprots an associated_with relationship with the inference score as an edge property (and possibly the list of shared genes). 
+   - All "shared gene" rows in the source data file for a given C-D pair will be aggregated into a single 'associated_with' edge that reports an associated_with relationship with the inference score as an edge property (and possibly the list of shared genes). 
    - This means that for a given C-D pair in the CTD file, there may be 1, 2, or 3 separate edges created in the Translator graph.
 - The 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
 - The 'correlates_with_or_contributes_to' predicate is used because the CTD 'M' flag does not distinguish between when a chemical is a correlated marker for a condition, or a contributing cause for the condition. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
