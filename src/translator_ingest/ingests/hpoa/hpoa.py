@@ -61,6 +61,26 @@ def get_latest_version() -> str:
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
     return ghr.get_latest_version()
 
+
+@koza.on_data_begin(tag="disease_to_phenotype")
+def on_data_begin_disease_to_phenotype(koza_transform: koza.KozaTransform):
+    """
+    Called before processing begins.
+    Can be used for setup or validation of input files.
+    """
+    koza_transform.log(f"Starting HPOA Disease to Phenotype processing")
+    koza_transform.log(f"Version: {get_latest_version()}")
+
+
+@koza.on_data_end(tag="disease_to_phenotype")
+def on_data_end_disease_to_phenotype(koza_transform: koza.KozaTransform):
+    """
+    Called after all data has been processed.
+    Used for logging summary statistics.
+    """
+    koza_transform.log("HPOA Disease to Phenotype processing complete")
+
+
 """
 This particular Translator Ingest module targets the "phenotype.hpoa" file for parsing.
 
@@ -190,6 +210,26 @@ def transform_record_disease_to_phenotype(
         logger.warning(str(e))
         return None
 
+
+@koza.on_data_begin(tag="gene_to_disease")
+def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform):
+    """
+    Called before processing begins.
+    Can be used for setup or validation of input files.
+    """
+    koza_transform.log(f"Starting HPOA Gene to Disease processing")
+    koza_transform.log(f"Version: {get_latest_version()}")
+
+
+@koza.on_data_end(tag="gene_to_disease")
+def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
+    """
+    Called after all data has been processed.
+    Used for logging summary statistics.
+    """
+    koza_transform.log("HPOA Gene to Disease processing complete")
+
+
 @koza.transform_record(tag="gene_to_disease")
 def transform_record_gene_to_disease(
         koza_transform: koza.KozaTransform,
@@ -235,6 +275,26 @@ def transform_record_gene_to_disease(
         logger.warning(str(e))
         return None
 
+
+@koza.on_data_begin(tag="gene_to_phenotype")
+def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
+    """
+    Called before processing begins.
+    Can be used for setup or validation of input files.
+    """
+    koza_transform.log(f"Starting HPOA Gene to Phenotype processing")
+    koza_transform.log(f"Version: {get_latest_version()}")
+
+
+@koza.on_data_end(tag="gene_to_phenotype")
+def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
+    """
+    Called after all data has been processed.
+    Used for logging summary statistics.
+    """
+    koza_transform.log("HPOA Gene to Phenotype processing complete")
+
+
 @koza.prepare_data(tag="gene_to_phenotype")
 def prepare_data_gene_to_phenotype(
         koza_transform: koza.KozaTransform,
@@ -274,6 +334,7 @@ def prepare_data_gene_to_phenotype(
                      and g2p.disease_id = g2d_grouped.disease_id
     group by all
     """).fetchall()
+
 
 @koza.transform_record(tag="gene_to_phenotype")
 def transform_record_gene_to_phenotype(
