@@ -2,7 +2,10 @@
 
 ## Purpose
 
-This ingest provides a mechanism to process pre-existing KGX files from the Text Mining Knowledge Provider (TMKP) through the translator-ingests pipeline. Unlike other ingests that transform external data formats into KGX, this module reads existing KGX files and applies validation, normalization, and optional transformations while maintaining the KGX format.
+This ingest provides a mechanism to process pre-existing KGX files from the Text Mining Knowledge Provider (TMKP) 
+through the translator-ingests pipeline. Unlike other ingests that transform external data formats into KGX, this 
+module reads existing KGX files and applies validation, normalization, and optional transformations while maintaining 
+the KGX format.
 
 ### Why Pass-through Processing?
 
@@ -11,6 +14,19 @@ This ingest provides a mechanism to process pre-existing KGX files from the Text
 3. **Filtering**: Allows filtering based on confidence scores, evidence, or other criteria
 4. **Provenance**: Maintains or enhances knowledge source attribution
 5. **Pipeline Integration**: Leverages existing pipeline infrastructure for logging, monitoring, and quality control
+
+## Use Cases
+
+### When to Use This Pass-through
+- Processing KGX files from external knowledge providers
+- Applying consistent validation across multiple KGX sources
+- Filtering or subsetting existing KGX data
+- Integrating external KGX into the standard pipeline
+- Adding provenance or updating metadata
+
+### When NOT to Use
+- Creating KGX from non-KGX sources (use standard ingests)
+- Simple file copying without processing
 
 ### Optional Transformations
 - **Confidence Filtering**: Remove low-confidence associations
@@ -43,13 +59,6 @@ The `text_mining_kp.yaml` file allows customization of:
 
 ## Run Instructions
 
-### Prerequisites
-1. Place KGX files in the designated data directory
-2. Update file paths in `text_mining_kp.yaml`
-3. Ensure Koza environment is properly configured
-
-### Execution
-
 ```bash
 # Run the pass-through ingest
 koza transform \
@@ -63,9 +72,7 @@ koza transform \
   --transform-config '{"min_confidence_threshold": 0.7}'
 ```
 
-### Pipeline Integration
-
-When integrated with the full pipeline:
+or via `make` commands:
 
 ```bash
 # 1. Skip download (using existing KGX files)
@@ -79,25 +86,3 @@ make normalize INGEST=text_mining_kp
 make validate INGEST=text_mining_kp
 ```
 
-## Use Cases
-
-### When to Use This Pass-through
-- Processing KGX files from external knowledge providers
-- Applying consistent validation across multiple KGX sources
-- Filtering or subsetting existing KGX data
-- Integrating external KGX into the standard pipeline
-- Adding provenance or updating metadata
-
-### When NOT to Use
-- Creating KGX from non-KGX sources (use standard ingests)
-- Simple file copying without processing
-
-## Monitoring and Logging
-
-The ingest provides detailed logging including:
-- Number of nodes/edges processed
-- Number of records filtered
-- Validation errors encountered
-- Processing statistics
-
-Logs are written to the standard Koza output and can be monitored for quality control.
