@@ -15,7 +15,7 @@
 ## - "source_publication_date": same reasoning as above
 ## - "source_data_files": source access url downloads 1 file. Don't see file name
 "source_infores_id": "infores:ebi-gene2phenotype"          # infores identifier of the source                   |   1..1 iriOrCurie
-"source_license": >-                                       # license / terms of use for the ingested source.    |   0..1 string      TO DO: Provide additional guidance on how to populate. Consider a more cosntrained or richer model of licenses (see proposal 2 below)
+"source_license": >-                                       # license / terms of use for the ingested source.    |   0..1 string      TO DO: Provide additional guidance on how to populate. Consider a more constrained or richer model of licenses (see proposal 2 below)
   'All data is made freely available', according to https://www.ebi.ac.uk/gene2phenotype/about/project.
   The website also links the EMBL-EBI terms of use https://www.ebi.ac.uk/about/terms-of-use/#general.
 "source_access_date": "2025-08-08"                         # date that data from the resource was accessed and downloaded into the ingest system.   |    0..1 date

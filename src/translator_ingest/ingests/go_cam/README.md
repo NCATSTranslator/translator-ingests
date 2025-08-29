@@ -19,7 +19,7 @@ CC BY 4.0 - Creative Commons Attribution 4.0 International License
 ### Data Access Locations
 There are two pages for downloading data files.
  - GO-CAMs are downloaded model by model, via kghub-downloader that takes an index file that shows all possible
-gocams by identifier, and then iterates one by one through the identifers, downloading each gocam. 
+gocams by identifier, and then iterates one by one through the identifiers, downloading each gocam. 
  - Downloads: 
    - index: https://s3.amazonaws.com/provider-to-model.json
    - URL pattern: https://live-go-cam.geneontology.io/product/yaml/go-cam/[id].json
