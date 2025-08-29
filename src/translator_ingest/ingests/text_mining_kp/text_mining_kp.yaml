@@ -1,38 +1,18 @@
 # Text Mining KP KGX Pass-through Configuration
 name: text_mining_kp
 
-# Configuration for reading pre-existing KGX files
-readers:
-  # Nodes file reader
-  - name: nodes
-    format: jsonl
-    files:
-      # Update these paths to point to actual KGX files
-      - data/text_mining_kp/nodes.jsonl
-    # No delimiter needed for JSONL format
-    
-  # Edges file reader  
-  - name: edges
-    format: jsonl
-    files:
-      # Update these paths to point to actual KGX files
-      - data/text_mining_kp/edges.jsonl
+reader:
+  format: jsonl
+  files:
+    - data/text_mining_kp/dummy.jsonl
 
 # Transform configuration
 transform:
   # Python module containing the transformation logic
-  code: src/translator_ingest/ingests/text_mining_kp/text_mining_kp.py
+  code: text_mining_kp.py
   
   # Optional: Set minimum confidence threshold for filtering
   # min_confidence_threshold: 0.5
-  
-  # Optional: Add any custom filters
-  filters:
-    # Example: Filter by knowledge level
-    # - inclusion_criteria:
-    #     knowledge_level:
-    #       - statistical_association
-    #       - literature_derived
 
 # Writer configuration for KGX output
 writer:
@@ -54,22 +34,17 @@ writer:
     - subject
     - predicate
     - object
-    - category
+    - qualified_predicate
+    - subject_aspect_qualifier
+    - subject_direction_qualifier
+    - object_aspect_qualifier
+    - object_direction_qualifier
     - knowledge_level
     - agent_type
-    - primary_knowledge_source
-    - aggregator_knowledge_source
+    - sources
     - publications
-    - confidence_score
-    - qualifiers
+    - has_confidence_level
+    - has_supporting_study_result
     - has_evidence
-    - has_count
-    - has_total
-    - has_quotient
-    - has_percentage
-    - subject_closure
-    - object_closure
+    - qualifiers
     
-  # Optional: Output file naming
-  # node_file: text_mining_kp_nodes_transformed.jsonl
-  # edge_file: text_mining_kp_edges_transformed.jsonl
