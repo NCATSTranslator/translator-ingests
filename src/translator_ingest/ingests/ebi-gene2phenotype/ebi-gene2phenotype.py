@@ -143,6 +143,8 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     publications = ["PMID:"+i.strip() for i in record["publications"].split(";")] if record["publications"] else None
     ## creating url
     url = "https://www.ebi.ac.uk/gene2phenotype/lgd/" + record["g2p id"]
+    ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error 
+    date = record["date of last review"][0:10]
 
     ## ?? okay not to include name?
     gene = Gene(id = "HGNC:"+record["hgnc id"])
@@ -168,8 +170,8 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         object = disease.id,
         sources = [
             RetrievalSource(
-                ## ?? current pydantic requires an id field
-                id = "EBI_G2P",
+                ## ?? current pydantic requires an id field. Doing what go_cam did
+                id = INFORES_EBI_G2P,
                 resource_id = INFORES_EBI_G2P,
                 resource_role = ResourceRoleEnum.primary_knowledge_source,
                 source_record_urls = [url]
@@ -177,7 +179,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         ],
         knowledge_level = KnowledgeLevelEnum.knowledge_assertion,
         agent_type = AgentTypeEnum.manual_agent,
-        update_date = record["date of last review"],
+        update_date = date,
         allelic_requirement = koza.state["allelicreq_mappings"][record["allelic requirement"]],
         ## include publications!!!
         publications = publications,
