@@ -25,10 +25,6 @@
 ### Source Category(ies)
 Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
 
-### Citation
-- [Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint)](https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/)
-
-
 ### Citation (o)
 - [Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint)](https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/)
   
