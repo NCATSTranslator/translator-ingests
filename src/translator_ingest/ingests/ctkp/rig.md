@@ -51,8 +51,8 @@ CTKP provides an improved version of clinical trials information that addresses 
 ### Edge Types
 | # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties |  UI Explanation |
 |----------|----------|----------|----------|----------|----------|---------|----------|----------|
-| 1 | Association | ChemicalEntity, SmallMolecule, MolecularMixture  | in_clinical_trials_for | Disease, PhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   | The `in_clinical_trials_for` predicate reports that an intervention was the tested in a clinical trial for a particular disease - based on a registered trial in ct.gov. |
-| 2 | Association | ChemicalEntity, MolecularMixture  | treats | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |   |  The `treats` predicate reports here that an intervention was shown to successfully treat a particular disease in virtue of its being interrogated in a Phase 4 trial. |
+| 1 | Association | ChemicalEntity, SmallMolecule, MolecularMixture  | in_clinical_trials_for | Disease, PhenotypicFeature  |  none  |  manual_agent, knowledge_assertion  | to do  | The `in_clinical_trials_for` predicate reports that an intervention was the tested in a clinical trial for a particular disease - based on a registered trial in ct.gov. |
+| 2 | Association | ChemicalEntity, MolecularMixture  | treats | DiseaseOrPhenotypicFeature  |  none |  manual_agent, knowledge_assertion  |  to do  |  The `treats` predicate is used for interventions in a Phase 4 trial that are performed for after successful demonstration for treating a particular disease. |
 
 
 **Notes/Rationale (o)**:
