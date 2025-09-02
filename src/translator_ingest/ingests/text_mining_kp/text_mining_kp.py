@@ -392,12 +392,12 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
             mapped_attributes.pop('biolink:primary_knowledge_source', None)
             mapped_attributes.pop('biolink:aggregator_knowledge_source', None)
 
-            # Add mapped attributes
+            # Add mapped attributes using correct biolink space case format
             if mapped_attributes:
                 for key, value in mapped_attributes.items():
-                    # Remove biolink: prefix for setting attributes
+                    # Remove biolink: prefix to get the space case attribute name
                     attr_name = key.replace('biolink:', '')
-                    # Check if Association has this attribute
+                    # Keep the space case format as biolink model uses space case
                     if hasattr(Association, attr_name):
                         association_data[attr_name] = value
                     else:
