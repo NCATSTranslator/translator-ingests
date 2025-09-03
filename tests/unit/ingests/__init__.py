@@ -7,11 +7,46 @@ expected content in node and edge slots, with test expectations defined by
 'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
 
-from typing import Optional, Iterable, Any, Union
+from typing import Optional, Iterable, Any, Union, Iterator
 
+import koza
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
+from koza.io.writer.writer import KozaWriter
 
 from koza.model.graphs import KnowledgeGraph
+from koza.transform import Record
+
+
+class MockKozaWriter(KozaWriter):
+    """
+    Mock "do nothing" implementation of a KozaWriter
+    """
+    def write(self, entities: Iterable):
+        pass
+
+    def finalize(self):
+        pass
+
+    def write_edges(self, edges: Iterable):
+        pass
+
+    def write_nodes(self, nodes: Iterable):
+        pass
+
+
+class MockKozaTransform(koza.KozaTransform):
+    """
+    Mock "do nothing" implementation of a KozaTransform
+    """
+    @property
+    def current_reader(self) -> str:
+        return ""
+
+    @property
+    def data(self) -> Iterator[Record]:
+        record: Record = dict()
+        yield record
+
 
 def flatten_sources(sources: list[RetrievalSource]) -> list[dict[str, str]]:
     flat_sources: list[dict[str, str]] = []

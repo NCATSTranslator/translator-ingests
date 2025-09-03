@@ -1,11 +1,11 @@
 import pytest
 
-from typing import Optional, Iterator, Iterable
+from typing import Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
-from koza.transform import Record, Mappings
+from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.util.biolink import (
@@ -21,37 +21,7 @@ from translator_ingest.ingests.hpoa.hpoa import (
     transform_record_gene_to_phenotype
 )
 
-from tests.unit.ingests import transform_test_runner
-
-class MockKozaWriter(KozaWriter):
-    """
-    Mock "do nothing" implementation of a KozaWriter
-    """
-    def write(self, entities: Iterable):
-        pass
-
-    def finalize(self):
-        pass
-
-    def write_edges(self, edges: Iterable):
-        pass
-
-    def write_nodes(self, nodes: Iterable):
-        pass
-
-
-class MockKozaTransform(koza.KozaTransform):
-    """
-    Mock "do nothing" implementation of a KozaTransform
-    """
-    @property
-    def current_reader(self) -> str:
-        return ""
-
-    @property
-    def data(self) -> Iterator[Record]:
-        record: Record = dict()
-        yield record
+from tests.unit.ingests import transform_test_runner, MockKozaWriter, MockKozaTransform
 
 # test mondo_map for the gene_to_phenotype
 # disease_id to disease_context_qualifier mappings

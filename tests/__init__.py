@@ -1,2 +1,0 @@
-
-TEST_DATA_PATH = ""
