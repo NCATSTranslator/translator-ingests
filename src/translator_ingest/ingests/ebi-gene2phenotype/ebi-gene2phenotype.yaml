@@ -18,11 +18,6 @@ reader:
     - "molecular mechanism"
     - "publications"
     - "date of last review"
-
-transform:
-## ?? unclear to me if `code` field has to be included
-## ?? unclear if `filters` are supposed to go here or in `reader`/`readers`
-## ?? no option to remove rows if column's value or all the listed column's values are empty
   filters:
     ## remove rows with specific confidence values: negated or likely-no relationship
     - inclusion: exclude

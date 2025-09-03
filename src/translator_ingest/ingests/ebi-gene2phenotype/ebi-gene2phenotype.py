@@ -76,7 +76,7 @@ def build_allelic_req_mappings(allelic_req_val):
 
 @koza.on_data_begin()
 def on_begin(koza: koza.KozaTransform) -> None:
-    ## ?? does it need to be saved for later in state vs mutating the existing dictionary?
+    ## save in state for later use
     ## dynamically create allelic req mappings - dictionary comprehension
     koza.state["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
     ## add current manual mappings
@@ -146,7 +146,6 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error 
     date = record["date of last review"][0:10]
 
-    ## ?? okay not to include name?
     gene = Gene(id = "HGNC:"+record["hgnc id"])
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
     if record["disease mim"]:
@@ -159,9 +158,8 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     else:    ## use "disease MONDO" column, which already has the correct prefix/format for Translator
         disease = Disease(id = record["disease MONDO"])
 
-    ## ?? copying ctd / go_cam, where publications is included even when it is None. Is that fine?
     association = GeneToDiseaseAssociation(
-        ## ?? is ID required?
+        ## creating arbitrary ID for edge right now
         id = str(uuid.uuid4()),
         subject = gene.id,
         predicate = BIOLINK_ASSOCIATED_WITH,
@@ -170,7 +168,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         object = disease.id,
         sources = [
             RetrievalSource(
-                ## ?? current pydantic requires an id field. Doing what go_cam did
+                ## making the ID the same as infores for now, which is what go_cam did
                 id = INFORES_EBI_G2P,
                 resource_id = INFORES_EBI_G2P,
                 resource_role = ResourceRoleEnum.primary_knowledge_source,
