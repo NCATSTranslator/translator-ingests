@@ -2,8 +2,8 @@
 Generic utility code for use in the ingest unit tests.
 
 The main function of interest is validate_transform_result(), which is used to test
-the output of a single transform_record() method invocation, looking for the
-expected content in node and edge slots, with test expectations defined by
+the output of a single @koza.transform_record() decorated method invocation, looking for the
+expected content in node and edge slots, with test expectations defined by constraints
 'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
 import pytest
