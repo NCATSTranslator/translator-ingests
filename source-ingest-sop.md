@@ -23,7 +23,7 @@
 4. **Reference Ingest Guides (RIGs)**: Document scope, content, and modeling decisions for an ingest, in a computable yaml format. ([Instructions](https://biolink.github.io/resource-ingest-guide-schema/example-rigs/)) ([yaml schema](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml))  ([yaml template](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/docs/files/rig_template.yaml)) ([yaml CTD example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd-rig.yaml)) ([web documentation](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
 5. **Ingest Code**: Python code used to execute an ingest as described in a RIG. ([Directory](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests)) ([CTD Example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd.py))
 6. **KGX Files**: The final knowledge graphs and ingest metadata that is produced by ingest code. ([CTD Example]() - TO DO)
-7. **Phase 2 Results Analysis**: An assessment of how often different tyeps of edges from different sources are returned in current results (based on Phase 2 sources/ingests) - to help identify priority sources and edge types for Phase 3 ([GDrive](https://drive.google.com/drive/folders/1Ugr7rbOogsDz-tsVfIxQ8sSy5X2xGLLk))
+7. **Phase 2 Results Analysis**: An assessment of how often different types of edges from different sources are returned in current results (based on Phase 2 sources/ingests) - to help identify priority sources and edge types for Phase 3 ([GDrive](https://drive.google.com/drive/folders/1Ugr7rbOogsDz-tsVfIxQ8sSy5X2xGLLk))
    
 ## Task Details
 
@@ -32,7 +32,7 @@
    - [Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936): Lists sources for ingest, info about each to help prioritize, and columns to recommend ingest owners.
    - [Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Table cpturing the final owners and contributors for each ingest.
    - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): Table with one row per Phase 2 ingest of a source by a KP - reporting which / how many KPs ingeted each source. 
-- As appropriate, schedule a Planning Call bewteen all contributors, to collaboratively address/document the questions/tasks below.
+- As appropriate, schedule a Planning Call between all contributors, to collaboratively address/document the questions/tasks below.
 
 ### 2. Create a Source Ingest Ticket in DINGO Repository [here](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/)
 - This ticket will capture questions and discussion related to ingest of a specific source - including assessment of terms of use, content and modeling issues, and notes for future iterations of the ingest. 
