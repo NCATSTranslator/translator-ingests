@@ -21,18 +21,24 @@ class MockKozaWriter(KozaWriter):
     """
     Mock "do nothing" implementation of a KozaWriter
     """
+    def __init__(self):
+        self.items = []
+
     def write(self, entities: Iterable):
-        pass
+        if isinstance(entities, list):
+            self.items.extend(entities)
+        else:
+            for entity in entities:
+                self.items.append(entity)
+
+    def write_nodes(self, nodes: Iterable):
+        self.items.extend(nodes)
+
+    def write_edges(self, edges: Iterable):
+        self.items.extend(edges)
 
     def finalize(self):
         pass
-
-    def write_edges(self, edges: Iterable):
-        pass
-
-    def write_nodes(self, nodes: Iterable):
-        pass
-
 
 class MockKozaTransform(koza.KozaTransform):
     """
