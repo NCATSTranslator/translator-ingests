@@ -13,7 +13,7 @@ from translator_ingest.ingests._ingest_template._ingest_template import (
     transform_ingest_by_record
 )
 
-from tests.unit.ingests import transform_test_runner, MockKozaWriter, MockKozaTransform
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 
 @pytest.fixture(scope="package")
@@ -120,7 +120,7 @@ def test_ingest_transform(
         result_edge: Optional[dict]
 ):
     on_begin_ingest_by_record(mock_koza_transform)
-    transform_test_runner(
+    validate_transform_result(
         result=transform_ingest_by_record(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,

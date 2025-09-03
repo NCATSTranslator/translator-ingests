@@ -1,21 +1,21 @@
 """
 Generic utility code for use in the ingest unit tests.
 
-The main function of interest is transform_test_runner(), which is used to test
+The main function of interest is validate_transform_result(), which is used to test
 the output of a single transform_record() method invocation, looking for the
 expected content in node and edge slots, with test expectations defined by
 'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
-
-from typing import Optional, Iterable, Any, Union, Iterator
+import pytest
+from typing import Optional, Iterable, Any, Iterator
 
 import koza
-from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
+from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
-
 from koza.model.graphs import KnowledgeGraph
 from koza.transform import Record
 
+from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
 
 class MockKozaWriter(KozaWriter):
     """
@@ -53,6 +53,12 @@ class MockKozaTransform(koza.KozaTransform):
         record: Record = dict()
         yield record
 
+@pytest.fixture(scope="package")
+def mock_koza_transform() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = dict()
+    return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
+
 
 def flatten_sources(sources: list[RetrievalSource]) -> list[dict[str, str]]:
     flat_sources: list[dict[str, str]] = []
@@ -89,8 +95,8 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
-def transform_test_runner(
-        result: Union[Optional[Iterable[KnowledgeGraph]],tuple[Iterable[NamedThing], Iterable[Association]]],
+def validate_transform_result(
+        result: KnowledgeGraph | None,
         expected_nodes: Optional[list],
         expected_edge: Optional[dict],
         node_test_slots: list[str] = "id",
@@ -101,13 +107,12 @@ def transform_test_runner(
     transform_record() method invocation result, against
     test-defined node and edge slot content expectations.
 
-    :param result: The outputs from a single transform_record() method call to be tested; in this implementation,
-                   the result is a tuple of two Iterables: one of NamedThing and one of Association instances;
-                   The result may alternately be an Iterable[koza.model.graphs.KnowledgeGraph]
+    :param result: The koza.model.graphs.KnowledgeGraph | None from a single invocation of
+                   the target **@koza.transform_record**-decorated method to be tested.
     :param expected_nodes: An optional list of expected nodes. The list values can be scalar
-                           (node identifiers expected) or dictionary of expected node property values.
+                           (node CURIE string identifiers expected) or dictionary of expected node slot values.
     :param expected_edge: An optional expected edge (as a Python dictionary of field slot names and values).
-                          The expected slot values can be scalar or list of dictionaries that are edge sources to match.
+                        The expected slot values can be scalars or list of dictionaries that are edge sources to match.
     :param node_test_slots: String list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
     :param association_test_slots: String list of edge slots to be tested (default: None - no edge slots are tested)
     :return: None
@@ -117,17 +122,10 @@ def transform_test_runner(
         if expected_nodes is None and expected_edge is None:
             return  # we're good! No result was expected.
         else:
-            assert False, "Unexpected None result from transform_record() method call!"
+            assert False, "Unexpected null result from **`@koza.transform_record`** decorated method call!"
 
-    nodes: Optional[Iterable[NamedThing]]
-    edges: Optional[Iterable[Association]]
-    if isinstance(result, KnowledgeGraph):
-        nodes = result.nodes if result.nodes is not None else []
-        edges = result.edges if result.edges is not None else []
-    else:
-        # Assume that the result is a tuple of the two Iterables which are not None
-        nodes = result[0]
-        edges = result[1]
+    nodes: Iterable[NamedThing] = result.nodes if result.nodes is not None else []
+    edges: Iterable[Association] = result.edges if result.edges is not None else []
 
     # Convert the 'nodes' Iterable NamedThing content into
     # a list of Python dictionaries by comprehension

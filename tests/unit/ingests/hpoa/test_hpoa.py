@@ -21,7 +21,7 @@ from translator_ingest.ingests.hpoa.hpoa import (
     transform_record_gene_to_phenotype
 )
 
-from tests.unit.ingests import transform_test_runner, MockKozaWriter, MockKozaTransform
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 # test mondo_map for the gene_to_phenotype
 # disease_id to disease_context_qualifier mappings
@@ -248,7 +248,7 @@ def test_disease_to_phenotype_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    transform_test_runner(
+    validate_transform_result(
         result=transform_record_disease_to_phenotype(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
@@ -334,7 +334,7 @@ def test_gene_to_disease_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    transform_test_runner(
+    validate_transform_result(
         result=transform_record_gene_to_disease(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
@@ -565,7 +565,7 @@ def test_gene_to_phenotype_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    transform_test_runner(
+    validate_transform_result(
         result=transform_record_gene_to_phenotype(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
