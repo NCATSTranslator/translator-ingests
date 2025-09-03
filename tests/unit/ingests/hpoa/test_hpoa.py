@@ -1,15 +1,14 @@
 import pytest
 
-from typing import Optional, Iterator, Iterable, Any
-from os.path import join, abspath, dirname, sep
+from typing import Optional,  Iterable, Any
+from os.path import join, abspath, dirname
 from loguru import logger
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
-from koza.transform import Record, Mappings
+from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
-from scipy.optimize import anderson
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
 
@@ -20,41 +19,12 @@ from translator_ingest.ingests.hpoa.hpoa import (
     transform_record_gene_to_phenotype
 )
 
-from tests.unit.ingests import transform_test_runner
+from tests.unit.ingests import MockKozaWriter, MockKozaTransform, validate_transform_result
 
 HPOA_UNIT_TESTS = abspath(dirname(__file__))
 HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "test_data")
 logger.info("HPOA test data path: {}".format(HPOA_TEST_DATA_PATH))
 
-class MockKozaWriter(KozaWriter):
-    """
-    Mock "do nothing" implementation of a KozaWriter
-    """
-    def write(self, entities: Iterable):
-        pass
-
-    def finalize(self):
-        pass
-
-    def write_edges(self, edges: Iterable):
-        pass
-
-    def write_nodes(self, nodes: Iterable):
-        pass
-
-
-class MockKozaTransform(koza.KozaTransform):
-    """
-    Mock "do nothing" implementation of a KozaTransform
-    """
-    @property
-    def current_reader(self) -> str:
-        return ""
-
-    @property
-    def data(self) -> Iterator[Record]:
-        record: Record = dict()
-        yield record
 
 # test mondo_map for the gene_to_phenotype
 # disease_id to disease_context_qualifier mappings
@@ -279,7 +249,7 @@ def test_disease_to_phenotype_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    transform_test_runner(
+    validate_transform_result(
         result=transform_record_disease_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
@@ -365,7 +335,7 @@ def test_gene_to_disease_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    transform_test_runner(
+    validate_transform_result(
         result=transform_record_gene_to_disease(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
@@ -627,7 +597,7 @@ def test_gene_to_phenotype_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    transform_test_runner(
+    validate_transform_result(
         result=transform_record_gene_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
