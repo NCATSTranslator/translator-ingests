@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 import requests
 try:
@@ -20,7 +20,7 @@ class GitHubReleases:
         self.version_cache_file: str = version_cache_file \
             if version_cache_file \
             else f"{git_org}-{git_repo}-releases.yaml"
-        self._release_catalog: Optional[List[str]] = None
+        self._release_catalog: Optional[list[str]] = None
 
     def get_release_catalog(self, refresh: bool = False):
         """
@@ -32,7 +32,7 @@ class GitHubReleases:
 
             response = requests.get(f"https://api.github.com/repos/{self.git_org}/{self.git_repo}/releases")
             release_data = response.json()
-            version_data: List[str] = [release_tag["tag_name"] for release_tag in release_data]
+            version_data: list[str] = [release_tag["tag_name"] for release_tag in release_data]
 
             with open(self.version_cache_file, "w") as version_cache:
                 dump(data=version_data, stream=version_cache)
@@ -41,10 +41,10 @@ class GitHubReleases:
             # is now a two-level YAML catalog of "releases" and "branches"
             self._release_catalog = load(version_cache, Loader=Loader)
 
-    def get_releases(self) -> List[str]:
+    def get_releases(self) -> list[str]:
         """
         Get the catalog of currently available project releases.
-        :return: List of release version strings
+        :return: list of release version strings
         """
         if self._release_catalog is None:
             self.get_release_catalog()

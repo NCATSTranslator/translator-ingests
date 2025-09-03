@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 import requests
@@ -13,7 +12,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from translator_ingest.util.biolink import (
     INFORES_CTD,
-    BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
     entity_id,
     build_association_knowledge_sources
 )
@@ -60,7 +58,7 @@ def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
-        predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
+        predicate="biolink:treats_or_applied_or_studied_to_treat",
         object=disease.id,
         publications=publications,
         # is this code/repo an aggregator in this context? feels like no, but maybe yes?

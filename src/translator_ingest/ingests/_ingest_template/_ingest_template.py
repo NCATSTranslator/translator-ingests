@@ -14,7 +14,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from translator_ingest.util.biolink import (
     INFORES_CTD,
-    BIOLINK_RELATED_TO,
     entity_id,
     build_association_knowledge_sources
 )
@@ -26,7 +25,7 @@ from koza.model.graphs import KnowledgeGraph
 # This module provides a template with example code and instructions for implementing an ingest. Replace the body
 # of function examples below with ingest specific code and delete all template comments or unused functions.
 #
-# Note about ingest tags: for ingests with multiple different input files and/or different transformation processes,
+# Note about ingest tags: for the ingests with multiple different input files and/or different transformation processes,
 # ingests can be divided into multiple sections using tags. Examples from this template are "ingest_by_record",
 # "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
 # yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
@@ -102,7 +101,7 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
-        predicate=BIOLINK_RELATED_TO,
+        predicate="biolink:related_to",
         object=disease.id,
         publications=publications,
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
@@ -125,7 +124,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
             id=str(uuid.uuid4()),
             subject=chemical.id,
-            predicate=BIOLINK_RELATED_TO,
+            predicate="biolink:related_to",
             object=disease.id,
             primary_knowledge_source=INFORES_CTD,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
@@ -145,7 +144,7 @@ def transform_ingest_all_streaming(koza: koza.KozaTransform, data: Iterable[dict
         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
             id=str(uuid.uuid4()),
             subject=chemical.id,
-            predicate=BIOLINK_RELATED_TO,
+            predicate="biolink:related_to",
             object=disease.id,
             primary_knowledge_source=INFORES_CTD,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
