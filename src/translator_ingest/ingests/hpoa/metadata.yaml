@@ -1,4 +1,0 @@
-ingest_title: 'HPOA'
-ingest_url: 'https://hpo.jax.org/app/'
-description: 'Ingest of Human Phenotype Ontology annotated gene, disease and phenotype associations'
-license: 'https://hpo.jax.org/app/license'
