@@ -14,13 +14,14 @@ Unit tests for Panther Gene Orthology relationships ingest
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import GeneToGeneHomologyAssociation, KnowledgeLevelEnum, AgentTypeEnum
 from koza.utils.testing_utils import mock_koza
-from pantherdb_orthologs_ingest.panther_orthologs_utils import (make_ncbi_taxon_gene_map, 
-                                                                parse_gene_info)
-
-from pantherdb_orthologs_ingest.panther_orthologs_utils import (panther_taxon_map, 
-                                                                relevant_ncbi_cols, 
-                                                                relevant_ncbi_taxons, 
-                                                                db_to_curie_map)
+from translator_ingest.ingests.panther.panther_orthologs_utils import (
+    make_ncbi_taxon_gene_map,
+    parse_gene_info,
+    panther_taxon_map,
+    relevant_ncbi_cols,
+    relevant_ncbi_taxons,
+    db_to_curie_map
+)
 
 
 ############################################################################
