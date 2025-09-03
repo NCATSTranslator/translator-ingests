@@ -1,11 +1,9 @@
 ReferenceIngestGuide:
-  name: TTD Reference Ingest Guide  # (optional, range = string)
+  name: TTD Reference Ingest Guide
 
-# Information about the Source of the ingest
-  source_info:  # (required, range = SourceInfo)
-    infores_id: infores:ttd  # (required, range = UriOrCurie)
-    description:  # (optional, range = string)
-    citations:  # (optional, multivalued, range = string)
+  source_info:
+    infores_id: infores:ttd
+    citations:
       - "2024: https://doi.org/10.1093/nar/gkad751"
       - "2022: https://doi.org/10.1093/nar/gkab953"
       - "2020: https://doi.org/10.1093/nar/gkz981"
@@ -15,52 +13,51 @@ ReferenceIngestGuide:
       - "2012: https://doi.org/10.1093/nar/gkr797"
       - "2010: https://doi.org/10.1093/nar/gkp1014"
       - "2002 first paper: https://doi.org/10.1093/nar/30.1.412"
-    terms_of_use: >-  # (required, range = string)
-      No formal license. Andrew Su has emailed developers and gotten positive response for
-      use with 'proper attribution'. Citations describe resource as 'freely accessible to
+    terms_of_use: >-
+      No formal license. Andrew Su has emailed developers and gotten a positive response for
+      use with 'proper attribution'. Papers describe resource as 'freely accessible to
       all users'.
-    data_access_locations:  # (optional, multivalued, range = string)
+    data_access_locations:
       - "Downloads page: https://db.idrblab.net/ttd/full-data-download"
-    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
+    data_provision_mechanisms:
       - file_download
-    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+    data_formats:
       - other
-    data_versioning_and_releases: >-  # (optional, range = string)
+    data_versioning_and_releases: >-
       New release ~ every 2 years. Versioning is a little complicated.
       Some files have a header with a semantic version number and date (these dates can differ a lot). Others don't.
       The Downloads page has a "Last update by" section with a date, but it's unclear if all
       files without versioning in their header should use that date as their version or not.
-    additional_notes:  # (optional, range = string)
+    ## additional_notes:  # (optional, range = string)
 
 
-# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
-  ingest_info:  # (required, range = IngestInfo)
+  ingest_info:  # (required, range = IngestInformation)
     ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
       - 
     utility:  # (required, range = string)
     scope:  # (optional, range = string)
 
-    relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest. 
-      - file_name: P1-05-Drug_disease.txt  # (required, range = string)
-        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
-        description: >-  # (optional, range = string)
+    relevant_files:
+      - file_name: P1-05-Drug_disease.txt
+        location: https://db.idrblab.net/ttd/full-data-download
+        description: >-
           Downloads page says "Drug to disease mapping with ICD identifiers".
           Has chemical - disease associations.
           Uses TTD drug IDs, needs mapping using other file
-      - file_name: P1-06-Target_disease.txt  # (required, range = string)
-        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
-        description: >-  # (optional, range = string)
+      - file_name: P1-06-Target_disease.txt
+        location: https://db.idrblab.net/ttd/full-data-download
+        description: >-
           Downloads page says "Target to disease mapping with ICD identifiers".
           Has protein - disease associations.
           Uses TTD target IDs, needs mapping using other file
-      - file_name: P1-03-TTD_crossmatching.txt  # (required, range = string)
-        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
-        description: >-  # (optional, range = string)
+      - file_name: P1-03-TTD_crossmatching.txt
+        location: https://db.idrblab.net/ttd/full-data-download
+        description: >-
           Downloads page says "Cross-matching ID between TTD drugs and public databases".
           Has TTD drug ID => PUBCHEM.COMPOUND, CAS, CHEBI. Unclear if all entries have all ID fields
-      - file_name: P2-01-TTD_uniprot_all.txt  # (required, range = string)
-        location: https://db.idrblab.net/ttd/full-data-download  # (required, range = UriOrCurie)
-        description: >-  # (optional, range = string)
+      - file_name: P2-01-TTD_uniprot_all.txt
+        location: https://db.idrblab.net/ttd/full-data-download
+        description: >-
           Downloads page says "Download Uniprot IDs for all targets". Has TTD target ID -> UNIPROT NAME (not ID).
 
 
@@ -83,7 +80,6 @@ ReferenceIngestGuide:
 
     additional_notes:  # (optional, range = string)
 
-# Information about the Graph Output by the ingest 
   target_info:  # (required, range = TargetInfo)
     infores_id:  # (optional, range = UriOrCurie)
 
