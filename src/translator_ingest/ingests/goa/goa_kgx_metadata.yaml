@@ -1,0 +1,60 @@
+title: "GOA Source-to-KGX Ingest Metadata"
+created_by: "Adilbek Bazarkulov"
+creation_date: "2025-09-02"
+
+ingest:
+  code_path: "src/translator_ingest/ingests/goa/goa.py"
+  config_path: "src/translator_ingest/ingests/goa/goa.yaml"
+  guide_path: "src/translator_ingest/ingests/goa/rig.md"
+
+source:
+  infores_id: "infores:goa"
+  license: "CC BY 4.0"
+  license_url: "https://creativecommons.org/licenses/by/4.0/legalcode"
+  citation_policy_url: "https://geneontology.org/docs/go-citation-policy/"
+  access_date: "2025-09-02"
+  access_urls:
+    - "https://current.geneontology.org/annotations/goa_human.gaf.gz"
+    - "https://current.geneontology.org/annotations/mgi.gaf.gz"
+    - "https://current.geneontology.org/annotations/rgd.gaf.gz"
+  data_formats:
+    - "gaf-2.2"
+    - "tsv"
+  provision_mechanism: "file_download"
+
+inputs:
+  files:
+    - id: "goa_human.gaf.gz"
+      url: "https://current.geneontology.org/annotations/goa_human.gaf.gz"
+    - id: "mgi.gaf.gz"
+      url: "https://current.geneontology.org/annotations/mgi.gaf.gz"
+    - id: "rgd.gaf.gz"
+      url: "https://current.geneontology.org/annotations/rgd.gaf.gz"
+
+transform:
+  framework: "koza"
+  entrypoint: "transform_record"
+  filter:
+    taxon:
+      - "NCBITaxon:9606"
+      - "NCBITaxon:10090"
+      - "NCBITaxon:10116"
+
+product:
+  title: "Translator GOA KGX"
+  type: "Biolink KG"
+  creation_date: "2025-09-02"
+  data_format: "kgx-jsonl"
+  data_model: "https://w3id.org/biolink/biolink-model"
+  outputs:
+    nodes: "/data/goa_nodes.jsonl"
+    edges: "/data/goa_edges.jsonl"
+  knowledge_sources:
+    primary: "infores:goa"
+    aggregator: "infores:biolink"
+
+contributors:
+  - name: "Adilbek Bazarkulov"
+  - name: "Evan Morris"
+  - name: "Sierra Moxon"
+  - name: "Matthew Brush"

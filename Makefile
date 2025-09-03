@@ -31,6 +31,7 @@ define HELP
 │                                                           │
 │     lint                Lint all code                     │
 │     format              Format all code                   │
+│     spell-fix           Fix spelling errors interactively │
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │
@@ -70,6 +71,7 @@ install: python
 .PHONY: test
 test:
 	$(RUN) pytest tests
+	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore
 
 
 ### Running ###
@@ -134,3 +136,7 @@ lint:
 format:
 	$(RUN) ruff check --fix --exit-zero
 	$(RUN) black -l 120 src tests
+
+.PHONY: spell-fix
+spell-fix:
+	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
