@@ -50,12 +50,6 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     hpo_to_mode_of_inheritance
 )
 
-HPOA_PHENOTYPE_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
-HPOA_GENES_TO_DISEASE_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt"))
-HPOA_GENES_TO_PHENOTYPE_FILE: str = abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
-HPOA_GENES_TO_PHENOTYPE_PREPROCESSED_FILE: str = \
-    abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype_preprocessed.tsv"))
-
 
 def get_latest_version() -> str:
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
@@ -284,6 +278,11 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
     """
     koza_transform.log(f"Starting HPOA Gene to Phenotype processing")
     koza_transform.log(f"Version: {get_latest_version()}")
+    koza_transform.extra_fields = {
+        "HPOA_PHENOTYPE_FILE": abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa")),
+        "HPOA_GENES_TO_DISEASE_FILE": abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt")),
+        "HPOA_GENES_TO_PHENOTYPE_FILE": abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
+    }
 
 
 @koza.on_data_end(tag="gene_to_phenotype")
@@ -310,13 +309,13 @@ def prepare_data_gene_to_phenotype(
     db = duckdb.connect(":memory:", read_only=False)
     return db.execute(f"""
     with
-      hpoa as (select * from read_csv('{HPOA_PHENOTYPE_FILE}')),
-      g2p as (select * from read_csv('{HPOA_GENES_TO_PHENOTYPE_FILE}')),
+      hpoa as (select * from read_csv('{koza_transform.extra_fields["HPOA_PHENOTYPE_FILE"]}')),
+      g2p as (select * from read_csv('{koza_transform.extra_fields["HPOA_GENES_TO_PHENOTYPE_FILE"]}')),
       g2d as (select 
         replace(ncbi_gene_id, 'NCBIGene:', '') as ncbi_gene_id_clean,
         disease_id, 
         association_type 
-        from read_csv('{HPOA_GENES_TO_DISEASE_FILE}')),
+        from read_csv('{koza_transform.extra_fields["HPOA_GENES_TO_DISEASE_FILE"]}')),
       g2d_grouped as (select 
         ncbi_gene_id_clean,
         disease_id,

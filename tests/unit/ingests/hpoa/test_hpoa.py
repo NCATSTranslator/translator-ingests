@@ -1,12 +1,15 @@
 import pytest
 
-from typing import Optional, Iterator, Iterable
+from typing import Optional, Iterator, Iterable, Any
+from os.path import join, abspath, dirname, sep
+from loguru import logger
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
 from koza.transform import Record, Mappings
 from koza.io.writer.writer import KozaWriter
+from scipy.optimize import anderson
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
 
@@ -18,6 +21,10 @@ from translator_ingest.ingests.hpoa.hpoa import (
 )
 
 from tests.unit.ingests import transform_test_runner
+
+HPOA_UNIT_TESTS = abspath(dirname(__file__))
+HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "test_data")
+logger.info("HPOA test data path: {}".format(HPOA_TEST_DATA_PATH))
 
 class MockKozaWriter(KozaWriter):
     """
@@ -370,17 +377,31 @@ def test_gene_to_disease_transform(
 @pytest.fixture(scope="package")
 def mock_koza_transform_2() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    extra_fields: dict[str, Any] = {}
+    extra_fields: dict[str, Any] = {
+        "HPOA_PHENOTYPE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_phenotype.hpoa")),
+        "HPOA_GENES_TO_DISEASE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_genes_to_disease.txt")),
+        "HPOA_GENES_TO_PHENOTYPE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_genes_to_phenotype.txt"))
+    }
     return MockKozaTransform(extra_fields=extra_fields, writer=writer, mappings=dict())
 
-# @koza.prepare_data(tag="gene_to_phenotype")
-# def prepare_data_gene_to_phenotype(
-#         koza_transform: koza.KozaTransform,
-#         data: Iterable[dict[str, Any]]
-# ) -> Iterable[dict[str, Any]] | None:
-def test_transform_record_disease_to_phenotype(mock_koza_transform_1: koza.KozaTransform):
+
+def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaTransform):
     result: Iterable[dict[str, Any]] | None = prepare_data_gene_to_phenotype(mock_koza_transform_2, [])
     assert result is not None
+    assert any(
+        [
+            # Check that all fields are present for a
+            # particular entry computed from the merged test data
+            'ABCB7' in entry and
+            'HP:0002470' in entry and
+            'Nonprogressive cerebellar ataxia' in entry and
+            '11/11' in entry and
+            'OMIM:301310' in entry and
+            'PMID:26242992;PMID:4045952;PMID:11050011' in entry and
+            'MENDELIAN' in entry
+            for entry in result
+        ]
+    )
 
 
 @pytest.mark.parametrize(
