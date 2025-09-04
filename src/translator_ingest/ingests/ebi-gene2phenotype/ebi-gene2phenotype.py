@@ -90,12 +90,12 @@ def on_begin(koza: koza.KozaTransform) -> None:
 @koza.on_data_end()
 def on_end(koza: koza.KozaTransform) -> None:
     ## add logs based on counts
-    if koza.state["no_disease_IDs"] > 0:
+    if koza.state["no_diseaseID_stats"]['n_rows'] > 0:
         koza.log(f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.", level="INFO")
-    if koza.state["no_gene_IDs"] > 0:
-        koza.log(f"{koza.state['row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO")
-    if koza.state["duplicate_rows"] > 0:
-        koza.log(f"{koza.state['row_counts']['duplicate_rows']} rows were discarded for being duplicates.", level="INFO")
+    if koza.state['other_row_counts']['no_gene_IDs'] > 0:
+        koza.log(f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO")
+    if koza.state['other_row_counts']["duplicate_rows"] > 0:
+        koza.log(f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.", level="INFO")
 
 
 @koza.prepare_data()
