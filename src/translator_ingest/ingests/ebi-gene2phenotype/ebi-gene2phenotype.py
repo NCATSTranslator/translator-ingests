@@ -25,8 +25,8 @@ BIOLINK_CAUSES = "biolink:causes"
 INFORES_EBI_G2P = "infores:ebi-gene2phenotype"
 
 
-## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs. Mapping all, not just those currently in the data. 
-## Using OLS API with HP's synonym info to map some values 
+## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs. 
+## Dynamically mapping all possible values (not just those in the data) using OLS API with HP's synonym info
 ALLELIC_REQ_TO_MAP = [
     "biallelic_autosomal",
     "monoallelic_autosomal",
@@ -34,14 +34,10 @@ ALLELIC_REQ_TO_MAP = [
     "monoallelic_PAR",
     "mitochondrial",
     "monoallelic_Y_hemizygous",
+    "monoallelic_X",
+    "monoallelic_X_hemizygous",
+    "monoallelic_X_heterozygous",
 ]
-## Using hard-coded mappings for some values due to errors in HP's data right now
-## Once an HP release / OLS update fixes these errors, can move values to ALLELIC_REQ_TO_MAP
-HARDCODED_ALLELIC_REQ_MAPPINGS = {
-    "monoallelic_X": "HP:0001417",
-    "monoallelic_X_hemizygous": "HP:0001419",
-    "monoallelic_X_heterozygous": "HP:0001423",
-}
 ## hard-coded mapping of EBI G2P's "molecular mechanism" values to biolink's `form_or_variant_qualifier` values
 ## uses `genetic_variant_form` or its descendants
 FORM_OR_VARIANT_QUALIFIER_MAPPINGS = {
@@ -79,8 +75,6 @@ def on_begin(koza: koza.KozaTransform) -> None:
     ## save in state for later use
     ## dynamically create allelic req mappings - dictionary comprehension
     koza.state["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
-    ## add current manual mappings
-    koza.state["allelicreq_mappings"].update(HARDCODED_ALLELIC_REQ_MAPPINGS)
 
     ## counting removed rows
     koza.state["no_diseaseID_stats"] = {
