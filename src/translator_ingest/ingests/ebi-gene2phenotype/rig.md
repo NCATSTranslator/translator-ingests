@@ -60,7 +60,7 @@ Records from the relevant files that are included, and optionally a list of fiel
 
   | File | Included Records | Fields Used (o) | 
   |----------|----------|----------|
-  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, disease MONDO, allelic requirement, confidence, molecular mechanism, publications, date of last review |
+  | G2P_all_[date].csv| Records where 'confidence' value is 'definitive', 'strong', or 'moderate' | g2p id, hgnc id, disease mim, disease MONDO, allelic requirement, confidence, molecular mechanism, publications |
  
        
 ### Filtered Content
@@ -99,7 +99,7 @@ infores:translator-ebi-gene2phenotype-kgx
 
 | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
 |----------|----------|----------|----------|---------|----------|---------|
-| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: ChemicalOrGeneOrGeneProductFormOrVariantEnum | manual_agent, knowledge_assertion | original_subject, original_object, update_date | EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease. |
+| Gene | associated_with | Disease | qualified_predicate: causes, subject_form_or_variant_qualifier: ChemicalOrGeneOrGeneProductFormOrVariantEnum | manual_agent, knowledge_assertion | original_subject, original_object | EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease. |
 
 
 **Additional Notes/Rationale (o)**:
@@ -116,6 +116,7 @@ High-level Biolink categories of nodes produced from this ingest as assigned by 
 
 
 ### Future Modeling Considerations (o)
+- May add update_date (from column 'date of last review') back to ingest. Was removed due to issues with this pipeline handling dates
 - May want to revisit how we handle the 'molecular mechanism' and 'variant types' columns VS the biolink-model qualifier options 
 - Revisit modeling of allelic_requirement (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values). See PR linked below for more details.
 
