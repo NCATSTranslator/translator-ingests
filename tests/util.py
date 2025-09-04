@@ -8,7 +8,7 @@ def find_project_root(start: Path = Path(__file__)) -> Path:
             return parent
     raise FileNotFoundError("Could not find project root from starting point.")
 
-ingest_dir_ignore_list = "__pycache__"
+ingest_dir_ignore_list = ["__pycache__"]
 def get_all_source_ids():
     ingest_dir = find_project_root() / "src" / "translator_ingest" / "ingests"
     return [p.name for p in ingest_dir.iterdir() if p.is_dir() and p.name not in ingest_dir_ignore_list]
