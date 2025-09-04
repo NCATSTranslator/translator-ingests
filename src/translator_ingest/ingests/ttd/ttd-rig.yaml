@@ -1,8 +1,8 @@
 ReferenceIngestGuide:
-  name: TTD Reference Ingest Guide
+  name: Therapeutic Target Database (TTD) Reference Ingest Guide
 
   source_info:
-    infores_id: infores:ttd
+    infores_id: "infores:ttd"
     citations:
       - "2024: https://doi.org/10.1093/nar/gkad751"
       - "2022: https://doi.org/10.1093/nar/gkab953"
@@ -25,180 +25,192 @@ ReferenceIngestGuide:
       - other
     data_versioning_and_releases: >-
       New release ~ every 2 years. Versioning is a little complicated.
-      Some files have a header with a semantic version number and date (these dates can differ a lot). Others don't.
-      The Downloads page has a "Last update by" section with a date, but it's unclear if all
-      files without versioning in their header should use that date as their version or not.
-    ## additional_notes:  # (optional, range = string)
+      Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't.
+      The Downloads page has a 'Last update by' section with a date, but it's unclear if this applies to all files that lack version info in their header.
+    # additional_notes:  # (optional, range = string)
 
 
-  ingest_info:  # (required, range = IngestInformation)
-    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
-      - 
-    utility:  # (required, range = string)
-    scope:  # (optional, range = string)
+  ingest_info:
+    ingest_categories:
+      - primary_knowledge_provider
+    utility:  "TTD provides associations for drugs/chemicals, therapeutic targets (mostly proteins), and diseases that appear to be manually curated from literature review. This literature review includes information that may not be covered by other resources, including: drug industry reports, drug pipeline reports of hundreds of companies, patents from multiple countries, and manual review of Pubmed literature searches. This associations could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
+    scope: "This ingest covers the drug-disease associations and the protein-drug associations from one file. For more details on the data content and decision-making on what files to ingest, see Colleen Xu's internal document and https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30."
 
     relevant_files:
       - file_name: P1-05-Drug_disease.txt
         location: https://db.idrblab.net/ttd/full-data-download
         description: >-
-          Downloads page says "Drug to disease mapping with ICD identifiers".
-          Has chemical - disease associations.
-          Uses TTD drug IDs, needs mapping using other file
-      - file_name: P1-06-Target_disease.txt
+          Description on Downloads page is 'Drug to disease mapping with ICD identifiers'.
+          Includes chemical/drug 'treats' disease associations.
+          Uses TTD drug IDs - need to use other file to map to usable IDs for Translator
+      - file_name: P1-07-Drug-TargetMapping.xlsx
         location: https://db.idrblab.net/ttd/full-data-download
         description: >-
-          Downloads page says "Target to disease mapping with ICD identifiers".
-          Has protein - disease associations.
-          Uses TTD target IDs, needs mapping using other file
+          Description on Downloads page is 'Target to drug mapping with mode of action'.
+          Has chemical/drug 'affects' protein associations.
+          Uses TTD target IDs and drug IDs - need to use other file to map to usable IDs for Translator
       - file_name: P1-03-TTD_crossmatching.txt
         location: https://db.idrblab.net/ttd/full-data-download
         description: >-
-          Downloads page says "Cross-matching ID between TTD drugs and public databases".
-          Has TTD drug ID => PUBCHEM.COMPOUND, CAS, CHEBI. Unclear if all entries have all ID fields
+          Description on Downloads page is 'Cross-matching ID between TTD drugs and public databases'. Using for ID mapping only.
+          Has TTD drug ID (start with 'D') mappings to PUBCHEM.COMPOUND, CAS, and/or CHEBI. 
+          This file does not have info for all TTD drug IDs. It also doesn't have any info on TTD chemical IDs (start with 'C').
       - file_name: P2-01-TTD_uniprot_all.txt
         location: https://db.idrblab.net/ttd/full-data-download
         description: >-
-          Downloads page says "Download Uniprot IDs for all targets". Has TTD target ID -> UNIPROT NAME (not ID).
+          Description on Downloads page is 'Download Uniprot IDs for all targets'.  Using for ID mapping only.
+          Has TTD target ID mappings to UNIPROT NAME (not ID).
+          This file does not actually include all TTD Target IDs. It also has special values ('NOUNIPROTAC' appears to mean no name/mapping).
+
+    # included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest.
+    #   - file_name:  # (required, range = string)
+    #     included_records:  # (required, range = string)
+    #     fields_used:  # (optional, range = string)
+
+    filtered_content:
+      - file_name: P1-05-Drug_disease.txt
+        filtered_records: "ICD-11 ID is 'N.A.'"
+        rationale: "This means there isn't an ID for this disease, and we need one for each node."
+      - file_name: P1-05-Drug_disease.txt
+        filtered_records: "TTD drug ID doesn't have mapping to an external namespace, or its name doesn't successfully retrieve an entity in NameResolver."
+        rationale: "Need node IDs that are in NodeNorm's scope."
+      - file_name: P1-07-Drug-TargetMapping.xlsx
+        filtered_records: "TTD drug ID doesn't have mapping to an external namespace, or its name doesn't successfully retrieve an entity in NameResolver."
+        rationale: "Need node IDs that are in NodeNorm's scope."
+      - file_name: P1-07-Drug-TargetMapping.xlsx
+        filtered_records: "TTD target ID doesn't have a mapping to a UniProt name, or that UniProt name doesn't successfully map to a UniProt ID."
+        rationale: "Need node IDs that are in NodeNorm's scope."
+
+    future_considerations:
+      - category: edge_content
+        consideration: "Could ingest another file 'Target to compound mapping with activity data', which contains chemical/drug 'affects' protein associations. Involves more parsing and filtering work. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209860820 for details."
+        relevant_files: "P1-09-Target_compound_activity.txt"
+      - category: other
+        consideration: "Could run disease names through NameResolver when ICD-11 ID is 'N.A.' (<200 records right now). But it'd involve manual review to see if the output seems accurate."
+        relevant_files: "P1-05-Drug_disease.txt"
+
+    # additional_notes:  # (optional, range = string)
 
 
+  target_info:
+    # infores_id:  # (optional, range = UriOrCurie)
 
-
-    included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest.
-      - file_name:  # (required, range = string)
-        included_records:  # (required, range = string)
-        fields_used:  # (optional, range = string)
-
-    filtered_content:  # (optional, multivalued, range = FilteredContent)  Records from relevant files that are not included in the ingest, and why.
-      - file_name:  # (required, range = string)
-        filtered_records:  # (required, range = string)
-        rationale:  # (required, range = string)
-
-    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations)  Content addditions/changes to consider for future iterations.
-      - category:  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
-        consideration:  # (required, range = string)
-        relevant_files:  # (optional, range = string)
-
-    additional_notes:  # (optional, range = string)
-
-  target_info:  # (required, range = TargetInfo)
-    infores_id:  # (optional, range = UriOrCurie)
-
-    edge_type_info:  # (required, multivalued, range = EdgeType)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+    edge_type_info:
+      - subject_categories:
           - ChemicalEntity
-        predicate: treats  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
+        predicate: treats
+        object_categories:
           - Disease
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          - 
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          - 
-        edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - original_subject    ## use original TTD drug ID, rather than mapped?
+          - original_object
+        ui_explanation: "The TTD curators assigned this relationship a clinical status of 'approved', 'phase 4', 'approved (orphan drug)', or 'NDA filed'."
+        # additional_notes:    # (optional, range = string)
+      - subject_categories:
           - ChemicalEntity
-        predicate: studied_to_treat  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
+        predicate: studied_to_treat
+        object_categories:
           - Disease
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          - 
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          - 
-        edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - original_subject    ## use original TTD drug ID, rather than mapped?
+          - original_object
+        ui_explanation: "The TTD curators assigned this relationship a clinical status of 'investigative', 'patented', 'discontinued in preregistration', 'preregistration', or 'withdrawn from market'."
+        # additional_notes:    # (optional, range = string)
+      - subject_categories:
           - ChemicalEntity
-        predicate: in_preclinical_trials_for  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
+        predicate: in_preclinical_trials_for
+        object_categories:
           - Disease
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          - 
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          - 
-        edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - original_subject    ## use original TTD drug ID, rather than mapped?
+          - original_object
+        ui_explanation: "The TTD curators assigned this relationship a clinical status of 'preclinical'."
+        # additional_notes:    # (optional, range = string)
+      - subject_categories:
           - ChemicalEntity
-        predicate: in_clinical_trials_for  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
+        predicate: in_clinical_trials_for
+        object_categories:
           - Disease
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          - 
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          - 
-        edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - original_subject    ## use original TTD drug ID, rather than mapped?
+          - original_object
+          #- max_research_phase    ## maybe? Would be a lot of work to map, original values may change a lot
+        ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registered, various submissions, discontinued in a specific phase, or terminated)."
+        additional_notes: "This includes >30 unique values. Some values have the same meaning (perhaps curators aren't consistent with what terminology they use), and perhaps the possible values will change between releases."
+      - subject_categories:
+          - ChemicalEntity
+        predicate: affects
+        object_categories:
           - Gene
           - Protein
-        predicate: target_for  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
-          - Disease
-        qualified_predicate:  # (optional, range = UriOrCurie)
-        biolink_qualifier_1:  # (optional, range = UriOrCurie)
-        biolink_qualifier_1_value_type:  # (optional, range = UriOrCurie)
-        biolink_qualifier_2:  # (optional, range = UriOrCurie)
-        biolink_qualifier_2_value_type:  # (optional, range = UriOrCurie)
-        biolink_qualifier_3:  # (optional, range = UriOrCurie)
-        biolink_qualifier_3_value_type:  # (optional, range = UriIrCurie)
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          - 
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          - 
+        ## qualifiers depends on mode of action (some don't have any, ~45 possible values)
+        qualified_predicate: causes    ## if other qualifiers exist, will always assign this
+        
+        biolink_qualifier_1: object_aspect_qualifier
+        ## will likely always be 'activity' or 'activity_or_abundance'
+        biolink_qualifier_1_value_type: GeneOrGeneProductOrChemicalEntityAspectEnum
+
+        biolink_qualifier_2: object_direction_qualifier
+        biolink_qualifier_2_value_type: DirectionQualifierEnum
+
+        biolink_qualifier_3: causal_mechanism_qualifier
+        biolink_qualifier_3_value_type: CausalMechanismQualifierEnum
+
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
         edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
+          - original_subject    ## use original TTD drug ID, rather than mapped?
+          - original_object    ## use original TTD target ID, rather than mapped?
+        ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature) and sometimes included the mode of action."
+        additional_notes: "Curators are maybe not consistent with what terminology they use, and perhaps the possible values will change between releases."
+
+    node_type_info:
+      - node_category: "biolink:ChemicalEntity"
+        ## these are the options, not the actual ID namespaces included
+        source_identifier_types: "PUBCHEM.COMPOUND, CAS, CHEBI"
+        additional_notes: >-
+          Original ID is TTD drug ID, but we are using TTD mapping files to get these external IDs that can be NodeNormed.
+      - node_category: "biolink:Disease"
+        source_identifier_types: "icd11"
+      - node_category: "biolink:Gene"
+        source_identifier_types: "UNIPROTKB"
+        additional_notes: >-
+          Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human.
+      - node_category: "biolink:Protein"
+        source_identifier_types: "UNIPROTKB"
+        additional_notes: >-
+          Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human.
+
+    future_considerations:
+      - category: other
+        consideration: "P1-02 ('Download TTD drug information in raw format') contains TTD drug ID to INCHIKEY mappings, which could be explored to see if it fills gaps in the TTD drug ID mappings."
+      - category: node_properties
+        consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
 
 
-
-
-    node_type_info:  # (required, multivalued, range = NodeType)
-      - node_category: "biolink:ChemicalEntity" # (required, range = UriOrCurie)
-        source_identifier_types: "PUBCHEM.COMPOUND, CAS, CHEBI" # (required, range = string)
-        node_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        additional_notes: >-  # (optional, range = string)
-          Original ID is TTD drug ID. Used mapping file TTD provides to get the ID we use.
-      - node_category: "biolink:Disease" # (required, range = UriOrCurie)
-        source_identifier_types: "icd11" # (required, range = string)
-        node_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        additional_notes:  # (optional, range = string)
-      - node_category: "biolink:Gene" # (required, range = UriOrCurie)
-        source_identifier_types: "UNIPROTKB" # (required, range = string)
-        node_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        additional_notes: >-  # (optional, range = string)
-          Original ID is TTD target ID. Used mapping file TTD provides to get the Uniprot name. Then used NameResolver to get the UniProt ID we use.
-      - node_category: "biolink:Protein" # (required, range = UriOrCurie)
-        source_identifier_types: "UNIPROTKB" # (required, range = string)
-        node_properties:  # (optional, multivalued, range = UriOrCurie)
-          - 
-        additional_notes: >-  # (optional, range = string)
-          Original ID is TTD target ID. Used mapping file TTD provides to get the Uniprot name. Then used NameResolver to get the UniProt ID we use.
-
-
-
-
-    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteratiosn of the ingest
-      - category:  # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
-        consideration:  # (required, range = string)
-
-    additional_notes:  # (optional, range = string)
-
-
-# Information about the how the ingest was specified and performed
-  provenance_info:  # (optional, range = ProvenanceInfo)
-    contributions:  # (optional, multivalued, range = string)
-      - 
-    artifacts:  # (optional, multivalued, range = string)
-      - 
+  provenance_info:
+    contributions:
+    - "Colleen Xu - code author, data modeling"
+    - "Andrew Su - code support, domain expertise"
+    - "Matthew Brush - data modeling, domain expertise"
+    artifacts:
+      - https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30
+      ## there's Colleen Xu's google doc too, but that's for internal use only at the moment. 
