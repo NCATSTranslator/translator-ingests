@@ -1,5 +1,7 @@
 name: ctd_chemical_to_disease
 metadata: !include './metadata.yaml'
+# TODO: Is this yaml property 'transform_code' needed, does it reside here or should it be listed under each ingest?
+transform_code: 'src/translator_ingest/ingests/ctd/ctd.py'
 
 readers:
   chemical_to_disease:

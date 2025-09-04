@@ -1,4 +1,6 @@
 name: goa
+# TODO: Is this yaml property 'transform_code' needed, does it reside here or should it be listed under each ingest?
+transform_code: 'src/translator_ingest/ingests/goa/goa.py'
 reader:
   format: csv
   delimiter: \t 

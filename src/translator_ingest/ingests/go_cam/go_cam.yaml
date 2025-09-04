@@ -1,4 +1,6 @@
 name: go_cam_gene_to_gene
+# TODO: Is this yaml property 'transform_code' needed, does it reside here or should it be listed under each ingest?
+transform_code: 'src/translator_ingest/ingests/go_cam/go_cam.py'
 
 reader:
   format: json
