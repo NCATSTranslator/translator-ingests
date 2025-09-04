@@ -10,7 +10,6 @@ def find_project_root(start: Path = Path(__file__)) -> Path:
 
 # get the absolute path for an ingest config yaml file
 # source_id: the name of the source corresponding to a translator_ingest directory
-# yaml_file_name: (optional) if not the same as the source id, provide the name of an ingest config yaml file
 def get_ingest_config_yaml_path(source_id):
     yaml_file_name = source_id + ".yaml"
     top_level_dir = find_project_root()
