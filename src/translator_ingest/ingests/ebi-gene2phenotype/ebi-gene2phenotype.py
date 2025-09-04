@@ -137,8 +137,9 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     publications = ["PMID:"+i.strip() for i in record["publications"].split(";")] if record["publications"] else None
     ## creating url
     url = "https://www.ebi.ac.uk/gene2phenotype/lgd/" + record["g2p id"]
-    ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error 
-    date = record["date of last review"][0:10]
+    ## removing update_date from output due to pipeline issues with dates
+    # ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error 
+    # date = record["date of last review"][0:10]
 
     gene = Gene(id = "HGNC:"+record["hgnc id"])
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
@@ -171,7 +172,8 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         ],
         knowledge_level = KnowledgeLevelEnum.knowledge_assertion,
         agent_type = AgentTypeEnum.manual_agent,
-        update_date = date,
+        ## removing update_date from output due to pipeline issues with dates
+        # update_date = date,
         allelic_requirement = koza.state["allelicreq_mappings"][record["allelic requirement"]],
         ## include publications!!!
         publications = publications,
