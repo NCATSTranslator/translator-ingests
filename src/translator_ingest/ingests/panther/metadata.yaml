@@ -1,12 +1,7 @@
-# Metadata for the project
-# Uncomment and edit the fields you want to include in the metadata
-# See metadata properties at https://koza.monarchinitiative.org/Ingests/source_config/
-
-id:  'CURIE for the project'
-name: 'pantherdb_gene to gene orthology'
+id:  'infores:panther'
+name: 'PantherDb'
 ingest_title: 'pantherdb_orthologs_ingest'
 ingest_url: 'https://github.com/monarch-initiative/pantherdb-orthologs-ingest'
-description: 'ortholog ingest from pantherdb'
+description: 'Panther Gene to Gene Orthology Relationships'
 provided_by: 'pantherdb'
-license: 'Link to license'
-rights: 'http://www.pantherdb.org/tou.jsp' 
+rights: 'http://www.pantherdb.org/tou.jsp'
