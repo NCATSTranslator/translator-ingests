@@ -45,12 +45,12 @@ def get_latest_version() -> str:
 def create_biolink_entity(node_id: str, category: str, name: str):
     """
     Create the appropriate biolink entity based on the category.
-    
+
     Args:
         node_id: The node ID
         category: The biolink category
         name: The node name
-    
+
     Returns:
         The appropriate biolink entity instance
     """
@@ -60,15 +60,16 @@ def create_biolink_entity(node_id: str, category: str, name: str):
         'biolink:Disease': Disease,
         'biolink:Gene': Gene,
         'biolink:Protein': Protein,
+        'biolink:NamedThing': NamedThing
     }
-    
+
     # Get the appropriate class, default to NamedThing
     entity_class = category_mapping.get(category, NamedThing)
-    
+
     # For NamedThing, we need to ensure category is exactly 'biolink:NamedThing'
     if entity_class == NamedThing and category != 'biolink:NamedThing':
         category = 'biolink:NamedThing'
-    
+
     return entity_class(
         id=node_id,
         category=[category],
@@ -96,70 +97,16 @@ def extract_tar_gz(tar_path: str, koza_instance: KozaTransform) -> str:
     return extract_dir
 
 
-def map_attribute_to_biolink_slot(attribute_name: str, koza_instance: KozaTransform) -> Optional[str]:
+
+def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, record: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Map Text Mining KP attribute names to Biolink model slots.
-
-    Args:
-        attribute_name: The attribute name from the KGX file
-        koza_instance: KozaTransform instance for logging
-
-    Returns:
-        The corresponding Biolink slot name, or None if no mapping exists
-    """
-    # Map from Text Mining KP attribute names to Biolink model slot names
-    attribute_mappings = {
-        # Confidence/evidence mappings
-        'confidence_score': 'has_confidence_level',
-        'tmkp_confidence_score': 'has_confidence_level',
-        'extraction_confidence_score': 'extraction_confidence_score',
-        'has_evidence_count': 'evidence_count',
-
-        # Study/publication mappings
-        'supporting_study_result': 'has_supporting_study_result',
-        'supporting_study_results': 'has_supporting_study_result',
-        'supporting_publications': 'publications',
-        'supporting_document': 'publications',
-
-        # Text-mining-specific slots
-        'supporting_text': 'supporting_text',
-        'subject_location_in_text': 'subject_location_in_text',
-        'object_location_in_text': 'object_location_in_text',
-        'supporting_text_located_in': 'supporting_text_section_type',
-        'supporting_document_year': 'supporting_document_year',
-        'supporting_document_type': 'supporting_document_type',
-
-        # Knowledge source mappings
-        'primary_knowledge_source': 'primary_knowledge_source',
-        'aggregator_knowledge_source': 'aggregator_knowledge_source',
-        'supporting_data_source': 'supporting_data_source',
-
-        # Study metadata mappings
-        'supporting_study_method_type': 'supporting_study_method_type',
-        'supporting_study_method_description': 'supporting_study_method_description',
-        'supporting_study_size': 'supporting_study_size',
-        'supporting_study_cohort': 'supporting_study_cohort',
-        'supporting_study_date_range': 'supporting_study_date_range',
-        'supporting_study_context': 'supporting_study_context'
-    }
-
-    biolink_slot = attribute_mappings.get(attribute_name)
-    if not biolink_slot:
-        koza_instance.log(f"No Biolink slot mapping found for attribute: {attribute_name}")
-        return None
-
-    # Add biolink: prefix to the slot name
-    return f"biolink:{biolink_slot}"
-
-
-def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform) -> Dict[str, Any]:
-    """
-    Parse the _attributes JSON string and map to Biolink slots.
-    Handles TRAPI attribute model structure and simplifies to Biolink slots.
+    Parse the _attributes JSON string and pass through biolink-prefixed attributes.
+    Logs any attributes that are not found in the Biolink model.
 
     Args:
         attributes_str: JSON string containing attributes
         koza_instance: KozaTransform instance for logging
+        record: The edge record being processed (for context in logging)
 
     Returns:
         Dictionary of mapped attributes with biolink: prefixed keys
@@ -174,84 +121,100 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform) -> 
 
         mapped_attributes = {}
         supporting_study_results = []
+        unmapped_attributes = []
 
         for attr in attributes:
             if isinstance(attr, dict) and 'attribute_type_id' in attr:
-                # Extract just the attribute name without biolink: prefix
-                attr_name = attr['attribute_type_id'].replace('biolink:', '')
-                biolink_slot = map_attribute_to_biolink_slot(attr_name, koza_instance)
+                # The attributes already come with biolink: prefix
+                attr_type_id = attr['attribute_type_id']
+                value = attr.get('value')
+                
+                # Extract the attribute name without biolink: prefix for checking
+                attr_name = attr_type_id.replace('biolink:', '') if attr_type_id.startswith('biolink:') else attr_type_id
 
-                if biolink_slot:
-                    # Extract just the value field from TRAPI attribute structure
-                    value = attr.get('value')
+                # Handle supporting_study_result with nested attributes
+                if attr_type_id == 'biolink:has_supporting_study_result' and 'attributes' in attr:
+                    # This is a supporting study result with nested attributes
+                    study_result_data = {
+                        'id': value,  # The study result ID
+                    }
 
-                    # Handle supporting_study_result with nested attributes
-                    if biolink_slot == 'biolink:has_supporting_study_result' and 'attributes' in attr:
-                        # This is a supporting study result with nested attributes
-                        study_result_data = {
-                            'id': value,  # The study result ID
-                        }
+                    # Process nested attributes (also in TRAPI format)
+                    for nested_attr in attr.get('attributes', []):
+                        if isinstance(nested_attr, dict) and 'attribute_type_id' in nested_attr:
+                            nested_attr_type_id = nested_attr['attribute_type_id']
+                            nested_value = nested_attr.get('value')
+                            nested_attr_name = nested_attr_type_id.replace('biolink:', '') if nested_attr_type_id.startswith('biolink:') else nested_attr_type_id
 
-                        # Process nested attributes (also in TRAPI format)
-                        for nested_attr in attr.get('attributes', []):
-                            if isinstance(nested_attr, dict) and 'attribute_type_id' in nested_attr:
-                                nested_attr_name = nested_attr['attribute_type_id'].replace('biolink:', '')
-                                nested_value = nested_attr.get('value')
-                                nested_slot = map_attribute_to_biolink_slot(nested_attr_name, koza_instance)
+                            # These text mining attributes should be on the Association, not StudyResult
+                            if nested_attr_name in ['supporting_text', 'subject_location_in_text',
+                                                  'object_location_in_text', 'supporting_text_located_in',
+                                                  'extraction_confidence_score', 'supporting_document_year',
+                                                  'supporting_document_type']:
+                                # Handle character offsets as integers
+                                if nested_attr_name in ['subject_location_in_text', 'object_location_in_text']:
+                                    # Convert pipe-separated string to list of integers
+                                    if isinstance(nested_value, str) and '|' in nested_value:
+                                        try:
+                                            mapped_attributes[nested_attr_type_id] = [int(x) for x in nested_value.split('|')]
+                                        except ValueError:
+                                            mapped_attributes[nested_attr_type_id] = nested_value
+                                    else:
+                                        mapped_attributes[nested_attr_type_id] = nested_value
+                                else:
+                                    mapped_attributes[nested_attr_type_id] = nested_value
+                            elif nested_attr_name == 'supporting_document' or nested_attr_name == 'supporting_documents':
+                                # Handle publications
+                                if isinstance(nested_value, str):
+                                    pubs = nested_value.split('|') if '|' in nested_value else [nested_value]
+                                    study_result_data['publications'] = pubs
+                                else:
+                                    study_result_data['publications'] = nested_value
 
-                                if nested_slot:
-                                    # These text mining attributes should be on the Association, not StudyResult
-                                    if nested_attr_name in ['supporting_text', 'subject_location_in_text',
-                                                          'object_location_in_text', 'supporting_text_located_in',
-                                                          'extraction_confidence_score', 'supporting_document_year',
-                                                          'supporting_document_type']:
-                                        # Handle character offsets as integers
-                                        if nested_attr_name in ['subject_location_in_text', 'object_location_in_text']:
-                                            # Convert pipe-separated string to list of integers
-                                            if isinstance(nested_value, str) and '|' in nested_value:
-                                                try:
-                                                    mapped_attributes[nested_slot] = [int(x) for x in nested_value.split('|')]
-                                                except ValueError:
-                                                    mapped_attributes[nested_slot] = nested_value
-                                            else:
-                                                mapped_attributes[nested_slot] = nested_value
-                                        else:
-                                            mapped_attributes[nested_slot] = nested_value
-                                    elif nested_attr_name == 'supporting_document':
-                                        # Handle publications
-                                        if isinstance(nested_value, str):
-                                            pubs = nested_value.split('|') if '|' in nested_value else [nested_value]
-                                            study_result_data['publications'] = pubs
-                                        else:
-                                            study_result_data['publications'] = nested_value
+                    try:
+                        # Create StudyResult instance with simplified data
+                        study_result_obj = StudyResult(**study_result_data)
+                        supporting_study_results.append(study_result_obj)
+                    except Exception as e:
+                        koza_instance.log(f"Error creating StudyResult: {e}, data: {study_result_data}")
 
-                        try:
-                            # Create StudyResult instance with simplified data
-                            study_result_obj = StudyResult(**study_result_data)
-                            supporting_study_results.append(study_result_obj)
-                        except Exception as e:
-                            koza_instance.log(f"Error creating StudyResult: {e}, data: {study_result_data}")
+                    continue
 
-                        continue
-
-                    # Handle regular attributes
-                    if biolink_slot == 'biolink:publications' and isinstance(value, str):
-                        # Handle pipe-separated publications
-                        mapped_attributes[biolink_slot] = value.split('|') if '|' in value else [value]
-                    elif biolink_slot in ['biolink:primary_knowledge_source', 
-                                        'biolink:aggregator_knowledge_source']:
-                        # Preserve these for creating RetrievalSource objects
-                        mapped_attributes[biolink_slot] = value
-                    elif biolink_slot == 'biolink:supporting_data_source':
-                        # This is auxiliary info, could be stored but not critical
-                        continue
-                    else:
-                        # Store the value with the biolink-prefixed slot name
-                        mapped_attributes[biolink_slot] = value
+                # Handle regular attributes
+                if attr_type_id == 'biolink:publications' and isinstance(value, str):
+                    # Handle pipe-separated publications
+                    mapped_attributes[attr_type_id] = value.split('|') if '|' in value else [value]
+                elif attr_type_id in ['biolink:primary_knowledge_source',
+                                    'biolink:aggregator_knowledge_source']:
+                    # Preserve these for creating RetrievalSource objects
+                    mapped_attributes[attr_type_id] = value
+                elif attr_type_id == 'biolink:supporting_data_source':
+                    # This is auxiliary info, could be stored but not critical
+                    continue
+                else:
+                    # Store the value with the biolink-prefixed name
+                    mapped_attributes[attr_type_id] = value
+                    
+                    # Check if this attribute exists in the Association model
+                    if not hasattr(Association, attr_name):
+                        unmapped_attributes.append(attr_type_id)
 
         # Add supporting study results if any
         if supporting_study_results:
             mapped_attributes['biolink:has_supporting_study_result'] = supporting_study_results
+
+        # Log unmapped attributes with context
+        if unmapped_attributes and record:
+            subject = record.get('subject', 'unknown')
+            predicate = record.get('predicate', 'unknown')
+            object_id = record.get('object', 'unknown')
+            edge_id = record.get('id', 'unknown')
+            
+            koza_instance.log(
+                f"Unmapped Biolink attributes for association {edge_id} "
+                f"({subject} --[{predicate}]--> {object_id}): "
+                f"{', '.join(unmapped_attributes)}"
+            )
 
         return mapped_attributes
 
@@ -349,15 +312,15 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
 
             # Parse and map attributes
             attributes_str = record.get('_attributes', '[]')
-            mapped_attributes = parse_attributes_json(attributes_str, koza_instance)
+            mapped_attributes = parse_attributes_json(attributes_str, koza_instance, record)
 
             # Extract knowledge source information from attributes if available
             primary_source = mapped_attributes.get('biolink:primary_knowledge_source', TMKP_INFORES)
             aggregator_sources = mapped_attributes.get('biolink:aggregator_knowledge_source', [])
-            
+
             # Create RetrievalSource objects
             sources = []
-            
+
             # Add primary knowledge source
             if primary_source:
                 sources.append(RetrievalSource(
@@ -365,7 +328,7 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
                     resource_id=primary_source if isinstance(primary_source, str) else TMKP_INFORES,
                     resource_role=ResourceRoleEnum.primary_knowledge_source
                 ))
-            
+
             # Add aggregator knowledge sources if any
             if aggregator_sources:
                 if isinstance(aggregator_sources, str):
@@ -376,7 +339,7 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
                         resource_id=agg_source,
                         resource_role=ResourceRoleEnum.aggregator_knowledge_source
                     ))
-            
+
             # Build the association
             association_data = {
                 'id': edge_id or f"{subject}-{predicate}-{object_id}",
@@ -387,7 +350,7 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
                 'knowledge_level': KnowledgeLevelEnum.statistical_association,
                 'agent_type': AgentTypeEnum.text_mining_agent
             }
-            
+
             # Remove knowledge source attributes from mapped_attributes since they're handled via sources
             mapped_attributes.pop('biolink:primary_knowledge_source', None)
             mapped_attributes.pop('biolink:aggregator_knowledge_source', None)
