@@ -76,16 +76,6 @@ def on_begin(koza: koza.KozaTransform) -> None:
     ## dynamically create allelic req mappings - dictionary comprehension
     koza.state["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
 
-    ## counting removed rows
-    koza.state["no_diseaseID_stats"] = {
-        "n_rows": 0,
-        "n_names": 0,
-    }
-    koza.state["other_row_counts"] = {
-        "no_gene_IDs": 0,    ## just in case
-        "duplicate_rows": 0,    ## just in case
-    }
-
 
 @koza.on_data_end()
 def on_end(koza: koza.KozaTransform) -> None:
@@ -101,7 +91,22 @@ def on_end(koza: koza.KozaTransform) -> None:
 @koza.prepare_data()
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
     ## remove rows we don't want to process, using pandas
-    df = pd.DataFrame(data)
+    ## set up counts for removed rows, save in state for later use
+    koza.state["no_diseaseID_stats"] = {
+        "n_rows": 0,
+        "n_names": 0,
+    }
+    koza.state["other_row_counts"] = {
+        "no_gene_IDs": 0,    ## just in case
+        "duplicate_rows": 0,    ## just in case
+    }
+
+    df = pd.DataFrame.from_records(data)
+    ## data was loaded with empty values = "". Replace these empty strings with None, so isna() methods will work
+    df.replace(to_replace="", value=None, inplace=True)
+    ## for debugging
+    # print(df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape)
+    # print(df[df["gene mim"].isna()].shape)
 
     ## currently, there are rows where both disease ID columns have no value. Check, count, remove
     temp_no_disease = df[df["disease mim"].isna() & df["disease MONDO"].isna()]
