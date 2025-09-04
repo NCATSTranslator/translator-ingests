@@ -7,6 +7,7 @@ metadata: !include './metadata.yaml'
 transform_code: 'src/translator_ingest/ingests/hpoa/hpoa.py'
 readers:
   disease_to_phenotype:
+    # TODO: is the 'name' tag redundant here, given the 'disease_to_phenotype' yaml key above?
     name: 'hpoa_disease_to_phenotype'
     files:
       - 'data/hpoa/phenotype.hpoa'
@@ -30,6 +31,7 @@ readers:
       - 'aspect'
       - 'biocuration'
   gene_to_disease:
+    # TODO: is the 'name' tag redundant here, given the 'gene_to_disease' yaml key above?
     name: 'hpoa_gene_to_disease'
     files:
       - './data/hpoa/genes_to_disease.txt'
@@ -43,6 +45,7 @@ readers:
       - 'source'
     transform_mode: 'flat'
   gene_to_phenotype:
+    # TODO: is the 'name' tag redundant here, given the 'gene_to_phenotype' yaml key above?
     name: "hpoa_gene_to_phenotype"
     header: 0
     format: 'csv'
@@ -63,6 +66,7 @@ readers:
         filter_code: 'in'
         value:
           - 'MENDELIAN'
+  # TODO: is this the "best practices" location for the mondo map specification (as opposed to a distinct yaml file)?
   mondo_map:
     name: 'mondo_map'
     files:
