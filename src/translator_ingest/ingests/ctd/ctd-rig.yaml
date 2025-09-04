@@ -120,7 +120,7 @@ ReferenceIngestGuide:
         object_categories:
           - biolink:DiseaseOrPhenotypicFeature
         knowledge_level:
-          - statisitcal_association
+          - statistical_association
         agent_type:
           - data_analysis_pipeline
         edge_properties:
