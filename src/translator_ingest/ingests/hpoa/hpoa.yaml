@@ -58,7 +58,6 @@ readers:
       - 'disease_id'
       - 'publications'
       - 'gene_to_disease_association_types'
-    transform_mode: 'flat'
     filters:
       - inclusion: 'include'
         column: 'gene_to_disease_association_types'
