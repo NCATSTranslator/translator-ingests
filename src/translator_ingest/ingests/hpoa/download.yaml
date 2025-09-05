@@ -5,12 +5,12 @@
 ---
 # For genes_to_phenotype
 - url: http://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt
-  local_name: data/hpoa/genes_to_phenotype.txt
+  local_name: genes_to_phenotype.txt
 
 # For genes_to_disease
 - url: http://purl.obolibrary.org/obo/hp/hpoa/genes_to_disease.txt
-  local_name: data/hpoa/genes_to_disease.txt
+  local_name: genes_to_disease.txt
 
 # For disease_to_phenotype and mode of inheritance
 - url: http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa
-  local_name: data/hpoa/phenotype.hpoa
+  local_name: phenotype.hpoa
