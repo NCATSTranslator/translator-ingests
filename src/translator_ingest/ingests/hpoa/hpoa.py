@@ -201,7 +201,7 @@ def transform_record_disease_to_phenotype(
 
     except Exception as e:
         # Catch and report all errors here with messages
-        logger.warning(str(e))
+        logger.warning("transform_record_disease_to_phenotype(): "+str(e))
         return None
 
 
@@ -266,7 +266,7 @@ def transform_record_gene_to_disease(
 
     except Exception as e:
         # Catch and report all errors here with messages
-        logger.warning(str(e))
+        logger.warning("transform_record_gene_to_disease(): "+str(e))
         return None
 
 
@@ -404,5 +404,5 @@ def transform_record_gene_to_phenotype(
 
     except Exception as e:
         # Catch and report all errors here with messages
-        logger.warning(str(e))
+        logger.warning("transform_record_gene_to_phenotype(): "+str(e))
         return None
