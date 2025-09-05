@@ -278,11 +278,6 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
     """
     koza_transform.log(f"Starting HPOA Gene to Phenotype processing")
     koza_transform.log(f"Version: {get_latest_version()}")
-    koza_transform.extra_fields = {
-        "HPOA_PHENOTYPE_FILE": abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa")),
-        "HPOA_GENES_TO_DISEASE_FILE": abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt")),
-        "HPOA_GENES_TO_PHENOTYPE_FILE": abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
-    }
 
 
 @koza.on_data_end(tag="gene_to_phenotype")
@@ -306,16 +301,29 @@ def prepare_data_gene_to_phenotype(
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
     """
+    phenotype_file_path = koza_transform.extra_fields.get(
+        "HPOA_PHENOTYPE_FILE",
+        abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
+    )
+    genes_to_phenotype_file_path = koza_transform.extra_fields.get(
+        "HPOA_GENES_TO_PHENOTYPE_FILE",
+        abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
+    )
+    genes_to_disease_file_path = koza_transform.extra_fields.get(
+        "HPOA_GENES_TO_DISEASE_FILE",
+        abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt"))
+    )
+
     db = duckdb.connect(":memory:", read_only=False)
     return db.execute(f"""
     with
-      hpoa as (select * from read_csv('{koza_transform.extra_fields["HPOA_PHENOTYPE_FILE"]}')),
-      g2p as (select * from read_csv('{koza_transform.extra_fields["HPOA_GENES_TO_PHENOTYPE_FILE"]}')),
+      hpoa as (select * from read_csv('{phenotype_file_path}')),
+      g2p as (select * from read_csv('{genes_to_phenotype_file_path}')),
       g2d as (select 
         replace(ncbi_gene_id, 'NCBIGene:', '') as ncbi_gene_id_clean,
         disease_id, 
         association_type 
-        from read_csv('{koza_transform.extra_fields["HPOA_GENES_TO_DISEASE_FILE"]}')),
+        from read_csv('{genes_to_disease_file_path}')),
       g2d_grouped as (select 
         ncbi_gene_id_clean,
         disease_id,
