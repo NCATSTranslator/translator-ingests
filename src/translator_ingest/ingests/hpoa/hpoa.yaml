@@ -8,7 +8,7 @@ transform_code: 'src/translator_ingest/ingests/hpoa/hpoa.py'
 readers:
   disease_to_phenotype:
     # TODO: is the 'name' tag redundant here, given the 'disease_to_phenotype' yaml key above?
-    name: 'hpoa_disease_to_phenotype'
+    name: 'disease_to_phenotype'
     files:
       - 'data/hpoa/phenotype.hpoa'
     depends_on:
@@ -32,7 +32,7 @@ readers:
       - 'biocuration'
   gene_to_disease:
     # TODO: is the 'name' tag redundant here, given the 'gene_to_disease' yaml key above?
-    name: 'hpoa_gene_to_disease'
+    name: 'gene_to_disease'
     files:
       - './data/hpoa/genes_to_disease.txt'
     format: 'csv'
@@ -46,7 +46,7 @@ readers:
     transform_mode: 'flat'
   gene_to_phenotype:
     # TODO: is the 'name' tag redundant here, given the 'gene_to_phenotype' yaml key above?
-    name: "hpoa_gene_to_phenotype"
+    name: "gene_to_phenotype"
     header: 0
     format: 'csv'
     delimiter: '\t'
