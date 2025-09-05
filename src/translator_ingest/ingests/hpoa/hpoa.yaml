@@ -1,10 +1,6 @@
-id:  'infores:hpo-annotations'
-
-# TODO: is this correct? Should it be the (non-space-included) name of the koza app passed into the transform.py?
-name: 'Human Phenotype Ontology Annotations'
-
+name: 'human_phenotype_ontology_annotations'
 metadata: !include './metadata.yaml'
-transform_code: 'src/translator_ingest/ingests/hpoa/hpoa.py'
+
 readers:
   disease_to_phenotype:
     # TODO: is the 'name' tag redundant here, given the 'disease_to_phenotype' yaml key above?
