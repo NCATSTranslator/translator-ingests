@@ -21,17 +21,109 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     Protein,
     Association,
+    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalToGeneAssociation,
+    GeneRegulatoryRelationship,
+    GeneToDiseaseAssociation,
     RetrievalSource,
     ResourceRoleEnum,
     AgentTypeEnum,
     KnowledgeLevelEnum,
-    StudyResult
+    TextMiningStudyResult
 )
 from koza.model.graphs import KnowledgeGraph
 
 
 # Constants for the Text Mining KP
 TMKP_INFORES = "infores:text-mining-provider-targeted"
+
+# Mapping from subject/predicate/object patterns to Association classes
+# Based on content_metadata.json from the Text Mining KP data
+SPO_TO_ASSOCIATION_MAP = {
+    # ChemicalToGeneAssociation patterns
+    ('biolink:Protein', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalToGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:NamedThing'): ChemicalToGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:ChemicalEntity'): ChemicalToGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:MolecularMixture'): ChemicalToGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:ComplexMolecularMixture'): ChemicalToGeneAssociation,
+    ('biolink:SmallMolecule', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
+    ('biolink:MolecularMixture', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
+    ('biolink:ChemicalEntity', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
+    ('biolink:NamedThing', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
+    ('biolink:NamedThing', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalToGeneAssociation,
+    
+    # GeneRegulatoryRelationship patterns  
+    ('biolink:Protein', 'biolink:affects', 'biolink:Protein'): GeneRegulatoryRelationship,
+    
+    # GeneToDiseaseAssociation patterns
+    ('biolink:Disease', 'biolink:contributes_to', 'biolink:Protein'): GeneToDiseaseAssociation,
+    ('biolink:Disease', 'biolink:affects', 'biolink:Protein'): GeneToDiseaseAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:contributes_to', 'biolink:Protein'): GeneToDiseaseAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:affects', 'biolink:Protein'): GeneToDiseaseAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:Protein'): GeneToDiseaseAssociation,
+    ('biolink:Protein', 'biolink:contributes_to', 'biolink:Disease'): GeneToDiseaseAssociation,
+    
+    # ChemicalToDiseaseOrPhenotypicFeatureAssociation patterns
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:SmallMolecule'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:treats', 'biolink:SmallMolecule'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:treats', 'biolink:ChemicalEntity'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:contributes_to', 'biolink:SmallMolecule'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:contributes_to', 'biolink:MolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:treats', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:contributes_to', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:contributes_to', 'biolink:ChemicalEntity'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:treats', 'biolink:MolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:treats', 'biolink:Protein'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:treats', 'biolink:ComplexMolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:Disease', 'biolink:contributes_to', 'biolink:ComplexMolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:contributes_to', 'biolink:SmallMolecule'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:treats', 'biolink:SmallMolecule'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:contributes_to', 'biolink:ChemicalEntity'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:treats', 'biolink:ChemicalEntity'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:contributes_to', 'biolink:MolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:contributes_to', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:treats', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:treats', 'biolink:Protein'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:treats', 'biolink:MolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:contributes_to', 'biolink:ComplexMolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:PhenotypicFeature', 'biolink:treats', 'biolink:ComplexMolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:SmallMolecule'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:MolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:ChemicalEntity'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:ChemicalEntity'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:Protein'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:MolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:treats', 'biolink:ComplexMolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:NamedThing', 'biolink:contributes_to', 'biolink:ComplexMolecularMixture'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:SmallMolecule', 'biolink:treats', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:SmallMolecule', 'biolink:treats', 'biolink:PhenotypicFeature'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:SmallMolecule', 'biolink:contributes_to', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:SmallMolecule', 'biolink:contributes_to', 'biolink:NamedThing'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:MolecularMixture', 'biolink:treats', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:MolecularMixture', 'biolink:contributes_to', 'biolink:PhenotypicFeature'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:MolecularMixture', 'biolink:contributes_to', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ('biolink:ChemicalEntity', 'biolink:treats', 'biolink:Disease'): ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+}
+
+
+def get_association_class(subject_category: str, predicate: str, object_category: str):
+    """
+    Get the appropriate Association class based on subject/predicate/object pattern.
+    
+    Args:
+        subject_category: Subject category (e.g., 'biolink:Protein')
+        predicate: Predicate (e.g., 'biolink:affects')
+        object_category: Object category (e.g., 'biolink:SmallMolecule')
+        
+    Returns:
+        The appropriate Association class, defaults to Association if no specific match
+    """
+    spo_key = (subject_category, predicate, object_category)
+    return SPO_TO_ASSOCIATION_MAP.get(spo_key, Association)
 
 
 def get_latest_version() -> str:
@@ -146,37 +238,50 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                             nested_value = nested_attr.get('value')
                             nested_attr_name = nested_attr_type_id.replace('biolink:', '') if nested_attr_type_id.startswith('biolink:') else nested_attr_type_id
 
-                            # These text mining attributes should be on the Association, not StudyResult
-                            if nested_attr_name in ['supporting_text', 'subject_location_in_text',
-                                                  'object_location_in_text', 'supporting_text_located_in',
-                                                  'extraction_confidence_score', 'supporting_document_year',
-                                                  'supporting_document_type']:
-                                # Handle character offsets as integers
-                                if nested_attr_name in ['subject_location_in_text', 'object_location_in_text']:
-                                    # Convert pipe-separated string to list of integers
-                                    if isinstance(nested_value, str) and '|' in nested_value:
-                                        try:
-                                            mapped_attributes[nested_attr_type_id] = [int(x) for x in nested_value.split('|')]
-                                        except ValueError:
-                                            mapped_attributes[nested_attr_type_id] = nested_value
-                                    else:
-                                        mapped_attributes[nested_attr_type_id] = nested_value
-                                else:
-                                    mapped_attributes[nested_attr_type_id] = nested_value
-                            elif nested_attr_name == 'supporting_document' or nested_attr_name == 'supporting_documents':
-                                # Handle publications
+                            # Map text mining attributes to TextMiningStudyResult fields
+                            if nested_attr_name == 'supporting_text':
+                                # Convert to list if it's a string
                                 if isinstance(nested_value, str):
-                                    pubs = nested_value.split('|') if '|' in nested_value else [nested_value]
-                                    study_result_data['publications'] = pubs
+                                    study_result_data['supporting_text'] = [nested_value]
                                 else:
-                                    study_result_data['publications'] = nested_value
+                                    study_result_data['supporting_text'] = nested_value
+                            elif nested_attr_name == 'subject_location_in_text':
+                                # Convert pipe-separated string to list of integers
+                                if isinstance(nested_value, str) and '|' in nested_value:
+                                    try:
+                                        study_result_data['subject_location_in_text'] = [int(x) for x in nested_value.split('|')]
+                                    except ValueError:
+                                        study_result_data['subject_location_in_text'] = nested_value
+                                else:
+                                    study_result_data['subject_location_in_text'] = nested_value
+                            elif nested_attr_name == 'object_location_in_text':
+                                # Convert pipe-separated string to list of integers
+                                if isinstance(nested_value, str) and '|' in nested_value:
+                                    try:
+                                        study_result_data['object_location_in_text'] = [int(x) for x in nested_value.split('|')]
+                                    except ValueError:
+                                        study_result_data['object_location_in_text'] = nested_value
+                                else:
+                                    study_result_data['object_location_in_text'] = nested_value
+                            elif nested_attr_name == 'extraction_confidence_score':
+                                study_result_data['extraction_confidence_score'] = nested_value
+                            elif nested_attr_name == 'supporting_document_year':
+                                study_result_data['supporting_document_year'] = nested_value
+                            elif nested_attr_name == 'supporting_document_type':
+                                study_result_data['supporting_document_type'] = nested_value
+                            elif nested_attr_name == 'supporting_text_section_type':
+                                study_result_data['supporting_text_section_type'] = nested_value
+                            elif nested_attr_name == 'supporting_document' or nested_attr_name == 'supporting_documents':
+                                # TextMiningStudyResult doesn't have a publications field, 
+                                # so we skip this attribute - it should be handled at the Association level
+                                continue
 
                     try:
-                        # Create StudyResult instance with simplified data
-                        study_result_obj = StudyResult(**study_result_data)
+                        # Create TextMiningStudyResult instance with text mining-specific fields
+                        study_result_obj = TextMiningStudyResult(**study_result_data)
                         supporting_study_results.append(study_result_obj)
                     except Exception as e:
-                        koza_instance.log(f"Error creating StudyResult: {e}, data: {study_result_data}")
+                        koza_instance.log(f"Error creating TextMiningStudyResult: {e}, data: {study_result_data}")
 
                     continue
 
@@ -190,6 +295,11 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                     mapped_attributes[attr_type_id] = value
                 elif attr_type_id == 'biolink:supporting_data_source':
                     # This is auxiliary info, could be stored but not critical
+                    continue
+                elif attr_type_id in ['biolink:has_evidence_count', 'biolink:tmkp_confidence_score', 
+                                    'biolink:supporting_document', 'biolink:supporting_study_result']:
+                    # These attributes are not valid for Association objects, skip them
+                    unmapped_attributes.append(attr_type_id)
                     continue
                 else:
                     # Store the value with the biolink-prefixed name
@@ -281,6 +391,9 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
     node_count = 0
     edge_count = 0
     attribute_errors = 0
+    
+    # Cache for node categories
+    node_categories = {}
 
     for record in data:
         record_type = record.get('_record_type')
@@ -293,6 +406,9 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
 
             if not node_id:
                 continue
+
+            # Cache node category for later association type determination
+            node_categories[node_id] = category
 
             # Create the appropriate biolink entity based on category
             node = create_biolink_entity(node_id, category, name)
@@ -355,42 +471,44 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
             mapped_attributes.pop('biolink:primary_knowledge_source', None)
             mapped_attributes.pop('biolink:aggregator_knowledge_source', None)
 
+            # Determine the appropriate Association class based on subject/predicate/object types
+            subject_category = node_categories.get(subject, 'biolink:NamedThing')
+            object_category = node_categories.get(object_id, 'biolink:NamedThing')
+            
+            association_class = get_association_class(subject_category, predicate, object_category)
+            
             # Add mapped attributes using correct biolink space case format
             if mapped_attributes:
                 for key, value in mapped_attributes.items():
                     # Remove biolink: prefix to get the space case attribute name
                     attr_name = key.replace('biolink:', '')
-                    # Keep the space case format as biolink model uses space case
-                    if hasattr(Association, attr_name):
+                    # Check against the specific association class, not just base Association
+                    if hasattr(association_class, attr_name):
                         association_data[attr_name] = value
                     else:
-                        koza_instance.log(f"Association does not have attribute: {attr_name}")
+                        koza_instance.log(f"{association_class.__name__} does not have attribute: {attr_name}")
 
-            # Handle qualified predicates if present
-            if record.get('qualified_predicate'):
+            # Handle qualified predicates if the association class supports it
+            if record.get('qualified_predicate') and hasattr(association_class, 'qualified_predicate'):
                 association_data['qualified_predicate'] = record['qualified_predicate']
 
-            # Handle qualifiers
+            # Handle qualifier fields directly as association properties for specific association classes
             qualifier_fields = [
                 'subject_aspect_qualifier', 'subject_direction_qualifier',
                 'object_aspect_qualifier', 'object_direction_qualifier'
             ]
 
-            qualifiers = {}
             for field in qualifier_fields:
-                if record.get(field):
-                    qualifiers[field] = record[field]
-
-            if qualifiers:
-                association_data['qualifiers'] = qualifiers
+                if record.get(field) and hasattr(association_class, field):
+                    association_data[field] = record[field]
 
             try:
-                association = Association(**association_data)
+                association = association_class(**association_data)
                 edges.append(association)
                 edge_count += 1
             except Exception as e:
                 attribute_errors += 1
-                koza_instance.log(f"Error creating association: {e}")
+                koza_instance.log(f"Error creating {association_class.__name__}: {e}")
 
     koza_instance.log(f"Processed {node_count} nodes and {edge_count} edges ({attribute_errors} errors)")
 
