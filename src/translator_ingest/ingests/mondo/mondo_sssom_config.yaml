@@ -1,7 +1,7 @@
 name: 'mondo_map'
 
 files:
-  - './data/mondo.sssom.tsv'
+  - './data/mondo/mondo.sssom.tsv'
 
 format: 'csv'
 delimiter: '\t'
