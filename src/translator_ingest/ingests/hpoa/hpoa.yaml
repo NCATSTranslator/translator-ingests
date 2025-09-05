@@ -43,7 +43,6 @@ readers:
       - 'association_type'
       - 'disease_id'
       - 'source'
-    transform_mode: 'flat'
   gene_to_phenotype:
     # TODO: is the 'name' tag redundant here, given the 'gene_to_phenotype' yaml key above?
     name: "gene_to_phenotype"
