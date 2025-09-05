@@ -114,20 +114,20 @@ ReferenceIngestGuide:
           - publications
         ui_explanation: CTD Chemical-Disease records with an "M" (marker/mechanism) DirectEvidence code indicate the chemical to correlate with or play an etiological role in a condition - which maps best to the Biolink predicate 'correlates_with_or_contributes_to'.
         additional_notes: The 'correlates_with_or_contributes_to' predicate is used because the CTD 'M' flag does not distinguish between when a chemical is a correlated marker for a condition, or a contributing cause for the condition. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
-    - subject_categories:
+      - subject_categories:
         - biolink:ChemicalEntity
-      predicate:  biolink:associated_with
-      object_categories:
-        - biolink:DiseaseOrPhenotypicFeature
-      knowledge_level:  
-        - statisitcal_association
-      agent_type:  
-        - data_analysis_pipeline
-      edge_properties: 
-        - publications
-        - has_confidence_score
-      ui_explanation: CTD Chemical-Disease records with an inference score indicate a statistically significant number of shared gene associations that suggest a biological relationship may exist. The statistical basis of this relationship maps to the Biolink 'assocaited_with' predicate.
-      additional_notes: none
+        predicate:  biolink:associated_with
+        object_categories:
+          - biolink:DiseaseOrPhenotypicFeature
+        knowledge_level:
+          - statistical_association
+        agent_type:
+          - data_analysis_pipeline
+        edge_properties:
+          - publications
+          - has_confidence_score
+        ui_explanation: CTD Chemical-Disease records with an inference score indicate a statistically significant number of shared gene associations that suggest a biological relationship may exist. The statistical basis of this relationship maps to the Biolink 'assocaited_with' predicate.
+        additional_notes: none
 
     node_type_info:  
       - node_category: biolink:ChemicalEntity
