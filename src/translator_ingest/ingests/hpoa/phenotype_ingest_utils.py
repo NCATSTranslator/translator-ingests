@@ -289,7 +289,7 @@ hpo_to_mode_of_inheritance: dict = {
     "HP:0012275": "Autosomal dominant inheritance with maternal imprinting",
     "HP:0001427": "Mitochondrial inheritance",
     "HP:0010985": "Gonosomal inheritance",
-    "HP_0003829": "Typified by incomplete penetrance",
-    "HP_0003831": "Typified by age-related disease onset",
-    "HP_0034344": "Female-limited expression"
+    "HP:0003829": "Typified by incomplete penetrance",
+    "HP:0003831": "Typified by age-related disease onset",
+    "HP:0034344": "Female-limited expression"
 }
