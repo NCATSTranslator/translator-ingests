@@ -216,7 +216,63 @@ ASSOCIATION_TEST_SLOTS = [
                 "agent_type": AgentTypeEnum.manual_agent
             }
         ),
-        (  # Query 4 - Disease inheritance 'aspect' == 'I' record processed
+        (  # Query 4 - Same 'aspect' == 'P' record but lacking any frequency qualifier
+            {
+                "database_id": "OMIM:117650",
+                "disease_name": "Cerebrocostomandibular syndrome",
+                # "qualifier" was actually empty in the original Monarch test data;
+                # however, we want to trigger a test of the negation, so we lie!
+                "qualifier": "",
+                "hpo_id": "HP:0001545",
+                "reference": "OMIM:117650",
+                "evidence": "TAS",
+                "onset": "",
+                "frequency": "",
+                "sex": "",
+                "modifier": "",
+                "aspect": "P",
+                "biocuration": "HPO:skoehler[2017-07-13]",
+            },
+            [
+                {
+                    "id": "OMIM:117650",
+                    "name": "Cerebrocostomandibular syndrome",
+                    "category": ["biolink:Disease"],
+                    "provided_by": ["infores:hpo-annotations", 'infores:omim'],
+                 },
+                {
+                    "id": "HP:0001545",
+                    "category": ["biolink:PhenotypicFeature"]
+                }
+            ],
+            {
+                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+                "subject": "OMIM:117650",
+                "predicate": "biolink:has_phenotype",
+                "negated": False,
+                "object": "HP:0001545",
+                "publications": [],
+                "has_evidence": ["ECO:0000304"],
+                "sex_qualifier": None,
+                "onset_qualifier": None,
+                "has_percentage": None,
+                "has_quotient": None,
+                "frequency_qualifier": None,
+                "sources": [
+                    {
+                       "resource_role": "primary_knowledge_source",
+                       "resource_id": "infores:hpo-annotations"
+                    },
+                    {
+                       "resource_role": "supporting_data_source",
+                       "resource_id": "infores:omim"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
+            }
+        ),
+        (  # Query 5 - Disease inheritance 'aspect' == 'I' record processed
             {
                 "database_id": "OMIM:300425",
                 "disease_name": "Autism susceptibility, X-linked 1",
