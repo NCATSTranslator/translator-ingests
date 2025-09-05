@@ -3,8 +3,6 @@ metadata: !include './metadata.yaml'
 
 readers:
   disease_to_phenotype:
-    # TODO: is the 'name' tag redundant here, given the 'disease_to_phenotype' yaml key above?
-    name: 'disease_to_phenotype'
     files:
       - 'data/hpoa/phenotype.hpoa'
     header_mode: 4
@@ -25,8 +23,6 @@ readers:
       - 'aspect'
       - 'biocuration'
   gene_to_disease:
-    # TODO: is the 'name' tag redundant here, given the 'gene_to_disease' yaml key above?
-    name: 'gene_to_disease'
     files:
       - './data/hpoa/genes_to_disease.txt'
     format: 'csv'
@@ -38,8 +34,6 @@ readers:
       - 'disease_id'
       - 'source'
   gene_to_phenotype:
-    # TODO: is the 'name' tag redundant here, given the 'gene_to_phenotype' yaml key above?
-    name: "gene_to_phenotype"
     depends_on:
       - 'src/translator_ingest/mappings/mondo/mondo_sssom_config.yaml'
     format: 'csv'
