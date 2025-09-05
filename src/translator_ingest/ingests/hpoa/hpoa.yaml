@@ -11,7 +11,7 @@ readers:
     name: 'disease_to_phenotype'
     files:
       - 'data/hpoa/phenotype.hpoa'
-    header: 4
+    header_mode: 4
     format: 'csv'
     delimiter: '\t'
     # For a csv/tsv file, list expected columns
@@ -44,7 +44,6 @@ readers:
   gene_to_phenotype:
     # TODO: is the 'name' tag redundant here, given the 'gene_to_phenotype' yaml key above?
     name: "gene_to_phenotype"
-    header: 0
     format: 'csv'
     delimiter: '\t'
     columns:
@@ -62,26 +61,26 @@ readers:
         filter_code: 'in'
         value:
           - 'MENDELIAN'
-  # TODO: is this the "best practices" location for the mondo map specification (as opposed to a distinct yaml file)?
-  mondo_map:
-    name: 'mondo_map'
-    files:
-      - './data/mondo.sssom.tsv'
-    format: 'csv'
-    delimiter: '\t'
-    header: 51
-    filters:
-      - inclusion: 'include'
-        column: 'predicate_id'
-        filter_code: 'eq'
-        value: 'skos:exactMatch'
-    key: object_id
-    values:
-      - subject_id
-    columns:
-      - subject_id
-      - subject_label
-      - predicate_id
-      - object_id
-      - object_label
-      - mapping_justification
+#  # TODO: is this the "best practices" location for the mondo map specification (as opposed to a distinct yaml file)?
+#  mondo_map:
+#    name: 'mondo_map'
+#    files:
+#      - './data/mondo.sssom.tsv'
+#    format: 'csv'
+#    delimiter: '\t'
+#    header: 51
+#    filters:
+#      - inclusion: 'include'
+#        column: 'predicate_id'
+#        filter_code: 'eq'
+#        value: 'skos:exactMatch'
+#    key: object_id
+#    values:
+#      - subject_id
+#    columns:
+#      - subject_id
+#      - subject_label
+#      - predicate_id
+#      - object_id
+#      - object_label
+#      - mapping_justification
