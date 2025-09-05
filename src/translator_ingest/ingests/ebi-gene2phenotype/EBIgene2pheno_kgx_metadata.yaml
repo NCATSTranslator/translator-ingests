@@ -1,7 +1,7 @@
 # Info about this metadata file
 "title": "EBI Gene2Phenotype Source-to-KGX Ingest Metadata"        # an informative, human-readable name for this metadata file/object, e.g. "CTD Chemical-Disease Source-KGX Ingest Metadata"   |   1..1 string
 "created_by": "Colleen Xu"                                         # who created this ingest metadata file    |   1..m string   (for now . . . may evolve to require identifiers (e.g. ORCIDs), or Agent instances/objects)
-"creation_date": "2025-08-08"                                      # when it was created                      |   1..1 date
+"creation_date": "2025-09-04"                                      # when it was created                      |   1..1 date
 
 # Metadata about the ingest task/process/code
 # url a specific official release or tagged branch of the code used to generate the target product     |    1..1 iriOrCurie     TO DO: explore hwo this would actually work
@@ -18,7 +18,7 @@
 "source_license": >-                                       # license / terms of use for the ingested source.    |   0..1 string      TO DO: Provide additional guidance on how to populate. Consider a more constrained or richer model of licenses (see proposal 2 below)
   'All data is made freely available', according to https://www.ebi.ac.uk/gene2phenotype/about/project.
   The website also links the EMBL-EBI terms of use https://www.ebi.ac.uk/about/terms-of-use/#general.
-"source_access_date": "2025-08-08"                         # date that data from the resource was accessed and downloaded into the ingest system.   |    0..1 date
+"source_access_date": "2025-09-04"                         # date that data from the resource was accessed and downloaded into the ingest system.   |    0..1 date
 "source_access_urls":                                      # urls or urls where source data was accessed / downloaded / queried        |    0..m iriOrCURIE
   - "https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/"
 "source_data_formats":                                     # format/type of files or payloads that were downloaded/retrieved.          |   0..m   string 
@@ -30,7 +30,7 @@
 ## - "target_license": I don't know what to put here - likely depends on Translator policy / Andrew and Chunlei input. 
 "target_title": "EBI Gene2Phenotype Translator KG"                               # a unique human readable name of the target data/graph produced by this ingest.  e.g. "CTD Chemical-Disease Source-KG", or "CTD Chemical-Disease Biolink-KG".     |   1..1   string
 "target_type": "Normalized KG"                                         # a flag that reports the levelof processing/modeling applied to the KG  {"Source-KG"  | "Biolink KG"  |  "Normalized KG" } . . .  TO DO: consider if we want something like this?    |   1..1   string / enum
-"target_creation_date": "2025-08-08"                                   # date that the target data/graph was created.    |    1..1 date
+"target_creation_date": "2025-09-04"                                   # date that the target data/graph was created.    |    1..1 date
 "target_data_format": "kgx"                                            # the format in which the data/graph is serialized. Will be "KGX" for all Translator KGs (KGX is a higher order format, which specifies a json-lines serialization)     |   1..1   string 
 "target_data_model": "https://w3id.org/biolink/biolink-model"          # the model used to structure the graph data. Will be Biolink Model for all Translator KGs (except directly parsed "Source KGX" graphs). Reference using the url "https://w3id.org/biolink/biolink-model"?   |   0..1   string
 "target_data_model_version": "master"   ## using terms not in a release yet
