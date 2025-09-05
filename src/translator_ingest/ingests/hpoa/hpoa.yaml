@@ -34,8 +34,6 @@ readers:
       - 'disease_id'
       - 'source'
   gene_to_phenotype:
-    depends_on:
-      - 'src/translator_ingest/mappings/mondo/mondo_sssom_config.yaml'
     format: 'csv'
     delimiter: '\t'
     columns:
