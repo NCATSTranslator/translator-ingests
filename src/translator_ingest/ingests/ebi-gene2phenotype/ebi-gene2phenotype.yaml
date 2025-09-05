@@ -17,6 +17,7 @@ reader:
     - "confidence"
     - "molecular mechanism"
     - "publications"
+    - "date of last review"
   filters:
     ## remove rows with specific confidence values: negated or likely-no relationship
     - inclusion: exclude
