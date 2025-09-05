@@ -17,7 +17,3 @@
 # For disease_to_phenotype and mode of inheritance
 - url: http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa
   local_name: data/hpoa/phenotype.hpoa
-
-# Allows us to filter / select hp terms based on subontology structures
-- url: http://purl.obolibrary.org/obo/hp.obo
-  local_name: data/hpoa/hp.obo
