@@ -206,7 +206,10 @@ def transform_record_disease_to_phenotype(
 
     except Exception as e:
         # Catch and report all errors here with messages
-        logger.warning("transform_record_disease_to_phenotype(): "+str(e))
+        logger.warning(
+            f"transform_record_disease_to_phenotype():  - record: '{str(record)}' " +
+            f"with {type(e)} exception: "+str(e)
+        )
         return None
 
 
@@ -271,7 +274,10 @@ def transform_record_gene_to_disease(
 
     except Exception as e:
         # Catch and report all errors here with messages
-        logger.warning("transform_record_gene_to_disease(): "+str(e))
+        logger.warning(
+            f"transform_record_gene_to_disease() - record: '{str(record)}' " +
+            f"with {type(e)} exception: "+str(e)
+        )
         return None
 
 
@@ -363,17 +369,14 @@ def transform_record_gene_to_phenotype(
     """
 
     try:
-        logger.debug("transform_record_gene_to_phenotype(): 'gene_id'")
         gene_id = "NCBIGene:" + str(record["ncbi_gene_id"])
         gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
 
-        logger.debug("transform_record_gene_to_phenotype(): 'hpo_id'")
         hpo_id = record["hpo_id"]
         assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
         phenotype = PhenotypicFeature(id=hpo_id, **{})
 
         ## Frequency of occurrence
-        logger.debug("transform_record_gene_to_phenotype(): 'frequency'")
         frequency: Frequency
         if not record["frequency"] or record["frequency"] == "-":
             # No frequency data provided
@@ -382,7 +385,6 @@ def transform_record_gene_to_phenotype(
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
             frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
-        logger.debug("transform_record_gene_to_phenotype(): 'disease_id'")
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
         try:
             # Convert disease identifier to mondo term identifier if possible...
@@ -391,10 +393,8 @@ def transform_record_gene_to_phenotype(
             # ...otherwise leave as is
             pass
 
-        logger.debug("transform_record_gene_to_phenotype(): publications")
         publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
-        logger.debug("transform_record_gene_to_phenotype(): 'association'")
         association = GeneToPhenotypicFeatureAssociation(
             id=entity_id(),
             subject=gene_id,
@@ -413,13 +413,12 @@ def transform_record_gene_to_phenotype(
             **{}
         )
 
-        logger.debug("transform_record_gene_to_phenotype(): KnowledgeGraph")
         return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
 
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_record_gene_to_phenotype() - record: '{str(record)}' "
+            f"transform_record_gene_to_phenotype() - record: '{str(record)}' " +
             f"with {type(e)} exception: "+str(e)
         )
         return None
