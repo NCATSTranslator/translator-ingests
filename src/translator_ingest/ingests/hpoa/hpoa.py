@@ -418,5 +418,5 @@ def transform_record_gene_to_phenotype(
 
     except Exception as e:
         # Catch and report all errors here with messages
-        logger.warning("transform_record_gene_to_phenotype(): "+str(e))
+        logger.warning("transform_record_gene_to_phenotype(): Exception - "+str(e))
         return None
