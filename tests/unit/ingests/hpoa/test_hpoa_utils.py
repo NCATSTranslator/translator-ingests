@@ -113,9 +113,31 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
                 has_total=None
             )
         ),
-        (   # query 9 - if a valid 'Frequency' HP ontology term is
-            #           already given, then it should be sent back,
-            #           but without any indicative ranges
+        (   # query 9 - rounds down if decimal value < 0.5 of above an upper bound
+            "79.4%",
+            # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=100, upper=100),
+            Frequency(
+                frequency_qualifier="HP:0040282",
+                has_percentage=79.4,
+                has_quotient=0.79,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 10 - rounds upwards if decimal value >= 0.5 above an upper bound
+            "79.5%",
+            # FrequencyHpoTerm(curie="HP:0040281", name="Very frequent", lower=100, upper=100),
+            Frequency(
+                frequency_qualifier="HP:0040281",
+                has_percentage=79.5,
+                has_quotient=0.80,
+                has_count=None,
+                has_total=None
+            )
+        ),
+        (   # query 11 - if a valid 'Frequency' HP ontology term is
+            #            already given, then it should be sent back,
+            #            but without any indicative ranges
             "HP:0040282",
             # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
             Frequency(
@@ -126,7 +148,7 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
                 has_total=None
             )
         ),
-        (   # query 10 - division ratios converted to percentages (i.e., 7/13 ~ 53.8%) that match
+        (   # query 12 - division ratios converted to percentages (i.e., 7/13 ~ 53.8%) that match
             # within a specific percentage range should be sent back accurately
             "7/13",
             # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
@@ -138,7 +160,7 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
                 has_total=13
             )
         ),
-        (  # query 11 - obligate percentage value
+        (  # query 13 - obligate percentage value
             "1/1",
             # FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
             Frequency(
@@ -149,7 +171,7 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
                 has_total=1
             )
         ),
-        (  # query 12 - still an obligate percentage value
+        (  # query 14 - still an obligate percentage value
             "2/2",
             # FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100),
             Frequency(
@@ -160,7 +182,7 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
                 has_total=2
             )
         ),
-        (   # query 13 - frequent ratio/percentage value
+        (   # query 15 - frequent ratio/percentage value
             "1/2",
             # FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79),
             Frequency(
