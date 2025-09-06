@@ -390,6 +390,10 @@ def transform_record_gene_to_phenotype(
             # Convert disease identifier to mondo term identifier if possible...
             dis_id = koza_transform.lookup(name=dis_id, map_column="subject_id", map_name="mondo_map")
         except MapItemException:
+            logger.debug(
+                f"transform_record_gene_to_phenotype() - koza_transform.lookup "
+                f"failure for 'dis_id' field '{str(dis_id)}' in record '{str(record)}' "
+            )
             # ...otherwise leave as is
             pass
 
