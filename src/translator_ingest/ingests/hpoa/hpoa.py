@@ -364,7 +364,7 @@ def transform_record_gene_to_phenotype(
 
     try:
         logger.debug("transform_record_gene_to_phenotype(): 'gene_id'")
-        gene_id = "NCBIGene:" + record["ncbi_gene_id"]
+        gene_id = "NCBIGene:" + str(record["ncbi_gene_id"])
         gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
 
         logger.debug("transform_record_gene_to_phenotype(): 'hpo_id'")

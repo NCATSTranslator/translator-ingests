@@ -447,7 +447,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         ),
         (   # Query 1 - Full record, with the empty ("-") frequency field
             {
-                "ncbi_gene_id": "8086",
+                "ncbi_gene_id": 8086,
                 "gene_symbol": "AAAS",
                 "hpo_id": "HP:0000252",
                 "hpo_name": "Microcephaly",
@@ -498,7 +498,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         ),
         (   # Query 2 - Full record, with a HPO term defined frequency field value
             {
-                "ncbi_gene_id": "8120",
+                "ncbi_gene_id": 8120,
                 "gene_symbol": "AP3B2",
                 "hpo_id": "HP:0001298",
                 "hpo_name": "Encephalopathy",
@@ -549,7 +549,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         ),
         (   # Query 3 - Full record, with a ratio ("quotient") frequency field value
             {
-                "ncbi_gene_id": "8192",
+                "ncbi_gene_id": 8192,
                 "gene_symbol": "CLPP",
                 "hpo_id": "HP:0000013",
                 "hpo_name": "Hypoplasia of the uterus",
@@ -602,7 +602,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         (   # Query 4 - Full record, with a percentage frequency field value
             # 8929	PHOX2B	HP:0003005	Ganglioneuroma	5%	OMIM:613013
             {
-                "ncbi_gene_id": "8929",
+                "ncbi_gene_id": 8929,
                 "gene_symbol": "PHOX2B",
                 "hpo_id": "HP:0003005",
                 "hpo_name": "Ganglioneuroma",
