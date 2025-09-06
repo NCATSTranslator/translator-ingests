@@ -210,9 +210,9 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
                 # This should map onto a non-null HPO term
                 hpo_term = map_percentage_frequency_to_hpo_term(percentage)
 
-        except Exception:
+        except Exception as e:
             # the expected ratio is not recognized
-            logger.error(f"phenotype_frequency_to_hpo_term(): invalid frequency field value '{frequency_field}'")
+            logger.error(f"phenotype_frequency_to_hpo_term(): invalid frequency field value '{frequency_field}', Exception: {e}")
             return Frequency()
 
         return Frequency(
