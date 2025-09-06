@@ -212,7 +212,10 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
 
         except Exception as e:
             # the expected ratio is not recognized
-            logger.error(f"phenotype_frequency_to_hpo_term(): invalid frequency field value '{frequency_field}', Exception: {e}")
+            logger.error(
+                "phenotype_frequency_to_hpo_term(): invalid frequency field value " +
+                f"'{frequency_field}' of type {type(frequency_field)}, {type(e)} message: {e}"
+            )
             return Frequency()
 
         return Frequency(
