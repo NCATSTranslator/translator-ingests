@@ -414,17 +414,24 @@ def mock_koza_transform_2() -> koza.KozaTransform:
 def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaTransform):
     result: Iterable[dict[str, Any]] | None = prepare_data_gene_to_phenotype(mock_koza_transform_2, [])
     assert result is not None
+    expected_entry: dict[str, Any] = {
+        "ncbi_gene_id": 22,  # this gotta be an 'int'!
+        "gene_symbol": "ABCB7",
+        "hpo_id": "HP:0002470",
+        "hpo_name": "Nonprogressive cerebellar ataxia",
+        "publications": "PMID:26242992;PMID:4045952;PMID:11050011",
+        "frequency": "11/11",
+        "disease_id": "OMIM:301310",
+        "gene_to_disease_association_types": "MENDELIAN"
+    }
+    # Find any entry with the expected fields in the result list
     assert any(
         [
-            # Check that all fields are present for a
-            # particular entry computed from the merged test data
-            'ABCB7' in entry and
-            'HP:0002470' in entry and
-            'Nonprogressive cerebellar ataxia' in entry and
-            '11/11' in entry and
-            'OMIM:301310' in entry and
-            'PMID:26242992;PMID:4045952;PMID:11050011' in entry and
-            'MENDELIAN' in entry
+            # Check that all expected fields are present in the entry
+            all([
+                key in expected_entry.keys() and expected_entry[key] == value
+                for key, value in entry.items()
+            ])
             for entry in result
         ]
     )

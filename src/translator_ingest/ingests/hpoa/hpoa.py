@@ -345,7 +345,7 @@ def prepare_data_gene_to_phenotype(
          left outer join g2d_grouped on g2p.ncbi_gene_id = g2d_grouped.ncbi_gene_id_clean
                      and g2p.disease_id = g2d_grouped.disease_id
     group by all
-    """).fetchall()
+    """).fetchdf().to_dict('records')
 
 
 @koza.transform_record(tag="gene_to_phenotype")
