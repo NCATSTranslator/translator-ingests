@@ -138,8 +138,13 @@ def transform_record_disease_to_phenotype(
             onset = record["onset"] if record["onset"] else None
 
             ## Frequency of occurrence
-            # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-            frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+            frequency: Frequency
+            if not record["frequency"] or record["frequency"] == "-":
+                # No frequency data provided
+                frequency = Frequency()
+            else:
+                # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
+                frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
             ## Evidence Code
             # Three letter Evidence Code Ontology ("ECO") term translated
@@ -167,11 +172,11 @@ def transform_record_disease_to_phenotype(
                 has_evidence=[evidence_curie],
                 sex_qualifier=sex_qualifier,
                 onset_qualifier=onset,
-                has_percentage=frequency.has_percentage if frequency else None,
-                has_quotient=frequency.has_quotient if frequency else None,
-                frequency_qualifier=frequency.frequency_qualifier if frequency and frequency.frequency_qualifier else None,
-                has_count=frequency.has_count if frequency else None,
-                has_total=frequency.has_total if frequency else None,
+                has_percentage=frequency.has_percentage,
+                has_quotient=frequency.has_quotient,
+                frequency_qualifier=frequency.frequency_qualifier,
+                has_count=frequency.has_count,
+                has_total=frequency.has_total,
                 sources=get_hpoa_association_sources(disease_id),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
@@ -358,20 +363,26 @@ def transform_record_gene_to_phenotype(
     """
 
     try:
+        logger.debug("transform_record_gene_to_phenotype(): gene_id")
         gene_id = "NCBIGene:" + record["ncbi_gene_id"]
         gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
 
+        logger.debug("transform_record_gene_to_phenotype(): hpo_id")
         hpo_id = record["hpo_id"]
         assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
         phenotype = PhenotypicFeature(id=hpo_id, **{})
 
-        # No frequency data provided
-        if record["frequency"] == "-":
+        ## Frequency of occurrence
+        logger.debug("transform_record_gene_to_phenotype(): frequency")
+        frequency: Frequency
+        if not record["frequency"] or record["frequency"] == "-":
+            # No frequency data provided
             frequency = Frequency()
         else:
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-            frequency: Frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+            frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
+        logger.debug("transform_record_gene_to_phenotype(): disease_id")
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
         try:
             # Convert disease identifier to mondo term identifier if possible...
@@ -380,14 +391,16 @@ def transform_record_gene_to_phenotype(
             # ...otherwise leave as is
             pass
 
+        logger.debug("transform_record_gene_to_phenotype(): publications")
         publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
 
+        logger.debug("transform_record_gene_to_phenotype(): build association")
         association = GeneToPhenotypicFeatureAssociation(
             id=entity_id(),
             subject=gene_id,
             predicate="biolink:has_phenotype",
             object=hpo_id,
-            frequency_qualifier=frequency.frequency_qualifier if frequency.frequency_qualifier else None,
+            frequency_qualifier=frequency.frequency_qualifier,
             has_percentage=frequency.has_percentage,
             has_quotient=frequency.has_quotient,
             has_count=frequency.has_count,
@@ -400,6 +413,7 @@ def transform_record_gene_to_phenotype(
             **{}
         )
 
+        logger.debug("transform_record_gene_to_phenotype(): KnowledgeGraph")
         return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
 
     except Exception as e:
