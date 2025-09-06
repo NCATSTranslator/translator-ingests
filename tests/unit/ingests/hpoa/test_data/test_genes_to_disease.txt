@@ -1,0 +1,10 @@
+ncbi_gene_id	gene_symbol	association_type	disease_id	source
+NCBIGene:22	ABCB7	UNKNOWN	ORPHA:2802	http://www.orphadata.org/data/xml/en_product6.xml
+NCBIGene:22	ABCB7	MENDELIAN	OMIM:301310	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen
+NCBIGene:24	ABCA4	MENDELIAN	OMIM:248200	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen
+NCBIGene:24	ABCA4	POLYGENIC	OMIM:153800	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen
+NCBIGene:24	ABCA4	MENDELIAN	OMIM:604116	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen
+NCBIGene:24	ABCA4	MENDELIAN	OMIM:601718	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen
+NCBIGene:24	ABCA4	UNKNOWN	ORPHA:1872	http://www.orphadata.org/data/xml/en_product6.xml
+NCBIGene:24	ABCA4	UNKNOWN	ORPHA:791	http://www.orphadata.org/data/xml/en_product6.xml
+NCBIGene:24	ABCA4	UNKNOWN	ORPHA:827	http://www.orphadata.org/data/xml/en_product6.xml

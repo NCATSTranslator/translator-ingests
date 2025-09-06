@@ -1,7 +1,9 @@
-"""Translator Phase 3 Data Ingest Pipeline."""
+"""
+Translator Ingest Globally Shared Code and parameters
+"""
+from os.path import abspath, dirname, join, sep
+from loguru import logger
 
-try:
-    from importlib.metadata import version
-    __version__ = version("bridge")
-except Exception:
-    __version__ = "0.0.0"
+TI_PACKAGE_PATH = abspath(dirname(__file__))
+PRIMARY_DATA_PATH = join(TI_PACKAGE_PATH, f"..{sep}..{sep}data")
+logger.info("Primary data path: {}".format(PRIMARY_DATA_PATH))

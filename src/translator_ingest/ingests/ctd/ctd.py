@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 import requests
@@ -11,12 +10,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
+from translator_ingest.util.biolink import (
+    INFORES_CTD,
+    entity_id,
+    build_association_knowledge_sources
+)
+
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
-
-# ideally we'll use a predicate enum, maybe an infores enum?
-BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
-INFORES_CTD = "infores:ctd"
 
 
 def get_latest_version():
@@ -55,14 +56,14 @@ def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=chemical.id,
-        predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
+        predicate="biolink:treats_or_applied_or_studied_to_treat",
         object=disease.id,
         publications=publications,
         # is this code/repo an aggregator in this context? feels like no, but maybe yes?
         # aggregator_knowledge_source=["infores:???"],
-        primary_knowledge_source=INFORES_CTD,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
