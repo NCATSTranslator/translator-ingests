@@ -159,7 +159,7 @@ def map_percentage_frequency_to_hpo_term(percentage: Optional[float]) -> Frequen
     """
     if percentage is not None:
         for hpo_id, fht in hpo_term_to_frequency.items():
-            if fht.lower <= percentage <= fht.upper:
+            if fht.lower <= round(percentage) <= fht.upper:
                 return fht
     raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage}")
 
