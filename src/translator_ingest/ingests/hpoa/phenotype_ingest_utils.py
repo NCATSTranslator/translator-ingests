@@ -164,7 +164,7 @@ def map_percentage_frequency_to_hpo_term(percentage: Optional[float]) -> Frequen
     raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage}")
 
 
-def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[Frequency]:
+def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency:
     """
     Maps a raw frequency field onto an HPO term, for consistency, since **phenotypes.hpoa** file field 8,
     which tracks phenotypic frequency, has variable values.   There are three allowed options for this field:
@@ -178,8 +178,9 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
        with the specified disease were found to have the phenotypic abnormality referred to by the HPO term
        in question in the study referred to by the DB_Reference;
 
-        :param frequency_field: str, raw frequency value in one of the three above forms
-        :return: Frequency containing the resolved FrequencyHpoTerm range and/or interpreted value
+        :param frequency_field: String raw frequency value in one of the three above forms
+        :return: Frequency containing the resolved FrequencyHpoTerm range and/or
+                 interpreted value (empty Frequency object, if not found)
     """
     quotient: Optional[float] = None
     percentage: Optional[float] = None
@@ -212,7 +213,7 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
         except Exception:
             # the expected ratio is not recognized
             logger.error(f"phenotype_frequency_to_hpo_term(): invalid frequency field value '{frequency_field}'")
-            return None
+            return Frequency()
 
         return Frequency(
             frequency_qualifier=hpo_term.curie if hpo_term else None,
@@ -223,8 +224,9 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Optional[
         )
 
     else:
-        # may be None if the original field was empty or has an invalid value
-        return None
+        # may return an empty Frequency object if
+        # the original field was empty or has an invalid value
+        return Frequency()
 
 
 def get_hpoa_genetic_predicate(original_predicate: str) -> str:

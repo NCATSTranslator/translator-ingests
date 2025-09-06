@@ -54,9 +54,9 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
 @pytest.mark.parametrize(
     "query,frequency",
     [
-        (None, None),          # query 0 - None input
-        ("", None),            # query 1 - empty string input
-        ("0", None),           # query 2 - not a raw number... has to be tagged as a percentage?
+        (None, Frequency()),          # query 0 - None input
+        ("", Frequency()),            # query 1 - empty string input
+        ("0", Frequency()),           # query 2 - not a raw number... has to be tagged as a percentage?
         ("HP:0040279", Frequency()),  # query 3 - the sub-ontology term below HP:0040279, outside HPO term
         (   # query 4 - exact matches to global lower bounds should be sent back accurately
             "0%",
