@@ -25,7 +25,7 @@ def normalize_kgx_files(output_dir: str,
 
     nodes_output_file_path = versioned_output_dir / "normalized_nodes.jsonl"
     node_norm_map_file_path = versioned_output_dir / "node_normalization_map.json"
-    node_norm_failures_file_path = versioned_output_dir / "node_normalization_failures.json"
+    node_norm_failures_file_path = versioned_output_dir / "node_normalization_failures.txt"
     edges_output_file_path = versioned_output_dir / "normalized_edges.jsonl"
     edge_norm_predicate_map_file_path = versioned_output_dir / "edge_predicate_map.json"
 
