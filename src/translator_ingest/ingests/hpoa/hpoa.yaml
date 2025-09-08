@@ -59,7 +59,8 @@ readers:
 writer:
   sssom_config:
     # TODO: Not ideal to put MONDO under hpoa. Can the download of the MONDO SSSOM be centralized for shared use?
-    sssom_file: '../../../../data/hpoa/mondo.sssom.tsv'
+    files:
+      - '../../../../data/hpoa/mondo.sssom.tsv'
     subject_target_prefixes:
       - 'OMIM'
       - 'Orphanet'
