@@ -55,12 +55,11 @@ readers:
         value:
           - 'MENDELIAN'
 
-# TODO: Still need the 'writer' section to set up the MONDO SSSOM file?
+# Still need the 'writer' section to set up the MONDO SSSOM file?
 writer:
   sssom_config:
-    # TODO: Not ideal to put MONDO under hpoa. Can the download of the MONDO SSSOM be centralized for shared use?
-    files:
-      - '../../../../data/hpoa/mondo.sssom.tsv'
+    files:  # For invariance, we'll point to the web source of the data
+      - "https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv"
     subject_target_prefixes:
       - 'OMIM'
       - 'Orphanet'
