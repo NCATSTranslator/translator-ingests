@@ -12,7 +12,7 @@
 3. [Resource Ingest Guide Repo](https://github.com/biolink/resource-ingest-guide-schema): Holds a linkML-based schema for authoring/validating RIGs, and a catalog of RIGs for existing source ingests
    - **RIG Schema**: linkML schema for authoring/validating RIG documents ([yaml](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml)) ([web site](https://biolink.github.io/resource-ingest-guide-schema/))
    - **RIG Catalog**: Collection of RIGs for current source ingests ([directory](https://github.com/biolink/resource-ingest-guide-schema/tree/main/src/docs/rigs)) ([web site](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
-4. [Ingest Metadata Schema Repo](https://github.com/biolink/ingest-metadata): Holds a schema and documentation for KGX ingest-metadata filesm which accompany 'nodes' and 'edges' files for each ingest execution.
+4. [Ingest Metadata Schema Repo](https://github.com/biolink/ingest-metadata): Holds a schema and documentation for KGX ingest-metadata files which accompany 'nodes' and 'edges' files for each ingest execution.
    - **Ingest Metadata Schema**: LinkML-based schema for authoring/validating KGX ingest-metadata files ([yaml](https://github.com/biolink/ingest-metadata/blob/main/src/ingest_metadata/schema/ingest_metadata.yaml)) ([web site](https://biolink.github.io/ingest-metadata/))
    
 
@@ -30,8 +30,8 @@
 ### 1. Establish / Organize Owners and Contributors
 - Determine who will perform and contribute to each ingest. We are currently using the following tables:
    - [Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936): Lists sources for ingest, info about each to help prioritize, and columns to recommend ingest owners.
-   - [Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Table cpturing the final owners and contributors for each ingest.
-   - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): Table with one row per Phase 2 ingest of a source by a KP - reporting which / how many KPs ingeted each source. 
+   - [Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Table capturing the final owners and contributors for each ingest.
+   - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): Table with one row per Phase 2 ingest of a source by a KP - reporting which / how many KPs ingested each source. 
 - As appropriate, schedule a Planning Call between all contributors, to collaboratively address/document the questions/tasks below.
 
 ### 2. Create a Source Ingest Ticket in DINGO Repository [here](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/)
@@ -68,9 +68,9 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
 
 ### 6. Source Data Exploration
 - Programmatic exploration of a source is often performed by developers as part of the ingest process, to understand its content and inform how to best ingest and transform the data.
-- This may be performed as needed by lead develoeprs for an ingest.
+- This may be performed as needed by lead developers for an ingest.
   - Note that key outcomes/conclusions from this work can be documented in a RIG where useful (see below), to explain content or modeling decisions.
-  - And key artifacts generated through this process (e.g. Jupyter Notebooks, summary sprreadshets can be described in and linked to from the RIG.
+  - And key artifacts generated through this process (e.g. Jupyter Notebooks, summary spreadsheats can be described in and linked to from the RIG.
   
 ### 7. Document Ingest Decisions in a RIG
 RIGs like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd-rig.yaml) document these scope, content, and modeling decisions for a source ingest.
@@ -92,7 +92,7 @@ RIGs are used to:
 - Describe node/edge properties and patterns that will be used to capture metadata?
 - Consider any re-modeling of Phase 2 patterns needed, and note any Biolink changes/additions needed. 
 
-#### Describe Content/Modeling to Reconsdier in Future Iterations
+#### Describe Content/Modeling to Reconsider in Future Iterations
 - Be sure to document any content left behind that should be revisited/ingested in future iterations*.
 - Document areas where we might consider refactored modeling in the future - so we can return to and update the ingest. 
 
