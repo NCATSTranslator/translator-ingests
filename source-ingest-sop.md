@@ -7,8 +7,9 @@
 1. [Data Ingest Coordination Working Group Repo](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group): Central place for high-level discussion about DINGO ingest processes and tasks
    - **Source Ingest Tickets**: planning / discussion of content and modeling for individual source ingest ([issue list](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22))
    - **Ingest Project Board**: tracks status of source ingests across all ingest tickets ([board](https://github.com/orgs/NCATSTranslator/projects/33))
-2. [Translator Ingests Repo](https://github.com/NCATSTranslator/translator-ingests): Holds code base for source ingests, with developer documentation
+2. [Translator Ingests Repo](https://github.com/NCATSTranslator/translator-ingests): Holds code base for source ingests, with shared code modules, overall ingest pipeline and associated developer documentation
    - **Source Ingest Code**: Code for executing each source ingest ([directory](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests))
+   - **Unit Tests for Ingests**: Unit tests validating logic of each source ingest ([directory](https://github.com/NCATSTranslator/translator-ingests/tree/main/tests/unit/ingests))
 3. [Resource Ingest Guide Repo](https://github.com/biolink/resource-ingest-guide-schema): Holds a linkML-based schema for authoring/validating RIGs, and a catalog of RIGs for existing source ingests
    - **RIG Schema**: linkML schema for authoring/validating RIG documents ([yaml](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml)) ([web site](https://biolink.github.io/resource-ingest-guide-schema/))
    - **RIG Catalog**: Collection of RIGs for current source ingests ([directory](https://github.com/biolink/resource-ingest-guide-schema/tree/main/src/docs/rigs)) ([web site](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
