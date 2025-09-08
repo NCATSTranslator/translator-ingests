@@ -1,9 +1,0 @@
-### This file is a YAML configuration that specifies
-### the data to be downloaded and ingested for this project.
-### The configuration is used by `kghub-downloader`.
-### For more information, see https://github.com/monarch-initiative/kghub-downloader
----
-# MONDO SSSOM mappings
-- url: https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv
-  local_name: data/mondo/mondo.sssom.tsv
-

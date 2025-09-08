@@ -14,3 +14,7 @@
 # For disease_to_phenotype and mode of inheritance
 - url: http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa
   local_name: phenotype.hpoa
+
+# MONDO SSSOM mappings
+- url: https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv
+  local_name: mondo.sssom.tsv

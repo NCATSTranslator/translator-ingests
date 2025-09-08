@@ -388,7 +388,7 @@ def transform_record_gene_to_phenotype(
         dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
         try:
             # Convert disease identifier to mondo term identifier if possible...
-            dis_id = koza_transform.lookup(name=dis_id, map_column="subject_id", map_name="mondo_map")
+            dis_id = koza_transform.lookup(name=dis_id, map_column="subject_id", map_name="mondo")
         except MapItemException:
             logger.debug(
                 f"transform_record_gene_to_phenotype() - koza_transform.lookup "
