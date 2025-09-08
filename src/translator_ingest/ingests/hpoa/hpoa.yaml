@@ -1,5 +1,4 @@
 name: 'human_phenotype_ontology_annotations'
-metadata: !include './metadata.yaml'
 
 readers:
   disease_to_phenotype:
