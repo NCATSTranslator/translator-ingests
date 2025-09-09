@@ -72,6 +72,7 @@ install: python
 test:
 	$(RUN) pytest tests
 	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore
+	$(RUN) ruff check
 
 
 ### Running ###
