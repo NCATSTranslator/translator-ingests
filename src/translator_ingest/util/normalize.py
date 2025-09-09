@@ -170,7 +170,7 @@ import click
 from pathlib import Path
 
 from orion import KGXFileNormalizer
-from orion.normalization import NodeNormalizer
+from orion.normalization import NodeNormalizer, NormalizationScheme
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +198,7 @@ def normalize_kgx_files(output_dir: str,
         logger.info(f"Normalization output files already exist. Skipping normalization.")
         return
 
+    normalization_scheme = NormalizationScheme(conflation=True)
     file_normalizer = KGXFileNormalizer(source_nodes_file_path=str(input_nodes_file_path),
                                         nodes_output_file_path=str(nodes_output_file_path),
                                         node_norm_map_file_path=str(node_norm_map_file_path),
@@ -205,6 +206,7 @@ def normalize_kgx_files(output_dir: str,
                                         source_edges_file_path=str(input_edges_file_path),
                                         edges_output_file_path=str(edges_output_file_path),
                                         edge_norm_predicate_map_file_path=str(edge_norm_predicate_map_file_path),
+                                        normalization_scheme=normalization_scheme,
                                         has_sequence_variants=False,
                                         process_in_memory=True,
                                         preserve_unconnected_nodes=False)
