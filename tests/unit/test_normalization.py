@@ -258,7 +258,7 @@ MOCK_NN_DC_CONFLATED_CHEMICAL_DATA["equivalent_identifiers"].extend(
         "identifier": "PUBCHEM.COMPOUND:10129877",
         "label": "Water O-15"
       }
-      # The real server returns alot more stuff but who cares?
+      # The real server returns much more stuff but who cares?
     ]
 )
 MOCK_NN_DC_CONFLATED_CHEMICAL_DATA["type"].extend(
