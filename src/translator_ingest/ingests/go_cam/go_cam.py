@@ -10,8 +10,6 @@ import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
-    NamedThing,
-    Association,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     GeneToGeneAssociation,

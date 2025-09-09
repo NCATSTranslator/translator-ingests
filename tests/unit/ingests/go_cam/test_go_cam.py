@@ -1,5 +1,3 @@
-from typing import Iterable
-import json
 import logging
 
 import pytest
@@ -9,37 +7,13 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneAssociation,
     Gene
 )
-from koza.io.writer.writer import KozaWriter
-from koza.runner import KozaRunner, KozaTransformHooks
 from translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
-from pathlib import Path
-from unittest.mock import MagicMock
 
-
-class MockWriter(KozaWriter):
-    def __init__(self):
-        self.items = []
-
-    def write(self, entities):
-        if isinstance(entities, list):
-            self.items.extend(entities)
-        else:
-            for entity in entities:
-                self.items.append(entity)
-
-    def write_nodes(self, nodes: Iterable):
-        self.items.extend(nodes)
-
-    def write_edges(self, edges: Iterable):
-        self.items.extend(edges)
-
-    def finalize(self):
-        pass
-
+from tests.unit.ingests import MockKozaWriter
 
 @pytest.fixture
 def gocam_output():
-    writer = MockWriter()
+    writer = MockKozaWriter()
 
     # Mock the koza transform object
     from koza.transform import KozaTransform
@@ -107,7 +81,9 @@ def test_gocam_entities(gocam_output):
     from koza.model.graphs import KnowledgeGraph
     assert isinstance(kg, KnowledgeGraph)
     
-    all_entities = kg.nodes + kg.edges
+    all_entities = list()
+    all_entities.extend(kg.nodes)
+    all_entities.extend(kg.edges)
 
     genes = [e for e in all_entities if isinstance(e, Gene)]
     assert len(genes) == 2
