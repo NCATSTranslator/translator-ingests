@@ -1,5 +1,5 @@
 # Unit tests for normalizations of nodes and edges, based on Pydantic models
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union
 from copy import deepcopy
 
 import pytest
@@ -15,7 +15,7 @@ from src.translator_ingest.util.normalize import Normalizer
 
 #################### MOCK Node Normalizer result data ###################
 
-MOCK_NN_GENE_ONLY_DATA: Dict[str, Union[List[Union[str, Dict[str,str]]], Dict[str,str], int]] = {
+MOCK_NN_GENE_ONLY_DATA: dict[str, Union[list[Union[str, dict[str,str]]], dict[str,str], int]] = {
     "equivalent_identifiers": [
       {
         "identifier": "NCBIGene:7486",
@@ -276,12 +276,12 @@ MOCK_NN_DC_CONFLATED_CHEMICAL_DATA["type"].extend(
 @pytest.fixture(scope="module")
 def mock_nn_query():
     # return Normalizer().get_normalized_nodes
-    def mock_node_normalizer_query(query: Dict) -> Dict[str, Optional[Dict]]:
+    def mock_node_normalizer_query(query: dict) -> dict[str, Optional[dict]]:
         # Fixture sanity check for a well-formed query input
         # I am also mimicking the default "conflate" and "drug_chemical_conflate" modes here
         assert query
         assert "curies" in query
-        result: Dict[str, Optional[Dict]] = dict()
+        result: dict[str, Optional[dict]] = dict()
         for identifier in query["curies"]:
             if identifier in ["HGNC:12791", "NCBIGene:7486", "UniProtKB:Q14191"]:
                 if "conflate" not in query or query["conflate"] is True:
@@ -316,11 +316,11 @@ def test_convert_to_preferred(mock_nn_query):
 
 
 # def normalize_identifiers(
-#       self, curies: List[str], gp_conflate: bool = False, dc_conflate: bool = False
-# ) -> Dict[str, str]
+#       self, curies: list[str], gp_conflate: bool = False, dc_conflate: bool = False
+# ) -> dict[str, str]
 def test_normalize_identifiers(mock_nn_query):
     normalizer = Normalizer(endpoint=mock_nn_query)
-    result: Dict[str,str] = normalizer.normalize_identifiers(curies=["HGNC:12791","DOID:5688"])
+    result: dict[str,str] = normalizer.normalize_identifiers(curies=["HGNC:12791","DOID:5688"])
     assert result
     assert result["HGNC:12791"] == "NCBIGene:7486"
     assert result["DOID:5688"] == "MONDO:0010196"
