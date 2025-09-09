@@ -71,7 +71,7 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
 - Programmatic exploration of a source is often performed by developers as part of the ingest process, to understand its content and inform how to best ingest and transform the data.
 - This may be performed as needed by lead developers for an ingest.
   - Note that key outcomes/conclusions from this work can be documented in a RIG where useful (see below), to explain content or modeling decisions.
-  - And key artifacts generated through this process (e.g. Jupyter Notebooks, summary spreadsheats can be described in and linked to from the RIG.
+  - And key artifacts generated through this process (e.g. Jupyter Notebooks, summary spreadsheets can be described in and linked to from the RIG.
   
 ### 7. Document Ingest Decisions in a RIG
 RIGs like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd-rig.yaml) document these scope, content, and modeling decisions for a source ingest.
