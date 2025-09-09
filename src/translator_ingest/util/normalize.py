@@ -25,7 +25,7 @@
 # All of the above methods can use gene-to-protein and drug-to-chemical conflation to
 # modify their results. The code defaults are for gene-to-protein conflation to be applied,
 # but drug-to-chemical conflation to be avoided.
-from typing import Optional, Union, List, Dict, Callable
+from typing import Optional
 import logging
 
 from .http import post_query
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 class Normalizer:
     """
-    Wrapper for Node Normalizer operations.
+    Wrapper class for Node Normalizer operations.
     """
 
     NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"

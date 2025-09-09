@@ -2,12 +2,12 @@
 
 from typing import Dict
 from urllib3 import request, Retry, BaseHTTPResponse
+
 from json import JSONDecodeError
 import logging
 logger = logging.getLogger(__name__)
 
 NUMBER_OF_RETRIES = 5
-
 RETRIES = Retry(
     total=NUMBER_OF_RETRIES,
     backoff_factor=0.1,
@@ -22,7 +22,7 @@ def post_query(url: str, query: Dict, server: str = "") -> Dict:
     :param url, str URL target for HTTP POST
     :param query, JSON query for posting
     :param server, str human-readable name of server called (for error message reports)
-    :return: Dict, JSON content response from the query (empty, posting a logging message, if unsuccessful)
+    :return: dict, JSON content response from the query (empty, posting a logging message, if unsuccessful)
     """
     try:
         response: BaseHTTPResponse = request(
@@ -35,7 +35,7 @@ def post_query(url: str, query: Dict, server: str = "") -> Dict:
         logging.error(f"URL {url} could not be accessed: {str(ce)}?")
         return dict()
 
-    result: Dict = dict()
+    result: dict = dict()
     err_msg_prefix: str = \
         f"post_query(): Server {server} at '\nUrl: '{url}', Query: '{query}' -"
     if response.status == 200:

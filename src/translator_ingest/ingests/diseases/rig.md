@@ -31,8 +31,7 @@ https://diseases.jensenlab.org/Downloads
 - Formats: tsv
    
 ### Releases and Versioning
- - Updated weekly (ref: [resource's "About" page](https://diseases.jensenlab.org/About), 
-[paper](https://doi.org/10.1093/database/baac019)), perhaps every weekend (paper: "The corpus in DISEASES is updated every weekend").  
+ - Updated weekly on Fridays, according to current maintainer 2025-08-05 (not sure if this is when the update posts or when it starts - the update process may take days).
  - Website offers only download of latest version. It does not include a version or creation date for this download.
  - Old, versioned releases archived at https://figshare.com/authors/Lars_Juhl_Jensen/96428
 
@@ -78,7 +77,7 @@ Records from relevant files that are not included in the ingest.
 
 
 ### Future Content Considerations (o)
-Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Consider filtering some of the lower scoring text-mined associations if we can define a threshold/cutoff.

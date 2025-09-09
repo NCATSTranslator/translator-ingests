@@ -6,8 +6,9 @@
 
   | Source  | Infores | Access URL |  File  |  Description  | 
   |----------|----------|----------|----------|----------|
-  | Aggregate Analysis of ClinicalTrial.gov (AACT)  | [infores:aact](https://w3id.org/information-resource-registry/aact) |  TO DO | TO DO  | TO DO  |
+  | Aggregate Analysis of ClinicalTrial.gov (AACT)  | [infores:aact](https://w3id.org/information-resource-registry/aact) | https://aact.ctti-clinicaltrials.org/downloads  | yyyymmdd_export_ctgov.zip  | Use these pipe-delimited text files to import AACT data into any database or analysis tool. Each file corresponds to a table in the AACT database schema.  |
 
+  
 ### Additional Notes:
 
 
@@ -16,40 +17,39 @@
 ## Translator Knowledge Source Information
 
 ### Infores
-- [infores:ctkp](https://w3id.org/information-resource-registry/ctkp)
-  
+- [infores:multiomics-clinicaltrials](https://w3id.org/information-resource-registry/multiomics-clinicaltrials)
+
 ### Description
  The Clinical Trials KP provides information on Clinical Trials, ultimately derived from researcher submissions to clinicaltrials.gov, via the Aggregate Analysis of Clinical Trials (AACT) database. Information on select trials includes the NCT Identifier of the trial, interventions used, diseases/conditions relevant to the trial, adverse events, etc.  
 
 ### Source Category(ies)
 Use terms from the enumerated list [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/rig-specification.md#source-categoryies).
 
-- [Primary Knowledge Source](https://biolink.github.io/biolink-model/primary_knowledge_source/)   
-
 ### Citation (o)
-
+- [Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint)](https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/)
+  
 ### Terms of Use
-- TO DO
+- Freely available
 
 ### Data Access Locations
-- TO DO
+- Direct download links for the latest version are given in the [manifest file](https://github.com/multiomicsKP/clinical_trials_kp/blob/main/manifest.json)
    
 ### Provision Mechanisms and Formats
-- Mechanism(s): TO DO
-- Formats: TO DO
+- Mechanism(s): File download
+- Formats: KGX two-tsv format
    
 ### Releases and Versioning
-TO DO
+- New versions are released weekly
 
 ### Utility
 CTKP provides an improved version of clinical trials information that addresses quality and computability issues with sources it uses (AACT, ct.gov), as well as treatment assertions derived from this data. This type of knowledge is critical for many Translator query types. 
    
 ### Edge Types
+| # | Association Type | Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties |  UI Explanation |
+|----------|----------|----------|----------|----------|----------|---------|----------|----------|
+| 1 | Association | ChemicalEntity, SmallMolecule, MolecularMixture  | in_clinical_trials_for | Disease, PhenotypicFeature  |  none  |  manual_agent, knowledge_assertion  | to do  | The `in_clinical_trials_for` predicate reports that an intervention was the tested in a clinical trial for a particular disease - based on a registered trial in ct.gov. |
+| 2 | Association | ChemicalEntity, MolecularMixture  | treats | DiseaseOrPhenotypicFeature  |  none |  manual_agent, knowledge_assertion  |  to do  |  The `treats` predicate is used for interventions in a Phase 4 trial that are performed for after successful demonstration for treating a particular disease. |
 
-|  Subject Category |  Predicate | Object Category | Qualifier Types |  AT / KL  | Edge Properties | UI Explanation |
-|----------|----------|----------|----------|----------|---------|----------|
-| ChemicalEntity, MolecularMixture  | in_clinical_trials_for | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  | TO DO  | The 'in_clinical_trials_for' predicate reports that an intervention was the tested in a clinical trial for a particular disease - based on a registered trial in ct.gov. |
-| ChemicalEntity, MolecularMixture  | treats | DiseaseOrPhenotypicFeature  |  n/a  |  manual_agent, knowledge_assertion  |  TO DO |  The 'treats' predicate reports here that an intervention was shown to successfully treat a particular disease in virtue of its passing Phase 3 or being interrogated in a Phase 4 trial. |
 
 **Notes/Rationale (o)**:
 
@@ -58,10 +58,12 @@ CTKP provides an improved version of clinical trials information that addresses 
 
 | Biolink Category |  Source Identifier Type(s) | Node Properties | Notes (o) |
 |------------------|----------------------------|-----------------|-----------|
-| ChemicalEntity |  TO DO  |  none  |  |
-| MolecularMixture  | TO DO  | none  |  |
-| Small Molecule  | TO DO | none |  |
-| DiseaseOrPhenotypicFeature | TO DO | none |  |
+| ChemicalEntity | Free text   |    |
+| MolecularMixture  | Free text  |   |
+| Small Molecule  | Free text |  |
+| Disease  | Free text  |
+| PhenotypicFeature  | Free text  |
+
 -----------------
 
 ## Provenance Information (o)
@@ -69,8 +71,7 @@ CTKP provides an improved version of clinical trials information that addresses 
 ### Ingest Contributors (o)
 - **Gwenlyn Glusman**: code author, domain expertise
 - **Matthew Brush**: data modeling
+- **Sierra Moxon**: data modeling
 
 ### Artifacts (o)
 
-
-### Additional Notes (o)

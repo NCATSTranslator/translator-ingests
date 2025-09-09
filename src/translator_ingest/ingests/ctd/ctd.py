@@ -1,5 +1,4 @@
-import uuid
-from typing import Iterable, Any
+from typing import Any
 
 import requests
 import koza
@@ -8,16 +7,17 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
-    NamedThing,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
-    Association
+    AgentTypeEnum
 )
-from bs4 import BeautifulSoup
+from translator_ingest.util.biolink import (
+    INFORES_CTD,
+    entity_id,
+    build_association_knowledge_sources
+)
 
-# ideally we'll use a predicate enum, maybe an infores enum?
-BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
-INFORES_CTD = "infores:ctd"
+from bs4 import BeautifulSoup
+from koza.model.graphs import KnowledgeGraph
 
 
 def get_latest_version():
@@ -32,35 +32,72 @@ def get_latest_version():
     else:
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
-"""
-Functions decorated with @koza.on_data_begin() run before transform or transform_record
 
-koza.state is a dictionary that can be used to store arbitrary variables
-@koza.on_data_begin()
-def prepare(koza: koza.KozaTransform) -> None:
-    koza.state['example_counter'] = 1
+#Functions decorated with @koza.on_data_begin() run before transform or transform_record
 
-Functions decorated with @koza.on_data_end() run after transform or transform_record
-@koza.on_data_end()
-def clean_up(koza: koza.KozaTransform) -> None:
-    if koza.state['example_counter'] > 0:
-        koza.log(f'Uh oh, {koza.state['example_counter']} things happened!', level="WARNING")
-"""
+#koza.state is a dictionary that can be used to store arbitrary variables
+@koza.on_data_begin(tag="chemical_to_disease")
+def on_begin_chemical_to_disease(koza: koza.KozaTransform) -> None:
+    koza.state['example_error_counter'] = 1
+    koza.log('On Data Begin... chemical_to_disease', level="INFO")
 
-@koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> (Iterable[NamedThing], Iterable[Association]):
+
+#Functions decorated with @koza.on_data_end() run after transform or transform_record
+@koza.on_data_end(tag="chemical_to_disease")
+def on_end_chemical_to_disease(koza: koza.KozaTransform) -> None:
+    koza.log('On Data End... chemical_to_disease', level="INFO")
+    if koza.state['example_error_counter'] > 1:
+        koza.log(f'Uh oh, {koza.state['example_error_counter']} things happened!', level="WARNING")
+
+
+@koza.transform_record(tag="chemical_to_disease")
+def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=chemical.id,
-        predicate=BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
+        predicate="biolink:treats_or_applied_or_studied_to_treat",
         object=disease.id,
-        publications=["PMID:" + p for p in record["PubMedIDs"].split("|")],
+        publications=publications,
         # is this code/repo an aggregator in this context? feels like no, but maybe yes?
         # aggregator_knowledge_source=["infores:???"],
-        primary_knowledge_source=INFORES_CTD,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
-    return [chemical, disease], [association]
+    return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
+
+
+
+@koza.on_data_begin(tag="exposure_events")
+def on_begin_exposure_events(koza: koza.KozaTransform) -> None:
+    koza.log('On Data Begin... exposure_events', level="INFO")
+    koza.state['missing_predicate'] = 0
+    koza.state['missing_disease'] = 0
+    koza.state['all_predicates_labels'] = set()
+
+
+#Functions decorated with @koza.on_data_end() run after transform or transform_record
+@koza.on_data_end(tag="exposure_events")
+def on_end_exposure_events(koza: koza.KozaTransform) -> None:
+    koza.log('On Data End.. exposure_events', level="INFO")
+    koza.log(f'all CTD predicate values: {koza.state['all_predicates_labels']}', level="INFO")
+
+
+@koza.transform_record(tag="exposure_events")
+def transform_record_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    disease_id = f'MESH:{record['diseaseid']}'
+    if not disease_id:
+        koza.state['missing_disease'] += 1
+
+    predicate_label = record['outcomerelationship']
+    if not predicate_label:
+        koza.state['missing_predicate'] += 1
+
+    koza.state['all_predicates_labels'].add(predicate_label)
+    return None
+
+    # exposure_id = f'MESH:{record['exposurestressorid']}'
+    # publications = f'PMID:{record['reference']}'
