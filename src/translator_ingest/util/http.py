@@ -1,4 +1,6 @@
-# HTTP query wrappers
+"""
+HTTP query wrappers
+"""
 
 from urllib3 import request, Retry, BaseHTTPResponse
 

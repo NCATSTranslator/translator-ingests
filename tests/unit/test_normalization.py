@@ -1,4 +1,6 @@
-# Unit tests for normalizations of nodes and edges, based on Pydantic models
+"""
+Unit tests for normalizations of nodes and edges, based on Pydantic models
+"""
 from typing import Optional, Union
 from copy import deepcopy
 
@@ -12,8 +14,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from src.translator_ingest.util.normalize import Normalizer
-
-#################### MOCK Node Normalizer result data ###################
 
 MOCK_NN_GENE_ONLY_DATA: dict[str, Union[list[Union[str, dict[str,str]]], dict[str,str], int]] = {
     "equivalent_identifiers": [

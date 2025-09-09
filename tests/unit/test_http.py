@@ -1,3 +1,6 @@
+"""
+Basic unit tests for HTTP
+"""
 from src.translator_ingest.util.http import post_query
 
 from src.translator_ingest.util.normalize import Normalizer
