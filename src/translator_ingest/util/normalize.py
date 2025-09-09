@@ -22,10 +22,10 @@
 #   the edge normalized with subject and object identifiers normalized to their
 #   canonical identifiers identified by the node normalizer.
 #
-# All of the above methods can use gene-to-protein and drug-to-chemical conflation to
+# All the above methods can use gene-to-protein and drug-to-chemical conflation to
 # modify their results. The code defaults are for gene-to-protein conflation to be applied,
 # but drug-to-chemical conflation to be avoided.
-from typing import Optional
+from typing import Optional, Union, Callable
 import logging
 
 from .http import post_query
@@ -43,18 +43,19 @@ class Normalizer:
 
     @staticmethod
     def _query(
-        curies: List[str],
+        curies: list[str],
         description: bool = False,
         gp_conflate: bool = True,
         dc_conflate: bool = False
-    ) -> Dict[str, Union[str, List[str], bool]]:
+    ) -> dict[str, Union[str, list[str], bool]]:
         """
-        Compose a well formed input query dictionary for the Node Normalization "get_normalized_nodes" endpoint.
-        :param curies: List[str] of curies to be matched for normalization.
-        :param description: bool, if True, return description associated with identifier (default False)
-        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
+        Compose a well-formed input query dictionary for the Node Normalization "get_normalized_nodes" endpoint.
+        :param curies: A list[str] of curies to be matched for normalization.
+        :param description: A boolean flag, if True, triggers the return the description
+                            associated with identifier (default False)
+        :param gp_conflate: A boolean flag to trigger the application Gene-Protein conflation (default: True)
         :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
-        :return: Dict[str, Union[str, List[str], bool]] well-formed "get_normalized_nodes" query parameter
+        :return: dict[str, Union[str, list[str], bool]] well-formed "get_normalized_nodes" query parameter
         """
         query = {'curies': curies, 'description': description}
         if gp_conflate:
@@ -70,19 +71,19 @@ class Normalizer:
 
 
     @classmethod
-    def get_normalized_nodes(cls, query: Dict) -> Optional[Dict]:
+    def get_normalized_nodes(cls, query: dict) -> Optional[dict]:
         """
         Wrapper for Node Normalizer http POST query request,
         implementing a remote web server implementation of the Node Normalizer.
         :param query: JSON query input, as a Python dictionary
-        :return: Optional[Dict] JSON-like result as multi-level Python dictionary
+        :return: Optional[dict] JSON-like result as a multi-level Python dictionary
         """
         return post_query(url=cls.NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
 
     def __init__(self, endpoint: Callable = get_normalized_nodes):
         """
-        Constructs a Normalizer instance. See https://nodenormalization-sri.renci.org/docs for parameters of query.
-        :param endpoint: Node Normalizer access method with protocol f(query: Dict) -> Optional[Dict]
+        Constructs a Normalizer instance. See https://nodenormalization-sri.renci.org/docs for parameters of a query.
+        :param endpoint: Node Normalizer access method with protocol f(query: dict) -> Optional[dict]
         """
         self.node_normalizer = endpoint
 
@@ -91,7 +92,7 @@ class Normalizer:
     def convert_to_preferred(
             self,
             curie: str,
-            allowed_list: List[str],
+            allowed_list: list[str],
             gp_conflate: bool = True,
             dc_conflate: bool = False
     ) -> Optional[str]:
@@ -100,10 +101,10 @@ class Normalizer:
         to identify an acceptable CURIE match with prefix
         as requested in the input 'allowed_list' of prefixes.
 
-        :param curie: str CURIE identifier of interest to convert to a preferred namespace
-        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
+        :param curie: A string CURIE identifier of interest to convert to a preferred namespace
+        :param gp_conflate: A boolean flag to tripper the application of Gene-Protein conflation (default: True)
         :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
-        :param allowed_list: List[str] of one or more acceptable CURIE
+        :param allowed_list: list[str] of one or more acceptable CURIE
                namespaces from which to find at least one equivalent identifier
         :return: Optional[str] curie if found, within the allowable list of prefix namespaces
         """
@@ -127,17 +128,17 @@ class Normalizer:
 
     def normalize_identifiers(
             self,
-            curies: List[str],
+            curies: list[str],
             gp_conflate: bool = True,
             dc_conflate: bool = False
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, Optional[str]]:
         """
         Calls the Node Normalizer ("NN") with a list of curies,
         returning a dictionary of canonical identifier mappings.
 
-        :param curies: non-empty list of CURIE identifiers to be normalized
-        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
-        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
+        :param curies: A non-empty list of CURIE identifiers to be normalized
+        :param gp_conflate: A boolean flag to trigger application of Gene-Protein conflation (default: True)
+        :param dc_conflate: A boolean flag to trigger application of Drug-Chemical conflation (default: False)
         :return: dictionary mappings of input identifiers to canonical identifiers (None if unknown)
         """
         assert curies, "normalize_identifiers(curies): empty list of CURIE identifiers?"
@@ -152,7 +153,7 @@ class Normalizer:
 
         assert result, "normalize_identifiers(curies): no result returned from the Node Normalizer?"
 
-        mappings: Dict[str, Optional[str]] = {}
+        mappings: dict[str, Optional[str]] = {}
         for identifier in curies:
             # Sanity check: was a result for every input CURIE returned?
             if identifier not in result:
@@ -191,9 +192,9 @@ class Normalizer:
 
         Known limitation: this method does NOT reset the node.category field values at this time.
 
-        :param node: target instance of a class object in the NameThing hierarchy
-        :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
-        :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
+        :param node: A target instance of a class object in the NameThing hierarchy
+        :param gp_conflate: A boolean flag to trigger application of Gene-Protein conflation (default: True)
+        :param dc_conflate: A boolean flag to trigger application of Drug-Chemical conflation (default: False)
         :return: rewritten node entry; None, if a node cannot be resolved in NN
         """
 
@@ -209,7 +210,7 @@ class Normalizer:
         )
 
         # Sanity check about regular NN operation for all queries
-        # that returns a result with key equal to the input node identifier
+        # that returns a result with a key equal to the input node identifier
         assert node.id in result
 
         # Maybe nothing returned if the node identifier is unknown?
@@ -285,12 +286,12 @@ class Normalizer:
         """
         Rewrites the Association subject and object identifiers with their Node Normalizer canonical identifiers.
 
-        :param edge: target instance of a class object in the Association hierarchy
+        :param edge: A target instance of a class object in the Association hierarchy
         :param gp_conflate: bool, apply Gene-Protein conflation (default: True)
         :param dc_conflate:  bool, apply Drug-Chemical conflation (default: False)
 
-        :return: rewritten edge Association entry; None, if edge subject or object identifier
-                 cannot be resolved by the Node Normalizer.
+        :return: A rewritten edge Association entry; None, if the Node Normalizer
+                 cannot resolve the edge subject or object identifier.
         """
         edge_subject = self.normalize_node(
             NamedThing(id=edge.subject, **{}),
