@@ -74,21 +74,21 @@ src := "src"
 
 ### Installation and Setup ###
 
-all: install test
+setup: _install test
 
-python:
+_python:
 	uv python install
 
-install: python
+_install: _python
 	uv sync
 
 ### Testing ###
 
 # Run all tests
-test: _spell_fix
+test:
     {{run}} python -m pytest tests
 
-_spell_fix:
+spell_fix:
 	{{run}} codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
 
 
