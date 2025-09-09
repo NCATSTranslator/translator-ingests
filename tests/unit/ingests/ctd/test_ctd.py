@@ -1,39 +1,21 @@
-from typing import Iterable
-
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntity,
-    Disease,
+    Disease, RetrievalSource,
 )
-from koza.io.writer.writer import KozaWriter
-from koza.runner import KozaRunner, KozaTransformHooks
-from src.translator_ingest.ingests.ctd.ctd import transform_record_chemical_to_disease as ctd_transform
 
+from koza.runner import KozaRunner, KozaTransformHooks
+from translator_ingest.ingests.ctd.ctd import transform_record_chemical_to_disease as ctd_transform
+
+from tests.unit.ingests import MockKozaWriter
 
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 
 
-class MockWriter(KozaWriter):
-    def __init__(self):
-        self.items = []
-
-    def write(self, entities):
-        self.items += entities
-
-    def write_nodes(self, nodes: Iterable):
-        self.items += nodes
-
-    def write_edges(self, edges: Iterable):
-        self.items += edges
-
-    def finalize(self):
-        pass
-
-
 @pytest.fixture
 def therapeutic_output():
-    writer = MockWriter()
+    writer = MockKozaWriter()
     record = {
         "ChemicalName": "10,11-dihydro-10-hydroxycarbamazepine",
         "ChemicalID": "C039775",
@@ -60,7 +42,10 @@ def test_therapeutic_entities(therapeutic_output):
     assert association.predicate == BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT
     assert "PMID:17516704" in association.publications
     assert "PMID:123" in association.publications
-    assert association.primary_knowledge_source == "infores:ctd"
+
+    assert association.sources and \
+           isinstance(association.sources[0], RetrievalSource) and \
+           association.sources[0].resource_id == "infores:ctd"
 
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MESH:D004827"
