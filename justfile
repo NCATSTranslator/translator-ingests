@@ -58,13 +58,13 @@ Targets:
 Configuration:
 
     sources		        Space-separated list of sources
-				Default: ctd go_cam goa
+				Default: \\"ctd go_cam goa\\"
 
 Examples:
 
     just run
-    just validate sources="ctd go_cam"
-    just run sources="go_cam"
+    just validate sources=\\"ctd go_cam\\"
+    just run sources=\\"go_cam\\"
 """
 
 help:
@@ -96,10 +96,6 @@ install: _python
 # Run all tests
 test:
     {{run}} python -m pytest tests
-
-spell_fix:
-	{{run}} codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
-
 
 ### Running ###
 
@@ -143,12 +139,15 @@ clobber:
 	rm -rf {{rootdir}}/data
 	rm -rf {{rootdir}}/output
 
-_lint:
+lint:
 	{{run}} ruff check --diff --exit-zero
 	{{run}} black -l 120 --check --diff src tests
 
-_format:
+format:
 	{{run}} ruff check --fix --exit-zero
 	{{run}} black -l 120 src tests
+
+spell_fix:
+	{{run}} codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
 
 import "project.justfile"
