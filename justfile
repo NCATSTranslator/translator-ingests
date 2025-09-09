@@ -131,9 +131,9 @@ clean:
 		.venv .ruff_cache .pytest_cache **/.ipynb_checkpoints
 
 clean-reports:
-	@echo "Cleaning validation reports..."
-	rm -rf {{rootdir}}/data/validation
-	@echo "All validation reports removed."
+    echo "Cleaning validation reports..."
+    rm -rf {{rootdir}}/data/validation
+    echo "All validation reports removed."
 
 clobber:
 	rm -rf {{rootdir}}/data
