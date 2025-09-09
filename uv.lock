@@ -296,7 +296,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
-    { name = "robokop-orion", specifier = "==0.1.2" },
+    { name = "robokop-orion", git = "https://github.com/RobokopU24/orion.git?rev=packaging" },
 ]
 
 [package.metadata.requires-dev]
@@ -2826,8 +2826,8 @@ wheels = [
 
 [[package]]
 name = "robokop-orion"
-version = "0.1.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.1.6"
+source = { git = "https://github.com/RobokopU24/orion.git?rev=packaging#8c12c0b4c515e1de0d7e12ad06db3c87c381b9af" }
 dependencies = [
     { name = "bmt" },
     { name = "jsonlines" },
@@ -2838,10 +2838,6 @@ dependencies = [
     { name = "requests-toolbelt" },
     { name = "robokop-genetics" },
     { name = "xxhash" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/13/85/15ae2dcf933810c0782d7b63ca603a3c5e2858a3bd0dd201efb38c4805a9/robokop_orion-0.1.2.tar.gz", hash = "sha256:90d84c8c160f551e81d5b065b36870c9238d4da95c47f3d9d880777521af8315", size = 78427 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/45/be242bd1129a462cf4ba3f1caf94e41996066a71853f6294ba0c448609ef/robokop_orion-0.1.2-py3-none-any.whl", hash = "sha256:65b6214d181fe453f3e4b7329723c5b9d724ab14ef0bd682fa2fcf8f396ab065", size = 90790 },
 ]
 
 [[package]]
