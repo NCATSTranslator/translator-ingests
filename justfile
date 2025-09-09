@@ -18,6 +18,9 @@ shebang := if os() == 'windows' {
   '/usr/bin/env python3'
 }
 
+rootdir :=`pwd`
+sources := "ctd go_cam goa"
+
 ### Help ###
 
 export HELP := """
@@ -68,7 +71,6 @@ run := 'uv run'
 # Environment variables with defaults
 # schema_name := env_var_or_default("<SOME_ENVIRONMENT_VARIABLE_NAME>", "")
 
-
 # Directory variables
 src := "src"
 
@@ -95,34 +97,34 @@ spell_fix:
 ### Running ###
 
 download:
-	@for source in $(SOURCES); do \
+	@for source in {{sources}}; do \
 		echo "Downloading $$source..."; \
-		{{run}} downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
+		{{run}} downloader --output-dir {{rootdir}}/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
 	done
 
 transform: download
-	@for source in $(SOURCES); do \
+	@for source in {{sources}}; do \
 		echo "Transforming $$source..."; \
-		{{run}} koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
+		{{run}} koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir {{rootdir}}/data/$$source --output-format jsonl; \
 	done
 
 normalize: transform
-	@echo "Normalization placeholder for sources: $(SOURCES)"
+	@echo "Normalization placeholder for sources: {{sources}}"
 
 validate: normalize
-	{{run}} python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+	{{run}} python src/translator_ingest/util/validate_kgx.py --data-dir {{rootdir}}/data
 
 validate-single: normalize
-	@for source in $(SOURCES); do \
+	@for source in {{sources}}; do \
 		echo "Validating $$source..."; \
-		{{run}} python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
+		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$$source/*_nodes.jsonl {{rootdir}}/data/$$source/*_edges.jsonl; \
 	done
 
 run: download transform normalize
 
 clean-reports:
 	@echo "Cleaning validation reports..."
-	rm -rf $(ROOTDIR)/data/validation
+	rm -rf {{rootdir}}/data/validation
 	@echo "All validation reports removed."
 
 _clobber:
