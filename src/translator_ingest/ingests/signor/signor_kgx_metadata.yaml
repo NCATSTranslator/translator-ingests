@@ -1,4 +1,5 @@
 # Info about this metadata file
+#
 "title": "SIGNOR Source-to-KGX Ingest Metadata"        # an informative, human-readable name for this metadata file/object, e.g. "CTD Chemical-Disease Source-KGX Ingest Metadata"   |   1..1 string
 "created_by": "Qi WEI"                               # who created this ingest metadata file    |   1..m string   (for now . . . may evolve to require identifiers (e.g. ORCIDs), or Agent instances/objects)
 "creation_date": "2025-09-04"                            # when it was created                      |   1..1 date
