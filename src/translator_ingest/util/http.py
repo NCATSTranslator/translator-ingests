@@ -1,6 +1,5 @@
 # HTTP query wrappers
 
-from typing import Dict
 from urllib3 import request, Retry, BaseHTTPResponse
 
 from json import JSONDecodeError
@@ -15,7 +14,7 @@ RETRIES = Retry(
     allowed_methods={'POST'},
 )
 
-def post_query(url: str, query: Dict, server: str = "") -> Dict:
+def post_query(url: str, query: dict, server: str = "") -> dict:
     """
     Post a JSON query to the specified URL and return the JSON response.
 
