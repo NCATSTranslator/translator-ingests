@@ -24,9 +24,10 @@ sources := "ctd go_cam goa"
 ### Help ###
 
 export HELP := """
+
 Just commands for ingest
 
----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 
 Usage:
 
@@ -37,11 +38,11 @@ Targets:
 
     help			Print this help message
 
-    all				Install everything and test
+    setup			Install everything and test
     fresh			Clean and install everything
     clean			Clean up build artifacts
     clean-reports		Clean up validation reports
-    clobber			Clean up generated files
+    clobber			Clean up downloaded data and generated files
 
     install			install python requirements
     run			        Run pipeline (download->transform->normalize)
@@ -80,12 +81,14 @@ src := "src"
 
 ### Installation and Setup ###
 
-setup: _install test
+fresh: clean clobber setup
+
+setup: install test
 
 _python:
 	uv python install
 
-_install: _python
+install: _python
 	uv sync
 
 ### Testing ###
@@ -126,14 +129,19 @@ validate-single: normalize
 
 run: download transform normalize
 
+clean:
+	rm -f `find . -type f -name '*.py[co]' `
+	rm -rf `find . -name __pycache__` \
+		.venv .ruff_cache .pytest_cache **/.ipynb_checkpoints
+
 clean-reports:
 	@echo "Cleaning validation reports..."
 	rm -rf {{rootdir}}/data/validation
 	@echo "All validation reports removed."
 
-_clobber:
-	# Add any files to remove here
-	@echo "Nothing to remove. Add files to remove to clobber target."
+clobber:
+	rm -rf {{rootdir}}/data
+	rm -rf {{rootdir}}/output
 
 _lint:
 	{{run}} ruff check --diff --exit-zero
