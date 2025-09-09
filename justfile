@@ -100,27 +100,27 @@ test:
 ### Running ###
 
 download:
-	@for source in {{sources}}; do \
-		echo "Downloading $$source..."; \
-		{{run}} downloader --output-dir {{rootdir}}/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
+	for source in {{sources}}; do \
+		echo "Downloading $source..."; \
+		{{run}} downloader --output-dir {{rootdir}}/data/$source src/translator_ingest/ingests/$source/download.yaml; \
 	done
 
 transform: download
-	@for source in {{sources}}; do \
-		echo "Transforming $$source..."; \
-		{{run}} koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir {{rootdir}}/data/$$source --output-format jsonl; \
+	for source in {{sources}}; do \
+		echo "Transforming $source..."; \
+		{{run}} koza transform src/translator_ingest/ingests/$source/$source.yaml --output-dir {{rootdir}}/data/$source --output-format jsonl; \
 	done
 
 normalize: transform
-	@echo "Normalization placeholder for sources: {{sources}}"
+	echo "Normalization placeholder for sources: {{sources}}"
 
 validate: normalize
 	{{run}} python src/translator_ingest/util/validate_kgx.py --data-dir {{rootdir}}/data
 
 validate-single: normalize
-	@for source in {{sources}}; do \
-		echo "Validating $$source..."; \
-		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$$source/*_nodes.jsonl {{rootdir}}/data/$$source/*_edges.jsonl; \
+	for source in {{sources}}; do \
+		echo "Validating $source..."; \
+		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
 	done
 
 run: download transform normalize
