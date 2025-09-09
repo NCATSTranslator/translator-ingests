@@ -143,7 +143,7 @@ def knowledge_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
     ## data was loaded with empty values = "". Just in case, replace these empty strings with None so isna() methods will work
     df.replace(to_replace="", value=None, inplace=True)
     ## debugging: keep because it tells us how much was removed by filter
-    print("After filter, but before prepare_data: {df.shape}")
+    print(f"After filter, but before prepare_data: {df.shape}")
 
     ## remove duplicates, record count of duplicates
     df, koza.state["knowledge_row_counts"]["duplicate_rows"] = remove_duplicates(df)
