@@ -169,7 +169,6 @@ dependencies = [
     { name = "click" },
     { name = "kghub-downloader" },
     { name = "koza" },
-    { name = "linkml" },
 ]
 
 [package.dev-dependencies]
@@ -188,7 +187,6 @@ requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
-    { name = "linkml" },
 ]
 
 [package.metadata.requires-dev]
