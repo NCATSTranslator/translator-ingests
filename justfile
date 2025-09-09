@@ -24,11 +24,14 @@ sources := "ctd go_cam goa"
 ### Help ###
 
 export HELP := """
-Make for ingest
-----------------------------------------------------------------------
+Just commands for ingest
+
+---------------------------------------------------------------------------
+
 Usage:
+
     just <target>
-    just <target> SOURCES="ctd go_cam"
+    just <target> sources=\\"ctd go_cam\\"
 
 Targets:
 
@@ -41,29 +44,30 @@ Targets:
     clobber			Clean up generated files
 
     install			install python requirements
-    run			Run pipeline (download->transform->normalize)
+    run			        Run pipeline (download->transform->normalize)
     validate			Validate all sources in data/
-    validate-single	Validate only specified sources
+    validate-single	        Validate only specified sources
 
     test			Run all tests
 
     lint			Lint all code
     format			Format all code
-    spell-fix			Fix spelling errors interactively
+    spell-fix		        Fix spelling errors interactively
 
 Configuration:
 
-    SOURCES		Space-separated list of sources
+    sources		        Space-separated list of sources
 				Default: ctd go_cam goa
 
 Examples:
+
     just run
-    just validate SOURCES="ctd go_cam"
-    just run SOURCES="go_cam" 
+    just validate sources="ctd go_cam"
+    just run sources="go_cam"
 """
 
 help:
-    echo {{HELP}}
+    echo "{{HELP}}"
 
 # This project uses the uv dependency manager
 run := 'uv run'
