@@ -1,8 +1,6 @@
 import logging
-
 import pytest
 
-logger = logging.getLogger(__name__)
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneAssociation,
     Gene
@@ -10,6 +8,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
 
 from tests.unit.ingests import MockKozaWriter
+
+logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def gocam_output():
