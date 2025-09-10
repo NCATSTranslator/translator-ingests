@@ -34,10 +34,12 @@ Below are descriptions and links for the various artifacts prescribed by the SOP
 
 ## Initial Minimal Viable Product: A CTD Example
 
-Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data from the [Comparative Toxicology Database](https://ctdbase.org/), writing the knowledge graph output out to jsonlines (jsonl) files. The project is built and executed using a conventional (unix-like) Makefile:
+Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data from the [Comparative Toxicology Database](https://ctdbase.org/), writing the knowledge graph output out to jsonlines (jsonl) files. The project is built and executed using targets in a conventional (unix-like) **make** command, operating on a **Makefile** in the repository.
+
+Alternately, there is a **justfile** upon which the cross-platform **just** command tool may be used on functionally equivalent targets. [**Install just**](https://just.systems/man/en/introduction.html) then type **`just help`** for usage.
 
     │ Usage:
-    │     make <target>
+    │     make <target>  # or just <target>
     │
     │ Targets:
     │     help                Print this help message
