@@ -24,47 +24,44 @@ sources := "ctd go_cam goa"
 ### Help ###
 
 export HELP := """
-
-Just commands for ingest
-
---------------------------------------------------------------------------------
-
-Usage:
-
-    just <target>
-    just sources=\\"ctd go_cam\\" <target>
-
-Targets:
-
-    help			Print this help message
-
-    setup			Install everything and test
-    fresh			Clean and install everything
-    clean			Clean up build artifacts
-    clean-reports		Clean up validation reports
-    clobber			Clean up downloaded data and generated files
-
-    install			install python requirements
-    run			        Run pipeline (download->transform->normalize->validate)
-    validate			Validate all sources in data/
-    validate-single	        Validate only specified sources
-
-    test			Run all tests
-
-    lint			Lint all code
-    format			Format all code
-    spell-fix		        Fix spelling errors interactively
-
-Configuration:
-
-    sources		        Space-separated list of sources
-				Default: \\"ctd go_cam goa\\"
-
-Examples:
-
-    just run  # uses default list of sources
-    just  sources=\\"ctd go_cam\\" validate
-    just sources=\\"go_cam\\" run
+╭──────────────────────────────────────────────────────────────────╮
+│   Just commands for ingest                                       │
+│ ──────────────────────────────────────────────────────────────── │
+│ Usage:                                                           │
+│     just <target>                                                │
+│     just sources=\\"ctd go_cam\\" <target>                           │
+│                                                                  │
+│ Targets:                                                         │
+│     help              Print this help message                    │
+│                                                                  │
+│     setup             Install everything and test                │
+│     fresh             Clean and install everything               │
+│     clean             Clean up build artifacts                   │
+│     clean-reports     Clean up validation reports                │
+│     clobber           Clean up data and generated files          │
+│                                                                  │
+│     install           Install python requirements                │
+│                                                                  │
+│     run               Run pipeline                               │
+│                       (download->transform->normalize->validate) │
+│                                                                  │
+│     validate          Validate all sources in data/              │
+│     validate-single   Validate only specified sources            │
+│                                                                  │
+│     test              Run all tests                              │
+│                                                                  │
+│     lint              Lint all code                              │
+│     format            Format all code                            │
+│     spell-fix         Fix spelling errors interactively          │
+│                                                                  │
+│ Configuration:                                                   │
+│     sources           Space-separated list of sources            │
+│                       Default: \\"ctd go_cam goa\\"                  │
+│ Examples:                                                        │
+│     just run  # uses default list of sources                     │
+│     just  sources=\\"ctd go_cam\\" validate                          │
+│     just sources=\\"go_cam\\" run                                    │
+╰──────────────────────────────────────────────────────────────────╯
 """
 
 help:
