@@ -36,25 +36,40 @@ Below are descriptions and links for the various artifacts prescribed by the SOP
 
 Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data from the [Comparative Toxicology Database](https://ctdbase.org/), writing the knowledge graph output out to jsonlines (jsonl) files. The project is built and executed using a conventional (unix-like) Makefile:
 
-    │ Usage:
-    │     make <target>
-    │
-    │ Targets:
-    │     help                Print this help message
-    │ 
-    │     all                 Install everything and test
-    │     fresh               Clean and install everything
-    │     clean               Clean up build artifacts
-    │     clobber             Clean up generated files
-    │
-    │     install             install python requirements
-    │     download            Download data
-    │     run                 Run the transform
-    │
-    │     test                Run all tests
-    │
-    │     lint                Lint all code
-    │     format              Format all code  running the following steps.
+
+    Usage:
+     make <target>
+     make <target> SOURCES="ctd go_cam"
+ 
+    Targets:
+     help                Print this help message
+  
+     all                 Install everything and test
+     fresh               Clean and install everything
+     clean               Clean up build artifacts
+     clean-reports       Clean up validation reports
+     clobber             Clean up generated files
+  
+     install             install python requirements
+     run                 Run pipeline
+                         (download→transform→normalize->validate)
+     validate            Validate all sources in data/
+     validate-single     Validate only specified sources
+  
+     test                Run all tests
+  
+     lint                Lint all code
+     format              Format all code
+     spell-fix           Fix spelling errors interactively
+ 
+    Configuration:
+       SOURCES             Space-separated list of sources
+                           Default: ctd go_cam goa 
+ 
+    Examples:
+       make run
+       make validate SOURCES="ctd go_cam"
+       make run SOURCES="go_cam"
 
 The task involves the following steps/components:
 
