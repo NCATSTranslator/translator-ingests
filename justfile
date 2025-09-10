@@ -93,6 +93,8 @@ install: _python
 # Run all tests
 test:
     {{run}} python -m pytest tests
+    {{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+	{{run}} ruff check
 
 ### Running ###
 
@@ -142,6 +144,6 @@ format:
 	{{run}} black -l 120 src tests
 
 spell_fix:
-	{{run}} codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
+	{{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
 
 import "project.justfile"
