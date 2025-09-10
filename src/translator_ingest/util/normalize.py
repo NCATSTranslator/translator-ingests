@@ -30,7 +30,7 @@ def normalize_kgx_files(output_dir: str,
     edge_norm_predicate_map_file_path = versioned_output_dir / "edge_predicate_map.json"
 
     if node_norm_failures_file_path.exists() and edges_output_file_path.exists():
-        logger.info(f"Normalization output files already exist. Skipping normalization.")
+        logger.info("Normalization output files already exist. Skipping normalization.")
         return
 
     normalization_scheme = NormalizationScheme(conflation=True)
