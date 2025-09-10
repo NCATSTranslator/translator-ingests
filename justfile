@@ -32,7 +32,7 @@ Just commands for ingest
 Usage:
 
     just <target>
-    just <target> sources=\\"ctd go_cam\\"
+    just sources=\\"ctd go_cam\\" <target>
 
 Targets:
 
@@ -62,9 +62,9 @@ Configuration:
 
 Examples:
 
-    just run
-    just validate sources=\\"ctd go_cam\\"
-    just run sources=\\"go_cam\\"
+    just run  # uses default list of sources
+    just  sources=\\"ctd go_cam\\" validate
+    just sources=\\"go_cam\\" run
 """
 
 help:
