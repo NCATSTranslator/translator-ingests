@@ -27,7 +27,7 @@ export HELP := """
 
 Just commands for ingest
 
------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Usage:
 
@@ -45,7 +45,7 @@ Targets:
     clobber			Clean up downloaded data and generated files
 
     install			install python requirements
-    run			        Run pipeline (download->transform->normalize)
+    run			        Run pipeline (download->transform->normalize->validate)
     validate			Validate all sources in data/
     validate-single	        Validate only specified sources
 
@@ -115,15 +115,12 @@ normalize: transform
 	echo "Normalization placeholder for sources: {{sources}}"
 
 validate: normalize
-	{{run}} python src/translator_ingest/util/validate_kgx.py --data-dir {{rootdir}}/data
-
-validate-single: normalize
 	for source in {{sources}}; do \
 		echo "Validating $source..."; \
 		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
 	done
 
-run: download transform normalize
+run: validate
 
 clean:
 	rm -f `find . -type f -name '*.py[co]' `
