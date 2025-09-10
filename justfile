@@ -94,7 +94,7 @@ install: _python
 test:
     {{run}} python -m pytest tests
     {{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
-	{{run}} ruff check
+    {{run}} ruff check
 
 ### Running ###
 
