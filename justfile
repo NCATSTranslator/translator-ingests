@@ -28,7 +28,7 @@ export HELP := """
 │   Just commands for ingest                                       │
 │ ──────────────────────────────────────────────────────────────── │
 │ Usage:                                                           │
-│     just <target>                                                │
+│     just <target>    # uses default list of sources              │
 │     just sources=\\"ctd go_cam\\" <target>                           │
 │                                                                  │
 │ Targets:                                                         │
@@ -58,7 +58,7 @@ export HELP := """
 │     sources           Space-separated list of sources            │
 │                       Default: \\"ctd go_cam goa\\"                  │
 │ Examples:                                                        │
-│     just run  # uses default list of sources                     │
+│     just run    # uses default list of sources                   │
 │     just  sources=\\"ctd go_cam\\" validate                          │
 │     just sources=\\"go_cam\\" run                                    │
 ╰──────────────────────────────────────────────────────────────────╯
