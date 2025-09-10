@@ -62,7 +62,7 @@ def on_data_begin_disease_to_phenotype(koza_transform: koza.KozaTransform):
     Called before processing begins.
     Can be used for setup or validation of input files.
     """
-    koza_transform.log(f"Starting HPOA Disease to Phenotype processing")
+    koza_transform.log("Starting HPOA Disease to Phenotype processing")
     koza_transform.log(f"Version: {get_latest_version()}")
 
 
@@ -219,7 +219,7 @@ def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform):
     Called before processing begins.
     Can be used for setup or validation of input files.
     """
-    koza_transform.log(f"Starting HPOA Gene to Disease processing")
+    koza_transform.log("Starting HPOA Gene to Disease processing")
     koza_transform.log(f"Version: {get_latest_version()}")
 
 
@@ -287,7 +287,7 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
     Called before processing begins.
     Can be used for setup or validation of input files.
     """
-    koza_transform.log(f"Starting HPOA Gene to Phenotype processing")
+    koza_transform.log("Starting HPOA Gene to Phenotype processing")
     koza_transform.log(f"Version: {get_latest_version()}")
 
 
