@@ -210,7 +210,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             return [], []
         else:
             koza.log(
-                msg=f"Using fallback predicate for " +
+                msg="Using fallback predicate for " +
                     f"qualifier '{qualifier}' -> aspect '{aspect}' -> '{predicate}'", level="INFO"
             )
 
