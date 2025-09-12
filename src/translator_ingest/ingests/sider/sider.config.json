@@ -1,0 +1,21 @@
+{
+    "infores": "infores:sider",
+    "latest_version": "4.1",
+    "column": {
+        "CID_stereo": "STITCH_compound_id_stereo",
+        "UMLS_id": "UMLS_concept_id",
+        "side_effect_name": "side_effect_name"
+    },
+    "curie_prefix": {
+        "CID": "PUBCHEM.COMPOUND:",
+        "UMLS": "UMLS:"
+    },
+    "predicate": "biolink:has_side_effect",
+    "transformations": [
+        {
+            "column": "CID_stereo",
+            "regex_pattern": "CID0*(\\d+)",
+            "replacement": "{0}"
+        }
+    ]
+}

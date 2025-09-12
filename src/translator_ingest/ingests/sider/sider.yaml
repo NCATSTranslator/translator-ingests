@@ -1,62 +1,22 @@
 name: ingest_template
 
 readers:
-  ingest_by_record:
+  sider_se_reader:
     format: "csv"
     delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
+    header_mode: none
     files:
-      - "../../../../data/_ingest_template/example_data.tsv.gz"
+      - "../../../../data/sider/meddra_all_label_se.tsv.gz"
     columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
+      - label
+      - STITCH_compound_id_flat
+      - STITCH_compound_id_stereo
+      - UMLS_concept_id_label
+      - MedDRA_concept_type
+      - UMLS_concept_id
+      - side_effect_name
     filters:
       - inclusion: include
-        column: DirectEvidence
+        column: MedDRA_concept_type
         filter_code: eq
-        value: therapeutic
-  ingest_all:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
-    files:
-      - "../../../../data/_ingest_template/example_data_2.tsv.gz"
-    columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
-  ingest_all_streaming:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
-    files:
-      - "../../../../data/_ingest_template/example_data_3.tsv.gz"
-    columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
+        value: PT
