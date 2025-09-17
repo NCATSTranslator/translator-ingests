@@ -93,7 +93,7 @@ def transform_record_disease_to_phenotype(
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
-    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
     try:
         ## Subject: Disease
@@ -243,7 +243,7 @@ def transform_record_gene_to_disease(
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
-    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
     try:
         gene_id = record["ncbi_gene_id"]
@@ -365,7 +365,7 @@ def transform_record_gene_to_phenotype(
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
-    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
 
     try:
