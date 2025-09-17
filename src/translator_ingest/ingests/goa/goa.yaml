@@ -1,0 +1,37 @@
+name: goa
+
+reader:
+  format: csv
+  delimiter: \t 
+  comment_char: "!" # Header line starts with !
+  header_mode: none 
+  files:
+    - ../../../../data/goa/goa_human.gaf.gz # GOA human gene association file
+    - ../../../../data/goa/mgi.gaf.gz # MGI gene association file
+    - ../../../../data/goa/rgd.gaf.gz # RGD rat gene association file
+  columns: # 17 columns from the GAF file
+    - DB # Database
+    - DB_Object_ID # Gene ID
+    - DB_Object_Symbol # Gene symbol
+    - Qualifier # Relationship between the gene and the GO term
+    - GO_ID # GO term ID
+    - DB_Reference # Publication ID
+    - Evidence_Code # Evidence code
+    - With_Or_From # With or from
+    - Aspect # Aspect of the GO term
+    - DB_Object_Name # Gene name
+    - DB_Object_Synonym # Gene synonym
+    - DB_Object_Type # Gene type
+    - Taxon # Taxon
+    - Date # Date
+    - Assigned_By # Assigned by
+    - Annotation_Extension # Annotation extension
+    - Gene_Product_Form_ID # Gene product form ID
+  filters:
+    - inclusion: include # Include only the rows where the taxon is Homo Sapiens, Mouse, or Rat
+      column: Taxon 
+      filter_code: in
+      value:
+        - taxon:9606 # Homo Sapiens
+        - taxon:10090 # Mouse
+        - taxon:10116 # Rat

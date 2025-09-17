@@ -77,7 +77,7 @@ Records from relevant files that are not included in the ingest.
 
 
 ### Future Content Considerations (o)
-Content addditions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
+Content additions/changes to consider for future iterations (consider edge content node property content, and edge property/EPC content)
 
 - **Edges**
   - Consider filtering some of the lower scoring text-mined associations if we can define a threshold/cutoff.
