@@ -10,7 +10,6 @@ https://koza.monarchinitiative.org/Usage/testing/
 Unit tests for Panther Gene Orthology relationships ingest
 """
 
-
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import GeneToGeneHomologyAssociation, KnowledgeLevelEnum, AgentTypeEnum
 
@@ -24,12 +23,12 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
 )
 
 
-############################################################################
-### Fixtures referencing code and basic parameters reused in tests below ###
+################################################################################
+### Fixtures referencing code and basic parameters reused in the tests below ###
 @pytest.fixture
 def source_name():
     """
-    :return: string name of ingest source found within transform yaml
+    :return: string name of the data ingest source found within transform yaml
     """
     return "panther_genome_orthologs"
 
@@ -206,7 +205,7 @@ def panther_species_genes():
                      ["DICDI|dictyBase=DDB_G0274381|UniProtKB=P54642", {"dictyBase:DDB_G0274381":''}],
                      
                      # Aspergillus will be our test cases to ensure mapping back to NCBIGene is done properly
-                     # and scenario where we use UniProtKB identifier instead
+                     # and the scenario where we use UniProtKB identifier instead
                      ["EMENI|Gene_ORFName=AN0062|UniProtKB=Q5BHB8", {"NCBIGene:ANIA_00062":'',
                                                                      "UniProtKB:Q5BHB8":''}],
 
@@ -238,7 +237,7 @@ def test_panther_rows(panther_rows, source_name, script, mock_koza, map_cache, r
     # Now check our koza generated associations against expected results
     for koza_association, expected_info in zip(koza_associations, expected_res):
     
-        # Ensure association type is correct (we are dealing with GeneToGeneHomologyAssociation s here)
+        # Ensure the association type is correct (we are dealing with GeneToGeneHomologyAssociation s here)
         assert isinstance(koza_association, GeneToGeneHomologyAssociation)
 
         # Test that mock koza processing of pantherdb row produces expected results
@@ -256,7 +255,7 @@ def test_species_parse_gene(panther_species_genes, map_cache):
                                            
         # Assert that the parsed species and gene ID match the expected values
         assert species in panther_taxon_map
-        assert gene_id in expected # Allows for muliple mapping values to be present
+        assert gene_id in expected    # Allows for multiple mapping values to be present
         
 
 def test_exclude_species_parse_gene(exclude_species_genes, map_cache):

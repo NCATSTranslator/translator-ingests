@@ -79,11 +79,11 @@ def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_
     
     with gzip.open(gene_info_file, 'rt') as infile:
         
-        # Read header line into memory to index relevant column fields
+        # Read the header line into memory to index relevant column fields
         hinfo = {hfield:i for i,hfield in enumerate(infile.readline().strip('\r').strip('\n').split('\t'))}
         
         ccc = 0
-        # Now loop through each line, and create a map back to taxon / NCBIGene:xyz ...
+        # Now loop through each line and create a map back to taxon / NCBIGene:xyz ...
         for line in infile:
             cols = line.strip('\r').strip('\n').split('\t')
             rel_data = [str(cols[hinfo[r]]) for r in relevant_columns]
@@ -102,7 +102,7 @@ def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_
                 
                 # Some columns like dbxref contain this character, 
                 # which separates common names from each other. So we loop through them 
-                # (minority, not majority have this in them)
+                # (a minority, not a majority, have this in them)
                 mk_cols = map_key.split("|")
                 for key_to_ncbi in mk_cols:
                     
@@ -143,33 +143,33 @@ def parse_gene_info(gene_info, taxon_map, curie_map, fallback_map):
     cols = gene_info.split("|") # species|gene|uniprotkb_id
     species = cols[0]
 
-    # Exit condition (saves compute when there are many rows to process..)
+    # Exit condition (saves compute when there are many rows to process...)
     if species not in taxon_map:
         return None, None
     
     # Now assign our gene to its "rightful" prefix... If no reasonable prefix exists (HGNC, MGI, etc.),
     # then we use the UniprotKB ID prefix as a fallback. Connections can be rescued through 
-    # normalization process via uniprotkb protein ids
+    # a normalization process via UniProtKB protein ids
     
-    # Our prefered order, is Organism specific (HGNC, PomBase, ZFIN)
+    # Our preferred order is Organism specific (HGNC, PomBase, ZFIN)
     taxon_id = taxon_map[species]
     gene_split = cols[1].split("=")
     matched = 0
     fback = 0
     unikb = 0
     
-    # Check if gene id can be mapped directly to kg build preffered gene ids
+    # Check if gene id can be mapped directly to kg build preferred gene ids
     if gene_split[0] in curie_map:
         gene = "{}:{}".format(curie_map[gene_split[0]], gene_split[-1]) # We use -1 here to avoid things like MGI=MGI=95886
         matched = 1
         
-    # Otherwise, fall back onto ncbi gene map if possible, 
+    # Otherwise, fall back onto NCBI Gene map if possible,
     elif gene_split[1] in fallback_map[taxon_id]:
         g_id = fallback_map[taxon_id][gene_split[1]]
         gene = "NCBIGene:{}".format(g_id)
         fback = 1
     
-    # Use uniprotkb id as last resort and format e.g. UniProtKB=Q8TCT9 => UniProtKB:Q8TCT9
+    # Use uniprotkb id as a last resort and format e.g. UniProtKB=Q8TCT9 => "UniProtKB:Q8TCT9"
     else:
         gene = "{}".format(cols[-1].replace("=", ":"))
         unikb += 1

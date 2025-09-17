@@ -1,31 +1,46 @@
-id: 'infores:panther'
 name: 'panther_genome_orthologs'
-metadata: !include './metadata.yaml'
-transform_code: 'src/translator_ingest/ingests/panther/panther_transform.py'
 
 reader:
-  format: 'csv'
-  transform_mode: 'flat'
+  format: csv
   delimiter: '\t'
-  header: none
-  # We expand the ingest to extract orthology data from target species extracted out of "All Orthologs"
-  file_archive: 'data/AllOrthologs.tar.gz'
+  header_mode: "none"
   files:
-    - 'AllOrthologs'
+    - '../../../../data/panther/AllOrthologs.tar.gz'
+    - '../../../../data/panther/gene_info.gz'  # TODO: does this NCBI Gene data belong here or in a mapping?
   columns:
     - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
     - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2
     - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused
     - 'Common ancestor for the orthologs'    # unused
-    - 'Panther Ortholog ID'                  # panther prtotein family ID
-  edge_properties:
-    - 'id'
-    - 'category'
-    - 'subject'
-    - 'predicate'
-    - 'object'
-    - 'has_evidence'
-    - 'aggregator_knowledge_source'
-    - 'primary_knowledge_source'
-    - 'knowledge_level'
-    - 'agent_type'
+    - 'Panther Ortholog ID'                  # panther protein family ID
+#  filters:
+#    - inclusion: 'include'
+#      column: 'Gene'
+#      filter_code: 'in'
+#      value:
+#        - 'HUMAN'
+#    - inclusion: 'include'
+#      column: 'Ortholog'
+#      filter_code: 'in'
+#      value:
+#        - 'HUMAN'
+#    - inclusion: 'include'
+#      column: 'Gene'
+#      filter_code: 'in'
+#      value:
+#        - 'MOUSE'
+#    - inclusion: 'include'
+#      column: 'Ortholog'
+#      filter_code: 'in'
+#      value:
+#        - 'MOUSE'
+#    - inclusion: 'include'
+#      column: 'Gene'
+#      filter_code: 'in'
+#      value:
+#        - 'RAT'
+#    - inclusion: 'include'
+#      column: 'Ortholog'
+#      filter_code: 'in'
+#      value:
+#        - 'RAT'
