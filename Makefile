@@ -7,7 +7,7 @@ SOURCES ?= ctd go_cam goa
 
 define HELP
 ╭───────────────────────────────────────────────────────────╮
-  Make for ingest
+│ Make for ingest                                           │
 │ ───────────────────────────────────────────────────────── │
 │ Usage:                                                    │
 │     make <target>                                         │
@@ -23,7 +23,8 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     run                 Run pipeline (download→transform→normalize) │
+│     run                 Run pipeline                      │
+│                  (download→transform→normalize->validate) │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │
 │                                                           │
@@ -107,7 +108,7 @@ validate-single: normalize
 	done
 
 .PHONY: run
-run: download transform normalize
+run: validate
 
 ### Linting, Formatting, and Cleaning ###
 
