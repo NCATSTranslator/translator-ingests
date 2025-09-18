@@ -92,7 +92,7 @@ ReferenceIngestGuide:
           - biolink:ChemicalEntity
         predicate:  biolink:treats_or_applied_or_studied_to_treat
         object_categories:
-          - biolink:iseaseOrPhenotypicFeature
+          - biolink:DiseaseOrPhenotypicFeature
         knowledge_level:
           - knowledge_assertion
         agent_type:
