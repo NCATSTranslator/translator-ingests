@@ -19,10 +19,14 @@ from translator_ingest.util.biolink import (
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
 
+BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
+BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
+BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
+
 CTD_PREDICATES_BY_EVIDENCE_TYPE = {
-    "therapeutic": "biolink:treats_or_applied_or_studied_to_treat",
-    "marker/mechanism": "biolink:correlated_with",
-    "inference": "biolink:associated_with"  # the files don't have "inference" but we use it in the transform
+    "therapeutic": BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
+    "marker/mechanism": BIOLINK_CORRELATED_WITH,
+    "inference": BIOLINK_ASSOCIATED_WITH  # the files don't have "inference" but we use it in the transform
 }
 
 def get_latest_version():
@@ -50,7 +54,7 @@ def on_end_chemical_to_disease(koza: koza.KozaTransform) -> None:
             koza.log(f"CTD chemical_to_disease: {count} {row_type} rows with 0 publications", level="WARNING")
 
 @koza.transform_record(tag="chemical_to_disease")
-def transform_record_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     chemical = ChemicalEntity(id=f"MESH:{record["ChemicalID"]}", name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
 
