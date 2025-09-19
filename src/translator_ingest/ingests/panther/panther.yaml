@@ -1,0 +1,46 @@
+name: 'panther_genome_orthologs'
+
+reader:
+  format: csv
+  delimiter: '\t'
+  header_mode: "none"
+  files:
+    - '../../../../data/panther/AllOrthologs.tar.gz'
+    - '../../../../data/panther/gene_info.gz'  # TODO: does this NCBI Gene data belong here or in a mapping?
+  columns:
+    - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
+    - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2
+    - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused
+    - 'Common ancestor for the orthologs'    # unused
+    - 'Panther Ortholog ID'                  # panther protein family ID
+#  filters:
+#    - inclusion: 'include'
+#      column: 'Gene'
+#      filter_code: 'in'
+#      value:
+#        - 'HUMAN'
+#    - inclusion: 'include'
+#      column: 'Ortholog'
+#      filter_code: 'in'
+#      value:
+#        - 'HUMAN'
+#    - inclusion: 'include'
+#      column: 'Gene'
+#      filter_code: 'in'
+#      value:
+#        - 'MOUSE'
+#    - inclusion: 'include'
+#      column: 'Ortholog'
+#      filter_code: 'in'
+#      value:
+#        - 'MOUSE'
+#    - inclusion: 'include'
+#      column: 'Gene'
+#      filter_code: 'in'
+#      value:
+#        - 'RAT'
+#    - inclusion: 'include'
+#      column: 'Ortholog'
+#      filter_code: 'in'
+#      value:
+#        - 'RAT'
