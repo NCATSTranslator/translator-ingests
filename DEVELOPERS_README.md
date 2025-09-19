@@ -21,9 +21,9 @@ Second, **uv** generally works equally well under native Windows and WSL2 Linux 
 Third, the PyCharms IDE operation tends to favor the OS under which it is run (say, Windows 11). That is, package resolution and code navigation, Pytest, etc. generally needs to see a Windows virtual environment configured (i.e. by **uv**) with all required packages. _It can't reuse the Linux venv configured in the  by **uv** for this purpose._: running most **uv** commands in a Windows PowerShell with a default venv configured by Linux **uv** operations will fail.
 
 A workable solution requires the following:
-Within PyCharms settings..Tools..Terminal..Project Settings..Environment Variables, add 
+Within PyCharms settings..Tools..Terminal..Project Settings..Environment Variables, add
 
-**`UV_PROJECT_ENVIRONMENT=<name-of-windows-specific-venv-folder>** ` 
+**`UV_PROJECT_ENVIRONMENT=<name-of-windows-specific-venv-folder>`**
 
 where the <name-of-windows-specific-venv-folder> is the actual directory name within which you wish to manage the Windows virtual environment.
 
