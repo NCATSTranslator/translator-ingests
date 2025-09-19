@@ -130,7 +130,7 @@ This repository uses GitHub Actions to automate testing and quality checks.  Cod
 - Writing:
   - Notebooks: explore data, figure out what I want to do in an environ that's easy to debug.
   - Copy [Template](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests/_ingest_template) files over to my resource's folder, rename
-Download.yaml
+  - Download.yaml
   - (Optional) Copy over how the notebook constructs edge, adjust if needed for pipeline
     - Color code what is from record, vs pull from biolink pydantic, vs hard code
   - (Optional) Go through notebook - record actions are needed, decide where they could go
