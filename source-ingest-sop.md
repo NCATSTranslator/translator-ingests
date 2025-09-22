@@ -15,7 +15,9 @@
    - **RIG Catalog**: Collection of RIGs for current source ingests ([directory](https://github.com/biolink/resource-ingest-guide-schema/tree/main/src/docs/rigs)) ([web site](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
 4. [Ingest Metadata Schema Repo](https://github.com/biolink/ingest-metadata): Holds a schema and documentation for KGX ingest-metadata files which accompany 'nodes' and 'edges' files for each ingest execution.
    - **Ingest Metadata Schema**: LinkML-based schema for authoring/validating KGX ingest-metadata files ([yaml](https://github.com/biolink/ingest-metadata/blob/main/src/ingest_metadata/schema/ingest_metadata.yaml)) ([web site](https://biolink.github.io/ingest-metadata/))
-   
+5. [Information Resource Registry Repo](https://github.com/biolink/information-resource-registry): holds an information resource ('infores') catalog with identifiers and metadata about resources from which Translator ingests data, and a schema for authoring/validating these records.
+   - **Information Resource Registry Schema**: LinkML-based schema for populating resource records ([schema](https://github.com/biolink/information-resource-registry/blob/main/src/information_resource_registry/schema/information_resource_registry.yaml))
+   - **Information Resource (Infores) Catalog**: YAML file with entries for each information resource ([catalog](https://github.com/biolink/information-resource-registry/blob/main/infores_catalog.yaml))
 
 ## Key Artifacts
 1. **Ingest List and Assignments**: Records owner and contributor assignments for each ingest. ([Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) ([Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496)) 
