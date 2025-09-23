@@ -13,34 +13,18 @@ reader:
     - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused
     - 'Common ancestor for the orthologs'    # unused
     - 'Panther Ortholog ID'                  # panther protein family ID
-#  filters:
-#    - inclusion: 'include'
-#      column: 'Gene'
-#      filter_code: 'in'
-#      value:
-#        - 'HUMAN'
-#    - inclusion: 'include'
-#      column: 'Ortholog'
-#      filter_code: 'in'
-#      value:
-#        - 'HUMAN'
-#    - inclusion: 'include'
-#      column: 'Gene'
-#      filter_code: 'in'
-#      value:
-#        - 'MOUSE'
-#    - inclusion: 'include'
-#      column: 'Ortholog'
-#      filter_code: 'in'
-#      value:
-#        - 'MOUSE'
-#    - inclusion: 'include'
-#      column: 'Gene'
-#      filter_code: 'in'
-#      value:
-#        - 'RAT'
-#    - inclusion: 'include'
-#      column: 'Ortholog'
-#      filter_code: 'in'
-#      value:
-#        - 'RAT'
+  filters:
+    - inclusion: 'include'
+      column: 'Gene'
+      filter_code: 'in'
+      value:
+        - 'HUMAN'
+        - 'MOUSE'
+        - 'RAT'
+    - inclusion: 'include'
+      column: 'Ortholog'
+      filter_code: 'in'
+      value:
+        - 'HUMAN'
+        - 'MOUSE'
+        - 'RAT'
