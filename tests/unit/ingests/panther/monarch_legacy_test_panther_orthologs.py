@@ -101,7 +101,9 @@ def panther_rows():
                 "aggregator_knowledge_source": ["infores:monarchinitiative"],
                 "primary_knowledge_source": "infores:panther",
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided}),
+                "agent_type": AgentTypeEnum.not_provided
+               }
+             ),
             
             # Mouse and Schizosaccharomyces pombe ortholog row test
             ({"Gene":"MOUSE|MGI=MGI=2147627|UniProtKB=Q91WQ3",

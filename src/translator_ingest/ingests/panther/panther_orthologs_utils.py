@@ -69,7 +69,7 @@ def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_
     if relevant_columns[0] != "#tax_id":
         raise RuntimeError("- '#tax_id' must be first element present in relevant_columns arg... Exiting")
     
-    # We don't want entries equivalant to this from this file
+    # We don't want entries equivalent to this from this file
     exclude_terms = {"-":''}
     
     # Don't want to use pandas here (for memory and other reasons relating to speed)
@@ -124,14 +124,15 @@ def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_
             ##print("- Taxon {} | Removing {} | Count {}".format(tx_id, remove_key, rcount))
             del taxa_gene_map[tx_id][remove_key]
     
-    # Return cleaned map back to a ncbi gene id that can be normalized later down road
+    # Return cleaned-up mapping to a ncbi gene id
+    # that can be normalized later down the road
     return taxa_gene_map
 
 
 def parse_gene_info(gene_info, taxon_map, curie_map, fallback_map):
     """
-    This function takes a panther gene information string and returns the species name and gene identifier
-    in a standardized format by converting to CURIEs based on predefined mappings, and using the 
+    This function takes a panther gene information string and returns the species name and gene identifier in a
+    standardized format. This is done by converting to CURIEs based on a predefined mapping in a table and using
     uniprotkb id as a fallback. We also remove ensemble version/transcript ids from the tail end of ensembl ids,
     and we also filter out species that are not in our taxon map. Below are examples of the transformation process
 
@@ -147,33 +148,37 @@ def parse_gene_info(gene_info, taxon_map, curie_map, fallback_map):
     if species not in taxon_map:
         return None, None
     
-    # Now assign our gene to its "rightful" prefix... If no reasonable prefix exists (HGNC, MGI, etc.),
-    # then we use the UniprotKB ID prefix as a fallback. Connections can be rescued through 
-    # a normalization process via UniProtKB protein ids
+    # Now assign our gene to its "rightful" prefix...
+    # If no reasonable prefix exists (HGNC, MGI, etc.),
+    # then we use the UniprotKB ID prefix as a fallback.
+    # Connections can be rescued through
+    # a normalization process, via UniProtKB protein ids
     
     # Our preferred order is Organism specific (HGNC, PomBase, ZFIN)
     taxon_id = taxon_map[species]
     gene_split = cols[1].split("=")
-    matched = 0
-    fback = 0
-    unikb = 0
+
+    # TODO: not sure what's the point of these counters here...
+    # matched = 0
+    # fback = 0
+    # unikb = 0
     
     # Check if gene id can be mapped directly to kg build preferred gene ids
     if gene_split[0] in curie_map:
-        gene = "{}:{}".format(curie_map[gene_split[0]], gene_split[-1]) # We use -1 here to avoid things like MGI=MGI=95886
-        matched = 1
+        # We use -1 here to avoid things like MGI=MGI=95886
+        gene = "{}:{}".format(curie_map[gene_split[0]], gene_split[-1])
+        # matched = 1
         
     # Otherwise, fall back onto NCBI Gene map if possible,
     elif gene_split[1] in fallback_map[taxon_id]:
         g_id = fallback_map[taxon_id][gene_split[1]]
         gene = "NCBIGene:{}".format(g_id)
-        fback = 1
+        # fback = 1
     
     # Use uniprotkb id as a last resort and format e.g. UniProtKB=Q8TCT9 => "UniProtKB:Q8TCT9"
     else:
         gene = "{}".format(cols[-1].replace("=", ":"))
-        unikb += 1
-
+        # unikb += 1
         
     # Lastly we need to strip version numbers off from ENSEMBL IDs,
     # (e.g. ENSG00000123456.1 => ENSG00000123456)
