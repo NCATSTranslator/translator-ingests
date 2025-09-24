@@ -1,3 +1,6 @@
+"""
+Ingest of Reference Genome Orthologs from Panther
+"""
 from loguru import logger
 import koza
 from typing import Any
@@ -30,11 +33,8 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
 # corresponding to the current version. For sources that are updated regularly, use file modification dates if
 # possible or the current date. Versions should (ideally) be sortable (ie YYYY-MM-DD) and should contain no spaces.
 def get_latest_version() -> str:
-    return "v1"
+    return "v1"   # TODO: this value needs to be somehow obtain from the Panther web site?
 
-
-# Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional. If implemented they will be called
-# before and/or after transform or transform_record.
 @koza.on_data_begin()
 def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     """
@@ -48,8 +48,10 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     # koza_transform.state["species_pair_max"] = {}
     # koza_transform.state["species_pair_stats"] = {}
 
+    # TODO: we need to ponder whether this ncbi_taxon_gene_map
+    #       is better implemented as an external Koza mapping table
     koza_transform.extra_fields["tx_gmap"] = make_ncbi_taxon_gene_map(
-        gene_info_file="./data/ncbi/gene_info.gz",
+        gene_info_file="./data/panther/gene_info.gz",
         relevant_columns=relevant_ncbi_cols,
         taxon_catalog=relevant_ncbi_taxons
     )
