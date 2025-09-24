@@ -1,95 +1,92 @@
 ReferenceIngestGuide:
-  name:  # (optional, range = string)
+  name: "SIDER Reference Ingest Guide"
 
 # Information about the Source of the ingest
-  source_info:  # (required, range = SourceInfo)
-    infores_id:  # (required, range = UriOrCurie)
-    description:  # (optional, range = string)
-    citations:  # (optional, multivalued, range = string)
-      -
-    terms_of_use:  # (required, range = string)
-    data_access_locations:  # (optional, multivalued, range = string)
-      -
-    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
-      -
-    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
-      -
-    data_versioning_and_releases:  # (optional, range = string)
-    additional_notes:  # (optional, range = string)
+  source_info:
+    infores_id: infores:sider
+    description: >-
+      SIDER contains information on marketed drugs and their recorded adverse drug reactions.
+      The information is extracted from public documents and package inserts. The current version
+      of the database contains data on 1,430 drugs and 5,868 adverse drug reactions.
+    citations:
+      - "Kuhn M, Letunic I, Jensen LJ, Bork P. The SIDER database of drugs and side effects. Nucleic Acids Research. 2016;44(D1):D1075-9. DOI: 10.1093/nar/gkv1075"
+    terms_of_use: "Creative Commons Attribution-Noncommercial-Share Alike 4.0 License"
+    data_access_locations:
+      - "http://sideeffects.embl.de/download/"
+    data_provision_mechanisms:
+      - file_download
+    data_formats:
+      - tsv
+    data_versioning_and_releases: "SIDER version 4.1 released in 2015. Updates are irregular and infrequent. Database maintenance is limited."
+    additional_notes: "It may not include the most recent drug approvals or complete adverse event profiles."
 
 
-# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
-  ingest_info:  # (required, range = IngestInfo)
-    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
-      -
-    utility:  # (required, range = string)
-    scope:  # (optional, range = string)
+# Information about Ingested Content
+  ingest_info:
+    ingest_categories:
+      - primary_knowledge_provider
+    utility: "Provides drug-adverse drug reaction associations for pharmacovigilance, drug safety analysis, and adverse drug reaction prediction studies."
+    scope: "Covers marketed drugs and their documented adverse drug reactions as found in public documents and package inserts."
 
-    relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest.
-      - file_name:  # (required, range = string)
-        location:  # (required, range = UriOrCurie)
-        description:  # (optional, range = string)
+    relevant_files:
+      - file_name: meddra_all_label_se.tsv.gz
+        location: "http://sideeffects.embl.de/media/download/meddra_all_label_se.tsv.gz"
+        description: "Side effects specifically found on drug labels"
+      - file_name: drug_names.tsv
+        location: "http://sideeffects.embl.de/media/download/drug_names.tsv"
+        description: "Drug identifiers and common names mapping STITCH IDs to drug names"
+      - file_name: meddra.tsv
+        location: "http://sideeffects.embl.de/media/download/meddra.tsv"
+        description: "MedDRA terms and hierarchy information"
 
-    included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest.
-      - file_name:  # (required, range = string)
-        included_records:  # (required, range = string)
-        fields_used:  # (optional, range = string)
 
-    filtered_content:  # (optional, multivalued, range = FilteredContent)  Records from relevant files that are not included in the ingest, and why.
-      - file_name:  # (required, range = string)
-        filtered_records:  # (required, range = string)
-        rationale:  # (required, range = string)
+    included_content:
+      - file_name: meddra_all_label_se.tsv.gz
+        included_records: "All records (~63,473 label-specific side effect associations)"
+        fields_used: "STITCH_compound_id_flat, UMLS_concept_id_label, MedDRA_concept_type, UMLS_concept_id_MedDRA, side_effect_name"
 
-    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations)  Content addditions/changes to consider for future iterations.
-      - category:  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
-        consideration:  # (required, range = string)
-        relevant_files:  # (optional, range = string)
+    filtered_content:
+      - file_name: meddra_all_label_se.tsv.gz
+        filtered_records: include only MedDRA_concept_type = PT (preferred term)
+        rationale: >-
+          from http://sideeffects.embl.de/media/download/README:
+          There is at least one PT for every LLT, but sometimes the PT is the same as the LLT. LLTs are sometimes too detailed, 
+          and therefore you might want to filter for PT."
 
-    additional_notes:  # (optional, range = string)
 
 # Information about the Graph Output by the ingest
   target_info:  # (required, range = TargetInfo)
-    infores_id:  # (optional, range = UriOrCurie)
+    infores_id: "infores:translator-sider-kgx"
 
-    edge_type_info:  # (required, multivalued, range = EdgeType)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
-          -
-        predicate:  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
-          -
-        qualified_predicate:  # (optional, range = UriOrCurie)
-        biolink_qualifier_1:  # (optional, range = UriOrCurie)
-        biolink_qualifier_1_value_type:  # (optional, range = UriOrCurie)
-        biolink_qualifier_2:  # (optional, range = UriOrCurie)
-        biolink_qualifier_2_value_type:  # (optional, range = UriOrCurie)
-        biolink_qualifier_3:  # (optional, range = UriOrCurie)
-        biolink_qualifier_3_value_type:  # (optional, range = UriIrCurie)
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          -
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          -
-        edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          -
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
+    edge_type_info:
+      - subject_categories:
+          - biolink:ChemicalEntity
+        predicate: biolink:has_side_effect
+        object_categories:
+          - biolink:DiseaseOrPhenotypicFeature
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        ui_explanation: "Drug X causes adverse drug reaction Y"
 
-    node_type_info:  # (required, multivalued, range = NodeType)
-      - node_category:  # (required, range = UriOrCurie)
-        source_identifier_types:  # (required, range = string)
-        node_properties:  # (optional, multivalued, range = UriOrCurie)
-          -
-        additional_notes:  # (optional, range = string)
-
-    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteratiosn of the ingest
-      - category:  # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
-        consideration:  # (required, range = string)
-
-    additional_notes:  # (optional, range = string)
+    node_type_info:
+      - node_category: biolink:ChemicalEntity
+        source_identifier_types: PUBCHEM.COMPOUND
+        node_properties:
+          - biolink:name
+      - node_category: biolink:DiseaseOrPhenotypicFeature
+        source_identifier_types: UMLS
+        node_properties:
+          - biolink:name
 
 
 # Information about the how the ingest was specified and performed
-  provenance_info:  # (optional, range = ProvenanceInfo)
-    contributions:  # (optional, multivalued, range = string)
-      -
-    artifacts:  # (optional, multivalued, range = string)
-      -
+  provenance_info:
+    contributions:
+    - "Vlado Dancik - code author, domain expertise"
+    - "Kevin Schaper - code support"
+    - "Evan Morris - code support"
+    - "Sierra Moxon - data modeling, code support"
+    - "Matthew Brush - data modeling, domain expertise"
+
