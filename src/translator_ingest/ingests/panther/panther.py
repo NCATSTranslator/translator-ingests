@@ -50,7 +50,7 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
 
     # TODO: we need to ponder whether this ncbi_taxon_gene_map
     #       is better implemented as an external Koza mapping table
-    koza_transform.extra_fields["tx_gmap"] = make_ncbi_taxon_gene_map(
+    koza_transform.extra_fields["ntg_map"] = make_ncbi_taxon_gene_map(
         gene_info_file="./data/panther/gene_info.gz",
         relevant_columns=relevant_ncbi_cols,
         taxon_catalog=relevant_ncbi_taxons
@@ -91,13 +91,13 @@ def transform_gene_to_gene_orthology(
             record["Gene"],
             panther_taxon_map,
             db_to_curie_map,
-            koza_transform.extra_fields["tx_gmap"]
+            koza_transform.extra_fields["ntg_map"]
         )
         species_b, gene_b_id = parse_gene_info(
             record["Ortholog"],
             panther_taxon_map,
             db_to_curie_map,
-            koza_transform.extra_fields["tx_gmap"]
+            koza_transform.extra_fields["ntg_map"]
         )
 
         # Only consume species we are interested in (i.e.,

@@ -34,40 +34,46 @@ panther_taxon_map = {
                      # Additional species for future here...
                      # "FELCA": "9685",  # Felis catus - domestic cat
 
-relevant_ncbi_cols = ['#tax_id', 
-                      'GeneID', 
-                      'Symbol', 
-                      'LocusTag', 
-                      'Synonyms', 
-                      'dbXrefs', 
-                      'Symbol_from_nomenclature_authority',
-                      'Full_name_from_nomenclature_authority',
-                      'Other_designations']
+relevant_ncbi_cols = [
+    '#tax_id',
+    'GeneID',
+    'Symbol',
+    'LocusTag',
+    'Synonyms',
+    'dbXrefs',
+    'Symbol_from_nomenclature_authority',
+    'Full_name_from_nomenclature_authority',
+    'Other_designations'
+]
 
-# Entries with Gene/Orthology identifier namespaces that need modifying to match our CURIEs
-# Keys are the pantherdb namespace, and values are the CURIE namespace 
-# (Note, many key/value pairs are the same for simplicty in downstream processing
-db_to_curie_map = {"HGNC":"HGNC",
-                   "MGI":"MGI",
-                   "RGD":"RGD",
-                   "SGD":"SGD",
-                   "ZFIN":"ZFIN",
-                   "dictyBase":"dictyBase",
-                   "PomBase":"PomBase",
-                   "Xenbase":"Xenbase",
-                   
-                   "FlyBase":"FB",      
-                   "WormBase":"WB",     
-                   "Ensembl": "ENSEMBL"}
+# Entries with Gene/Orthology identifier namespaces that need modifying
+# to match our CURIEs.  Keys are the pantherdb namespace, and values
+# are the CURIE namespace (Note: many key/value pairs are the same
+# for simplicity in downstream processing)
+db_to_curie_map = {
+    "HGNC":"HGNC",
+    "MGI":"MGI",
+    "RGD":"RGD",
+    "SGD":"SGD",
+    "ZFIN":"ZFIN",
+    "dictyBase":"dictyBase",
+    "PomBase":"PomBase",
+    "Xenbase":"Xenbase",
 
-                   ## For future reference... Genes with this prefix (EnsembleGenome) appear to be in the symbol name space... 
-                   ## Rather than ENSEMBL gene name space (i.e ENS0000123..))
-                   ## So we simply use the gene name as is and attempt to map back to ncbi gene id, and uniprot as fallback
-                   ##"EnsemblGenome": "ENSEMBL"}
+    "FlyBase":"FB",
+    "WormBase":"WB",
+    "Ensembl": "ENSEMBL",
+    ## For future reference... Genes with this prefix (EnsembleGenome)
+    # appear to be in the symbol name space...
+    ## Rather than ENSEMBL gene name space (i.e., ENS0000123..))
+    ## So we simply use the gene name as is and attempt
+    # to map back to ncbi gene id, and uniprot as fallback
+    ##"EnsemblGenome": "ENSEMBL"
+}
+
 
 # Used in make_ncbi_taxon_gene_map function to filter for only species we are interested in
 relevant_ncbi_taxons = {v:'' for v in panther_taxon_map.values()} 
-
 
 
 def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_catalog: dict):
