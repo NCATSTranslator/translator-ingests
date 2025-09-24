@@ -9,21 +9,28 @@ from collections import Counter
 
 # These names should match pantherdb shorthand names for each species
 # Example... https://www.pantherdb.org/genomes/genome.jsp?taxonId=9606 --> Short Name: HUMAN
-panther_taxon_map = {"HUMAN": "9606",
-                     "MOUSE": "10090",
-                     "CANLF": "9615",   # Canis lupus familiaris - domestic dog
-                     "BOVIN": "9913",   # Bos taurus - cow
-                     "PIG": "9823",     # Sus scrofa - pig
-                     "RAT": "10116",
-                     "CHICK": "9031",
-                     "XENTR": "8364",   # Xenopus tropicalis - tropical clawed frog
-                     "DANRE": "7955",
-                     "DROME": "7227",
-                     "CAEEL": "6239",
-                     "DICDI": "44689",
-                     "EMENI": "227321",  # Emericella nidulans (strain FGSC A4 etc.) (Aspergillus nidulans)
-                     "SCHPO": "4896",
-                     "YEAST": "4932"}
+panther_taxon_map = {
+    "HUMAN": "9606",
+    "MOUSE": "10090",
+    "RAT": "10116",
+
+    # The September 2025 implementation of the
+    # Translator Phase 3 Panther data ingestion
+    # only contains data for the above 3 species.
+    #
+    # "CANLF": "9615",   # Canis lupus familiaris - domestic dog
+    # "BOVIN": "9913",   # Bos taurus - cow
+    # "PIG": "9823",     # Sus scrofa - pig
+    # "CHICK": "9031",
+    # "XENTR": "8364",   # Xenopus tropicalis - tropical clawed frog
+    # "DANRE": "7955",
+    # "DROME": "7227",
+    # "CAEEL": "6239",
+    # "DICDI": "44689",
+    # "EMENI": "227321",  # Emericella nidulans (strain FGSC A4 etc.) (Aspergillus nidulans)
+    # "SCHPO": "4896",
+    # "YEAST": "4932"
+}
                      # Additional species for future here...
                      # "FELCA": "9685",  # Felis catus - domestic cat
 
@@ -75,7 +82,6 @@ def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_
     # Don't want to use pandas here (for memory and other reasons relating to speed)
     taxa_gene_map = {tx_id:{} for tx_id in taxon_catalog}   # Many-->1 mapping dictionary
     taxa_remove_map = {tx_id:Counter() for tx_id in taxon_catalog} # Removes unreliable mapping keys from taxa_gene_map
-    
     
     with gzip.open(gene_info_file, 'rt') as infile:
         

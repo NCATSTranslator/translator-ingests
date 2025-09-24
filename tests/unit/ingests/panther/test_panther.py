@@ -71,7 +71,18 @@ ASSOCIATION_TEST_SLOTS = [
             None,
             None
         ),
-        (   # Query 2 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
+        (   # Query 2 - This data includes Genes from a currently excluded species, S. Pombe - returns None
+            {
+                "Gene": "MOUSE|MGI=MGI=2147627|UniProtKB=Q91WQ3",
+                "Ortholog": "SCHPO|PomBase=SPAC30C2.04|UniProtKB=Q9P6K7",
+                "Type of ortholog": "LDO",
+                "Common ancestor for the orthologs": "Opisthokonts",
+                "Panther Ortholog ID": "PTHR11586"
+            },
+            None,
+            None
+        ),
+        (   # Query 3 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
             {
                  "Gene": "HUMAN|HGNC=11477|UniProtKB=Q6GZX4",              # species1|DB=id1|protdb=pdbid1
                  "Ortholog": "RAT|RGD=1564893|UniProtKB=Q6GZX2",           # species2|DB=id2|protdb=pdbid2
@@ -118,7 +129,7 @@ ASSOCIATION_TEST_SLOTS = [
                 "agent_type": AgentTypeEnum.not_provided
             }
         ),
-        (   # Query 3 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
+        (   # Query 4 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
             {
                 "Gene": "HUMAN|Ensembl=ENSG00000275949.5|UniProtKB=A0A0G2JMH3",
                 "Ortholog": "MOUSE|MGI=MGI=99431|UniProtKB=P84078",
