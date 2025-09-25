@@ -5,7 +5,7 @@ import os
 import gzip
 from collections import Counter
 
-
+NCBI_MAP_FILE_PATH = "./data/panther/gene_info.gz"
 
 # These names should match pantherdb shorthand names for each species
 # Example... https://www.pantherdb.org/genomes/genome.jsp?taxonId=9606 --> Short Name: HUMAN

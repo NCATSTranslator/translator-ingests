@@ -20,6 +20,7 @@ from koza.model.graphs import KnowledgeGraph
 # Custom pantherdb specific function, and constants respectively
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
     make_ncbi_taxon_gene_map,
+    NCBI_MAP_FILE_PATH,
     parse_gene_info,
     panther_taxon_map,
     relevant_ncbi_cols,
@@ -51,7 +52,7 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     # TODO: we need to ponder whether this ncbi_taxon_gene_map
     #       is better implemented as an external Koza mapping table
     koza_transform.extra_fields["ntg_map"] = make_ncbi_taxon_gene_map(
-        gene_info_file="./data/panther/gene_info.gz",
+        gene_info_file=NCBI_MAP_FILE_PATH,
         relevant_columns=relevant_ncbi_cols,
         taxon_catalog=relevant_ncbi_taxons
     )
