@@ -1,12 +1,12 @@
 name: 'panther_genome_orthologs'
 
 reader:
-  format: csv
-  delimiter: '\t'
-  header_mode: "none"
   files:
     - '../../../../data/panther/AllOrthologs.tar.gz'
     - '../../../../data/panther/gene_info.gz'  # TODO: does this NCBI Gene data belong here or in a mapping?
+  format: csv
+  delimiter: '\t'
+  header_mode: "none"
   columns:
     - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
     - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2

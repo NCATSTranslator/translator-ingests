@@ -1,6 +1,5 @@
 # Things to do on the Panther ingest
 
-- Review panther.yaml compliance with the latest Koza yaml spec
 - Implement **`get_latest_version()'** method, by using web (service API?) access to the Panther website
 - (Perhaps) convert the NCBI GeneInfo table ("tx_map") into a distinct Koza mapping table (ask Kevin for help)
 - Add unit test cases which better test fringe conditions, e.g., NCBI GeneInfo table remapped identifiers
