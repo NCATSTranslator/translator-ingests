@@ -1,9 +1,11 @@
 """
 Ingest of Reference Genome Orthologs from Panther
 """
-from loguru import logger
-import koza
 from typing import Any
+import requests
+from loguru import logger
+
+from bs4 import BeautifulSoup
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
@@ -15,6 +17,8 @@ from translator_ingest.util.biolink import (
     entity_id,
     build_association_knowledge_sources
 )
+
+import koza
 from koza.model.graphs import KnowledgeGraph
 
 # Custom pantherdb specific function, and constants respectively
@@ -29,12 +33,35 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
 )
 
 
-# Retrieve and return a string representing the latest version of the source data.
-# If a source does not implement versioning, we need to do it. For static datasets assign a version string
-# corresponding to the current version. For sources that are updated regularly, use file modification dates if
-# possible or the current date. Versions should (ideally) be sortable (ie YYYY-MM-DD) and should contain no spaces.
 def get_latest_version() -> str:
-    return "v1"   # TODO: this value needs to be somehow obtain from the Panther web site?
+    #
+    # TODO: Panther has a "are you human" web sentry blocking simple screen scraping, so
+    #       this method is currently only an incompletely implemented inert stub.
+    #
+    # Panther doesn't provide a great programmatic way to determine the latest version,
+    # but it does have a Data Status page with a version on it, formatted somewhat as follows:
+    #      <td align="right" class="formLabel">
+    #          Current Release: <a href="/news/news20240620.jsp"><b>PANTHER 19.0</b></a>&nbsp;&nbsp;|
+    #          ... other stuff...
+    #      </td>
+    # Thus, we attempt to fetch the HTML and parse it to determine the current version.
+    #
+    #
+    # html_page: requests.Response = requests.get('https://www.pantherdb.org/data/')
+    # resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    # td_elements: BeautifulSoup.Tag = resp.find_all('td')
+    # version_element = None
+    # for element in td_elements:
+    #     if "Current Release" in element.text:
+    #         version_element = element
+    #         break
+    # if version_element is not None:
+    #     # Version tagging is something like "Current Release: <a href="/news/news20240620.jsp"><b>PANTHER 19.0</b>"
+    #     return version_element.text.split('PANTHER ')[1].split("</b>")[0]
+    # else:
+    #     raise RuntimeError('Could not determine latest version for Panther. Version block not found in HTML.')
+    return "19.0"  # Hard-coded release as of September 25, 2025
+
 
 @koza.on_data_begin()
 def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
