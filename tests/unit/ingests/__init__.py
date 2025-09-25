@@ -138,7 +138,7 @@ def validate_transform_result(
             f"unexpected non-empty set of nodes: {','.join([str(dict(node)) for node in transformed_nodes])}!"
     else:
 
-        assert transformed_nodes, f"Expected a non-empty set of nodes to be returned!"
+        assert transformed_nodes, "Expected a non-empty set of nodes to be returned!"
 
         # if nodes are returned, then are they the expected ones?
         # for uniformity in checking details, we convert the
@@ -169,7 +169,6 @@ def validate_transform_result(
     if association_test_slots is not None:
         # Convert the 'edges' Iterable content
         # into a list by comprehension
-        edge: Association
         transformed_edges = [dict(edge) for edge in edges]
 
         if expected_edge is None:
