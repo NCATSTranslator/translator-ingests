@@ -178,15 +178,16 @@ def normalize_kgx_files(output_dir: str,
                         input_nodes_file_path: str = None,
                         input_edges_file_path: str = None):
 
-    # get the current version of the Node Normalizer and make a versioned directory
-    current_node_norm_version = NodeNormalizer().get_current_node_norm_version()
-    versioned_output_dir = Path(output_dir) / current_node_norm_version
-    versioned_output_dir.mkdir(exist_ok=True)
-
+    # if no file paths provided, assume the file names
     if not input_nodes_file_path:
         input_nodes_file_path = Path(output_dir) / "nodes.jsonl"
     if not input_edges_file_path:
         input_edges_file_path = Path(output_dir) / "edges.jsonl"
+
+    # get the current version of the Node Normalizer and make a versioned directory
+    current_node_norm_version = NodeNormalizer().get_current_node_norm_version()
+    versioned_output_dir = Path(output_dir) / current_node_norm_version
+    versioned_output_dir.mkdir(exist_ok=True)
 
     nodes_output_file_path = versioned_output_dir / "normalized_nodes.jsonl"
     node_norm_map_file_path = versioned_output_dir / "node_normalization_map.json"
@@ -194,7 +195,7 @@ def normalize_kgx_files(output_dir: str,
     edges_output_file_path = versioned_output_dir / "normalized_edges.jsonl"
     edge_norm_predicate_map_file_path = versioned_output_dir / "edge_predicate_map.json"
 
-    if node_norm_failures_file_path.exists() and edges_output_file_path.exists():
+    if edges_output_file_path.exists():
         logger.info("Normalization output files already exist. Skipping normalization.")
         return
 
