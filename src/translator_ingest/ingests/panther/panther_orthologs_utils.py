@@ -30,10 +30,12 @@ panther_taxon_map = {
     # "EMENI": "227321",  # Emericella nidulans (strain FGSC A4 etc.) (Aspergillus nidulans)
     # "SCHPO": "4896",
     # "YEAST": "4932"
+    # Additional species for future here...
+    # "FELCA": "9685",  # Felis catus - domestic cat
 }
-                     # Additional species for future here...
-                     # "FELCA": "9685",  # Felis catus - domestic cat
 
+
+# Full list of NCBI columns is:
 relevant_ncbi_cols = [
     '#tax_id',
     'GeneID',
@@ -54,15 +56,18 @@ db_to_curie_map = {
     "HGNC":"HGNC",
     "MGI":"MGI",
     "RGD":"RGD",
-    "SGD":"SGD",
-    "ZFIN":"ZFIN",
-    "dictyBase":"dictyBase",
-    "PomBase":"PomBase",
-    "Xenbase":"Xenbase",
 
-    "FlyBase":"FB",
-    "WormBase":"WB",
-    "Ensembl": "ENSEMBL",
+    # These identifier namespaces for non-target species are ignored for now.
+    # We assume that they don't slip by the gauntless of the taxonomic filter in the code.
+    # "SGD":"SGD",
+    # "ZFIN":"ZFIN",
+    # "dictyBase":"dictyBase",
+    # "PomBase":"PomBase",
+    # "Xenbase":"Xenbase",
+    #
+    # "FlyBase":"FB",
+    # "WormBase":"WB",
+    # "Ensembl": "ENSEMBL",
     ## For future reference... Genes with this prefix (EnsembleGenome)
     # appear to be in the symbol name space...
     ## Rather than ENSEMBL gene name space (i.e., ENS0000123..))
@@ -100,11 +105,12 @@ def make_ncbi_taxon_gene_map(gene_info_file: str, relevant_columns: list, taxon_
             cols = line.strip('\r').strip('\n').split('\t')
             rel_data = [str(cols[hinfo[r]]) for r in relevant_columns]
             tx_id = rel_data[0]
-            ncbi_gene_id = cols[hinfo["GeneID"]]
-            
+
             # Only consume species we are interested in
             if tx_id not in taxon_catalog:
                 continue
+
+            ncbi_gene_id = cols[hinfo["GeneID"]]
             
             # Find reliable mapping keys to this NCBI gene id
             # We take the set() of relevant mapping keys here... that if the same_id is reported on the same line
@@ -170,7 +176,7 @@ def parse_gene_info(gene_info, taxon_map, curie_map, fallback_map):
     taxon_id = taxon_map[species]
     gene_split = cols[1].split("=")
 
-    # TODO: not sure what's the point of these counters here...
+    # TODO: not sure what's the point of these counters here... not reported anywhere?
     # matched = 0
     # fback = 0
     # unikb = 0
@@ -181,7 +187,9 @@ def parse_gene_info(gene_info, taxon_map, curie_map, fallback_map):
         gene = "{}:{}".format(curie_map[gene_split[0]], gene_split[-1])
         # matched = 1
         
-    # Otherwise, fall back onto NCBI Gene map if possible,
+    # Otherwise, the gene identifiers for the target species
+    # are not the ones in the 'curie_map' so we
+    # fall back onto NCBI Gene map, if possible.
     elif gene_split[1] in fallback_map[taxon_id]:
         g_id = fallback_map[taxon_id][gene_split[1]]
         gene = "NCBIGene:{}".format(g_id)

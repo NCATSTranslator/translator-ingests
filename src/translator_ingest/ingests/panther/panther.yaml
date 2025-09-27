@@ -10,7 +10,7 @@ reader:
   columns:
     - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
     - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2
-    - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused
+    - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused; see also http://data.pantherdb.org/ftp/ortholog/17.0/README
     - 'Common ancestor for the orthologs'    # unused
     - 'Panther Ortholog ID'                  # panther protein family ID
   filters:
