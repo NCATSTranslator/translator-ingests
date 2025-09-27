@@ -3,22 +3,45 @@ import koza
 import pandas as pd
 from typing import Any, Iterable
 
+## the definition of biolink class can be found here: https://github.com/monarch-initiative/biolink-model-pydantic/blob/main/biolink_model_pydantic/model.py
+# * existing biolink category mapping:
+#     * 'Gene': 'biolink:Gene',
+#     * 'Chemical': 'biolink:ChemicalEntity',
+#     * 'Smallmolecule': 'biolink:SmallMolecule',
+#     * 'Phenotype': 'biolink:PhenotypicFeature', -> BiologicalProcess
+#     * 'Protein': 'biolink:Protein',
+# * went through valid check cause there is potential issue:
+#     * 'Antibody': 'biolink:Drug', ## check if all are indeed drug
+#     * 'Complex': 'biolink:MacromolecularComplex',
+#     * 'Mirna': 'biolink:MicroRNA',
+#     * 'Ncrna': 'biolink:Noncoding_RNAProduct',
+
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    Gene,
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-    Disease,
+    SmallMolecule,
+    PhenotypicFeature,
+    Protein,
+    Drug,
+    MicroRNA,
+    NoncodingRNAProduct,
+    MacromolecularComplexMixin,
     NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    Association
+    Association,
+    PredicateMapping,
 )
 from translator_ingest.util.biolink import (
-    INFORES_CTD,
+    INFORES_SIGNOR,
     entity_id,
     build_association_knowledge_sources
 )
 from koza.model.graphs import KnowledgeGraph
 
+## adding additional needed resources
+BIOLINK_AFFECTS = "biolink:affects"
+BIOLINK_entity_positively_regulated_by_entity = "biolink:entity_positively_regulated_by_entity"
 
 # !!! README First !!!
 #
@@ -64,25 +87,37 @@ def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
 @koza.prepare_data(tag="ingest_by_record")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
-    # do pandas stuff
-    df = pd.DataFrame(data)
-    return df.dropna().drop_duplicates().to_dict(orient="records")
+    ## convert the input dataframe into pandas df format
+    source_df = pd.DataFrame(data)
 
-    # do database stuff:
-    # import sqlite3
-    # con = sqlite3.connect("example.db")
-    # con.row_factory = sqlite3.Row
-    # cur = con.cursor()
-    # cur.execute("SELECT * FROM example_table")
-    # records = cursor.fetchall()
-    # for record in records:
-    #     yield record
-    # con.close()
+    ## include some basic quality control steps here
+    ## Drop nan values
+    source_df = source_df.dropna(subset=['ENTITYA', 'ENTITYB'])
 
-    # merge stuff in a custom way
-    # koza.state['nodes'] = defaultdict(dict)
-    # for record in data:
-    #    koza.state['nodes'][record['node_id']] # store some merged node properties or something like that
+    ## rename those columns into desired format
+    source_df.rename(columns={'ENTITYA': 'subject_name', 'TYPEA': 'subject_category', 'ENTITYB': 'object_name', 'TYPEB': 'object_category'}, inplace=True)
+
+    ## replace phenotype labeling into biologicalProcess
+    source_df["subject_category"] = source_df["subject_category"].replace("phenotype", "BiologicalProcess")
+    source_df ["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
+
+    ## replace all 'miR-34' to 'miR-34a' in two columns subject_category and object_category in the pandas dataframe
+    source_df['subject_name'] = source_df['subject_name'].replace('miR-34', 'miR-34a')
+    source_df['object_name'] = source_df['object_name'].replace('miR-34', 'miR-34a')
+
+    ## remove those rows with category in fusion protein or stimulus from source_df for now, and expecting biolink team to add those new categories
+    source_df = source_df[(source_df['subject_category'] != 'fusion Protein') & (source_df['object_category'] != 'fusion Protein')]
+    source_df = source_df[(source_df['subject_category'] != 'stimulus') & (source_df['object_category'] != 'stimulus')]
+
+    ## for first pass ingestion, limited to the largest portion combo
+    ## subject_category: protein, object_category:protein, effect: up-regulates activity
+    filtered_df = source_df[
+        (source_df['subject_category'] == 'protein') &
+        (source_df['object_category'] == 'protein') &
+        (source_df['EFFECT'] == 'up-regulates activity')
+        ]
+
+    return filtered_df.dropna().drop_duplicates().to_dict(orient="records")
 
 
 # Ingests must implement a function decorated with @koza.transform() OR @koza.transform_record() (not both).
@@ -91,28 +126,28 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 #
 # The transform_record function takes the KozaTransform and a single record, a dictionary typically corresponding to a
 # row in a source data file, and returns a KnowledgeGraph with any number of nodes and/or edges.
-@koza.transform_record(tag="ingest_by_record")
-def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-
-    # here is an example of skipping a record based off of some condition
-    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-    if not publications:
-        koza.state['example_counter'] += 1
-        return None
-
-    chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-    disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
-        subject=chemical.id,
-        predicate="biolink:related_to",
-        object=disease.id,
-        publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent
-    )
-    return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
+# @koza.transform_record(tag="ingest_by_record")
+# def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+#
+#     # here is an example of skipping a record based off of some condition
+#     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
+#     if not publications:
+#         koza.state['example_counter'] += 1
+#         return None
+#
+#     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
+#     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+#     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+#         id=entity_id(),
+#         subject=chemical.id,
+#         predicate="biolink:related_to",
+#         object=disease.id,
+#         publications=publications,
+#         sources=build_association_knowledge_sources(primary=INFORES_CTD),
+#         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+#         agent_type=AgentTypeEnum.manual_agent
+#     )
+#     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
 
 # As an alternative to transform_record, functions decorated with @koza.transform() take a KozaTransform and an Iterable
 # of dictionaries, typically corresponding to all the rows in a source data file, and return an iterable of
@@ -123,35 +158,18 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
     nodes: list[NamedThing] = []
     edges: list[Association] = []
     for record in data:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+        Protein_subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
+        Protein_object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
             id=str(uuid.uuid4()),
-            subject=chemical.id,
-            predicate="biolink:related_to",
-            object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
+            subject=Protein_subject.id,
+            predicate=BIOLINK_entity_positively_regulated_by_entity,
+            object=Protein_object.id,
+            primary_knowledge_source=INFORES_SIGNOR,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
-        nodes.append(chemical)
-        nodes.append(disease)
+        nodes.append(Protein_subject)
+        nodes.append(Protein_object)
         edges.append(association)
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
-
-# Here is an example using a generator to stream results
-# @koza.transform(tag="ingest_all_streaming")
-# def transform_ingest_all_streaming(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-#     for record in data:
-#         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-#         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-#         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-#             id=str(uuid.uuid4()),
-#             subject=chemical.id,
-#             predicate="biolink:related_to",
-#             object=disease.id,
-#             primary_knowledge_source=INFORES_CTD,
-#             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-#             agent_type=AgentTypeEnum.manual_agent,
-#         )
-#         yield KnowledgeGraph(nodes=[chemical, disease], edges=[association])

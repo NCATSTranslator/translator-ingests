@@ -14,6 +14,7 @@ INFORES_HPOA = "infores:hpo-annotations"
 INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
 INFORES_BIOLINK = "infores:biolink"
+INFORES_SIGNOR = "infores:signor"
 
 
 def entity_id() -> str:

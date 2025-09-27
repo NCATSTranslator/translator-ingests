@@ -7,16 +7,19 @@ readers:
     header_mode: 27
     header_prefix: "#"
     files:
-      - "../../../../data/signor/all_data_11_09_25.tsv"
+      - "../../../../data/signor/all_data_24_09_25.tsv"
     columns:
       - ENTITYA
       - TYPEA
       - IDA
+      - DATABASEA
       - ENTITYB
       - TYPEB
       - IDB
+      - DATABASEB
       - EFFECT
       - MECHANISM
+      - TAX_ID
       - PMID
       - DIRECT
       - SCORE
