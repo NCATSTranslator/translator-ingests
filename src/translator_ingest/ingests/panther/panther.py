@@ -23,12 +23,12 @@ from koza.model.graphs import KnowledgeGraph
 
 # Custom pantherdb specific function, and constants respectively
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
-    make_ncbi_taxon_gene_map,
-    NCBI_MAP_FILE_PATH,
+    # make_ncbi_taxon_gene_map,
+    # NCBI_MAP_FILE_PATH,
     parse_gene_info,
     panther_taxon_map,
-    relevant_ncbi_cols,
-    relevant_ncbi_taxons,
+    # relevant_ncbi_cols,
+    # relevant_ncbi_taxons,
     db_to_curie_map
 )
 
@@ -72,17 +72,18 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     koza_transform.log("Starting Panther Gene Orthology processing")
     koza_transform.log(f"Version: {get_latest_version()}")
 
-    # TODO: ported from the Monarch ingest... not sure if and how these are to be used
+    # TODO: ported from the Monarch ingest... not sure if and
+    #       how these are to be used, so we ignore them for now.
+    # koza_transform.state["species_pair_min"] = {}
     # koza_transform.state["species_pair_max"] = {}
     # koza_transform.state["species_pair_stats"] = {}
 
-    # TODO: we need to ponder whether this ncbi_taxon_gene_map
-    #       is better implemented as an external Koza mapping table
-    koza_transform.extra_fields["ntg_map"] = make_ncbi_taxon_gene_map(
-        gene_info_file=NCBI_MAP_FILE_PATH,
-        relevant_columns=relevant_ncbi_cols,
-        taxon_catalog=relevant_ncbi_taxons
-    )
+    # RMB: 29-Sept-2025: we skip NCBI Gene lookup for now
+    # koza_transform.extra_fields["ntg_map"] = make_ncbi_taxon_gene_map(
+    #     gene_info_file=NCBI_MAP_FILE_PATH,
+    #     relevant_columns=relevant_ncbi_cols,
+    #     taxon_catalog=relevant_ncbi_taxons
+    # )
 
 @koza.on_data_end()
 def on_data_end_panther(koza_transform: koza.KozaTransform):
@@ -119,13 +120,13 @@ def transform_gene_to_gene_orthology(
             record["Gene"],
             panther_taxon_map,
             db_to_curie_map,
-            koza_transform.extra_fields["ntg_map"]
+            # koza_transform.extra_fields["ntg_map"]  # we skip NCBI Gene lookup for now
         )
         species_b, gene_b_id = parse_gene_info(
             record["Ortholog"],
             panther_taxon_map,
             db_to_curie_map,
-            koza_transform.extra_fields["ntg_map"]
+            # koza_transform.extra_fields["ntg_map"]  # we skip NCBI Gene lookup for now
         )
 
         # Only consume species we are interested in (i.e.,
