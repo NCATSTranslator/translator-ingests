@@ -1,10 +1,9 @@
 """
 Utility functions for Panther Orthology data processing
 """
-import gzip
-from collections import Counter
-
 # RMB: 29-Sept-2025: NCBI gene lookup is not used for now
+# import gzip
+# from collections import Counter
 # NCBI_MAP_FILE_PATH = "./data/panther/gene_info.gz"
 
 # These names should match pantherdb shorthand names for each species
@@ -185,7 +184,8 @@ def parse_gene_info(
     # a normalization process, via UniProtKB protein ids
     
     # Our preferred order is Organism specific (HGNC, PomBase, ZFIN)
-    taxon_id = taxon_map[species]
+    # RMB: 29-Sept-2025: taxon_id only used for NCBI gene lookup, which is itself unused for now
+    # taxon_id = taxon_map[species]
     gene_split = cols[1].split("=")
 
     # TODO: not sure what's the point of these counters here... not reported anywhere?

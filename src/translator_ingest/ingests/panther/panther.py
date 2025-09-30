@@ -2,10 +2,12 @@
 Ingest of Reference Genome Orthologs from Panther
 """
 from typing import Any
-import requests
 from loguru import logger
 
-from bs4 import BeautifulSoup
+# Imports that called by code - commented out - for screen-scraping
+# inside and early implementation of get_latest_version() for Panther
+# import requests
+# from bs4 import BeautifulSoup
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
