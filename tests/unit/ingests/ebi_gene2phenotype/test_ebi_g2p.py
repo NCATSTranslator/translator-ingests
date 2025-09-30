@@ -10,10 +10,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToDiseaseAssociation,
     RetrievalSource,
 )
-## trying to import transform function when there's dashes in module names
 import datetime
-import importlib
-ebi_g2p = importlib.import_module("translator_ingest.ingests.ebi-gene2phenotype.ebi-gene2phenotype")
+from translator_ingest.ingests.ebi_gene2phenotype.ebi_gene2phenotype import on_begin, transform
 
 
 
@@ -66,7 +64,7 @@ def single_record_test():
     ]
     ## running on_begin is problematic because it actually runs requests to retrieve outside data
     runner = KozaRunner(data=records, writer=writer,
-                        hooks=KozaTransformHooks(on_data_begin=[ebi_g2p.on_begin], transform_record=[ebi_g2p.transform]))
+                        hooks=KozaTransformHooks(on_data_begin=[on_begin], transform_record=[transform]))
     runner.run()
     return writer.items
 
