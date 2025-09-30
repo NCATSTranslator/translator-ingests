@@ -3,7 +3,7 @@ name: 'panther_genome_orthologs'
 reader:
   files:
     - '../../../../data/panther/AllOrthologs.tar.gz'
-    - '../../../../data/panther/gene_info.gz'  # TODO: does this NCBI Gene data belong here or in a mapping?
+#    - '../../../../data/panther/gene_info.gz'   # NCBI gene info not used for now
   format: csv
   delimiter: '\t'
   header_mode: "none"
