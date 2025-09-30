@@ -60,7 +60,11 @@
 
 | Node Category | Source Identifier Types | Additional Notes |
 | --- | --- | --- |
-| biolink:Gene | HGNC, MGI, RGD, NCBIGene, ENSEMBL |  |
+| biolink:Gene | HGNC, MGI, RGD, ENSEMBL |  |
+
+### Future Modeling Considerations
+
+**other:** The Monarch Initiative ingest of Panther data (https://github.com/monarch-initiative/pantherdb-orthologs-ingest) sometimes attempts to map eccentric identifiers to the NCBI gene identifier space. The initial iteration of  the Panther ingest in Translator does not attempt to do this at this time, but rather simply uses the given UniProt identifier.
 
 ## Provenance Information
 
