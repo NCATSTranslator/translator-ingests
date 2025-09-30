@@ -5,6 +5,8 @@
 ---
 - url: http://data.pantherdb.org/ftp/ortholog/current_release/AllOrthologs.tar.gz
   local_name: AllOrthologs.tar.gz
-
-- url: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
-  local_name: gene_info.gz
+#
+# RMB: 29-Sept-2025: NCBI gene lookup is not used for now
+#
+#- url: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
+#  local_name: gene_info.gz
