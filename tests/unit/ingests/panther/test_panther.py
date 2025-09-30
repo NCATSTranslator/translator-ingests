@@ -25,7 +25,7 @@ def test_get_latest_version():
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
     extra_fields = dict()
-    extra_fields["ntg_map"] = dict()
+    # extra_fields["ntg_map"] = dict()
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = dict()
     return MockKozaTransform(extra_fields=extra_fields, writer=writer, mappings=mappings)
