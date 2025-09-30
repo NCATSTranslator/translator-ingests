@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd go_cam goa
+SOURCES ?= ctd diseases ebi-gene2phenotype go_cam goa hpoa
 
 ### Help ###
 
@@ -77,40 +77,31 @@ test:
 
 ### Running ###
 
-.PHONY: download
-download:
+.PHONY: run
+run:
 	@for source in $(SOURCES); do \
-		echo "Downloading $$source..."; \
-		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
+		echo "Running pipeline for $$source..."; \
+		$(RUN) python src/translator_ingest/pipeline.py $$source; \
 	done
 
 .PHONY: transform
-transform: download
+transform:
 	@for source in $(SOURCES); do \
-		echo "Transforming $$source..."; \
-		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
-	done
-
-.PHONY: normalize
-normalize: transform
-	@for source in $(SOURCES); do \
-		echo "Normalizing $$source..."; \
-		$(RUN) python src/translator_ingest/util/normalize.py $(ROOTDIR)/data/$$source; \
+		echo "Transform only for $$source..."; \
+		$(RUN) python src/translator_ingest/pipeline.py $$source --transform-only; \
 	done
 
 .PHONY: validate
-validate: normalize
-	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+validate: run
+	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data;
 
 .PHONY: validate-single
-validate-single: normalize
+validate-single: run
 	@for source in $(SOURCES); do \
 		echo "Validating $$source..."; \
 		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
 	done
 
-.PHONY: run
-run: download transform normalize
 
 ### Linting, Formatting, and Cleaning ###
 
