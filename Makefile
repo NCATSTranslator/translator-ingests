@@ -3,8 +3,6 @@ RUN = uv run
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd ebi_gene2phenotype go_cam goa sider hpoa diseases
 
-
-
 ### Help ###
 
 define HELP
@@ -80,33 +78,26 @@ test:
 
 ### Running ###
 
-.PHONY: download
-download:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix download-,$(SOURCES))
+.PHONY: run
+run:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix run-,$(SOURCES))
 
-.PHONY: download-%
-download-%:
-	@echo "Downloading $*..."
-	@$(RUN) downloader --output-dir $(ROOTDIR)/data/$* src/translator_ingest/ingests/$*/download.yaml
+.PHONY: run-%
+run-%:
+	@echo "Running pipeline for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $*
 
 .PHONY: transform
-transform: download
+transform:
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
 
 .PHONY: transform-%
 transform-%:
-	@echo "Transforming $*..."
-	@$(RUN) koza transform src/translator_ingest/ingests/$*/$*.yaml --output-dir $(ROOTDIR)/data/$* --output-format jsonl
-
-.PHONY: normalize
-normalize: transform
-	@for source in $(SOURCES); do \
-		echo "Normalizing $$source..."; \
-		$(RUN) python src/translator_ingest/util/normalize.py $(ROOTDIR)/data/$$source; \
-	done
+	@echo "Transform only for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $* --transform-only
 
 .PHONY: validate
-validate: normalize
+validate: run
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-,$(SOURCES))
 
 .PHONY: validate-%
@@ -124,14 +115,12 @@ validate-only-%:
 	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
 .PHONY: validate-single
-validate-single: normalize
+validate-single: run
 	@for source in $(SOURCES); do \
 		echo "Validating $$source..."; \
 		$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
 	done
 
-.PHONY: run
-run: normalize
 
 ### Linting, Formatting, and Cleaning ###
 
