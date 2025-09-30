@@ -56,6 +56,7 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
 #### Prepare
 - Reps for each KP that ingested a source in Phase 2 should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
 - In particular for sources ingested by multiple KPs, we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) for CTD - to help identify and resolve any differences in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below.
+- The 'owner' of a given source will create a survey spreadsheet, fill it out for their KP, then reach out to other relevant KPs to review. These KPs may decide that the owner's ingest covers everything they did, in which case nothing else is needed. Or they may determine that the owner's ingest is different in important ways (scope of content, filtering, modeling) - and populate rows describing their ingest that will help surface and resolve these differences. This will likely require a meeting to discuss in real time. 
     
 #### Compare
 - What KPs ingested the source in Phase 2?
