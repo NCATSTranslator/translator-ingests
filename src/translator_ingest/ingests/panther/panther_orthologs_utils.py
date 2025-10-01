@@ -340,7 +340,12 @@ def parse_gene_info(
 #         if not self.test_mode:
 #             # get the complete data set
 #             #TODO make these class level variables.
-#             file_count: int = gd.pull_via_ftp('ftp.pantherdb.org', f'/sequence_classifications/{self.data_version}/PANTHER_Sequence_Classification_files/', [self.data_file], self.data_path)
+#             file_count: int = gd.pull_via_ftp(
+#                'ftp.pantherdb.org',
+#                f'/sequence_classifications/{self.data_version}/PANTHER_Sequence_Classification_files/',
+#                [self.data_file],
+#                self.data_path
+#             )
 #         else:
 #             file_count: int = 1
 #
@@ -351,7 +356,7 @@ def parse_gene_info(
 #     def split_with(input_str, splitter, keys=[], ignore_length_mismatch=False):
 #         """
 #         Splits a string based on splitter. If keys is provided it will return a dictionary where the keys of the dictionary map to
-#         the splitted values.
+#         the split values.
 #         """
 #         split = input_str.split(splitter)
 #
