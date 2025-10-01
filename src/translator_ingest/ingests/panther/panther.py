@@ -1,13 +1,17 @@
 """
 Ingest of Reference Genome Orthologs from Panther
-"""
-from typing import Any
-from loguru import logger
+This code is inspired and adapted from various sources:
 
-# Imports that called by code - commented out - for screen-scraping
-# inside and early implementation of get_latest_version() for Panther
-# import requests
-# from bs4 import BeautifulSoup
+1. Monarch Database Ingest: https://github.com/monarch-initiative/pantherdb-orthologs-ingest
+2. Biothings MyGenes Ingest: https://github.com/biothings/mygene.info/tree/7181b3d46aa76d3e234cdbe212192b2cabd325ed/src/plugins/pantherdb
+3. Automat-Panther TRAPI service: https://robokop.renci.org/api-docs/docs/automat/panther
+"""
+from typing import Any, Optional
+from loguru import logger
+import re
+import requests
+
+from bs4 import BeautifulSoup
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
@@ -34,35 +38,48 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     db_to_curie_map
 )
 
+# Hacky cache for the latest version number
+panther_data_version: Optional[str] = None
 
 def get_latest_version() -> str:
-    #
-    # TODO: Panther has a "are you human" web sentry blocking simple screen scraping, so
-    #       this method is currently only an incompletely implemented inert stub.
-    #
-    # Panther doesn't provide a great programmatic way to determine the latest version,
-    # but it does have a Data Status page with a version on it, formatted somewhat as follows:
-    #      <td align="right" class="formLabel">
-    #          Current Release: <a href="/news/news20240620.jsp"><b>PANTHER 19.0</b></a>&nbsp;&nbsp;|
-    #          ... other stuff...
-    #      </td>
-    # Thus, we attempt to fetch the HTML and parse it to determine the current version.
-    #
-    #
-    # html_page: requests.Response = requests.get('https://www.pantherdb.org/data/')
-    # resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
-    # td_elements: BeautifulSoup.Tag = resp.find_all('td')
-    # version_element = None
-    # for element in td_elements:
-    #     if "Current Release" in element.text:
-    #         version_element = element
-    #         break
-    # if version_element is not None:
-    #     # Version tagging is something like "Current Release: <a href="/news/news20240620.jsp"><b>PANTHER 19.0</b>"
-    #     return version_element.text.split('PANTHER ')[1].split("</b>")[0]
-    # else:
-    #     raise RuntimeError('Could not determine latest version for Panther. Version block not found in HTML.')
-    return "19.0"  # Hard-coded release as of September 25, 2025
+    """
+    Code cannibalized from https://github.com/RobokopU24/ORION/blob/master/parsers/panther/src/loadPanther.py
+    :return: String representing the Panther version number
+    """
+    global panther_data_version
+
+    if panther_data_version is not None:
+        return panther_data_version
+
+    # init the return
+    ret_val: str = 'Not found'
+
+    # load the web page for Panther sequence data which has file names with an embedded version number
+    html_page: requests.Response = requests.get(
+        'http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/')
+
+    # get the html into a parsable object
+    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+
+    # set the search text
+    search_text = 'PTHR*'
+
+    # find the version tag
+    a_tag: BeautifulSoup.Tag = resp.find('a', string=re.compile(search_text))
+
+    # Check if the tag was found?
+    if a_tag is not None:
+        # strip off the search text
+        val = a_tag.text.split(search_text[:-1])[1].strip()
+
+        # get the actual version number
+        ret_val = val.split('_')[0]
+
+        # save the version for data gathering later
+        panther_data_version = ret_val
+
+    # return to the caller
+    return ret_val
 
 
 @koza.on_data_begin()

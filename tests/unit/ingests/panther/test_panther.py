@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from typing import Optional
@@ -16,11 +18,11 @@ from translator_ingest.ingests.panther.panther import (
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
-# This test is hard to mock, so we put it in
-# during development but will normally skip it
-# pytest.mark.skip()
+# Whatever the version number is, it should not be "Not found"
 def test_get_latest_version():
-    assert get_latest_version() == "19.0"
+    version: str = get_latest_version()
+    assert version != "Not found"
+    assert re.match(r"\d{1,2}\.\d", version)  # something like "19.0"
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
@@ -180,7 +182,7 @@ ASSOCIATION_TEST_SLOTS = [
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.not_provided
              },
-        )
+        ),
     ]
 )
 def test_ingest_transform(
@@ -197,3 +199,122 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
+
+# ORION edge cases test data to add to unit tests(?)
+# {
+#   "source_type": "primary",
+#   "edges": [
+#     {
+#       "subject_category": "biolink:GeneFamily",
+#       "object_category": "biolink:GeneFamily",
+#       "predicate": "biolink:has_part",
+#       "subject_id": "PANTHER.FAMILY:PTHR23158",
+#       "object_id": "PANTHER.FAMILY:PTHR23158:SF57"
+#     },
+#     {
+#       "subject_category": "biolink:GeneFamily",
+#       "object_category": "biolink:Gene",
+#       "predicate": "biolink:has_part",
+#       "subject_id": "PANTHER.FAMILY:PTHR23158",
+#       "object_id": "NCBIGene:375056"
+#     },
+#     {
+#       "subject_category": "biolink:GeneFamily",
+#       "object_category": "biolink:CellularComponent",
+#       "predicate": "biolink:located_in",
+#       "subject_id": "PANTHER.FAMILY:PTHR23158",
+#       "object_id": "GO:0070971"
+#     },
+#     {
+#       "subject_category": "biolink:GeneFamily",
+#       "object_category": "biolink:BiologicalProcess",
+#       "predicate": "biolink:actively_involved_in",
+#       "subject_id": "PANTHER.FAMILY:PTHR23158",
+#       "object_id": "GO:0006888"
+#     },
+#     {
+#       "subject_category": "biolink:GeneFamily",
+#       "object_category": "biolink:MolecularActivity",
+#       "predicate": "biolink:catalyzes",
+#       "subject_id": "PANTHER.FAMILY:PTHR10489",
+#       "object_id": "GO:0038023"
+#     },
+#     {
+#       "subject_category": "biolink:GeneFamily",
+#       "object_category": "biolink:Pathway",
+#       "predicate": "biolink:actively_involved_in",
+#       "subject_id": "PANTHER.FAMILY:PTHR10489",
+#       "object_id": "GO:0007165"
+#     },
+#     {
+#       "subject_category": "biolink:Pathway",
+#       "object_category": "biolink:GeneFamily",
+#       "predicate": "biolink:has_participant",
+#       "subject_id": "PANTHER.PATHWAY:P00044",
+#       "object_id": "PANTHER.FAMILY:PTHR23158"
+#     },
+#     {
+#       "subject_category": "biolink:Pathway",
+#       "object_category": "biolink:BiologicalProcess",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:0030845",
+#       "object_id": "GO:0065007"
+#     },
+#     {
+#       "subject_category": "biolink:Pathway",
+#       "object_category": "biolink:Pathway",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:0010476",
+#       "object_id": "GO:0007165"
+#     },
+#     {
+#       "subject_category": "biolink:MolecularActivity",
+#       "object_category": "biolink:MolecularActivity",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:0031829",
+#       "object_id": "GO:0005515"
+#     },
+#     {
+#       "subject_category": "biolink:BiologicalProcess",
+#       "object_category": "biolink:BiologicalProcess",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:0090317",
+#       "object_id": "GO:0032879"
+#     },
+#     {
+#       "subject_category": "biolink:CellularComponent",
+#       "object_category": "biolink:CellularComponent",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:1990005",
+#       "object_id": "GO:0043226"
+#     },
+#     {
+#       "subject_category": "biolink:CellularComponent",
+#       "object_category": "biolink:AnatomicalEntity",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:0005634",
+#       "object_id": "UBERON:0001062"
+#     },
+#     {
+#       "subject_category": "biolink:CellularComponent",
+#       "object_category": "biolink:GrossAnatomicalStructure",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "GO:0005604",
+#       "object_id": "UBERON:0000475"
+#     },
+#     {
+#       "subject_category": "biolink:AnatomicalEntity",
+#       "object_category": "biolink:CellularComponent",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "UBERON:0008877",
+#       "object_id": "GO:0005604"
+#     },
+#     {
+#       "subject_category": "biolink:GrossAnatomicalStructure",
+#       "object_category": "biolink:CellularComponent",
+#       "predicate": "biolink:subclass_of",
+#       "subject_id": "UBERON:4000020",
+#       "object_id": "GO:0030312"
+#     }
+#   ]
+# }
