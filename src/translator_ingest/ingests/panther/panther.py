@@ -82,8 +82,8 @@ def get_latest_version() -> str:
     return ret_val
 
 
-@koza.on_data_begin()
-def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
+@koza.on_data_begin(tag="gene_orthology")
+def on_data_begin_gene_orthology(koza_transform: koza.KozaTransform) -> None:
     """
     Called before processing begins.
     Can be used for setup or validation of input files.
@@ -104,23 +104,17 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     #     taxon_catalog=relevant_ncbi_taxons
     # )
 
-@koza.on_data_end()
-def on_data_end_panther(koza_transform: koza.KozaTransform):
+@koza.on_data_end(tag="gene_orthology")
+def on_data_end_gene_orthology(koza_transform: koza.KozaTransform) -> None:
     """
     Called after all data has been processed.
     Used for logging summary statistics.
     """
     koza_transform.log("Panther Gene Orthology processing complete")
 
-# Ingests must implement a function decorated with @koza.transform() OR @koza.transform_record() (not both).
-# These functions should contain the core data transformation logic generating and returning NamedThings (nodes) and
-# Associations (edges) from source data.
-#
-# The transform_record function takes the KozaTransform and a single record, a dictionary typically corresponding to a
-# row in a source data file, and returns a tuple of NamedThings and Associations. Any number of NamedThings and/or
-# Associations can be returned.
-@koza.transform_record()
-def transform_gene_to_gene_orthology(
+
+@koza.transform_record(tag="gene_orthology")
+def transform_gene_orthology(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
@@ -184,3 +178,38 @@ def transform_gene_to_gene_orthology(
             f"with {type(e)} exception: "+str(e)
         )
         return None
+
+
+@koza.on_data_begin(tag="gene_annotation")
+def on_data_begin_gene_annotation(koza_transform: koza.KozaTransform) -> None:
+    """
+    Called before processing begins.
+    Can be used for setup or validation of input files.
+    """
+    koza_transform.log("Starting Panther Gene Orthology processing")
+    koza_transform.log(f"Version: {get_latest_version()}")
+
+
+@koza.on_data_end(tag="gene_annotation")
+def on_data_end_gene_annotation(koza_transform: koza.KozaTransform) -> None:
+    """
+    Called after all data has been processed.
+    Used for logging summary statistics.
+    """
+    koza_transform.log("Panther Gene Orthology processing complete")
+
+
+@koza.transform_record(tag="gene_annotation")
+def transform_gene_annotation(
+        koza_transform: koza.KozaTransform,
+        record: dict[str, Any]
+) -> KnowledgeGraph | None:
+    """
+    Transform a Panther protein orthology relationship entry into a
+    Biolink Model-compliant gene to gene orthology knowledge graph statement.
+
+    :param koza_transform: KozaTransform object (unused in this implementation)
+    :param record: Dict contents of a single input data record
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
+    """
+    return None

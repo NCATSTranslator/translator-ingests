@@ -1,30 +1,52 @@
 name: 'panther_genome_orthologs'
 
-reader:
-  files:
-    - '../../../../data/panther/RefGenomeOrthologs.tar.gz'
-#    - '../../../../data/panther/gene_info.gz'   # NCBI gene info not used for now
-  format: csv
-  delimiter: '\t'
-  header_mode: "none"
-  columns:
-    - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
-    - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2
-    - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused; see also http://data.pantherdb.org/ftp/ortholog/17.0/README
-    - 'Common ancestor for the orthologs'    # unused
-    - 'Panther Ortholog ID'                  # panther protein family ID
-  filters:
-    - inclusion: 'include'
-      column: 'Gene'
-      filter_code: 'in'
-      value:
-        - 'HUMAN'
-        - 'MOUSE'
-        - 'RAT'
-    - inclusion: 'include'
-      column: 'Ortholog'
-      filter_code: 'in'
-      value:
-        - 'HUMAN'
-        - 'MOUSE'
-        - 'RAT'
+readers:
+  gene_orthology:
+    files:
+      - '../../../../data/panther/RefGenomeOrthologs.tar.gz'
+  #    - '../../../../data/panther/gene_info.gz' # NCBI gene info not used for now
+    format: csv
+    delimiter: '\t'
+    header_mode: "none"
+    columns:
+      - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
+      - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2
+      - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused; see also http://data.pantherdb.org/ftp/ortholog/17.0/README
+      - 'Common ancestor for the orthologs'    # unused
+      - 'Panther Ortholog ID'                  # panther protein family ID
+    filters:
+      - inclusion: 'include'
+        column: 'Gene'
+        filter_code: 'in'
+        value:
+          - 'HUMAN'
+          - 'MOUSE'
+          - 'RAT'
+      - inclusion: 'include'
+        column: 'Ortholog'
+        filter_code: 'in'
+        value:
+          - 'HUMAN'
+          - 'MOUSE'
+          - 'RAT'
+  gene_annotation:
+    files:
+      - '../../../../data/panther/human_gene_annotation.tsv'
+      - '../../../../data/panther/rat_gene_annotation.tsv'
+      - '../../../../data/panther/mouse_gene_annotation.tsv'
+    format: csv
+    delimiter: '\t'
+    header_mode: "none"
+    columns:
+      - 'gene_identifier'
+      - 'protein_id'
+      - 'gene_name'
+      - 'panther_sf_id'
+      - 'panther_family_name'
+      - 'panther_subfamily_name'
+      - 'panther_molecular_func'
+      - 'panther_biological_process'
+      - 'cellular_components'
+      - 'protein_class'
+      - 'pathway'
+

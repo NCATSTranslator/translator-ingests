@@ -3,9 +3,19 @@
 ### The configuration is used by `kghub-downloader`.
 ### For more information, see https://github.com/monarch-initiative/kghub-downloader
 ---
-# 30 September 2025: PANTHER RefGenomeOrthologs is adequate to be used instead of All_Orthologs?
+# 30 September 2025: MyGenes target file RefGenomeOrthologs seems adequate
+#                    to be used, instead of All_Orthologs used by Monarch?
 - url: http://data.pantherdb.org/ftp/ortholog/current_release/RefGenomeOrthologs.tar.gz
   local_name: RefGenomeOrthologs.tar.gz
+
+# Automat-Panther / ORION input data file targets
+- url: http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_human
+  local_name: human_gene_annotation.tsv
+- url: http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_rat
+  local_name: rat_gene_annotation.tsv
+- url: http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_mouse
+  local_name: mouse_gene_annotation.tsv
+
 #
 # RMB: 29-Sept-2025: NCBI gene lookup is not used for now
 #
