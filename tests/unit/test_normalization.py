@@ -1,4 +1,9 @@
 # Unit tests for normalizations of nodes and edges, based on Pydantic models
+"""
+TODO - Evan commented this out after implementing normalization through ORION, we need to decide if we want to continue
+    to use ORION or to implement specific normalization functionality in translator-ingests. If in ORION these kinds of
+    tests should live there, if in translator-ingests we should revive these.
+
 from typing import Optional, Dict
 
 import pytest
@@ -251,3 +256,4 @@ def test_normalize_edge_invalid_subject(nn_query):
         nn_query=nn_query
     )
     assert result is None
+"""

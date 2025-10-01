@@ -3,7 +3,7 @@ name: 'human_phenotype_ontology_annotations'
 readers:
   disease_to_phenotype:
     files:
-      - '../../../../data/hpoa/phenotype.hpoa'
+      - 'phenotype.hpoa'
     header_mode: 4
     format: 'csv'
     delimiter: '\t'

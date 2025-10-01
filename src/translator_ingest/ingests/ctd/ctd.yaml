@@ -8,7 +8,7 @@ readers:
     header_mode: 27
     header_prefix: '#'
     files:
-      - ../../../../data/ctd/CTD_chemicals_diseases.tsv.gz
+      - CTD_chemicals_diseases.tsv.gz
     columns:
       - ChemicalName
       - ChemicalID
