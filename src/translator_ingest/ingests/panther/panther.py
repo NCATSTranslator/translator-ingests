@@ -108,8 +108,8 @@ def transform_gene_to_gene_orthology(
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Transform an 'AllOrthologs.tar.gz' data entry into a (Pydantic encapsulated)
-    Biolink gene to gene orthology knowledge graph statement.
+    Transform a Panther protein orthology relationship entry into a
+    Biolink Model-compliant gene to gene orthology knowledge graph statement.
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
