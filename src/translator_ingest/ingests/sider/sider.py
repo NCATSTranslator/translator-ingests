@@ -55,6 +55,7 @@ def get_latest_version() -> str:
 # The ingest framework will call this function once per transform.
 @koza.transform(tag="sider_se_reader")
 def transform_ingest_all_streaming(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    all_triples = set()
     for record in data:
         # apply transformations
         for t in transformations:
@@ -65,6 +66,10 @@ def transform_ingest_all_streaming(koza: koza.KozaTransform, data: Iterable[dict
         # create nodes and edges
         chemical = ChemicalEntity(id=curie_prefix.CID + record[column.CID_stereo])
         disease = DiseaseOrPhenotypicFeature(id=curie_prefix.UMLS+record[column.UMLS_id], name=record[column.side_effect_name])
+        # prevent duplicate edges
+        if (chemical.id, predicate, disease.id) in all_triples:
+            continue
+        all_triples.add((chemical.id, predicate, disease.id))
         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
             id=str(uuid.uuid4()),
             subject=chemical.id,
