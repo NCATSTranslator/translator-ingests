@@ -9,6 +9,7 @@
   local_name: RefGenomeOrthologs.tar.gz
 
 # Automat-Panther / ORION input data file targets
+# TODO: handle versioning of downloaded files
 - url: http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_human
   local_name: human_gene_annotation.tsv
 - url: http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_rat
