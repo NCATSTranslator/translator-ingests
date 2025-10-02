@@ -13,7 +13,7 @@ from koza.io.writer.writer import KozaWriter
 from translator_ingest.ingests.panther.panther import (
     get_latest_version,
     # on_begin_ingest_by_record,
-    transform_gene_to_gene_orthology
+    transform_gene_orthology
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
@@ -193,7 +193,7 @@ def test_ingest_transform(
 ):
     # on_begin_ingest_by_record(mock_koza_transform)
     validate_transform_result(
-        result=transform_gene_to_gene_orthology(mock_koza_transform, test_record),
+        result=transform_gene_orthology(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
         node_test_slots=NODE_TEST_SLOTS,

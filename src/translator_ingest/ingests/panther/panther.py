@@ -38,47 +38,19 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     db_to_curie_map
 )
 
-# Hacky cache for the latest version number
-panther_data_version: Optional[str] = None
-
 def get_latest_version() -> str:
     """
     Code cannibalized from https://github.com/RobokopU24/ORION/blob/master/parsers/panther/src/loadPanther.py
     :return: String representing the Panther version number
     """
-    global panther_data_version
-
-    if panther_data_version is not None:
-        return panther_data_version
-
-    # init the return
     ret_val: str = 'Not found'
 
-    # load the web page for Panther sequence data which has file names with an embedded version number
-    html_page: requests.Response = requests.get(
-        'http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/')
+    # load the README file which has a version number in it
+    readme_file: requests.Response = requests.get('https://data.pantherdb.org/ftp/ortholog/current_release/README')
+    readme_text = readme_file.content.decode('utf-8')
+    version_match = re.match(pattern=r"!PANTHER\sversion:\s+v\.(\d{1,2}\.\d)", string=readme_text)
+    ret_val = version_match.group(1) if version_match else ret_val
 
-    # get the html into a parsable object
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
-
-    # set the search text
-    search_text = 'PTHR*'
-
-    # find the version tag
-    a_tag: BeautifulSoup.Tag = resp.find('a', string=re.compile(search_text))
-
-    # Check if the tag was found?
-    if a_tag is not None:
-        # strip off the search text
-        val = a_tag.text.split(search_text[:-1])[1].strip()
-
-        # get the actual version number
-        ret_val = val.split('_')[0]
-
-        # save the version for data gathering later
-        panther_data_version = ret_val
-
-    # return to the caller
     return ret_val
 
 
