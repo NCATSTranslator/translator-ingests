@@ -7,7 +7,7 @@
 **Description:** The PANTHER (Protein ANalysis THrough Evolutionary Relationships) Classification System  was designed to classify proteins (and their genes) in order to facilitate high-throughput analysis. The core of PANTHER is a comprehensive, annotated library of gene family phylogenetic trees. All nodes in the tree have persistent identifiers that are maintained between versions of PANTHER, providing a stable substrate for annotations of protein properties like subfamily and function.
 
 **Citations:**
-- https://onlinelibrary.wiley.com/doi/10.1002/pro.4218
+- https://doi.org/10.1002/pro.4218
 
 **Data Access Locations:**
 - http://data.pantherdb.org/ftp/
