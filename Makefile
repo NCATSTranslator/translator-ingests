@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd go_cam goa
+SOURCES ?= ctd ebi_gene2phenotype go_cam goa
 
 ### Help ###
 
