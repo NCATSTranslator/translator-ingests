@@ -181,7 +181,7 @@ ORTHOLOGY_ASSOCIATION_TEST_SLOTS = [
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
-             },
+             }
         ),
     ]
 )
@@ -223,135 +223,711 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (   # Query 0 - Missing a record field column (Gene key as an example) - returns None
+        (   # Query 0 - Missing a record field column (gene_identifier key as an example) - returns None
             {
-                # "Gene": "HUMAN|HGNC=11477|UniProtKB=Q6GZX4",
-                "Ortholog": "RAT|RGD=1564893|UniProtKB=Q6GZX2",
-                "Type of ortholog": "LDO",
-                "Common ancestor for the orthologs": "Euarchontoglires",
-                "Panther Ortholog ID": "PTHR12434"
+                # "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
             },
             None,
             None
         ),
-# ORION edge cases test data to add to unit tests(?)
-# {
-#   "source_type": "primary",
-#   "edges": [
-#     {
-#       "subject_category": "biolink:GeneFamily",
-#       "object_category": "biolink:GeneFamily",
-#       "predicate": "biolink:has_part",
-#       "subject_id": "PANTHER.FAMILY:PTHR23158",
-#       "object_id": "PANTHER.FAMILY:PTHR23158:SF57"
-#     },
-#     {
-#       "subject_category": "biolink:GeneFamily",
-#       "object_category": "biolink:Gene",
-#       "predicate": "biolink:has_part",
-#       "subject_id": "PANTHER.FAMILY:PTHR23158",
-#       "object_id": "NCBIGene:375056"
-#     },
-#     {
-#       "subject_category": "biolink:GeneFamily",
-#       "object_category": "biolink:CellularComponent",
-#       "predicate": "biolink:located_in",
-#       "subject_id": "PANTHER.FAMILY:PTHR23158",
-#       "object_id": "GO:0070971"
-#     },
-#     {
-#       "subject_category": "biolink:GeneFamily",
-#       "object_category": "biolink:BiologicalProcess",
-#       "predicate": "biolink:actively_involved_in",
-#       "subject_id": "PANTHER.FAMILY:PTHR23158",
-#       "object_id": "GO:0006888"
-#     },
-#     {
-#       "subject_category": "biolink:GeneFamily",
-#       "object_category": "biolink:MolecularActivity",
-#       "predicate": "biolink:catalyzes",
-#       "subject_id": "PANTHER.FAMILY:PTHR10489",
-#       "object_id": "GO:0038023"
-#     },
-#     {
-#       "subject_category": "biolink:GeneFamily",
-#       "object_category": "biolink:Pathway",
-#       "predicate": "biolink:actively_involved_in",
-#       "subject_id": "PANTHER.FAMILY:PTHR10489",
-#       "object_id": "GO:0007165"
-#     },
-#     {
-#       "subject_category": "biolink:Pathway",
-#       "object_category": "biolink:GeneFamily",
-#       "predicate": "biolink:has_participant",
-#       "subject_id": "PANTHER.PATHWAY:P00044",
-#       "object_id": "PANTHER.FAMILY:PTHR23158"
-#     },
-#     {
-#       "subject_category": "biolink:Pathway",
-#       "object_category": "biolink:BiologicalProcess",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:0030845",
-#       "object_id": "GO:0065007"
-#     },
-#     {
-#       "subject_category": "biolink:Pathway",
-#       "object_category": "biolink:Pathway",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:0010476",
-#       "object_id": "GO:0007165"
-#     },
-#     {
-#       "subject_category": "biolink:MolecularActivity",
-#       "object_category": "biolink:MolecularActivity",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:0031829",
-#       "object_id": "GO:0005515"
-#     },
-#     {
-#       "subject_category": "biolink:BiologicalProcess",
-#       "object_category": "biolink:BiologicalProcess",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:0090317",
-#       "object_id": "GO:0032879"
-#     },
-#     {
-#       "subject_category": "biolink:CellularComponent",
-#       "object_category": "biolink:CellularComponent",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:1990005",
-#       "object_id": "GO:0043226"
-#     },
-#     {
-#       "subject_category": "biolink:CellularComponent",
-#       "object_category": "biolink:AnatomicalEntity",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:0005634",
-#       "object_id": "UBERON:0001062"
-#     },
-#     {
-#       "subject_category": "biolink:CellularComponent",
-#       "object_category": "biolink:GrossAnatomicalStructure",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "GO:0005604",
-#       "object_id": "UBERON:0000475"
-#     },
-#     {
-#       "subject_category": "biolink:AnatomicalEntity",
-#       "object_category": "biolink:CellularComponent",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "UBERON:0008877",
-#       "object_id": "GO:0005604"
-#     },
-#     {
-#       "subject_category": "biolink:GrossAnatomicalStructure",
-#       "object_category": "biolink:CellularComponent",
-#       "predicate": "biolink:subclass_of",
-#       "subject_id": "UBERON:4000020",
-#       "object_id": "GO:0030312"
-#     }
-#   ]
-# }
+        (   # Query 1 - GeneFamily--has_part->GeneFamily
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.FAMILY:PTHR23158",
+                    "category": ["biolink:GeneFamily"]
+                },
+                {
+                    "id": "PANTHER.FAMILY:PTHR23158:SF57",
+                    "category": ["biolink:GeneFamily"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.FAMILY:PTHR23158",
+                "object": "PANTHER.FAMILY:PTHR23158:SF57",
+                "predicate": "biolink:has_part",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 2 - GeneFamily--has_part->Gene
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.FAMILY:PTHR23158",
+                    "category": ["biolink:GeneFamily"]
+                },
+                {
+                    "id": "NCBIGene:375056",
+                    "category": ["biolink:Gene"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.FAMILY:PTHR23158",
+                "object": "NCBIGene:375056",
+                "predicate": "biolink:has_part",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 3 - GeneFamily--located_in->CellularComponent
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.FAMILY:PTHR23158",
+                    "category": ["biolink:GeneFamily"]
+                },
+                {
+                    "id": "GO:0070971",
+                    "category": ["biolink:CellularComponent"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.FAMILY:PTHR23158",
+                "object": "GO:0070971",
+                "predicate": "biolink:located_in",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 4 - GeneFamily--actively_involved_in->BiologicalProcess
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.FAMILY:PTHR23158",
+                    "category": ["biolink:GeneFamily"]
+                },
+                {
+                    "id": "GO:0006888",
+                    "category": ["biolink:BiologicalProcess"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.FAMILY:PTHR23158",
+                "object": "GO:0006888",
+                "predicate": "biolink:actively_involved_in",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 5 - GeneFamily--catalyzes->MolecularActivity
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.FAMILY:PTHR10489",
+                    "category": ["biolink:GeneFamily"]
+                },
+                {
+                    "id": "GO:0038023",
+                    "category": ["biolink:MolecularActivity"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.FAMILY:PTHR10489",
+                "object": "GO:0038023",
+                "predicate": "biolink:catalyzes",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 6 - GeneFamily--actively_involved_in->Pathway
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.FAMILY:PTHR10489",
+                    "category": ["biolink:GeneFamily"]
+                },
+                {
+                    "id": "GO:0007165",
+                    "category": ["biolink:Pathway"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.FAMILY:PTHR10489",
+                "object": "GO:0007165",
+                "predicate": "biolink:actively_involved_in",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 7 - Pathway--has_participant->GeneFamily
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "PANTHER.PATHWAY:P00044",
+                    "category": ["biolink:Pathway"]
+                },
+                {
+                    "id": "PANTHER.FAMILY:PTHR23158",
+                    "category": ["biolink:GeneFamily"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "PANTHER.PATHWAY:P00044",
+                "object": "PANTHER.FAMILY:PTHR23158",
+                "predicate": "biolink:has_participant",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 8 - Pathway--subclass_of->BiologicalProcess
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:0030845",
+                    "category": ["biolink:Pathway"]
+                },
+                {
+                    "id": "GO:0065007",
+                    "category": ["biolink:BiologicalProcess"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:0030845",
+                "object": "GO:0065007",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 9 - Pathway--subclass_of->Pathway
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:0010476",
+                    "category": ["biolink:Pathway"]
+                },
+                {
+                    "id": "GO:0007165",
+                    "category": ["biolink:Pathway"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:0010476",
+                "object": "GO:0007165",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 10 - MolecularActivity--subclass_of->MolecularActivity
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:0031829",
+                    "category": ["biolink:MolecularActivity"]
+                },
+                {
+                    "id": "GO:0005515",
+                    "category": ["biolink:MolecularActivity"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:0031829",
+                "object": "GO:0005515",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 11 - BiologicalProcess--subclass_of->BiologicalProcess
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:0090317",
+                    "category": ["biolink:BiologicalProcess"]
+                },
+                {
+                    "id": "GO:0032879",
+                    "category": ["biolink:BiologicalProcess"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:0090317",
+                "object": "GO:0032879",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 12 - CellularComponent--subclass_of->CellularComponent
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:1990005",
+                    "category": ["biolink:CellularComponent"]
+                },
+                {
+                    "id": "GO:0043226",
+                    "category": ["biolink:CellularComponent"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:1990005",
+                "object": "GO:0043226",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 13 - CellularComponent--subclass_of->AnatomicalEntity
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:0005634",
+                    "category": ["biolink:CellularComponent"]
+                },
+                {
+                    "id": "UBERON:0001062",
+                    "category": ["biolink:AnatomicalEntity"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:0005634",
+                "object": "UBERON:0001062",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             }
+        ),
+        (   # Query 14 - CellularComponent--subclass_of->GrossAnatomicalStructure
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "GO:0005604",
+                    "category": ["biolink:CellularComponent"]
+                },
+                {
+                    "id": "UBERON:0000475",
+                    "category": ["biolink:GrossAnatomicalStructure"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "GO:0005604",
+                "object": "UBERON:0000475",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+            }
+        ),
+        (   # Query 15 - AnatomicalEntity--subclass_of->CellularComponent
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "UBERON:0008877",
+                    "category": ["biolink:AnatomicalEntity"]
+                },
+                {
+                    "id": "GO:0005604",
+                    "category": ["biolink:CellularComponent"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "UBERON:0008877",
+                "object": "GO:0005604",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+            }
+        ),
+        (   # Query 16 - GrossAnatomicalStructure--subclass_of->CellularComponent
+            {
+                "gene_identifier": "",
+                "protein_id": "",
+                "gene_name": "",
+                "panther_sf_id": "",
+                "panther_family_name": "",
+                "panther_subfamily_name": "",
+                "panther_molecular_func": "",
+                "panther_biological_process": "",
+                "cellular_components": "",
+                "protein_class": "",
+                "pathway": ""
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "UBERON:4000020",
+                    "category": ["biolink:GrossAnatomicalStructure"]
+                },
+                {
+                    "id": "GO:0030312",
+                    "category": ["biolink:CellularComponent"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "UBERON:4000020",
+                "object": "GO:0030312",
+                "predicate": "biolink:subclass_of",
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+            }
+        )
     ]
 )
 def test_transform_gene_classification(

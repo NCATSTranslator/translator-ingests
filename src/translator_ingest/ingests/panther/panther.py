@@ -176,11 +176,63 @@ def transform_gene_classification(
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Transform a Panther protein orthology relationship entry into a
-    Biolink Model-compliant gene to gene orthology knowledge graph statement.
+    Transform a Panther gene classification relationship entry into a
+    Biolink Model-compliant knowledge graph statement.
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
-    return None
+    try:
+        # # Parse the gene information for both species and format gene id to curie:gene_id
+        # # (Gene and Ortholog columns are formatted the same, but for different species/gene info)
+        # species_a, gene_a_id = parse_gene_info(
+        #     record["Gene"],
+        #     panther_taxon_map,
+        #     db_to_curie_map,
+        #     # koza_transform.extra_fields["ntg_map"]  # we skip NCBI Gene lookup for now
+        # )
+        # species_b, gene_b_id = parse_gene_info(
+        #     record["Ortholog"],
+        #     panther_taxon_map,
+        #     db_to_curie_map,
+        #     # koza_transform.extra_fields["ntg_map"]  # we skip NCBI Gene lookup for now
+        # )
+        #
+        # # Only consume species we are interested in (i.e.,
+        # # those that are in our NCBI Taxon catalog)
+        # if (not species_a) or (not species_b):
+        #     return None
+        #
+        # # Format our species names to NCBI Taxon IDs
+        # ncbitaxon_a = "NCBITaxon:{}".format(panther_taxon_map[species_a])
+        # ncbitaxon_b = "NCBITaxon:{}".format(panther_taxon_map[species_b])
+        #
+        # gene_a = Gene(id=gene_a_id, in_taxon=[ncbitaxon_a],**{})
+        # gene_b = Gene(id=gene_b_id, in_taxon=[ncbitaxon_b],**{})
+        #
+        # # Our ortholog identifier (panther protein family name), and predicate
+        # panther_ortholog_id = record["Panther Ortholog ID"]
+        # orthology_evidence = ["PANTHER.FAMILY:{}".format(panther_ortholog_id)]
+        #
+        # # Generate our association object
+        # association = GeneToGeneHomologyAssociation(
+        #     id=entity_id(),
+        #     subject=gene_a.id,
+        #     object=gene_b.id,
+        #     predicate="biolink:orthologous_to",
+        #     has_evidence=orthology_evidence,
+        #     sources=build_association_knowledge_sources(primary="infores:panther"),
+        #     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        #     agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+        # )
+        # return KnowledgeGraph(nodes=[gene_a, gene_b], edges=[association])
+        return None
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(
+            f"transform_record_gene_to_disease() - record: '{str(record)}' " +
+            f"with {type(e)} exception: "+str(e)
+        )
+        return None
