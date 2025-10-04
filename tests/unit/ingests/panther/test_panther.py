@@ -12,8 +12,8 @@ from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.panther.panther import (
     get_latest_version,
-    # on_begin_ingest_by_record,
-    transform_gene_orthology
+    transform_gene_orthology,
+    transform_gene_classification
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
@@ -34,7 +34,7 @@ def mock_koza_transform() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = [
+ORTHOLOG_NODE_TEST_SLOTS = [
     "id",
     "in_taxon",
     "category"
@@ -42,7 +42,7 @@ NODE_TEST_SLOTS = [
 
 # list of slots whose values are
 # to be checked in a result edge
-ASSOCIATION_TEST_SLOTS = [
+ORTHOLOGY_ASSOCIATION_TEST_SLOTS = [
     "category",
     "subject",
     "predicate",
@@ -134,7 +134,7 @@ ASSOCIATION_TEST_SLOTS = [
                     # }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
             }
         ),
         (   # Query 4 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
@@ -180,12 +180,12 @@ ASSOCIATION_TEST_SLOTS = [
                     # }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
              },
         ),
     ]
 )
-def test_ingest_transform(
+def test_transform_gene_orthology(
         mock_koza_transform: koza.KozaTransform,
         test_record: dict,
         result_nodes: Optional[list],
@@ -196,10 +196,44 @@ def test_ingest_transform(
         result=transform_gene_orthology(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
-        node_test_slots=NODE_TEST_SLOTS,
-        association_test_slots=ASSOCIATION_TEST_SLOTS
+        node_test_slots=ORTHOLOG_NODE_TEST_SLOTS,
+        association_test_slots=ORTHOLOGY_ASSOCIATION_TEST_SLOTS
     )
 
+
+# list of slots whose values are
+# to be checked in a result node
+ANNOTATION_NODE_TEST_SLOTS = [
+    "id",
+    "category"
+]
+
+# list of slots whose values are
+# to be checked in a result edge
+ANNOTATION_ASSOCIATION_TEST_SLOTS = [
+    "category",
+    "subject",
+    "predicate",
+    "object",
+    "sources",
+    "knowledge_level",
+    "agent_type"
+]
+
+@pytest.mark.parametrize(
+    "test_record,result_nodes,result_edge",
+    [
+        (   # Query 0 - Missing a record field column (Gene key as an example) - returns None
+            {
+                # "Gene": "HUMAN|HGNC=11477|UniProtKB=Q6GZX4",
+                "Ortholog": "RAT|RGD=1564893|UniProtKB=Q6GZX2",
+                "Type of ortholog": "LDO",
+                "Common ancestor for the orthologs": "Euarchontoglires",
+                "Panther Ortholog ID": "PTHR12434"
+            },
+            None,
+            None
+        ),
 # ORION edge cases test data to add to unit tests(?)
 # {
 #   "source_type": "primary",
@@ -318,3 +352,19 @@ def test_ingest_transform(
 #     }
 #   ]
 # }
+    ]
+)
+def test_transform_gene_classification(
+        mock_koza_transform: koza.KozaTransform,
+        test_record: dict,
+        result_nodes: Optional[list],
+        result_edge: Optional[dict]
+):
+    # on_begin_ingest_by_record(mock_koza_transform)
+    validate_transform_result(
+        result=transform_gene_classification(mock_koza_transform, test_record),
+        expected_nodes=result_nodes,
+        expected_edge=result_edge,
+        node_test_slots=ANNOTATION_NODE_TEST_SLOTS,
+        association_test_slots=ANNOTATION_ASSOCIATION_TEST_SLOTS
+    )

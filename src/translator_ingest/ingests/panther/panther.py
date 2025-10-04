@@ -6,12 +6,11 @@ This code is inspired and adapted from various sources:
 2. Biothings MyGenes Ingest: https://github.com/biothings/mygene.info/tree/7181b3d46aa76d3e234cdbe212192b2cabd325ed/src/plugins/pantherdb
 3. Automat-Panther TRAPI service: https://robokop.renci.org/api-docs/docs/automat/panther
 """
-from typing import Any, Optional
+from typing import Any
 from loguru import logger
 import re
 import requests
 
-from bs4 import BeautifulSoup
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
@@ -139,7 +138,7 @@ def transform_gene_orthology(
             has_evidence=orthology_evidence,
             sources=build_association_knowledge_sources(primary="infores:panther"),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.not_provided
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
         )
         return KnowledgeGraph(nodes=[gene_a, gene_b], edges=[association])
 
@@ -172,7 +171,7 @@ def on_data_end_gene_annotation(koza_transform: koza.KozaTransform) -> None:
 
 
 @koza.transform_record(tag="gene_annotation")
-def transform_gene_annotation(
+def transform_gene_classification(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
