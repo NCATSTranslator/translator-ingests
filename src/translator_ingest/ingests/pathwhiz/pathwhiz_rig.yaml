@@ -41,7 +41,10 @@ ingest_info:
       included_records: "All PWML pathway files"
       fields_used: "entities (compounds, proteins, complexes, nucleic acids), processes (reactions, transports, interactions), participants (inputs/outputs), enzymes/transporters, localization (compartments/tissues)"
 
-  filtered_content:
+  # FOR ADIL : Per the schema definition here (https://biolink.github.io/resource-ingest-guide-schema/FilteredContent/), 
+  # the 'filtered content' object describes a subset of records from the included files that are excluded from the ingest by some filtering logic.
+  # Not describe other formats or files that were not used.  If this info is relevant however, if should be documented in the scope field above. 
+  filtered_content: 
     - file_name: "Other formats (BioPAX, SBML, SBGN, RXN, SVG, PNG, FASTA, SDF)"
       filtered_records: "Excluded to enforce two-file ingest constraint; may be added later for enrichment"
       rationale: "This RIG intentionally limits inputs to the master pathways CSV and PWML for parity with the SMPDB-style ETL while ensuring semantic completeness."
@@ -51,6 +54,7 @@ ingest_info:
 target_info:
   infores_id: infores:translator-pathwhiz-kgx
 
+  # FOR ADIL: we should be sure we represent all edges here in a manner consistent with how pathway knowledge from other sources is represented (Reactome/GO-CAM, Rhea, etc)
   edge_type_info:
     - subject_categories:
         - biolink:SmallMolecule
@@ -64,8 +68,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
-        - provided_by
+      edge_properties:       #  FOR ADIL: these need to have biolink prefixes if they are biolink properties. If not, they should not be included but may note for future consideration (or add a property to biolink)
+        - provided_by        # 'provided by' is no longer used in Translator KGs for describing source provenance.  What is is being used to capture here?
         - pathway_id
       ui_explanation: "Entity is listed as a member/participant of the specified pathway (from PWML membership and context)."
 
@@ -80,7 +84,7 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
+      edge_properties:    #  FOR ADIL: these need to have biolink prefixes if they are biolink properties. If not, add them to biolink or drop them for now (and note in future considerations)
         - stoichiometry
         - participant_role
         - provided_by
@@ -105,7 +109,7 @@ target_info:
 
     - subject_categories:
         - biolink:BiologicalProcess
-      predicate: biolink:enabled_by
+      predicate: biolink:enabled_by         # FOR ADIL: GO Annotations uses has_participant (or sub-predicate) for linking BP to Gene/Product. Is there a reason to use 'enabled by' here. Also, 'enables' is the canonical predicate/direction. 
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -119,7 +123,7 @@ target_info:
 
     - subject_categories:
         - biolink:Protein
-      predicate: biolink:part_of
+      predicate: biolink:part_of           # FOR ADIL: has_part is the canonical direction / predicate here. You have a separate (but broader) entry for this below.  Explain. 
       object_categories:
         - biolink:MacromolecularComplex
       knowledge_level:
@@ -176,7 +180,7 @@ target_info:
   node_type_info:
     - node_category: biolink:Pathway
       source_identifier_types:
-        - "PathBank pathway identifiers (as listed in pathbank_pathways.csv)"
+        - "PathBank pathway identifiers (as listed in pathbank_pathways.csv)"  
       additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/Pathway/"
     - node_category: biolink:SmallMolecule
       source_identifier_types:
