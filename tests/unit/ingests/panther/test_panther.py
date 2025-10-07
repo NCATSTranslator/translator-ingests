@@ -223,7 +223,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (   # Query 0 - Missing a record field column (gene_identifier key as an example) - returns None
+        (   # Query 0 - Missing data (gene_identifier key as an example) - returns None
             {
                 # "gene_identifier": "",
                 "protein_id": "",
@@ -269,7 +269,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:GeneFamilyToGeneOrGeneProductOrGeneFamilyAssociation"],
                 "subject": "PANTHER.FAMILY:PTHR23158",
                 "object": "PANTHER.FAMILY:PTHR23158:SF57",
                 "predicate": "biolink:has_part",
@@ -312,7 +312,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:GeneFamilyToGeneOrGeneProductOrGeneFamilyAssociation"],
                 "subject": "PANTHER.FAMILY:PTHR23158",
                 "object": "NCBIGene:375056",
                 "predicate": "biolink:has_part",
@@ -355,7 +355,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:GeneOrGeneProductOrGeneFamilyToAnatomicalEntityAssociation"],
                 "subject": "PANTHER.FAMILY:PTHR23158",
                 "object": "GO:0070971",
                 "predicate": "biolink:located_in",
@@ -398,7 +398,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:GeneOrGeneProductOrGeneFamilyToBiologicalProcessOrActivityAssociation"],
                 "subject": "PANTHER.FAMILY:PTHR23158",
                 "object": "GO:0006888",
                 "predicate": "biolink:actively_involved_in",
@@ -441,7 +441,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:GeneOrGeneProductOrGeneFamilyToBiologicalProcessOrActivityAssociation"],
                 "subject": "PANTHER.FAMILY:PTHR10489",
                 "object": "GO:0038023",
                 "predicate": "biolink:catalyzes",
@@ -484,7 +484,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:GeneOrGeneProductOrGeneFamilyToBiologicalProcessOrActivityAssociation"],
                 "subject": "PANTHER.FAMILY:PTHR10489",
                 "object": "GO:0007165",
                 "predicate": "biolink:actively_involved_in",
@@ -527,7 +527,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:BiologicalProcessOrActivityToGeneOrGeneProductOrGeneFamilyAssociation"],
                 "subject": "PANTHER.PATHWAY:P00044",
                 "object": "PANTHER.FAMILY:PTHR23158",
                 "predicate": "biolink:has_participant",
@@ -570,7 +570,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:BiologicalProcessOrActivityToBiologicalProcessOrActivityAssociation"],
                 "subject": "GO:0030845",
                 "object": "GO:0065007",
                 "predicate": "biolink:subclass_of",
@@ -613,7 +613,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:BiologicalProcessOrActivityToBiologicalProcessOrActivityAssociation"],
                 "subject": "GO:0010476",
                 "object": "GO:0007165",
                 "predicate": "biolink:subclass_of",
@@ -656,7 +656,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:BiologicalProcessOrActivityToBiologicalProcessOrActivityAssociation"],
                 "subject": "GO:0031829",
                 "object": "GO:0005515",
                 "predicate": "biolink:subclass_of",
@@ -699,7 +699,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:BiologicalProcessOrActivityToBiologicalProcessOrActivityAssociation"],
                 "subject": "GO:0090317",
                 "object": "GO:0032879",
                 "predicate": "biolink:subclass_of",
@@ -742,7 +742,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:AnatomicalEntityToAnatomicalEntityAssociation"],
                 "subject": "GO:1990005",
                 "object": "GO:0043226",
                 "predicate": "biolink:subclass_of",
@@ -785,7 +785,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:AnatomicalEntityToAnatomicalEntityAssociation"],
                 "subject": "GO:0005634",
                 "object": "UBERON:0001062",
                 "predicate": "biolink:subclass_of",
@@ -828,7 +828,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:AnatomicalEntityToAnatomicalEntityAssociation"],
                 "subject": "GO:0005604",
                 "object": "UBERON:0000475",
                 "predicate": "biolink:subclass_of",
@@ -871,7 +871,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:AnatomicalEntityToAnatomicalEntityAssociation"],
                 "subject": "UBERON:0008877",
                 "object": "GO:0005604",
                 "predicate": "biolink:subclass_of",
@@ -914,7 +914,7 @@ ANNOTATION_ASSOCIATION_TEST_SLOTS = [
 
             # Captured edge contents
             {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "category": ["biolink:AnatomicalEntityToAnatomicalEntityAssociation"],
                 "subject": "UBERON:4000020",
                 "object": "GO:0030312",
                 "predicate": "biolink:subclass_of",

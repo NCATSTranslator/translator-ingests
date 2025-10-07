@@ -4,16 +4,23 @@ This code is inspired and adapted from various sources:
 
 1. Monarch Database Ingest: https://github.com/monarch-initiative/pantherdb-orthologs-ingest
 2. Biothings MyGenes Ingest: https://github.com/biothings/mygene.info/tree/7181b3d46aa76d3e234cdbe212192b2cabd325ed/src/plugins/pantherdb
-3. Automat-Panther TRAPI service: https://robokop.renci.org/api-docs/docs/automat/panther
+3. Automat-Panther Ingest: https://github.com/RobokopU24/ORION/blob/master/parsers/panther/src/loadPanther.py
 """
 from typing import Any
 from loguru import logger
 import re
 import requests
+from functools import partial
 
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
+    GeneFamilyToGeneOrGeneProductOrGeneFamilyAssociation,
+    GeneOrGeneProductOrGeneFamilyToAnatomicalEntityAssociation,
+    GeneOrGeneProductOrGeneFamilyToBiologicalProcessOrActivityAssociation,
+    # BiologicalProcessOrActivityToGeneOrGeneProductOrGeneFamilyAssociation, # Biolink Model PR #1611
+    BiologicalProcessOrActivityToBiologicalProcessOrActivityAssociation,
+    AnatomicalEntityToAnatomicalEntityAssociation,
     Gene,
     KnowledgeLevelEnum,
     AgentTypeEnum
