@@ -11,9 +11,10 @@ from loguru import logger
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
+    GeneToGeneFamilyAssociation,
     Gene,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum, GeneFamily
 )
 from translator_ingest.util.biolink import (
     entity_id,
@@ -145,10 +146,13 @@ def transform_gene_to_gene_orthology(
 
         # Our ortholog identifier (panther protein family name), and predicate
         panther_ortholog_id = record["Panther Ortholog ID"]
-        orthology_evidence = ["PANTHER.FAMILY:{}".format(panther_ortholog_id)]
+        gene_family_id = "PANTHER.FAMILY:{}".format(panther_ortholog_id)
+        orthology_evidence = [gene_family_id]
 
-        # Generate our association object
-        association = GeneToGeneHomologyAssociation(
+        gene_family = GeneFamily(id=gene_family_id, **{})
+
+        # Generate our association objects
+        orthology_relationship = GeneToGeneHomologyAssociation(
             id=entity_id(),
             subject=gene_a.id,
             object=gene_b.id,
@@ -156,9 +160,37 @@ def transform_gene_to_gene_orthology(
             has_evidence=orthology_evidence,
             sources=build_association_knowledge_sources(primary="infores:panther"),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.not_provided
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
         )
-        return KnowledgeGraph(nodes=[gene_a, gene_b], edges=[association])
+        gene_a_family_relationship = GeneToGeneFamilyAssociation(
+            id=entity_id(),
+            subject=gene_a.id,
+            object=gene_family.id,
+            predicate="biolink:member_of",
+            sources=build_association_knowledge_sources(primary="infores:panther"),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+        )
+        gene_b_family_relationship = GeneToGeneFamilyAssociation(
+            id=entity_id(),
+            subject=gene_b.id,
+            object=gene_family.id,
+            predicate="biolink:member_of",
+            sources=build_association_knowledge_sources(primary="infores:panther"),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+        )
+        return KnowledgeGraph(
+            nodes=[
+                gene_a,
+                gene_b
+            ],
+            edges=[
+                orthology_relationship,
+                gene_a_family_relationship,
+                gene_b_family_relationship
+            ]
+        )
 
     except Exception as e:
         # Catch and report all errors here with messages

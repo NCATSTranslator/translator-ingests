@@ -92,7 +92,7 @@ ASSOCIATION_TEST_SLOTS = [
             {
                  "Gene": "HUMAN|HGNC=11477|UniProtKB=Q6GZX4",              # species1|DB=id1|protdb=pdbid1
                  "Ortholog": "RAT|RGD=1564893|UniProtKB=Q6GZX2",           # species2|DB=id2|protdb=pdbid2
-                 "Type of ortholog": "LDO",                                # [LDO, O, P, X ,LDX]  see: localtt
+                 "Type of ortholog": "LDO",                                # [LDO, O, P, X ,LDX]  # not currently used
                  "Common ancestor for the orthologs": "Euarchontoglires",  # unused
                  "Panther Ortholog ID": "PTHR12434"
             },
@@ -123,16 +123,10 @@ ASSOCIATION_TEST_SLOTS = [
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:panther"
-                    },
-                    # {
-                    #     "resource_role": "aggregator_knowledge_source",
-                    #     "resource_id": "infores:translator-panther-kgx",
-                    #     "upstream_resource_ids": ["infores:panther"]
-                    #
-                    # }
+                    }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
             }
         ),
         (   # Query 4 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
@@ -169,16 +163,50 @@ ASSOCIATION_TEST_SLOTS = [
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:panther"
-                    },
-                    # {
-                    #     "resource_role": "aggregator_knowledge_source",
-                    #     "resource_id": "infores:translator-panther-kgx",
-                    #     "upstream_resource_ids": ["infores:panther"]
-                    #
-                    # }
+                    }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+             },
+        ),
+        (   # Query 5 - Regular record, HUMAN (non-canonical gene identifier) to RAT ortholog row test
+            {
+                "Gene": "HUMAN|Gene=P12LL_HUMAN|UniProtKB=A6NNC1",
+                "Ortholog": "RAT|RGD=7561849|UniProtKB=A0A8I6A0K9",
+                "Type of ortholog": "O",
+                "Common ancestor for the orthologs": "Euarchontoglires",
+                "Panther Ortholog ID": "PTHR15566"
+            },
+
+            # Captured node contents
+            [
+                {
+                    "id": "UniProtKB:A6NNC1",
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "RGD:7561849",
+                    "in_taxon": ["NCBITaxon:10116"],
+                    "category": ["biolink:Gene"]
+                }
+            ],
+
+            # Captured edge contents
+            {
+                "category": ["biolink:GeneToGeneHomologyAssociation"],
+                "subject": "UniProtKB:A6NNC1",
+                "object": "RGD:7561849",
+                "predicate": "biolink:orthologous_to",
+                "has_evidence": ["PANTHER.FAMILY:PTHR15566"],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:panther"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
              },
         )
     ]
@@ -189,11 +217,11 @@ def test_ingest_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    # on_begin_ingest_by_record(mock_koza_transform)
     validate_transform_result(
         result=transform_gene_to_gene_orthology(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edge=result_edge,
+        expected_no_of_edges=3,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
