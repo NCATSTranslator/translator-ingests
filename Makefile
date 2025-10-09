@@ -1,7 +1,8 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd diseases go_cam goa
+SOURCES ?= ctd ebi_gene2phenotype go_cam goa
+
 
 ### Help ###
 
@@ -107,7 +108,7 @@ validate-single: normalize
 	done
 
 .PHONY: run
-run: download transform normalize
+run: normalize
 
 ### Linting, Formatting, and Cleaning ###
 
