@@ -192,7 +192,7 @@ def test_normalize_node(nn_query):
     assert "OMIM:604611" in result.xref
     # ... but not the canonical identifier in xrefs (already used in node id)
     assert "NCBIGene:7486" not in result.xref
-    # should include original node name field value as a synonym
+    # should include the original node name field value as a synonym
     assert "Werner Syndrome Locus" in result.synonym
     # should include additional names as synonyms...
     assert "WRN protein, human" in result.synonym
