@@ -4,13 +4,13 @@
 
 **InfoRes ID:** infores:panther
 
-**Description:** The PANTHER (Protein ANalysis THrough Evolutionary Relationships) Classification System  was designed to classify proteins (and their genes) in order to facilitate high-throughput analysis. The core of PANTHER is a comprehensive, annotated library of gene family phylogenetic trees. All nodes in the tree have persistent identifiers that are maintained between versions of PANTHER, providing a stable substrate for annotations of protein properties like subfamily and function.
+**Description:** The PANTHER (Protein ANalysis THrough Evolutionary Relationships) Classification System  was designed to classify proteins (and their genes) to facilitate high-throughput analysis. The core of PANTHER is a comprehensive, annotated library of gene family phylogenetic trees. All nodes in the tree have persistent identifiers that are maintained between versions of PANTHER, providing a stable substrate for annotations of protein properties like subfamily and function.
 
 **Citations:**
-- https://onlinelibrary.wiley.com/doi/10.1002/pro.4218
+- https://doi.org/10.1002/pro.4218
 
 **Data Access Locations:**
-- http://data.pantherdb.org/ftp/ortholog/current_release/RefGenomeOrthologs.tar.gz
+- http://data.pantherdb.org/ftp/
 
 **Data Provision Mechanisms:** file_download
 
@@ -24,7 +24,7 @@
 
 **Ingest Categories:** primary_knowledge_provider
 
-**Utility:** Homology relationships between human genes and other model research species like mouse, rat and many other species can be suggestive of the biological function of genes, since gene function can often be partially inferred from experimental observations - in the model species - which cannot be easily or ethically replicated in human beings.
+**Utility:** Homology relationships between human genes and other model research species like mouse, rat and many other species can be suggestive of the biological function of genes, since gene function can often be partially inferred from experimental observations in the model species which cannot be easily or ethically replicated in human beings.
 
 **Scope:** Gene to gene genomic orthology relationships
 
