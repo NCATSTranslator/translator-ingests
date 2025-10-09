@@ -6,7 +6,6 @@ the output of a single @koza.transform_record() decorated method invocation, loo
 expected content in node and edge slots, with test expectations defined by constraints
 'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
-from multiprocessing.managers import rebuild_as_list
 
 import pytest
 from typing import Optional, Iterable, Any, Iterator
@@ -134,7 +133,7 @@ def _match_edge(
                                 if not validate_sources(expected=entry, returned=returned_sources):
                                     return f"Invalid returned sources '{returned_sources}'"
                         else:
-                            return f"Unexpected value type for "+\
+                            return "Unexpected value type for "+\
                                 f"{str(expected_edge[association_slot])} for slot '{association_slot}'"
             else:
                 # Scalar value test
