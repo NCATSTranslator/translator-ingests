@@ -6,6 +6,8 @@ the output of a single @koza.transform_record() decorated method invocation, loo
 expected content in node and edge slots, with test expectations defined by constraints
 'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
 """
+from multiprocessing.managers import rebuild_as_list
+
 import pytest
 from typing import Optional, Iterable, Any, Iterator
 
@@ -95,10 +97,81 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
+def _match_edge(
+        returned_edge:dict,
+        expected_edge:dict,
+        target_slots: list[str]
+) -> Optional[str]:
+    returned_sources: Optional[list[dict[str, str]]]
+    # We only bother with a comparison if the slot is included in both the
+    # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
+    # and in the list of slots in the 'expected_edge' test data.
+    for association_slot in target_slots:
+        if association_slot in returned_edge and association_slot in expected_edge:
+
+            reasv = returned_edge[association_slot]
+
+            # We only pass things through if *both* of the returned and the
+            # expected the lists of slot values are or are not empty (namely not XOR).
+            if isinstance(expected_edge[association_slot], list):
+                if bool(expected_edge[association_slot]) ^ bool(reasv):
+                    return f"Unexpected return values '{reasv}' for slot '{association_slot}' in edge"
+                # ...but we only specifically validate non-empty expectations
+                if expected_edge[association_slot]:
+                    returned_sources = None
+                    for entry in expected_edge[association_slot]:
+                        if isinstance(entry, str):
+                            # Simple Membership value test.
+                            if entry not in reasv:
+                                return f"Value '{entry}' for slot '{association_slot}' " + \
+                                f"is missing in returned edge values '{reasv}?'"
+                        elif isinstance(entry, dict):
+                            # A more complex validation of field
+                            # content, e.g., Association.sources
+                            if association_slot == 'sources':
+                                if returned_sources is None:
+                                    returned_sources = flatten_sources(reasv)
+                                if not validate_sources(expected=entry, returned=returned_sources):
+                                    return f"Invalid returned sources '{returned_sources}'"
+                        else:
+                            return f"Unexpected value type for "+\
+                                f"{str(expected_edge[association_slot])} for slot '{association_slot}'"
+            else:
+                # Scalar value test
+                if reasv != expected_edge[association_slot]:
+                    return f"Value '{expected_edge[association_slot]}' "+\
+                           f"for slot '{association_slot}' not equal to returned edge value '{reasv}'?"
+
+    # If we got to here, then success!
+    # No errors were reported?
+    return None
+
+def _found_edge(
+        returned_edge:dict,
+        expected_edge_list:list[dict],
+        target_slots: list[str]
+) -> tuple[bool, Optional[list[str]]]:
+    error_messages: list[str] = list()
+    for expected_edge in expected_edge_list:
+        error_msg: Optional[str] = _match_edge(returned_edge, expected_edge, target_slots)
+        if error_msg is None:
+            # Success! We found at least one match with expectation...
+            return True, None
+
+        # We track returned error messages indicating possible sources
+        # missed edge expectations, but the caller will need to decide
+        # for themselves exactly which specific expectation failed.
+        # To guide assessment, the full list of error messages are
+        # (only) returned when 'returned_edge' matches no expected edge.
+        error_messages.append(error_msg)
+
+    return False, error_messages
+
+
 def validate_transform_result(
         result: KnowledgeGraph | None,
         expected_nodes: Optional[list],
-        expected_edge: Optional[dict]|list[dict],
+        expected_edges: Optional[dict] | list[dict],
         expected_no_of_edges: int = 1,
         node_test_slots: list[str] = "id",
         association_test_slots: Optional[list] = None
@@ -112,17 +185,18 @@ def validate_transform_result(
                    the target **@koza.transform_record**-decorated method to be tested.
     :param expected_nodes: An optional list of expected nodes. The list values can be scalar
                            (node CURIE string identifiers expected) or dictionary of expected node slot values.
-    :param expected_edge: An optional expected edge (as a single Python dictionary of field slot names and values)
-                          of a list of such edge dictionaries.  The expected slot values in the dictionary
-                          can be scalars or a list of dictionaries that are edge sources to match.
+    :param expected_edges: An optional argument of either a single expected edge (as a single Python dictionary
+                           of field slot names and values) or a list of such edge dictionaries.
+                           The expected slot values in the dictionary can be scalars
+                           or a list of dictionaries that are edge sources to match.
     :param expected_no_of_edges: The expected number of association edges returned (default: 1).
     :param node_test_slots: String list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
     :param association_test_slots: String list of edge slots to be tested (default: None - no edge slots are tested)
     :return: None
-    :raises: various AssertionError conditions if result expectations are not met
+    :raises: AssertionError condition with a candidate list of possible errors, if result expectations were not met
     """
     if result is None:
-        if expected_nodes is None and expected_edge is None:
+        if expected_nodes is None and expected_edges is None:
             return  # we're good! No result was expected.
         else:
             assert False, "Unexpected null result from **`@koza.transform_record`** decorated method call!"
@@ -174,70 +248,26 @@ def validate_transform_result(
         # into a list by comprehension
         transformed_edges = [dict(edge) for edge in edges]
 
-        if expected_edge is None:
+        if expected_edges is None:
             # Check for empty 'transformed_edges' expectations
             assert not transformed_edges, \
-                f"Unexpected non-empty result list of edges: '{','.join(str(transformed_edges)[0:20])}'..."
+                "Unexpected non-empty result list of ingest transform edges: "+\
+                 f"'{','.join(str(transformed_edges)[0:20])}'..."
         else:
             # Check contents of edge(s) returned.
-            # For HPOA transformation, only 'expected_no_of_edges' are expected to be returned?
+            # Only 'expected_no_of_edges' are expected to be returned?
             assert len(transformed_edges) == expected_no_of_edges
 
             expected_edge_list: list[dict] = list()
-            if isinstance(expected_edge, list):
-                # Blissfully assume that a list of edges was given
-                expected_edge_list.extend(expected_edge)
+            if isinstance(expected_edges, list):
+                # Blissfully assume that a list of edge slot=value dictionaries was specified
+                expected_edge_list.extend(expected_edges)
             else:
-                # Blissfully assume just a single edge
-                expected_edge_list.append(expected_edge)
+                # Blissfully assume just a single edge slot=value dictionary was specified
+                expected_edge_list.append(expected_edges)
 
             for returned_edge in transformed_edges:
-
-                returned_sources: Optional[list[dict[str, str]]]
-
-                # Check values in expected edge slots of parsed edges
-                for association_slot in association_test_slots:
-
-                    # TODO: I have to figure out some way to do a pairwise comparison of
-                    #       returned_edge and edge_entries without fail,
-                    #       i.e. a kind of "any(returned_edge in expected_edge_list)"
-
-                    for edge_entry in expected_edge_list:
-                        # I only bother with this if the slot is included in the
-                        # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
-                        # and is also in the list of slots in the 'expected_edge' test data.
-
-                        if association_slot in returned_edge and \
-                                association_slot in edge_entry:
-                            slot_values = str(returned_edge.get(association_slot, "Empty!"))
-                            if isinstance(edge_entry[association_slot], list):
-                                # We only pass things through if *both* of the returned and the
-                                # expected the lists of slot values are or are not empty (namely not XOR).
-                                assert not (bool(edge_entry[association_slot]) ^ bool(returned_edge[association_slot])), \
-                                    f"Unexpected return values '{slot_values}' for slot '{association_slot}' in edge"
-                                # ...but we only specifically validate non-empty expectations
-                                if edge_entry[association_slot]:
-                                    returned_sources = None
-                                    for entry in edge_entry[association_slot]:
-                                        if isinstance(entry, str):
-                                            # Simple Membership value test.
-                                            assert entry in returned_edge[association_slot], \
-                                                f"Value '{entry}' for slot '{association_slot}' " + \
-                                                f"is missing in returned edge values '{slot_values}?'"
-                                        elif isinstance(entry, dict):
-                                            # A more complex validation of field
-                                            # content, e.g., Association.sources
-                                            if association_slot == 'sources':
-                                                if returned_sources is None:
-                                                    returned_sources = flatten_sources(returned_edge[association_slot])
-                                                assert validate_sources(expected=entry, returned=returned_sources), \
-                                                    f"Invalid returned sources '{returned_sources}'"
-                                        else:
-                                            assert False, \
-                                                f"Unexpected value type for {str(edge_entry[association_slot])} " + \
-                                                f" for slot '{association_slot}'"
-                            else:
-                                # Scalar value test
-                                assert returned_edge[association_slot] == edge_entry[association_slot], \
-                                    f"Value '{edge_entry[association_slot]}' for slot '{association_slot}' not equal to " + \
-                                    f"returned edge value '{returned_edge[association_slot]}'?"
+                found: bool
+                error_messages: Optional[list[str]]
+                found, error_messages = _found_edge(returned_edge, expected_edge_list, association_test_slots)
+                assert found, '\n'.join(error_messages)

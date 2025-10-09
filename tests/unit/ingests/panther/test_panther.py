@@ -108,26 +108,59 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "RGD:1564893",
                     "in_taxon": ["NCBITaxon:10116"],
                     "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "PANTHER.FAMILY:PTHR12434",
+                    "category": ["biolink:GeneFamily"]
                 }
             ],
 
             # Captured edge contents
-            {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
-                "subject": "HGNC:11477",
-                "object": "RGD:1564893",
-                "predicate": "biolink:orthologous_to",
-                "has_evidence": ["PANTHER.FAMILY:PTHR12434"],
-                "aggregator_knowledge_source": ["infores:translator-panther-kgx"],
-                "sources": [
-                    {
-                        "resource_role": "primary_knowledge_source",
-                        "resource_id": "infores:panther"
-                    }
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
-            }
+            [
+                {
+                    "category": ["biolink:GeneToGeneHomologyAssociation"],
+                    "subject": "HGNC:11477",
+                    "object": "RGD:1564893",
+                    "predicate": "biolink:orthologous_to",
+                    "has_evidence": ["PANTHER.FAMILY:PTHR12434"],
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                },
+                {
+                    "category": ["biolink:GeneToGeneFamilyAssociation"],
+                    "subject": "HGNC:11477",
+                    "object": "PANTHER.FAMILY:PTHR12434",
+                    "predicate": "biolink:member_of",
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                },
+                {
+                    "category": ["biolink:GeneToGeneFamilyAssociation"],
+                    "subject": "RGD:1564893",
+                    "object": "PANTHER.FAMILY:PTHR12434",
+                    "predicate": "biolink:member_of",
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                }
+            ]
         ),
         (   # Query 4 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog row test
             {
@@ -149,25 +182,59 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "MGI:99431",
                     "in_taxon": ["NCBITaxon:10090"],
                     "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "PANTHER.FAMILY:PTHR11711",
+                    "category": ["biolink:GeneFamily"]
                 }
             ],
 
             # Captured edge contents
-            {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
-                "subject": "ENSEMBL:ENSG00000275949",
-                "object": "MGI:99431",
-                "predicate": "biolink:orthologous_to",
-                "has_evidence": ["PANTHER.FAMILY:PTHR11711"],
-                "sources": [
-                    {
-                        "resource_role": "primary_knowledge_source",
-                        "resource_id": "infores:panther"
-                    }
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
-             },
+            [
+                {
+                    "category": ["biolink:GeneToGeneHomologyAssociation"],
+                    "subject": "ENSEMBL:ENSG00000275949",
+                    "object": "MGI:99431",
+                    "predicate": "biolink:orthologous_to",
+                    "has_evidence": ["PANTHER.FAMILY:PTHR11711"],
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                },
+                {
+                    "category": ["biolink:GeneToGeneFamilyAssociation"],
+                    "subject": "ENSEMBL:ENSG00000275949",
+                    "object": "PANTHER.FAMILY:PTHR11711",
+                    "predicate": "biolink:member_of",
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                },
+                {
+                    "category": ["biolink:GeneToGeneFamilyAssociation"],
+                    "subject": "MGI:99431",
+                    "object": "PANTHER.FAMILY:PTHR11711",
+                    "predicate": "biolink:member_of",
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                }
+            ]
         ),
         (   # Query 5 - Regular record, HUMAN (non-canonical gene identifier) to RAT ortholog row test
             {
@@ -189,25 +256,60 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "RGD:7561849",
                     "in_taxon": ["NCBITaxon:10116"],
                     "category": ["biolink:Gene"]
+                },
+                {
+                    "id": "PANTHER.FAMILY:PTHR15566",
+                    "category": ["biolink:GeneFamily"]
                 }
             ],
 
             # Captured edge contents
-            {
-                "category": ["biolink:GeneToGeneHomologyAssociation"],
-                "subject": "UniProtKB:A6NNC1",
-                "object": "RGD:7561849",
-                "predicate": "biolink:orthologous_to",
-                "has_evidence": ["PANTHER.FAMILY:PTHR15566"],
-                "sources": [
-                    {
-                        "resource_role": "primary_knowledge_source",
-                        "resource_id": "infores:panther"
-                    }
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
-             },
+            [
+
+                {
+                    "category": ["biolink:GeneToGeneHomologyAssociation"],
+                    "subject": "UniProtKB:A6NNC1",
+                    "object": "RGD:7561849",
+                    "predicate": "biolink:orthologous_to",
+                    "has_evidence": ["PANTHER.FAMILY:PTHR15566"],
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                 },
+{
+                    "category": ["biolink:GeneToGeneFamilyAssociation"],
+                    "subject": "UniProtKB:A6NNC1",
+                    "object": "PANTHER.FAMILY:PTHR15566",
+                    "predicate": "biolink:member_of",
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                 },
+{
+                    "category": ["biolink:GeneToGeneFamilyAssociation"],
+                    "subject": "RGD:7561849",
+                    "object": "PANTHER.FAMILY:PTHR15566",
+                    "predicate": "biolink:member_of",
+                    "sources": [
+                        {
+                            "resource_role": "primary_knowledge_source",
+                            "resource_id": "infores:panther"
+                        }
+                    ],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                 }
+            ]
         )
     ]
 )
@@ -220,7 +322,7 @@ def test_ingest_transform(
     validate_transform_result(
         result=transform_gene_to_gene_orthology(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge,
+        expected_edges=result_edge,
         expected_no_of_edges=3,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS

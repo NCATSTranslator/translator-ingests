@@ -183,7 +183,8 @@ def transform_gene_to_gene_orthology(
         return KnowledgeGraph(
             nodes=[
                 gene_a,
-                gene_b
+                gene_b,
+                gene_family
             ],
             edges=[
                 orthology_relationship,
