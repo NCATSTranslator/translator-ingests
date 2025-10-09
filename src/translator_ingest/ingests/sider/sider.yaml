@@ -1,0 +1,22 @@
+name: ingest_template
+
+readers:
+  sider_se_reader:
+    format: "csv"
+    delimiter: "\t"
+    header_mode: none
+    files:
+      - "../../../../data/sider/meddra_all_label_se.tsv.gz"
+    columns:
+      - label
+      - STITCH_compound_id_flat
+      - STITCH_compound_id_stereo
+      - UMLS_concept_id_label
+      - MedDRA_concept_type
+      - UMLS_concept_id
+      - side_effect_name
+    filters:
+      - inclusion: include
+        column: MedDRA_concept_type
+        filter_code: eq
+        value: PT
