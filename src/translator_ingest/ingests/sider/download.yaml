@@ -1,0 +1,8 @@
+# Specify the file that needs to be downloaded for this ingest
+# The download.yaml file format is defined and used by the KGHub Downloader to download files.
+# https://monarch-initiative.github.io/kghub-downloader/
+#
+# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+---
+- url: http://sideeffects.embl.de/media/download/meddra_all_label_se.tsv.gz
+  local_name: meddra_all_label_se.tsv.gz
