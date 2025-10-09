@@ -1,0 +1,92 @@
+name: "Multiomics Clinical Trials Knowledge Provider (CTKP) Reference Ingest Guide"
+
+supporting_data_source_info:
+  - infores_id: "infores:aact"
+    name: "Aggregate Analysis of ClinicalTrial.gov (AACT)"
+    description: "AACT is derived from researcher submissions to clinicaltrials.gov"
+    terms_of_use_info:
+      terms_of_use_description: >-
+         Freely available, with suggested acknowledgement of the source.
+         See https://aact.ctti-clinicaltrials.org/documentation/346.
+    relevant_files:
+      - file_name: "yyyymmdd_export_ctgov.zip"
+        location: "https://aact.ctti-clinicaltrials.org/downloads"
+        description: "Use these pipe-delimited text files to import AACT data into any database or analysis tool. Each file corresponds to a table in the AACT database schema."
+
+source_info: 
+  infores_id: "infores:multiomics-clinicaltrials"
+  name: "Multiomics Clinical Trials Knolwedge Provider (Multiomics-CTKP)"
+  description:  "The Clinical Trials KP provides information on Clinical Trials, ultimately derived from researcher submissions to clinicaltrials.gov, via the Aggregate Analysis of Clinical Trials (AACT) database. Information on select trials includes the NCT Identifier of the trial, interventions used, diseases/conditions relevant to the trial, adverse events, etc.  "
+  citations:  
+    - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
+  terms_of_use_info:
+    terms_of_use_description: "Freely available"
+  data_access_locations:
+    - "Direct download links for the latest version are given in the manifest file: https://github.com/multiomicsKP/clinical_trials_kp/blob/main/manifest.json"
+  data_provision_mechanisms:  
+    - file_download
+  data_formats:
+    - kgx
+  data_versioning_and_releases:  "New versions are released weekly"
+
+ingest_info:
+  ingest_categories:
+    - translator_knowledge_creator
+  utility: "CTKP provides an improved version of clinical trials information that addresses quality and computability issues with sources it uses (AACT, ct.gov), as well as treatment assertions derived from this data. This type of knowledge is critical for many Translator query types."
+  scope: "Clinical trials information including interventions, diseases/conditions, and treatment assertions derived from clinical trial outcomes."
+  relevant_files:
+    - file_name: "CTKP processed data"
+      location: "https://ctkp.ncats.io/"
+      description: "Clinical trials data processed from AACT/clinicaltrials.gov"
+  included_content:
+    - file_name: "CTKP processed data"
+      included_records: "Clinical trial interventions and their associated diseases/conditions, plus treatment assertions for successful trials"
+      fields_used: "NCT Identifier, interventions, diseases/conditions, adverse events, trial phases"
+
+target_info:
+  infores_id: "infores:translator-ctkp-kgx"
+  edge_type_info:
+    - subject_categories:
+        - "biolink:ChemicalEntity"
+        - "biolink:MolecularMixture"
+      predicates: 
+        - "biolink:in_clinical_trials_for"
+      object_categories:
+        - "biolink:DiseaseOrPhenotypicFeature"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "The 'in_clinical_trials_for' predicate reports that an intervention was tested in a clinical trial for a particular disease - based on a registered trial in ct.gov."
+    - subject_categories:
+        - "biolink:ChemicalEntity"
+        - "biolink:MolecularMixture"
+      predicates: 
+        - "biolink:treats"
+      object_categories:
+        - "biolink:DiseaseOrPhenotypicFeature"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "The `treats` predicate is used for interventions in Phase 4 trials that are performed for after successful demonstration of efficacy in treating a particular disease."
+  
+  node_type_info:
+    - node_category: "biolink:ChemicalEntity"
+      source_identifier_types:
+        - "Free text in AACT - no identifiers"
+    - node_category: "biolink:MolecularMixture"
+      source_identifier_types:
+        - "Free text in AACT - no identifiers"
+    - node_category: "biolink:SmallMolecule"
+      source_identifier_types:
+        - "Free text in AACT - no identifiers"
+    - node_category: "biolink:DiseaseOrPhenotypicFeature"
+      source_identifier_types:
+        - "Free text in AACT - no identifiers"
+
+provenance_info:
+  contributions:
+    - "Gwenlyn Glusman - code author, domain expertise"
+    - "Matthew Brush - data modeling"
+    - "Sierra Moxon - data modeling"    

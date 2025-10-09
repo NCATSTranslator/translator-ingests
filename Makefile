@@ -141,3 +141,5 @@ format:
 .PHONY: spell-fix
 spell-fix:
 	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
+
+include project.Makefile

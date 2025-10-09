@@ -1,0 +1,5 @@
+| InfoRes ID | Source Name | YAML | Markdown |
+|------------|-------------|------|----------|
+{%- for rig in rigs %}
+| {{ rig.infores_id }} | {{ rig.name }} | [{{ rig.filename }}.yaml]({{ rig.filename }}.yaml) | [{{ rig.filename }}.md]({{ rig.filename }}.md) |
+{%- endfor %}

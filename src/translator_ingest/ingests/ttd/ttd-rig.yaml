@@ -1,0 +1,193 @@
+# Therapeutic Target Database (TTD) Reference Ingest Guide (RIG)
+name: Therapeutic Target Database (TTD) Reference Ingest Guide
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:ttd
+  name: Therapeutic Target Database (TTD)
+  citations:
+    - "2024: https://doi.org/10.1093/nar/gkad751"
+    - "2022: https://doi.org/10.1093/nar/gkab953"
+    - "2020: https://doi.org/10.1093/nar/gkz981"
+    - "2018: https://doi.org/10.1093/nar/gkx1076"
+    - "2016: https://doi.org/10.1093/nar/gkv1230"
+    - "2014: https://doi.org/10.1093/nar/gkt1129"
+    - "2012: https://doi.org/10.1093/nar/gkr797"
+    - "2010: https://doi.org/10.1093/nar/gkp1014"
+    - "2002 first paper: https://doi.org/10.1093/nar/30.1.412"
+  terms_of_use_info:
+    terms_of_use_description: "No formal license. Andrew Su has emailed developers and gotten a positive response for use with 'proper attribution'. Papers describe resource as 'freely accessible to all users'."
+  data_access_locations:
+    - "Downloads page: https://db.idrblab.net/ttd/full-data-download"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - other
+  data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't. The Downloads page has a 'Last update by' section with a date, but it's unclear if this applies to all files that lack version info in their header."
+
+# Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "TTD provides associations for drugs/chemicals, therapeutic targets (mostly proteins), and diseases that appear to be manually curated from literature review. This literature review includes information that may not be covered by other resources, including: drug industry reports, drug pipeline reports of hundreds of companies, patents from multiple countries, and manual review of Pubmed literature searches. This associations could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
+  scope: "This ingest covers the drug-disease associations and the protein-drug associations from one file. For more details on the data content and decision-making on what files to ingest, see Colleen Xu's internal document and https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30."
+  
+  relevant_files:
+    - file_name: "P1-05-Drug_disease.txt"
+      location: "https://db.idrblab.net/ttd/full-data-download"
+      description: "Description on Downloads page is 'Drug to disease mapping with ICD identifiers'. Includes chemical/drug 'treats' disease associations. Uses TTD drug IDs - need to use other file to map to usable IDs for Translator"
+    - file_name: "P1-07-Drug-TargetMapping.xlsx"
+      location: "https://db.idrblab.net/ttd/full-data-download"
+      description: "Description on Downloads page is 'Target to drug mapping with mode of action'. Has chemical/drug 'affects' protein associations. Uses TTD target IDs and drug IDs - need to use other file to map to usable IDs for Translator"
+    - file_name: "P1-03-TTD_crossmatching.txt"
+      location: "https://db.idrblab.net/ttd/full-data-download"
+      description: "Description on Downloads page is 'Cross-matching ID between TTD drugs and public databases'. Using for ID mapping only. Has TTD drug ID (start with 'D') mappings to PUBCHEM.COMPOUND, CAS, and/or CHEBI. This file does not have info for all TTD drug IDs. It also doesn't have any info on TTD chemical IDs (start with 'C')."
+    - file_name: "P2-01-TTD_uniprot_all.txt"
+      location: "https://db.idrblab.net/ttd/full-data-download"
+      description: "Description on Downloads page is 'Download Uniprot IDs for all targets'. Using for ID mapping only. Has TTD target ID mappings to UNIPROT NAME (not ID). This file does not actually include all TTD Target IDs. It also has special values ('NOUNIPROTAC' appears to mean no name/mapping)."
+
+  filtered_content:
+    - file_name: "P1-05-Drug_disease.txt"
+      filtered_records: "ICD-11 ID is 'N.A.'"
+      rationale: "This means there isn't an ID for this disease, and we need one for each node."
+    - file_name: "P1-05-Drug_disease.txt"
+      filtered_records: "TTD drug ID doesn't have mapping to an external namespace, or its name doesn't successfully retrieve an entity in NameResolver."
+      rationale: "Need node IDs that are in NodeNorm's scope."
+    - file_name: "P1-07-Drug-TargetMapping.xlsx"
+      filtered_records: "TTD drug ID doesn't have mapping to an external namespace, or its name doesn't successfully retrieve an entity in NameResolver."
+      rationale: "Need node IDs that are in NodeNorm's scope."
+    - file_name: "P1-07-Drug-TargetMapping.xlsx"
+      filtered_records: "TTD target ID doesn't have a mapping to a UniProt name, or that UniProt name doesn't successfully map to a UniProt ID."
+      rationale: "Need node IDs that are in NodeNorm's scope."
+
+  future_considerations:
+    - category: edge_content
+      consideration: "Could ingest another file 'Target to compound mapping with activity data', which contains chemical/drug 'affects' protein associations. Involves more parsing and filtering work. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209860820 for details."
+      relevant_files: "P1-09-Target_compound_activity.txt"
+    - category: other
+      consideration: "Could run disease names through NameResolver when ICD-11 ID is 'N.A.' (<200 records right now). But it'd involve manual review to see if the output seems accurate."
+      relevant_files: "P1-05-Drug_disease.txt"
+
+# Information about the Graph Output by the ingest
+target_info:
+  edge_type_info:
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:treats
+      object_categories:
+        - biolink:Disease
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'approved', 'phase 4', 'approved (orphan drug)', or 'NDA filed'."
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:studied_to_treat
+      object_categories:
+        - biolink:Disease
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'investigative', 'patented', 'discontinued in preregistration', 'preregistration', or 'withdrawn from market'."
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:in_preclinical_trials_for
+      object_categories:
+        - biolink:Disease
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'preclinical'."
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:in_clinical_trials_for
+      object_categories:
+        - biolink:Disease
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registered, various submissions, discontinued in a specific phase, or terminated)."
+      additional_notes: "This includes >30 unique values. Some values have the same meaning (perhaps curators aren't consistent with what terminology they use), and perhaps the possible values will change between releases."
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:affects
+      object_categories:
+        - biolink:Gene
+        - biolink:Protein
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration: 
+            - "biolink:causes"
+        - property: biolink:object_aspect_qualifier
+          value_range:
+            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+        - property: biolink:object_direction_qualifier
+          value_range:
+            - biolink:DirectionQualifierEnum
+        - property: biolink:causal_mechanism_qualifier
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature) and sometimes included the mode of action."
+      additional_notes: "Curators are maybe not consistent with what terminology they use, and perhaps the possible values will change between releases."
+
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - "PUBCHEM.COMPOUND"
+        - "CAS"
+        - "CHEBI"
+      additional_notes: "Original ID is TTD drug ID, but we are using TTD mapping files to get these external IDs that can be NodeNormed."
+    - node_category: biolink:Disease
+      source_identifier_types:
+        - "icd11"
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "UNIPROTKB"
+      additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
+    - node_category: biolink:Protein
+      source_identifier_types:
+        - "UNIPROTKB"
+      additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
+
+  future_considerations:
+    - category: other
+      consideration: "P1-02 ('Download TTD drug information in raw format') contains TTD drug ID to INCHIKEY mappings, which could be explored to see if it fills gaps in the TTD drug ID mappings."
+    - category: node_properties
+      consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
+
+# Information about the how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Colleen Xu - code author, data modeling"
+    - "Andrew Su - code support, domain expertise"
+    - "Matthew Brush - data modeling, domain expertise"
+  artifacts:
+    - "https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30"

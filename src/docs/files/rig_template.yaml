@@ -1,0 +1,115 @@
+# ReferenceIngestGuide schema based content.
+  name:  # (optional, range = string)
+
+# Information about upstream sources of data that are used by an ingested source to derive the knowledge that we ingest.
+# This slot is OPTIONAL and can be OMITTED for typical data ingest of an external knowledge source.
+# It is only relevant RIGs for "data-derived" KPs like ICEES, COHD, various Multiomics KPs, etc.
+  supporting_data_source_info: # (optional, multivalued, range = SupportingDataSourceInformation)
+    - infores_id: # (required, range = URIorCURIE)
+      name: # (optional, range = string)
+      description: # (optional, range = string)
+      terms_of_use_info:  # (optional, range = TermsOfUseInfo)
+        terms_of_use_url: # (optional, range = URIorCURIE)
+        terms_of_use_description:  # (optional, range = string)
+        license_name: # (optional, range = string)
+        license_url: # (optional, range = URIorCURIE)
+      relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest.
+        - file_name:  # (required, range = string)
+          location:  # (required, range = URIorCURIE)
+          description:  # (optional, range = string)
+        
+# Information about the Source of the data ingest
+  source_info:  # (required, range = SourceInformation)
+    infores_id:  # (required, range = URIorCURIE)
+    name: # (optional, range = string)    
+    description:  # (optional, range = string)
+    citations:  # (optional, multivalued, range = string)
+    terms_of_use_info:  # (optional, range = TermsOfUseInfo)
+      terms_of_use_url: # (optional, range = URIorCURIE)
+      terms_of_use_description:  # (optional, range = string)
+      license name:  # (optional, range = string)
+      license url:   # (optional, range = URIorCURIE)
+    data_access_locations:  # (optional, multivalued, range = string) Each value should include a url, and optional description of what is provided at that location.
+    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
+    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+    data_versioning_and_releases:  # (optional, range = string)
+    additional_notes:  # (optional, range = string)
+
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+  ingest_info:  # (required, range = IngestInformation)
+    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
+      -
+    utility:  # (required, range = string)
+    scope:  # (optional, range = string)
+
+    relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest.
+      - file_name:  # (required, range = string)
+        location:  # (required, range = URIorCURIE)
+        description:  # (optional, range = string)
+
+    included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
+      - file_name:  # (required, range = string)
+        included_records:  # (required, range = string)
+        fields_used:  # (optional, range = string)
+
+    filtered_content:  # (optional, multivalued, range = FilteredContent) Records from relevant files that are not included in the ingest, and why.
+      - file_name:  # (required, range = string)
+        filtered_records:  # (required, range = string)
+        rationale:  # (required, range = string)
+
+    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
+      - category:  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+        consideration:  # (required, range = string)
+        relevant_files:  # (optional, range = string)
+
+    additional_notes:  # (optional, range = string)
+
+# Information about the Graph Output by the ingest
+  target_info:  # (required, range = TargetInformation)
+    infores_id:  # (optional, range = URIorCURIE)
+
+    edge_type_info:  # (required, multivalued, range = EdgeType)
+      - subject_categories:  # (required, multivalued, range = URIorCURIE) Note: multiple sub_cat and obj_cat values for an edge type does not mean that the full cross-product must be instantiated in the data. See schema for more details.
+          -
+        predicate:  # (required, multivaluded, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
+          - 
+        object_categories:  # (required, multivalued, range = URIorCURIE)
+          -
+        qualifiers: # (optional, multivalued, range = Qualifier)
+          - property:  # (required, range = URIorCURIE)
+          # Choose one (or more) of the 'value' slots to describe the type of value hold by the qualifier
+            value_range: # (optional, multivalued, range = URIorCURIE) 
+            value_enumeration: # (optional, multivalued, range = string)
+            value_id_prefixes: # (optional, multivalued, range = string)
+            value_description:  # (optional, range = string)
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          -
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          -
+        edge_properties:  # (optional, multivalued, range = URIorCURIE)
+          -
+        ui_explanation:  # (required, range = string)
+        additional_notes:  # (optional, range = string)
+
+    node_type_info:  # (required, multivalued, range = NodeType)
+      - node_category:  # (required, range = URIorCURIE)
+        source_identifier_types:  # (required, multivalued, range = string)
+          -
+        node_properties:  # (optional, multivalued, range = URIorCURIE)
+          -
+        additional_notes:  # (optional, range = string)
+
+    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
+      - category:  # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
+        consideration:  # (required, range = string)
+
+    additional_notes:  # (optional, range = string)
+
+
+# Information about how the ingest was specified and performed
+  provenance_info:  # (optional, range = ProvenanceInformation)
+    contributions:  # (optional, multivalued, range = string)
+      -
+    artifacts:  # (optional, multivalued, range = string)
+      -

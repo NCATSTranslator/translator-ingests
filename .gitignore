@@ -15,3 +15,4 @@ wheels/
 .venv
 output
 data
+docs
