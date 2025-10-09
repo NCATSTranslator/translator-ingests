@@ -15,6 +15,7 @@ dependencies = [
     "click>=8.0.0",
     "kghub-downloader>=0.4.2",
     "koza",
+    "resource-ingest-guide-schema"
 ]
 
 [project.scripts]
@@ -45,6 +46,7 @@ package = true
 [tool.uv.sources]
 koza = { git = "https://github.com/monarch-initiative/koza.git", rev = "translator-ingests" }
 biolink-model = { git = "https://github.com/biolink/biolink-model.git", rev = "master" }
+resource-ingest-guide-schema = { git = "https://github.com/biolink/resource-ingest-guide-schema.git", rev = "main" }
 
 [tool.uv-dynamic-versioning]
 vcs = "git"
