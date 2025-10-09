@@ -2,11 +2,11 @@
 Tests of HPOA Utils methods
 """
 from typing import Optional
-from re import compile
 
 import pytest
 
-from src.translator_ingest.util.github import GitHubReleases
+
+
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     FrequencyHpoTerm,
     Frequency,
@@ -15,12 +15,19 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     phenotype_frequency_to_hpo_term,
 )
 
-vre = compile(pattern=r"^20\d\d-\d\d-\d\d$")
-
-def test_hpoa_latest_version():
-    ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
-    version = ghr.get_latest_version()
-    assert version is not None and vre.match(version)
+#
+# Removing unit test since HPO versioning is via
+# GitHub API access and thus, is not easily mocked.
+#
+# from re import compile
+# from src.translator_ingest.util.github import GitHubReleases
+# vre = compile(pattern=r"^20\d\d-\d\d-\d\d$")
+#
+# def test_hpoa_latest_version():
+#     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
+#     version = ghr.get_latest_version()
+#     assert version is not None and vre.match(version)
+#
 
 def test_get_hpo_term():
     assert get_frequency_hpo_term("HP:0040282") == FrequencyHpoTerm(curie="HP:0040282", name="Frequent", lower=30, upper=79)
