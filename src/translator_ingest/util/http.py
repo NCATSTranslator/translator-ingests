@@ -1,13 +1,12 @@
 # HTTP query wrappers
 
-from typing import Dict
 import requests
 from json import JSONDecodeError
 import logging
 logger = logging.getLogger(__name__)
 
 
-def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
+def post_query(url: str, query: dict, params=None, server: str = "") -> dict:
     """
     Post a JSON query to the specified URL and return the JSON response.
 
@@ -15,7 +14,7 @@ def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
     :param query, JSON query for posting
     :param params, optional parameters
     :param server, str human-readable name of server called (for error message reports)
-    :return: Dict, JSON content response from the query (empty, posting a logging message, if unsuccessful)
+    :return: dict, JSON content response from the query (empty, posting a logging message, if unsuccessful)
     """
     try:
         if params is None:
@@ -26,7 +25,7 @@ def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
         logging.error(f"URL {url} could not be accessed: {str(ce)}?")
         return dict()
 
-    result: Dict = dict()
+    result: dict = dict()
     err_msg_prefix: str = \
         f"post_query(): Server {server} at '\nUrl: '{url}', Query: '{query}' with parameters '{params}' -"
     if response.status_code == 200:

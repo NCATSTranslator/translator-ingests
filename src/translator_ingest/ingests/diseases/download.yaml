@@ -1,0 +1,5 @@
+---
+- url: https://download.jensenlab.org/human_disease_textmining_filtered.tsv
+  local_name: diseases_textmining.tsv
+- url: https://download.jensenlab.org/human_disease_knowledge_filtered.tsv
+  local_name: diseases_knowledge.tsv

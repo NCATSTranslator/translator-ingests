@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd go_cam goa
+SOURCES ?= ctd diseases go_cam goa
 
 ### Help ###
 
@@ -71,7 +71,8 @@ install: python
 .PHONY: test
 test:
 	$(RUN) pytest tests
-	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+	$(RUN) ruff check
 
 
 ### Running ###
@@ -139,4 +140,4 @@ format:
 
 .PHONY: spell-fix
 spell-fix:
-	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
