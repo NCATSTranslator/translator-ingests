@@ -108,7 +108,7 @@ validate-single: normalize
 	done
 
 .PHONY: run
-run: download transform normalize
+run: normalize
 
 ### Linting, Formatting, and Cleaning ###
 
