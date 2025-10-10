@@ -4,9 +4,5 @@
 #
 # Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
 ---
-- url: https://stars.renci.org/var/data_services/example_data.tsv.gz
-  local_name: example_data.tsv.gz
-- url: https://stars.renci.org/var/data_services/example_data_2.tsv.gz
-  local_name: example_data_2.tsv.gz
-- url: https://stars.renci.org/var/data_services/example_data_3.tsv.gz
-  local_name: example_data_3.tsv.gz
+- url: https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_35_sqlite.tar.gz
+  local_name: chembl_35_sqlite.tar.gz
