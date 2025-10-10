@@ -113,7 +113,7 @@ def test_ingest_transform(
         validate_transform_result(
             result=result,
             expected_nodes=result_nodes,
-            expected_edge=result_edge,
+            expected_edges=result_edge,
             node_test_slots=NODE_TEST_SLOTS,
             association_test_slots=ASSOCIATION_TEST_SLOTS
         )

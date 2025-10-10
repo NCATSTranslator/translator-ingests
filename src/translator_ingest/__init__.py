@@ -1,9 +1,14 @@
 """
 Translator Ingest Globally Shared Code and parameters
 """
-from os.path import abspath, dirname, join, sep
-from loguru import logger
+from os.path import abspath
+from pathlib import Path
 
-TI_PACKAGE_PATH = abspath(dirname(__file__))
-PRIMARY_DATA_PATH = join(TI_PACKAGE_PATH, f"..{sep}..{sep}data")
-logger.info("Primary data path: {}".format(PRIMARY_DATA_PATH))
+TRANSLATOR_INGEST_PATH = Path(__file__).parent
+TRANSLATOR_INGEST_DIR = abspath(TRANSLATOR_INGEST_PATH)
+
+INGESTS_DATA_PATH = TRANSLATOR_INGEST_PATH / ".." / ".." / "data"
+INGESTS_DATA_DIR = abspath(INGESTS_DATA_PATH)
+
+INGESTS_PARSER_PATH = TRANSLATOR_INGEST_PATH / "ingests"
+INGEST_PARSER_DIR = abspath(INGESTS_PARSER_PATH)
