@@ -169,6 +169,7 @@ dependencies = [
     { name = "click" },
     { name = "kghub-downloader" },
     { name = "koza" },
+    { name = "resource-ingest-guide-schema" },
 ]
 
 [package.dev-dependencies]
@@ -187,6 +188,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
+    { name = "resource-ingest-guide-schema", git = "https://github.com/biolink/resource-ingest-guide-schema.git?rev=main" },
 ]
 
 [package.metadata.requires-dev]
@@ -1596,6 +1598,18 @@ wheels = [
 [package.optional-dependencies]
 socks = [
     { name = "pysocks" },
+]
+
+[[package]]
+name = "resource-ingest-guide-schema"
+version = "0.1.2.dev61+g3d18b23c3"
+source = { git = "https://github.com/biolink/resource-ingest-guide-schema.git?rev=main#3d18b23c375fe044e4af5bd2372c996345946c92" }
+dependencies = [
+    { name = "click" },
+    { name = "jinja2" },
+    { name = "linkml" },
+    { name = "linkml-runtime" },
+    { name = "pyyaml" },
 ]
 
 [[package]]

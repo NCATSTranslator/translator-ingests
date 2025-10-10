@@ -146,4 +146,21 @@ format:
 spell_fix:
 	{{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
 
+
+## RIG management targets (adapted from https://github.com/biolink/resource-ingest-guide-schema)
+
+INFORES:= ""
+NAME := ""
+
+# Create a new RIG from template
+# Usage: just INFORES=infores:ctd NAME="CTD Chemical-Disease Associations" new-rig
+new-rig:
+    @if [[ -z "{{INFORES}}" ]]; then \
+        echo "INFORES is required. Usage: just INFORES=infores:example NAME='Example RIG' new-rig "; \
+    elif [[ -z "{{NAME}}" ]]; then \
+        echo "NAME is required. Usage: just INFORES=infores:example NAME='Example RIG' new-rig "; \
+    else \
+       {{run}} python {{src}}/scripts/create_rig.py --infores "{{INFORES}}" --name "{{NAME}}"; \
+    fi
+
 import "project.justfile"

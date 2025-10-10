@@ -113,18 +113,7 @@
 #.cruft.json:
 #	echo "creating a stub for .cruft.json. IMPORTANT: setup via cruft not cookiecutter recommended!" ; \
 #	touch $@
-#
-## Create a new RIG from template
-## Usage: make new-rig INFORES=infores:ctd NAME="CTD Chemical-Disease Associations"
-#new-rig:
-#ifndef INFORES
-#	$(error INFORES is required. Usage: make new-rig INFORES=infores:example NAME="Example RIG")
-#endif
-#ifndef NAME
-#	$(error NAME is required. Usage: make new-rig INFORES=infores:example NAME="Example RIG")
-#endif
-#	$(RUN) python $(SRC)/scripts/create_rig.py --infores "$(INFORES)" --name "$(NAME)"
-#
+
 ## Validate all RIG files against the schema
 #validate-rigs:
 #	@echo "Validating RIG files against schema..."

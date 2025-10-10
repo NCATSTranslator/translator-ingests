@@ -1,4 +1,5 @@
 ROOTDIR = $(shell pwd)
+SRC = src
 RUN = uv run
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd go_cam goa
@@ -81,14 +82,14 @@ test:
 download:
 	@for source in $(SOURCES); do \
 		echo "Downloading $$source..."; \
-		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
+		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source $(SRC)/translator_ingest/ingests/$$source/download.yaml; \
 	done
 
 .PHONY: transform
 transform: download
 	@for source in $(SOURCES); do \
 		echo "Transforming $$source..."; \
-		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
+		$(RUN) koza transform $(SRC)/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
 	done
 
 .PHONY: normalize
@@ -97,13 +98,13 @@ normalize: transform
 
 .PHONY: validate
 validate: normalize
-	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+	$(RUN) python $(SRC)/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
 
 .PHONY: validate-single
 validate-single: normalize
 	@for source in $(SOURCES); do \
 		echo "Validating $$source..."; \
-		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
+		$(RUN) python $(SRC)/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
 	done
 
 .PHONY: run
@@ -131,15 +132,28 @@ clobber:
 .PHONY: lint
 lint:
 	$(RUN) ruff check --diff --exit-zero
-	$(RUN) black -l 120 --check --diff src tests
+	$(RUN) black -l 120 --check --diff $(SRC) tests
 
 .PHONY: format
 format:
 	$(RUN) ruff check --fix --exit-zero
-	$(RUN) black -l 120 src tests
+	$(RUN) black -l 120 $(SRC) tests
 
 .PHONY: spell-fix
 spell-fix:
 	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
+
+## RIG management targets (adapted from https://github.com/biolink/resource-ingest-guide-schema)
+
+# Create a new RIG from template
+# Usage: make new-rig INFORES=infores:ctd NAME="CTD Chemical-Disease Associations"
+new-rig:
+ifndef INFORES
+	$(error INFORES is required. Usage: make new-rig INFORES=infores:example NAME="Example RIG")
+endif
+ifndef NAME
+	$(error NAME is required. Usage: make new-rig INFORES=infores:example NAME="Example RIG")
+endif
+	$(RUN) python $(SRC)/scripts/create_rig.py --infores "$(INFORES)" --name "$(NAME)"
 
 include project.Makefile

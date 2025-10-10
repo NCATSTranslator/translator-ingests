@@ -9,8 +9,10 @@ from pathlib import Path
 import yaml
 from datetime import datetime
 import click
+from pydantic.v1.utils import ROOT_KEY
 
-RIGS_DIRECTORY = Path(__file__).parent.parent / "docs" / "rigs"
+ROOT_INGESTS_DIRECTORY = Path(__file__).parent.parent / "translator_ingest" / "ingests"
+RIG_TEMPLATE_FILE_PATH = Path(__file__).parent.parent / "docs" / "files" / "rig_template.yaml"
 
 def load_template(template_path):
     """Load the RIG template from the YAML file."""
@@ -18,13 +20,13 @@ def load_template(template_path):
         return yaml.safe_load(f)
 
 
-def create_rig(infores_id, rig_name, output_path, template_path):
+def create_rig(infores_id, rig_name, output, template_path):
     """
     Create a new RIG from the RIG template with user-specified values.
 
     :param infores_id: Associated with the primary knowledge source
     :param rig_name: name of the RIG
-    :param output_path: full path to the RIG file
+    :param output: full path to the RIG file
     :param template_path: full path to the RIG template file
     :return: None
     """
@@ -38,7 +40,7 @@ def create_rig(infores_id, rig_name, output_path, template_path):
     # Set the target infores_id based on the source (optional but commonly done)
     if 'target_info' not in template:
         template['target_info'] = {}
-    # TODO: should this now be something like
+    # TODO: perhaps this should this now be something like
     #       "infores:translator-ctd-kgx" instead of just "'"infores:ctd"?
     template['target_info']['infores_id'] = infores_id
     
@@ -47,14 +49,14 @@ def create_rig(infores_id, rig_name, output_path, template_path):
         template['source_info']['additional_notes'] = f"RIG created on {datetime.now().strftime('%Y-%m-%d')}"
     
     # Write the new RIG file
-    with open(output_path, 'w') as f:
+    with open(output, 'w') as f:
         yaml.dump(template, f, default_flow_style=False, sort_keys=False, indent=2)
     
-    click.echo(f"Created new RIG: {output_path}")
+    click.echo(f"Created new RIG: {output}")
     click.echo(f"  Name: {rig_name}")
     click.echo(f"  InfoRes ID: {infores_id}")
     click.echo(f"\nNext steps:")
-    click.echo(f"1. Edit {output_path} to fill in the template sections")
+    click.echo(f"1. Edit {output} to fill in the template sections")
     click.echo(f"2. See src{sep}docs{sep}files{sep}example-rigs.md for detailed guidance")
 
 
@@ -75,8 +77,8 @@ def create_rig(infores_id, rig_name, output_path, template_path):
 )
 @click.option(
     '--template',
-    default=f"src{sep}docs{sep}files{sep}rig_template.yaml",
-    help=f"Path to the RIG template file (default: src{sep}docs{sep}files{sep}rig_template.yaml)"
+    default=RIG_TEMPLATE_FILE_PATH,
+    help=f"Path to the RIG template file (default: {RIG_TEMPLATE_FILE_PATH})"
 )
 def main(infores, name, output, template):
     """Create a new Reference Ingest Guide from the template.
@@ -93,15 +95,15 @@ def main(infores, name, output, template):
         click.echo("Error: InfoRes ID must start with 'infores:'", err=True)
         sys.exit(1)
 
-    # Generate output filename if not provided
+    # If a user-specified override is not provided,
+    # generate an output file specification
     if not output:
-        # Extract a source file name from infores ID and create filename
+        # Extract a source file name from infores ID and create the output file path
         source_name = infores.replace('infores:', '').replace(':', '_')
-        output = f"{source_name}_rig.yaml"
-
-    # Sanity check: ensure the rigs directory exists
-    makedirs(path.abspath(RIGS_DIRECTORY), exist_ok=True)
-    output_path = f"{RIGS_DIRECTORY}{sep}{output}"
+        ingest_rig_path = ROOT_INGESTS_DIRECTORY / source_name
+        makedirs(path.abspath(ingest_rig_path), exist_ok=True)
+        output_path = ingest_rig_path / f"{source_name}_rig.yaml"
+        output = path.abspath(output_path)
 
     # Check if template exists
     if not path.exists(template):
@@ -109,13 +111,13 @@ def main(infores, name, output, template):
         sys.exit(1)
     
     # Check if the output file already exists
-    if path.exists(output_path):
-        if not click.confirm(f"File {output_path} already exists. Overwrite?"):
+    if path.exists(output):
+        if not click.confirm(f"File {output} already exists. Overwrite?"):
             click.echo("Aborted.")
             sys.exit(0)
     
     try:
-        create_rig(infores, name, output_path, template)
+        create_rig(infores, name, output, template)
     except Exception as e:
         click.echo(f"Error creating RIG: {e}", err=True)
         sys.exit(1)

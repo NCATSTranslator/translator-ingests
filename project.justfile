@@ -44,10 +44,6 @@
 #gen_owl_args := env_var_or_default("LINKML_GENERATORS_OWL_ARGS", "")
 #gen_java_args := env_var_or_default("LINKML_GENERATORS_JAVA_ARGS", "")
 #gen_ts_args := env_var_or_default("LINKML_GENERATORS_TYPESCRIPT_ARGS", "")
-#
-#INFORES:= ""
-#NAME := ""
-#
 ## Directory variables
 #src := "src"
 #dest := "project"
@@ -196,18 +192,6 @@
 ## Show git status
 #_git-status:
 #    git status
-#
-## Create a new RIG from template
-## Usage: just INFORES=infores:ctd NAME="CTD Chemical-Disease Associations" new-rig
-#new-rig:
-#    @if [[ -z "{{INFORES}}" ]]; then \
-#        echo "INFORES is required. Usage: just INFORES=infores:example NAME='Example RIG' new-rig "; \
-#    elif [[ -z "{{NAME}}" ]]; then \
-#        echo "NAME is required. Usage: just INFORES=infores:example NAME='Example RIG' new-rig "; \
-#    else \
-#       {{run}} python {{src}}/scripts/create_rig.py --infores "{{INFORES}}" --name "{{NAME}}"; \
-#    fi
-#
 ## Validate all RIG files against the schema
 #validate-rigs:
 #    @echo "Validating RIG files against schema..."
