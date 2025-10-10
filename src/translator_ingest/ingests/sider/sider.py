@@ -1,3 +1,4 @@
+from os.path import abspath
 import uuid
 import koza
 from typing import Any, Iterable
@@ -12,12 +13,18 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+
+from translator_ingest import INGESTS_PARSER_PATH
 from translator_ingest.util.biolink import (
     build_association_knowledge_sources
 )
+
 from koza.model.graphs import KnowledgeGraph
 
-# load insgest delacations from config file
+SIDER_INGEST_PATH = INGESTS_PARSER_PATH / "sider"
+SIDER_INGEST_CONFIG_PATH = SIDER_INGEST_PATH / "sider.config.json"
+
+# load ingest declarations from the config file
 # using a simple object class to allow attribute access to dictionary keys
 
 class object:
@@ -36,7 +43,7 @@ def to_object(parsed_json) -> Any:
         return parsed_json
 
 def load_config() -> tuple[str, str]:
-    config = json.load(open("src/translator_ingest/ingests/sider/sider.config.json"))
+    config = json.load(open(abspath(SIDER_INGEST_CONFIG_PATH), "r"))
     obj = to_object(config)
     return (obj.infores, obj.latest_version, obj.column, obj.curie_prefix, obj.predicate, obj.transformations)
 
