@@ -97,8 +97,7 @@ def transform_record_disease_to_phenotype(
     """
     try:
         ## Subject: Disease
-
-        disease_id = record["database_id"]
+        disease_id = record["database_id"].replace("ORPHA:", "Orphanet:") # match `Orphanet` as used in Mondo SSSOM
         disease_name = record["disease_name"]
         disease: Disease = Disease(
             id=disease_id,
@@ -164,7 +163,7 @@ def transform_record_disease_to_phenotype(
             # Association/Edge
             association = DiseaseToPhenotypicFeatureAssociation(
                 id=entity_id(),
-                subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
+                subject=disease_id,
                 predicate="biolink:has_phenotype",
                 negated=negated,
                 object=hpo_id,
