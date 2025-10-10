@@ -1,6 +1,10 @@
 ROOTDIR = $(shell pwd)
 SRC = src
 RUN = uv run
+
+SCHEMA_NAME = $(LINKML_SCHEMA_NAME:-resource_ingest_guide_schema.yaml)
+SOURCE_SCHEMA_PATH = $(LINKML_SCHEMA_SOURCE_PATH:-$(ROOTDIR)/py/Lib/site-packages/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml)
+
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd go_cam goa
 
@@ -8,7 +12,7 @@ SOURCES ?= ctd go_cam goa
 
 define HELP
 ╭───────────────────────────────────────────────────────────╮
-  Make for ingest
+│ Make for ingest                                           │
 │ ───────────────────────────────────────────────────────── │
 │ Usage:                                                    │
 │     make <target>                                         │
@@ -155,5 +159,17 @@ ifndef NAME
 	$(error NAME is required. Usage: make new-rig INFORES=infores:example NAME="Example RIG")
 endif
 	$(RUN) python $(SRC)/scripts/create_rig.py --infores "$(INFORES)" --name "$(NAME)"
+
+## Validate all RIG files against the schema
+validate-rigs:
+	@echo "Validating RIG files against schema..."
+	@for rig_file in $(SRC)/translator_ingest/ingests/*/*_rig.yaml; do \
+		if [ -f "$$rig_file" ]; then \
+			echo "Validating $$rig_file"; \
+			$(RUN) linkml-validate --schema $(SOURCE_SCHEMA_PATH) "$$rig_file"; \
+		fi; \
+	done
+	@echo "✓ All RIG files validated successfully"
+
 
 include project.Makefile

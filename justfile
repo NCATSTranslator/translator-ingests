@@ -19,6 +19,10 @@ shebang := if os() == 'windows' {
 }
 
 rootdir :=`pwd`
+
+schema_name := env_var_or_default("LINKML_SCHEMA_NAME", "")
+source_schema_path := env_var_or_default("LINKML_SCHEMA_SOURCE_PATH", "")
+
 sources := "ctd go_cam goa"
 
 ### Help ###
@@ -162,5 +166,16 @@ new-rig:
     else \
        {{run}} python {{src}}/scripts/create_rig.py --infores "{{INFORES}}" --name "{{NAME}}"; \
     fi
+
+# Validate all RIG files against the schema
+validate-rigs:
+    @echo "Validating RIG files against schema..."
+    @for rig_file in {{src}}/translator_ingest/ingests/*/*_rig.yaml; do \
+        if [ -f "$rig_file" ]; then \
+            echo "Validating $rig_file"; \
+            {{run}} linkml-validate --schema {{source_schema_path}} "$rig_file"; \
+        fi; \
+    done
+    @echo "✓ All RIG files validated (with any errors as indicated)"
 
 import "project.justfile"
