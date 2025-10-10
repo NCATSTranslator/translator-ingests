@@ -31,7 +31,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from translator_ingest import INGESTS_DATA_DIR
+from translator_ingest import INGESTS_DATA_PATH
 from translator_ingest.util.github import GitHubReleases
 from translator_ingest.util.biolink import (
     INFORES_HPOA,
@@ -311,7 +311,7 @@ def prepare_data_gene_to_phenotype(
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
     """
-    hpoa_data_path = INGESTS_DATA_DIR / "hpoa"
+    hpoa_data_path = INGESTS_DATA_PATH / "hpoa"
     phenotype_file_path = koza_transform.extra_fields.get(
         "HPOA_PHENOTYPE_FILE",
         abspath(hpoa_data_path / "phenotype.hpoa")
