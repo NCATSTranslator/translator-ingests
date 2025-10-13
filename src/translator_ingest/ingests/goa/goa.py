@@ -1,11 +1,8 @@
-import uuid
-import logging
-from pathlib import Path
-import koza
 from typing import Iterable, Any
 
 import koza
 import requests
+from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -31,63 +28,25 @@ from translator_ingest.util.biolink import (
 )
 
 # Constants
-INFORES_GOA = "infores:goa"
-INFORES_BIOLINK = "infores:biolink"
 GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
-GOA_DATA_DIR = Path("data/goa")
-
-
-logger = logging.getLogger(__name__)
-
-
-def _parse_header_date(gaf_path: Path) -> str | None:
-    try:
-        with gaf_path.open("r") as handle:
-            for line in handle:
-                if not line.startswith("!"):
-                    break
-                if line.lower().startswith("!date-generated"):
-                    return line.split(":", 1)[1].strip()
-    except FileNotFoundError:
-        return None
-    except OSError as exc:
-        raise RuntimeError(f"Failed to read GOA GAF header from {gaf_path}") from exc
-    return None
-
-
-def _fallback_version_from_gaf() -> str:
-    candidate_files = sorted(
-        GOA_DATA_DIR.glob("*.gaf"),
-        key=lambda path: path.stat().st_mtime,
-        reverse=True,
-    )
-    if not candidate_files:
-        raise RuntimeError("No GOA GAF files found for fallback version lookup")
-
-    for gaf_path in candidate_files:
-        version = _parse_header_date(gaf_path)
-        if version:
-            return version
-
-    raise RuntimeError(
-        "Unable to determine GOA version: metadata endpoint failed and no '!date-generated' header found"
-    )
 
 
 def get_latest_version() -> str:
-    """Fetch the current GOA release version from the metadata endpoint with a local fallback."""
+    """Fetch the current GOA release version from the public metadata endpoint."""
     try:
         response = requests.get(GOA_RELEASE_METADATA_URL, timeout=10)
         response.raise_for_status()
         metadata = response.json()
     except requests.RequestException as exc:
-        logger.warning("GOA metadata request failed (%s). Using local fallback header.", exc)
-        return _fallback_version_from_gaf()
+        raise RuntimeError(
+            f"Unable to retrieve GOA release metadata from {GOA_RELEASE_METADATA_URL}"
+        ) from exc
 
     version = metadata.get("date")
     if not version:
-        logger.warning("GOA metadata response missing 'date'. Using local fallback header.")
-        return _fallback_version_from_gaf()
+        raise RuntimeError(
+            f"GOA metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field"
+        )
 
     return version
 
@@ -323,8 +282,8 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
             sources=build_association_knowledge_sources(
-                primary=INFORES_GOA, # GOA as the primary source
-                aggregating={INFORES_BIOLINK:[INFORES_GOA]} # This repository as the aggregator
+                primary=INFORES_GOA,# GOA as the primary source
+                aggregating={INFORES_BIOLINK: [INFORES_GOA]}, # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
@@ -340,11 +299,11 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
             sources=build_association_knowledge_sources(
-                primary=INFORES_GOA,  # GOA as the primary source
-                aggregating={INFORES_BIOLINK: [INFORES_GOA]}  # This repository as the aggregator
+                primary=INFORES_GOA,
+                aggregating={INFORES_BIOLINK: [INFORES_GOA]},
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
         )
 
-    return [entity, go_term, association]
+    return KnowledgeGraph(nodes=[entity, go_term], edges=[association])
