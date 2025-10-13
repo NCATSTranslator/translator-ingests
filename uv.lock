@@ -290,13 +290,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.13.4" },
+    { name = "beautifulsoup4", specifier = ">=4.14.2" },
     { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
-    { name = "bmt", specifier = ">=1.4.5" },
+    { name = "bmt", specifier = ">=1.4.6" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
-    { name = "robokop-orion", git = "https://github.com/RobokopU24/orion.git?rev=packaging" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir" },
+    { name = "robokop-orion", specifier = "==0.1.5" },
 ]
 
 [package.metadata.requires-dev]
@@ -1470,7 +1470,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests#e572aaf99bfa21288aa9fc21dcbf7095113b642c" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir#870342a5dc046e9351ada7e8f4a3ed78bcd08938" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
@@ -2826,8 +2826,8 @@ wheels = [
 
 [[package]]
 name = "robokop-orion"
-version = "0.1.6"
-source = { git = "https://github.com/RobokopU24/orion.git?rev=packaging#8c12c0b4c515e1de0d7e12ad06db3c87c381b9af" }
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bmt" },
     { name = "jsonlines" },
@@ -2838,6 +2838,10 @@ dependencies = [
     { name = "requests-toolbelt" },
     { name = "robokop-genetics" },
     { name = "xxhash" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2e/70/947c34b31422dc9f093a79038c80cf6594f388b261d922211944b8bc10cd/robokop_orion-0.1.5.tar.gz", hash = "sha256:85f319dd45753b6bd635a7b5824245dc0e6b7f474277a54ad9d058bc7bfedf11", size = 80052 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/8e/55da48676be41d5251099a730d37d8f7691689394431af703aa990e1d2ab/robokop_orion-0.1.5-py3-none-any.whl", hash = "sha256:29bd327e1a004325d60956243fd9ffe49843cfee7729eea4842d67863c4c909d", size = 92518 },
 ]
 
 [[package]]
