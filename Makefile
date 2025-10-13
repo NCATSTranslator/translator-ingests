@@ -3,7 +3,7 @@ SRC = src
 RUN = uv run
 
 SITE_PACKAGES := $(shell python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-SOURCE_SCHEMA_PATH = ${LINKML_SCHEMA_SOURCE_PATH:-$(SITE_PACKAGES)/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml}
+SOURCE_SCHEMA_PATH = "$(SITE_PACKAGES)/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml"
 
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd ebi_gene2phenotype go_cam goa
@@ -167,7 +167,7 @@ endif
 
 ## Validate all RIG files against the schema
 validate-rigs:
-	@echo "Validating RIG files against schema..."
+	@echo "Validating RIG files against schema: $(SOURCE_SCHEMA_PATH)"
 	@for rig_file in $(SRC)/translator_ingest/ingests/*/*_rig.yaml; do \
 		if [ -f "$$rig_file" ]; then \
 			echo "Validating $$rig_file"; \
