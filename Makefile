@@ -2,8 +2,8 @@ ROOTDIR = $(shell pwd)
 SRC = src
 RUN = uv run
 
-SCHEMA_NAME = ${LINKML_SCHEMA_NAME:-resource_ingest_guide_schema.yaml}
-SOURCE_SCHEMA_PATH = ${LINKML_SCHEMA_SOURCE_PATH:-$ROOTDIR/$UV_PROJECT_ENVIRONMENT/Lib/site-packages/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml}
+SITE_PACKAGES := $(shell python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+SOURCE_SCHEMA_PATH = ${LINKML_SCHEMA_SOURCE_PATH:-$(SITE_PACKAGES)/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml}
 
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd ebi_gene2phenotype go_cam goa
