@@ -27,12 +27,25 @@ logger.setLevel(logging.INFO)
 
 # Determine the latest available version for the source using the function from the ingest module
 def get_latest_source_version(source):
-    # Import the ingest module for this source
-    ingest_module = import_module(f"translator_ingest.ingests.{source}.{source}")
-    # Get a reference to the get_latest_source_version function
-    latest_version_fn = getattr(ingest_module, "get_latest_version")
-    # Call it and return the latest version
-    return latest_version_fn()
+    try:
+        # Import the ingest module for this source
+        ingest_module = import_module(f"translator_ingest.ingests.{source}.{source}")
+    except ModuleNotFoundError:
+        error_message = f"Python module for {source} was not found at translator_ingest.ingests.{source}.{source}.py"
+        logger.error(error_message)
+        raise NotImplementedError(error_message)
+
+    try:
+        # Get a reference to the get_latest_source_version function
+        latest_version_fn = getattr(ingest_module, "get_latest_version")
+        # Call it and return the latest version
+        return latest_version_fn()
+    except AttributeError:
+        error_message = (f"Function get_latest_version() was not found for {source}. "
+                         f"There should be a function declared to retrieve the latest version of the source data in"
+                         f" translator_ingest.ingests.{source}.{source}.py")
+        logger.error(error_message)
+        raise NotImplementedError(error_message)
 
 
 # Download the source data for a source from the original location
