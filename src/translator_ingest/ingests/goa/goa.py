@@ -1,5 +1,8 @@
-import koza
 from typing import Iterable, Any
+
+import koza
+import requests
+from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -24,6 +27,28 @@ from translator_ingest.util.biolink import (
     build_association_knowledge_sources
 )
 
+# Constants
+GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
+
+
+def get_latest_version() -> str:
+    """Fetch the current GOA release version from the public metadata endpoint."""
+    try:
+        response = requests.get(GOA_RELEASE_METADATA_URL, timeout=10)
+        response.raise_for_status()
+        metadata = response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(
+            f"Unable to retrieve GOA release metadata from {GOA_RELEASE_METADATA_URL}"
+        ) from exc
+
+    version = metadata.get("date")
+    if not version:
+        raise RuntimeError(
+            f"GOA metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field"
+        )
+
+    return version
 
 # Dynamic category assignments from Biolink pydantic models
 # This ensures the categories are always in sync with the Biolink model
@@ -257,8 +282,8 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
             sources=build_association_knowledge_sources(
-                primary=INFORES_GOA, # GOA as the primary source
-                aggregating={INFORES_BIOLINK:[INFORES_GOA]} # This repository as the aggregator
+                primary=INFORES_GOA,# GOA as the primary source
+                aggregating={INFORES_BIOLINK: [INFORES_GOA]}, # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
@@ -274,11 +299,11 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
             sources=build_association_knowledge_sources(
-                primary=INFORES_GOA,  # GOA as the primary source
-                aggregating={INFORES_BIOLINK: [INFORES_GOA]}  # This repository as the aggregator
+                primary=INFORES_GOA,
+                aggregating={INFORES_BIOLINK: [INFORES_GOA]},
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
         )
 
-    return [entity, go_term, association]
+    return KnowledgeGraph(nodes=[entity, go_term], edges=[association])
