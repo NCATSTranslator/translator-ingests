@@ -23,7 +23,7 @@
 # containing KGX-coded Biolink entities - is best coordinated.
 #
 from typing import Optional
-from .http import post_query
+from .http_utils import post_query
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing, Association

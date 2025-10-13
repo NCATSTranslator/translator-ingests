@@ -16,10 +16,13 @@ from typing import Optional, Dict, Any, List
 import click
 
 from linkml.validator import validate
-from linkml.validator.plugins import JsonSchemaValidationPlugin
-from biolink_model import SchemaView as BiolinkSchemaView
+from linkml.validator.plugins import JsonschemaValidationPlugin
+from linkml_runtime.utils.schemaview import SchemaView
 
-from .biolink_validation_plugin import BiolinkValidationPlugin
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent))
+from biolink_validation_plugin import BiolinkValidationPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +79,8 @@ def validate_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
 
     # Initialize Biolink schema view
     try:
-        biolink_schema = BiolinkSchemaView()
+        # Try to load biolink schema - this is optional for basic validation
+        biolink_schema = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
     except Exception as e:
         logger.warning(f"Could not load Biolink schema: {e}. Using fallback validation.")
         biolink_schema = None
