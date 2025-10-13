@@ -2,7 +2,6 @@ from typing import Iterable, Any
 
 import koza
 import requests
-from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
