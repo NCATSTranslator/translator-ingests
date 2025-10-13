@@ -23,7 +23,7 @@ reader:
     - inclusion: exclude
       column: "confidence"
       filter_code: in
-      value: 
+      value:
         - "refuted"
         - "disputed"
         - "limited"

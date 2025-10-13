@@ -102,7 +102,6 @@ validate-single: run
 		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
 	done
 
-
 ### Linting, Formatting, and Cleaning ###
 
 .PHONY: clean

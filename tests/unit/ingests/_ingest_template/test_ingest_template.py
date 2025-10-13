@@ -123,7 +123,7 @@ def test_ingest_transform(
     validate_transform_result(
         result=transform_ingest_by_record(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge,
+        expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
