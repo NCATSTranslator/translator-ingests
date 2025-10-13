@@ -11,7 +11,7 @@ https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 
 from loguru import logger
 from typing import Optional, Any, Iterable
-from os.path import join, abspath
+from os.path import abspath
 
 import duckdb
 
@@ -31,7 +31,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from translator_ingest import PRIMARY_DATA_PATH
+from translator_ingest import INGESTS_DATA_PATH
 from translator_ingest.util.github import GitHubReleases
 from translator_ingest.util.biolink import (
     INFORES_HPOA,
@@ -97,8 +97,7 @@ def transform_record_disease_to_phenotype(
     """
     try:
         ## Subject: Disease
-
-        disease_id = record["database_id"]
+        disease_id = record["database_id"].replace("ORPHA:", "Orphanet:") # match `Orphanet` as used in Mondo SSSOM
         disease_name = record["disease_name"]
         disease: Disease = Disease(
             id=disease_id,
@@ -164,7 +163,7 @@ def transform_record_disease_to_phenotype(
             # Association/Edge
             association = DiseaseToPhenotypicFeatureAssociation(
                 id=entity_id(),
-                subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
+                subject=disease_id,
                 predicate="biolink:has_phenotype",
                 negated=negated,
                 object=hpo_id,
@@ -312,17 +311,18 @@ def prepare_data_gene_to_phenotype(
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
     """
+    hpoa_data_path = INGESTS_DATA_PATH / "hpoa"
     phenotype_file_path = koza_transform.extra_fields.get(
         "HPOA_PHENOTYPE_FILE",
-        abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
+        abspath(hpoa_data_path / "phenotype.hpoa")
     )
     genes_to_phenotype_file_path = koza_transform.extra_fields.get(
         "HPOA_GENES_TO_PHENOTYPE_FILE",
-        abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
+        abspath(hpoa_data_path / "genes_to_phenotype.txt")
     )
     genes_to_disease_file_path = koza_transform.extra_fields.get(
         "HPOA_GENES_TO_DISEASE_FILE",
-        abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt"))
+        abspath(hpoa_data_path / "genes_to_disease.txt")
     )
 
     db = duckdb.connect(":memory:", read_only=False)

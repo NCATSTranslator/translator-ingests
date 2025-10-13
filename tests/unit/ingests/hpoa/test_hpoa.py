@@ -308,7 +308,7 @@ def test_disease_to_phenotype_transform(
     validate_transform_result(
         result=transform_record_disease_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge,
+        expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
@@ -394,7 +394,7 @@ def test_gene_to_disease_transform(
     validate_transform_result(
         result=transform_record_gene_to_disease(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge,
+        expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
@@ -663,7 +663,7 @@ def test_gene_to_phenotype_transform(
     validate_transform_result(
         result=transform_record_gene_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge,
+        expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         association_test_slots=ASSOCIATION_TEST_SLOTS
     )
