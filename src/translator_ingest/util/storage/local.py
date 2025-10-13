@@ -1,7 +1,7 @@
 from enum import Enum, StrEnum
 from pathlib import Path
 
-from translator_ingest import PRIMARY_DATA_PATH
+from translator_ingest import INGESTS_DATA_PATH
 from translator_ingest.util.metadata import PipelineMetadata
 
 
@@ -78,7 +78,7 @@ def get_versioned_file_paths(file_type: IngestFileType,
     return FILE_PATH_LOOKUP[file_type](pipeline_metadata)
 
 def get_output_directory(pipeline_metadata: PipelineMetadata) -> Path:
-    return Path(PRIMARY_DATA_PATH) / pipeline_metadata.source / pipeline_metadata.source_version
+    return Path(INGESTS_DATA_PATH) / pipeline_metadata.source / pipeline_metadata.source_version
 
 def get_source_data_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / "source_data"

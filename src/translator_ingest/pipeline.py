@@ -10,7 +10,7 @@ from koza.model.formats import OutputFormat as KozaOutputFormat
 from orion.meta_kg import MetaKnowledgeGraphBuilder
 from orion.kgx_validation import validate_graph as generate_graph_summary
 
-from translator_ingest import TI_PACKAGE_PATH
+from translator_ingest import INGESTS_PARSER_PATH
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.storage.local import (get_output_directory,
@@ -38,7 +38,7 @@ def get_latest_source_version(source):
 def download(pipeline_metadata: PipelineMetadata):
     logger.info(f"Downloading source data for {pipeline_metadata.source}...")
     # Find the path to the source specific download yaml
-    download_yaml_file = Path(TI_PACKAGE_PATH) / "ingests" / pipeline_metadata.source / "download.yaml"
+    download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
     # Get a path for the subdirectory for the source data
     source_data_output_dir = get_source_data_directory(pipeline_metadata)
     Path.mkdir(source_data_output_dir, exist_ok=True)
@@ -67,7 +67,7 @@ def transform(pipeline_metadata: PipelineMetadata):
     logger.info(f"Starting transform for {source}")
 
     # the path to the source config yaml file for this specific ingest
-    source_config_yaml_path = Path(TI_PACKAGE_PATH) / "ingests" / source / f"{source}.yaml"
+    source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
 
     # the path for the versioned subdirectory for this transform
     transform_dir = get_transform_directory(pipeline_metadata)
