@@ -19,10 +19,7 @@ from linkml.validator import validate
 from linkml.validator.plugins import JsonschemaValidationPlugin
 from linkml_runtime.utils.schemaview import SchemaView
 
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent))
-from biolink_validation_plugin import BiolinkValidationPlugin
+from .biolink_validation_plugin import BiolinkValidationPlugin
 
 logger = logging.getLogger(__name__)
 
