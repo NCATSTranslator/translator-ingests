@@ -1,6 +1,7 @@
 """
 Translator Ingest Globally Shared Code and parameters
 """
+
 from os.path import abspath
 from pathlib import Path
 

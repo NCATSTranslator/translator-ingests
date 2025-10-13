@@ -10,13 +10,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    Association
+    Association,
 )
-from translator_ingest.util.biolink import (
-    INFORES_CTD,
-    entity_id,
-    build_association_knowledge_sources
-)
+from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
 
@@ -39,18 +35,21 @@ from koza.model.graphs import KnowledgeGraph
 def get_latest_version() -> str:
     return "v1"
 
+
 # Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
 # If implemented they will be called at the beginning and/or end of the transform process.
 @koza.on_data_begin(tag="ingest_by_record")
 def on_begin_ingest_by_record(koza: koza.KozaTransform) -> None:
     # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.
-    koza.state['example_counter'] = 0
+    koza.state["example_counter"] = 0
+
 
 @koza.on_data_end(tag="ingest_by_record")
 def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
     # for example koza.state could be used for logging
-    if koza.state['example_counter'] > 0:
-        koza.log(f'{koza.state['example_counter']} rows were discarded for having no publications.', level="INFO")
+    if koza.state["example_counter"] > 0:
+        koza.log(f"{koza.state['example_counter']} rows were discarded for having no publications.", level="INFO")
+
 
 # Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
 # They take an Iterable of dictionaries, typically representing the rows of a source data file, and return an Iterable
@@ -93,7 +92,7 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
     # here is an example of skipping a record based off of some condition
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     if not publications:
-        koza.state['example_counter'] += 1
+        koza.state["example_counter"] += 1
         return None
 
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
@@ -106,9 +105,10 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
         publications=publications,
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent
+        agent_type=AgentTypeEnum.manual_agent,
     )
     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
+
 
 # As an alternative to transform_record, functions decorated with @koza.transform() take a KozaTransform and an Iterable
 # of dictionaries, typically corresponding to all the rows in a source data file, and return an iterable of
@@ -135,9 +135,12 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         edges.append(association)
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
 
+
 # Here is an example using a generator to stream results
 @koza.transform(tag="ingest_all_streaming")
-def transform_ingest_all_streaming(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+def transform_ingest_all_streaming(
+    koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
+) -> Iterable[KnowledgeGraph]:
     for record in data:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])

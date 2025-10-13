@@ -63,9 +63,16 @@ class BiolinkValidationPlugin(ValidationPlugin):
         except Exception:
             # If we can't get categories from schema, use common ones
             valid_categories = {
-                "biolink:Gene", "biolink:Protein", "biolink:Disease", "biolink:ChemicalEntity",
-                "biolink:BiologicalProcess", "biolink:MolecularFunction", "biolink:CellularComponent",
-                "biolink:Pathway", "biolink:PhenotypicFeature", "biolink:OrganismTaxon"
+                "biolink:Gene",
+                "biolink:Protein",
+                "biolink:Disease",
+                "biolink:ChemicalEntity",
+                "biolink:BiologicalProcess",
+                "biolink:MolecularFunction",
+                "biolink:CellularComponent",
+                "biolink:Pathway",
+                "biolink:PhenotypicFeature",
+                "biolink:OrganismTaxon",
             }
 
         self._valid_categories_cache = valid_categories
@@ -86,9 +93,16 @@ class BiolinkValidationPlugin(ValidationPlugin):
         except Exception:
             # If we can't get predicates from schema, use common ones
             valid_predicates = {
-                "biolink:related_to", "biolink:affects", "biolink:treats", "biolink:causes",
-                "biolink:associated_with", "biolink:regulates", "biolink:interacts_with",
-                "biolink:participates_in", "biolink:has_participant", "biolink:occurs_in"
+                "biolink:related_to",
+                "biolink:affects",
+                "biolink:treats",
+                "biolink:causes",
+                "biolink:associated_with",
+                "biolink:regulates",
+                "biolink:interacts_with",
+                "biolink:participates_in",
+                "biolink:has_participant",
+                "biolink:occurs_in",
             }
 
         self._valid_predicates_cache = valid_predicates
@@ -98,9 +112,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
         """Check if identifier follows valid CURIE format."""
         if not isinstance(identifier, str):
             return False
-        
+
         # Basic CURIE pattern: prefix:identifier
-        curie_pattern = r'^[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_\-\.]+$'
+        curie_pattern = r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_\-\.]+$"
         return bool(re.match(curie_pattern, identifier))
 
     def _validate_node(self, node_obj: dict, path: str, context: ValidationContext) -> Iterator[ValidationResult]:
@@ -112,7 +126,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 severity=Severity.ERROR,
                 instance=node_obj,
                 instantiates=context.target_class,
-                message=f"Node at /{path} is missing required 'id' field"
+                message=f"Node at /{path} is missing required 'id' field",
             )
             return
 
@@ -126,7 +140,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 severity=Severity.ERROR,
                 instance=node_obj,
                 instantiates=context.target_class,
-                message=f"Node at /{path} has invalid CURIE format for id '{node_id}'"
+                message=f"Node at /{path} has invalid CURIE format for id '{node_id}'",
             )
 
         # Check categories
@@ -136,13 +150,13 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 severity=Severity.ERROR,
                 instance=node_obj,
                 instantiates=context.target_class,
-                message=f"Node at /{path} is missing required 'category' field"
+                message=f"Node at /{path} is missing required 'category' field",
             )
         else:
             categories = node_obj["category"]
             if isinstance(categories, str):
                 categories = [categories]
-            
+
             valid_categories = self._get_valid_categories(context.schema_view)
             for category in categories:
                 if category not in valid_categories:
@@ -151,7 +165,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                         severity=Severity.WARNING,
                         instance=node_obj,
                         instantiates=context.target_class,
-                        message=f"Node at /{path} has potentially invalid category '{category}'"
+                        message=f"Node at /{path} has potentially invalid category '{category}'",
                     )
 
         # Check for name field (recommended)
@@ -161,7 +175,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 severity=Severity.WARNING,
                 instance=node_obj,
                 instantiates=context.target_class,
-                message=f"Node at /{path} is missing recommended 'name' field"
+                message=f"Node at /{path} is missing recommended 'name' field",
             )
 
     def _validate_edge(self, edge_obj: dict, path: str, context: ValidationContext) -> Iterator[ValidationResult]:
@@ -175,20 +189,20 @@ class BiolinkValidationPlugin(ValidationPlugin):
                     severity=Severity.ERROR,
                     instance=edge_obj,
                     instantiates=context.target_class,
-                    message=f"Edge at /{path} is missing required '{field}' field"
+                    message=f"Edge at /{path} is missing required '{field}' field",
                 )
 
         if "predicate" in edge_obj:
             predicate = edge_obj["predicate"]
             valid_predicates = self._get_valid_predicates(context.schema_view)
-            
+
             if predicate not in valid_predicates:
                 yield ValidationResult(
                     type="biolink-model validation",
                     severity=Severity.WARNING,
                     instance=edge_obj,
                     instantiates=context.target_class,
-                    message=f"Edge at /{path} has potentially invalid predicate '{predicate}'"
+                    message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
                 )
 
         # Validate subject and object CURIEs
@@ -201,7 +215,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                         severity=Severity.ERROR,
                         instance=edge_obj,
                         instantiates=context.target_class,
-                        message=f"Edge at /{path} has invalid CURIE format for {field} '{identifier}'"
+                        message=f"Edge at /{path} has invalid CURIE format for {field} '{identifier}'",
                     )
 
         # Check for knowledge source attribution
@@ -211,7 +225,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 severity=Severity.WARNING,
                 instance=edge_obj,
                 instantiates=context.target_class,
-                message=f"Edge at /{path} is missing knowledge source attribution ('sources' field)"
+                message=f"Edge at /{path} is missing knowledge source attribution ('sources' field)",
             )
         else:
             sources = edge_obj["sources"]
@@ -225,7 +239,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                             severity=Severity.WARNING,
                             instance=edge_obj,
                             instantiates=context.target_class,
-                            message=f"Edge at /{path} primary source missing 'resource_id'"
+                            message=f"Edge at /{path} primary source missing 'resource_id'",
                         )
 
     def process(self, instance: Any, context: ValidationContext) -> Iterator[ValidationResult]:
@@ -238,11 +252,11 @@ class BiolinkValidationPlugin(ValidationPlugin):
         """
         # Reset node cache for each instance
         self._node_ids_cache = set()
-        
+
         # First pass: collect all node IDs and validate nodes
         for data_path, obj in _yield_biolink_objects(instance):
-            str_data_path = '/'.join(str(p) for p in data_path)
-            
+            str_data_path = "/".join(str(p) for p in data_path)
+
             # Determine if this is a node or edge
             if "id" in obj and "category" in obj and "subject" not in obj:
                 # This is a node
@@ -253,27 +267,27 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         # Second pass: validate edge references
         for data_path, obj in _yield_biolink_objects(instance):
-            str_data_path = '/'.join(str(p) for p in data_path)
-            
+            str_data_path = "/".join(str(p) for p in data_path)
+
             if "subject" in obj and "object" in obj:
                 # Check that subject and object nodes exist
                 subject_id = obj.get("subject")
                 object_id = obj.get("object")
-                
+
                 if subject_id and subject_id not in self._node_ids_cache:
                     yield ValidationResult(
                         type="biolink-model validation",
                         severity=Severity.ERROR,
                         instance=instance,
                         instantiates=context.target_class,
-                        message=f"Edge at /{str_data_path} references non-existent subject node '{subject_id}'"
+                        message=f"Edge at /{str_data_path} references non-existent subject node '{subject_id}'",
                     )
-                
+
                 if object_id and object_id not in self._node_ids_cache:
                     yield ValidationResult(
                         type="biolink-model validation",
                         severity=Severity.ERROR,
                         instance=instance,
                         instantiates=context.target_class,
-                        message=f"Edge at /{str_data_path} references non-existent object node '{object_id}'"
+                        message=f"Edge at /{str_data_path} references non-existent object node '{object_id}'",
                     )

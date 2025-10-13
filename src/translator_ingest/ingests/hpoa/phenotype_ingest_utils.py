@@ -1,6 +1,7 @@
 """
 HPOA processing utility methods
 """
+
 from typing import Optional, Union
 from loguru import logger
 
@@ -18,7 +19,7 @@ from translator_ingest.util.biolink import (
     INFORES_ORPHANET,
     INFORES_DECIFER,
     INFORES_HPOA,
-    build_association_knowledge_sources
+    build_association_knowledge_sources,
 )
 
 
@@ -37,62 +38,49 @@ def get_hpoa_association_sources(source_id: str, as_list: bool = False) -> Union
         if as_list:
             return [INFORES_HPOA, INFORES_MEDGEN, INFORES_OMIM]
         else:
-            return build_association_knowledge_sources(
-                primary=INFORES_HPOA,
-                supporting=[INFORES_MEDGEN, INFORES_OMIM]
-            )
+            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
 
     elif source_id.startswith("OMIM"):
         if as_list:
             return [INFORES_HPOA, INFORES_OMIM]
         else:
-            return build_association_knowledge_sources(
-                primary=INFORES_HPOA,
-                supporting=[INFORES_OMIM]
-            )
+            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
 
     elif "orphadata" in source_id or source_id.startswith("ORPHA") or "orpha" in source_id.lower():
         if as_list:
             return [INFORES_HPOA, INFORES_ORPHANET]
         else:
-            return build_association_knowledge_sources(
-                primary=INFORES_HPOA,
-                supporting=[INFORES_ORPHANET]
-            )
+            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
 
     elif source_id.startswith("DECIPHER"):
         if as_list:
             return [INFORES_HPOA, INFORES_DECIFER]
         else:
-            return build_association_knowledge_sources(
-                primary=INFORES_HPOA,
-                supporting=[INFORES_DECIFER]
-            )
+            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
 
     else:
         raise ValueError(f"Unknown source '{source_id}' value, can't set the primary knowledge source")
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
-evidence_to_eco: dict = {"IEA": "ECO:0000501", # "inferred from electronic annotation",
-                         "PCS": "ECO:0006017", # "published clinical study evidence",
-                         "TAS": "ECO:0000304", # "traceable author statement",
-                         "ICE": "ECO:0006019"} # "individual clinical experience evidence"
+evidence_to_eco: dict = {
+    "IEA": "ECO:0000501",  # "inferred from electronic annotation",
+    "PCS": "ECO:0006017",  # "published clinical study evidence",
+    "TAS": "ECO:0000304",  # "traceable author statement",
+    "ICE": "ECO:0006019",
+}  # "individual clinical experience evidence"
 
 # Sex (right now both all uppercase and all lowercase
-sex_format: dict = {"male": "male",
-                    "MALE": "male",
-                    "female": "female",
-                    "FEMALE": "female"}
+sex_format: dict = {"male": "male", "MALE": "male", "female": "female", "FEMALE": "female"}
 
-sex_to_pato: dict = {"female": "PATO:0000383",
-                     "male":   "PATO:0000384"}
+sex_to_pato: dict = {"female": "PATO:0000383", "male": "PATO:0000384"}
 
 
 class FrequencyHpoTerm(BaseModel):
     """
     Data class to store relevant information
     """
+
     curie: str
     name: str
     lower: float
@@ -103,6 +91,7 @@ class Frequency(BaseModel):
     """
     Converts fields to pydantic field declarations
     """
+
     frequency_qualifier: Optional[str] = None
     has_percentage: Optional[float] = None
     has_quotient: Optional[float] = None
@@ -111,30 +100,24 @@ class Frequency(BaseModel):
 
 
 # HPO "HP:0040279": representing the frequency of phenotypic abnormalities within a patient cohort.
-hpo_term_to_frequency: dict = {"HP:0040280": FrequencyHpoTerm(curie="HP:0040280",
-                                                              name="Obligate", 
-                                                              lower=100.0, 
-                                                              upper=100.0), # Always present, i.e., 100% of the cases.
-                               "HP:0040281": FrequencyHpoTerm(curie="HP:0040281", 
-                                                              name="Very frequent", 
-                                                              lower=80.0, 
-                                                              upper=99.0), # Present in 80% to 99% of the cases.
-                               "HP:0040282": FrequencyHpoTerm(curie="HP:0040282", 
-                                                              name="Frequent", 
-                                                              lower=30.0, 
-                                                              upper=79.0),# Present in 30% to 79% of the cases.
-                               "HP:0040283": FrequencyHpoTerm(curie="HP:0040283", 
-                                                              name="Occasional", 
-                                                              lower=5.0, 
-                                                              upper=29.0), # Present in 5% to 29% of the cases.
-                               "HP:0040284": FrequencyHpoTerm(curie="HP:0040284", 
-                                                              name="Very rare", 
-                                                              lower=1.0, 
-                                                              upper=4.0), # Present in 1% to 4% of the cases.
-                               "HP:0040285": FrequencyHpoTerm(curie="HP:0040285", 
-                                                              name="Excluded", 
-                                                              lower=0.0, 
-                                                              upper=0.0)}  # Present in 0% of the cases.
+hpo_term_to_frequency: dict = {
+    "HP:0040280": FrequencyHpoTerm(
+        curie="HP:0040280", name="Obligate", lower=100.0, upper=100.0
+    ),  # Always present, i.e., 100% of the cases.
+    "HP:0040281": FrequencyHpoTerm(
+        curie="HP:0040281", name="Very frequent", lower=80.0, upper=99.0
+    ),  # Present in 80% to 99% of the cases.
+    "HP:0040282": FrequencyHpoTerm(
+        curie="HP:0040282", name="Frequent", lower=30.0, upper=79.0
+    ),  # Present in 30% to 79% of the cases.
+    "HP:0040283": FrequencyHpoTerm(
+        curie="HP:0040283", name="Occasional", lower=5.0, upper=29.0
+    ),  # Present in 5% to 29% of the cases.
+    "HP:0040284": FrequencyHpoTerm(
+        curie="HP:0040284", name="Very rare", lower=1.0, upper=4.0
+    ),  # Present in 1% to 4% of the cases.
+    "HP:0040285": FrequencyHpoTerm(curie="HP:0040285", name="Excluded", lower=0.0, upper=0.0),
+}  # Present in 0% of the cases.
 
 
 def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm:
@@ -194,14 +177,15 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
 
             else:
                 if frequency_field.endswith("%"):
-                    percentage = round(float(frequency_field.removesuffix("%")),1)
+                    percentage = round(float(frequency_field.removesuffix("%")), 1)
                     quotient = round(percentage / 100.0, 2)
 
                 else:
                     # assume a ratio
                     ratio_parts = frequency_field.split("/")
-                    assert len(ratio_parts) == 2, \
-                        f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
+                    assert (
+                        len(ratio_parts) == 2
+                    ), f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
                     has_count = int(ratio_parts[0])
                     has_total = int(ratio_parts[1])
                     quotient = round(float(has_count / has_total), 2)
@@ -213,8 +197,8 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
         except Exception as e:
             # the expected ratio is not recognized
             logger.error(
-                "phenotype_frequency_to_hpo_term(): invalid frequency field value " +
-                f"'{frequency_field}' of type {type(frequency_field)}, {type(e)} message: {e}"
+                "phenotype_frequency_to_hpo_term(): invalid frequency field value "
+                + f"'{frequency_field}' of type {type(frequency_field)}, {type(e)} message: {e}"
             )
             return Frequency()
 
@@ -236,14 +220,15 @@ def get_hpoa_genetic_predicate(original_predicate: str) -> str:
     """
     Convert the association column into a Biolink Model predicate
     """
-    if original_predicate == 'MENDELIAN':
+    if original_predicate == "MENDELIAN":
         return "biolink:causes"
-    elif original_predicate == 'POLYGENIC':
+    elif original_predicate == "POLYGENIC":
         return "biolink:contributes_to"
-    elif original_predicate == 'UNKNOWN':
+    elif original_predicate == "UNKNOWN":
         return "biolink:associated_with"
     else:
         raise ValueError(f"Unknown predicate: {original_predicate}")
+
 
 ## MODES OF INHERITANCE
 
@@ -297,5 +282,5 @@ hpo_to_mode_of_inheritance: dict = {
     "HP:0003829": "Typified by incomplete penetrance",
     "HP:0003831": "Typified by age-related disease onset",
     "HP:0034344": "Female-limited expression",
-    "HP:4000158": "Typified by high penetrance"
+    "HP:4000158": "Typified by high penetrance",
 }
