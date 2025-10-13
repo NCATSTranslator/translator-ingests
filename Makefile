@@ -80,17 +80,21 @@ test:
 
 .PHONY: download
 download:
-	@for source in $(SOURCES); do \
-		echo "Downloading $$source..."; \
-		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
-	done
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix download-,$(SOURCES))
+
+.PHONY: download-%
+download-%:
+	@echo "Downloading $*..."
+	@$(RUN) downloader --output-dir $(ROOTDIR)/data/$* src/translator_ingest/ingests/$*/download.yaml
 
 .PHONY: transform
 transform: download
-	@for source in $(SOURCES); do \
-		echo "Transforming $$source..."; \
-		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
-	done
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
+
+.PHONY: transform-%
+transform-%:
+	@echo "Transforming $*..."
+	@$(RUN) koza transform src/translator_ingest/ingests/$*/$*.yaml --output-dir $(ROOTDIR)/data/$* --output-format jsonl
 
 .PHONY: normalize
 normalize: transform
