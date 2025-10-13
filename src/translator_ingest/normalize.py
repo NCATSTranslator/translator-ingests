@@ -3,7 +3,7 @@ import logging
 
 from pathlib import Path
 
-from orion import KGXFileNormalizer
+from orion.kgx_file_normalizer import KGXFileNormalizer
 from orion.normalization import NodeNormalizer, NormalizationScheme
 
 logger = logging.getLogger(__name__)

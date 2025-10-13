@@ -19,6 +19,7 @@ class IngestFileType(Enum):
     TEST_DATA_FILE = 11
     EXAMPLE_DATA_FILE = 12
     FINAL_METADATA_FILE = 13
+    VALIDATION_REPORT_FILE = 14
 
 
 class IngestFileName(StrEnum):
@@ -35,6 +36,7 @@ class IngestFileName(StrEnum):
     TEST_DATA_FILENAME = "testing_data.json"
     EXAMPLE_DATA_FILENAME = "example_edges.jsonl"
     FINAL_METADATA_FILE = "final_metadata.json"
+    VALIDATION_REPORT_FILE = "validation_report.json"
 
 
 FILE_PATH_LOOKUP = {
@@ -66,6 +68,8 @@ FILE_PATH_LOOKUP = {
         lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.EXAMPLE_DATA_FILENAME,
     IngestFileType.FINAL_METADATA_FILE:
         lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.FINAL_METADATA_FILE,
+    IngestFileType.VALIDATION_REPORT_FILE:
+        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.VALIDATION_REPORT_FILE
 }
 
 
