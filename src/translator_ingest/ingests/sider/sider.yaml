@@ -6,7 +6,7 @@ readers:
     delimiter: "\t"
     header_mode: none
     files:
-      - "../../../../data/sider/meddra_all_label_se.tsv.gz"
+      - "meddra_all_label_se.tsv.gz"
     columns:
       - label
       - STITCH_compound_id_flat
