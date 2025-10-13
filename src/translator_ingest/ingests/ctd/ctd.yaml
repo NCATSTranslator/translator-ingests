@@ -1,5 +1,8 @@
-name: ctd
-metadata: !include './metadata.yaml'
+metadata:
+  ingest_title: 'CTD'
+  ingest_url: 'https://ctdbase.org/'
+  description: 'The Comparative Toxicogenomics Database'
+  rights: 'https://ctdbase.org/about/legal.jsp#datause'
 
 readers:
   chemical_to_disease:
