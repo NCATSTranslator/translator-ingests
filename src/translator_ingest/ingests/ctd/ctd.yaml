@@ -26,7 +26,7 @@ readers:
 #    header_mode: 26
 #    header_prefix: '#'
 #    files:
-#      - ../../../../data/ctd/CTD_exposure_events.tsv.gz
+#      - CTD_exposure_events.tsv.gz
 #    columns:
 #      - exposurestressorname
 #      - exposurestressorid
