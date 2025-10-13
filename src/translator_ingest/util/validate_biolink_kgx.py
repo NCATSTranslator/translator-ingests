@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-KGX Node/Edge Consistency Validator
+Biolink KGX Validator using LinkML validation framework
 
-Validates that:
-1. All nodes referenced in edges exist in the nodes file
-2. Reports orphaned nodes and missing node references
-3. Generates structured JSON reports for programmatic analysis
+Validates KGX files against Biolink Model requirements using LinkML validation plugins.
+Provides the same CLI interface as the original validate_kgx.py but with enhanced
+Biolink Model compliance checking.
 """
 
 import json
@@ -13,13 +12,19 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any, List
 import click
+
+from linkml.validator import validate
+from linkml.validator.plugins import JsonSchemaValidationPlugin
+from biolink_model import SchemaView as BiolinkSchemaView
+
+from .biolink_validation_plugin import BiolinkValidationPlugin
 
 logger = logging.getLogger(__name__)
 
 
-def load_jsonl(file_path: Path) -> list[dict]:
+def load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
     """Load JSONL file and return list of records."""
     records = []
     with open(file_path, 'r') as f:
@@ -30,23 +35,7 @@ def load_jsonl(file_path: Path) -> list[dict]:
     return records
 
 
-def extract_node_ids(nodes: list[dict]) -> set[str]:
-    """Extract all node IDs from nodes file."""
-    return {node['id'] for node in nodes if 'id' in node}
-
-
-def extract_edge_node_refs(edges: list[dict]) -> set[str]:
-    """Extract all node IDs referenced in edges (subject + object)."""
-    node_refs = set()
-    for edge in edges:
-        if 'subject' in edge:
-            node_refs.add(edge['subject'])
-        if 'object' in edge:
-            node_refs.add(edge['object'])
-    return node_refs
-
-
-def save_validation_report(report: dict, output_dir: Path) -> Path:
+def save_validation_report(report: Dict[str, Any], output_dir: Path) -> Path:
     """Save validation report to JSON file with timestamped name."""
     # Create validation subdirectory
     timestamp = datetime.now().strftime("%m%d%y")
@@ -54,72 +43,148 @@ def save_validation_report(report: dict, output_dir: Path) -> Path:
     validation_dir.mkdir(parents=True, exist_ok=True)
     
     # Generate report filename with full timestamp
-    report_filename = f"validation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    report_filename = f"biolink_validation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     report_path = validation_dir / report_filename
     
     # Save report
     with open(report_path, 'w') as f:
         json.dump(report, f, indent=2)
     
-    logger.info(f"Validation report saved to: {report_path}")
+    logger.info(f"Biolink validation report saved to: {report_path}")
     return report_path
 
 
-def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> dict:
+def validate_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
     """
-    Validate KGX node/edge consistency.
+    Validate KGX files using LinkML Biolink validation.
 
-    Returns validation report as a dictionary.
+    Returns comprehensive validation report.
     """
     logger.info(f"Loading nodes from: {nodes_file}")
     nodes = load_jsonl(nodes_file)
-    node_ids = extract_node_ids(nodes)
-    logger.info(f"Found {len(node_ids)} nodes")
+    logger.info(f"Found {len(nodes)} nodes")
 
     logger.info(f"Loading edges from: {edges_file}")
     edges = load_jsonl(edges_file)
-    edge_node_refs = extract_edge_node_refs(edges)
-    logger.info(f"Found {len(edges)} edges referencing {len(edge_node_refs)} unique nodes")
+    logger.info(f"Found {len(edges)} edges")
 
-    # Check for missing nodes (referenced in edges but not in nodes file)
+    # Create combined KGX structure for validation
+    kgx_data = {
+        "nodes": nodes,
+        "edges": edges
+    }
+
+    # Initialize Biolink schema view
+    try:
+        biolink_schema = BiolinkSchemaView()
+    except Exception as e:
+        logger.warning(f"Could not load Biolink schema: {e}. Using fallback validation.")
+        biolink_schema = None
+
+    # Set up validation plugins
+    plugins = [BiolinkValidationPlugin()]
+    
+    # Perform validation
+    validation_results = []
+    try:
+        if biolink_schema:
+            # Use LinkML validation with Biolink schema
+            results = validate(
+                instance=kgx_data,
+                schema=biolink_schema.schema,
+                plugins=plugins
+            )
+            validation_results = list(results)
+        else:
+            # Fallback: use plugin directly
+            plugin = BiolinkValidationPlugin()
+            from linkml.validator.validation_context import ValidationContext
+            context = ValidationContext(target_class="KnowledgeGraph", schema_view=None)
+            validation_results = list(plugin.process(kgx_data, context))
+    except Exception as e:
+        logger.error(f"Validation failed: {e}")
+        validation_results = []
+
+    # Process validation results
+    errors = []
+    warnings = []
+    for result in validation_results:
+        result_dict = {
+            "type": result.type,
+            "severity": result.severity.name,
+            "message": result.message,
+            "instance_path": getattr(result, 'instance_path', 'unknown')
+        }
+        if result.severity.name == "ERROR":
+            errors.append(result_dict)
+        else:
+            warnings.append(result_dict)
+
+    # Check reference integrity (nodes referenced in edges)
+    node_ids = {node['id'] for node in nodes if 'id' in node}
+    edge_node_refs = set()
+    for edge in edges:
+        if 'subject' in edge:
+            edge_node_refs.add(edge['subject'])
+        if 'object' in edge:
+            edge_node_refs.add(edge['object'])
+
     missing_nodes = edge_node_refs - node_ids
     orphaned_nodes = node_ids - edge_node_refs
-    
-    validation_passed = len(missing_nodes) == 0
-    
-    # Create structured validation report
+
+    # Add reference integrity errors
+    for missing_node in missing_nodes:
+        errors.append({
+            "type": "reference-integrity",
+            "severity": "ERROR",
+            "message": f"Edge references non-existent node: {missing_node}",
+            "instance_path": "edges"
+        })
+
+    validation_passed = len(errors) == 0
+
+    # Create comprehensive validation report
     report = {
         "timestamp": datetime.now().isoformat(),
+        "validator": "biolink-kgx-validator",
         "files": {
             "nodes_file": str(nodes_file),
             "edges_file": str(edges_file)
         },
         "statistics": {
-            "total_nodes": len(node_ids),
+            "total_nodes": len(nodes),
             "total_edges": len(edges),
             "unique_nodes_in_edges": len(edge_node_refs),
             "missing_nodes_count": len(missing_nodes),
-            "orphaned_nodes_count": len(orphaned_nodes)
+            "orphaned_nodes_count": len(orphaned_nodes),
+            "validation_errors": len(errors),
+            "validation_warnings": len(warnings)
         },
         "validation_status": "PASSED" if validation_passed else "FAILED",
         "issues": {
+            "errors": errors,
+            "warnings": warnings,
             "missing_nodes": sorted(list(missing_nodes)),
             "orphaned_nodes": sorted(list(orphaned_nodes))
         }
     }
     
     # Log summary
+    if errors:
+        logger.error(f"Found {len(errors)} validation errors")
+    if warnings:
+        logger.warning(f"Found {len(warnings)} validation warnings")
     if missing_nodes:
-        logger.warning(f"Found {len(missing_nodes)} missing node references")
+        logger.error(f"Found {len(missing_nodes)} missing node references")
     if orphaned_nodes:
         logger.info(f"Found {len(orphaned_nodes)} orphaned nodes")
     
-    logger.info(f"Validation {'PASSED' if validation_passed else 'FAILED'}")
+    logger.info(f"Biolink validation {'PASSED' if validation_passed else 'FAILED'}")
     
     return report
 
 
-def find_kgx_files(data_dir: Path) -> list[tuple]:
+def find_kgx_files(data_dir: Path) -> List[tuple]:
     """
     Find all KGX node/edge file pairs in data directory.
 
@@ -136,7 +201,6 @@ def find_kgx_files(data_dir: Path) -> list[tuple]:
         edges_files = list(subdir.glob("*edges.jsonl"))
 
         if not nodes_files or not edges_files:
-            # Skip subdirectories without KGX files (not a warning since this is expected)
             continue
 
         if len(nodes_files) > 1:
@@ -144,15 +208,14 @@ def find_kgx_files(data_dir: Path) -> list[tuple]:
         if len(edges_files) > 1:
             logger.warning(f"Multiple edges files found in {subdir}: {[f.name for f in edges_files]}")
 
-        # Use the first found files
         kgx_pairs.append((subdir.name, nodes_files[0], edges_files[0]))
 
     return kgx_pairs
 
 
-def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -> dict:
+def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -> Dict[str, Any]:
     """
-    Validate all KGX files in data directory.
+    Validate all KGX files in data directory using Biolink validation.
 
     Returns combined validation report for all sources.
     """
@@ -166,6 +229,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
         logger.info(f"No KGX file pairs found in {data_dir}")
         return {
             "timestamp": datetime.now().isoformat(),
+            "validator": "biolink-kgx-validator",
             "data_directory": str(data_dir),
             "sources": {},
             "summary": {
@@ -181,6 +245,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     # Create validation report
     validation_report = {
         "timestamp": datetime.now().isoformat(),
+        "validator": "biolink-kgx-validator",
         "data_directory": str(data_dir),
         "sources": {},
         "summary": {
@@ -195,7 +260,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     for source_name, nodes_file, edges_file in kgx_pairs:
         logger.info(f"Validating source: {source_name}")
         
-        source_report = validate_kgx_consistency(nodes_file, edges_file)
+        source_report = validate_kgx_files(nodes_file, edges_file)
         validation_report["sources"][source_name] = source_report
         
         if source_report.get("validation_status") == "PASSED":
@@ -203,7 +268,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
         else:
             validation_report["summary"]["failed"] += 1
 
-    # set overall status
+    # Set overall status
     if validation_report["summary"]["failed"] == 0:
         validation_report["summary"]["overall_status"] = "PASSED"
     else:
@@ -213,7 +278,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     if output_dir:
         save_validation_report(validation_report, output_dir)
     
-    logger.info(f"Overall validation: {validation_report['summary']['overall_status']}")
+    logger.info(f"Overall Biolink validation: {validation_report['summary']['overall_status']}")
     logger.info(f"Passed: {validation_report['summary']['passed']}, Failed: {validation_report['summary']['failed']}")
     
     return validation_report
@@ -243,7 +308,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     help="Don't save validation report to file"
 )
 def main(data_dir, files, output_dir, no_save):
-    """Validate KGX node/edge consistency."""
+    """Validate KGX files using Biolink Model compliance checks."""
     
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -267,14 +332,14 @@ def main(data_dir, files, output_dir, no_save):
             logger.error(f"Edges file not found: {edges_file}")
             sys.exit(1)
         
-        single_report = validate_kgx_consistency(nodes_file, edges_file)
+        single_report = validate_kgx_files(nodes_file, edges_file)
         validation_passed = single_report.get("validation_status") == "PASSED"
         
         # Save single file report if requested
         if not no_save:
-            # Create a minimal report structure for single file validation
             validation_report = {
                 "timestamp": datetime.now().isoformat(),
+                "validator": "biolink-kgx-validator",
                 "data_directory": "single_file_validation",
                 "sources": {"single_validation": single_report},
                 "summary": {

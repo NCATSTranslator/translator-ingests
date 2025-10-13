@@ -98,13 +98,13 @@ normalize: transform
 
 .PHONY: validate
 validate: normalize
-	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --data-dir $(ROOTDIR)/data
 
 .PHONY: validate-single
 validate-single: normalize
 	@for source in $(SOURCES); do \
 		echo "Validating $$source..."; \
-		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
+		$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
 	done
 
 .PHONY: run
