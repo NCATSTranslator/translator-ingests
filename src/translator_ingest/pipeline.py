@@ -1,6 +1,7 @@
 import logging
 import click
 import json
+from dataclasses import is_dataclass, asdict
 from importlib import import_module
 from pathlib import Path
 
@@ -83,8 +84,17 @@ def transform(pipeline_metadata: PipelineMetadata):
     runner.run()
     logger.info(f"Finished transform for {source}")
 
+    # retrieve source level metadata from the koza config
+    # (this is currently populated from the metadata field of the source yaml but gets cast to a koza.DatasetDescription
+    # object so you can't include arbitrary fields)
+    # TODO bring koza.DatasetDescription up to date with the KGX metadata spec or allow passing arbitrary fields
+    koza_source_metadata = config.metadata
+    source_metadata = asdict(koza_source_metadata) \
+        if is_dataclass(koza_source_metadata) else {"source_metadata": koza_source_metadata}
+
     # collect and save some metadata about the transform
     transform_metadata = {"source": pipeline_metadata.source,
+                          **{k:v for k,v in source_metadata.items() if v is not None},
                           "source_version": pipeline_metadata.source_version,
                           "transform_version": "1.0"}
     # here we can extract automated or custom metadata about the transformation process
