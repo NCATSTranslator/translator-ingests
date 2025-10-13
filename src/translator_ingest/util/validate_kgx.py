@@ -13,13 +13,13 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Set, Dict, List, Optional
+from typing import Optional
 import click
 
 logger = logging.getLogger(__name__)
 
 
-def load_jsonl(file_path: Path) -> List[Dict]:
+def load_jsonl(file_path: Path) -> list[dict]:
     """Load JSONL file and return list of records."""
     records = []
     with open(file_path, 'r') as f:
@@ -30,12 +30,12 @@ def load_jsonl(file_path: Path) -> List[Dict]:
     return records
 
 
-def extract_node_ids(nodes: List[Dict]) -> Set[str]:
+def extract_node_ids(nodes: list[dict]) -> set[str]:
     """Extract all node IDs from nodes file."""
     return {node['id'] for node in nodes if 'id' in node}
 
 
-def extract_edge_node_refs(edges: List[Dict]) -> Set[str]:
+def extract_edge_node_refs(edges: list[dict]) -> set[str]:
     """Extract all node IDs referenced in edges (subject + object)."""
     node_refs = set()
     for edge in edges:
@@ -46,7 +46,7 @@ def extract_edge_node_refs(edges: List[Dict]) -> Set[str]:
     return node_refs
 
 
-def save_validation_report(report: Dict, output_dir: Path) -> Path:
+def save_validation_report(report: dict, output_dir: Path) -> Path:
     """Save validation report to JSON file with timestamped name."""
     # Create validation subdirectory
     timestamp = datetime.now().strftime("%m%d%y")
@@ -65,7 +65,7 @@ def save_validation_report(report: Dict, output_dir: Path) -> Path:
     return report_path
 
 
-def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict:
+def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> dict:
     """
     Validate KGX node/edge consistency.
 
@@ -119,7 +119,7 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict:
     return report
 
 
-def find_kgx_files(data_dir: Path) -> List[tuple]:
+def find_kgx_files(data_dir: Path) -> list[tuple]:
     """
     Find all KGX node/edge file pairs in data directory.
 
@@ -150,7 +150,7 @@ def find_kgx_files(data_dir: Path) -> List[tuple]:
     return kgx_pairs
 
 
-def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -> Dict:
+def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -> dict:
     """
     Validate all KGX files in data directory.
 
@@ -203,7 +203,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
         else:
             validation_report["summary"]["failed"] += 1
 
-    # Set overall status
+    # set overall status
     if validation_report["summary"]["failed"] == 0:
         validation_report["summary"]["overall_status"] = "PASSED"
     else:

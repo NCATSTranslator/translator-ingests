@@ -22,10 +22,16 @@ validate-kgx = "translator_ingest.util.validate_kgx:main"
 
 [dependency-groups]
 dev = [
-    "pytest>=7.4.0",
+    "pytest>=8.4.1",
     "black>=24.1.0",
-    "ruff>=0.1.9",
     "codespell>=2.2.0",
+    "ruff>=0.12.8",
+    "pandas",   # also installs numpy
+    "requests",  
+    # for CX notebook support: I use old version that works with extensions
+    "nbclassic",
+    "jupyter_contrib_nbextensions",
+    "jsonlines", 
 ]
 
 [tool.pytest.ini_options]
@@ -34,6 +40,7 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+extend-exclude = ["*.ipynb"]
 
 [tool.black]
 line-length = 120

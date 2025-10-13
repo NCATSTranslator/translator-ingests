@@ -19,6 +19,11 @@ readers:
       - InferenceScore
       - OmimIDs
       - PubMedIDs
+    filters:
+      - inclusion: include
+        column: DirectEvidence
+        filter_code: eq
+        value: therapeutic
   ingest_all:
     format: "csv"
     delimiter: "\t"
@@ -55,10 +60,3 @@ readers:
       - InferenceScore
       - OmimIDs
       - PubMedIDs
-
-transform:
-  filters:
-    - inclusion: include
-      column: DirectEvidence
-      filter_code: eq
-      value: therapeutic
