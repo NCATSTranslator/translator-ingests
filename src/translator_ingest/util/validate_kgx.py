@@ -261,7 +261,7 @@ def get_validation_status(report_file_path: Path) -> Optional[str]:
         try:
             return validation_report["summary"]["overall_status"]
         except KeyError:
-            error_message = f"Validation report file found but format was unexpected, validation status not found."
+            error_message = "Validation report file found but format was unexpected, validation status not found."
             logger.error(error_message)
             raise KeyError(error_message)
 
