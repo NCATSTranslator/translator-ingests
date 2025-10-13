@@ -2,8 +2,8 @@ ROOTDIR = $(shell pwd)
 SRC = src
 RUN = uv run
 
-SCHEMA_NAME = $(LINKML_SCHEMA_NAME:-resource_ingest_guide_schema.yaml)
-SOURCE_SCHEMA_PATH = $(LINKML_SCHEMA_SOURCE_PATH:-$(ROOTDIR)/py/Lib/site-packages/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml)
+SCHEMA_NAME = ${LINKML_SCHEMA_NAME:-resource_ingest_guide_schema.yaml}
+SOURCE_SCHEMA_PATH = ${LINKML_SCHEMA_SOURCE_PATH:-$ROOTDIR/$UV_PROJECT_ENVIRONMENT/Lib/site-packages/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml}
 
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd ebi_gene2phenotype go_cam goa
@@ -29,6 +29,10 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
+│                                                           │
+│     new-rig             Create a new resource ingest guide│
+│     validate-rigs       Validate user-curated RIG file    │
+│                                                           │
 │     run                 Run pipeline (download→transform→normalize) │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │

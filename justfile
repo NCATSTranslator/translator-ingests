@@ -20,8 +20,11 @@ shebang := if os() == 'windows' {
 
 rootdir :=`pwd`
 
+# Environment variables with defaults
+# env_var_name := env_var_or_default("<SOME_ENVIRONMENT_VARIABLE_NAME>", "")
 schema_name := env_var_or_default("LINKML_SCHEMA_NAME", "")
-source_schema_path := env_var_or_default("LINKML_SCHEMA_SOURCE_PATH", "")
+
+source_schema_path := `pwd`+"/$UV_PROJECT_ENVIRONMENT/Lib/site-packages/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml"
 
 sources := "ctd go_cam goa"
 
@@ -40,11 +43,14 @@ export HELP := """
 │                                                                  │
 │     setup             Install everything and test                │
 │     fresh             Clean and install everything               │
+│     install           Install python requirements                │
+│                                                                  │
 │     clean             Clean up build artifacts                   │
 │     clean-reports     Clean up validation reports                │
 │     clobber           Clean up data and generated files          │
 │                                                                  │
-│     install           Install python requirements                │
+│     new-rig           Create a new resource ingest guide (RIG)   │
+│     validate-rigs     Validate user-curated RIG file content     │
 │                                                                  │
 │     run               Run pipeline                               │
 │                       (download->transform->normalize->validate) │
@@ -68,27 +74,28 @@ export HELP := """
 ╰──────────────────────────────────────────────────────────────────╯
 """
 
+# A few more just recipe details
 help:
     echo "{{HELP}}"
 
 # This project uses the uv dependency manager
 run := 'uv run'
 
-# Environment variables with defaults
-# schema_name := env_var_or_default("<SOME_ENVIRONMENT_VARIABLE_NAME>", "")
-
 # Directory variables
 src := "src"
 
 ### Installation and Setup ###
 
+# clean clobber setup
 fresh: clean clobber setup
 
+# Install everything and test
 setup: install test
 
 _python:
 	uv python install
 
+# Install Python and related library dependencies
 install: _python
 	uv sync
 
@@ -102,69 +109,78 @@ test:
 
 ### Running ###
 
+# Download data files for specified 'sources'
 download:
 	for source in {{sources}}; do \
 		echo "Downloading $source..."; \
 		{{run}} downloader --output-dir {{rootdir}}/data/$source src/translator_ingest/ingests/$source/download.yaml; \
 	done
 
+# Transform input data into knowledge graphs for specified 'sources'
 transform: download
 	for source in {{sources}}; do \
 		echo "Transforming $source..."; \
 		{{run}} koza transform src/translator_ingest/ingests/$source/$source.yaml --output-dir {{rootdir}}/data/$source --output-format jsonl; \
 	done
 
+# Normalize knowledge graphs for specified 'sources'
 normalize: transform
 	echo "Normalization placeholder for sources: {{sources}}"
 
+# Validate knowledge graphs for specified 'sources'
 validate: normalize
 	for source in {{sources}}; do \
 		echo "Validating $source..."; \
 		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
 	done
 
-run: validate
+# Run the transformation on all specified 'sources'
+run: normalize
 
+# Clean out Python code cache artifacts
 clean:
 	rm -f `find . -type f -name '*.py[co]' `
 	rm -rf `find . -name __pycache__` \
 		.venv .ruff_cache .pytest_cache **/.ipynb_checkpoints
 
-clean-reports:
+_clean-reports:
     echo "Cleaning validation reports..."
     rm -rf {{rootdir}}/data/validation
     echo "All validation reports removed."
 
+# Clean out all input data and output files
 clobber:
 	rm -rf {{rootdir}}/data
 	rm -rf {{rootdir}}/output
 
+# Lint checking of code
 lint:
 	{{run}} ruff check --diff --exit-zero
 	{{run}} black -l 120 --check --diff src tests
 
+# Check and repair code format
 format:
 	{{run}} ruff check --fix --exit-zero
 	{{run}} black -l 120 src tests
 
+# Spell checking and repair of code
 spell_fix:
 	{{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
 
-
 ## RIG management targets (adapted from https://github.com/biolink/resource-ingest-guide-schema)
 
-INFORES:= ""
-NAME := ""
+infores:= ""
+name := ""
 
 # Create a new RIG from template
-# Usage: just INFORES=infores:ctd NAME="CTD Chemical-Disease Associations" new-rig
+# Usage: just infores=infores:ctd name="CTD Chemical-Disease Associations" new-rig
 new-rig:
-    @if [[ -z "{{INFORES}}" ]]; then \
+    @if [[ -z "{{infores}}" ]]; then \
         echo "INFORES is required. Usage: just INFORES=infores:example NAME='Example RIG' new-rig "; \
-    elif [[ -z "{{NAME}}" ]]; then \
+    elif [[ -z "{{name}}" ]]; then \
         echo "NAME is required. Usage: just INFORES=infores:example NAME='Example RIG' new-rig "; \
     else \
-       {{run}} python {{src}}/scripts/create_rig.py --infores "{{INFORES}}" --name "{{NAME}}"; \
+       {{run}} python {{src}}/scripts/create_rig.py --infores "{{infores}}" --name "{{name}}"; \
     fi
 
 # Validate all RIG files against the schema
