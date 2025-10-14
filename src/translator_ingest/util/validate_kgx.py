@@ -22,6 +22,7 @@ from translator_ingest.util.storage.local import IngestFileName
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class ValidationStatus(StrEnum):
     PASSED = "PASSED"
     # maybe we want something like this
@@ -33,7 +34,7 @@ class ValidationStatus(StrEnum):
 def load_jsonl(file_path: Path) -> list[dict]:
     """Load JSONL file and return list of records."""
     records = []
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -43,17 +44,17 @@ def load_jsonl(file_path: Path) -> list[dict]:
 
 def extract_node_ids(nodes: list[dict]) -> set[str]:
     """Extract all node IDs from nodes file."""
-    return {node['id'] for node in nodes if 'id' in node}
+    return {node["id"] for node in nodes if "id" in node}
 
 
 def extract_edge_node_refs(edges: list[dict]) -> set[str]:
     """Extract all node IDs referenced in edges (subject + object)."""
     node_refs = set()
     for edge in edges:
-        if 'subject' in edge:
-            node_refs.add(edge['subject'])
-        if 'object' in edge:
-            node_refs.add(edge['object'])
+        if "subject" in edge:
+            node_refs.add(edge["subject"])
+        if "object" in edge:
+            node_refs.add(edge["object"])
     return node_refs
 
 
@@ -64,7 +65,7 @@ def save_validation_report(report: dict, output_dir: Path) -> Path:
     report_path = output_dir / IngestFileName.VALIDATION_REPORT_FILE
 
     # Save report
-    with open(report_path, 'w') as f:
+    with open(report_path, "w") as f:
         json.dump(report, f, indent=2)
 
     logger.info(f"Validation report saved to: {report_path}")
@@ -96,22 +97,16 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> dict:
     # Create structured validation report
     report = {
         "timestamp": datetime.now().isoformat(),
-        "files": {
-            "nodes_file": str(nodes_file),
-            "edges_file": str(edges_file)
-        },
+        "files": {"nodes_file": str(nodes_file), "edges_file": str(edges_file)},
         "statistics": {
             "total_nodes": len(node_ids),
             "total_edges": len(edges),
             "unique_nodes_in_edges": len(edge_node_refs),
             "missing_nodes_count": len(missing_nodes),
-            "orphaned_nodes_count": len(orphaned_nodes)
+            "orphaned_nodes_count": len(orphaned_nodes),
         },
         "validation_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
-        "issues": {
-            "missing_nodes": sorted(list(missing_nodes)),
-            "orphaned_nodes": sorted(list(orphaned_nodes))
-        }
+        "issues": {"missing_nodes": sorted(list(missing_nodes)), "orphaned_nodes": sorted(list(orphaned_nodes))},
     }
 
     # Log summary
@@ -155,6 +150,7 @@ def find_kgx_files(data_dir: Path) -> list[tuple]:
 
     return kgx_pairs
 
+
 def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: bool = False) -> bool:
     if not nodes_file.exists():
         error_message = f"Nodes file not found: {nodes_file}"
@@ -179,8 +175,8 @@ def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: 
                 "total_sources": 1,
                 "passed": 1 if validation_passed else 0,
                 "failed": 0 if validation_passed else 1,
-                "overall_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED
-            }
+                "overall_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
+            },
         }
         save_validation_report(validation_report, output_dir)
     return validation_passed
@@ -204,12 +200,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
             "timestamp": datetime.now().isoformat(),
             "data_directory": str(data_dir),
             "sources": {},
-            "summary": {
-                "total_sources": 0,
-                "passed": 0,
-                "failed": 0,
-                "overall_status": "NO_DATA"
-            }
+            "summary": {"total_sources": 0, "passed": 0, "failed": 0, "overall_status": "NO_DATA"},
         }
 
     logger.info(f"Found {len(kgx_pairs)} KGX file pairs to validate")
@@ -219,12 +210,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
         "timestamp": datetime.now().isoformat(),
         "data_directory": str(data_dir),
         "sources": {},
-        "summary": {
-            "total_sources": len(kgx_pairs),
-            "passed": 0,
-            "failed": 0,
-            "overall_status": "PENDING"
-        }
+        "summary": {"total_sources": len(kgx_pairs), "passed": 0, "failed": 0, "overall_status": "PENDING"},
     }
 
     # Validate each source
@@ -265,34 +251,26 @@ def get_validation_status(report_file_path: Path) -> Optional[str]:
             logger.error(error_message)
             raise KeyError(error_message)
 
+
 @click.command()
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
-    help="Path to data directory containing subdirectories with KGX files"
+    help="Path to data directory containing subdirectories with KGX files",
 )
-@click.option(
-    "--files",
-    nargs=2,
-    metavar="NODES_FILE EDGES_FILE",
-    help="Specific nodes and edges files to validate"
-)
+@click.option("--files", nargs=2, metavar="NODES_FILE EDGES_FILE", help="Specific nodes and edges files to validate")
 @click.option(
     "--output-dir",
     type=click.Path(path_type=Path),
     default=Path("data"),
-    help="Output directory for validation reports (default: data)"
+    help="Output directory for validation reports (default: data)",
 )
-@click.option(
-    "--no-save",
-    is_flag=True,
-    help="Don't save validation report to file"
-)
+@click.option("--no-save", is_flag=True, help="Don't save validation report to file")
 def main(data_dir, files, output_dir, no_save):
     """Validate KGX node/edge consistency."""
 
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     # Validate that exactly one of data_dir or files is provided
     if not data_dir and not files:
@@ -306,10 +284,9 @@ def main(data_dir, files, output_dir, no_save):
         validation_passed = validation_report.get("summary", {}).get("overall_status") == ValidationStatus.PASSED
     else:
         nodes_file, edges_file = Path(files[0]), Path(files[1])
-        validation_passed = validate_kgx(nodes_file=nodes_file,
-                                         edges_file=edges_file,
-                                         output_dir=output_dir,
-                                         no_save=no_save)
+        validation_passed = validate_kgx(
+            nodes_file=nodes_file, edges_file=edges_file, output_dir=output_dir, no_save=no_save
+        )
 
     sys.exit(0 if validation_passed else 1)
 
