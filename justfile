@@ -22,10 +22,8 @@ rootdir :=`pwd`
 
 # Environment variables with defaults
 # env_var_name := env_var_or_default("<SOME_ENVIRONMENT_VARIABLE_NAME>", "")
-schema_name := env_var_or_default("LINKML_SCHEMA_NAME", "")
-
-source_schema_path := `pwd`+"/$UV_PROJECT_ENVIRONMENT/Lib/site-packages/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml"
-
+site_packages := `python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"`
+source_schema_path := site_packages+"/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml"
 sources := "ctd go_cam goa"
 
 ### Help ###
