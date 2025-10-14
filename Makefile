@@ -4,6 +4,7 @@ RUN = uv run
 SOURCES ?= ctd ebi_gene2phenotype go_cam goa sider hpoa diseases
 
 
+
 ### Help ###
 
 define HELP
@@ -103,11 +104,21 @@ normalize: transform
 
 .PHONY: validate
 validate: normalize
-	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --data-dir $(ROOTDIR)/data
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-,$(SOURCES))
+
+.PHONY: validate-%
+validate-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
 .PHONY: validate-only
 validate-only:
-	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --data-dir $(ROOTDIR)/data
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
+
+.PHONY: validate-only-%
+validate-only-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
 .PHONY: validate-single
 validate-single: normalize
