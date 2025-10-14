@@ -16,8 +16,6 @@ from loguru import logger
 from koza.model.graphs import KnowledgeGraph
 from pathlib import Path
 import duckdb
-import gzip
-import json
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -88,41 +86,33 @@ def build_entity_lookup_db(data_dir: str = "data/alliance"):
     data_path = Path(data_dir)
 
     try:
-        # Create table
-        conn.execute("CREATE TABLE entities (id VARCHAR, category VARCHAR)")
+        # Load genes from BGI JSON files - DuckDB reads .gz directly
+        conn.execute(f"""
+            CREATE TABLE entities AS
+            SELECT
+                unnest.basicGeneticEntity.primaryId as id,
+                'biolink:Gene' as category
+            FROM read_json('{data_path}/BGI_*.json.gz',
+                           format='auto',
+                           maximum_object_size=2000000000),
+            unnest(data)
+            WHERE unnest.basicGeneticEntity.primaryId IS NOT NULL
+        """)
 
-        # Load genes from BGI JSON files - read directly in Python
-        logger.info("Loading genes from BGI files...")
-        genes = []
-        for file_path in data_path.glob("BGI_*.json.gz"):
-            with gzip.open(file_path, 'rt') as f:
-                data = json.load(f)
-                for item in data.get('data', []):
-                    gene_id = item.get('basicGeneticEntity', {}).get('primaryId')
-                    if gene_id:
-                        genes.append((gene_id,))
+        # Load genotypes from AGM JSON files
+        conn.execute(f"""
+            INSERT INTO entities
+            SELECT
+                unnest.primaryID as id,
+                'biolink:Genotype' as category
+            FROM read_json('{data_path}/AGM_*.json.gz',
+                           format='auto',
+                           maximum_object_size=2000000000),
+            unnest(data)
+            WHERE unnest.primaryID IS NOT NULL
+        """)
 
-        if genes:
-            conn.executemany("INSERT INTO entities VALUES (?, 'biolink:Gene')", genes)
-            logger.info(f"Loaded {len(genes):,} genes")
-
-        # Load genotypes from AGM JSON files - read directly in Python
-        logger.info("Loading genotypes from AGM files...")
-        genotypes = []
-        for file_path in data_path.glob("AGM_*.json.gz"):
-            with gzip.open(file_path, 'rt') as f:
-                data = json.load(f)
-                for item in data.get('data', []):
-                    genotype_id = item.get('primaryID')
-                    if genotype_id:
-                        genotypes.append((genotype_id,))
-
-        if genotypes:
-            conn.executemany("INSERT INTO entities VALUES (?, 'biolink:Genotype')", genotypes)
-            logger.info(f"Loaded {len(genotypes):,} genotypes")
-
-        # Load alleles from VARIANT-ALLELE TSV files - DuckDB can handle TSV easily
-        logger.info("Loading alleles from VARIANT-ALLELE files...")
+        # Load alleles from VARIANT-ALLELE TSV files
         conn.execute(f"""
             INSERT INTO entities
             SELECT DISTINCT
@@ -133,8 +123,6 @@ def build_entity_lookup_db(data_dir: str = "data/alliance"):
                           header=true)
             WHERE AlleleId IS NOT NULL AND AlleleId != '-'
         """)
-        allele_count = conn.execute("SELECT COUNT(*) FROM entities WHERE category = 'biolink:SequenceVariant'").fetchone()[0]
-        logger.info(f"Loaded {allele_count:,} alleles")
 
         # Create index for fast lookup
         conn.execute("CREATE INDEX idx_entity_id ON entities(id)")
@@ -271,6 +259,7 @@ def transform_gene(koza_transform, row: dict) -> List[Gene]:
 
     gene = Gene(
         id=gene_id,
+        category=["biolink:Gene"],
         symbol=row["symbol"],
         name=row["symbol"],
         full_name=row["name"].replace("\r", ""),  # Remove stray carriage returns
@@ -541,6 +530,7 @@ def transform_genotype(koza_transform, row: dict) -> List:
 
     genotype = Genotype(
         id=row["primaryID"],
+        category=["biolink:Genotype"],
         type=[row["subtype"]] if "subtype" in row else None,
         name=row["name"],
         in_taxon=[row["taxonId"]],
@@ -591,6 +581,7 @@ def transform_allele(koza_transform, row: dict) -> List:
 
     allele = SequenceVariant(
         id=allele_id,
+        category=["biolink:SequenceVariant"],
         name=row["AlleleSymbol"],
         in_taxon=[row["Taxon"]],
         in_taxon_label=row["SpeciesName"],
