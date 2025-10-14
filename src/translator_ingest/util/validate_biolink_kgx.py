@@ -29,6 +29,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class ValidationStatus(StrEnum):
     PASSED = "PASSED"
     # maybe we want something like this
@@ -173,7 +174,6 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
     # Create structured validation report
     report = {
         "timestamp": datetime.now().isoformat(),
-        "validator": "biolink-kgx-validator",
         "files": {"nodes_file": str(nodes_file), "edges_file": str(edges_file)},
         "statistics": {
             "total_nodes": len(nodes),
@@ -236,6 +236,7 @@ def find_kgx_files(data_dir: Path) -> List[tuple]:
 
     return kgx_pairs
 
+
 def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: bool = False) -> bool:
     if not nodes_file.exists():
         error_message = f"Nodes file not found: {nodes_file}"
@@ -260,8 +261,8 @@ def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: 
                 "total_sources": 1,
                 "passed": 1 if validation_passed else 0,
                 "failed": 0 if validation_passed else 1,
-                "overall_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED
-            }
+                "overall_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
+            },
         }
         save_validation_report(validation_report, output_dir)
     return validation_passed
@@ -283,7 +284,6 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
         logger.info(f"No KGX file pairs found in {data_dir}")
         return {
             "timestamp": datetime.now().isoformat(),
-            "validator": "biolink-kgx-validator",
             "data_directory": str(data_dir),
             "sources": {},
             "summary": {"total_sources": 0, "passed": 0, "failed": 0, "overall_status": "NO_DATA"},
@@ -294,7 +294,6 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     # Create validation report
     validation_report = {
         "timestamp": datetime.now().isoformat(),
-        "validator": "biolink-kgx-validator",
         "data_directory": str(data_dir),
         "sources": {},
         "summary": {"total_sources": len(kgx_pairs), "passed": 0, "failed": 0, "overall_status": "PENDING"},
@@ -338,6 +337,7 @@ def get_validation_status(report_file_path: Path) -> Optional[str]:
             logger.error(error_message)
             raise KeyError(error_message)
 
+
 @click.command()
 @click.option(
     "--data-dir",
@@ -370,10 +370,9 @@ def main(data_dir, files, output_dir, no_save):
         validation_passed = validation_report.get("summary", {}).get("overall_status") == ValidationStatus.PASSED
     else:
         nodes_file, edges_file = Path(files[0]), Path(files[1])
-        validation_passed = validate_kgx(nodes_file=nodes_file,
-                                         edges_file=edges_file,
-                                         output_dir=output_dir,
-                                         no_save=no_save)
+        validation_passed = validate_kgx(
+            nodes_file=nodes_file, edges_file=edges_file, output_dir=output_dir, no_save=no_save
+        )
 
     sys.exit(0 if validation_passed else 1)
 

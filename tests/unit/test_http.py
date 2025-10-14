@@ -13,5 +13,5 @@ def test_post_invalid_url_query():
 
 
 def test_post_query():
-    returned: Dict = post_query(url=NODE_NORMALIZATION_URL + "get_normalized_nodes", query={'curies': ["HGNC:12791"]})
+    returned: Dict = post_query(url=NODE_NORMALIZATION_URL + "get_normalized_nodes", query={"curies": ["HGNC:12791"]})
     assert "HGNC:12791" in returned.keys()

@@ -40,54 +40,59 @@ class IngestFileName(StrEnum):
 
 
 FILE_PATH_LOOKUP = {
-    IngestFileType.TRANSFORM_KGX_FILES:
-        lambda pipeline_metadata: __find_kgx_files(get_transform_directory(pipeline_metadata)),
-    IngestFileType.TRANSFORM_METADATA_FILE:
-        lambda pipeline_metadata: get_transform_directory(pipeline_metadata) / IngestFileName.TRANSFORM_METADATA,
-    IngestFileType.NORMALIZED_KGX_FILES:
-        lambda pipeline_metadata: (get_normalization_directory(pipeline_metadata) / IngestFileName.NORMALIZED_NODES,
-                                   get_normalization_directory(pipeline_metadata) / IngestFileName.NORMALIZED_EDGES
+    IngestFileType.TRANSFORM_KGX_FILES: lambda pipeline_metadata: __find_kgx_files(
+        get_transform_directory(pipeline_metadata)
     ),
-    IngestFileType.NORMALIZATION_METADATA_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) /
-                                  IngestFileName.NORMALIZATION_METADATA,
-    IngestFileType.NORMALIZATION_MAP_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) /
-                                  IngestFileName.NORMALIZATION_MAP,
-    IngestFileType.NORMALIZATION_FAILURES_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) /
-                                  IngestFileName.NORMALIZATION_FAILURES,
-    IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) /
-                                  IngestFileName.PREDICATE_NORMALIZATION_MAP,
-    IngestFileType.META_KG_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.META_KG_FILENAME,
-    IngestFileType.TEST_DATA_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.TEST_DATA_FILENAME,
-    IngestFileType.EXAMPLE_DATA_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.EXAMPLE_DATA_FILENAME,
-    IngestFileType.FINAL_METADATA_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.FINAL_METADATA_FILE,
-    IngestFileType.VALIDATION_REPORT_FILE:
-        lambda pipeline_metadata: get_normalization_directory(pipeline_metadata) / IngestFileName.VALIDATION_REPORT_FILE
+    IngestFileType.TRANSFORM_METADATA_FILE: lambda pipeline_metadata: get_transform_directory(pipeline_metadata)
+    / IngestFileName.TRANSFORM_METADATA,
+    IngestFileType.NORMALIZED_KGX_FILES: lambda pipeline_metadata: (
+        get_normalization_directory(pipeline_metadata) / IngestFileName.NORMALIZED_NODES,
+        get_normalization_directory(pipeline_metadata) / IngestFileName.NORMALIZED_EDGES,
+    ),
+    IngestFileType.NORMALIZATION_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.NORMALIZATION_METADATA,
+    IngestFileType.NORMALIZATION_MAP_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.NORMALIZATION_MAP,
+    IngestFileType.NORMALIZATION_FAILURES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.NORMALIZATION_FAILURES,
+    IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE: lambda pipeline_metadata: get_normalization_directory(
+        pipeline_metadata
+    )
+    / IngestFileName.PREDICATE_NORMALIZATION_MAP,
+    IngestFileType.META_KG_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.META_KG_FILENAME,
+    IngestFileType.TEST_DATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.TEST_DATA_FILENAME,
+    IngestFileType.EXAMPLE_DATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.EXAMPLE_DATA_FILENAME,
+    IngestFileType.FINAL_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.FINAL_METADATA_FILE,
+    IngestFileType.VALIDATION_REPORT_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.VALIDATION_REPORT_FILE,
 }
 
 
-def get_versioned_file_paths(file_type: IngestFileType,
-                             pipeline_metadata: PipelineMetadata) -> tuple[Path, Path] | Path:
+def get_versioned_file_paths(
+    file_type: IngestFileType, pipeline_metadata: PipelineMetadata
+) -> tuple[Path, Path] | Path:
     return FILE_PATH_LOOKUP[file_type](pipeline_metadata)
+
 
 def get_output_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return Path(INGESTS_DATA_PATH) / pipeline_metadata.source / pipeline_metadata.source_version
 
+
 def get_source_data_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / "source_data"
+
 
 def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / pipeline_metadata.transform_version
 
+
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_transform_directory(pipeline_metadata) / pipeline_metadata.normalization_version
+
 
 # Find the KGX files in a given directory
 def __find_kgx_files(directory: Path) -> (str, str):
@@ -100,14 +105,18 @@ def __find_kgx_files(directory: Path) -> (str, str):
             if nodes_file_path is None:
                 nodes_file_path = child_path
             else:
-                raise IOError(f"Multiple nodes files were found in {directory}. "
-                              f"This should not happen with normal ingest pipeline usage and is likely to cause bugs.")
+                raise IOError(
+                    f"Multiple nodes files were found in {directory}. "
+                    f"This should not happen with normal ingest pipeline usage and is likely to cause bugs."
+                )
         elif "edges.jsonl" in child_path.name:
             if edges_file_path is None:
                 edges_file_path = child_path
             else:
-                raise IOError(f"Multiple edges files were found in {directory}. "
-                              f"This should not happen with normal ingest pipeline usage and is likely to cause bugs.")
+                raise IOError(
+                    f"Multiple edges files were found in {directory}. "
+                    f"This should not happen with normal ingest pipeline usage and is likely to cause bugs."
+                )
     if not (nodes_file_path and edges_file_path):
         raise IOError(f"KGX files could not be found in {directory}")
     return nodes_file_path, edges_file_path
