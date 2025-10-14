@@ -158,7 +158,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
             if isinstance(categories, str):
                 categories = [categories]
 
-            schema_view = self._schema_view or getattr(context, 'schema_view', None)
+            schema_view = self._schema_view or getattr(context, "schema_view", None)
             if not schema_view:
                 # Skip category validation if no schema view
                 return
@@ -199,7 +199,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         if "predicate" in edge_obj:
             predicate = edge_obj["predicate"]
-            schema_view = self._schema_view or getattr(context, 'schema_view', None)
+            schema_view = self._schema_view or getattr(context, "schema_view", None)
             if schema_view:
                 valid_predicates = self._get_valid_predicates(schema_view)
                 if predicate not in valid_predicates:

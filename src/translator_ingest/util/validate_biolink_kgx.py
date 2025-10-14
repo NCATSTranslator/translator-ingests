@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 import click
 
-from linkml.validator import validate
 from linkml_runtime.utils.schemaview import SchemaView
 
 try:
@@ -101,11 +100,14 @@ def validate_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
         # Try to load from local biolink model if available
         try:
             from biolink_model import BIOLINK_MODEL_YAML_PATH
+
             biolink_schema = SchemaView(BIOLINK_MODEL_YAML_PATH)
             logger.debug("Successfully loaded Biolink schema from local file")
         except Exception as e2:
             logger.error(f"Failed to load local Biolink schema: {e2}")
-            raise RuntimeError("Cannot proceed without Biolink schema. Please ensure biolink-model is properly installed.")
+            raise RuntimeError(
+                "Cannot proceed without Biolink schema. Please ensure biolink-model is properly installed."
+            )
 
     # Perform validation using plugin directly
     validation_results = []

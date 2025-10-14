@@ -39,20 +39,20 @@ def normalize_id(node_id: str) -> str:
     """Remove duplicate prefixes from node IDs (e.g., MGI:MGI:1921700 -> MGI:1921700)."""
     if not node_id or ":" not in node_id:
         return node_id
-    
+
     # Split on the first colon to get prefix and remainder
     parts = node_id.split(":", 1)
     if len(parts) != 2:
         return node_id
-    
+
     prefix, remainder = parts
-    
+
     # Check if remainder starts with the same prefix followed by colon
     duplicate_prefix = f"{prefix}:"
     if remainder.startswith(duplicate_prefix):
         # Remove the duplicate prefix
         return f"{prefix}:{remainder[len(duplicate_prefix):]}"
-    
+
     return node_id
 
 
@@ -251,7 +251,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             # Get normalized IDs for the association
             normalized_source_id = node_lookup[source_id]["id"]
             normalized_target_id = node_lookup[target_id]["id"]
-            
+
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
                 id=str(uuid.uuid4()),
