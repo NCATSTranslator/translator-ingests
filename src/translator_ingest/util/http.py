@@ -3,6 +3,7 @@
 import requests
 from json import JSONDecodeError
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,8 +27,9 @@ def post_query(url: str, query: dict, params=None, server: str = "") -> dict:
         return dict()
 
     result: dict = dict()
-    err_msg_prefix: str = \
+    err_msg_prefix: str = (
         f"post_query(): Server {server} at '\nUrl: '{url}', Query: '{query}' with parameters '{params}' -"
+    )
     if response.status_code == 200:
         try:
             result = response.json()
