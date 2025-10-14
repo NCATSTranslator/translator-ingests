@@ -33,6 +33,8 @@ define HELP
 │     lint                Lint all code                     │
 │     format              Format all code                   │
 │     spell-fix           Fix spelling errors interactively │
+│     new-rig             Create a new RIG from template (requires INFORES and NAME)" │
+│			validate-rigs       Validate all RIG files against the schema" │
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │

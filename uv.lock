@@ -285,6 +285,7 @@ dev = [
     { name = "pandas" },
     { name = "pytest" },
     { name = "requests" },
+    { name = "resource-ingest-guide-schema" },
     { name = "ruff" },
 ]
 
@@ -295,7 +296,7 @@ requires-dist = [
     { name = "bmt", specifier = ">=1.4.6" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir-2" },
     { name = "robokop-orion", specifier = "==0.1.5" },
 ]
 
@@ -309,6 +310,7 @@ dev = [
     { name = "pandas" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "requests" },
+    { name = "resource-ingest-guide-schema" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
@@ -1470,7 +1472,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir#870342a5dc046e9351ada7e8f4a3ed78bcd08938" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir-2#b569428efcf488e1c577c18e18be90b377ad654d" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
@@ -2753,6 +2755,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f3/61/d7545dafb7ac2230c70d38d31cbfe4cc64f7144dc41f6e4e4b78ecd9f5bb/requests-toolbelt-1.0.0.tar.gz", hash = "sha256:7681a0a3d047012b5bdc0ee37d7f8f07ebe76ab08caeccfc3921ce23c88d5bc6", size = 206888 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/51/d4db610ef29373b879047326cbf6fa98b6c1969d6f6dc423279de2b1be2c/requests_toolbelt-1.0.0-py2.py3-none-any.whl", hash = "sha256:cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06", size = 54481 },
+]
+
+[[package]]
+name = "resource-ingest-guide-schema"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "jinja2" },
+    { name = "linkml" },
+    { name = "linkml-runtime" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/17/a6/0135578a821641f0b7d10277a1e51148f6e540f864a002eef8b51d12fa71/resource_ingest_guide_schema-0.1.2.tar.gz", hash = "sha256:1cc3c85cf561fae4193722fe90338f18f6c868a94da3f049988a1c56e30bd5e1", size = 2415371 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/17/7248bacfb5891b7c86b3b58d90f11ad8589b97e3e9b2641e61b8764505bb/resource_ingest_guide_schema-0.1.2-py3-none-any.whl", hash = "sha256:dcfcec77f3256bce2637254a1f8c1e856364b9d742f0a43958aace38dac31cfa", size = 14484 },
 ]
 
 [[package]]

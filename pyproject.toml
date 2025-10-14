@@ -33,6 +33,7 @@ dev = [
     "nbclassic",
     "jupyter_contrib_nbextensions",
     "jsonlines",
+    "resource-ingest-guide-schema",
 ]
 
 [tool.pytest.ini_options]
