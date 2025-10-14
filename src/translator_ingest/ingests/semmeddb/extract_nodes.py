@@ -137,10 +137,12 @@ if __name__ == "__main__":
     candidates: list[Path] = []
     if env_in:
         candidates.append(Path(env_in))
-    candidates.extend([
-        Path("data/semmeddb/semmeddb_edges.jsonl"),
-        Path("data/semmeddb_kg2_kgx/kg2.10.3-semmeddb-edges.jsonl"),
-    ])
+    candidates.extend(
+        [
+            Path("data/semmeddb/semmeddb_edges.jsonl"),
+            Path("data/semmeddb_kg2_kgx/kg2.10.3-semmeddb-edges.jsonl"),
+        ]
+    )
     input_path: Optional[Path] = next((p for p in candidates if p.exists()), None)
     if not input_path:
         raise SystemExit(
@@ -163,5 +165,3 @@ if __name__ == "__main__":
                 seen.add(curie)
                 written += 1
     print(f"Wrote {written} nodes to {out_nodes}")
-
-

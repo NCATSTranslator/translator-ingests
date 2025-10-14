@@ -7,6 +7,7 @@ from koza.model.graphs import KnowledgeGraph
 from datetime import datetime
 import pandas as pd
 import requests
+
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -25,7 +26,7 @@ BIOLINK_CAUSES = "biolink:causes"
 INFORES_EBI_G2P = "infores:ebi-gene2phenotype"
 
 
-## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs. 
+## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
 ## Dynamically mapping all possible values (not just those in the data) using OLS API with HP's synonym info
 ALLELIC_REQ_TO_MAP = [
     "biallelic_autosomal",
@@ -55,15 +56,17 @@ def get_latest_version() -> str:
     return datetime.now(datetime.now().astimezone().tzinfo).isoformat()
 
 
-## used in `on_data_begin` to build mapping of EBI G2P's allelic requirement values -> HP terms 
+## used in `on_data_begin` to build mapping of EBI G2P's allelic requirement values -> HP terms
 def build_allelic_req_mappings(allelic_req_val):
     ## queries OLS to find what HP term has the allelic requirement value as an exact synonym (OLS uses the latest HPO release)
-    ols_request = f"https://www.ebi.ac.uk/ols4/api/search?q={allelic_req_val}&ontology=hp&queryFields=synonym&exact=true"
+    ols_request = (
+        f"https://www.ebi.ac.uk/ols4/api/search?q={allelic_req_val}&ontology=hp&queryFields=synonym&exact=true"
+    )
     try:
         response = requests.get(ols_request, timeout=5)
         if response.status_code == 200:
             temp = response.json()
-            return temp["response"]["docs"][0]["obo_id"]    ## only need the HP ID
+            return temp["response"]["docs"][0]["obo_id"]  ## only need the HP ID
         else:
             print(f"Error encountered on '{allelic_req_val}': {response.status_code}")
     except requests.RequestException as e:
@@ -80,12 +83,20 @@ def on_begin(koza: koza.KozaTransform) -> None:
 @koza.on_data_end()
 def on_end(koza: koza.KozaTransform) -> None:
     ## add logs based on counts
-    if koza.state["no_diseaseID_stats"]['n_rows'] > 0:
-        koza.log(f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.", level="INFO")
-    if koza.state['other_row_counts']['no_gene_IDs'] > 0:
-        koza.log(f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO")
-    if koza.state['other_row_counts']["duplicate_rows"] > 0:
-        koza.log(f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.", level="INFO")
+    if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
+        koza.log(
+            f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.",
+            level="INFO",
+        )
+    if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
+        koza.log(
+            f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO"
+        )
+    if koza.state["other_row_counts"]["duplicate_rows"] > 0:
+        koza.log(
+            f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.",
+            level="INFO",
+        )
 
 
 @koza.prepare_data()
@@ -97,8 +108,8 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         "n_names": 0,
     }
     koza.state["other_row_counts"] = {
-        "no_gene_IDs": 0,    ## just in case
-        "duplicate_rows": 0,    ## just in case
+        "no_gene_IDs": 0,  ## just in case
+        "duplicate_rows": 0,  ## just in case
     }
 
     df = pd.DataFrame.from_records(data)
@@ -110,7 +121,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     ## currently, there are rows where both disease ID columns have no value. Check, count, remove
     temp_no_disease = df[df["disease mim"].isna() & df["disease MONDO"].isna()]
-    if temp_no_disease.shape[0] > 0:    ## number of rows
+    if temp_no_disease.shape[0] > 0:  ## number of rows
         ## add to counts
         koza.state["no_diseaseID_stats"]["n_rows"] = temp_no_disease.shape[0]
         koza.state["no_diseaseID_stats"]["n_names"] = len(temp_no_disease["disease name"].unique())
@@ -125,7 +136,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         df.dropna(subset=["hgnc id"], inplace=True, ignore_index=True)
 
     ## Check for duplicate rows just in case (not in data currently). Count, remove if they're there
-    temp_duplicates = df[df.duplicated()]    ## will count all except first occurrence (default)
+    temp_duplicates = df[df.duplicated()]  ## will count all except first occurrence (default)
     if temp_duplicates.shape[0] > 0:
         ## add to counts
         koza.state["other_row_counts"]["duplicate_rows"] = temp_duplicates.shape[0]
@@ -138,48 +149,48 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
 @koza.transform_record()
 def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-    ## processing `publications` field 
-    publications = ["PMID:"+i.strip() for i in record["publications"].split(";")] if record["publications"] else None
+    ## processing `publications` field
+    publications = ["PMID:" + i.strip() for i in record["publications"].split(";")] if record["publications"] else None
     ## creating url
     url = "https://www.ebi.ac.uk/gene2phenotype/lgd/" + record["g2p id"]
-    ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error 
+    ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error
     date = record["date of last review"][0:10]
 
-    gene = Gene(id = "HGNC:"+record["hgnc id"])
+    gene = Gene(id="HGNC:" + record["hgnc id"])
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
     if record["disease mim"]:
         ## assuming the value will always be a string
         ## check if value is numeric (OMIM ID) or not
         if record["disease mim"].isnumeric():
-            disease = Disease(id = "OMIM:"+record["disease mim"])
-        else:    ## these have been orphanet IDs in format Orphanet:######, Translator prefix is all-lowercase
-            disease = Disease(id = record["disease mim"].lower())
-    else:    ## use "disease MONDO" column, which already has the correct prefix/format for Translator
-        disease = Disease(id = record["disease MONDO"])
+            disease = Disease(id="OMIM:" + record["disease mim"])
+        else:  ## these have been orphanet IDs in format Orphanet:######, Translator prefix is all-lowercase
+            disease = Disease(id=record["disease mim"].lower())
+    else:  ## use "disease MONDO" column, which already has the correct prefix/format for Translator
+        disease = Disease(id=record["disease MONDO"])
 
     association = GeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id = str(uuid.uuid4()),
-        subject = gene.id,
-        predicate = BIOLINK_ASSOCIATED_WITH,
-        qualified_predicate = BIOLINK_CAUSES,
-        subject_form_or_variant_qualifier = FORM_OR_VARIANT_QUALIFIER_MAPPINGS[record["molecular mechanism"]],
-        object = disease.id,
-        sources = [
+        id=str(uuid.uuid4()),
+        subject=gene.id,
+        predicate=BIOLINK_ASSOCIATED_WITH,
+        qualified_predicate=BIOLINK_CAUSES,
+        subject_form_or_variant_qualifier=FORM_OR_VARIANT_QUALIFIER_MAPPINGS[record["molecular mechanism"]],
+        object=disease.id,
+        sources=[
             RetrievalSource(
                 ## making the ID the same as infores for now, which is what go_cam did
-                id = INFORES_EBI_G2P,
-                resource_id = INFORES_EBI_G2P,
-                resource_role = ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls = [url]
+                id=INFORES_EBI_G2P,
+                resource_id=INFORES_EBI_G2P,
+                resource_role=ResourceRoleEnum.primary_knowledge_source,
+                source_record_urls=[url],
             )
         ],
-        knowledge_level = KnowledgeLevelEnum.knowledge_assertion,
-        agent_type = AgentTypeEnum.manual_agent,
-        update_date = date,
-        allelic_requirement = koza.state["allelicreq_mappings"][record["allelic requirement"]],
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        update_date=date,
+        allelic_requirement=koza.state["allelicreq_mappings"][record["allelic requirement"]],
         ## include publications!!!
-        publications = publications,
+        publications=publications,
     )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
