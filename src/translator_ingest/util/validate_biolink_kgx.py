@@ -18,7 +18,12 @@ import click
 from linkml.validator import validate
 from linkml_runtime.utils.schemaview import SchemaView
 
-from .biolink_validation_plugin import BiolinkValidationPlugin
+try:
+    from .biolink_validation_plugin import BiolinkValidationPlugin
+except ImportError:
+    # Handle direct script execution
+    sys.path.append(str(Path(__file__).parent))
+    from biolink_validation_plugin import BiolinkValidationPlugin
 logger = logging.getLogger(__name__)
 
 
