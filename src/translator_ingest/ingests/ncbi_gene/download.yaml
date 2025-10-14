@@ -1,0 +1,4 @@
+---
+# NCBI Gene database - gene_info file containing gene metadata for all species
+- url: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
+  local_name: gene_info.gz

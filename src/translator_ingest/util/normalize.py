@@ -22,23 +22,23 @@
 # how the normalization - of the two distinct but interrelated collections
 # containing KGX-coded Biolink entities - is best coordinated.
 #
-from typing import Optional, Dict
+from typing import Optional
 from .http import post_query
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing, Association
-)
+from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association
 
 
 NODE_NORMALIZER_SERVER = "https://nodenormalization-sri.renci.org/get_normalized_nodes"
 
-def node_normalizer_query(query: Dict) -> Optional[Dict]:
+
+def node_normalizer_query(query: dict) -> Optional[dict]:
     """
     Wrapper for Node Normalizer http POST query request.
     :param query: JSON query input, as a Python dictionary
-    :return: Optional[Dict] JSON-like result as multi-level Python dictionary
+    :return: Optional[dict] JSON-like result as multi-level Python dictionary
     """
     return post_query(url=NODE_NORMALIZER_SERVER, query=query, server="Node Normalizer")
+
 
 # I'm not sure that this method is needed... copied from the
 # reasoner-validator library, just to help thinking about NN
@@ -53,13 +53,13 @@ def convert_to_preferred(curie, allowed_list, nn_query=node_normalizer_query):
     :param nn_query: Node Normalizer accessor query wrapper
     :param nn_query: Node Normalizer query accessor method
     """
-    query = {'curies': [curie]}
+    query = {"curies": [curie]}
     result = nn_query(query=query)
-    if not (result and curie in result and result[curie] and 'equivalent_identifiers' in result[curie]):
+    if not (result and curie in result and result[curie] and "equivalent_identifiers" in result[curie]):
         return None
-    new_ids = [v['identifier'] for v in result[curie]['equivalent_identifiers']]
+    new_ids = [v["identifier"] for v in result[curie]["equivalent_identifiers"]]
     for nid in new_ids:
-        if nid.split(':')[0] in allowed_list:
+        if nid.split(":")[0] in allowed_list:
             return nid
     return None
 
@@ -80,7 +80,7 @@ def normalize_node(node: NamedThing, nn_query=node_normalizer_query) -> Optional
 
     assert node.id, "normalize_node(node): empty node identifier?"
 
-    query = {'curies': [node.id]}
+    query = {"curies": [node.id]}
     result = nn_query(query=query)
 
     # Sanity check about regular NN operation for all queries
@@ -122,9 +122,7 @@ def normalize_node(node: NamedThing, nn_query=node_normalizer_query) -> Optional
         if entry["identifier"] not in node.xref:
             node.xref.append(entry["identifier"])
         # ... and label as a synonym (except for the canonical name)
-        if "label" in entry and \
-                entry["label"] != canonical_name and \
-                entry["label"] not in node.synonym:
+        if "label" in entry and entry["label"] != canonical_name and entry["label"] not in node.synonym:
             node.synonym.append(entry["label"])
 
     if node.id != canonical_identifier:
@@ -134,8 +132,7 @@ def normalize_node(node: NamedThing, nn_query=node_normalizer_query) -> Optional
 
         # Add input.name moved to the list of synonyms
         # if it is identical to the canonical name
-        if node.name != canonical_name and \
-                node.name not in node.synonym:
+        if node.name != canonical_name and node.name not in node.synonym:
             node.synonym.append(node.name)
 
     # Overwrite the node name with the canonical name...
@@ -147,6 +144,7 @@ def normalize_node(node: NamedThing, nn_query=node_normalizer_query) -> Optional
 
     # return the normalized node
     return node
+
 
 def normalize_edge(edge: Association, nn_query=node_normalizer_query) -> Optional[Association]:
     """

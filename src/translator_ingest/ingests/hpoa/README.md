@@ -89,8 +89,10 @@ There are four HPOA ingests ('disease-to-phenotype' (includes capture of disease
 
 ### Future Modeling Considerations
 
-**spoq_pattern:** Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations where we place more semantics into predicates, per https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22 Should we consider creating support paths in our data/graphs, for the G-D-P hops over which HPO infers G-P associations? (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`);
-Note that the values of the disease_context_qualifier in the Gene-to-Phenotype Associations are not currently being remapped to MONDO, as was attempted in the Monarch Initiative ingest.
+**spoq_pattern:** Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations where we place more semantics into predicates, per https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22 Should we consider creating support paths in our data/graphs, for the G-D-P hops over which HPO infers G-P associations (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)?
+
+Note that the values of the **`disease_context_qualifier`** in the Gene-to-Phenotype **Associations** are not currently being remapped to MONDO, as was attempted in the Monarch Initiative ingest.
+
 
 ## Provenance Information
 

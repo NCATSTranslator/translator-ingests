@@ -15,13 +15,15 @@
    - **RIG Catalog**: Collection of RIGs for current source ingests ([directory](https://github.com/biolink/resource-ingest-guide-schema/tree/main/src/docs/rigs)) ([web site](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
 4. [Ingest Metadata Schema Repo](https://github.com/biolink/ingest-metadata): Holds a schema and documentation for KGX ingest-metadata files which accompany 'nodes' and 'edges' files for each ingest execution.
    - **Ingest Metadata Schema**: LinkML-based schema for authoring/validating KGX ingest-metadata files ([yaml](https://github.com/biolink/ingest-metadata/blob/main/src/ingest_metadata/schema/ingest_metadata.yaml)) ([web site](https://biolink.github.io/ingest-metadata/))
-   
+5. [Information Resource Registry Repo](https://github.com/biolink/information-resource-registry): holds an information resource ('infores') catalog with identifiers and metadata about resources from which Translator ingests data, and a schema for authoring/validating these records.
+   - **Information Resource Registry Schema**: LinkML-based schema for populating resource records ([schema](https://github.com/biolink/information-resource-registry/blob/main/src/information_resource_registry/schema/information_resource_registry.yaml))
+   - **Information Resource (Infores) Catalog**: YAML file with entries for each information resource ([catalog](https://github.com/biolink/information-resource-registry/blob/main/infores_catalog.yaml))
 
 ## Key Artifacts
-1. **Ingest List and Assignments**: Records owner and contributor assignments for each ingest. ([Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) ([Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496)) 
+1. **Ingest List and Assignments**: Records owner and contributor assignments for each ingest. ([Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) 
 2. **Source Ingest Tickets**: Tracks contributor questions and discussions about the ingest. ([Template](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/45)) ([Existing Tickets](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22)) ([Project Board](https://github.com/orgs/NCATSTranslator/projects/33/views/1?layout=board))
 3. **Ingest Surveys** **_(optional)_**: Describe current ingests of a source from Phase 2 to facilitate comparison and alignment (useful when there are multiple phase 2 ingests). ([Directory](https://drive.google.com/drive/folders/1temEMKNvfMXKkC-6G4ssXG06JXYXY4gT)) ([CTD Example)](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
-4. **Reference Ingest Guides (RIGs)**: Document scope, content, and modeling decisions for an ingest, in a computable yaml format. ([Instructions](https://biolink.github.io/resource-ingest-guide-schema/example-rigs/)) ([yaml schema](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml))  ([yaml template](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/docs/files/rig_template.yaml)) ([yaml CTD example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd-rig.yaml)) ([web documentation](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
+4. **Resource Ingest Guides (RIGs)**: Document scope, content, and modeling decisions for an ingest, in a computable yaml format. ([yaml schema](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml))  ([yaml template](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/docs/files/rig_template.yaml)) ([yaml CTD example](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/docs/rigs/ctd_rig.yaml)) ([web docs/instructions](https://biolink.github.io/resource-ingest-guide-schema/rig_index/))
 5. **Ingest Code**: Python code used to execute an ingest as described in a RIG. ([Directory](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests)) ([CTD Example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd.py))
 6. **KGX Files**: The final knowledge graphs and ingest metadata that is produced by ingest code. ([CTD Example]() - TO DO)
 7. **Phase 2 Results Analysis**: An assessment of how often different types of edges from different sources are returned in current results (based on Phase 2 sources/ingests) - to help identify priority sources and edge types for Phase 3 ([GDrive](https://drive.google.com/drive/folders/1Ugr7rbOogsDz-tsVfIxQ8sSy5X2xGLLk))
@@ -30,9 +32,9 @@
 
 ### 1. Establish / Organize Owners and Contributors
 - Determine who will perform and contribute to each ingest. We are currently using the following tables:
-   - [Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936): Lists sources for ingest, info about each to help prioritize, and columns to recommend ingest owners.
-   - [Ingest Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1969427496#gid=1969427496): Table capturing the final owners and contributors for each ingest.
+   - [Ingest List and Assignments](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936): Lists sources for ingest, info about each to help prioritize, and columns to recommend ingest owners.
    - [Phase 2 Source Ingestors](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=1144506947#gid=1144506947): Table with one row per Phase 2 ingest of a source by a KP - reporting which / how many KPs ingested each source. 
+
 - As appropriate, schedule a Planning Call between all contributors, to collaboratively address/document the questions/tasks below.
 
 ### 2. Create a Source Ingest Ticket in DINGO Repository [here](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/)
@@ -53,7 +55,8 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
 
 #### Prepare
 - Reps for each KP that ingested a source in Phase 2 should prepare by reviewing what their KP ingested, from where, how it was transformed to Biolink Associations, and the logic/rationale behind any processing or filtering that was performed.
-- In particular for sources ingested by multiple KPs, we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) like the one for CTD linked above - to help identify and resolve any differences in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below.
+- In particular for sources ingested by multiple KPs, we strongly recommend each KP populates an **Ingest Survey Spreadsheet** like the one [here](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0) for CTD - to help identify and resolve any differences in what and how source data is ingested, filtered, and modeled across KPs. This format will facilitate the 'Compare' task described below.
+- The 'owner' of a given source will create a survey spreadsheet, fill it out for their KP, then reach out to other relevant KPs to review. These KPs may decide that the owner's ingest covers everything they did, in which case nothing else is needed. Or they may determine that the owner's ingest is different in important ways (scope of content, filtering, modeling) - and populate rows describing their ingest that will help surface and resolve these differences. This will likely require a meeting to discuss in real time. 
     
 #### Compare
 - What KPs ingested the source in Phase 2?
@@ -74,7 +77,7 @@ Assuming a source passes **terms of use** and **utility** assessments, proceed w
   - And key artifacts generated through this process (e.g. Jupyter Notebooks, summary spreadsheets can be described in and linked to from the RIG.
   
 ### 7. Document Ingest Decisions in a RIG
-RIGs like the one [here](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd-rig.yaml) document these scope, content, and modeling decisions for a source ingest.
+RIGs like the one [here](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/docs/rigs/ctd_rig.yaml) document these scope, content, and modeling decisions for a source ingest.
 A template for authoring new yaml RIGs can be found [here](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/docs/files/rig_template.yaml), which follows [this schema](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml).
 
 RIGs are used to:

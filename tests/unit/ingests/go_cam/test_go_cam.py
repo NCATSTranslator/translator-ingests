@@ -1,93 +1,62 @@
-from typing import Iterable
-import json
 import logging
-
 import pytest
 
-logger = logging.getLogger(__name__)
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    GeneToGeneAssociation,
-    Gene
-)
-from koza.io.writer.writer import KozaWriter
-from koza.runner import KozaRunner, KozaTransformHooks
+from biolink_model.datamodel.pydanticmodel_v2 import GeneToGeneAssociation, Gene
 from translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
-from pathlib import Path
-from unittest.mock import MagicMock
 
+from tests.unit.ingests import MockKozaWriter
 
-class MockWriter(KozaWriter):
-    def __init__(self):
-        self.items = []
-
-    def write(self, entities):
-        if isinstance(entities, list):
-            self.items.extend(entities)
-        else:
-            for entity in entities:
-                self.items.append(entity)
-
-    def write_nodes(self, nodes: Iterable):
-        self.items.extend(nodes)
-
-    def write_edges(self, edges: Iterable):
-        self.items.extend(edges)
-
-    def finalize(self):
-        pass
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
 def gocam_output():
-    writer = MockWriter()
+    writer = MockKozaWriter()
 
     # Mock the koza transform object
     from koza.transform import KozaTransform
+
     mock_koza = KozaTransform(writer=writer, extra_fields={}, mappings={})
 
     # Create test data - this will be passed as an iterable to the transform function
-    data = [{
-        "graph": {
-            "model_info": {
-                "id": "gomodel:0000000300000001",
-                "taxon": "NCBITaxon:9606",
-                "title": "Test GO-CAM Model",
-                "state": "production",
-                "date": "2023-01-01",
-                "contributor": "http://orcid.org/0000-0000-0000-0000"
-            }
-        },
-        "nodes": [
-            {
-                "id": "UniProtKB:P12345",
-                "label": "Test Gene 1"
+    data = [
+        {
+            "graph": {
+                "model_info": {
+                    "id": "gomodel:0000000300000001",
+                    "taxon": "NCBITaxon:9606",
+                    "title": "Test GO-CAM Model",
+                    "state": "production",
+                    "date": "2023-01-01",
+                    "contributor": "http://orcid.org/0000-0000-0000-0000",
+                }
             },
-            {
-                "id": "UniProtKB:Q67890",
-                "label": "Test Gene 2"
-            }
-        ],
-        "edges": [
-            {
-                "source": "UniProtKB:P12345",
-                "target": "UniProtKB:Q67890",
-                "source_gene": "UniProtKB:P12345",
-                "target_gene": "UniProtKB:Q67890",
-                "model_id": "gomodel:GO:0001234",
-                "causal_predicate": "RO:0002629",
-                "causal_predicate_has_reference": ["PMID:12345678"],
-                "source_gene_molecular_function": "GO:0005515",
-                "source_gene_biological_process": "GO:0003700",
-                "source_gene_occurs_in": "GO:0005634",
-                "source_gene_product": "UniProtKB:P12345",
-                "target_gene_molecular_function": "GO:0043565",
-                "target_gene_biological_process": "GO:0003700",
-                "target_gene_occurs_in": "GO:0005634",
-                "target_gene_product": "UniProtKB:Q67890"
-            }
-        ],
-        "_file_path": "test_model.json"
-    }]
+            "nodes": [
+                {"id": "UniProtKB:P12345", "label": "Test Gene 1"},
+                {"id": "UniProtKB:Q67890", "label": "Test Gene 2"},
+            ],
+            "edges": [
+                {
+                    "source": "UniProtKB:P12345",
+                    "target": "UniProtKB:Q67890",
+                    "source_gene": "UniProtKB:P12345",
+                    "target_gene": "UniProtKB:Q67890",
+                    "model_id": "gomodel:GO:0001234",
+                    "causal_predicate": "RO:0002629",
+                    "causal_predicate_has_reference": ["PMID:12345678"],
+                    "source_gene_molecular_function": "GO:0005515",
+                    "source_gene_biological_process": "GO:0003700",
+                    "source_gene_occurs_in": "GO:0005634",
+                    "source_gene_product": "UniProtKB:P12345",
+                    "target_gene_molecular_function": "GO:0043565",
+                    "target_gene_biological_process": "GO:0003700",
+                    "target_gene_occurs_in": "GO:0005634",
+                    "target_gene_product": "UniProtKB:Q67890",
+                }
+            ],
+            "_file_path": "test_model.json",
+        }
+    ]
 
     # Call the transform function directly
     results = transform_go_cam_models(mock_koza, data)
@@ -101,13 +70,16 @@ def test_gocam_entities(gocam_output):
     entities = gocam_output
     assert entities
     assert len(entities) == 1
-    
+
     # Extract nodes and edges from KnowledgeGraph
     kg = entities[0]
     from koza.model.graphs import KnowledgeGraph
+
     assert isinstance(kg, KnowledgeGraph)
-    
-    all_entities = kg.nodes + kg.edges
+
+    all_entities = list()
+    all_entities.extend(kg.nodes)
+    all_entities.extend(kg.edges)
 
     genes = [e for e in all_entities if isinstance(e, Gene)]
     assert len(genes) == 2

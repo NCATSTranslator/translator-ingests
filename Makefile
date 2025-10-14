@@ -1,7 +1,8 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd go_cam goa
+SOURCES ?= ctd ebi_gene2phenotype go_cam goa
+
 
 ### Help ###
 
@@ -71,7 +72,8 @@ install: python
 .PHONY: test
 test:
 	$(RUN) pytest tests
-	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+	$(RUN) ruff check
 
 
 ### Running ###
@@ -106,7 +108,7 @@ validate-single: normalize
 	done
 
 .PHONY: run
-run: download transform normalize
+run: normalize
 
 ### Linting, Formatting, and Cleaning ###
 
@@ -139,4 +141,4 @@ format:
 
 .PHONY: spell-fix
 spell-fix:
-	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3

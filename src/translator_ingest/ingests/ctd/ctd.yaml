@@ -1,4 +1,4 @@
-name: ctd_chemical_to_disease
+name: ctd
 metadata: !include './metadata.yaml'
 
 readers:
@@ -20,59 +20,54 @@ readers:
       - InferenceScore
       - OmimIDs
       - PubMedIDs
-    filters:
-      - inclusion: include
-        column: DirectEvidence
-        filter_code: eq
-        value: therapeutic
-  exposure_events:
-    format: csv
-    delimiter: \t
-    header_mode: 26
-    header_prefix: '#'
-    files:
-      - ../../../../data/ctd/CTD_exposure_events.tsv.gz
-    columns:
-      - exposurestressorname
-      - exposurestressorid
-      - stressorsourcecategory
-      - stressorsourcedetails
-      - numberofstressorsamples
-      - stressornotes
-      - numberofreceptors
-      - receptors
-      - receptornotes
-      - smokingstatus
-      - age
-      - ageunitsofmeasurement
-      - agequalifier
-      - sex
-      - race
-      - methods
-      - detectionlimit
-      - detectionlimituom
-      - detectionfrequency
-      - medium
-      - exposuremarker
-      - exposuremarkerid
-      - markerlevel
-      - markerunitsofmeasurement
-      - markermeasurementstatistic
-      - assaynotes
-      - studycountries
-      - stateorprovince
-      - citytownregionarea
-      - exposureeventnotes
-      - outcomerelationship
-      - diseasename
-      - diseaseid
-      - phenotypename
-      - phenotypeid
-      - phenotypeactiondegreetype
-      - anatomy
-      - exposureoutcomenotes
-      - reference
-      - associatedstudytitles
-      - enrollmentstartyear
-      - enrollmentendyear
-      - studyfactors
+#  exposure_events:
+#    format: csv
+#    delimiter: \t
+#    header_mode: 26
+#    header_prefix: '#'
+#    files:
+#      - ../../../../data/ctd/CTD_exposure_events.tsv.gz
+#    columns:
+#      - exposurestressorname
+#      - exposurestressorid
+#      - stressorsourcecategory
+#      - stressorsourcedetails
+#      - numberofstressorsamples
+#      - stressornotes
+#      - numberofreceptors
+#      - receptors
+#      - receptornotes
+#      - smokingstatus
+#      - age
+#      - ageunitsofmeasurement
+#      - agequalifier
+#      - sex
+#      - race
+#      - methods
+#      - detectionlimit
+#      - detectionlimituom
+#      - detectionfrequency
+#      - medium
+#      - exposuremarker
+#      - exposuremarkerid
+#      - markerlevel
+#      - markerunitsofmeasurement
+#      - markermeasurementstatistic
+#      - assaynotes
+#      - studycountries
+#      - stateorprovince
+#      - citytownregionarea
+#      - exposureeventnotes
+#      - outcomerelationship
+#      - diseasename
+#      - diseaseid
+#      - phenotypename
+#      - phenotypeid
+#      - phenotypeactiondegreetype
+#      - anatomy
+#      - exposureoutcomenotes
+#      - reference
+#      - associatedstudytitles
+#      - enrollmentstartyear
+#      - enrollmentendyear
+#      - studyfactors
