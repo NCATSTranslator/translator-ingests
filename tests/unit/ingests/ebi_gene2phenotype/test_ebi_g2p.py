@@ -1,7 +1,9 @@
 import pytest
+
 # import koza    ## for mocking on_data_begin
 from koza.runner import KozaRunner, KozaTransformHooks
 from tests.unit.ingests import MockKozaWriter
+
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -12,7 +14,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 import datetime
 from translator_ingest.ingests.ebi_gene2phenotype.ebi_gene2phenotype import on_begin, transform
-
 
 
 ## trying to mock on_data_begin, create koza.state["allelicreq_mappings"] in hard-coded manner.
@@ -60,11 +61,12 @@ def single_record_test():
             "molecular mechanism": "loss of function",
             "publications": "30773277; 30773278",
             "date of last review": "2018-11-07 09:53:40+00:00",
-        }
+        },
     ]
     ## running on_begin is problematic because it actually runs requests to retrieve outside data
-    runner = KozaRunner(data=records, writer=writer,
-                        hooks=KozaTransformHooks(on_data_begin=[on_begin], transform_record=[transform]))
+    runner = KozaRunner(
+        data=records, writer=writer, hooks=KozaTransformHooks(on_data_begin=[on_begin], transform_record=[transform])
+    )
     runner.run()
     return writer.items
 
@@ -81,7 +83,10 @@ def test_ebi_g2p(single_record_test):
     association1 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][0]
     assert association1
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association1.subject_form_or_variant_qualifier == ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_variant_form
+    assert (
+        association1.subject_form_or_variant_qualifier
+        == ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_variant_form
+    )
     ## koza turns the dates into this type
     assert association1.update_date == datetime.date(2015, 7, 22)
     assert association1.allelic_requirement == "HP:0001423"
@@ -105,7 +110,10 @@ def test_ebi_g2p(single_record_test):
     association2 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][1]
     assert association2
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association2.subject_form_or_variant_qualifier == ChemicalOrGeneOrGeneProductFormOrVariantEnum.loss_of_function_variant_form
+    assert (
+        association2.subject_form_or_variant_qualifier
+        == ChemicalOrGeneOrGeneProductFormOrVariantEnum.loss_of_function_variant_form
+    )
     ## koza turns the dates into this type
     assert association2.update_date == datetime.date(2018, 11, 7)
     assert association2.allelic_requirement == "HP:0000007"

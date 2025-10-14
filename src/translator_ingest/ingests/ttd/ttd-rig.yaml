@@ -135,12 +135,13 @@ target_info:
       object_categories:
         - biolink:Gene
         - biolink:Protein
+      ## qualifiers depends on mode of action (some don't have any, ~45 possible values)
       qualifiers:
-        - property: biolink:qualified_predicate
+        - property: biolink:qualified_predicate    ## if other qualifiers exist, will always assign this
           value_enumeration: 
             - "biolink:causes"
         - property: biolink:object_aspect_qualifier
-          value_range:
+          value_range:        ## will likely always be 'activity' or 'activity_or_abundance'
             - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
         - property: biolink:object_direction_qualifier
           value_range:
@@ -160,6 +161,7 @@ target_info:
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
+      ## these are the options, not the actual ID namespaces included
       source_identifier_types:
         - "PUBCHEM.COMPOUND"
         - "CAS"
@@ -171,7 +173,7 @@ target_info:
     - node_category: biolink:Gene
       source_identifier_types:
         - "UNIPROTKB"
-      additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
+      additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human. NodeNorm with gene/protein conflation will set some of these to Gene entities."
     - node_category: biolink:Protein
       source_identifier_types:
         - "UNIPROTKB"
@@ -179,7 +181,7 @@ target_info:
 
   future_considerations:
     - category: other
-      consideration: "P1-02 ('Download TTD drug information in raw format') contains TTD drug ID to INCHIKEY mappings, which could be explored to see if it fills gaps in the TTD drug ID mappings."
+      consideration: "P1-02 ('Download TTD drug information in raw format') contains TTD drug ID to INCHIKEY mappings, which could be explored to see if it fills gaps in the TTD drug ID mappings and allows more edges to be ingested."
     - category: node_properties
       consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
 

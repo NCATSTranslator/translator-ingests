@@ -1,4 +1,5 @@
-""" Biolink Model support for Translator Ingests """
+"""Biolink Model support for Translator Ingests"""
+
 from typing import Optional
 from uuid import uuid4
 
@@ -37,10 +38,8 @@ def _infores(identifier: str) -> str:
 
 
 def build_association_knowledge_sources(
-            primary: str,
-            supporting: Optional[list[str]] = None,
-            aggregating: Optional[dict[str, list[str]]] = None
-        ) -> list[RetrievalSource]:
+    primary: str, supporting: Optional[list[str]] = None, aggregating: Optional[dict[str, list[str]]] = None
+) -> list[RetrievalSource]:
     """
     This function attempts to build a list of well-formed Biolink Model RetrievalSource
     of Association 'sources' annotation from the specified knowledge source parameters.
@@ -67,10 +66,7 @@ def build_association_knowledge_sources(
     primary_knowledge_source: Optional[RetrievalSource] = None
     if primary:
         primary_knowledge_source = RetrievalSource(
-            id=entity_id(),
-            resource_id=_infores(primary),
-            resource_role=ResourceRoleEnum.primary_knowledge_source,
-            **{}
+            id=entity_id(), resource_id=_infores(primary), resource_role=ResourceRoleEnum.primary_knowledge_source, **{}
         )
         sources.append(primary_knowledge_source)
 
@@ -80,7 +76,7 @@ def build_association_knowledge_sources(
                 id=entity_id(),
                 resource_id=_infores(source_id),
                 resource_role=ResourceRoleEnum.supporting_data_source,
-                **{}
+                **{},
             )
             sources.append(supporting_knowledge_source)
             if primary_knowledge_source:
@@ -88,12 +84,12 @@ def build_association_knowledge_sources(
                     primary_knowledge_source.upstream_resource_ids = list()
                 primary_knowledge_source.upstream_resource_ids.append(_infores(source_id))
     if aggregating:
-        for source_id,upstream_ids in aggregating.items():
+        for source_id, upstream_ids in aggregating.items():
             aggregating_knowledge_source = RetrievalSource(
                 id=entity_id(),
                 resource_id=_infores(source_id),
                 resource_role=ResourceRoleEnum.aggregator_knowledge_source,
-                **{}
+                **{},
             )
             aggregating_knowledge_source.upstream_resource_ids = [_infores(upstream) for upstream in upstream_ids]
             sources.append(aggregating_knowledge_source)

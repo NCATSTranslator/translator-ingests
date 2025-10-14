@@ -52,6 +52,7 @@ def _get_progress() -> Callable[[Iterable[Any], Optional[int]], Iterable[Any]]:
 
         return bar
     except Exception:
+
         def identity(iterable: Iterable[Any], total: Optional[int] = None) -> Iterable[Any]:  # noqa: ARG001
             return iterable
 
@@ -95,5 +96,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

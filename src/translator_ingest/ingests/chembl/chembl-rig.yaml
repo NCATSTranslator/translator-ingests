@@ -48,8 +48,8 @@
 
     filtered_content:
       - file_name: chembl_35_sqlite.tar.gz
-        filtered_records: "Gene targets - removed tragets that cannot be mapped to genes (like cell-lines)"
-        rationale: "tragets that cannot be mapped to genes"
+        filtered_records: "Gene targets - removed targets that cannot be mapped to genes (like cell-lines)"
+        rationale: "targets that cannot be mapped to genes"
 
   target_info: 
     infores_id: "infores:translator-chembl-kgx"
