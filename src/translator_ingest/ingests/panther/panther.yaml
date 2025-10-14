@@ -1,9 +1,9 @@
 name: 'panther_genome_orthologs'
 
 reader:
+  file_archive: '../../../../data/panther/RefGenomeOrthologs.tar.gz'
   files:
-    - '../../../../data/panther/RefGenomeOrthologs.tar.gz'
-#    - '../../../../data/panther/gene_info.gz'   # NCBI gene info not used for now
+    - 'RefGenomeOrthologs'
   format: csv
   delimiter: '\t'
   header_mode: "none"
