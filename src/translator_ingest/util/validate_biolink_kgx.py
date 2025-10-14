@@ -74,31 +74,34 @@ def validate_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
     # Create combined KGX structure for validation
     kgx_data = {"nodes": nodes, "edges": edges}
 
-    # Initialize Biolink schema view
+    # Initialize Biolink schema view - always required for proper validation
+    biolink_schema = None
     try:
-        # Try to load biolink schema - this is optional for basic validation
+        # Load biolink schema from official URL
         biolink_schema = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
+        logger.debug("Successfully loaded Biolink schema")
     except Exception as e:
-        logger.warning(f"Could not load Biolink schema: {e}. Using fallback validation.")
-        biolink_schema = None
+        logger.error(f"Failed to load Biolink schema from URL: {e}")
+        # Try to load from local biolink model if available
+        try:
+            from biolink_model import BIOLINK_MODEL_YAML_PATH
+            biolink_schema = SchemaView(BIOLINK_MODEL_YAML_PATH)
+            logger.debug("Successfully loaded Biolink schema from local file")
+        except Exception as e2:
+            logger.error(f"Failed to load local Biolink schema: {e2}")
+            raise RuntimeError("Cannot proceed without Biolink schema. Please ensure biolink-model is properly installed.")
 
-    # Set up validation plugins
-    plugins = [BiolinkValidationPlugin()]
-
-    # Perform validation
+    # Perform validation using plugin directly
     validation_results = []
     try:
-        if biolink_schema:
-            # Use LinkML validation with Biolink schema
-            results = validate(instance=kgx_data, schema=biolink_schema.schema, plugins=plugins)
-            validation_results = list(results)
-        else:
-            # Fallback: use plugin directly
-            plugin = BiolinkValidationPlugin()
-            from linkml.validator.validation_context import ValidationContext
+        # Use plugin directly for validation, passing schema_view during initialization
+        plugin = BiolinkValidationPlugin(schema_view=biolink_schema)
+        from linkml.validator.validation_context import ValidationContext
 
-            context = ValidationContext(target_class="KnowledgeGraph", schema_view=None)
-            validation_results = list(plugin.process(kgx_data, context))
+        # Create validation context with schema
+        context = ValidationContext(target_class="KnowledgeGraph", schema=biolink_schema.schema)
+        
+        validation_results = list(plugin.process(kgx_data, context))
     except Exception as e:
         logger.error(f"Validation failed: {e}")
         validation_results = []

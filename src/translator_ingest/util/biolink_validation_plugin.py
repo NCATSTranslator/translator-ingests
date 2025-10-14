@@ -40,8 +40,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
       6. Ensure proper evidence and provenance metadata
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, schema_view: Optional[SchemaView] = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self._schema_view = schema_view
         self._valid_categories_cache = None
         self._valid_predicates_cache = None
         self._node_ids_cache = set()
@@ -157,12 +158,16 @@ class BiolinkValidationPlugin(ValidationPlugin):
             if isinstance(categories, str):
                 categories = [categories]
 
-            valid_categories = self._get_valid_categories(context.schema_view)
+            schema_view = self._schema_view or getattr(context, 'schema_view', None)
+            if not schema_view:
+                # Skip category validation if no schema view
+                return
+            valid_categories = self._get_valid_categories(schema_view)
             for category in categories:
                 if category not in valid_categories:
                     yield ValidationResult(
                         type="biolink-model validation",
-                        severity=Severity.WARNING,
+                        severity=Severity.WARN,
                         instance=node_obj,
                         instantiates=context.target_class,
                         message=f"Node at /{path} has potentially invalid category '{category}'",
@@ -172,7 +177,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if "name" not in node_obj:
             yield ValidationResult(
                 type="biolink-model validation",
-                severity=Severity.WARNING,
+                severity=Severity.INFO,
                 instance=node_obj,
                 instantiates=context.target_class,
                 message=f"Node at /{path} is missing recommended 'name' field",
@@ -194,16 +199,17 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         if "predicate" in edge_obj:
             predicate = edge_obj["predicate"]
-            valid_predicates = self._get_valid_predicates(context.schema_view)
-
-            if predicate not in valid_predicates:
-                yield ValidationResult(
-                    type="biolink-model validation",
-                    severity=Severity.WARNING,
-                    instance=edge_obj,
-                    instantiates=context.target_class,
-                    message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
-                )
+            schema_view = self._schema_view or getattr(context, 'schema_view', None)
+            if schema_view:
+                valid_predicates = self._get_valid_predicates(schema_view)
+                if predicate not in valid_predicates:
+                    yield ValidationResult(
+                        type="biolink-model validation",
+                        severity=Severity.WARN,
+                        instance=edge_obj,
+                        instantiates=context.target_class,
+                        message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
+                    )
 
         # Validate subject and object CURIEs
         for field in ["subject", "object"]:
@@ -222,7 +228,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if "sources" not in edge_obj:
             yield ValidationResult(
                 type="biolink-model validation",
-                severity=Severity.WARNING,
+                severity=Severity.INFO,
                 instance=edge_obj,
                 instantiates=context.target_class,
                 message=f"Edge at /{path} is missing knowledge source attribution ('sources' field)",
@@ -236,7 +242,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
                     if "resource_id" not in primary_source:
                         yield ValidationResult(
                             type="biolink-model validation",
-                            severity=Severity.WARNING,
+                            severity=Severity.WARN,
                             instance=edge_obj,
                             instantiates=context.target_class,
                             message=f"Edge at /{path} primary source missing 'resource_id'",

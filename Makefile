@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd ebi_gene2phenotype go_cam goa
+SOURCES ?= ctd ebi_gene2phenotype go_cam goa sider hpoa diseases
 
 
 ### Help ###
@@ -26,6 +26,7 @@ define HELP
 │     install             install python requirements       │
 │     run                 Run pipeline (download→transform→normalize) │
 │     validate            Validate all sources in data/     │
+│     validate-only       Validate without re-running pipeline │
 │     validate-single     Validate only specified sources   │
 │                                                           │
 │     test                Run all tests                     │
@@ -102,6 +103,10 @@ normalize: transform
 
 .PHONY: validate
 validate: normalize
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --data-dir $(ROOTDIR)/data
+
+.PHONY: validate-only
+validate-only:
 	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --data-dir $(ROOTDIR)/data
 
 .PHONY: validate-single
