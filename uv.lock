@@ -284,6 +284,7 @@ dev = [
     { name = "pandas" },
     { name = "pytest" },
     { name = "requests" },
+    { name = "resource-ingest-guide-schema" },
     { name = "ruff" },
 ]
 
@@ -307,6 +308,7 @@ dev = [
     { name = "pandas" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "requests" },
+    { name = "resource-ingest-guide-schema" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
@@ -2599,6 +2601,22 @@ wheels = [
 [package.optional-dependencies]
 socks = [
     { name = "pysocks" },
+]
+
+[[package]]
+name = "resource-ingest-guide-schema"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "jinja2" },
+    { name = "linkml" },
+    { name = "linkml-runtime" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/17/a6/0135578a821641f0b7d10277a1e51148f6e540f864a002eef8b51d12fa71/resource_ingest_guide_schema-0.1.2.tar.gz", hash = "sha256:1cc3c85cf561fae4193722fe90338f18f6c868a94da3f049988a1c56e30bd5e1", size = 2415371 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/17/7248bacfb5891b7c86b3b58d90f11ad8589b97e3e9b2641e61b8764505bb/resource_ingest_guide_schema-0.1.2-py3-none-any.whl", hash = "sha256:dcfcec77f3256bce2637254a1f8c1e856364b9d742f0a43958aace38dac31cfa", size = 14484 },
 ]
 
 [[package]]

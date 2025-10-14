@@ -27,11 +27,12 @@ dev = [
     "codespell>=2.2.0",
     "ruff>=0.12.8",
     "pandas",   # also installs numpy
-    "requests",  
+    "requests",
     # for CX notebook support: I use old version that works with extensions
     "nbclassic",
     "jupyter_contrib_nbextensions",
-    "jsonlines", 
+    "jsonlines",
+    "resource-ingest-guide-schema",
 ]
 
 [tool.pytest.ini_options]
