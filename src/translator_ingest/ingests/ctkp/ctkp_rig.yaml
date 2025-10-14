@@ -15,7 +15,7 @@ supporting_data_source_info:
 
 source_info: 
   infores_id: "infores:multiomics-clinicaltrials"
-  name: "Multiomics Clinical Trials Knolwedge Provider (Multiomics-CTKP)"
+  name: "Multiomics Clinical Trials Knowledge Provider (Multiomics-CTKP)"
   description:  "The Clinical Trials KP provides information on Clinical Trials, ultimately derived from researcher submissions to clinicaltrials.gov, via the Aggregate Analysis of Clinical Trials (AACT) database. Information on select trials includes the NCT Identifier of the trial, interventions used, diseases/conditions relevant to the trial, adverse events, etc.  "
   citations:  
     - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
