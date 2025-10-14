@@ -19,6 +19,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     MacromolecularComplex,
     RNAProduct,
 )
+from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import INFORES_GOA, INFORES_BIOLINK, entity_id, build_association_knowledge_sources
 
 # Constants
@@ -32,17 +33,14 @@ def get_latest_version() -> str:
         response.raise_for_status()
         metadata = response.json()
     except requests.RequestException as exc:
-        raise RuntimeError(
-            f"Unable to retrieve GOA release metadata from {GOA_RELEASE_METADATA_URL}"
-        ) from exc
+        raise RuntimeError(f"Unable to retrieve GOA release metadata from {GOA_RELEASE_METADATA_URL}") from exc
 
     version = metadata.get("date")
     if not version:
-        raise RuntimeError(
-            f"GOA metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field"
-        )
+        raise RuntimeError(f"GOA metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field")
 
     return version
+
 
 # Dynamic category assignments from Biolink pydantic models
 # This ensures the categories are always in sync with the Biolink model
@@ -294,4 +292,4 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             agent_type=agent_type,
         )
 
-    return [entity, go_term, association]
+    return KnowledgeGraph(nodes=[entity, go_term], edges=[association])

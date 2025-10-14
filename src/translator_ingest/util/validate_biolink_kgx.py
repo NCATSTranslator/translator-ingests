@@ -38,6 +38,22 @@ def load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
     return records
 
 
+def extract_node_ids(nodes: list[dict]) -> set[str]:
+    """Extract all node IDs from nodes file."""
+    return {node["id"] for node in nodes if "id" in node}
+
+
+def extract_edge_node_refs(edges: list[dict]) -> set[str]:
+    """Extract all node IDs referenced in edges (subject + object)."""
+    node_refs = set()
+    for edge in edges:
+        if "subject" in edge:
+            node_refs.add(edge["subject"])
+        if "object" in edge:
+            node_refs.add(edge["object"])
+    return node_refs
+
+
 def save_validation_report(report: Dict[str, Any], output_dir: Path) -> Path:
     """Save validation report to JSON file with timestamped name."""
     # Create validation subdirectory
@@ -100,7 +116,7 @@ def validate_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
 
         # Create validation context with schema
         context = ValidationContext(target_class="KnowledgeGraph", schema=biolink_schema.schema)
-        
+
         validation_results = list(plugin.process(kgx_data, context))
     except Exception as e:
         logger.error(f"Validation failed: {e}")
