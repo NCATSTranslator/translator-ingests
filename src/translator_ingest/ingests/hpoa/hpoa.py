@@ -11,7 +11,6 @@ https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 
 from loguru import logger
 from typing import Optional, Any, Iterable
-from os.path import abspath
 
 import duckdb
 
@@ -31,7 +30,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 
-from translator_ingest import INGESTS_DATA_PATH
 from translator_ingest.util.github import GitHubReleases
 from translator_ingest.util.biolink import INFORES_HPOA, entity_id, build_association_knowledge_sources
 
@@ -309,7 +307,7 @@ def prepare_data_gene_to_phenotype(
     """
     hpoa_data_path = koza_transform.input_files_dir
     if not hpoa_data_path:
-        raise IOError(f"Koza transform input_files_dir was not configured, source data path could not be resolved.")
+        raise IOError("Koza transform input_files_dir was not configured, source data path could not be resolved.")
     phenotype_file_path = hpoa_data_path / "phenotype.hpoa"
     genes_to_phenotype_file_path = hpoa_data_path / "genes_to_phenotype.txt"
     genes_to_disease_file_path = hpoa_data_path / "genes_to_disease.txt"
