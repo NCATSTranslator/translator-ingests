@@ -6,7 +6,7 @@
 ## Relevant Repositories
 A list of Github repositories with content related to ingest tasks.
 1. [Data Ingest Coordination Working Group Repo](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group): No code/model artifacts here. Used only for Issues/Discussions about content and modeling issues related to specific DINGO ingests 
-   - **Ingest Tickets**: For discussing specific sources, content, and modeling questions or requests ([issue list](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=state%3Aopen%20label%3A%22source%20ingest%22))
+   - **Ingest Tickets**: For discussing specific sources, content, and modeling questions or requests ([issue list](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues))
    - **Ingest Discussions**: For higher level planning and prioritization discussions ([discussion list](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/discussions))
 2. [Translator Ingests Repo](https://github.com/NCATSTranslator/translator-ingests): Holds code base for source ingests, Resource Ingest Guides (RIGs) for each ingest, and associated developer/user documentation.
    - **Ingest Code and Artifacts**: Code, RIGs, and other artifacts for specifying and executing ingests ([ingests](https://github.com/NCATSTranslator/translator-ingests/tree/add_rigs_back/src/translator_ingest/ingests))
