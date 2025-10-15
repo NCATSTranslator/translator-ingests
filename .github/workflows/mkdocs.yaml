@@ -1,55 +1,42 @@
-name: Build and Deploy MkDocs
+name: Deploy MkDocs Documentation
 
 on:
   push:
-    branches: 
-      - main
+    branches: [main]
   pull_request:
-    branches: 
-      - main
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-  pull-requests: write
-
-concurrency:
-  group: "pages-${{ github.ref }}"
-  cancel-in-progress: false
+    branches: [main]
 
 jobs:
-  build:
+  build-docs:
     runs-on: ubuntu-latest
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      contents: write  # to let mkdocs write the new docs
+      pages: write     # to deploy to Pages
+      pull-requests: write  # to comment on PRs
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          
+          fetch-depth: 0  # otherwise, you will fail to push refs to dest repo
+
       - name: Install uv
         uses: astral-sh/setup-uv@v3
-        
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
       - name: Install dependencies
-        run: |
-          uv sync --group dev
-          
-      - name: Setup Pages (main branch only)
-        if: github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v4
-        
-      - name: Build MkDocs site
+        run: uv sync --group dev
+
+      - name: Build documentation for PR preview
+        if: github.event_name == 'pull_request'
         run: |
           make docs-build
-          
-      - name: Upload artifact (main branch)
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
           
       - name: Upload PR preview artifact
         if: github.event_name == 'pull_request'
@@ -64,23 +51,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            // Create a simple index.html to serve the preview
-            const indexHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Documentation Preview - PR #${{ github.event.number }}</title>
-              <meta http-equiv="refresh" content="0; url=./site/index.html">
-            </head>
-            <body>
-              <p>Redirecting to documentation preview...</p>
-              <p><a href="./site/index.html">Click here if not redirected automatically</a></p>
-            </body>
-            </html>`;
-            
             const comment = `
             ## 📖 Documentation Preview
             
@@ -88,7 +58,8 @@ jobs:
             
             **Note:** GitHub Actions artifacts are only accessible to repository collaborators. 
             To view the preview:
-            1. Download the \`docs-preview-${{ github.event.number }}\` artifact from the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            1. Download the \`docs-preview-${{ github.event.number }}\` artifact from the [Actions run](
+               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             2. Extract the zip file
             3. Open \`index.html\` in your browser
             
@@ -102,14 +73,9 @@ jobs:
               body: comment
             });
 
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Build and deploy documentation to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          make docs-build
+          touch site/.nojekyll
+          make docs-deploy
