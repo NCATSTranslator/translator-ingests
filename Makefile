@@ -1,8 +1,8 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd ebi_gene2phenotype go_cam goa sider hpoa diseases
 
+SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
 ### Help ###
 
 define HELP
