@@ -117,6 +117,4 @@ def __find_kgx_files(directory: Path) -> (str, str):
                     f"Multiple edges files were found in {directory}. "
                     f"This should not happen with normal ingest pipeline usage and is likely to cause bugs."
                 )
-    if not (nodes_file_path and edges_file_path):
-        raise IOError(f"KGX files could not be found in {directory}")
     return nodes_file_path, edges_file_path
