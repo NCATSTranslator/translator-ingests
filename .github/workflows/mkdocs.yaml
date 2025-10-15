@@ -38,7 +38,7 @@ jobs:
           make docs-build
 
       - name: Build and deploy documentation to GitHub Pages
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/add_rigs_back'
         run: |
           make docs-build
           touch site/.nojekyll
