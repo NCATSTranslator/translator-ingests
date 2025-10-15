@@ -34,6 +34,10 @@ dev = [
     "jupyter_contrib_nbextensions",
     "jsonlines",
     "resource-ingest-guide-schema",
+    # Documentation dependencies
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocs-minify-plugin>=0.8.0",
 ]
 
 [tool.pytest.ini_options]

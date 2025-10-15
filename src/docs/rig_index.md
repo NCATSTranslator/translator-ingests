@@ -13,7 +13,7 @@ Each RIG contains:
 - **Target Information**: How the data is modeled in the output graph, including edge and node types
 - **Provenance Information**: Contributors and related artifacts
 
-For guidance on creating new RIGs, see the [RIG Creation Guide](example-rigs.md).
+For guidance on creating new RIGs, see the RIG Creation Guide.
 
 ## Available RIGs
 
