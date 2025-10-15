@@ -3,6 +3,10 @@ RUN = uv run
 # Configure which sources to process (default: all available sources)
 SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
 
+# Include additional makefiles
+include rig.Makefile
+include doc.Makefile
+
 ### Help ###
 
 define HELP
@@ -32,6 +36,12 @@ define HELP
 │     lint                Lint all code                     │
 │     format              Format all code                   │
 │     spell-fix           Fix spelling errors interactively │
+│     new-rig             Create a new RIG from template (requires INFORES and NAME)" │
+│			validate-rigs       Validate all RIG files against the schema" │
+│                                                           │
+│     docs                Build documentation locally       │
+│     docs-serve          Build and serve docs on port 8000│
+│     docs-clean          Clean documentation build        │
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │

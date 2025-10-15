@@ -1,0 +1,362 @@
+# GO Annotations (GOA) Reference Ingest Guide (RIG)
+name: GO Annotations (GOA) Reference Ingest Guide
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:goa
+  name: GO Annotations (GOA)
+  description: "GO Annotations connect genes to a Gene Ontology term that describes a molecular function it enables, a biological process in which it participates, or a cellular component in which it is located. Most are produced through rigorous manual curation of the literature, although some are based on automated pipelines that assign GO terms based on things like orthology or sequence similarity."
+  citations:
+    - "Data Archive: https://zenodo.org/records/10536401"
+    - "Publication: https://doi.org/10.1093/nar/gky1055"
+  terms_of_use_info:
+    terms_of_use_url: "https://geneontology.org/docs/go-citation-policy/"
+    license_name: "CC BY 4.0"
+    license_url: "https://creativecommons.org/licenses/by/4.0/legalcode#s3a1"
+  data_access_locations:
+    - "All downloads: https://geneontology.org/docs/download-go-annotations/"
+    - "Commonly studied organisms: https://current.geneontology.org/products/pages/downloads.html"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: "Release cadence: Approximately every four weeks, synchronized with UniProtKB. Versioning: By date - each GAF header includes a `!Generated: YYYY-MM-DD` line. Release notes: https://geneontology.org/docs/download-go-annotations/ and https://geneontology.org/docs/go-annotation-file-gaf-format-2.2/. Release archive: https://release.geneontology.org/. Formats: tsv in GAF format (17 columns)"
+
+# Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "GOA is a rich source of manually curated knowledge about gene function with broad relevance to all Translator queries and use cases."
+  scope: "This initial ingest of GOA covers molecular function, biological process, and cellular component annotations about human, mouse, and rat genes, including manually curated and electronically inferred content, from GAF files (GPAD and GPI formats not ingested). Other species may be added in future updates to the ingest."
+  
+  relevant_files:
+    - file_name: "goa_human.gaf"
+      location: "https://current.geneontology.org/products/pages/downloads.html"
+      description: "Human gene-product to GO term associations (GAF 2.2)"
+    - file_name: "mgi.gaf"
+      location: "https://current.geneontology.org/products/pages/downloads.html"
+      description: "Mouse gene-product to GO term associations (GAF 2.2)"
+    - file_name: "rgd.gaf"
+      location: "https://current.geneontology.org/products/pages/downloads.html"
+      description: "Rat gene-product to GO term associations (GAF 2.2)"
+
+  included_content:
+    - file_name: "goa_human.gaf"
+      included_records: "All records included"
+      fields_used: "DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon"
+    - file_name: "mgi.gaf"
+      included_records: "All records included"
+      fields_used: "DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon"
+    - file_name: "rgd.gaf"
+      included_records: "All records included"
+      fields_used: "DB, DB Object ID, DB Object Symbol, Relation, GO ID, DB:Reference(s), Evidence Code, With (or) From, Aspect, DB Object Name, DB Object Type, Taxon"
+
+  filtered_content: []
+
+  future_considerations:
+    - category: edge_content
+      consideration: "Consider ingesting Gene/Product to GO Term annotations from other taxon (beyond human, mouse, and rat)"
+    - category: edge_content
+      consideration: "Consider inclusion of qualifying information (as may be found in the Annotation Extensions, or With or From columns) to existing and new Gene/Product to GO Term annotations. With/From column in particular to show provenance of inferred associations with codes like IBA or IEA."
+    - category: edge_content
+      consideration: "Consider ingesting associations between two GO Terms, per the specification at https://wiki.geneontology.org/index.php/Annotation_Relations#Standard_Annotation:_Annotation_Extension_Relations"
+    - category: node_property_content
+      consideration: "GOA generally adds some curatorial value when pulling annotations from sources like MODs, PANTHER, etc.  Minimally, id mapping, quality checking, etc. - but often more than this. This is why we are ok with making them the primary source. But we should attribute MODs, PANTHER, etc. as supporting data sources in these cases, if we can find this info in the data."
+    - category: node_property_content
+      consideration: "t.b.d. if we will bring in taxon info about gene/gene product nodes from GOA, or rely on other gene property authorities for this information (e.g. ncbigene)"
+
+  # Note: additional_notes field has been removed from this section according to new schema
+  # Previous note: n/a - no records are filtered from the source data sets listed above. NOTE that where we can identify annotations that were imported/re-structured from GO-CAM, we can keep infores:goa as the primary source for these edges, but indicate infores:go-cam as a 'supporting_data_provider'
+
+# Information about the Graph Output by the ingest
+target_info:
+  infores_id: infores:translator-goa-kgx
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:enables
+      object_categories:
+        - biolink:MolecularActivity
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'enables' predicate when a gene product is solely capable of executing the reported function."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:MacromolecularComplex
+      predicates:
+        - biolink:contributes_to
+      object_categories:
+        - biolink:MolecularActivity
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'contributes_to' predicate when a gene product is required as part of a macromolecular complex for executing the reported function."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:involved_in
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:acts_upstream_of_or_within
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'acts_upstream_of_or_within' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, as is the directionality of its effect on the process."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:acts_upstream_of_or_within_positive_effect
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'acts_upstream_of_or_within_positive_effect' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, but the activity of the gene product has a positive effect on the process."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:acts_upstream_of_or_within_negative_effect
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'acts_upstream_of_or_within_negative_effect' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, but the activity of the gene product has a negative effect on the process."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:acts_upstream_of
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'acts_upstream_of' predicate when the a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the directionality of its effect on the process is not known."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:acts_upstream_of_positive_effect
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'acts_upstream_of_positive_effect' predicate when a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the activity of the gene product is required for the process but does not regulate it."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:acts_upstream_of_negative_effect
+      object_categories:
+        - biolink:BiologicalProcess
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'acts_upstream_of_negative_effect' predicate when a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the activity of the gene product prevents or reduces the process but does not regulate it."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:is_active_in
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'is_active_in' predicate when a gene product is present in and performs its molecular function in the reported cellular component."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:located_in
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'located_in' predicate when a gene product enables is detected in the reported cellular component."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:RNAProduct
+      predicates:
+        - biolink:part_of
+      object_categories:
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'part_of' predicate when a gene product is a component of the reported macromolecular complex."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:colocalizes_with
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'colocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+
+  node_type_info:
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "MGI"
+        - "RGD"
+    - node_category: biolink:Protein
+      source_identifier_types:
+        - "UniProtKB accession"
+    - node_category: biolink:MacromolecularComplex
+      source_identifier_types:
+        - "ComplexPortal IDs"
+    - node_category: biolink:RNAProduct
+      source_identifier_types:
+        - "RNAcentral IDs"
+    - node_category: biolink:BiologicalProcess
+      source_identifier_types:
+        - "Gene Ontology IDs (Aspect P)"
+    - node_category: biolink:MolecularActivity
+      source_identifier_types:
+        - "Gene Ontology IDs (Aspect F)"
+    - node_category: biolink:CellularComponent
+      source_identifier_types:
+        - "Gene Ontology IDs (Aspect C)"
+
+  future_considerations:
+    - category: qualifiers
+      consideration: "Introduce qualifier-based representation if/when we decide to ingest any qualifying context on GO annotations"
+    - category: node_properties
+      consideration: "If we end up ingesting taxon info for gene nodes, we may have to update the Biolink Model to support this (currently in_taxon is represented as a predicate, and species_context_qualifier as an edge property - but there is no taxon node property)"
+
+# Information about the how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Adilbek Bazarkulov: code author"
+    - "Evan Morris: code support"
+    - "Adilbek Bazarkulov: code support, domain expertise"
+    - "Sierra Moxon: data modeling, domain expertise"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "Ingest Survey: https://docs.google.com/spreadsheets/d/18wGm2a0W1oIXm7cn8TZ99xn_aAMJ91SgAsuPDcV-lII/edit?gid=325339947#gid=325339947"
+    - "Ingest Ticket: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/8"
+  # Note: additional_notes field has been removed from this section according to new schema
+  # Previous implementation notes: Framework Integration: Koza Framework: Uses `@koza.transform_record()` decorator for record-by-record processing. Biolink Pydantic Model: Leverages biolink pydantic models for validation and structure. Dynamic Class Selection: Uses database source to determine appropriate biolink class for entities. Dynamic GO Term Categorization: Maps GO aspects to specific biolink classes for semantic precision. Database Source Mapping: Dynamic Selection: Database source determines biolink class: `UniProtKB` -> `Protein`, `MGI`, `RGD`, `SGD`, `ZFIN`, `FB`, `WB`, `TAIR` -> `Gene`, `ComplexPortal` -> `MacromolecularComplex`, `RNAcentral` -> `RNAProduct`. Extensibility: Easy to add new database sources and their corresponding biolink classes. GO Aspect Mapping: Dynamic Categorization: GO aspects map to specific biolink classes: `P` (Process) -> `BiologicalProcess`, `F` (Function) -> `MolecularActivity`, `C` (Component) -> `CellularComponent`. Semantic Precision: Uses most appropriate biolink class for each GO aspect. Evidence Code Mapping: Hardcoded Mapping: Uses hardcoded evidence code to knowledge level/agent type mapping for simplicity and performance. Biolink Enums: Leverages `KnowledgeLevelEnum` and `AgentTypeEnum` for type safety and validation. Fallback Values: Unknown evidence codes default to `not_provided` for both knowledge level and agent type. Evidence Formatting: Evidence codes are formatted as ECO CURIEs (e.g., `ECO:IEA`). Association Selection: Dynamic Association: Uses `GeneToGoTermAssociation` for Gene entities, generic `Association` for others. Biolink Compliance: Uses specific association when available, falls back to generic Association. Extensibility: Can easily add specific associations for Protein, MacromolecularComplex, . when they become available. Taxon Modeling: Node-Level Only: `in_taxon` is only set on entity nodes, not on associations. Framework Constraint: GeneToGoTermAssociation doesn't include the 'thing with taxon' mixin in the biolink model. Inference: Taxon information can be inferred from the subject node's `in_taxon` property
