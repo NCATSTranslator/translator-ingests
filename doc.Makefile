@@ -21,7 +21,7 @@ docs-setup:  ## Setup documentation structure
 	@echo "Converting RIG YAML files to markdown..."
 	uv run python src/docs/scripts/rig_to_markdown.py --input-dir docs/rigs --output-dir docs/rigs
 	@echo "Generating RIG table..."
-	uv run python src/docs/scripts/generate_rig_index.py --rig-dir docs/rigs --input-file src/docs/rig_index.md --output-file docs/src/docs/rig_index.md
+	uv run python src/docs/scripts/generate_rig_table.py
 
 docs-build: docs-clean docs-setup  ## Build the documentation site
 	@echo "Building MkDocs site..."
