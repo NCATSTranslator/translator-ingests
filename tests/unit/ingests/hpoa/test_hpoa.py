@@ -3,6 +3,7 @@ import pytest
 from typing import Optional, Iterable, Any
 from os.path import join, abspath, dirname
 from loguru import logger
+from pathlib import Path
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
@@ -345,12 +346,10 @@ def test_gene_to_disease_transform(
 @pytest.fixture(scope="package")
 def mock_koza_transform_2() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    extra_fields: dict[str, Any] = {
-        "HPOA_PHENOTYPE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_phenotype.hpoa")),
-        "HPOA_GENES_TO_DISEASE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_genes_to_disease.txt")),
-        "HPOA_GENES_TO_PHENOTYPE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_genes_to_phenotype.txt")),
-    }
-    return MockKozaTransform(extra_fields=extra_fields, writer=writer, mappings=dict())
+    return MockKozaTransform(writer=writer,
+                             mappings=dict(),
+                             extra_fields=dict(),
+                             input_files_dir=Path(HPOA_TEST_DATA_PATH))
 
 
 def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaTransform):

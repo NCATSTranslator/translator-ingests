@@ -308,15 +308,11 @@ def prepare_data_gene_to_phenotype(
     :return: Iterable[dict[str, Any]] | None
     """
     hpoa_data_path = koza_transform.input_files_dir
-    phenotype_file_path = koza_transform.extra_fields.get(
-        "HPOA_PHENOTYPE_FILE", abspath(hpoa_data_path / "phenotype.hpoa")
-    )
-    genes_to_phenotype_file_path = koza_transform.extra_fields.get(
-        "HPOA_GENES_TO_PHENOTYPE_FILE", abspath(hpoa_data_path / "genes_to_phenotype.txt")
-    )
-    genes_to_disease_file_path = koza_transform.extra_fields.get(
-        "HPOA_GENES_TO_DISEASE_FILE", abspath(hpoa_data_path / "genes_to_disease.txt")
-    )
+    if not hpoa_data_path:
+        raise IOError(f"Koza transform input_files_dir was not configured, source data path could not be resolved.")
+    phenotype_file_path = hpoa_data_path / "phenotype.hpoa"
+    genes_to_phenotype_file_path = hpoa_data_path / "genes_to_phenotype.txt"
+    genes_to_disease_file_path = hpoa_data_path / "genes_to_disease.txt"
 
     db = duckdb.connect(":memory:", read_only=False)
     return (
