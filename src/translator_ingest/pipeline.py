@@ -100,7 +100,7 @@ def transform(pipeline_metadata: PipelineMetadata):
         str(source_config_yaml_path),
         output_dir=str(transform_dir),
         output_format=KozaOutputFormat.jsonl,
-        input_file_directory=str(get_source_data_directory(pipeline_metadata)),
+        input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
     runner.run()
     logger.info(f"Finished transform for {source}")
@@ -122,11 +122,11 @@ def transform(pipeline_metadata: PipelineMetadata):
         **{k: v for k, v in source_metadata.items() if v is not None},
         "source_version": pipeline_metadata.source_version,
         "transform_version": "1.0",
+        "transform_metadata": runner.transform_metadata
     }
-    # here we can extract automated or custom metadata about the transformation process
-    # these are fake examples, need to do some work in koza for this
-    # transform_metadata = runner.metadata
+    # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
+
     transform_metadata_file_path = get_versioned_file_paths(
         file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
     )

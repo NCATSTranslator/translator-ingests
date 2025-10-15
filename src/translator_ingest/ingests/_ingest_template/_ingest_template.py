@@ -59,6 +59,9 @@ def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
 @koza.prepare_data(tag="ingest_by_record")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
+    koza.transform_metadata["ingest_by_record"] = {}
+    koza.transform_metadata["ingest_by_record"]["example_counter"] = 0
+
     # do pandas stuff
     df = pd.DataFrame(data)
     return df.dropna().drop_duplicates().to_dict(orient="records")
@@ -92,7 +95,7 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
     # here is an example of skipping a record based off of some condition
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     if not publications:
-        koza.state["example_counter"] += 1
+        koza.transform_metadata["ingest_by_record"]["example_counter"] += 1
         return None
 
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
