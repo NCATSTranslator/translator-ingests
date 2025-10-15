@@ -1,0 +1,45 @@
+name: Deploy MkDocs Documentation
+
+on:
+  push:
+    branches: [main, add_rigs_back]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      contents: write  # to let mkdocs write the new docs
+      pages: write     # to deploy to Pages
+      pull-requests: write  # to comment on PRs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # otherwise, you will fail to push refs to dest repo
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Build documentation for PR preview
+        run: |
+          make docs-build
+
+      - name: Build and deploy documentation to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/add_rigs_back'
+        run: |
+          make docs-build
+          touch site/.nojekyll
+          make docs-deploy
