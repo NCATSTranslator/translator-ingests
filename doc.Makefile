@@ -13,8 +13,8 @@ docs-clean:  ## Clean documentation build artifacts
 
 docs-setup:  ## Setup documentation structure
 	@echo "Setting up documentation structure..."
-	cp README.md docs/index.md
 	mkdir -p docs/src/docs docs/rigs
+	cp README.md docs/index.md
 	if [ -d "src/docs" ]; then cp -r src/docs/* docs/src/docs/; fi
 	@echo "Copying RIG YAML files..."
 	find src/translator_ingest/ingests -name "*rig*.yaml" -exec cp {} docs/rigs/ \;
