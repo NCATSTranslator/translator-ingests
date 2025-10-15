@@ -34,44 +34,8 @@ jobs:
         run: uv sync --group dev
 
       - name: Build documentation for PR preview
-        if: github.event_name == 'pull_request'
         run: |
           make docs-build
-          
-      - name: Upload PR preview artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-preview-${{ github.event.number }}
-          path: ./site
-          retention-days: 7
-          
-      - name: Comment PR with preview link
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const comment = `
-            ## 📖 Documentation Preview
-            
-            The documentation has been built successfully for this PR.
-            
-            **Note:** GitHub Actions artifacts are only accessible to repository collaborators. 
-            To view the preview:
-            1. Download the \`docs-preview-${{ github.event.number }}\` artifact from the [Actions run](
-               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            2. Extract the zip file
-            3. Open \`index.html\` in your browser
-            
-            The preview will be automatically deployed to GitHub Pages when this PR is merged to main.
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
 
       - name: Build and deploy documentation to GitHub Pages
         if: github.ref == 'refs/heads/main'
