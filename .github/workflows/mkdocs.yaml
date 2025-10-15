@@ -1,0 +1,115 @@
+name: Build and Deploy MkDocs
+
+on:
+  push:
+    branches: 
+      - main
+  pull_request:
+    branches: 
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        
+      - name: Install dependencies
+        run: |
+          uv sync --group dev
+          
+      - name: Setup Pages (main branch only)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v4
+        
+      - name: Build MkDocs site
+        run: |
+          make docs-build
+          
+      - name: Upload artifact (main branch)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+          
+      - name: Upload PR preview artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview-${{ github.event.number }}
+          path: ./site
+          retention-days: 7
+          
+      - name: Comment PR with preview link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Create a simple index.html to serve the preview
+            const indexHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Documentation Preview - PR #${{ github.event.number }}</title>
+              <meta http-equiv="refresh" content="0; url=./site/index.html">
+            </head>
+            <body>
+              <p>Redirecting to documentation preview...</p>
+              <p><a href="./site/index.html">Click here if not redirected automatically</a></p>
+            </body>
+            </html>`;
+            
+            const comment = `
+            ## 📖 Documentation Preview
+            
+            The documentation has been built successfully for this PR.
+            
+            **Note:** GitHub Actions artifacts are only accessible to repository collaborators. 
+            To view the preview:
+            1. Download the \`docs-preview-${{ github.event.number }}\` artifact from the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            2. Extract the zip file
+            3. Open \`index.html\` in your browser
+            
+            The preview will be automatically deployed to GitHub Pages when this PR is merged to main.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

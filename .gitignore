@@ -17,5 +17,5 @@ output
 data
 
 # Documentation build artifacts (only used locally and in CI)
-docs/
+/docs/
 site/
