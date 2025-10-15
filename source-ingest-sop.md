@@ -22,13 +22,14 @@ A list of Github repositories with content related to ingest tasks.
 
 ## Process and Artifact Overview
 Follow the steps and use / generate the artifacts described below, to perform a source ingest according to standard operating procedure.
-1. **Ingest Assignment and Tracking** **_(required)_**: Record owner/contributor assignments and track status for each ingest. ([Ingest List](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) 
-2. **Ingest Surveys** **_(as needed)_**: Describe past ingests of a source to facilitate comparison and alignment (useful when there are multiple prior ingests). ([Directory](https://drive.google.com/drive/folders/1temEMKNvfMXKkC-6G4ssXG06JXYXY4gT)) ([CTD Example)](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
+1. **Ingest Assignment and Tracking** **_(required)_**: Record owner/contributor assignments and track status for each ingest. ([ingest list](https://docs.google.com/spreadsheets/d/1nbhTsEb-FicBz1w69pnwCyyebq_2L8RNTLnIkGYp1co/edit?gid=506291936#gid=506291936)) 
+2. **Ingest Surveys** **_(as needed)_**: Describe past ingests of a source to facilitate comparison and alignment (useful when there are multiple prior ingests). ([directory](https://drive.google.com/drive/folders/1temEMKNvfMXKkC-6G4ssXG06JXYXY4gT)) ([ctd example)](https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)
 3. **Resource Ingest Guides (RIGs)** **_(required)_**: Document scope, content, and modeling decisions for an ingest, in a computable yaml format. ([yaml schema](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/resource_ingest_guide_schema/schema/resource_ingest_guide_schema.yaml)) ([yaml template](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/docs/rig_template.yaml)) ([yaml example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd_rig.yaml)) ([derived markdown example](https://ncatstranslator.github.io/translator-ingests/rigs/ctd_rig/)) ([full rig catalog](https://ncatstranslator.github.io/translator-ingests/src/docs/rig_index/))
 4. **Source Ingest Tickets** **_(as needed)_**: If content or modeling questions arise, create a `source-ingest` ticket in the DINGO repo ([ingest issues](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues?q=label%3A%22source%20ingest%22))
-5. **Ingest Code** **_(required)_**: Author ingest code / artifacts following RIG spec, using shared python code base. ([source code](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/)) ([example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd.py))
-6. **KGX Files** **_(required)_**: Execute ingest code and normalization services to generate normalized knowledge graphs and ingest metadata artifacts. ([ctd example]() - TO DO)
-7. **KGX Summary Reports** **_(under development)_**: Automated scripts generate reports that summarize content of KGX ingest files, to facilitate manual QA/debugging, and provide documentation of KG content and modeling. ([ctd example]() - TO DO)
+5. **Ingest Code and Tests** **_(required)_**: Author ingest code / artifacts following RIG spec, along with unit tests, using shared python code base. ([ingest code](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/)) ([code template](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/_ingest_template.yaml)) ([code example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/ctd/ctd.py)) ([unit tests](https://github.com/NCATSTranslator/translator-ingests/blob/main/tests/unit/ingests)) ([unit test template](https://github.com/NCATSTranslator/translator-ingests/blob/main/tests/unit/_ingest_template/test_ingest_template.py))
+7. **KGX Files** **_(required)_**: Execute ingest code and normalization services to generate normalized knowledge graphs and ingest metadata artifacts. ([ctd example]() - TO DO)
+8. **KGX Summary Reports** **_(under development)_**: Automated scripts generate reports that summarize content of KGX ingest files, to facilitate manual QA/debugging, and provide documentation of KG content and modeling. ([ctd example]() - TO DO)
+
    
 ## Detailed Guidance
 Specific guidance and considerations for executing a source ingest. 
@@ -107,10 +108,16 @@ RIGs are used to:
 - If content or modeling issues arise that require public discussion or documentation, create a ticket in the [DINGO repository](https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/).
 - Be sure to add a `source-ingest` label to the issue.
 
-### 8. Write Ingest Code
-- Follow specification documented in the RIG . . . 
-- Implementation details of the shared pipeline are still t.b.d. 
+### 8. Write Ingest Code and Tests
+- Code should follow specification documented in the RIG 
+- Populate the ingest-specific download.yaml file that describes the input data of the knowledge source ([ingest template example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/download.yaml)).
+- Write the configuration file that describes the source and the transform to be applied. ([directory](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests)) ([ingest template example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/_ingest_template.yaml))
+- Write the Python script used to execute the ingest task as described in a RIG and to pass the unit tests which were written. ([directory](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests)) ([ingest template example](https://github.com/NCATSTranslator/translator-ingests/blob/main/src/translator_ingest/ingests/_ingest_template/_ingest_template.py))
+- Write unit tests with mock (but realistic) data, to illustrate how input records for a specified source are transformed into knowledge graph nodes and edges.  See the ([unit ingest tests directory](https://github.com/NCATSTranslator/translator-ingests/blob/main/tests/unit/ingests)) for some examples, and the ([ingest template example](https://github.com/NCATSTranslator/translator-ingests/blob/main/tests/unit/_ingest_template/test_ingest_template.py)) highlighting the use of some generic utility code available to fast-track the development of such ingest unit tests.
 
 ### 9. Execute Ingests to Produce KGX Files
-- Create nodes, edges, ingest-metadata KGX files
-- t.b.d. where these will be stored
+- Create nodes, edges, ingest-metadata KGX files. t.b.d. where these will be stored.
+- Ingest Code parsers are generally written to generate their knowledge graphs - nodes and edges - using a Biolink Model-constrained Pydantic model (the exception to this is a 'pass-through' KGX file processor which bypasses the Pydantic model).
+- Use of the Pydantic model is recommended since it provides a standardized way to validate and transform input data.
+- The Translator Ingest pipeline converts the resulting parser Koza KnowledgeGraph output objects into KGX node and edge (jsonl) file content (that is, the Ingest Code does not write the KGX files directly, nor need to worry about doing so).
+- That said, the KGX ingest metadata needs to be generated separately using the [ingest metadata schema](https://github.com/biolink/ingest-metadata) which has a Python implementation.
