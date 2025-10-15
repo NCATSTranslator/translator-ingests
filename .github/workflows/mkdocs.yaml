@@ -2,7 +2,7 @@ name: Deploy MkDocs Documentation
 
 on:
   push:
-    branches: [main]
+    branches: [main, add_rigs_back]
   pull_request:
     branches: [main]
 
