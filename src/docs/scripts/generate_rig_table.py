@@ -102,7 +102,7 @@ def update_rig_index(table, docs_path):
 
 def main():
     """Main function."""
-    base_path = Path(__file__).parent.parent
+    base_path = Path(__file__).parent.parent.parent.parent  # Go up from src/docs/scripts to repo root
     docs_path = base_path / "docs"
     
     # Find all RIG files
