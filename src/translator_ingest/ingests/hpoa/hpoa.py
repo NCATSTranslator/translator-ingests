@@ -307,7 +307,7 @@ def prepare_data_gene_to_phenotype(
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
     """
-    hpoa_data_path = INGESTS_DATA_PATH / "hpoa"
+    hpoa_data_path = koza_transform.input_files_dir
     phenotype_file_path = koza_transform.extra_fields.get(
         "HPOA_PHENOTYPE_FILE", abspath(hpoa_data_path / "phenotype.hpoa")
     )
