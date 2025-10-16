@@ -325,6 +325,115 @@
           - ChEMBL
         node_properties:
           - atc_classification
+          - atc_classifications
+          - availability_type
+          - biolink:highest_FDA_approval_status
+          - biolink:routes_of_delivery
+          - black_box_warning
+          - chirality
+          - dosed_ingredient
+          - drug_warning
+          - first_approval
+          - first_in_class
+          - indication_class
+          - inorganic_flag
+          - max_phase
+          - molecule_type
+          - natural_product
+          - prodrug
+          - therapeutic_flag
+          - usan_stem
+          - usan_stem_definition
+          - usan_substem
+          - usan_year
+          - withdrawn_flag
+      - node_category: NucleicAcidEntity
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - assay_tissue_name
+          - biolink:description
+          - biolink:in_taxon
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - component_type
+          - organism
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: Organism
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: PairwiseGeneToGeneInteraction
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - assay_tissue_name
+          - biolink:description
+          - biolink:in_taxon
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - component_type
+          - organism
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: PhenotypicFeature
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - assay_tissue_name
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - target_mapping
+      - node_category: Protein
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - atc_classification
+          - atc_classifications
+          - availability_type
+          - biolink:description
+          - biolink:highest_FDA_approval_status
+          - biolink:in_taxon
+          - biolink:routes_of_delivery
+          - black_box_warning
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - chirality
+          - component_type
+          - dosed_ingredient
+          - drug_warning
+          - first_approval
+          - first_in_class
+          - indication_class
+          - max_phase
+          - molecule_type
+          - mutation
+          - organism
+          - prodrug
+          - target_mapping
+          - target_organism
+          - target_type
+          - therapeutic_flag
+          - usan_stem
+          - usan_stem_definition
+          - usan_substem
           - usan_year
           - withdrawn_flag
       - node_category: ProteinComplex
