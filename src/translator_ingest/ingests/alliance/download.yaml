@@ -1,0 +1,20 @@
+---
+# Alliance of Genome Resources data - Mouse and Rat only
+
+# Gene Files (used for entity lookup to filter phenotype records)
+- url: https://fms.alliancegenome.org/download/BGI_MGI.json.gz
+  local_name: BGI_MGI.json.gz
+- url: https://fms.alliancegenome.org/download/BGI_RGD.json.gz
+  local_name: BGI_RGD.json.gz
+
+# Phenotype Data
+- url: https://fms.alliancegenome.org/download/PHENOTYPE_MGI.json.gz
+  local_name: PHENOTYPE_MGI.json.gz
+- url: https://fms.alliancegenome.org/download/PHENOTYPE_RGD.json.gz
+  local_name: PHENOTYPE_RGD.json.gz
+
+# Expression Data
+- url: https://fms.alliancegenome.org/download/EXPRESSION_MGI.json.gz
+  local_name: EXPRESSION_MGI.json.gz
+- url: https://fms.alliancegenome.org/download/EXPRESSION_RGD.json.gz
+  local_name: EXPRESSION_RGD.json.gz
