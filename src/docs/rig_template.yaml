@@ -8,7 +8,7 @@
     - infores_id: # (required, range = URIorCURIE)
       name: # (optional, range = string)
       description: # (optional, range = string)
-      terms_of_use_info:  # (optional, range = TermsOfUseInfo)
+      terms_of_use_info:  # (required, range = TermsOfUseInfo)
         terms_of_use_url: # (optional, range = URIorCURIE)
         terms_of_use_description:  # (optional, range = string)
         license_name: # (optional, range = string)
@@ -24,12 +24,12 @@
     name: # (optional, range = string)    
     description:  # (optional, range = string)
     citations:  # (optional, multivalued, range = string)
-    terms_of_use_info:  # (optional, range = TermsOfUseInfo)
+    terms_of_use_info:  # (required, range = TermsOfUseInfo)
       terms_of_use_url: # (optional, range = URIorCURIE)
       terms_of_use_description:  # (optional, range = string)
       license name:  # (optional, range = string)
       license url:   # (optional, range = URIorCURIE)
-    data_access_locations:  # (optional, multivalued, range = string) Each value should include a url, and optional description of what is provided at that location.
+    data_access_locations:  # (required, multivalued, range = string) Each value should include a url, and optional description of what is provided at that location.
     data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
     data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
     data_versioning_and_releases:  # (optional, range = string)
@@ -48,7 +48,7 @@
         location:  # (required, range = URIorCURIE)
         description:  # (optional, range = string)
 
-    included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
+    included_content:  # (required, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
       - file_name:  # (required, range = string)
         included_records:  # (required, range = string)
         fields_used:  # (optional, range = string)
