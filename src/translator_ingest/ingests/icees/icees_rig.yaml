@@ -1,32 +1,35 @@
 name: Integrated Clinical and Environmental Exposures Service (ICEES)
-supporting_data_source_info:
-- infores_id: null
-  name: null
-  description: null
-  terms_of_use_info:
-    terms_of_use_url: null
-    terms_of_use_description: null
-    license_name: null
-    license_url: null
-  relevant_files:
-  - file_name: null
-    location: null
-    description: null
+#supporting_data_source_info:
+#- infores_id: null
+#  name: null
+#  description: null
+#  terms_of_use_info:
+#    terms_of_use_url: null
+#    terms_of_use_description: null
+#    license_name: null
+#    license_url: null
+#  relevant_files:
+#  - file_name: null
+#    location: null
+#    description: null
 source_info:
-  infores_id: infores:icees
-  name: null
-  description: null
+  infores_id: infores:icees  # TODO: should this instead be infores:icees-kg or infores:automate-icees-kg?
+  name: Integrated Clinical and Environmental Exposures Service (ICEES) KGX dataset
+  description: >-
+    ICEES KG is the KG version of the Integrated Clinical and Environmental Exposures Service (ICEES),
+    which provides regulatory-compliant open access to clinical data (e.g., electronic health records,
+    survey data, clinical research data) that have been integrated at the patient level with
+    environmental exposures data (e.g., airborne pollutants, landfills, concentrated animal
+    feeding operations, socio-economic indicators).
   citations: null
   terms_of_use_info:
-    terms_of_use_url: null
-    terms_of_use_description: null
-    license name: null
-    license url: null
-  data_access_locations: null
-  data_provision_mechanisms: null
-  data_formats: null
-  data_versioning_and_releases: null
-  additional_notes: null
+    terms_of_use_url: "https://github.com/ExposuresProvider/icees-api-config/blob/master/terms.txt"
+    terms_of_use_description: "UNC Health is permitted to provide under 45 C.F.R. § 164.502(d)(2)"
+  data_access_locations:
+  - "https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/ - Automat ICEES Plater loaded KGX jsonl files, plus meta_knowledge_graph.json: "
+  data_provision_mechanisms: file_download
+  data_formats: kgx
+  data_versioning_and_releases: "Static dataset released 8-20-2024"
 ingest_info:
   ingest_categories:
   - null
