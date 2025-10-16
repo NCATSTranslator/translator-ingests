@@ -1,15 +1,11 @@
 ---
 # Alliance of Genome Resources data - Mouse and Rat only
 
-# Gene Files
+# Gene Files (used for entity lookup to filter phenotype records)
 - url: https://fms.alliancegenome.org/download/BGI_MGI.json.gz
   local_name: BGI_MGI.json.gz
 - url: https://fms.alliancegenome.org/download/BGI_RGD.json.gz
   local_name: BGI_RGD.json.gz
-
-# Disease Association Data (combined file - will filter for mouse/rat in transform)
-- url: https://fms.alliancegenome.org/download/DISEASE-ALLIANCE_COMBINED.tsv.gz
-  local_name: DISEASE-ALLIANCE_COMBINED.tsv.gz
 
 # Phenotype Data
 - url: https://fms.alliancegenome.org/download/PHENOTYPE_MGI.json.gz
@@ -22,15 +18,3 @@
   local_name: EXPRESSION_MGI.json.gz
 - url: https://fms.alliancegenome.org/download/EXPRESSION_RGD.json.gz
   local_name: EXPRESSION_RGD.json.gz
-
-# AGM / Genotype Files
-- url: https://fms.alliancegenome.org/download/AGM_MGI.json.gz
-  local_name: AGM_MGI.json.gz
-- url: https://fms.alliancegenome.org/download/AGM_RGD.json.gz
-  local_name: AGM_RGD.json.gz
-
-# Allele/Variant Files (mouse and rat specific)
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
-  local_name: VARIANT-ALLELE_NCBITaxon10090.tsv.gz
-- url: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10116.tsv.gz
-  local_name: VARIANT-ALLELE_NCBITaxon10116.tsv.gz
