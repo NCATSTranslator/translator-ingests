@@ -4,3 +4,17 @@ Sometimes the source of Translator knowledge graph data is (just) a generated KG
 
 Here we describe how to write a KGX passthrough ingest parser using available tools and procedures.
 
+## Overview
+
+1. Create an ingest-specific branch within a development copy of the Translator Ingest (TI) pipeline repository, e.g. "icees-ingest" for ICEES.
+2. Identify the (internet endpoint) visible sources of the previously generated [KGX-compliant node and edge jsonl target files](https://github.com/biolink/kgx) for the knowledge source, then record the endpoint urls within the ingest-specific **download.yaml** file. This will trigger downloading of the files for local processing by the pipeline.
+3. It is helpful at this point to perform some kind of [profiling the 'metagraph' of the Biolink Model contents](#characterizing-the-basic-metagraph) of the KGX nodes and edges, both for RIG documentation purposes and to identify any need for filtering or Biolink Model updating of the legacy dataset (which can perhaps be applied within the parser code - step 6 below), to ensure proper normalization and validation downstream in the pipeline.
+4. Write a simple ingest specification (i.e., **icees.yaml**) which specifies separate tagged readers to parse the nodes and edges jsonl rows (records) into separate Koza transform streams for processing.
+5. (Optionally) Write some basic unit tests with sample KGX-style input records representative of the input KGX file, to test the Pydantic remapping, for example, for any filtering or updating of fields.
+6. Write a simple ingest model (i.e., **icees.py**) alongside the **download.yaml** file, encoding the methods which simply open each downloaded KGX node and edge file, to processes in the distinct reader streams through the transformer methods, to conversion the records to the stream of Biolink Model-compliant Pydantic objects, for uniform downstream processing by the TI pipeline.
+
+The challenge is "what do we do when these don't validate?" -- and then you can sort of look at TMKP passthrough ingest for an example on how to handle this. Note that validation during ingest may be more important than to just use what they give us.
+
+## Characterizing the Basic Metagraph
+
+T.B.A.
