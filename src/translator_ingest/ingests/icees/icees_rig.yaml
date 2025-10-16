@@ -1,0 +1,90 @@
+name: Integrated Clinical and Environmental Exposures Service (ICEES)
+supporting_data_source_info:
+- infores_id: null
+  name: null
+  description: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license_name: null
+    license_url: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+source_info:
+  infores_id: infores:icees
+  name: null
+  description: null
+  citations: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations: null
+  data_provision_mechanisms: null
+  data_formats: null
+  data_versioning_and_releases: null
+  additional_notes: null
+ingest_info:
+  ingest_categories:
+  - null
+  utility: null
+  scope: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+  included_content:
+  - file_name: null
+    included_records: null
+    fields_used: null
+  filtered_content:
+  - file_name: null
+    filtered_records: null
+    rationale: null
+  future_considerations:
+  - category: null
+    consideration: null
+    relevant_files: null
+  additional_notes: null
+target_info:
+  infores_id: infores:icees
+  edge_type_info:
+  - subject_categories:
+    - null
+    predicates:
+    - null
+    object_categories:
+    - null
+    qualifiers:
+    - property: null
+      value_range: null
+      value_enumeration: null
+      value_id_prefixes: null
+      value_description: null
+    knowledge_level:
+    - null
+    agent_type:
+    - null
+    edge_properties:
+    - null
+    ui_explanation: null
+    additional_notes: null
+  node_type_info:
+  - node_category: null
+    source_identifier_types:
+    - null
+    node_properties:
+    - null
+    additional_notes: null
+  future_considerations:
+  - category: null
+    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - null
+  artifacts:
+  - null
