@@ -1,0 +1,16 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+# KGX 'nodes' file for ICEES, hard-coded to release 8-20-2024
+- url: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/nodes.jsonl.gz
+  local_name: nodes.jsonl.gz
+
+# KGX 'edges' file for ICEES, hard-coded to release 8-20-2024
+- url: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/edges.jsonl.gz
+  local_name: edges.jsonl.gz
+
+# KGX 'meta_knowledge_graph' file for ICEES, hard-coded to release 8-20-2024
+- url: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/meta_knowledge_graph.json
+  local_name: meta_knowledge_graph.json
