@@ -28,9 +28,12 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     run                 Run pipeline (download→transform→normalize) │
+│     run                 Run pipeline (download→transform→normalize→validate) │
+│     transform           Transform the source to KGX       │
 │     validate            Validate all sources in data/     │
+│     validate-single     Validate only specified sources   │
 │     validate-only       Validate without re-running pipeline │
+│     merge               Merge specified sources into one KG │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
@@ -52,6 +55,7 @@ define HELP
 │     make run                                              │
 │     make validate SOURCES="ctd go_cam"                    │
 │     make run SOURCES="go_cam"                             │
+│     make merge SOURCES="ctd go_cam goa"                   │
 ╰───────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -124,6 +128,11 @@ validate-only-%:
 	@echo "Validating $*..."
 	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
+
+.PHONY: merge
+merge:
+	@echo "Merging sources and building translator_kg...";
+	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES);
 
 ### Linting, Formatting, and Cleaning ###
 
