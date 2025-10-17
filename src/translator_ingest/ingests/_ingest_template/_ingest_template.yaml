@@ -7,7 +7,7 @@ readers:
     header_mode: 27
     header_prefix: "#"
     files:
-      - "../../../../data/_ingest_template/example_data.tsv.gz"
+      - "example_data.tsv.gz"
     columns:
       - ChemicalName
       - ChemicalID
@@ -25,7 +25,7 @@ readers:
     header_mode: 27
     header_prefix: "#"
     files:
-      - "../../../../data/_ingest_template/example_data_2.tsv.gz"
+      - "example_data_2.tsv.gz"
     columns:
       - ChemicalName
       - ChemicalID
@@ -43,7 +43,7 @@ readers:
     header_mode: 27
     header_prefix: "#"
     files:
-      - "../../../../data/_ingest_template/example_data_3.tsv.gz"
+      - "example_data_3.tsv.gz"
     columns:
       - ChemicalName
       - ChemicalID
@@ -55,10 +55,3 @@ readers:
       - InferenceScore
       - OmimIDs
       - PubMedIDs
-
-transform:
-  filters:
-    - inclusion: include
-      column: DirectEvidence
-      filter_code: eq
-      value: therapeutic

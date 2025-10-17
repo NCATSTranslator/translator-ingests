@@ -1,13 +1,14 @@
 name: goa
+
 reader:
   format: csv
   delimiter: \t 
   comment_char: "!" # Header line starts with !
   header_mode: none 
   files:
-    - ../../../../data/goa/goa_human.gaf.gz # GOA human gene association file
-    - ../../../../data/goa/mgi.gaf.gz # MGI gene association file
-    - ../../../../data/goa/rgd.gaf.gz # RGD rat gene association file
+    - goa_human.gaf.gz # GOA human gene association file
+    - mgi.gaf.gz # MGI gene association file
+    - rgd.gaf.gz # RGD rat gene association file
   columns: # 17 columns from the GAF file
     - DB # Database
     - DB_Object_ID # Gene ID
@@ -26,9 +27,6 @@ reader:
     - Assigned_By # Assigned by
     - Annotation_Extension # Annotation extension
     - Gene_Product_Form_ID # Gene product form ID
-
-transform:
-  code: goa.py # Python code to transform the data (transform_record)
   filters:
     - inclusion: include # Include only the rows where the taxon is Homo Sapiens, Mouse, or Rat
       column: Taxon 
@@ -37,24 +35,3 @@ transform:
         - taxon:9606 # Homo Sapiens
         - taxon:10090 # Mouse
         - taxon:10116 # Rat
-
-writer:
-  node_properties:
-    - id # Node ID (ex: MGI:1000001 or UniProt:P01234)
-    - name # Node name (ex: NUDT4B)
-    - category # Node category (biolink:Gene or biolink:Protein)
-    - description # Node description (full gene name/description)
-    - in_taxon # Node in taxon (taxon:9606, taxon:10090, or taxon:10116)
-  edge_properties:
-    - id # Edge ID (UUID)
-    - subject # Subject node ID (Gene ID ex: MGI:1000001, UniProt:P01234, or RGD:12345)
-    - predicate # Edge predicate (ex: biolink:enables)
-    - object # Object node ID (GO term ID ex: GO:0008150)
-    - negated # Negated edge (NOT ex: negated:true or negated:false)
-    - has_evidence # Edge evidence (ECO CURIE ex: ECO:0000501)
-    - publications # Edge publications (PMID CURIE ex: PMID:12345678)
-    - primary_knowledge_source # Edge primary knowledge source (infores_goa)
-    - aggregator_knowledge_source # Edge aggregator knowledge source (infores_biolink)
-    - knowledge_level # Edge knowledge level (ex: prediction)
-    - agent_type # Edge agent type (Gene)
-    - category # Edge category (biolink:CellularComponent, biolink:BiologicalProcess, biolink:MolecularActivity)

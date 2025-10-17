@@ -1,0 +1,12 @@
+name: semmeddb_nodes
+
+reader:
+  format: json
+  files:
+    # placeholder; prepare_data opens the actual jsonl
+    - semmeddb_edges.jsonl
+
+transform:
+  # no extra fields required
+
+
