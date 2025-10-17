@@ -100,7 +100,10 @@ transform-%:
 
 .PHONY: normalize
 normalize: transform
-	@echo "Normalization placeholder for sources: $(SOURCES)"
+	@for source in $(SOURCES); do \
+		echo "Normalizing $$source..."; \
+		$(RUN) python src/translator_ingest/util/normalize.py --output-dir $(ROOTDIR)/data/$$source; \
+	done
 
 .PHONY: validate
 validate: normalize
