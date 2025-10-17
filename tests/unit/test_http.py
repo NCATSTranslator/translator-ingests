@@ -1,7 +1,11 @@
 from typing import Dict
 
 # def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
+<<<<<<< HEAD
 from src.translator_ingest.util.http_utils import post_query
+=======
+from src.translator_ingest.util.query import post_query
+>>>>>>> 1a85f5e (working normalization)
 
 from src.translator_ingest.util.normalize import NODE_NORMALIZER_SERVER
 

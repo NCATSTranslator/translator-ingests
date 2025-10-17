@@ -212,14 +212,13 @@ def normalize_kgx_files(output_dir: str,
 
     normalization_metadata_file_path = versioned_output_dir / "normalization_metadata.json"
     with normalization_metadata_file_path.open("w") as normalization_metadata_file:
-        normalization_metadata_file.write(json.dumps(normalization_metadata))
+        normalization_metadata_file.write(json.dumps(normalization_metadata, indent=4))
 
 
-@click.command()
+@click.command(help="Given a directory with KGX files, normalize them and produce normalization maps and metadata.")
 @click.argument(
     "output-dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
-    help="Output directory for normalization outputs."
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path)
 )
 @click.option(
     "--files",
@@ -265,7 +264,9 @@ def main(output_dir, files):
                             input_nodes_file_path=nodes_file,
                             input_edges_file_path=edges_file)
         sys.exit(0)
-    except Exception:
+    except Exception as e:
+        logger.error(str(e))
+        # raise e
         sys.exit(1)
 
 

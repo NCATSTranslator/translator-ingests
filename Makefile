@@ -102,7 +102,7 @@ transform-%:
 normalize: transform
 	@for source in $(SOURCES); do \
 		echo "Normalizing $$source..."; \
-		$(RUN) python src/translator_ingest/util/normalize.py --output-dir $(ROOTDIR)/data/$$source; \
+		$(RUN) python src/translator_ingest/util/normalize.py $(ROOTDIR)/data/$$source; \
 	done
 
 .PHONY: validate
