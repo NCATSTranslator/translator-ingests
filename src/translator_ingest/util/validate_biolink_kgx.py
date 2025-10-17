@@ -12,6 +12,7 @@ import logging
 import sys
 from datetime import datetime
 from enum import StrEnum
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -29,36 +30,22 @@ except ImportError:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Cache for Biolink schema to avoid repeated network calls
-_BIOLINK_SCHEMA_CACHE = None
-
-
+@lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
     """Get cached Biolink schema, loading it if not already cached."""
-    global _BIOLINK_SCHEMA_CACHE
-    
-    if _BIOLINK_SCHEMA_CACHE is not None:
-        return _BIOLINK_SCHEMA_CACHE
     
     # Try to load from local biolink model first (same version as ingests)
     try:
         from biolink_model import BIOLINK_MODEL_YAML_PATH
-        _BIOLINK_SCHEMA_CACHE = SchemaView(BIOLINK_MODEL_YAML_PATH)
+        schema_view = SchemaView(BIOLINK_MODEL_YAML_PATH)
         logger.debug("Successfully loaded Biolink schema from local file")
-        return _BIOLINK_SCHEMA_CACHE
+        return schema_view
     except Exception as e:
         logger.warning(f"Failed to load local Biolink schema: {e}")
-    
-    # Fallback to loading from official URL
-    try:
-        _BIOLINK_SCHEMA_CACHE = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
+        # Fallback to loading from official URL
+        schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
         logger.debug("Successfully loaded Biolink schema from URL")
-        return _BIOLINK_SCHEMA_CACHE
-    except Exception as e:
-        logger.error(f"Failed to load Biolink schema from URL: {e}")
-        raise RuntimeError(
-            "Cannot proceed without Biolink schema. Please ensure biolink-model is properly installed."
-        )
+        return schema_view
 
 
 class ValidationStatus(StrEnum):
