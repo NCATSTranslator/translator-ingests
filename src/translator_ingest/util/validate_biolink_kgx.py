@@ -36,7 +36,7 @@ def get_biolink_schema() -> SchemaView:
 
     # Try to load from local biolink model first (same version as ingests)
     try:
-        with importlib.resources.path("biolink_model", "biolink-model.yaml") as schema_path:
+        with importlib.resources.path("biolink_model.schema", "biolink_model.yaml") as schema_path:
             schema_view = SchemaView(str(schema_path))
             logger.debug("Successfully loaded Biolink schema from local file")
             return schema_view
