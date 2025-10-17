@@ -61,20 +61,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 descendants = schema_view.class_descendants("NamedThing")
                 valid_categories.update(f"biolink:{cls}" for cls in descendants)
                 valid_categories.add("biolink:NamedThing")
-        except Exception:
-            # If we can't get categories from schema, use common ones
-            valid_categories = {
-                "biolink:Gene",
-                "biolink:Protein",
-                "biolink:Disease",
-                "biolink:ChemicalEntity",
-                "biolink:BiologicalProcess",
-                "biolink:MolecularFunction",
-                "biolink:CellularComponent",
-                "biolink:Pathway",
-                "biolink:PhenotypicFeature",
-                "biolink:OrganismTaxon",
-            }
+        except Exception as e:
+            # Having a working schema with NamedThing descendants is required
+            raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
 
         self._valid_categories_cache = valid_categories
         return valid_categories
@@ -91,20 +80,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
             descendants = schema_view.slot_descendants("related_to")
             valid_predicates.update(f"biolink:{slot}" for slot in descendants)
             valid_predicates.add("biolink:related_to")
-        except Exception:
-            # If we can't get predicates from schema, use common ones
-            valid_predicates = {
-                "biolink:related_to",
-                "biolink:affects",
-                "biolink:treats",
-                "biolink:causes",
-                "biolink:associated_with",
-                "biolink:regulates",
-                "biolink:interacts_with",
-                "biolink:participates_in",
-                "biolink:has_participant",
-                "biolink:occurs_in",
-            }
+        except Exception as e:
+            # Having a working schema with predicate descendants is required
+            raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
 
         self._valid_predicates_cache = valid_predicates
         return valid_predicates
@@ -185,8 +163,26 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
     def _validate_edge(self, edge_obj: dict, path: str, context: ValidationContext) -> Iterator[ValidationResult]:
         """Validate a single edge object."""
-        # Check required fields
-        required_fields = ["subject", "predicate", "object"]
+        # Get required fields from Association class in schema
+        schema_view = self._schema_view or getattr(context, "schema_view", None)
+        required_fields = ["subject", "predicate", "object"]  # fallback
+        
+        if schema_view:
+            try:
+                association_class = schema_view.get_class("Association")
+                if association_class:
+                    # Get slots that are required for Association
+                    required_slots = []
+                    for slot_name in schema_view.class_slots("Association"):
+                        slot = schema_view.get_slot(slot_name)
+                        if slot and slot.required:
+                            required_slots.append(slot_name)
+                    if required_slots:
+                        required_fields = required_slots
+            except Exception:
+                # Fall back to hardcoded required fields if schema lookup fails
+                pass
+        
         for field in required_fields:
             if field not in edge_obj:
                 yield ValidationResult(
