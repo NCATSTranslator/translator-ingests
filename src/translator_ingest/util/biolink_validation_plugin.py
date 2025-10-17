@@ -88,7 +88,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         return valid_predicates
 
     def _is_valid_curie(self, identifier: str) -> bool:
-        """Check if identifier follows valid CURIE format."""
+        """Check if the identifier follows a valid CURIE format."""
         if not isinstance(identifier, str):
             return False
 
@@ -164,7 +164,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         # Get required fields from Association class in schema
         schema_view = self._schema_view or getattr(context, "schema_view", None)
         required_fields = ["subject", "predicate", "object"]  # fallback
-        
+
         if schema_view:
             try:
                 association_class = schema_view.get_class("Association")
@@ -180,7 +180,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
             except Exception:
                 # Fall back to hardcoded required fields if schema lookup fails
                 pass
-        
+
         for field in required_fields:
             if field not in edge_obj:
                 yield ValidationResult(
