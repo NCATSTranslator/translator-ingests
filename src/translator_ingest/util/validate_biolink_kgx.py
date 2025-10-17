@@ -29,6 +29,37 @@ except ImportError:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# Cache for Biolink schema to avoid repeated network calls
+_BIOLINK_SCHEMA_CACHE = None
+
+
+def get_biolink_schema() -> SchemaView:
+    """Get cached Biolink schema, loading it if not already cached."""
+    global _BIOLINK_SCHEMA_CACHE
+    
+    if _BIOLINK_SCHEMA_CACHE is not None:
+        return _BIOLINK_SCHEMA_CACHE
+    
+    # Try to load from local biolink model first (same version as ingests)
+    try:
+        from biolink_model import BIOLINK_MODEL_YAML_PATH
+        _BIOLINK_SCHEMA_CACHE = SchemaView(BIOLINK_MODEL_YAML_PATH)
+        logger.debug("Successfully loaded Biolink schema from local file")
+        return _BIOLINK_SCHEMA_CACHE
+    except Exception as e:
+        logger.warning(f"Failed to load local Biolink schema: {e}")
+    
+    # Fallback to loading from official URL
+    try:
+        _BIOLINK_SCHEMA_CACHE = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
+        logger.debug("Successfully loaded Biolink schema from URL")
+        return _BIOLINK_SCHEMA_CACHE
+    except Exception as e:
+        logger.error(f"Failed to load Biolink schema from URL: {e}")
+        raise RuntimeError(
+            "Cannot proceed without Biolink schema. Please ensure biolink-model is properly installed."
+        )
+
 
 class ValidationStatus(StrEnum):
     PASSED = "PASSED"
@@ -96,25 +127,8 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
     # Create combined KGX structure for validation
     kgx_data = {"nodes": nodes, "edges": edges}
 
-    # Initialize Biolink schema view - always required for proper validation
-    biolink_schema = None
-    try:
-        # Load biolink schema from official URL
-        biolink_schema = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
-        logger.debug("Successfully loaded Biolink schema")
-    except Exception as e:
-        logger.error(f"Failed to load Biolink schema from URL: {e}")
-        # Try to load from local biolink model if available
-        try:
-            from biolink_model import BIOLINK_MODEL_YAML_PATH
-
-            biolink_schema = SchemaView(BIOLINK_MODEL_YAML_PATH)
-            logger.debug("Successfully loaded Biolink schema from local file")
-        except Exception as e2:
-            logger.error(f"Failed to load local Biolink schema: {e2}")
-            raise RuntimeError(
-                "Cannot proceed without Biolink schema. Please ensure biolink-model is properly installed."
-            )
+    # Get cached Biolink schema view - always required for proper validation
+    biolink_schema = get_biolink_schema()
 
     # Perform validation using plugin directly
     validation_results = []

@@ -249,9 +249,9 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             if publications and isinstance(publications, list):
                 publications = [pub for pub in publications if isinstance(pub, str) and pub.startswith("PMID:")]
 
-            # Get normalized IDs for the association
-            normalized_source_id = node_lookup[source_id]["id"]
-            normalized_target_id = node_lookup[target_id]["id"]
+            # Get normalized IDs for the association with safe fallback
+            normalized_source_id = node_lookup.get(source_id, {}).get("id", normalize_id(source_id))
+            normalized_target_id = node_lookup.get(target_id, {}).get("id", normalize_id(target_id))
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(

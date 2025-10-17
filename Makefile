@@ -31,7 +31,6 @@ define HELP
 │     run                 Run pipeline (download→transform→normalize) │
 │     validate            Validate all sources in data/     │
 │     validate-only       Validate without re-running pipeline │
-│     validate-single     Validate only specified sources   │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
@@ -125,12 +124,6 @@ validate-only-%:
 	@echo "Validating $*..."
 	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
-.PHONY: validate-single
-validate-single: run
-	@for source in $(SOURCES); do \
-		echo "Validating $$source..."; \
-		$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
-	done
 
 ### Linting, Formatting, and Cleaning ###
 

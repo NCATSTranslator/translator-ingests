@@ -4,7 +4,7 @@ import re
 from linkml.validator.plugins import ValidationPlugin
 from linkml.validator.report import ValidationResult, Severity
 from linkml.validator.validation_context import ValidationContext
-from linkml_runtime import SchemaView
+from linkml_runtime.utils.schemaview import SchemaView
 
 
 def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = None):
@@ -137,19 +137,17 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 categories = [categories]
 
             schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if not schema_view:
-                # Skip category validation if no schema view
-                return
-            valid_categories = self._get_valid_categories(schema_view)
-            for category in categories:
-                if category not in valid_categories:
-                    yield ValidationResult(
-                        type="biolink-model validation",
-                        severity=Severity.WARN,
-                        instance=node_obj,
-                        instantiates=context.target_class,
-                        message=f"Node at /{path} has potentially invalid category '{category}'",
-                    )
+            if schema_view:
+                valid_categories = self._get_valid_categories(schema_view)
+                for category in categories:
+                    if category not in valid_categories:
+                        yield ValidationResult(
+                            type="biolink-model validation",
+                            severity=Severity.WARN,
+                            instance=node_obj,
+                            instantiates=context.target_class,
+                            message=f"Node at /{path} has potentially invalid category '{category}'",
+                        )
 
         # Check for name field (recommended)
         if "name" not in node_obj:
