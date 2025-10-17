@@ -69,7 +69,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False):
 
     merge_metadata = file_merger.get_merge_metadata()
     if "merge_error" in merge_metadata:
-        logger.error(f"Merging error occured: {merge_metadata['merge_error']}")
+        logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
     else:
         metadata_output = output_dir / "merge_metadata.json"
         with open(metadata_output, "w") as metadata_file:
