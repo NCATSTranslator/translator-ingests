@@ -9,6 +9,7 @@ Validates KGX files against Biolink Model requirements using LinkML validation p
 import json
 import logging
 import sys
+import importlib.resources
 from datetime import datetime
 from enum import StrEnum
 from functools import lru_cache
@@ -35,10 +36,10 @@ def get_biolink_schema() -> SchemaView:
 
     # Try to load from local biolink model first (same version as ingests)
     try:
-        from biolink_model import BIOLINK_MODEL_YAML_PATH
-        schema_view = SchemaView(BIOLINK_MODEL_YAML_PATH)
-        logger.debug("Successfully loaded Biolink schema from local file")
-        return schema_view
+        with importlib.resources.path("biolink_model", "biolink-model.yaml") as schema_path:
+            schema_view = SchemaView(str(schema_path))
+            logger.debug("Successfully loaded Biolink schema from local file")
+            return schema_view
     except Exception as e:
         logger.warning(f"Failed to load local Biolink schema: {e}")
         # Fallback to loading from official URL
