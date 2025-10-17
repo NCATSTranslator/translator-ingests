@@ -2,7 +2,7 @@ import uuid
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.http import get_modify_date
+from translator_ingest.util.query import get_modify_date
 
 ## ADDED packages for this ingest
 from datetime import datetime
