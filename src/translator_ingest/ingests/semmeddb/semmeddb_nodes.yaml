@@ -4,7 +4,7 @@ reader:
   format: json
   files:
     # placeholder; prepare_data opens the actual jsonl
-    - ../../../../data/semmedb/semmeddb_edges.jsonl
+    - semmeddb_edges.jsonl
 
 transform:
   # no extra fields required
