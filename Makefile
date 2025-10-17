@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd ebi_gene2phenotype go_cam goa
+SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
 
 # Include additional makefiles
 include rig.Makefile
@@ -132,7 +132,6 @@ validate-single: run
 		echo "Validating $$source..."; \
 		$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
 	done
-
 
 ### Linting, Formatting, and Cleaning ###
 
