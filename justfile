@@ -116,7 +116,7 @@ normalize: transform
 validate: normalize
 	for source in {{sources}}; do \
 		echo "Validating $source..."; \
-		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
+		{{run}} python src/translator_ingest/util/validate_biolink_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
 	done
 
 run: validate

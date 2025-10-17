@@ -7,6 +7,7 @@ SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
 include rig.Makefile
 include doc.Makefile
 
+
 ### Help ###
 
 define HELP
@@ -31,6 +32,7 @@ define HELP
 │     transform           Transform the source to KGX       │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │
+│     validate-only       Validate without re-running pipeline │
 │     merge               Merge specified sources into one KG │
 │                                                           │
 │     test                Run all tests                     │
@@ -92,28 +94,40 @@ test:
 
 .PHONY: run
 run:
-	@for source in $(SOURCES); do \
-		echo "Running pipeline for $$source..."; \
-		$(RUN) python src/translator_ingest/pipeline.py $$source; \
-	done
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix run-,$(SOURCES))
+
+.PHONY: run-%
+run-%:
+	@echo "Running pipeline for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $*
 
 .PHONY: transform
 transform:
-	@for source in $(SOURCES); do \
-		echo "Transform only for $$source..."; \
-		$(RUN) python src/translator_ingest/pipeline.py $$source --transform-only; \
-	done
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
+
+.PHONY: transform-%
+transform-%:
+	@echo "Transform only for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $* --transform-only
 
 .PHONY: validate
 validate: run
-	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data;
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-,$(SOURCES))
 
-.PHONY: validate-single
-validate-single: run
-	@for source in $(SOURCES); do \
-		echo "Validating $$source..."; \
-		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
-	done
+.PHONY: validate-%
+validate-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
+
+.PHONY: validate-only
+validate-only:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
+
+.PHONY: validate-only-%
+validate-only-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
+
 
 .PHONY: merge
 merge:

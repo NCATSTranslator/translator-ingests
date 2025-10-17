@@ -1,7 +1,6 @@
 from typing import Dict
 
-from src.translator_ingest.util.query import post_query
-
+from src.translator_ingest.util.http_utils import post_query
 from orion.normalization import NODE_NORMALIZATION_URL
 
 
