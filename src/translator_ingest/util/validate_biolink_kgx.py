@@ -3,8 +3,7 @@
 Biolink KGX Validator using LinkML validation framework
 
 Validates KGX files against Biolink Model requirements using LinkML validation plugins.
-Provides the same CLI interface as the original validate_kgx.py but with enhanced
-Biolink Model compliance checking.
+
 """
 
 import json
@@ -33,7 +32,7 @@ logger.setLevel(logging.INFO)
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
     """Get cached Biolink schema, loading it if not already cached."""
-    
+
     # Try to load from local biolink model first (same version as ingests)
     try:
         from biolink_model import BIOLINK_MODEL_YAML_PATH
