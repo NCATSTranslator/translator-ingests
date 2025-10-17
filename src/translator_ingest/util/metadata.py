@@ -17,4 +17,4 @@ class PipelineMetadata:
             self.normalization_version,
             self.biolink_version,
         ]
-        return "".join(str(versions) for v in versions if v)
+        return "_".join(str(versions) for v in versions if v)
