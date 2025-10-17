@@ -8,7 +8,6 @@ include rig.Makefile
 include doc.Makefile
 
 
-SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
 ### Help ###
 
 define HELP
