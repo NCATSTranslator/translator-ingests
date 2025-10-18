@@ -1,0 +1,318 @@
+name: Columbia Open Health Data
+supporting_data_source_info:
+- infores_id: null
+  name: null
+  description: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license_name: null
+    license_url: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+source_info:
+  infores_id: infores:cohd
+  name: null
+  description: null
+  citations: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations: null
+  data_provision_mechanisms: null
+  data_formats: null
+  data_versioning_and_releases: null
+  additional_notes: null
+ingest_info:
+  ingest_categories:
+  - null
+  utility: null
+  scope: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+  included_content:
+  - file_name: null
+    included_records: null
+    fields_used: null
+  filtered_content:
+  - file_name: null
+    filtered_records: null
+    rationale: null
+  future_considerations:
+  - category: null
+    consideration: null
+    relevant_files: null
+  additional_notes: null
+target_info:
+  infores_id: infores:cohd
+  edge_type_info:
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Drug
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Drug
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:ChemicalEntity
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Drug
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Drug
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Drug
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:Drug
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  node_type_info:
+  - node_category: biolink:Disease
+    source_identifier_types:
+    - DOID
+    - UMLS
+    node_properties:
+    - biolink:Attribute
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - UNII
+    - CHEBI
+    node_properties:
+    - biolink:Attribute
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - node_category: biolink:Drug
+    source_identifier_types:
+    - RXCUI
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - CHEBI
+    node_properties:
+    - biolink:Attribute
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - MESH
+    - UNII
+    - CHEBI
+    node_properties:
+    - biolink:Attribute
+    - biolink:same_as
+    - biolink:Attribute
+    - biolink:Attribute
+  future_considerations:
+  - category: null
+    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - null
+  artifacts:
+  - null
