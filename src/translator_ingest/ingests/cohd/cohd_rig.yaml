@@ -1,7 +1,7 @@
 name: Columbia Open Health Data
 supporting_data_source_info:
-- infores_id: null
-  name: null
+- infores_id: infores:columbia-cdw-ehr-data
+  name: "Columbia University Irving Medical Center's clinical data warehouse"
   description: null
   terms_of_use_info:
     terms_of_use_url: null
@@ -14,9 +14,23 @@ supporting_data_source_info:
     description: null
 source_info:
   infores_id: infores:cohd
-  name: null
-  description: null
-  citations: null
+  name: "Columbia Open Health Data (COHD)"
+  description: >-
+    The COHD provides access to counts and patient prevalence
+    (i.e., prevalence from electronic health records) of conditions, procedures,
+    drug exposures, and patient demographics, and the co-occurrence frequencies
+    between them. Count and frequency data were derived from the
+    Columbia University Irving Medical Center's OHDSI database including inpatient
+    and outpatient data. Counts are the number of patients with the concept, e.g., 
+    diagnosed with a condition, exposed to a drug, or who had a procedure. 
+    Frequencies are the number of patients with the concept divided by the total number
+    of patients in the dataset. Clinical concepts (e.g., conditions, procedures, drugs)
+    are coded by their standard concept ID in the OMOP Common Data Model. 
+    To protect patient privacy, all concepts and pairs of concepts where
+    the count ≤ 10 were excluded, and counts were randomized by the Poisson distribution.
+  citations:
+    - https://www.nature.com/articles/sdata2018273
+    - https://github.com/NCATSTranslator/NCATSTranslator.github.io/raw/master/presentations/Translator_2020_Kick-Off_Presentation-Clinical_Data_Services.pdf
   terms_of_use_info:
     terms_of_use_url: null
     terms_of_use_description: null
