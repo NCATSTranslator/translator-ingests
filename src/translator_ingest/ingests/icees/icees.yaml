@@ -1,0 +1,27 @@
+name: 'integrated_clinical_and_environmental_exposures_service'
+
+readers:
+  kgx_nodes:
+    file_archive:
+      - '../../../../data/icees/icees_nodes.jsonl.gz'
+    files:
+      - 'icees_nodes.jsonl'
+    format: 'jsonl'
+    columns:
+      - 'id'
+      - 'categories'
+      - 'name'
+      - 'description'
+#      -
+  kgx_edges:
+    file_archive:
+      - '../../../../data/icees/icees_edges.jsonl.gz'
+    files:
+      - 'icees_edges.jsonl'
+    format: 'jsonl'
+    columns:
+      - 'id'
+      - 'subject'
+      - 'predicate'
+      - 'object'
+#      -
