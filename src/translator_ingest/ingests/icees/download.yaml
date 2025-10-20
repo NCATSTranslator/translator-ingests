@@ -10,8 +10,3 @@
 # KGX 'edges' file for ICEES, hard-coded to release 8-20-2024
 - url: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/edges.jsonl.gz
   local_name: edges.jsonl.gz
-
-# KGX 'meta_knowledge_graph' file for ICEES, hard-coded to release 8-20-2024;
-# Used as a source reference for the RIG and to identify needed data filtering/rewriting
-- url: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/meta_knowledge_graph.json
-  local_name: meta_knowledge_graph.json
