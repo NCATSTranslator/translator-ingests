@@ -22,7 +22,6 @@ It is generally advised to perform some kind of assessment of the Biolink Model 
 
 There are several ways to do this:
 
-1. If the KGX dataset is retrieved from a server sitting behind a Plater TRAPI instance (e.g., like RENCI's Automat installation), chances are that a static **meta_knowledge_graph.json** file describing the Biolink Model content of the KGX is  being used as the source of data for the **`/meta_knowledge_graph`** TRAPI endpoint.  The contents of that file can be access for the required KGX assessment.
-2. The [KGX library graph summarization method](https://biolink.github.io/kgx/reference/graph_operations/summarize_graph.html) can be applied to the KGX data files.
-3. A new Translator project KGX profiler tool (by D. Korn) may be available to perform this assessment.
-
+1. If the KGX dataset is retrieved from a server sitting behind a Plater TRAPI instance (e.g., like RENCI's Automat installation), chances are that a static **meta_knowledge_graph.json** file describing the Biolink Model content of the KGX is  being used as the source of data for the **`/meta_knowledge_graph`** TRAPI endpoint.  The contents of that file can be accessed for the required KGX assessment.  A new [mkg_to_rig.py](https://github.com/biolink/resource-ingest-guide-schema/blob/main/src/scripts/mkg_to_rig.py) script is available to copy over node and edge metadata from the meta_knowledge_graph.json file into the **`node_type_info`** and **`edge_type_info`** in the **`target_info`** section of a specified translator ingests knowledge source RIG.
+2. The [KGX library graph summarization method](https://biolink.github.io/kgx/reference/graph_operations/summarize_graph.html) can be applied to the KGX data files (note: the aforementioned **mkg_to_rig.py** doesn't yet support importing the resulting KGX graph summary directly into the RIG)
+3. A new Translator project KGX profiler tool (by Daniel Korn) may soon also be available to perform this assessment (note: the aforementioned **mkg_to_rig.py** doesn't yet support importing the resulting KGX graph summary directly into the RIG).
