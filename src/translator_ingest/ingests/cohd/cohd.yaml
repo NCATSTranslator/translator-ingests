@@ -1,0 +1,27 @@
+name: 'columbia_open_health_data'
+
+readers:
+  kgx_nodes:
+    file_archive:
+      - '../../../../data/cohd/cohd_nodes.jsonl.gz'
+    files:
+      - 'cohd_nodes.jsonl'
+    format: 'jsonl'
+    columns:
+      - 'id'
+      - 'categories'
+      - 'name'
+      - 'description'
+#      -
+  kgx_edges:
+    file_archive:
+      - '../../../../data/cohd/cohd_edges.jsonl.gz'
+    files:
+      - 'cohd_edges.jsonl'
+    format: 'jsonl'
+    columns:
+      - 'id'
+      - 'subject'
+      - 'predicate'
+      - 'object'
+#      -
