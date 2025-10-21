@@ -12,9 +12,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association,
 )
-from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import (
+    entity_id,
+    get_node_class,
+    knowledge_sources_from_trapi
+)
 from koza.model.graphs import KnowledgeGraph
-from cohd_util import get_node_class, build_sources
 
 def get_latest_version() -> str:
     return "2024-11-25"  # last Phase 2 release of COHD
@@ -64,7 +67,7 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
             predicate=record["predicate"],
             object=record["object"],
             has_confidence_score=record.get("score", None),
-            sources=build_sources(record["sources"]),
+            sources=knowledge_sources_from_trapi(record["sources"]),
             knowledge_level=KnowledgeLevelEnum.statistical_association,
             agent_type=AgentTypeEnum.data_analysis_pipeline,
         )
