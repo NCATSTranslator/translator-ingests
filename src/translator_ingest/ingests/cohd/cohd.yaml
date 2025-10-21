@@ -9,10 +9,9 @@ readers:
     format: 'jsonl'
     columns:
       - 'id'
-      - 'categories'
       - 'name'
-      - 'description'
-#      -
+      - 'categories'
+      - 'attributes'
   kgx_edges:
     file_archive:
       - '../../../../data/cohd/cohd_edges.jsonl.gz'
@@ -20,8 +19,9 @@ readers:
       - 'cohd_edges.jsonl'
     format: 'jsonl'
     columns:
-      - 'id'
       - 'subject'
       - 'predicate'
       - 'object'
-#      -
+      - 'score'
+      - 'attributes'
+      - 'sources'
