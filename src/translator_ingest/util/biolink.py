@@ -67,6 +67,7 @@ def get_node_class(node_id: str, categories: list[str]) -> type[NamedThing]:
         category = categories[0]
     return _BIOLINK_CLASS_MAPPING.get(category, NamedThing)
 
+
 def build_association_knowledge_sources(
     primary: str, supporting: Optional[list[str]] = None, aggregating: Optional[dict[str, list[str]]] = None
 ) -> list[RetrievalSource]:
