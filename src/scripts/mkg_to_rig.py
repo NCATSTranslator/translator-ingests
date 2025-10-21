@@ -124,9 +124,6 @@ def main(ingest, mkg, rig, knowledge_level, agent_type):
                     node_type_info.append(rig_node)
 
                 for edge in mkg_data['edges']:
-                    subject = edge['subject']
-                    predicate = edge['predicate']
-                    object = edge['object']
                     rig_edge = dict()
 
                     #       subject_categories:
