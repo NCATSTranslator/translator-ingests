@@ -1,6 +1,6 @@
 """Biolink Model support for Translator Ingests"""
 
-from typing import Optional
+from typing import Optional, Any
 from uuid import uuid4
 from loguru import logger
 
@@ -12,6 +12,24 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Drug,
     MolecularMixture,
     ChemicalEntity,
+    ChemicalExposure,
+    InformationContentEntity,
+    PhysiologicalProcess,
+    ComplexMolecularMixture,
+    EnvironmentalExposure,
+    PhenotypicFeature,
+    PopulationOfIndividualOrganisms,
+    PhysicalEntity,
+    GrossAnatomicalStructure,
+    OrganismAttribute,
+    Device,
+    Phenomenon,
+    SequenceVariant,
+    Procedure,
+    Protein,
+    Gene,
+    OrganismTaxon,
+    ClinicalIntervention,
     RetrievalSource,
     ResourceRoleEnum
 )
@@ -48,7 +66,7 @@ def _infores(identifier: str) -> str:
     return identifier if identifier.startswith("infores:") else f"infores:{identifier}"
 
 
-_BIOLINK_CLASS_MAPPING: dict[str, type[NamedThing]] = {
+_BIOLINK_CLASS_MAPPING: dict[str, Any] = {
     "biolink:NamedThing": NamedThing,
     "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
     "biolink:Disease": Disease,
@@ -56,6 +74,24 @@ _BIOLINK_CLASS_MAPPING: dict[str, type[NamedThing]] = {
     "biolink:Drug": Drug,
     "biolink:MolecularMixture": MolecularMixture,
     "biolink:ChemicalEntity": ChemicalEntity,
+    "biolink:ChemicalExposure": ChemicalExposure,
+    "biolink:InformationContentEntity": InformationContentEntity,
+    "biolink:PhysiologicalProcess": PhysiologicalProcess,
+    "biolink:ComplexMolecularMixture": ComplexMolecularMixture,
+    "biolink:EnvironmentalExposure": EnvironmentalExposure,
+    "biolink:PhenotypicFeature": PhenotypicFeature,
+    "biolink:PopulationOfIndividualOrganisms": PopulationOfIndividualOrganisms,
+    "biolink:PhysicalEntity": PhysicalEntity,
+    "biolink:GrossAnatomicalStructure": GrossAnatomicalStructure,
+    "biolink:OrganismAttribute": OrganismAttribute,
+    "biolink:Device": Device,
+    "biolink:Phenomenon": Phenomenon,
+    "biolink:Procedure": Procedure,
+    "biolink:SequenceVariant": SequenceVariant,
+    "biolink:Protein": Protein,
+    "biolink:Gene": Gene,
+    "biolink:OrganismTaxon": OrganismTaxon,
+    "biolink:ClinicalIntervention": ClinicalIntervention
 }
 
 def get_node_class(node_id: str, categories: list[str]) -> type[NamedThing]:
