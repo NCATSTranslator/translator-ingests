@@ -4,7 +4,6 @@ This script loads details from a Biolink Model-compliant
 """
 from os import path, rename
 import sys
-from pathlib import Path
 import yaml
 import json
 import click
