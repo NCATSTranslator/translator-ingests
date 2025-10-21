@@ -28,3 +28,8 @@ list-rigs:
 	@find src/translator_ingest/ingests -name "*_rig.yaml" -type f | sort | while read rig; do \
 		echo "  - $$rig"; \
 	done
+
+# Usage: make mkg-to-rig --INGEST <ingest_dir_name>
+# Populate target_info.(node|edge)_type_info using the contents of a
+# TRAPI-style Meta Knowledge Graph JSON file to RIGmkg-to-rig:
+	$(RUN) python src/docs/scripts/mkg_to_rig.py --ingest "$(INGEST)"

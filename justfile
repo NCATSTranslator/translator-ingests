@@ -147,3 +147,4 @@ spell_fix:
 	{{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
 
 import "project.justfile"
+import "rig.justfile"
