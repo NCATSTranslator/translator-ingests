@@ -29,7 +29,8 @@ list-rigs:
 		echo "  - $$rig"; \
 	done
 
-# Usage: make mkg-to-rig --INGEST <ingest_dir_name>
 # Populate target_info.(node|edge)_type_info using the contents of a
-# TRAPI-style Meta Knowledge Graph JSON file to RIGmkg-to-rig:
+# TRAPI-style Meta Knowledge Graph JSON file to RIG
+# Usage: make mkg-to-rig --INGEST <ingest_dir_name>
+mkg-to-rig:
 	$(RUN) python src/docs/scripts/mkg_to_rig.py --ingest "$(INGEST)"
