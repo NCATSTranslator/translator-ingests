@@ -11,7 +11,7 @@ readers:
       - 'id'
       - 'name'
       - 'category'
-      - 'equivalent_identifiers'  # rename this field to KGX 'xref' list
+      - 'equivalent_identifiers'  # rename this field to KGX 'xref' list value
   kgx_edges:
     file_archive:
       - '../../../../data/icees/icees_edges.jsonl.gz'
