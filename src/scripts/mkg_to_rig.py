@@ -8,8 +8,7 @@ from pathlib import Path
 import yaml
 import json
 import click
-
-TRANSLATOR_INGESTS = Path("../translator_ingest/ingests").absolute()
+from translator_ingest import INGESTS_PARSER_PATH
 
 @click.command()
 @click.option(
@@ -56,7 +55,7 @@ def main(ingest, mkg, rig, knowledge_level, agent_type):
     mk_to_rig.py --ingest icees
     mk_to_rig.py --ingest icees --mkg my_meta_graph.json --rig my_rig.yaml
     """
-    ingest_path = TRANSLATOR_INGESTS / ingest
+    ingest_path = INGESTS_PARSER_PATH / ingest
 
     print(f"Ingest Data: {ingest_path}")
 
