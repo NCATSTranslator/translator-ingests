@@ -11,7 +11,7 @@ readers:
       - 'id'
       - 'name'
       - 'category'
-      - 'equivalent_identifiers'
+      - 'equivalent_identifiers'  # rename this field to KGX 'xref' list
   kgx_edges:
     file_archive:
       - '../../../../data/icees/icees_edges.jsonl.gz'
@@ -24,4 +24,4 @@ readers:
       - 'predicate'
       - 'object'
       - 'primary_knowledge_source'
-      - 'attributes'
+      - 'attributes'  # how do we unpack this into the Pydantic model?
