@@ -11,7 +11,7 @@ readers:
       - 'id'
       - 'name'
       - 'categories'  # Rename this KGX field oo 'category' to comply to the latest Biolink Model
-      - 'attributes'
+      - 'attributes'  # how do we unpack this into the Pydantic model?
   kgx_edges:
     file_archive:
       - '../../../../data/cohd/cohd_edges.jsonl.gz'
