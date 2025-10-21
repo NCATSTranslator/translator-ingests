@@ -9,10 +9,9 @@ readers:
     format: 'jsonl'
     columns:
       - 'id'
-      - 'categories'
       - 'name'
-      - 'description'
-#      -
+      - 'category'
+      - 'equivalent_identifiers'
   kgx_edges:
     file_archive:
       - '../../../../data/icees/icees_edges.jsonl.gz'
@@ -24,4 +23,5 @@ readers:
       - 'subject'
       - 'predicate'
       - 'object'
-#      -
+      - 'primary_knowledge_source'
+      - 'attributes'
