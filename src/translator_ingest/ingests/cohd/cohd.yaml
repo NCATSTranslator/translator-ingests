@@ -1,7 +1,7 @@
 name: 'columbia_open_health_data'
 
 readers:
-  kgx_nodes:
+  cohd_nodes:
     file_archive:
       - '../../../../data/cohd/cohd_nodes.jsonl.gz'
     files:
@@ -12,7 +12,7 @@ readers:
       - 'name'
       - 'categories'  # Rename this KGX field oo 'category' to comply to the latest Biolink Model
       - 'attributes'  # how do we unpack this into the Pydantic model?
-  kgx_edges:
+  cohd_edges:
     file_archive:
       - '../../../../data/cohd/cohd_edges.jsonl.gz'
     files:
