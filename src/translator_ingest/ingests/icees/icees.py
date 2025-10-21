@@ -17,7 +17,7 @@ from koza.model.graphs import KnowledgeGraph
 
 
 def get_latest_version() -> str:
-    return "2024-11-25"  # last Phase 2 release of COHD
+    return "2024-08-20"  # last Phase 2 release of ICEES
 
 
 @koza.transform_record(tag="icees_nodes")
