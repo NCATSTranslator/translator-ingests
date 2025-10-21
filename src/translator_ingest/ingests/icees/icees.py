@@ -1,57 +1,77 @@
-import uuid
+from loguru import logger
 import koza
-import pandas as pd
-from typing import Any, Iterable
+
+from typing import Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-    Disease,
-    NamedThing,
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
     Association,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
 )
-from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import (
+    entity_id,
+    get_node_class,
+    build_association_knowledge_sources
+)
 from koza.model.graphs import KnowledgeGraph
 
 
 def get_latest_version() -> str:
-    return "2024-08-20"  # last Phase 2 ICEES release
+    return "2024-11-25"  # last Phase 2 release of COHD
+
 
 @koza.transform_record(tag="icees_nodes")
-def transform_ingest_by_record(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+def transform_icees_node(
+        koza_transform: koza.KozaTransform,
+        record: dict[str, Any]
+) -> KnowledgeGraph | None:
 
-    # here is an example of skipping a record based off of some condition
-    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-    if not publications:
-        koza.state["example_counter"] += 1
+    try:
+        node_id = record["id"]
+        # The node record 'category' is actually a list of
+        # categories, so we need to get the most specific one
+        node_class = get_node_class(node_id, record.get("category", ["biolink:NamedThing"]))
+
+        # TODO: need to figure out how to handle (certain?) attributes
+        # attributes = record["attributes"]
+        # # dct:description, biolink:same_as (equivalent_identifiers), etc.
+        # for attribute in attributes:
+        #     node.attributes.append(
+        #         Attribute(
+        #             attribute_type_id=attribute["attribute_type_id"],
+        #             value=attribute["value"]
+        #         )
+        #     )
+
+        node = node_class(id=node_id, name=record["name"], **{})
+        return KnowledgeGraph(nodes=[node])
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(
+            f"transform_icees_node():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
+        )
         return None
 
-    chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-    disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-
-    return KnowledgeGraph(nodes=[chemical, disease])
 
 @koza.transform_record(tag="icees_edges")
-def transform_ingest_by_record(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
 
-    # here is an example of skipping a record based off of some condition
-    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-    if not publications:
-        koza.state["example_counter"] += 1
+    try:
+        association = Association(
+            id=entity_id(),
+            subject=record["subject"],
+            predicate=record["predicate"],
+            object=record["object"],
+            sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.data_analysis_pipeline,
+        )
+        return KnowledgeGraph(edges=[association])
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(
+            f"transform_icees_edge():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
+        )
         return None
-
-    chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-    disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
-        subject=chemical.id,
-        predicate="biolink:related_to",
-        object=disease.id,
-        publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-    )
-    return KnowledgeGraph(edges=[association])

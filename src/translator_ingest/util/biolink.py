@@ -2,8 +2,19 @@
 
 from typing import Optional
 from uuid import uuid4
+from loguru import logger
 
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, ResourceRoleEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,
+    DiseaseOrPhenotypicFeature,
+    Disease,
+    SmallMolecule,
+    Drug,
+    MolecularMixture,
+    ChemicalEntity,
+    RetrievalSource,
+    ResourceRoleEnum
+)
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -36,6 +47,25 @@ def _infores(identifier: str) -> str:
     # https://github.com/biolink/information-resource-registry)
     return identifier if identifier.startswith("infores:") else f"infores:{identifier}"
 
+
+_BIOLINK_CLASS_MAPPING: dict[str, type[NamedThing]] = {
+    "biolink:NamedThing": NamedThing,
+    "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
+    "biolink:Disease": Disease,
+    "biolink:SmallMolecule": SmallMolecule,
+    "biolink:Drug": Drug,
+    "biolink:MolecularMixture": MolecularMixture,
+    "biolink:ChemicalEntity": ChemicalEntity,
+}
+
+def get_node_class(node_id: str, categories: list[str]) -> type[NamedThing]:
+    if len(categories) != 1:
+        logger.warning(f"ICEES record with id {node_id} has empty or multiple categories: '{str(categories)}'")
+        # TODO: Need to figure out how to return the most specific class for this... Check BMT?
+        category = "biolink:NamedThing"
+    else:
+        category = categories[0]
+    return _BIOLINK_CLASS_MAPPING.get(category, NamedThing)
 
 def build_association_knowledge_sources(
     primary: str, supporting: Optional[list[str]] = None, aggregating: Optional[dict[str, list[str]]] = None
