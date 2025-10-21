@@ -4,8 +4,6 @@ import koza
 from typing import Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,
-    Attribute,
     # ChemicalToDiseaseOrPhenotypicFeatureAssociation,
 
     KnowledgeLevelEnum,
@@ -67,7 +65,7 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
             predicate=record["predicate"],
             object=record["object"],
             has_confidence_score=record.get("score", None),
-            sources=knowledge_sources_from_trapi(record["sources"]),
+            sources=knowledge_sources_from_trapi(record["sources"]), # TODO: need to add additional supporting_data_source
             knowledge_level=KnowledgeLevelEnum.statistical_association,
             agent_type=AgentTypeEnum.data_analysis_pipeline,
         )

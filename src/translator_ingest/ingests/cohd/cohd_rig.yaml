@@ -1,17 +1,17 @@
 name: Columbia Open Health Data
 supporting_data_source_info:
-- infores_id: infores:columbia-cdw-ehr-data
+- infores_id: "infores:automat-ubergraph"
+  name: Automat Ubergraph
+  description: >-
+    A graph representation of Ubergraph, an integration of ontologies
+    including GO, CHEBI, Uberon, and HPO.
+- infores_id: "infores:columbia-cdw-ehr-data"
   name: "Columbia University Irving Medical Center's clinical data warehouse"
-  description: null
+- infores_id: "omop-ohdsi"
+  name: "Observational Medical Outcomes Partnership Observational Health Data Sciences and
+      Informatics"
   terms_of_use_info:
-    terms_of_use_url: null
-    terms_of_use_description: null
-    license_name: null
-    license_url: null
-  relevant_files:
-  - file_name: null
-    location: null
-    description: null
+    terms_of_use_url: "https://chime.ucsf.edu/observational-medical-outcomes-partnership-omop"
 source_info:
   infores_id: infores:cohd
   name: "Columbia Open Health Data (COHD)"
@@ -73,7 +73,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -86,7 +86,7 @@ target_info:
     object:
     - biolink:SmallMolecule
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -99,7 +99,7 @@ target_info:
     object:
     - biolink:SmallMolecule
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -112,7 +112,7 @@ target_info:
     object:
     - biolink:Drug
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -125,7 +125,7 @@ target_info:
     object:
     - biolink:Drug
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -138,7 +138,7 @@ target_info:
     object:
     - biolink:MolecularMixture
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -151,7 +151,7 @@ target_info:
     object:
     - biolink:ChemicalEntity
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -164,7 +164,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -177,7 +177,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -190,7 +190,7 @@ target_info:
     object:
     - biolink:Drug
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -203,7 +203,7 @@ target_info:
     object:
     - biolink:SmallMolecule
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -216,7 +216,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -229,7 +229,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -242,7 +242,7 @@ target_info:
     object:
     - biolink:SmallMolecule
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -255,7 +255,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
@@ -268,7 +268,7 @@ target_info:
     object:
     - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    agent_type: not_provided
     edge_properties:
     - biolink:Attribute
     - biolink:same_as
