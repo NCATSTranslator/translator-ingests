@@ -55,15 +55,24 @@ def transform_cohd_node(
 
 
 @koza.transform_record(tag="cohd_edges")
-def transform_ingest_by_record(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
 
-    association = Association(
-        id=entity_id(),
-        subject=record["subject"],
-        predicate=record["predicate"],
-        object=record["object"],
-        sources=build_sources(record["sources"]),
-        knowledge_level=KnowledgeLevelEnum.statistical_association,
-        agent_type=AgentTypeEnum.data_analysis_pipeline,
-    )
-    return KnowledgeGraph(edges=[association])
+    try:
+        association = Association(
+            id=entity_id(),
+            subject=record["subject"],
+            predicate=record["predicate"],
+            object=record["object"],
+            has_confidence_score=record.get("score", None),
+            sources=build_sources(record["sources"]),
+            knowledge_level=KnowledgeLevelEnum.statistical_association,
+            agent_type=AgentTypeEnum.data_analysis_pipeline,
+        )
+        return KnowledgeGraph(edges=[association])
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(
+            f"transform_cohd_edge():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
+        )
+        return None
