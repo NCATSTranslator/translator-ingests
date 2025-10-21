@@ -10,7 +10,7 @@ readers:
     columns:
       - 'id'
       - 'name'
-      - 'categories'
+      - 'categories'  # Rename this KGX field oo 'category' to comply to the latest Biolink Model
       - 'attributes'
   kgx_edges:
     file_archive:
@@ -24,4 +24,4 @@ readers:
       - 'object'
       - 'score'
       - 'attributes'
-      - 'sources'
+      - 'sources'  # This is a TRAPI-style 'sources' provenance field
