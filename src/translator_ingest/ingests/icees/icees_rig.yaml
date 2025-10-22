@@ -15,34 +15,42 @@ source_info:
       \ \xC2\xA7 164.502(d)(2)"
   data_access_locations:
   - 'https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/ - Automat ICEES
-    Plater loaded KGX jsonl files, plus meta_knowledge_graph.json: '
+    Plater loaded KGX jsonl files, plus meta_knowledge_graph.json'
   data_provision_mechanisms: file_download
   data_formats: kgx
   data_versioning_and_releases: Static dataset released 8-20-2024
 ingest_info:
   ingest_categories:
-  - null
-  utility: null
-  scope: null
+  - aggregation_interpreter
+  utility: >-
+    The impact of environmental exposures on clinical status is well known. This knowledge resource
+    aggregates such data from significant institutional expertise within Translator.
+  scope: Clinical correlations to environmental exposures.
   relevant_files:
-  - file_name: null
-    location: null
-    description: null
+  - file_name: nodes.jsonl.gz
+    location: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024
+    description: KGX jsonl file of KGX 'nodes' data from Phase 2 ICEES clinical knowledge provider activities.
+  - file_name: edges.jsonl.gz
+    location: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024
+    description: KGX jsonl file of KGX 'nodes' data from Phase 2 ICEES clinical knowledge provider activities.
   included_content:
-  - file_name: null
-    included_records: null
-    fields_used: null
-  filtered_content:
-  - file_name: null
-    filtered_records: null
-    rationale: null
-  future_considerations:
-  - category: null
-    consideration: null
-    relevant_files: null
-  additional_notes: null
+  - file_name: nodes.jsonl
+    included_records: all
+    fields_used: id, name, category, equivalent_identifiers
+  - file_name: edges.jsonl
+    included_records: all
+    fields_used: id, subject, predicate, object, primary_knowledge_source, attributes
+  #  filtered_content:
+  #  - file_name: null
+  #    filtered_records: null
+  #    rationale: null
+  #  future_considerations:
+  #  - category: null
+  #    consideration: null
+  #    relevant_files: null
+  #  additional_notes: null
 target_info:
-  infores_id: infores:icees
+  infores_id: infores:icees-kg
   edge_type_info:
   - subject:
     - biolink:SmallMolecule
@@ -8813,6 +8821,8 @@ target_info:
   additional_notes: null
 provenance_info:
   contributions:
-  - null
+  - "Richard Bruskiewich - data modeling, code author"
+  - "Evan Morris: code support"
+  - "Matthew Brush - data modeling, domain expertise"
   artifacts:
   - null
