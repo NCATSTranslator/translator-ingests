@@ -4,15 +4,19 @@ import os
 from typing import Any, Iterable
 import tarfile
 import sqlite3
+import json
 
 import biolink_model.datamodel.pydanticmodel_v2 as bm
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    ChemicalAffectsGeneAssociation
+    ChemicalAffectsGeneAssociation,
+    GeneAffectsChemicalAssociation
 )
 from koza.model.graphs import KnowledgeGraph
+
+QUALIFIER_CONFIG_PATH = "src/translator_ingest/ingests/chembl/chembl_qualifiers.json"
 
 LATEST_VERSION = "35"
 
@@ -108,40 +112,53 @@ COMPONENT_QUERY = """
 
 WHERE_TID_CLAUSE = "    WHERE tid = ?"
 
+QUALIFIER_CONFIG = {}
+
+def load_config():
+    global QUALIFIER_CONFIG
+    with open(QUALIFIER_CONFIG_PATH, 'r') as f:
+        config = json.load(f)
+        for action_type, entry in config.items():
+            association = entry["association"]
+            predicate = entry["predicate"]
+            qualifiers = {}
+            for qualifier in entry.get("qualifiers", []):
+              # skip TODO qualifiers until biolink model supports them
+              if not qualifier["qualifier_type_id"].startswith("TODO:"): 
+                qualifiers[qualifier["qualifier_type_id"]] = qualifier["qualifier_value"]
+            QUALIFIER_CONFIG[action_type] = {
+                "association": association,
+                "predicate": predicate,
+                "qualifiers": qualifiers
+            }
+
+load_config()
+
+print("Loaded qualifier configuration for ChEMBL:", QUALIFIER_CONFIG.keys())
+
 # This function returns the latest version of the data source.
 def get_latest_version() -> str:
     return LATEST_VERSION
 
 
-def get_database_path():
+def get_connection(log=None) -> sqlite3.Connection:
     version = get_latest_version()
     download_file = f'data/chembl/chembl_{version}_sqlite.tar.gz'
     database_path = f'data/chembl/chembl_{version}/chembl_{version}_sqlite/chembl_{version}.db'
+    if log:
+        log(f"Using ChEMBL database at {database_path}", level="INFO")
     # uncompress tar.gz file
     if not os.path.exists(database_path):
-        print(f"Extracting {download_file} to {database_path} ...")
+        if log:
+            log(f"Extracting {download_file} to {database_path} ...", level="INFO")
         with tarfile.open(download_file, "r:gz") as tar:
             tar.extractall(path='data/chembl/')
-        print("Extraction complete.")
-    return database_path
-
-
-# The prepare function is responsible for any data download, decompression, or other preparation required
-# before transformation. It should yield dictionaries, each representing a single record to be transformed.
-@koza.prepare_data(tag="chembl_drug_mechanism_binding")
-def prepare_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-
-    print("Preparing data...")
-    database_path = get_database_path()
+        if log:
+            log("Extraction complete.", level="INFO")
+    # create and return sqlite3 connection
     con = sqlite3.connect(database_path)
     con.row_factory = sqlite3.Row
-    koza.state['chembl_db_connection'] = con
-    cur = con.cursor()
-    cur.execute(MOA_QUERY + WHERE_DIRECT_INTERACTION)
-    records = cur.fetchall()
-    for record in records:
-         yield record
-    con.close()
+    return con
 
 
 def get_target_components(con: sqlite3.Connection, tid: int) -> list[dict[str, Any]]:
@@ -200,15 +217,14 @@ def build_target_node(koza: koza.KozaTransform, record: dict[str, Any]):
     return cls(id=id, name=name)
 
 
-
-def build_chemical_entity(record):
+def build_chemical_entity(record: dict[str, Any]):
     return ChemicalEntity(
         id=CHEMBL_COMPOUND_PREFIX+record["molecule_chembl_id"], 
         name=record["molecule_name"]
     )
 
 
-def get_mutation_qualifier(record):
+def get_mutation_qualifier(record: dict[str, Any]):
     if record["mutation"] is not None:
         # TODO: waiting for mutation to be added to biolink model
         # return "mutation" 
@@ -216,44 +232,59 @@ def get_mutation_qualifier(record):
     return None
 
 
-def get_species_context_qualifier(record):
+def get_species_context_qualifier(record: dict[str, Any]):
     if record["target_organism_tax_id"] is not None:
         return TAX_ID_PREFIX+str(record["target_organism_tax_id"])
     return None
 
 
-@koza.transform(tag="chembl_drug_mechanism_binding")
-def transform_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    for record in data:
-        #print(record)
-        nodes = []
-        edges = []
-        chemical = build_chemical_entity(record)
-        target = build_target_node(koza, record)
-        if target is not None:
-            nodes.append(chemical)
-            nodes.append(target)
+def get_publications(record: dict[str, Any]):
+    publications = []
+    if record["pubmed_id"] is not None:
+        publications.append(PUBMED_PREFIX+str(record["pubmed_id"]))
+    elif record["doi"] is not None:
+        publications.append(DOI_PREFIX+str(record["doi"]))
+    elif record["document_chembl_id"] is not None:
+        publications.append(CHEMBL_DODCUMENT_PREFIX+str(record["document_chembl_id"]))
+    if len(publications) == 0:
+        publications = None
+    return publications
+
+
+def get_association_class(association_type: str):
+    if association_type == "ChemicalAffectsGeneAssociation":
+        return ChemicalAffectsGeneAssociation
+    if association_type == "GeneAffectsChemicalAssociation":
+        return GeneAffectsChemicalAssociation
+    print("Unknown association type:", association_type)
+    return None
+
+def get_association(koza, record, action_type_map):
+    nodes = []
+    edges = []
+    chemical = build_chemical_entity(record)
+    target = build_target_node(koza, record)
+    if target is not None and action_type_map is not None:
+        predicate = action_type_map["predicate"]
+        accociation_type = action_type_map["association"]
+        qualifiers = action_type_map["qualifiers"]
+
+        nodes.append(chemical)
+        nodes.append(target)
 
             # add qualifiers if available
-            mutation_qualifier = get_mutation_qualifier(record)
-            species_context_qualifier = get_species_context_qualifier(record)
+        mutation_qualifier = get_mutation_qualifier(record)
+        species_context_qualifier = get_species_context_qualifier(record)
 
             # add publications if available
-            publications = []
-            if record["pubmed_id"] is not None:
-                publications.append(PUBMED_PREFIX+str(record["pubmed_id"]))
-            elif record["doi"] is not None:
-                publications.append(DOI_PREFIX+str(record["doi"]))
-            elif record["document_chembl_id"] is not None:
-                publications.append(CHEMBL_DODCUMENT_PREFIX+str(record["document_chembl_id"]))
-            if len(publications) == 0:
-                publications = None
-            
+        publications = get_publications(record)
+
+        association_class = get_association_class(accociation_type)    
             # Create association
-            association = ChemicalAffectsGeneAssociation(
+        association = association_class(
                 id=str(uuid.uuid4()),
                 subject=chemical.id,
-                predicate=BIOLINK_DIRECTLY_INTERACTS_WITH,
+                predicate=predicate,
                 object=target.id,
                 species_context_qualifier = species_context_qualifier,
                 object_form_or_variant_qualifier = mutation_qualifier,
@@ -269,7 +300,58 @@ def transform_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
                 # selectivity_comment = record["selectivity_comment"],
                 # mutation = record["mutation"],
                 # mutation_accession = record["mutation_accession"]
+                **qualifiers
             )
-            edges=[association]
+        edges=[association]
+    return nodes,edges
+
+
+# The prepare function is responsible for any data download, decompression, or other preparation required
+# before transformation. It should yield dictionaries, each representing a single record to be transformed.
+@koza.prepare_data(tag="chembl_drug_mechanism_binding")
+def prepare_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+
+    koza.log("ChEMBL drug mechanism binding data ...", level="INFO")
+    con = get_connection(koza.log)
+    koza.state['chembl_db_connection'] = con
+    cur = con.cursor()
+    cur.execute(MOA_QUERY + WHERE_DIRECT_INTERACTION)
+    records = cur.fetchall()
+    for record in records:
+         yield record
+    con.close()
+
+
+@koza.transform(tag="chembl_drug_mechanism_binding")
+def transform_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    for record in data:
+        #print(record)
+        action_type_map = QUALIFIER_CONFIG.get(record["action_type"])
+        if action_type_map is None or action_type_map["predicate"] != "biolink:directly_physically_interacts_with":
+            action_type_map = QUALIFIER_CONFIG.get("BINDING AGENT")
+        nodes, edges = get_association(koza, record, action_type_map)
         yield KnowledgeGraph(nodes=nodes, edges=edges)
 
+
+@koza.prepare_data(tag="chembl_drug_mechanism")
+def prepare_mechanism(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+
+    koza.log("ChEMBL drug mechanism data ...", level="INFO")
+    con = get_connection(koza.log)
+    koza.state['chembl_db_connection'] = con
+    cur = con.cursor()
+    cur.execute(MOA_QUERY)
+    records = cur.fetchall()
+    for record in records:
+         yield record
+    con.close()
+
+
+@koza.transform(tag="chembl_drug_mechanism")
+def transform_mechanism(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    for record in data:
+        nodes = []
+        edges = []
+        action_type_map = QUALIFIER_CONFIG.get(record["action_type"])
+        nodes, edges = get_association(koza, record, action_type_map)
+        yield KnowledgeGraph(nodes=nodes, edges=edges)
