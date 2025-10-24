@@ -1,8 +1,9 @@
 # HTTP query wrappers
 
 import requests
-from json import JSONDecodeError
 import logging
+from json import JSONDecodeError
+from email.utils import parsedate_to_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +40,13 @@ def post_query(url: str, query: dict, params=None, server: str = "") -> dict:
         logger.error(f"{err_msg_prefix} returned HTTP error code: '{response.status_code}'")
 
     return result
+
+
+def get_modify_date(file_url, str_format: str = "%Y_%m_%d") -> str:
+    r = requests.head(file_url)
+    r.raise_for_status()
+    url_time = r.headers['last-modified']
+    # using parsedate_to_datetime from email.utils instead of datetime.strptime because it is designed to parse
+    # this specific format and apparently handles timezones better
+    modified_datetime = parsedate_to_datetime(url_time)
+    return modified_datetime.strftime(str_format)

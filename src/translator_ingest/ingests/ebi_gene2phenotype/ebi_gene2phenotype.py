@@ -51,9 +51,9 @@ FORM_OR_VARIANT_QUALIFIER_MAPPINGS = {
 
 
 def get_latest_version() -> str:
-    ## gets the current time with no spaces "%Y-%m-%dT%H:%M:%S.%f%:z"
+    ## gets the current time with no spaces "%Y_%m_%d"
     ## assuming this function is run at almost the same time that the resource file is downloaded
-    return datetime.now(datetime.now().astimezone().tzinfo).isoformat()
+    return datetime.now().strftime("%Y_%m_%d")
 
 
 ## used in `on_data_begin` to build mapping of EBI G2P's allelic requirement values -> HP terms
