@@ -4,4 +4,4 @@ This folder contains both knowledge-source-specific ingest specifications (decla
 
 ## KGX "Passthrough" Ingest Parsers
 
-The special case of writing a KGX ingest parser is described in the [KGX Passthrough Ingest Parser README](kgx_passthrough_ingest_parser/README.md).
+The special case of writing a KGX ingest parser is described in the [KGX Passthrough Ingest Parser README](WRITING_A_KGX_PASSTHROUGH_PARSER.md).
