@@ -14,7 +14,7 @@ Here we describe how to write a KGX passthrough ingest parser using available to
 6. (Optionally) Write some basic unit tests with sample KGX-style input records representative of the input KGX file, to test the Pydantic remapping, for example, for any filtering or updating of fields.
 7. Write a simple Python ingest module (e.g., **icees.py**) alongside the **download.yaml** file. The script would encode methods that simply open each downloaded KGX node and edge file, to process in the distinct reader streams through the transformer methods, conversing the records to the stream of Biolink Model-compliant Pydantic objects. This allows for uniform downstream processing by the TI pipeline.
 
-Side note: the challenge is what do we do when these KGX files don't validate?  The TMKP KGX passthrough ingest parser is an example of how to handle this. Note that validation during ingest task may be more important than to just use what the KGX dataset provides.
+Side note: the challenge is what to do when these KGX files don't validate?  The TMKP KGX passthrough ingest parser is an example of how to handle this. Note that validation during ingest task may be more important than to just use what the KGX dataset provides.
 
 ## Characterizing the Basic Meta Knowledge Graph
 
