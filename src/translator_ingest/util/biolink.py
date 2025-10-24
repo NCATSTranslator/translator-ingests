@@ -3,11 +3,13 @@
 from typing import Optional
 from uuid import uuid4
 from functools import lru_cache
+from urllib.error import HTTPError
 from loguru import logger
 import biolink_model.datamodel.pydanticmodel_v2 as pyd
 
 from bmt import Toolkit
-# default toolkit, unless specified otherwise
+# For now, we assume that the default
+# Biolink Model Toolkit is adequate for current purposes
 toolkit = Toolkit()
 
 # knowledge source InfoRes curies
@@ -42,36 +44,36 @@ def _infores(identifier: str) -> str:
     return identifier if identifier.startswith("infores:") else f"infores:{identifier}"
 
 
-def _depth_function(bmt: Toolkit = toolkit):
-    # Get depth of each category in the hierarchy
-    @lru_cache()
-    def get_category_depth(category):
-        depth = 0
-        while True:
-            parent = bmt.get_parent(category)
-            if not parent:
-                break
-            category = parent
-            depth += 1
-        return depth
-    return get_category_depth
+@lru_cache()
+def get_category_depth(category):
+    depth = 0
+    while True:
+        parent = toolkit.get_parent(category)
+        if not parent:
+            break
+        category = parent
+        depth += 1
+    return depth
 
 
-def get_most_specific_category(category_list, bmt: Toolkit = toolkit):
+def get_most_specific_category(category_list) -> str:
     # Rank categories by depth
     # This works because depth in the hierarchy correlates with
     # specificity—leaf nodes or deeply nested classes are more specific
-    ranked = sorted(category_list, key=_depth_function(bmt), reverse=True)
+    ranked = sorted(category_list, key=get_category_depth, reverse=True)
     most_specific = ranked[0]
     print(f"Most specific category: {most_specific}")
     return most_specific
 
 
-def get_node_class(node_id: str, categories: list[str], bmt: Toolkit = toolkit) -> type[pyd.NamedThing] | None:
+def get_node_class(
+        node_id: str,
+        categories: list[str]
+) -> type[pyd.NamedThing] | None:
     if not categories:
         logger.warning(f"Node with id {node_id} has empty categories")
         return None
-    category = get_most_specific_category(categories, bmt=bmt)
+    category = get_most_specific_category(category_list=categories)
     try:
         category = category.replace("biolink:", "")
         return getattr(pyd, category)

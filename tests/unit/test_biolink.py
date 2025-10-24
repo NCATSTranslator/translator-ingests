@@ -1,3 +1,5 @@
+from bmt import Toolkit
+
 from translator_ingest.util.biolink import get_most_specific_category, get_node_class
 import biolink_model.datamodel.pydanticmodel_v2 as pyd
 
@@ -40,7 +42,7 @@ def test_get_node_class_empty_categories():
     assert node_class is None
 
 def test_get_node_class_from_most_specific_category():
-    # Empty categories
+    # List of categories - want the most specific one
     disease_node_id: str = "DOID:0111266"
     node_class = get_node_class(
         node_id=disease_node_id,
