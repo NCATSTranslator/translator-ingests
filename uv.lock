@@ -328,7 +328,7 @@ dev = [
     { name = "pandas" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "requests" },
-    { name = "resource-ingest-guide-schema" },
+    { name = "resource-ingest-guide-schema", git = "https://github.com/biolink/resource-ingest-guide-schema.git?rev=meta-knowledge-graph-json-ingest" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
@@ -2819,18 +2819,14 @@ wheels = [
 
 [[package]]
 name = "resource-ingest-guide-schema"
-version = "0.1.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.1.3.dev5+g7f566849e"
+source = { git = "https://github.com/biolink/resource-ingest-guide-schema.git?rev=meta-knowledge-graph-json-ingest#7f566849e18485e9d89362d307dc3faeb3b55fc8" }
 dependencies = [
     { name = "click" },
     { name = "jinja2" },
     { name = "linkml" },
     { name = "linkml-runtime" },
     { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/17/a6/0135578a821641f0b7d10277a1e51148f6e540f864a002eef8b51d12fa71/resource_ingest_guide_schema-0.1.2.tar.gz", hash = "sha256:1cc3c85cf561fae4193722fe90338f18f6c868a94da3f049988a1c56e30bd5e1", size = 2415371, upload-time = "2025-10-14T22:03:59.871Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/17/7248bacfb5891b7c86b3b58d90f11ad8589b97e3e9b2641e61b8764505bb/resource_ingest_guide_schema-0.1.2-py3-none-any.whl", hash = "sha256:dcfcec77f3256bce2637254a1f8c1e856364b9d742f0a43958aace38dac31cfa", size = 14484, upload-time = "2025-10-14T22:03:58.135Z" },
 ]
 
 [[package]]
