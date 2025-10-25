@@ -1,99 +1,142 @@
-from __future__ import annotations
+from typing import Any
+import koza
+from koza.model.graphs import KnowledgeGraph
 
-import json
-import os
-from pathlib import Path
-from typing import Callable, Iterable, Iterator, Optional, Set, Tuple, Dict, Any, TextIO, cast
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AnatomicalEntity,
+    ChemicalEntity,
+    Disease,
+    Gene,
+    NamedThing,
+    PhenotypicFeature,
+    Protein,
+    Association,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+)
+from translator_ingest.util.biolink import (
+    INFORES_SEMMEDDB,
+    entity_id,
+    build_association_knowledge_sources
+)
 
-
-PREDICATES_TO_KEEP: Set[str] = {
-    # list provided by user; keep exact biolink curies
-    "biolink:treats_or_applied_or_studied_to_treat",
-    "biolink:affects",
-    "biolink:preventative_for_condition",
-    "biolink:coexists_with",
-    "biolink:causes",
-    "biolink:related_to",
-    "biolink:interacts_with",
-    "biolink:located_in",
-    "biolink:predisposes_to_condition",
-    "biolink:physically_interacts_with",
-    "biolink:disrupts",
+# Prefix to Biolink class mapping for proper node typing
+PREFIX_TO_CLASS = {
+    "NCBIGene": Gene,
+    "HGNC": Gene,
+    "ENSEMBL": Gene,
+    "PR": Protein,
+    "UniProtKB": Protein,
+    "CHEBI": ChemicalEntity,
+    "DRUGBANK": ChemicalEntity,
+    "MONDO": Disease,
+    "DOID": Disease,
+    "HP": PhenotypicFeature,
+    "UBERON": AnatomicalEntity,
 }
 
+def get_latest_version() -> str:
+    """Return version string for SemMedDB data from RTX-KG2."""
+    return "kg2.10.3"
 
-def _iter_jsonl(path: Path) -> Iterator[Dict[str, Any]]:
-    """stream json objects line by line using a generator to limit memory usage"""
-    with path.open("r") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError:
-                # skip malformed lines rather than failing the entire run
-                continue
-
-
-def _open_output(path: Path) -> TextIO:
-    """open output file ensuring parent directory exists"""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path.open("w")
-
-
-def _get_progress() -> Callable[[Iterable[Any], Optional[int]], Iterable[Any]]:
-    """optional progress bar with graceful fallback if tqdm is missing"""
-    try:
-        from tqdm import tqdm  # type: ignore
-
-        def bar(iterable: Iterable[Any], total: Optional[int] = None) -> Iterable[Any]:
-            # cast because tqdm returns an untyped iterable which mypy treats as Any
-            return cast(Iterable[Any], tqdm(iterable, total=total, unit="lines"))
-
-        return bar
-    except Exception:
-        def identity(iterable: Iterable[Any], total: Optional[int] = None) -> Iterable[Any]:  # noqa: ARG001
-            return iterable
-
-        return identity
-
-
-def filter_semmed_edges(
-    input_path: Path = Path("data/semmeddb_kg2_kgx/kg2.10.3-semmeddb-edges.jsonl"),
-    output_path: Path = Path("data/semmeddb/semmeddb_edges.jsonl"),
-    predicates_to_keep: Set[str] = PREDICATES_TO_KEEP,
-) -> Tuple[int, int]:
+def _make_node(curie: str) -> NamedThing:
+    """Create a Biolink node instance from a CURIE.
+    
+    Args:
+        curie: The CURIE identifier
+        
+    Returns:
+        NamedThing instance with appropriate Biolink class based on prefix
     """
-    stream filter a large semmeddb edges jsonl by predicate.
+    if ":" not in curie:
+        # Malformed ID, still emit as NamedThing to retain referential integrity
+        return NamedThing(id=curie, category=NamedThing.model_fields["category"].default)
 
-    returns (total_read, total_written)
+    prefix = curie.split(":", 1)[0]
+    cls = PREFIX_TO_CLASS.get(prefix, NamedThing)
+    return cls(id=curie, category=cls.model_fields["category"].default)
+
+@koza.on_data_begin(tag="filter_edges")
+def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
+    """Initialize state for edge filtering and node extraction."""
+    koza.state["seen_node_ids"] = set()
+    koza.state["total_edges_processed"] = 0
+    koza.state["edges_with_publications"] = 0
+    koza.state["edges_without_publications"] = 0
+
+@koza.on_data_end(tag="filter_edges")
+def on_end_filter_edges(koza: koza.KozaTransform) -> None:
+    """Log summary statistics."""
+    koza.log("SemMedDB processing complete:", level="INFO")
+    koza.log(f"  Total edges processed: {koza.state['total_edges_processed']}", level="INFO")
+    koza.log(f"  Edges with publications: {koza.state['edges_with_publications']}", level="INFO")
+    koza.log(f"  Edges without publications: {koza.state['edges_without_publications']}", level="INFO")
+    koza.log(f"  Unique nodes extracted: {len(koza.state['seen_node_ids'])}", level="INFO")
+
+@koza.transform_record(tag="filter_edges")
+def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    """Transform a SemMedDB edge record into Biolink entities.
+    
+    Args:
+        koza: Koza transform instance
+        record: Edge record from RTX-KG2 SemMedDB data
+        
+    Returns:
+        KnowledgeGraph with nodes and edges, or None if record should be skipped
     """
-    progress = _get_progress()
-
-    total_read = 0
-    total_written = 0
-
-    with _open_output(output_path) as out:
-        for obj in progress(_iter_jsonl(input_path), None):
-            total_read += 1
-            # predicate field name in kgx is typically 'predicate'
-            predicate = obj.get("predicate") or obj.get("edge_label")
-            if predicate in predicates_to_keep:
-                out.write(json.dumps(obj, ensure_ascii=False) + "\n")
-                total_written += 1
-
-    return total_read, total_written
-
-
-def main() -> None:
-    input_env = os.environ.get("SEM_MED_IN", "data/semmeddb_kg2_kgx/kg2.10.3-semmeddb-edges.jsonl")
-    output_env = os.environ.get("SEM_MED_OUT", "data/semmeddb/semmeddb_edges.jsonl")
-    total_read, total_written = filter_semmed_edges(Path(input_env), Path(output_env))
-    # simple terminal summary for quick sanity check
-    print(f"read={total_read} written={total_written} kept={total_written}")
-
-
-if __name__ == "__main__":
-    main()
-
-
+    # Initialize state if not present (for testing)
+    if "total_edges_processed" not in koza.state:
+        koza.state["total_edges_processed"] = 0
+        koza.state["seen_node_ids"] = set()
+        koza.state["edges_with_publications"] = 0
+        koza.state["edges_without_publications"] = 0
+    
+    koza.state["total_edges_processed"] += 1
+    
+    # Extract basic edge information
+    subject_id = record.get("subject")
+    object_id = record.get("object")
+    predicate = record.get("predicate")
+    
+    if not all([subject_id, object_id, predicate]):
+        return None
+    
+    # Create nodes for subject and object
+    seen_node_ids = koza.state["seen_node_ids"]
+    nodes = []
+    
+    if subject_id not in seen_node_ids:
+        nodes.append(_make_node(subject_id))
+        seen_node_ids.add(subject_id)
+    
+    if object_id not in seen_node_ids:
+        nodes.append(_make_node(object_id))
+        seen_node_ids.add(object_id)
+    
+    # Process publications
+    publications = record.get("publications", [])
+    if not publications:
+        koza.state["edges_without_publications"] += 1
+    else:
+        koza.state["edges_with_publications"] += 1
+    
+    # Create association
+    association = Association(
+        id=entity_id(),
+        subject=subject_id,
+        predicate=predicate,
+        object=object_id,
+        publications=publications,
+        sources=build_association_knowledge_sources(primary=INFORES_SEMMEDDB),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.automated_agent,  # SemMedDB is automated extraction
+    )
+    
+    # Add additional fields if present
+    if record.get("negated"):
+        association.negated = record["negated"]
+    
+    # Note: domain_range_exclusion is not a field in Biolink Association model
+    # This information is available in the source data but not modeled in Biolink
+    
+    return KnowledgeGraph(nodes=nodes, edges=[association])
