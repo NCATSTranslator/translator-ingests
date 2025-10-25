@@ -1,17 +1,8 @@
 from bmt import Toolkit
 
-from translator_ingest.util.biolink import get_most_specific_category, get_node_class
+from translator_ingest.util.biolink import get_node_class
 import biolink_model.datamodel.pydanticmodel_v2 as pyd
 
-def test_get_most_specific_category():
-    categories = [
-        "biolink:Disease",
-        "biolink:DiseaseOrPhenotypicFeature",
-        "biolink:ThingWithTaxon",
-        "biolink:BiologicalEntity",
-        "biolink:NamedThing",
-    ]
-    assert get_most_specific_category(category_list=categories) == "biolink:Disease"
 
 def test_get_node_class_by_category_curie():
     # Biolink CURIE category
@@ -33,13 +24,13 @@ def test_get_node_class_unknown_category():
     # Unknown category
     nonsense_node_id: str = "foo:bar"
     node_class = get_node_class(node_id=nonsense_node_id, categories=["biolink:Nonsense"])
-    assert node_class is None
+    assert node_class == pyd.NamedThing
 
 def test_get_node_class_empty_categories():
     # Empty categories
     empty_node_id: str = "empty:node"
     node_class = get_node_class(node_id=empty_node_id, categories=[])
-    assert node_class is None
+    assert node_class is pyd.NamedThing
 
 def test_get_node_class_from_most_specific_category():
     # List of categories - want the most specific one
