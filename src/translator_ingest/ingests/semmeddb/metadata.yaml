@@ -1,4 +1,3 @@
 ingest_title: 'SemMedDB'
-ingest_url: 'https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/'
 description: 'Literature-derived semantic predications extracted by SemRep from PubMed'
 rights: 'https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html'

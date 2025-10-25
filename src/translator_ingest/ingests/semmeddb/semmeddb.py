@@ -20,7 +20,7 @@ from translator_ingest.util.biolink import (
     build_association_knowledge_sources
 )
 
-# Prefix to Biolink class mapping for proper node typing
+# map prefixes to node types for proper classification
 PREFIX_TO_CLASS = {
     "NCBIGene": Gene,
     "HGNC": Gene,
@@ -36,21 +36,15 @@ PREFIX_TO_CLASS = {
 }
 
 def get_latest_version() -> str:
-    """Return version string for SemMedDB data from RTX-KG2."""
-    return "kg2.10.3"
+    return "semmeddb-2023-kg2.10.3"
 
-def _make_node(curie: str) -> NamedThing:
-    """Create a Biolink node instance from a CURIE.
-    
-    Args:
-        curie: The CURIE identifier
-        
-    Returns:
-        NamedThing instance with appropriate Biolink class based on prefix
-    """
+def _make_node(curie: str, koza: koza.KozaTransform = None) -> NamedThing | None:
+    # create a node from an identifier
     if ":" not in curie:
-        # Malformed ID, still emit as NamedThing to retain referential integrity
-        return NamedThing(id=curie, category=NamedThing.model_fields["category"].default)
+        # bad id format, count it for later reporting
+        if koza and "bad_id_format" in koza.state:
+            koza.state["bad_id_format"] += 1
+        return None
 
     prefix = curie.split(":", 1)[0]
     cls = PREFIX_TO_CLASS.get(prefix, NamedThing)
@@ -58,69 +52,88 @@ def _make_node(curie: str) -> NamedThing:
 
 @koza.on_data_begin(tag="filter_edges")
 def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
-    """Initialize state for edge filtering and node extraction."""
+    # initialize counters for processing statistics
     koza.state["seen_node_ids"] = set()
     koza.state["total_edges_processed"] = 0
     koza.state["edges_with_publications"] = 0
     koza.state["edges_without_publications"] = 0
+    koza.state["bad_id_format"] = 0
+    koza.state["invalid_edges"] = 0
+    koza.state["invalid_nodes"] = 0
 
 @koza.on_data_end(tag="filter_edges")
 def on_end_filter_edges(koza: koza.KozaTransform) -> None:
-    """Log summary statistics."""
-    koza.log("SemMedDB processing complete:", level="INFO")
+    # print processing summary with key metrics
+    koza.log("semmeddb processing complete:", level="INFO")
     koza.log(f"  Total edges processed: {koza.state['total_edges_processed']}", level="INFO")
     koza.log(f"  Edges with publications: {koza.state['edges_with_publications']}", level="INFO")
     koza.log(f"  Edges without publications: {koza.state['edges_without_publications']}", level="INFO")
     koza.log(f"  Unique nodes extracted: {len(koza.state['seen_node_ids'])}", level="INFO")
+    
+    # only log warnings if there were issues
+    if koza.state["bad_id_format"] > 0:
+        koza.log(f"  Bad ID format skipped: {koza.state['bad_id_format']}", level="WARNING")
+    if koza.state["invalid_edges"] > 0:
+        koza.log(f"  Invalid edges skipped: {koza.state['invalid_edges']}", level="WARNING")
+    if koza.state["invalid_nodes"] > 0:
+        koza.log(f"  Invalid nodes skipped: {koza.state['invalid_nodes']}", level="WARNING")
 
 @koza.transform_record(tag="filter_edges")
 def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-    """Transform a SemMedDB edge record into Biolink entities.
-    
-    Args:
-        koza: Koza transform instance
-        record: Edge record from RTX-KG2 SemMedDB data
-        
-    Returns:
-        KnowledgeGraph with nodes and edges, or None if record should be skipped
-    """
-    # Initialize state if not present (for testing)
+    # convert one edge record into nodes and connections
+    # initialize state if not already done (needed for tests)
     if "total_edges_processed" not in koza.state:
-        koza.state["total_edges_processed"] = 0
         koza.state["seen_node_ids"] = set()
+        koza.state["total_edges_processed"] = 0
         koza.state["edges_with_publications"] = 0
         koza.state["edges_without_publications"] = 0
+        koza.state["bad_id_format"] = 0
+        koza.state["invalid_edges"] = 0
+        koza.state["invalid_nodes"] = 0
     
     koza.state["total_edges_processed"] += 1
     
-    # Extract basic edge information
+    # extract required fields
     subject_id = record.get("subject")
     object_id = record.get("object")
     predicate = record.get("predicate")
     
     if not all([subject_id, object_id, predicate]):
+        koza.state["invalid_edges"] += 1
         return None
     
-    # Create nodes for subject and object
+    # create nodes for subject and object, deduplicating as we go
     seen_node_ids = koza.state["seen_node_ids"]
     nodes = []
     
+    # process subject node
     if subject_id not in seen_node_ids:
-        nodes.append(_make_node(subject_id))
-        seen_node_ids.add(subject_id)
+        subject_node = _make_node(subject_id, koza)
+        if subject_node is not None:
+            nodes.append(subject_node)
+            seen_node_ids.add(subject_id)
+        else:
+            koza.state["invalid_nodes"] += 1
+            return None
     
+    # process object node
     if object_id not in seen_node_ids:
-        nodes.append(_make_node(object_id))
-        seen_node_ids.add(object_id)
+        object_node = _make_node(object_id, koza)
+        if object_node is not None:
+            nodes.append(object_node)
+            seen_node_ids.add(object_id)
+        else:
+            koza.state["invalid_nodes"] += 1
+            return None
     
-    # Process publications
+    # track publication statistics
     publications = record.get("publications", [])
-    if not publications:
-        koza.state["edges_without_publications"] += 1
-    else:
+    if publications:
         koza.state["edges_with_publications"] += 1
+    else:
+        koza.state["edges_without_publications"] += 1
     
-    # Create association
+    # create association between nodes
     association = Association(
         id=entity_id(),
         subject=subject_id,
@@ -129,14 +142,11 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
         publications=publications,
         sources=build_association_knowledge_sources(primary=INFORES_SEMMEDDB),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.automated_agent,  # SemMedDB is automated extraction
+        agent_type=AgentTypeEnum.automated_agent,
     )
     
-    # Add additional fields if present
+    # add negation information if present
     if record.get("negated"):
         association.negated = record["negated"]
-    
-    # Note: domain_range_exclusion is not a field in Biolink Association model
-    # This information is available in the source data but not modeled in Biolink
     
     return KnowledgeGraph(nodes=nodes, edges=[association])
