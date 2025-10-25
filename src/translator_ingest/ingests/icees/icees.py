@@ -30,9 +30,11 @@ def transform_icees_node(
         node_id = record["id"]
         # The node record 'category' is actually a list of
         # categories, so we need to get the most specific one
-        node_class = get_node_class(node_id, record.get("category", ["biolink:NamedThing"]))
+        node_class = get_node_class(node_id, record.get("category", []))
+        if node_class is None:
+            return None
 
-        # TODO: need to figure out how to handle (certain?) attributes
+        # TODO: need to figure out how to handle (certain additional?) ICEES attributes
         # attributes = record["attributes"]
         # # dct:description, biolink:same_as (equivalent_identifiers), etc.
         # for attribute in attributes:
