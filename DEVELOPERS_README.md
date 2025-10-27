@@ -77,6 +77,12 @@ The `make run` command executes the following steps:
 
 ### Validation Reports
 
+To run the validation step separately:
+```bash
+make validate
+```
+
+
 Validation generates JSON reports stored in timestamped directories:
 ```
 data/validation/validation_results_MMDDYY/validation_report_YYYYMMDD_HHMMSS.json

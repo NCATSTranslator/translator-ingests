@@ -1,0 +1,114 @@
+# EBI Gene2Phenotype Reference Ingest Guide (RIG)
+name: EBI Gene2Phenotype Reference Ingest Guide
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:ebi-gene2phenotype
+  name: EBI Gene2Phenotype
+  description: "EBI's Gene2Phenotype dataset contains high-quality gene-disease associations curated by UK disease domain experts and consultant clinical geneticists. It integrates data on genes, their variants, and related disorders. It is constructed by experts reviewing published literature, and it is primarily an inclusion list to allow targeted filtering of genome-wide data for diagnostic purposes. Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism."
+  citations:
+    - "https://doi.org/10.1186/s13073-024-01398-1"
+    - "https://www.nature.com/articles/s41467-019-10016-3"
+  terms_of_use_info:
+    terms_of_use_description: "Unsure, but likely uses EMBL-EBI terms of use (linked in website footer). Currently don't see a formal standard license. Various resource webpages (About -> The G2P Project, Downloads, Publications) say that all data is 'freely available' and to please cite the date accessed/data version and Thorman et al 2019"
+    terms_of_use_url: "https://www.ebi.ac.uk/about/terms-of-use/#general"
+  data_access_locations:
+    - "Latest data is provided at https://www.ebi.ac.uk/gene2phenotype/download (downloads created on-the-fly)"
+    - "Archived static releases provided on the FTP site at https://ftp.ebi.ac.uk/pub/databases/gene2phenotype/G2P_data_downloads/"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - csv    # on-the-fly downloads
+    - other    # FTP static releases are csv.gz
+  data_versioning_and_releases: "On-the-fly downloads: creation/download date are the same and can be used for versioning; note that the date in the filename may differ from the date in your timezone. Static releases: creation date (shown on FTP site and in folder/file names) can be used for versioning; releases cut and archived roughly every 1-2 months."
+
+# Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "EBI G2P associations are useful as edges in support paths for MVP1 ('what may treat disease X'), and in Pathfinder queries."
+  
+  relevant_files:
+    - file_name: "G2P_all_[date].csv"
+      location: "https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/"
+      description: "Associations from all panels (disease categories)"
+
+  included_content:
+    - file_name: "G2P_all_[date].csv"
+      included_records: "Records where 'confidence' value is 'definitive', 'strong', or 'moderate'"
+      fields_used: "g2p id, hgnc id, disease mim, disease MONDO, allelic requirement, confidence, molecular mechanism, publications, date of last review"
+
+  filtered_content:
+    - file_name: "G2P_all_[date].csv"
+      filtered_records: "Records where 'confidence' value is 'limited', 'disputed', or 'refuted'"
+      rationale: "Evidence level not sufficient for inclusion"
+    - file_name: "G2P_all_[date].csv"
+      filtered_records: "Records with no values in both 'disease mim' and 'disease MONDO' columns"
+      rationale: "No IDs to use for disease nodes"
+    - file_name: "G2P_all_[date].csv"
+      filtered_records: "Records with NodeNorm mapping failures for the node IDs"
+      rationale: "Failed normalization means that the node would not be connected to other data/nodes in Translator graphs"
+
+  future_considerations:
+    - category: edge_content
+      consideration: "Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better"
+    - category: edge_property_content
+      consideration: "Lots of additional edge-level information that we could include in future iterations, including: 'confidence' level values when we improve/refactor modeling of confidence in Biolink; variant information ('variant consequence', 'variant types' columns - their values map to SO terms); (Matt's note) rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications)."
+
+  # Note: additional_notes field has been removed from this section according to new schema
+
+# Information about the Graph Output by the ingest
+target_info:
+  infores_id: infores:translator-ebi-gene2phenotype-kgx
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:associated_with
+      object_categories:
+        - biolink:Disease
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration: 
+            - "biolink:causes"
+        - property: biolink:subject_form_or_variant_qualifier
+          value_range:
+            - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:original_subject
+        - biolink:original_object
+        - biolink:update_date
+      ui_explanation: "EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease."
+
+  node_type_info:
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "HGNC"
+    - node_category: biolink:Disease
+      source_identifier_types:
+        - "OMIM"
+        - "orphanet"
+        - "MONDO"
+      additional_notes: "'disease mim' column is source of OMIM and orphanet IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column"
+
+  future_considerations:
+    - category: qualifiers
+      consideration: "May want to revisit how we handle the 'molecular mechanism' and 'variant types' columns VS the biolink-model qualifier options"
+    - category: edge_properties
+      consideration: "Revisit modeling of allelic_requirement (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values)"
+
+# Information about the how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Colleen Xu: code author, data modeling"
+    - "Andrew Su: domain expertise"
+    - "Sierra Moxon: domain expertise"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "Github Ticket on confidence 'limited' value: https://github.com/biolink/biolink-model/issues/1581"
+    - "PR on biolink allelic_requirement: https://github.com/biolink/biolink-model/pull/1576"
