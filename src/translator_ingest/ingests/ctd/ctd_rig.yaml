@@ -96,13 +96,9 @@
       - category:  edge_property_content
         consideration: Consider an edge property that reports the list of shared genes supporting C-D inferred associations.
         relevant_files: CTD_chemicals_diseases.tsv.gz
-      - category: edge_content
-        consideration: While the current ingest includes only Chemical-Disease Associations, future iterations will include additional types of associations between Chemicals and GO Terms, Molecular Phenotypes, Genes, etc. See the Ingest Survey table linked below for more details.
       - category: node_property_content
         consideration: Molepro ingested chemical properties in its previous ingests - which we will likely bring in at some point. In particular, data from the CTD_chemicals.tsv file
         relevant_files: CTD_chemicals.tsv
-        
-    additional_notes:  none
 
 # Information about the Graph Output by the ingest 
   target_info:
