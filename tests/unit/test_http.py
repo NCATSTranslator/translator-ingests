@@ -1,9 +1,8 @@
 from typing import Dict
 
-# def post_query(url: str, query: Dict, params=None, server: str = "") -> Dict:
-from src.translator_ingest.util.http import post_query
+from src.translator_ingest.util.http_utils import post_query
+from orion.normalization import NODE_NORMALIZATION_URL
 
-from src.translator_ingest.util.normalize import NODE_NORMALIZER_SERVER
 
 def test_post_invalid_url_query():
     returned: Dict = post_query(url="http://fake-url", query={})
@@ -11,5 +10,5 @@ def test_post_invalid_url_query():
 
 
 def test_post_query():
-    returned: Dict = post_query(url=NODE_NORMALIZER_SERVER, query={'curies': ["HGNC:12791"]})
+    returned: Dict = post_query(url=NODE_NORMALIZATION_URL + "get_normalized_nodes", query={"curies": ["HGNC:12791"]})
     assert "HGNC:12791" in returned.keys()

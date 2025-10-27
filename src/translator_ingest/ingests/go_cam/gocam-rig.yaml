@@ -1,0 +1,169 @@
+# Gene Ontology Causal Activity Models (GO-CAM) Reference Ingest Guide (RIG)
+name: Gene Ontology Causal Activity Models (GO-CAM) Reference Ingest Guide
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:gocam
+  name: Gene Ontology Causal Activity Models (GO-CAM)
+  description: "GO-CAM (Gene Ontology Causal Activity Models) is a framework that extends standard GO annotations by connecting molecular functions, biological processes, and cellular components into causally linked pathways. GO-CAMs provide explicit causal connections between gene products and their activities within specific biological contexts, enabling more detailed representation of biological mechanisms than traditional GO annotations."
+  citations:
+    - "Thomas PD, Hill DP, Mi H, Osumi-Sutherland D, Van Auken K, Carbon S, Balhoff JP, Albou LP, Good B, Gaudet P, Lewis SE, Mungall CJ. Gene Ontology Causal Activity Modeling (GO-CAM) moves beyond GO annotations to structured descriptions of biological functions and systems. Nat Genet. 2019 Oct;51(10):1429-1433. doi: 10.1038/s41588-019-0500-1"
+  terms_of_use_info:
+    license_name: "CC BY 4.0 - Creative Commons Attribution 4.0 International License"
+  data_access_locations:
+    - "GO-CAMs are downloaded model by model, via kghub-downloader that takes an index file that shows all possible gocams by identifier, and then iterates one by one through the identifiers, downloading each gocam."
+    - "Index: https://s3.amazonaws.com/provider-to-model.json"
+    - "URL pattern: https://live-go-cam.geneontology.io/product/yaml/go-cam/[id].json"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - json
+  data_versioning_and_releases: "New GO-CAMs are added to the index weekly. Releases page / change log: https://geneontology.org/docs/download-go-cams/. Latest status page: https://geneontology.org/docs/go-cam-overview/"
+
+# Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "GO-CAMs provide structured causal relationships between gene products that are essential for pathway analysis, mechanistic understanding, and systems biology approaches in Translator. Unlike traditional GO annotations, GO-CAMs explicitly model how gene products causally regulate each other, making them valuable for reasoning about biological mechanisms and predicting downstream effects of perturbations."
+  scope: "This initial ingest focuses on gene-to-gene causal regulatory relationships extracted from GO-CAM models. The scope includes direct regulatory relationships (positive and negative regulation) between gene products, with associated molecular function, biological process, and cellular component annotations for context."
+  
+  relevant_files:
+    - file_name: "provider-to-model.json"
+      location: "https://s3.amazonaws.com/provider-to-model.json"
+      description: "index file of models"
+    - file_name: "5a7e68a100001817.json, etc."
+      location: "https://live-go-cam.geneontology.io/product/yaml/go-cam/[id].json"
+      description: "each model individually"
+
+  included_content:
+    - file_name: "5a7e68a100001817.json, etc."
+      included_records: "Gene to Gene edges"
+      fields_used: "source, target, causal_predicate"
+
+  filtered_content:
+    - file_name: "GO-CAM models"
+      filtered_records: "GO Term nodes and non-gene entities"
+      rationale: "Initial focus on gene-gene relationships; GO Terms and other entity types will be included in future iterations"
+    - file_name: "GO-CAM models"
+      filtered_records: "Edges without clear causal predicates"
+      rationale: "Only including edges with explicit causal relationship predicates to ensure high-quality causal assertions"
+    - file_name: "GO-CAM models"
+      filtered_records: "Non-human/mouse models"
+      rationale: "Species filtering applied to include only human (NCBITaxon:9606) and mouse (NCBITaxon:10090) models based on model_info.taxon field"
+
+  future_considerations:
+    - category: edge_content
+      consideration: "Currently, we are excluding GOTerms from the edges. This is just a first pass at the GO-CAMs to get the Gene to Gene edges in place. Future iterations will include the GOTerms, and potentially other edge types."
+    - category: node_property_content
+      consideration: "Includes only the gene identifier and category of 'Gene'. (Note, there are likely nodes that represent Genes or Gene Products, but we are not distinguishing between these at this time because we will NodeNormalize the category and id.)"
+    - category: edge_property_content
+      consideration: "TODO: plenty of work to do here to make edges like this, Biolink compliant past the source, target, and causal_predicate which are mapped in this ingest to 'biolink:subject', 'biolink:object', and the appropriate 'biolink:predicate' respectively. The edge properties are not currently being mapped to Biolink Model edge properties, but this will be done in future iterations."
+
+  # Note: additional_notes field has been removed from this section according to new schema
+  # Previous use cases: Use cases for Translator usage of this data: chemical to disease but put g2g in there then more pathways are available. gene to chemical target then to a secondary disease drugmechdb <-- how do all drugs interact with a target that treats a disease or the disease itself drug treats aspirin - but not useful if you put genes into it
+
+# Information about the Graph Output by the ingest
+target_info:
+  infores_id: infores:translator-gocam-kgx
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:directly_positively_regulates
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - model_id
+        - source_gene_molecular_function
+        - source_gene_biological_process
+        - source_gene_occurs_in
+        - target_gene_molecular_function
+        - target_gene_biological_process
+        - target_gene_occurs_in
+      ui_explanation: "GO-CAM models provide explicit causal relationships where one gene product directly positively regulates another gene product's activity."
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:directly_negatively_regulates
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - model_id
+        - source_gene_molecular_function
+        - source_gene_biological_process
+        - source_gene_occurs_in
+        - target_gene_molecular_function
+        - target_gene_biological_process
+        - target_gene_occurs_in
+      ui_explanation: "GO-CAM models provide explicit causal relationships where one gene product directly negatively regulates another gene product's activity."
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:positively_regulates
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - model_id
+        - source_gene_molecular_function
+        - source_gene_biological_process
+        - source_gene_occurs_in
+        - target_gene_molecular_function
+        - target_gene_biological_process
+        - target_gene_occurs_in
+      ui_explanation: "GO-CAM models provide causal relationships where one gene product positively regulates another gene product's activity, potentially through indirect mechanisms."
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:negatively_regulates
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - model_id
+        - source_gene_molecular_function
+        - source_gene_biological_process
+        - source_gene_occurs_in
+        - target_gene_molecular_function
+        - target_gene_biological_process
+        - target_gene_occurs_in
+      ui_explanation: "GO-CAM models provide causal relationships where one gene product negatively regulates another gene product's activity, potentially through indirect mechanisms."
+      additional_notes: "GO-CAM predicates are mapped to Biolink regulation predicates based on the causal relationship types defined in the Relation Ontology (RO). All edges are manual agent knowledge assertions as GO-CAMs are manually curated models of biological mechanisms. Edge properties preserve the functional context (molecular function, biological process, cellular component) for both source and target genes."
+
+  node_type_info:
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "UniProtKB"
+        - "MGI"
+      additional_notes: "Gene identifiers from human and mouse models only (NCBITaxon:9606, NCBITaxon:10090)"
+
+  future_considerations:
+    - category: other
+      consideration: "Consider including GO Term nodes and their relationships to genes in future iterations"
+    - category: other
+      consideration: "Evaluate modeling of complex regulatory cascades and multi-step pathways"
+    - category: other
+      consideration: "Assess integration with other pathway databases and resources"
+
+# Information about the how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Sierra Moxon: code"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "Ingest Survey: https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0"

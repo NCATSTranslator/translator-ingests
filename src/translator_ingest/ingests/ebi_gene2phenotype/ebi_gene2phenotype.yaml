@@ -5,7 +5,7 @@ reader:
   delimiter: ","    ## comma-delimited
   header_mode: 0    ## first row is column names
   files:
-    - "../../../../data/ebi-gene2phenotype/G2P_all.csv"
+    - "G2P_all.csv"
   ## including all the ones I want to use
   ## Not sure if I'm supposed to include all column names in the file instead
   columns:
@@ -23,7 +23,7 @@ reader:
     - inclusion: exclude
       column: "confidence"
       filter_code: in
-      value: 
+      value:
         - "refuted"
         - "disputed"
         - "limited"

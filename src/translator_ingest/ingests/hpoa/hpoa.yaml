@@ -3,7 +3,7 @@ name: 'human_phenotype_ontology_annotations'
 readers:
   disease_to_phenotype:
     files:
-      - '../../../../data/hpoa/phenotype.hpoa'
+      - 'phenotype.hpoa'
     header_mode: 4
     format: 'csv'
     delimiter: '\t'
@@ -23,7 +23,7 @@ readers:
       - 'biocuration'
   gene_to_disease:
     files:
-      - '../../../../data/hpoa/genes_to_disease.txt'
+      - 'genes_to_disease.txt'
     format: 'csv'
     delimiter: '\t'
     columns:
@@ -34,9 +34,9 @@ readers:
       - 'source'
   gene_to_phenotype:
     files:
-      - '../../../../data/hpoa/phenotype.hpoa'
-      - '../../../../data/hpoa/genes_to_disease.txt'
-      - '../../../../data/hpoa/genes_to_phenotype.txt'
+      - 'phenotype.hpoa'
+      - 'genes_to_disease.txt'
+      - 'genes_to_phenotype.txt'
     format: 'csv'
     delimiter: '\t'
     columns:

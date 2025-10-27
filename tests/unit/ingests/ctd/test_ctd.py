@@ -2,7 +2,8 @@ import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntity,
-    Disease, RetrievalSource,
+    Disease,
+    RetrievalSource,
 )
 
 from koza.runner import KozaRunner, KozaTransformHooks
@@ -10,7 +11,7 @@ from translator_ingest.ingests.ctd.ctd import (
     transform_chemical_to_disease as ctd_transform,
     BIOLINK_ASSOCIATED_WITH,
     BIOLINK_CORRELATED_WITH,
-    BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT
+    BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
 )
 
 from tests.unit.ingests import MockKozaWriter
@@ -44,9 +45,11 @@ def test_therapeutic_entities(therapeutic_output):
     assert "PMID:17516704" in association.publications
     assert "PMID:123" in association.publications
 
-    assert association.sources and \
-           isinstance(association.sources[0], RetrievalSource) and \
-           association.sources[0].resource_id == "infores:ctd"
+    assert (
+        association.sources
+        and isinstance(association.sources[0], RetrievalSource)
+        and association.sources[0].resource_id == "infores:ctd"
+    )
 
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MESH:D004827"
@@ -84,9 +87,11 @@ def test_marker_mechanism(marker_mechanism_output):
     assert association.predicate == BIOLINK_CORRELATED_WITH
     assert "PMID:19098162" in association.publications
 
-    assert association.sources and \
-           isinstance(association.sources[0], RetrievalSource) and \
-           association.sources[0].resource_id == "infores:ctd"
+    assert (
+        association.sources
+        and isinstance(association.sources[0], RetrievalSource)
+        and association.sources[0].resource_id == "infores:ctd"
+    )
 
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MESH:D006948"
@@ -95,6 +100,7 @@ def test_marker_mechanism(marker_mechanism_output):
     chemical = [e for e in entities if isinstance(e, ChemicalEntity)][0]
     assert chemical.id == "MESH:C112297"
     assert chemical.name == "10,10-bis(4-pyridinylmethyl)-9(10H)-anthracenone"
+
 
 @pytest.fixture
 def genetic_inference_output():
@@ -123,9 +129,11 @@ def test_genetic_inference(genetic_inference_output):
     assert association.predicate == BIOLINK_ASSOCIATED_WITH
     assert "PMID:21983787" in association.publications
 
-    assert association.sources and \
-           isinstance(association.sources[0], RetrievalSource) and \
-           association.sources[0].resource_id == "infores:ctd"
+    assert (
+        association.sources
+        and isinstance(association.sources[0], RetrievalSource)
+        and association.sources[0].resource_id == "infores:ctd"
+    )
 
     assert association.has_confidence_score == 4.23
 
