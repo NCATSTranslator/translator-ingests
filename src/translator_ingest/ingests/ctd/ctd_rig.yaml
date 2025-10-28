@@ -281,7 +281,7 @@
           - manual_agent
         edge_properties:
           - biolink:publications
-        ui_explanation:  TO DO (A directly_physically_interacts_with edge is created with CTD reports that a chemical "binds" a gene product, and qualifiers inidcate when a certain form, part, or derivative of the subject or object concept are relevant to this interaction. 
+        ui_explanation:  TO DO (A directly_physically_interacts_with edge is created with CTD reports that a chemical "binds" a gene product, and qualifiers indicate when a certain form, part, or derivative of the subject or object concept are relevant to this interaction. 
         additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
 
       - subject_categories:
