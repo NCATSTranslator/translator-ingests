@@ -8,13 +8,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum,
 )
-from translator_ingest.util.biolink import (
-    INFORES_CTD,
-    entity_id,
-    build_association_knowledge_sources
-)
+from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
 
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
@@ -26,20 +22,22 @@ BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_st
 CTD_PREDICATES_BY_EVIDENCE_TYPE = {
     "therapeutic": BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
     "marker/mechanism": BIOLINK_CORRELATED_WITH,
-    "inference": BIOLINK_ASSOCIATED_WITH  # the files don't have "inference" but we use it in the transform
+    "inference": BIOLINK_ASSOCIATED_WITH,  # the files don't have "inference" but we use it in the transform
 }
+
 
 def get_latest_version():
     # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
     # with a version on it. Fetch the html and parse it to determine the current version.
-    html_page: requests.Response = requests.get('http://ctdbase.org/about/dataStatus.go')
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
-    version_header: BeautifulSoup.Tag = resp.find(id='pgheading')
+    html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
+    resp: BeautifulSoup = BeautifulSoup(html_page.content, "html.parser")
+    version_header: BeautifulSoup.Tag = resp.find(id="pgheading")
     if version_header is not None:
         # pgheading looks like "Data Status: July 2025", convert it to "July_2025"
-        return version_header.text.split(':')[1].strip().replace(' ', '_')
+        return version_header.text.split(":")[1].strip().replace(" ", "_")
     else:
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
+
 
 @koza.on_data_begin(tag="chemical_to_disease")
 def on_begin_chemical_to_disease(koza: koza.KozaTransform) -> None:
@@ -47,11 +45,13 @@ def on_begin_chemical_to_disease(koza: koza.KozaTransform) -> None:
     for evidence_type in CTD_PREDICATES_BY_EVIDENCE_TYPE:
         koza.state["rows_missing_publications"][evidence_type] = 0
 
+
 @koza.on_data_end(tag="chemical_to_disease")
 def on_end_chemical_to_disease(koza: koza.KozaTransform) -> None:
     for row_type, count in koza.state["rows_missing_publications"].items():
         if count > 0:
             koza.log(f"CTD chemical_to_disease: {count} {row_type} rows with 0 publications", level="WARNING")
+
 
 @koza.transform_record(tag="chemical_to_disease")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:

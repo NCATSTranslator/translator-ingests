@@ -5,12 +5,12 @@ from typing import Optional
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
-from koza.transform import  Mappings
+from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests._ingest_template._ingest_template import (
     on_begin_ingest_by_record,
-    transform_ingest_by_record
+    transform_ingest_by_record,
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
@@ -22,13 +22,10 @@ def mock_koza_transform() -> koza.KozaTransform:
     mappings: Mappings = dict()
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
 
+
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = [
-    "id",
-    "name",
-    "category"
-]
+NODE_TEST_SLOTS = ["id", "name", "category"]
 
 # list of slots whose values are
 # to be checked in a result edge
@@ -41,7 +38,7 @@ ASSOCIATION_TEST_SLOTS = [
     "publications",
     "sources",
     "knowledge_level",
-    "agent_type"
+    "agent_type",
 ]
 
 
@@ -62,11 +59,10 @@ ASSOCIATION_TEST_SLOTS = [
                 "PubMedIDs": "",  # empty expected field, hence, parse doesn't return a knowledge graph
             },
             None,
-            None
+            None,
         ),
         (  # Query 1 - Another record complete with PubMedIDs
             {
-
                 "ChemicalName": "10074-G5",
                 "ChemicalID": "C534883",
                 "CasRN": "",
@@ -78,21 +74,11 @@ ASSOCIATION_TEST_SLOTS = [
                 "OmimIDs": "300068|312300",
                 "PubMedIDs": "1303262|8281139",
             },
-
             # Captured node contents
             [
-                {
-                    "id": "MESH:C534883",
-                    "name": "10074-G5",
-                    "category": ["biolink:ChemicalEntity"]
-                },
-                {
-                    "id": "MESH:D013734",
-                    "name": "Androgen-Insensitivity Syndrome",
-                    "category": ["biolink:Disease"]
-                }
+                {"id": "MESH:C534883", "name": "10074-G5", "category": ["biolink:ChemicalEntity"]},
+                {"id": "MESH:D013734", "name": "Androgen-Insensitivity Syndrome", "category": ["biolink:Disease"]},
             ],
-
             # Captured edge contents
             {
                 "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
@@ -100,30 +86,24 @@ ASSOCIATION_TEST_SLOTS = [
                 "predicate": "biolink:related_to",
                 "object": "MESH:D013734",
                 "publications": ["PMID:1303262", "PMID:8281139"],
-                "sources": [
-                    {
-                        "resource_role": "primary_knowledge_source",
-                        "resource_id": "infores:ctd"
-                    }
-                ],
-
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
-        )
-    ]
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
+        ),
+    ],
 )
 def test_ingest_transform(
-        mock_koza_transform: koza.KozaTransform,
-        test_record: dict,
-        result_nodes: Optional[list],
-        result_edge: Optional[dict]
+    mock_koza_transform: koza.KozaTransform,
+    test_record: dict,
+    result_nodes: Optional[list],
+    result_edge: Optional[dict],
 ):
     on_begin_ingest_by_record(mock_koza_transform)
     validate_transform_result(
         result=transform_ingest_by_record(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edge=result_edge,
+        expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
-        association_test_slots=ASSOCIATION_TEST_SLOTS
+        association_test_slots=ASSOCIATION_TEST_SLOTS,
     )

@@ -1,10 +1,12 @@
 from typing import Optional
 
 import requests
+
 try:
     from yaml import dump, load, CLoader as Loader
 except ImportError:
     from yaml import dump, load, Loader
+
 
 class GitHubReleases:
 
@@ -17,9 +19,9 @@ class GitHubReleases:
         """
         self.git_org: str = git_org
         self.git_repo: str = git_repo
-        self.version_cache_file: str = version_cache_file \
-            if version_cache_file \
-            else f"{git_org}-{git_repo}-releases.yaml"
+        self.version_cache_file: str = (
+            version_cache_file if version_cache_file else f"{git_org}-{git_repo}-releases.yaml"
+        )
         self._release_catalog: Optional[list[str]] = None
 
     def get_release_catalog(self, refresh: bool = False):
