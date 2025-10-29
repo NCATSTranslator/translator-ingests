@@ -3,8 +3,8 @@ name: EBI Gene2Phenotype Reference Ingest Guide
 
 # Information about the Source of the data ingest
 source_info:
-  infores_id: infores:ebi-gene2phenotype
-  name: EBI Gene2Phenotype
+  infores_id: infores:gene2phenotype
+  name: Gene2Phenotype
   description: "EBI's Gene2Phenotype dataset contains high-quality gene-disease associations curated by UK disease domain experts and consultant clinical geneticists. It integrates data on genes, their variants, and related disorders. It is constructed by experts reviewing published literature, and it is primarily an inclusion list to allow targeted filtering of genome-wide data for diagnostic purposes. Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism."
   citations:
     - "https://doi.org/10.1186/s13073-024-01398-1"
@@ -30,7 +30,7 @@ ingest_info:
   
   relevant_files:
     - file_name: "G2P_all_[date].csv"
-      location: "https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/"
+      location: "https://www..ac.uk/gene2phenotype/api/panel/all/download/"
       description: "Associations from all panels (disease categories)"
 
   included_content:
@@ -59,7 +59,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-ebi-gene2phenotype-kgx
+  infores_id: infores:translator-gene2phenotype-kgx
 
   edge_type_info:
     - subject_categories:
