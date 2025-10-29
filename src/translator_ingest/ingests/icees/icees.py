@@ -10,6 +10,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.util.biolink import (
     entity_id,
     get_node_class,
+    get_edge_class,
     build_association_knowledge_sources
 )
 from koza.model.graphs import KnowledgeGraph
@@ -27,15 +28,21 @@ def transform_icees_node(
 
     try:
         node_id = record["id"]
-        # The node record 'category' is actually a list of
-        # categories, so we need to get the most specific one
-        node_class = get_node_class(node_id, record.get("category", []))
+
+        # the node 'category' may be a list of ancestor types
+        # along with the most specific type, but the Pydantic
+        # class returned is only of the most specific type.
+        category = record.get("category", [])
+        node_class = get_node_class(node_id, category)
         if node_class is None:
+            logger.warning(f"Pydantic class for node '{node_id}' could not be created for category '{category}'")
             return None
 
+        # "equivalent identifiers considered node xref values
         xref: Optional[list[str]] = record.get("equivalent_identifiers", None)
 
         node = node_class(id=node_id, name=record["name"], xref=xref, **{})
+
         return KnowledgeGraph(nodes=[node])
 
     except Exception as e:
@@ -50,11 +57,12 @@ def transform_icees_node(
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
 
     try:
+        edge_id = entity_id()
+
         # TODO: need to figure out how to select the 'best'
         #       association type, perhaps somewhat like so:
         #
-        # association_list = def get_associations(
-        #             self,
+        # association_list = toolkit.get_associations(
         #             subject_categories: Optional[List[str]] = None,
         #             predicates: Optional[List[str]] = None,
         #             object_categories: Optional[List[str]] = None,
@@ -63,13 +71,12 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         #     ) -> List[str]
         #
         # PLUS
-        # specific_association = get_most_specific_association(association_list=association_list)
+        # TODO: fix stub implementation
+        association_list = ["biolink:Association"]
         #
         # THEN
         #
-        # edge_class = get_edge_class(specific_association)
-        #
-        edge_class = Association  # stub implementation
+        edge_class = get_edge_class(edge_id, associations=association_list)
         #
         #
         # TODO: need to figure out how to handle (certain additional?) ICEES edge attributes
@@ -83,7 +90,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         #         )
         #
         association = edge_class(
-            id=entity_id(),
+            id=edge_id,
             subject=record["subject"],
             predicate=record["predicate"],
             object=record["object"],

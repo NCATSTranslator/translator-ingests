@@ -190,6 +190,7 @@ def test_transform_icees_nodes(
                     "predicate": "biolink:positively_correlated_with",
                     "object": "MONDO:0007079",
                     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:icees-kg"}],
+                    # "attributes" later...
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.not_provided
                 },
