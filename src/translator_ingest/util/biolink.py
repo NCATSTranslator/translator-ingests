@@ -2,8 +2,19 @@
 
 from typing import Optional
 from uuid import uuid4
+from loguru import logger
 
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, ResourceRoleEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,
+    DiseaseOrPhenotypicFeature,
+    Disease,
+    SmallMolecule,
+    Drug,
+    MolecularMixture,
+    ChemicalEntity,
+    RetrievalSource,
+    ResourceRoleEnum
+)
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -37,8 +48,30 @@ def _infores(identifier: str) -> str:
     return identifier if identifier.startswith("infores:") else f"infores:{identifier}"
 
 
+_BIOLINK_CLASS_MAPPING: dict[str, type[NamedThing]] = {
+    "biolink:NamedThing": NamedThing,
+    "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
+    "biolink:Disease": Disease,
+    "biolink:SmallMolecule": SmallMolecule,
+    "biolink:Drug": Drug,
+    "biolink:MolecularMixture": MolecularMixture,
+    "biolink:ChemicalEntity": ChemicalEntity,
+}
+
+def get_node_class(node_id: str, categories: list[str]) -> type[NamedThing]:
+    if len(categories) != 1:
+        logger.warning(f"ICEES record with id {node_id} has empty or multiple categories: '{str(categories)}'")
+        # TODO: Need to figure out how to return the most specific class for this... Check BMT?
+        category = "biolink:NamedThing"
+    else:
+        category = categories[0]
+    return _BIOLINK_CLASS_MAPPING.get(category, NamedThing)
+
+
 def build_association_knowledge_sources(
-    primary: str, supporting: Optional[list[str]] = None, aggregating: Optional[dict[str, list[str]]] = None
+        primary: str,
+        supporting: Optional[list[str]] = None,
+        aggregating: Optional[dict[str, list[str]]] = None
 ) -> list[RetrievalSource]:
     """
     This function attempts to build a list of well-formed Biolink Model RetrievalSource
@@ -93,5 +126,41 @@ def build_association_knowledge_sources(
             )
             aggregating_knowledge_source.upstream_resource_ids = [_infores(upstream) for upstream in upstream_ids]
             sources.append(aggregating_knowledge_source)
+
+    return sources
+
+
+#
+# A different version of the above function, but which takes in
+# a list of dictionaries which are TRAPI-like 'sources' values,
+# for conversion into a list of Pydantic RetrieveSources
+#
+#
+# {
+#   "sources": [
+#     {
+#       "resource_id": "infores:columbia-cdw-ehr-data",
+#       "resource_role": "supporting_data_source"
+#     },
+#     {
+#       "resource_id": "infores:cohd",
+#       "resource_role": "primary_knowledge_source",
+#       "upstream_resource_ids": [
+#         "infores:columbia-cdw-ehr-data"
+#       ]
+#     }
+#   ]
+# }
+def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional[list[RetrievalSource]]:
+    sources: Optional[list[RetrievalSource]] = None
+    if source_list:
+        source: dict
+        for source in source_list:
+            rs = RetrievalSource(
+                id=source["resource_id"],
+                resource_role=source["resource_role"],
+                upstream_resource_ids=source.get("upstream_resource_ids", None)
+            )
+            sources.append(rs)
 
     return sources
