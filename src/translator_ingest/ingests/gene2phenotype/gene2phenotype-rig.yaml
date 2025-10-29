@@ -30,7 +30,7 @@ ingest_info:
   
   relevant_files:
     - file_name: "G2P_all_[date].csv"
-      location: "https://www..ac.uk/gene2phenotype/api/panel/all/download/"
+      location: "https://www.ebi.ac.uk/gene2phenotype/api/panel/all/download/"
       description: "Associations from all panels (disease categories)"
 
   included_content:
