@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
+SOURCES ?= ctd diseases gene2phenotype go_cam goa hpoa sider
 
 # Include additional makefiles
 include rig.Makefile

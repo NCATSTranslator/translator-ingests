@@ -13,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
 )
 import datetime
-from translator_ingest.ingests.ebi_gene2phenotype.ebi_gene2phenotype import on_begin, transform
+from translator_ingest.ingests.gene2phenotype.gene2phenotype import on_begin, transform
 
 
 ## trying to mock on_data_begin, create koza.state["allelicreq_mappings"] in hard-coded manner.
