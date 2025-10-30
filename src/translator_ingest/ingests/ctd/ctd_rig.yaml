@@ -218,6 +218,8 @@
         ui_explanation:  TO DO (explanations here depend on how the UI will concatenate predicates and qualifier info for display).
         additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
 
+# TO DO: add edge type for affects_response_to edges, if we decide to keep this data (see KGX summary report for Automat's Phase 2 ingest)
+
       - subject_categories:
           - biolink:ChemicalEntity
           - biolink:MolecularMixture
