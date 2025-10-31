@@ -88,7 +88,6 @@ def transform_ingest_all_streaming(
             predicate=predicate,
             object=disease.id,
             sources=build_association_knowledge_sources(infores),
-            primary_knowledge_source=infores,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )

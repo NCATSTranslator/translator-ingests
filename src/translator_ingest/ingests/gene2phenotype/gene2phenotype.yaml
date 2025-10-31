@@ -1,4 +1,4 @@
-name: ebi-gene2phenotype
+name: gene2phenotype
 
 reader:
   format: "csv"
