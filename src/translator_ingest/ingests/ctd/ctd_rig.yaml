@@ -69,7 +69,7 @@
        - file_name: CTD_chem_pathways_enriched.tsv
          location: http://ctdbase.org/downloads/ 
          description: Curated, literature-based associations between chemicals and phenotypes (often disease-like or physiological outcomes).
-       - file_name: CTD_genes_diseases.tsv.gz
+       - file_name: CTD_genes_diseases.tsv
          location: http://ctdbase.org/downloads/ 
          description: Manually curated and computationally inferred associations between genes and diseases (to be ingested in future iteration)
         
@@ -91,6 +91,8 @@
 # TO DO: EVAN AND VLADO - review included content description above and descriptions of any filtered content below, for accuracy. 
 
     future_considerations:  
+      - category:  edge_content
+        consideration: We should ingest gene-disease association edges from the CTD_genes_diseases.tsv file. Lots of content here. Assess quality and compare to other gene-disease association sources when we do a comprehensive review of content/modeling in this area. 
       - category:  edge_content
         consideration: For inferred Chemical-Disease associations, consider adding a cutoff to remove lower quality/confidence inferences (e.g. based on shared gene count, publication count, or inference score). At present we include even inferences based on a single shared gene/pub - which is not really meaningful.
         relevant_files: CTD_chemicals_diseases.tsv.gz
