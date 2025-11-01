@@ -13,6 +13,7 @@ from translator_ingest.ingests.icees.icees_util import get_cohort_metadata
 from translator_ingest.util.biolink import (
     entity_id,
     get_node_class,
+    get_edge_class,
     build_association_knowledge_sources
 )
 from koza.model.graphs import KnowledgeGraph
@@ -30,10 +31,14 @@ def transform_icees_node(
 
     try:
         node_id = record["id"]
-        # The node record 'category' is actually a list of
-        # categories, so we need to get the most specific one
-        node_class = get_node_class(node_id, record.get("category", []))
+
+        # the node 'category' may be a list of ancestor types
+        # along with the most specific type, but the Pydantic
+        # class returned is only of the most specific type.
+        category = record.get("category", [])
+        node_class = get_node_class(node_id, category)
         if node_class is None:
+            logger.warning(f"Pydantic class for node '{node_id}' could not be created for category '{category}'")
             return None
 
         # TODO: need to directly record the 'equivalent_identifiers',
@@ -54,12 +59,12 @@ def transform_icees_node(
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
 
     try:
+        edge_id = entity_id()
 
         # TODO: need to figure out how to select the 'best'
         #       association type, perhaps somewhat like so:
         #
-        # association_list = def get_associations(
-        #             self,
+        # association_list = toolkit.get_associations(
         #             subject_categories: Optional[List[str]] = None,
         #             predicates: Optional[List[str]] = None,
         #             object_categories: Optional[List[str]] = None,
@@ -68,14 +73,12 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         #     ) -> List[str]
         #
         # PLUS
-        # specific_association = get_most_specific_association(association_list=association_list)
+        # TODO: fix stub implementation
+        association_list = ["biolink:NamedThingAssociatedWithLikelihoodOfNamedThingAssociation"]
         #
         # THEN
         #
-        # edge_class = get_edge_class(specific_association)
-
-        # stub implementation
-        edge_class = NamedThingAssociatedWithLikelihoodOfNamedThingAssociation
+        edge_class = get_edge_class(edge_id, associations=association_list)
 
         # Convert many of the ICEES edge attributes into specific edge properties
         supporting_studies: list[str] = []

@@ -60,6 +60,23 @@ def get_node_class(
         return pyd.NamedThing
 
 
+def get_edge_class(
+        edge_id: str,
+        associations: list[str]
+) -> type[pyd.Association]:
+    if not associations:
+        logger.warning(f"Edge with id {edge_id} has no identified associations")
+        return pyd.Association
+    # association = toolkit.get_most_specific_association(association__list=associations)
+    association = "biolink:Association"  # TODO: fix stub implementation
+    try:
+        association = association.replace("biolink:", "")
+        return getattr(pyd, association)
+    except AttributeError:
+        logger.error(f"No Biolink Model class found for Association '{association}', for node with id {edge_id}")
+        return pyd.Association
+
+
 def build_association_knowledge_sources(
     primary: str, supporting: Optional[list[str]] = None, aggregating: Optional[dict[str, list[str]]] = None
 ) -> list[pyd.RetrievalSource]:

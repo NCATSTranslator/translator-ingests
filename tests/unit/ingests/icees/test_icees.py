@@ -202,7 +202,7 @@ def test_transform_icees_nodes(
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.not_provided
-                },
+                }
         ),
     ],
 )
