@@ -89,7 +89,10 @@ def build_association_knowledge_sources(
     primary_knowledge_source: Optional[pyd.RetrievalSource] = None
     if primary:
         primary_knowledge_source = pyd.RetrievalSource(
-            id=entity_id(), resource_id=_infores(primary), resource_role=pyd.ResourceRoleEnum.primary_knowledge_source, **{}
+            id=entity_id(),
+            resource_id=_infores(primary),
+            resource_role=pyd.ResourceRoleEnum.primary_knowledge_source,
+            **{}
         )
         sources.append(primary_knowledge_source)
 
