@@ -122,10 +122,10 @@ def load_config():
             association = entry["association"]
             predicate = entry["predicate"]
             qualifiers = {}
-            for qualifier in entry.get("qualifiers", []):
+            for qualifier_type, qualifier_value in entry.get("qualifiers", {}).items():
               # skip TODO qualifiers until biolink model supports them
-              if not qualifier["qualifier_type_id"].startswith("TODO:"): 
-                qualifiers[qualifier["qualifier_type_id"]] = qualifier["qualifier_value"]
+               if not qualifier_type.startswith("TODO:"): 
+                qualifiers[qualifier_type] = qualifier_value
             QUALIFIER_CONFIG[action_type] = {
                 "association": association,
                 "predicate": predicate,
@@ -134,7 +134,6 @@ def load_config():
 
 load_config()
 
-print("Loaded qualifier configuration for ChEMBL:", QUALIFIER_CONFIG.keys())
 
 # This function returns the latest version of the data source.
 def get_latest_version() -> str:
@@ -256,7 +255,6 @@ def get_association_class(association_type: str):
         return ChemicalAffectsGeneAssociation
     if association_type == "GeneAffectsChemicalAssociation":
         return GeneAffectsChemicalAssociation
-    print("Unknown association type:", association_type)
     return None
 
 def get_association(koza, record, action_type_map):
@@ -279,7 +277,10 @@ def get_association(koza, record, action_type_map):
             # add publications if available
         publications = get_publications(record)
 
-        association_class = get_association_class(accociation_type)    
+        association_class = get_association_class(accociation_type)
+        if association_class is None:
+            koza.log(f" Unknown association class for action type {record['action_type']}", level="WARNING")
+            return [], []
             # Create association
         association = association_class(
                 id=str(uuid.uuid4()),
@@ -325,7 +326,6 @@ def prepare_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> It
 @koza.transform(tag="chembl_drug_mechanism_binding")
 def transform_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     for record in data:
-        #print(record)
         action_type_map = QUALIFIER_CONFIG.get(record["action_type"])
         if action_type_map is None or action_type_map["predicate"] != "biolink:directly_physically_interacts_with":
             action_type_map = QUALIFIER_CONFIG.get("BINDING AGENT")
