@@ -12,14 +12,13 @@ from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 # from os import sep
 # from translator_ingest import PRIMARY_DATA_PATH
 # from translator_ingest.util.ontology import read_ontology_to_exclusion_terms
-
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest.util.biolink import (
     INFORES_MEDGEN,
     INFORES_OMIM,
     INFORES_ORPHANET,
     INFORES_DECIFER,
-    INFORES_HPOA,
-    build_association_knowledge_sources,
+    INFORES_HPOA
 )
 
 

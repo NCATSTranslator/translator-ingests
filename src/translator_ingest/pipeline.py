@@ -22,8 +22,9 @@ from translator_ingest.util.storage.local import (
     get_versioned_file_paths,
     IngestFileType,
 )
-from translator_ingest.util.validate_kgx import ValidationStatus, get_validation_status, validate_kgx
-
+from translator_ingest.util.validate_biolink_kgx import (
+    ValidationStatus, get_validation_status, validate_kgx
+)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 

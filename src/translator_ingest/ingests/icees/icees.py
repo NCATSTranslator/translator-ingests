@@ -10,7 +10,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from translator_ingest.ingests.icees.icees_util import get_cohort_metadata
-from translator_ingest.util.biolink import (
+from bmt.pydantic import (
     entity_id,
     get_node_class,
     get_edge_class,

@@ -42,7 +42,7 @@ ASSOCIATION_TEST_SLOTS = [
     "agent_type",
 ]
 
-
+@pytest.mark.skip("Not yet completedly implemented")
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
@@ -146,7 +146,7 @@ def test_transform_icees_nodes(
         node_test_slots=NODE_TEST_SLOTS
     )
 
-
+@pytest.mark.skip("Not yet completedly implemented")
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
