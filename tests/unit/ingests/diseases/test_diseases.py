@@ -1,6 +1,7 @@
 import pytest
 from koza.runner import KozaRunner, KozaTransformHooks
 from tests.unit.ingests import MockKozaWriter
+
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
@@ -10,7 +11,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
-from translator_ingest.ingests.diseases.diseases import remove_duplicates, keep_rows_with_IDs, textmining_transform, knowledge_transform
+from translator_ingest.ingests.diseases.diseases import (
+    remove_duplicates,
+    keep_rows_with_IDs,
+    textmining_transform,
+    knowledge_transform,
+)
 import pandas as pd
 
 
@@ -20,21 +26,51 @@ INFORES_MEDLINEPLUS = "infores:medlineplus"
 INFORES_AMYCO = "infores:amyco"
 
 
-
 ## NON-KOZA FUNCTIONS
 @pytest.fixture
 def starting_data():
     df = pd.DataFrame.from_records(
         data=[
             ## real duplicate data, KNOWLEDGE
-            ("ENSP00000269703", "CYP4F22", "DOID:0060655", "Autosomal recessive congenital ichthyosis", "MedlinePlus", "CURATED", 5.0),
-            ("ENSP00000269703", "CYP4F22", "DOID:0060655", "Autosomal recessive congenital ichthyosis", "MedlinePlus", "CURATED", 5.0),
+            (
+                "ENSP00000269703",
+                "CYP4F22",
+                "DOID:0060655",
+                "Autosomal recessive congenital ichthyosis",
+                "MedlinePlus",
+                "CURATED",
+                5.0,
+            ),
+            (
+                "ENSP00000269703",
+                "CYP4F22",
+                "DOID:0060655",
+                "Autosomal recessive congenital ichthyosis",
+                "MedlinePlus",
+                "CURATED",
+                5.0,
+            ),
             ## real data without IDs, KNOWLEDGE
             ("ABHD11-AS1", "ABHD11-AS1", "DOID:1928", "Williams-Beuren syndrome", "MedlinePlus", "CURATED", 5.0),
-            ("ENSP00000227667", "APOC3", "AmyCo:26", "Apolipoprotein C-III associated Amyloidosis", "AmyCo", "CURATED", 4.0),
+            (
+                "ENSP00000227667",
+                "APOC3",
+                "AmyCo:26",
+                "Apolipoprotein C-III associated Amyloidosis",
+                "AmyCo",
+                "CURATED",
+                4.0,
+            ),
         ],
-        columns=["protein_id", "protein_name", "disease_id", "disease_name", 
-                 "source_db", "evidence_type", "confidence_score"],
+        columns=[
+            "protein_id",
+            "protein_name",
+            "disease_id",
+            "disease_name",
+            "source_db",
+            "evidence_type",
+            "confidence_score",
+        ],
     )
 
     ## copied from py file
@@ -59,7 +95,6 @@ def test_functions(starting_data):
     assert dict_no_IDs["DOID"] == 1
 
 
-
 ## TEXT-MINING
 @pytest.fixture
 def textmining_output():
@@ -74,7 +109,9 @@ def textmining_output():
         "confidence_score": 2.387,
         "url": "https://diseases.jensenlab.org/Entity?documents=10&type1=9606&id1=ENSP00000000233&type2=-26&id2=DOID:0111266",
     }
-    runner = KozaRunner(data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[textmining_transform]))
+    runner = KozaRunner(
+        data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[textmining_transform])
+    )
     runner.run()
     return writer.items
 
@@ -99,14 +136,15 @@ def test_textmining_output(textmining_output):
     assert len(association.sources) == 1
     textmining_source = association.sources[0]
     assert isinstance(textmining_source, RetrievalSource)
-    assert textmining_source.source_record_urls == ["https://diseases.jensenlab.org/Entity?documents=10&type1=9606&id1=ENSP00000000233&type2=-26&id2=DOID:0111266"]
+    assert textmining_source.source_record_urls == [
+        "https://diseases.jensenlab.org/Entity?documents=10&type1=9606&id1=ENSP00000000233&type2=-26&id2=DOID:0111266"
+    ]
 
     protein = [e for e in entities if isinstance(e, Protein)][0]
     assert protein.id == "ENSEMBL:ENSP00000000233"
 
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "DOID:0111266"
-
 
 
 ## KNOWLEDGE
@@ -132,7 +170,7 @@ def knowledge_output():
             "source_db": "AmyCo",
             "evidence_type": "CURATED",
             "confidence_score": 4.0,
-        }
+        },
     ]
     runner = KozaRunner(data=records, writer=writer, hooks=KozaTransformHooks(transform_record=[knowledge_transform]))
     runner.run()

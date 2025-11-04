@@ -1,5 +1,10 @@
 name: ctd
-metadata: !include './metadata.yaml'
+
+metadata:
+  ingest_title: 'CTD'
+  ingest_url: 'https://ctdbase.org/'
+  description: 'The Comparative Toxicogenomics Database'
+  rights: 'https://ctdbase.org/about/legal.jsp#datause'
 
 readers:
   chemical_to_disease:
@@ -8,7 +13,7 @@ readers:
     header_mode: 27
     header_prefix: '#'
     files:
-      - ../../../../data/ctd/CTD_chemicals_diseases.tsv.gz
+      - CTD_chemicals_diseases.tsv.gz
     columns:
       - ChemicalName
       - ChemicalID
@@ -26,7 +31,7 @@ readers:
 #    header_mode: 26
 #    header_prefix: '#'
 #    files:
-#      - ../../../../data/ctd/CTD_exposure_events.tsv.gz
+#      - CTD_exposure_events.tsv.gz
 #    columns:
 #      - exposurestressorname
 #      - exposurestressorid

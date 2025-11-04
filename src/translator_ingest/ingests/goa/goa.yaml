@@ -6,9 +6,9 @@ reader:
   comment_char: "!" # Header line starts with !
   header_mode: none 
   files:
-    - ../../../../data/goa/goa_human.gaf.gz # GOA human gene association file
-    - ../../../../data/goa/mgi.gaf.gz # MGI gene association file
-    - ../../../../data/goa/rgd.gaf.gz # RGD rat gene association file
+    - goa_human.gaf.gz # GOA human gene association file
+    - mgi.gaf.gz # MGI gene association file
+    - rgd.gaf.gz # RGD rat gene association file
   columns: # 17 columns from the GAF file
     - DB # Database
     - DB_Object_ID # Gene ID
