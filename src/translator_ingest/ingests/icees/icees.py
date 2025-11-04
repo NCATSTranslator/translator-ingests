@@ -4,7 +4,6 @@ from loguru import logger
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThingAssociatedWithLikelihoodOfNamedThingAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
