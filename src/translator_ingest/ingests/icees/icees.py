@@ -74,12 +74,8 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         #
         # PLUS
         # TODO: fix stub implementation
-        # association_list = ["biolink:NamedThingAssociatedWithLikelihoodOfNamedThingAssociation"]
-        #
-        # THEN
-        #
-        # edge_class = get_edge_class(edge_id, associations=association_list)
-        edge_class = NamedThingAssociatedWithLikelihoodOfNamedThingAssociation
+        association_list = ["biolink:NamedThingAssociatedWithLikelihoodOfNamedThingAssociation"]
+        edge_class = get_edge_class(edge_id, associations=association_list)
 
         # Convert many of the ICEES edge attributes into specific edge properties
         supporting_studies: list[str] = []
