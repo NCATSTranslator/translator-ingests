@@ -1,0 +1,379 @@
+name: Panther Gene Orthology and Annotation RIG
+#supporting_data_source_info:
+#- infores_id: null
+#  name: null
+#  description: null
+#  terms_of_use_info:
+#    terms_of_use_url: null
+#    terms_of_use_description: null
+#    license_name: null
+#    license_url: null
+#  relevant_files:
+#  - file_name: null
+#    location: null
+#    description: null
+source_info:
+  infores_id: infores:panther
+  name: "Panther Gene to Gene Orthology Relationships"
+  description: >-
+    The PANTHER (Protein ANalysis THrough Evolutionary Relationships) Classification
+    System was designed to classify proteins (and their genes) in order to facilitate
+    high-throughput analysis. The core of PANTHER is a comprehensive, annotated
+    library of gene family phylogenetic trees. All nodes in the tree have persistent
+    identifiers that are maintained between versions of PANTHER, providing a
+    stable substrate for the annotation of each protein member of the family
+    by its family and protein class, subfamily, orthologs, paralogs, 
+    GO Phylogenetic Annotation Project function and Reactome pathways.
+  citations:
+    - https://doi.org/10.1002/pro.4218
+  terms_of_use_info:
+    terms_of_use_url: "http://www.pantherdb.org/tou.jsp"
+  data_access_locations:
+    - "http://data.pantherdb.org/ftp/"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - csv
+  data_versioning_and_releases: "Versioning by number. See https://www.pantherdb.org/data/"
+  additional_notes: null
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: >-
+    Homology relationships and association of GO and related annotation
+    by orthology inference can be made in between human genes and 
+    non-human species like mouse, rat and many model species, based on
+    the phenotypic characteristics of genes transitively inferred from
+    experimental observations in the model species which cannot
+    generally be easily or ethically replicated upon human beings.
+  scope: "Gene to gene genomic orthology relationships and associated annotations"
+  relevant_files:
+  - file_name: "RefGenomeOrthologs.tar.gz"
+    location: "http://data.pantherdb.org/ftp/ortholog/current_release/"
+    description: "Gene to Gene Orthology Relationships in reference genomes"
+  - file_name: "PTHR<Panther-version>_<taxon_name>"
+    location: "http://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/"
+    description: "Gene sequence annotation from specific genomes"
+  included_content:
+  - file_name: "RefGenomeOrthologs.tar.gz"
+    included_records: "All records, with taxonomic filtering noted below."
+    fields_used: "Gene, Ortholog, Type of ortholog, Panther Ortholog ID"
+  - file_name: "PTHR<Panther-version>_<taxon_name>"
+    included_records: "All records for the specified taxon."
+    fields_used: "Gene, Ortholog, Type of ortholog, Panther Ortholog ID"
+  filtered_content:
+  - file_name: "RefGenomeOrthologs.tar.gz, PTHR<Panther-version>_<taxon_name>"
+    filtered_records: "All records with Gene and Ortholog pairwise annotated with taxon name as 'HUMAN', 'MOUSE' or 'RAT' specific."
+    rationale: >-
+      Panther contains a huge number of records covering orthologs across 144 diverse species
+      (as of September 2025), but our core interest in Translator focuses on genes in taxa close
+      in evolutionary terms to human, thus having significant genetic, molecular and physiological 
+      annotation closer to human biology in character. It is also expected that the genes of these
+      evolutionarily close species also already have a significant assignment of functional roles 
+      partially inferred from other model organisms (e.g. developmental gene functions mapped 
+      from fruit fly or nematode onto mouse genes, but also experimentally tested in mouse).
+      The character of genetic and physiological systems are much more similar between humans and 
+      mice or rats, in particular, studied responses in pharmacology, metabolism, and the immune system.
+  future_considerations:
+  - category: other
+    consideration: "Additional model species may be included in the future."
+#  additional_notes: null
+target_info:
+  infores_id: infores:translator-panther-kgx
+# Monarch Initiative edges (https://github.com/monarch-initiative/pantherdb-orthologs-ingest)
+  edge_type_info:
+  #Monarch: Gene--orthologous to->Gene
+  - subject_categories:
+    - "biolink:Gene"
+    predicates:
+      - "biolink:orthologous_to"
+    object_categories:
+    - "biolink:Gene"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    edge_properties:
+    - has_evidence
+    ui_explanation: "Panther orthology family"
+#    additional_notes: null
+# Automat-Panther edges - https://robokop.renci.org/api-docs/docs/automat/panther
+  #automat-panther: Gene Family--has part->Gene Family
+  - subject_categories:
+    - "biolink:GeneFamily"
+    predicates:
+      - "biolink:has_part"
+    object_categories:
+    - "biolink:GeneFamily"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther gene family to gene family relationship"
+  #automat-panther: Gene Family--has part->Gene
+  - subject_categories:
+    - "biolink:GeneFamily"
+    predicates:
+      - "biolink:has_part"
+    object_categories:
+    - "biolink:Gene"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther Gene family membership"
+  #automat-panther: Gene Family--located in->Cellular Component
+  - subject_categories:
+    - "biolink:GeneFamily"
+    predicates:
+      - "biolink:located_in"
+    object_categories:
+    - "biolink:CellularComponent"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther Gene family cellular location of expression"
+  #automat-panther: Gene Family--actively involved in->Biological Process
+  - subject_categories:
+    - "biolink:GeneFamily"
+    predicates:
+      - "biolink:actively_involved_in"
+    object_categories:
+    - "biolink:BiologicalProcess"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther Gene Family involvement in a biological process"
+  #automat-panther: Gene Family--catalyzes->Molecular Activity
+  - subject_categories:
+    - "biolink:GeneFamily"
+    predicates:
+      - "biolink:catalyzes"
+    object_categories:
+    - "biolink:MolecularActivity"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther Gene Family catalysis of a molecular activity"
+  #automat-panther: Gene Family--actively involved in->Pathway
+  - subject_categories:
+    - "biolink:GeneFamily"
+    predicates:
+      - "biolink:actively_involved_in"
+    object_categories:
+    - "biolink:Pathway"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther active involvement of a Gene Family in a pathway"
+  #automat-panther: Pathway--has participant->Gene Family
+  - subject_categories:
+    - "biolink:Pathway"
+    predicates:
+      - "biolink:has_participant"
+    object_categories:
+    - "biolink:GeneFamily"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther participation of a Gene Family in a pathway"
+  #automat-panther: Pathway--subclass of->Biological Process
+  - subject_categories:
+    - "biolink:Pathway"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:BiologicalProcess"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther pathway as a subclass of a biological process"
+  #automat-panther: Pathway--subclass of->Pathway
+  - subject_categories:
+    - "biolink:Pathway"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:Pathway"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther pathway as a subclass of another pathway"
+  #automat-panther: Molecular Activity--subclass of->Molecular Activity
+  - subject_categories:
+    - "biolink:MolecularActivity"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:MolecularActivity"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther molecular activity as a subclass of another molecular activity"
+  #automat-panther: Biological Process--subclass of->Biological Process
+  - subject_categories:
+    - "biolink:BiologicalProcess"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:BiologicalProcess"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther biological process as a subclass of another biological process"
+  #automat-panther: Cellular Component--subclass of->Cellular Component
+  - subject_categories:
+    - "biolink:CellularComponent"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:CellularComponent"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther cellular component as a subclass of another cellular component"
+  #automat-panther: Cellular Component--subclass of->Anatomical Entity
+  - subject_categories:
+    - "biolink:CellularComponent"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:AnatomicalEntity"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther cellular component as a subclass of anatomical entity"
+  #automat-panther: Cellular Component--subclass of->Gross Anatomical Structure
+  - subject_categories:
+    - "biolink:CellularComponent"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:GrossAnatomicalStructure"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther cellular component as a subclass of gross anatomical structure"
+  #automat-panther: Anatomical Entity--subclass of->Cellular Component
+  - subject_categories:
+    - "biolink:AnatomicalEntity"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:CellularComponent"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther anatomical entity as a subclass of cellular component"
+  #automat-panther: Gross Anatomical Structure--subclass of->Cellular Component
+  - subject_categories:
+    - "biolink:GrossAnatomicalStructure"
+    predicates:
+      - "biolink:subclass_of"
+    object_categories:
+    - "biolink:CellularComponent"
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_validation_of_automated_agent
+    ui_explanation: "Panther gross anatomical structure as a subclass of cellular component"
+  node_type_info:
+  - node_category: "biolink:Gene"
+    source_identifier_types:
+    - HGNC
+    - MGI
+    - RGD
+    - ENSEMBL
+    - NCBIGene
+    node_properties:
+    - "biolink:name"
+    - "biolink:same_as"
+    - "biolink:in_taxon"
+    - "dct:description"
+    - "information_content"
+  - node_category: "biolink:GeneFamily"
+    source_identifier_types:
+      - PANTHER.FAMILY
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+  - node_category: "biolink:Pathway"
+    source_identifier_types:
+      - PANTHER.PATHWAY
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+      - "dct:description"
+      - "information_content"
+  - node_category: "biolink:MolecularActivity"
+    source_identifier_types:
+      - GO
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+      - "dct:description"
+      - "information_content"
+  - node_category: "biolink:BiologicalProcess"
+    source_identifier_types:
+      - GO
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+      - "dct:description"
+      - "information_content"
+  - node_category: "biolink:CellularComponent"
+    source_identifier_types:
+      - GO
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+      - "dct:description"
+      - "information_content"
+  - node_category: "biolink:AnatomicalEntity"
+    source_identifier_types:
+      - UBERON
+      - UMLS
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+      - "dct:description"
+  - node_category: "biolink:GrossAnatomicalStructure"
+    source_identifier_types:
+      - UBERON
+    node_properties:
+      - "biolink:name"
+      - "biolink:same_as"
+      - "dct:description"
+      - "biolink:Attribute"
+    additional_notes: "biolink:Attribute is used to capture the information content"
+  future_considerations:
+  - category: other
+    consideration: >-
+      The Monarch Initiative ingest of Panther data (https://github.com/monarch-initiative/pantherdb-orthologs-ingest)
+      sometimes attempts to map eccentric identifiers to the NCBI gene identifier space. The initial iteration of 
+      the Panther ingest in Translator does not attempt to do this at this time, but rather simply uses the given
+      UniProt identifier.
+##  additional_notes: null
+provenance_info:
+  contributions:
+  - "Richard Bruskiewich - data modelling, domain expertise, code author"
+  - "Kevin Schaper - Phase 2 legacy code expert"
+  - "Evan Morris - Phase 2 legacy code expert"
+  - "Chunlei Wu - Phase 2 legacy code expert"
+  - "Matt Brush - data modelling"
+  artifacts:
+  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1YlpI5bjGNGR5JC9VWxZJ7dd87hS_b4BMZv5geYe2NCk/edit?gid=0#gid=0)"
+  - "Ingest Ticket (https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/44)"
