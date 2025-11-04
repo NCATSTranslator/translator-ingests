@@ -8,7 +8,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
-from translator_ingest.util.biolink import (
+from bmt.pydantic import (
     entity_id,
     get_node_class,
     build_association_knowledge_sources
