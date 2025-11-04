@@ -23,7 +23,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
-INFORES_EBI_G2P = "infores:ebi-gene2phenotype"
+INFORES_EBI_G2P = "infores:gene2phenotype"
 
 
 ## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
