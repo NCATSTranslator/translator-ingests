@@ -23,7 +23,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
-INFORES_EBI_G2P = "infores:ebi-gene2phenotype"
+INFORES_EBI_G2P = "infores:gene2phenotype"
 
 
 ## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
@@ -51,9 +51,9 @@ FORM_OR_VARIANT_QUALIFIER_MAPPINGS = {
 
 
 def get_latest_version() -> str:
-    ## gets the current time with no spaces "%Y-%m-%dT%H:%M:%S.%f%:z"
+    ## gets the current time with no spaces "%Y_%m_%d"
     ## assuming this function is run at almost the same time that the resource file is downloaded
-    return datetime.now(datetime.now().astimezone().tzinfo).isoformat()
+    return datetime.now().strftime("%Y_%m_%d")
 
 
 ## used in `on_data_begin` to build mapping of EBI G2P's allelic requirement values -> HP terms

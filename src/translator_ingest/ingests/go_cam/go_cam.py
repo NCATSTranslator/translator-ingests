@@ -35,6 +35,27 @@ def extract_value(value):
     return value
 
 
+def normalize_id(node_id: str) -> str:
+    """Remove duplicate prefixes from node IDs (e.g., MGI:MGI:1921700 -> MGI:1921700)."""
+    if not node_id or ":" not in node_id:
+        return node_id
+
+    # Split on the first colon to get prefix and remainder
+    parts = node_id.split(":", 1)
+    if len(parts) != 2:
+        return node_id
+
+    prefix, remainder = parts
+
+    # Check if remainder starts with the same prefix followed by colon
+    duplicate_prefix = f"{prefix}:"
+    if remainder.startswith(duplicate_prefix):
+        # Remove the duplicate prefix
+        return f"{prefix}:{remainder[len(duplicate_prefix):]}"
+
+    return node_id
+
+
 def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
     """Map RO causal predicates to Biolink predicates."""
     predicate_mapping = {
@@ -146,7 +167,11 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         for node in model_data.get("nodes", []):
             node_id = node.get("id")
             if node_id:
-                node_lookup[node_id] = {"id": node_id, "name": node.get("label"), "taxon": taxon}
+                normalized_id = normalize_id(node_id)
+                # Store both original and normalized for edge lookup
+                node_lookup[node_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
+                if normalized_id != node_id:
+                    node_lookup[normalized_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
 
         # Determine knowledge sources based on model_id
         sources = []
@@ -224,12 +249,16 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             if publications and isinstance(publications, list):
                 publications = [pub for pub in publications if isinstance(pub, str) and pub.startswith("PMID:")]
 
+            # Get normalized IDs for the association with safe fallback
+            normalized_source_id = node_lookup.get(source_id, {}).get("id", normalize_id(source_id))
+            normalized_target_id = node_lookup.get(target_id, {}).get("id", normalize_id(target_id))
+
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
                 id=str(uuid.uuid4()),
-                subject=source_id,
+                subject=normalized_source_id,
                 predicate=biolink_predicate,
-                object=target_id,
+                object=normalized_target_id,
                 original_subject=source_id,
                 original_predicate=causal_predicate,
                 original_object=target_id,

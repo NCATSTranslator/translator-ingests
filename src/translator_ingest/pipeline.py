@@ -11,7 +11,7 @@ from koza.model.formats import OutputFormat as KozaOutputFormat
 from orion.meta_kg import MetaKnowledgeGraphBuilder
 from orion.kgx_validation import validate_graph as generate_graph_summary
 
-from translator_ingest import INGESTS_PARSER_PATH
+from translator_ingest import INGESTS_PARSER_PATH, INGESTS_DATA_PATH
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.storage.local import (
@@ -22,7 +22,7 @@ from translator_ingest.util.storage.local import (
     get_versioned_file_paths,
     IngestFileType,
 )
-from translator_ingest.util.validate_kgx import ValidationStatus, get_validation_status, validate_kgx
+from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -122,7 +122,7 @@ def transform(pipeline_metadata: PipelineMetadata):
         **{k: v for k, v in source_metadata.items() if v is not None},
         "source_version": pipeline_metadata.source_version,
         "transform_version": "1.0",
-        "transform_metadata": runner.transform_metadata
+        "transform_metadata": runner.transform_metadata,
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
@@ -300,8 +300,13 @@ def summary(pipeline_metadata: PipelineMetadata):
     logger.info(f"Final metadata complete for {pipeline_metadata.source}.")
 
 
-def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
+def generate_latest_build_report(pipeline_metadata: PipelineMetadata):
+    latest_build_report_path = Path(INGESTS_DATA_PATH) / pipeline_metadata.source / "latest_build.json"
+    with latest_build_report_path.open("w") as latest_build_file:
+        latest_build_file.write(json.dumps(asdict(pipeline_metadata), indent=4))
 
+
+def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
     source_version = get_latest_source_version(source)
     pipeline_metadata: PipelineMetadata = PipelineMetadata(source, source_version=source_version)
     Path.mkdir(get_output_directory(pipeline_metadata), parents=True, exist_ok=True)
@@ -363,8 +368,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     else:
         summary(pipeline_metadata)
 
+    logger.info(f"Generating latest build file {pipeline_metadata.source}.")
+    generate_latest_build_report(pipeline_metadata)
     logger.info(f"Pipeline finished for {pipeline_metadata.source}.")
-    # TODO return this latest version and/or save it somewhere to make deployment easy
 
 
 @click.command()
