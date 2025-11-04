@@ -7,7 +7,7 @@ readers:
     files:
       - 'icees_nodes.jsonl'
     format: 'jsonl'
-    columns:
+    required_properties:
       - 'id'
       - 'name'
       - 'category'
@@ -18,7 +18,7 @@ readers:
     files:
       - 'icees_edges.jsonl'
     format: 'jsonl'
-    columns:
+    required_properties:
       - 'id'
       - 'subject'
       - 'predicate'
