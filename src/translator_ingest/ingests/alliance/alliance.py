@@ -11,9 +11,8 @@ with richer data from other sources.
 
 import uuid
 import koza
-from typing import Any, List
+from typing import List
 from loguru import logger
-from koza.model.graphs import KnowledgeGraph
 from pathlib import Path
 import duckdb
 
