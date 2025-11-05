@@ -49,6 +49,9 @@ from typing import Any
 # }
 
 
-def get_cohort_metadata(metadata: list[dict[str, str]]):
+def get_supporting_study_result(
+        study_name: str,
+        metadata: list[dict[str, str]]
+):
     # TODO: stub code...implement this
     return None

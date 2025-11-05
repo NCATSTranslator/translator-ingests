@@ -11,6 +11,7 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
     "bmt",
+    "biolink-model",
     "click>=8.0.0",
     "kghub-downloader>=0.4.2",
     "koza",

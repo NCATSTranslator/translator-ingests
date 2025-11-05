@@ -4,11 +4,12 @@ from loguru import logger
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    StudyResult,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
 
-from translator_ingest.ingests.icees.icees_util import get_cohort_metadata
+from translator_ingest.ingests.icees.icees_util import get_supporting_study_result
 from bmt.pydantic import (
     entity_id,
     get_node_class,
@@ -77,7 +78,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         edge_class = get_edge_class(edge_id, associations=association_list)
 
         # Convert many of the ICEES edge attributes into specific edge properties
-        supporting_studies: list[str] = []
+        has_supporting_study_results: list[StudyResult] = []
         subject_context_qualifier = None
         object_context_qualifier = None
         attributes = record["attributes"]
@@ -85,9 +86,12 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             # is 'attribute' a dict, or string serialized version of a dict?
             attribute_data = json.loads(attribute_string)
             if attribute_data["attribute_type_id"] == "icees_cohort_identifier":
-                supporting_studies.append(attribute_data["value"])
-                # TODO: figure out what to do with this metadata...
-                get_cohort_metadata(attribute_data["attributes"])
+                has_supporting_study_results.append(
+                    get_supporting_study_result(
+                        study_name=attribute_data["value"],
+                        metadata=attribute_data["attributes"]
+                    )
+                )
             elif attribute_data["attribute_type_id"] == "subject_feature_name":
                 subject_context_qualifier = attribute_data["value"]
             elif attribute_data["attribute_type_id"] == "object_feature_name":
@@ -102,7 +106,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             predicate=record["predicate"],
             object=record["object"],
             object_context_qualifier=object_context_qualifier,
-            has_supporting_studies=supporting_studies,
+            has_supporting_study_results=supporting_study_results,
             sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.not_provided
