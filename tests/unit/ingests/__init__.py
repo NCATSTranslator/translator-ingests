@@ -4,7 +4,7 @@ Generic utility code for use in the ingest unit tests.
 The main function of interest is validate_transform_result(), which is used to test
 the output of a single @koza.transform_record() decorated method invocation, looking for the
 expected content in node and edge slots, with test expectations defined by constraints
-'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
+'expected_nodes', 'expected_edge', 'expected_no_of_edges', 'node_test_slots' and 'association_test_slots'
 """
 
 import pytest
@@ -162,7 +162,7 @@ def _found_edge(
         # We track returned error messages indicating possible sources
         # missed edge expectations, but the caller will need to decide
         # for themselves exactly which specific expectation failed.
-        # To guide assessment, the full list of error messages are
+        # To guide assessment, the full list of error messages is
         # (only) returned when 'returned_edge' matches no expected edge.
         error_messages.append(error_msg)
 
@@ -261,7 +261,7 @@ def validate_transform_result(
             )
         else:
             # Check contents of edge(s) returned.
-            # Only 'expected_no_of_edges' are expected to be returned?
+            # Only 'expected_no_of_edges' is expected to be returned?
             assert len(transformed_edges) == expected_no_of_edges
 
             expected_edge_list: list[dict] = list()
