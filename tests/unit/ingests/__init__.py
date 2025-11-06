@@ -18,10 +18,12 @@ from koza.transform import Record
 
 from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
 
+
 class MockKozaWriter(KozaWriter):
     """
     Mock "do nothing" implementation of a KozaWriter
     """
+
     def __init__(self):
         self.items = []
 
@@ -41,10 +43,12 @@ class MockKozaWriter(KozaWriter):
     def finalize(self):
         pass
 
+
 class MockKozaTransform(koza.KozaTransform):
     """
     Mock "do nothing" implementation of a KozaTransform
     """
+
     @property
     def current_reader(self) -> str:
         return ""
@@ -53,6 +57,7 @@ class MockKozaTransform(koza.KozaTransform):
     def data(self) -> Iterator[Record]:
         record: Record = dict()
         yield record
+
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
@@ -237,10 +242,13 @@ def validate_transform_result(
                 assert any(
                     [
                         _compare_slot_values(returned_node[node_property], expected_node_value)
-                        for returned_node in transformed_nodes if node_property in returned_node
+                        for returned_node in transformed_nodes
+                        if node_property in returned_node
                     ]
-                ), (f"Expected node value '{expected_node_value}' for slot '{node_property}'"
-                    f" not returned in transformed list of nodes: '{transformed_nodes}' ")
+                ), (
+                    f"Expected node value '{expected_node_value}' for slot '{node_property}'"
+                    f" not returned in transformed list of nodes: '{transformed_nodes}' "
+                )
 
     if association_test_slots is not None:
         # Convert the 'edges' Iterable content
@@ -249,6 +257,10 @@ def validate_transform_result(
 
         if expected_edges is None:
             # Check for empty 'transformed_edges' expectations
+            assert not transformed_edges, (
+                "Unexpected non-empty result list of ingest transform edges: "
+                + f"'{','.join(str(transformed_edges)[0:20])}'..."
+            )
             assert not transformed_edges, \
                 "Unexpected non-empty result list of ingest transform edges: "+\
                  f"'{','.join(str(transformed_edges)[0:20])}'..."
