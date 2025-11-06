@@ -97,7 +97,6 @@ def transform_record_disease_to_phenotype(
         disease: Disease = Disease(
             id=disease_id,
             name=disease_name,
-            provided_by=get_hpoa_association_sources(source_id=disease_id, as_list=True),
             **{},
         )
 
