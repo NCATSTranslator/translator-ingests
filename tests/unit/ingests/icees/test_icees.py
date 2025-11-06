@@ -37,10 +37,10 @@ NODE_TEST_SLOTS = [
 ASSOCIATION_TEST_SLOTS = [
     "category",
     "subject",
-    "subject_context_qualifier",
+    "subject_specialization_qualifier",
     "predicate",
     "object",
-    "object_context_qualifier",
+    "object_specialization_qualifier",
     "has_supporting_study_result",
     "sources",
     "knowledge_level",
@@ -189,10 +189,10 @@ def test_transform_icees_nodes(
                 {
                     "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
                     "subject": "PUBCHEM.COMPOUND:2083",
-                    "subject_context_qualifier": "AlbuterolRx",
+                    "subject_specialization_qualifier": "AlbuterolRx",
                     "predicate": "biolink:positively_correlated_with",
                     "object": "MONDO:0007079",
-                    "object_context_qualifier": "AlcoholDependenceDx",
+                    "object_specialization_qualifier": "AlcoholDependenceDx",
                     #
                     # Can't yet test for this given current status of the Biolink Model
                     #

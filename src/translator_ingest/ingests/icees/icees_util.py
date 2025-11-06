@@ -63,11 +63,27 @@ def get_icees_study_result(
         **data
     )
 
+# _type_to_target_map = {
+#     "ChemicalToDiseaseOrPhenotypicFeatureAssociation": {
+#         "subject": "subject_specialization_qualifier",
+#         "object": "object_specialization_qualifier"
+#     }
+# }
 
 def map_icees_qualifiers(
         association: type[Association],
         qualifiers: dict[str, str]
 ) -> dict[str, str]:
-    # TODO: to implement qualifier mappings of specific
-    #       ICEES attributes based on Association subclass?
-    return {}
+    # a_type = association.__name__
+    # if a_type in _type_to_target_map:
+    #     mapping = _type_to_target_map[a_type]
+    #     return {mapping[tag]: value for tag, value in qualifiers.items()}
+    #
+    # return {}
+    # Simplified version of the above, that assumes that all observed
+    # type[Association] have the same mapping, which is unlikely true
+    mapping = {
+        "subject": "subject_specialization_qualifier",
+        "object": "object_specialization_qualifier"
+    }
+    return {mapping[tag]: value for tag, value in qualifiers.items()}

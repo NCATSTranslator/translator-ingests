@@ -89,6 +89,8 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
 
         edge_class = get_edge_class(edge_id, associations=association_list)
 
+        logger.debug(f"edge_class: {edge_class.__name__}")
+
         # Convert many of the ICEES edge attributes into specific edge properties
         supporting_study_results: list[StudyResult] = []
         icees_qualifiers: dict[str,str] = {}
@@ -106,7 +108,9 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
                     )
                 )
             elif attribute_data["attribute_type_id"] in ["subject_feature_name","object_feature_name"]:
-                icees_qualifiers[attribute_data["attribute_type_id"]] = attribute_data["value"]
+                attribute_type_id = attribute_data["attribute_type_id"]
+                target = attribute_type_id.replace("_feature_name","")
+                icees_qualifiers[target] = attribute_data["value"]
             else:
                 pass # all other attributes ignored at this time
 
