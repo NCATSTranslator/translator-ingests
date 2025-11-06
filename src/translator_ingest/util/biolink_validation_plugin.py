@@ -93,7 +93,8 @@ class BiolinkValidationPlugin(ValidationPlugin):
             return False
 
         # Basic CURIE pattern: prefix:identifier
-        curie_pattern = r"^[A-Za-z0-9_\-\.]:[A-Za-z0-9_\-\.]+$"
+        # Prefix and identifier must start with alphanumeric
+        curie_pattern = r"^[A-Za-z0-9][A-Za-z0-9_\-\.]*:[A-Za-z0-9][A-Za-z0-9_\-\.]*$"
         return bool(re.match(curie_pattern, identifier))
 
     def _validate_node(self, node_obj: dict, path: str, context: ValidationContext) -> Iterator[ValidationResult]:
