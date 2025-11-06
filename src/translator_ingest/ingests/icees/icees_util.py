@@ -1,11 +1,13 @@
 """
 This file contains utility functions for ICEES data processing
 """
-from typing import Any
+
+from biolink_model.datamodel.pydanticmodel_v2 import IceesStudyResult, Association
+
 
 #
-# An example of the TRAPI-like attribute data structure for a cohort.
-# The embedded 'attributes' of this attribute are cohort metadata to be captured?
+# An example of the TRAPI-like attribute data structure for a Study Result.
+
 # {
 #     "attribute_type_id": "icees_cohort_identifier",
 #     "value": "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22",
@@ -47,11 +49,25 @@ from typing import Any
 #         }
 #     ]
 # }
-
-
-def get_supporting_study_result(
+# The embedded 'attributes' of this ICEES study result data
+# are the IceesStudyResult to be captured here
+def get_icees_study_result(
+        edge_id: str,
         study_name: str,
         metadata: list[dict[str, str]]
 ):
-    # TODO: stub code...implement this
-    return None
+    data = {attribute['attribute_type_id']: attribute['value'] for attribute in metadata}
+    return IceesStudyResult(
+        # this id could be atrociously long
+        id=f"icees:{study_name}|{edge_id}",
+        **data
+    )
+
+
+def map_icees_qualifiers(
+        association: type[Association],
+        qualifiers: dict[str, str]
+) -> dict[str, str]:
+    # TODO: to implement qualifier mappings of specific
+    #       ICEES attributes based on Association subclass?
+    return {}

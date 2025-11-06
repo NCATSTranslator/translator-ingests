@@ -25,7 +25,12 @@ def mock_koza_transform() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = ["id", "name", "category", "xref"]
+NODE_TEST_SLOTS = [
+    "id",
+    "name",
+    "category",
+    "equivalent_identifiers"
+]
 
 # list of slots whose values are
 # to be checked in a result edge
@@ -36,7 +41,7 @@ ASSOCIATION_TEST_SLOTS = [
     "predicate",
     "object",
     "object_context_qualifier",
-    "has_supporting_studies",
+    "has_supporting_study_result",
     "sources",
     "knowledge_level",
     "agent_type",
@@ -84,7 +89,7 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "PUBCHEM.COMPOUND:2083",
                     "name": "Salbutamol",
                     "category": ["biolink:Drug"],
-                    "xref": [
+                    "equivalent_identifiers": [
                         "PUBCHEM.COMPOUND:2083",
                         "CHEMBL.COMPOUND:CHEMBL714",
                         "CHEBI:2549",
@@ -120,7 +125,7 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "MONDO:0004979",
                     "name": "asthma",
                     "category": ["biolink:Disease"],
-                    "xref": [
+                    "equivalent_identifiers": [
                         "MONDO:0004979",
                         "DOID:2841",
                         "EFO:0000270"
@@ -182,16 +187,19 @@ def test_transform_icees_nodes(
                 None,
                 # Captured edge contents
                 {
-                    "category": ["biolink:NamedThingAssociatedWithLikelihoodOfNamedThingAssociation"],
+                    "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
                     "subject": "PUBCHEM.COMPOUND:2083",
                     "subject_context_qualifier": "AlbuterolRx",
                     "predicate": "biolink:positively_correlated_with",
                     "object": "MONDO:0007079",
                     "object_context_qualifier": "AlcoholDependenceDx",
-                    "has_supporting_studies": [
-                        "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22",
-                        "Asthma_UNC_EPR_patient_2013_v5_binned_deidentified|asthma|2013|2024_03_19_10_34_15"
-                    ],
+                    #
+                    # Can't yet test for this given current status of the Biolink Model
+                    #
+                    # "has_supporting_study_result": [
+                    #     "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22",
+                    #     "Asthma_UNC_EPR_patient_2013_v5_binned_deidentified|asthma|2013|2024_03_19_10_34_15"
+                    # ],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",

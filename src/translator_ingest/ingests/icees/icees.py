@@ -9,7 +9,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from translator_ingest.ingests.icees.icees_util import get_supporting_study_result
 from bmt.pydantic import (
     entity_id,
     get_node_class,
@@ -18,6 +17,15 @@ from bmt.pydantic import (
 )
 from koza.model.graphs import KnowledgeGraph
 
+from translator_ingest.ingests.icees.icees_util import (
+    get_icees_study_result,
+    map_icees_qualifiers
+)
+
+# Use the default Biolink Model release
+# for now, unless otherwise indicated
+from bmt import Toolkit
+bmt: Toolkit = Toolkit()
 
 def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
@@ -41,10 +49,13 @@ def transform_icees_node(
             logger.warning(f"Pydantic class for node '{node_id}' could not be created for category '{category}'")
             return None
 
-        # TODO: need to directly record the 'equivalent_identifiers',
-        #       not as 'xref' slot values but as 'equivalent_identifiers
         equivalent_identifiers: Optional[list[str]] = record.get("equivalent_identifiers", None)
-        node = node_class(id=node_id, name=record["name"], xref=equivalent_identifiers, **{})
+        node = node_class(
+            id=node_id,
+            name=record["name"],
+            equivalent_identifiers=equivalent_identifiers,
+            **{}
+        )
         return KnowledgeGraph(nodes=[node])
 
     except Exception as e:
@@ -61,55 +72,60 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
     try:
         edge_id = entity_id()
 
-        # TODO: need to figure out how to select the 'best'
-        #       association type, perhaps somewhat like so:
-        #
-        # association_list = toolkit.get_associations(
-        #             subject_categories: Optional[List[str]] = None,
-        #             predicates: Optional[List[str]] = None,
-        #             object_categories: Optional[List[str]] = None,
-        #             match_inverses: bool = True,
-        #             formatted: bool = False
-        #     ) -> List[str]
-        #
-        # PLUS
-        # TODO: fix stub implementation
-        association_list = ["biolink:NamedThingAssociatedWithLikelihoodOfNamedThingAssociation"]
+        icees_subject: str = record["subject"]
+        subject_category: list[str] = bmt.get_element_by_prefix(icees_subject)
+
+        icees_predicate: str = record["predicate"]
+
+        icees_object: str = record["object"]
+        object_category: list[str] = bmt.get_element_by_prefix(icees_object)
+
+        association_list = bmt.get_associations(
+                    subject_categories=subject_category,
+                    predicates= [icees_predicate],
+                    object_categories=object_category,
+                    formatted=True
+            )
+
         edge_class = get_edge_class(edge_id, associations=association_list)
 
         # Convert many of the ICEES edge attributes into specific edge properties
-        has_supporting_study_results: list[StudyResult] = []
-        subject_context_qualifier = None
+        supporting_study_results: list[StudyResult] = []
+        icees_qualifiers: dict[str,str] = {}
         object_context_qualifier = None
         attributes = record["attributes"]
         for attribute_string in attributes:
             # is 'attribute' a dict, or string serialized version of a dict?
             attribute_data = json.loads(attribute_string)
             if attribute_data["attribute_type_id"] == "icees_cohort_identifier":
-                has_supporting_study_results.append(
-                    get_supporting_study_result(
+                supporting_study_results.append(
+                    get_icees_study_result(
+                        edge_id=edge_id,
                         study_name=attribute_data["value"],
                         metadata=attribute_data["attributes"]
                     )
                 )
-            elif attribute_data["attribute_type_id"] == "subject_feature_name":
-                subject_context_qualifier = attribute_data["value"]
-            elif attribute_data["attribute_type_id"] == "object_feature_name":
-                object_context_qualifier = attribute_data["value"]
+            elif attribute_data["attribute_type_id"] in ["subject_feature_name","object_feature_name"]:
+                icees_qualifiers[attribute_data["attribute_type_id"]] = attribute_data["value"]
             else:
-                pass # other attributes ignored at this time
+                pass # all other attributes ignored at this time
+
+        # TODO: temporary workaround for non-inlined study results,
+        #       which should later be list[StudyResult]
+        has_supporting_study_results = [str(entry) for entry in supporting_study_results]
+
+        qualifiers: dict[str,str] = map_icees_qualifiers(association=edge_class, qualifiers=icees_qualifiers)
 
         association = edge_class(
             id=entity_id(),
-            subject=record["subject"],
-            subject_context_qualifier=subject_context_qualifier,
-            predicate=record["predicate"],
-            object=record["object"],
-            object_context_qualifier=object_context_qualifier,
-            has_supporting_study_results=supporting_study_results,
+            subject=icees_subject,
+            predicate=icees_predicate,
+            object=icees_object,
+            has_supporting_study_result=has_supporting_study_results,
             sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.not_provided
+            agent_type=AgentTypeEnum.not_provided,
+            **qualifiers
         )
 
         return KnowledgeGraph(edges=[association])
