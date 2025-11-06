@@ -1,9 +1,8 @@
 name: 'panther_genome_orthologs'
 
 reader:
-  file_archive: '../../../../data/panther/RefGenomeOrthologs.tar.gz'
   files:
-    - 'RefGenomeOrthologs'
+    - 'RefGenomeOrthologs.tar.gz'
   format: csv
   delimiter: '\t'
   header_mode: "none"
