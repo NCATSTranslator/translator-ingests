@@ -2,6 +2,8 @@
 Ingest of Reference Genome Orthologs from Panther
 """
 from typing import Any
+import requests
+import re
 from loguru import logger
 
 # Imports that called by code - commented out - for screen-scraping
@@ -37,34 +39,23 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
 
 
 def get_latest_version() -> str:
-    #
-    # TODO: Panther has a "are you human" web sentry blocking simple screen scraping, so
-    #       this method is currently only an incompletely implemented inert stub.
-    #
-    # Panther doesn't provide a great programmatic way to determine the latest version,
-    # but it does have a Data Status page with a version on it, formatted somewhat as follows:
-    #      <td align="right" class="formLabel">
-    #          Current Release: <a href="/news/news20240620.jsp"><b>PANTHER 19.0</b></a>&nbsp;&nbsp;|
-    #          ... other stuff...
-    #      </td>
-    # Thus, we attempt to fetch the HTML and parse it to determine the current version.
-    #
-    #
-    # html_page: requests.Response = requests.get('https://www.pantherdb.org/data/')
-    # resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
-    # td_elements: BeautifulSoup.Tag = resp.find_all('td')
-    # version_element = None
-    # for element in td_elements:
-    #     if "Current Release" in element.text:
-    #         version_element = element
-    #         break
-    # if version_element is not None:
-    #     # Version tagging is something like "Current Release: <a href="/news/news20240620.jsp"><b>PANTHER 19.0</b>"
-    #     return version_element.text.split('PANTHER ')[1].split("</b>")[0]
-    # else:
-    #     raise RuntimeError('Could not determine latest version for Panther. Version block not found in HTML.')
-    return "19.0"  # Hard-coded release as of September 25, 2025
+    try:
+        response = requests.get(
+            "https://data.pantherdb.org/ftp/ortholog/current_release/README"
+        )
+        response.raise_for_status()
+        text = response.text
+        match = re.search(pattern=r"version:\s*v\.(\d+\.\d+)", string=text)
+        if match:
+            version = match.group(1)
+            print(f"Extracted version: {version}")
+            return version
+        else:
+            raise RuntimeError("Version match not found.")
 
+    except (requests.RequestException, RuntimeError) as e:
+        print(f"Could not determine latest version for Panther: {e}")
+        return "unknown"
 
 @koza.on_data_begin()
 def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:

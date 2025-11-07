@@ -16,11 +16,8 @@ from translator_ingest.ingests.panther.panther import (
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
-# This test is hard to mock, so we put it in
-# during development but will normally skip it
-# pytest.mark.skip()
 def test_get_latest_version():
-    assert get_latest_version() == "19.0"
+    assert get_latest_version() != "unknown"
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
