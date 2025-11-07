@@ -6,8 +6,3 @@
 # 30 September 2025: PANTHER RefGenomeOrthologs is adequate to be used instead of All_Orthologs?
 - url: http://data.pantherdb.org/ftp/ortholog/current_release/RefGenomeOrthologs.tar.gz
   local_name: RefGenomeOrthologs.tar.gz
-#
-# RMB: 29-Sept-2025: NCBI gene lookup is not used for now
-#
-#- url: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
-#  local_name: gene_info.gz

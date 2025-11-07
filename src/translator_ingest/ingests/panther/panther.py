@@ -6,11 +6,6 @@ import requests
 import re
 from loguru import logger
 
-# Imports that called by code - commented out - for screen-scraping
-# inside and early implementation of get_latest_version() for Panther
-# import requests
-# from bs4 import BeautifulSoup
-
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
     GeneToGeneFamilyAssociation,
@@ -26,14 +21,9 @@ from translator_ingest.util.biolink import (
 import koza
 from koza.model.graphs import KnowledgeGraph
 
-# Custom pantherdb specific function, and constants respectively
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
-    # make_ncbi_taxon_gene_map,
-    # NCBI_MAP_FILE_PATH,
     parse_gene_info,
     panther_taxon_map,
-    # relevant_ncbi_cols,
-    # relevant_ncbi_taxons,
     db_to_curie_map
 )
 
@@ -66,19 +56,6 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     koza_transform.log("Starting Panther Gene Orthology processing")
     koza_transform.log(f"Version: {get_latest_version()}")
 
-    # TODO: ported from the Monarch ingest... not sure if and
-    #       how these are to be used, so we ignore them for now.
-    # koza_transform.state["species_pair_min"] = {}
-    # koza_transform.state["species_pair_max"] = {}
-    # koza_transform.state["species_pair_stats"] = {}
-
-    # RMB: 29-Sept-2025: we skip NCBI Gene lookup for now
-    # koza_transform.extra_fields["ntg_map"] = make_ncbi_taxon_gene_map(
-    #     gene_info_file=NCBI_MAP_FILE_PATH,
-    #     relevant_columns=relevant_ncbi_cols,
-    #     taxon_catalog=relevant_ncbi_taxons
-    # )
-
 @koza.on_data_end()
 def on_data_end_panther(koza_transform: koza.KozaTransform):
     """
@@ -87,13 +64,7 @@ def on_data_end_panther(koza_transform: koza.KozaTransform):
     """
     koza_transform.log("Panther Gene Orthology processing complete")
 
-# Ingests must implement a function decorated with @koza.transform() OR @koza.transform_record() (not both).
-# These functions should contain the core data transformation logic generating and returning NamedThings (nodes) and
-# Associations (edges) from source data.
-#
-# The transform_record function takes the KozaTransform and a single record, a dictionary typically corresponding to a
-# row in a source data file, and returns a tuple of NamedThings and Associations. Any number of NamedThings and/or
-# Associations can be returned.
+
 @koza.transform_record()
 def transform_gene_to_gene_orthology(
         koza_transform: koza.KozaTransform,
@@ -113,14 +84,12 @@ def transform_gene_to_gene_orthology(
         species_a, gene_a_id = parse_gene_info(
             record["Gene"],
             panther_taxon_map,
-            db_to_curie_map,
-            # koza_transform.extra_fields["ntg_map"]  # we skip NCBI Gene lookup for now
+            db_to_curie_map
         )
         species_b, gene_b_id = parse_gene_info(
             record["Ortholog"],
             panther_taxon_map,
-            db_to_curie_map,
-            # koza_transform.extra_fields["ntg_map"]  # we skip NCBI Gene lookup for now
+            db_to_curie_map
         )
 
         # Only consume species we are interested in (i.e.,
