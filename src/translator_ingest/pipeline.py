@@ -13,12 +13,14 @@ from orion.kgx_validation import validate_graph as generate_graph_summary
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_DATA_PATH
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
+from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
     get_transform_directory,
     get_normalization_directory,
+    get_validation_directory,
     get_versioned_file_paths,
     IngestFileType,
 )
@@ -190,11 +192,12 @@ def is_validation_complete(pipeline_metadata: PipelineMetadata):
 
 
 def validate(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Starting validation for {pipeline_metadata.source}...")
+    logger.info(f"Starting validation for {pipeline_metadata.source}... biolink: {pipeline_metadata.biolink_version}")
     nodes_file, edges_file = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
-    validation_output_dir = get_normalization_directory(pipeline_metadata=pipeline_metadata)
+    validation_output_dir = get_validation_directory(pipeline_metadata=pipeline_metadata)
+    validation_output_dir.mkdir(exist_ok=True)
     validate_kgx(nodes_file=nodes_file, edges_file=edges_file, output_dir=validation_output_dir)
 
 
@@ -332,15 +335,17 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     if is_normalization_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Normalization already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"transform: {pipeline_metadata.transform_version}, "
             f"normalization: {pipeline_metadata.normalization_version}"
         )
     else:
         normalize(pipeline_metadata)
 
-    # Validate the normalized files
+    # Validate the post-normalization files
+    # First retrieve and set the current biolink version to make sure validation is run using that version
+    pipeline_metadata.biolink_version = get_current_biolink_version()
     if is_validation_complete(pipeline_metadata) and not overwrite:
-        logger.info(f"Validation already done for {pipeline_metadata.source}")
+        logger.info(f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
+                    f"biolink: {pipeline_metadata.biolink_version}")
     else:
         validate(pipeline_metadata)
 

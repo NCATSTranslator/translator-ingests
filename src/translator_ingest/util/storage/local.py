@@ -67,7 +67,7 @@ FILE_PATH_LOOKUP = {
     / IngestFileName.EXAMPLE_DATA_FILENAME,
     IngestFileType.FINAL_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
     / IngestFileName.FINAL_METADATA_FILE,
-    IngestFileType.VALIDATION_REPORT_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    IngestFileType.VALIDATION_REPORT_FILE: lambda pipeline_metadata: get_validation_directory(pipeline_metadata)
     / IngestFileName.VALIDATION_REPORT_FILE,
 }
 
@@ -93,6 +93,8 @@ def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_transform_directory(pipeline_metadata) / pipeline_metadata.normalization_version
 
+def get_validation_directory(pipeline_metadata: PipelineMetadata) -> Path:
+    return get_normalization_directory(pipeline_metadata) / f"validation_{pipeline_metadata.biolink_version}"
 
 # Find the KGX files in a given directory
 def __find_kgx_files(directory: Path) -> (str, str):
