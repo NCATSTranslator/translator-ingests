@@ -331,11 +331,11 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         return
 
     # Normalize the post-transform KGX files
-    pipeline_metadata.normalization_version = get_current_node_norm_version()
+    pipeline_metadata.node_norm_version = get_current_node_norm_version()
     if is_normalization_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Normalization already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"normalization: {pipeline_metadata.normalization_version}"
+            f"normalization: {pipeline_metadata.node_norm_version}"
         )
     else:
         normalize(pipeline_metadata)
@@ -359,7 +359,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         logger.info(
             f"Meta KG already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
             f"transform: {pipeline_metadata.transform_version}, "
-            f"normalization: {pipeline_metadata.normalization_version}"
+            f"normalization: {pipeline_metadata.node_norm_version}"
         )
     else:
         meta_kg(pipeline_metadata)
@@ -368,7 +368,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         logger.info(
             f"Graph summary already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
             f"transform: {pipeline_metadata.transform_version}, "
-            f"normalization: {pipeline_metadata.normalization_version}"
+            f"normalization: {pipeline_metadata.node_norm_version}"
         )
     else:
         summary(pipeline_metadata)

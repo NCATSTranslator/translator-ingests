@@ -91,7 +91,7 @@ def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
 
 
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
-    return get_transform_directory(pipeline_metadata) / pipeline_metadata.normalization_version
+    return get_transform_directory(pipeline_metadata) / pipeline_metadata.node_norm_version
 
 def get_validation_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_normalization_directory(pipeline_metadata) / f"validation_{pipeline_metadata.biolink_version}"
