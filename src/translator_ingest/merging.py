@@ -10,7 +10,7 @@ from orion.merging import DiskGraphMerger
 
 from translator_ingest import INGESTS_DATA_PATH
 from translator_ingest.util.metadata import PipelineMetadata
-from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType
+from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,9 +22,9 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False):
     graph_spec_sources = []
     graph_source_versions = []
     for source in sources:
-        latest_path = Path(INGESTS_DATA_PATH) / source / "latest_build.json"
+        latest_path = Path(INGESTS_DATA_PATH) / source / IngestFileName.LATEST_RELEASE_FILE
         if not latest_path.exists():
-            raise IOError(f"Could not find latest build metadata for {source}")
+            raise IOError(f"Could not find latest release metadata for {source}")
 
         with latest_path.open() as latest_pipeline_metadata_file:
             latest_pipeline_metadata = json.load(latest_pipeline_metadata_file)
@@ -34,7 +34,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False):
             file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
         )
         graph_spec_sources.append(GraphSource(id=source, file_paths=[str(norm_node_path), str(norm_edge_path)]))
-        graph_source_versions.append(pipeline_metadata.get_composite_version())
+        graph_source_versions.append(pipeline_metadata.build_version)
 
     graph_version = hashlib.md5("".join(graph_source_versions).encode()).hexdigest()[:12]
     logger.info(f"Graph version determined: {graph_version}")

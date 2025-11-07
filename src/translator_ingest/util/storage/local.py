@@ -20,6 +20,7 @@ class IngestFileType(Enum):
     EXAMPLE_DATA_FILE = 12
     FINAL_METADATA_FILE = 13
     VALIDATION_REPORT_FILE = 14
+    LATEST_RELEASE_FILE = 15
 
 
 class IngestFileName(StrEnum):
@@ -37,6 +38,7 @@ class IngestFileName(StrEnum):
     EXAMPLE_DATA_FILENAME = "example_edges.jsonl"
     FINAL_METADATA_FILE = "final_metadata.json"
     VALIDATION_REPORT_FILE = "validation_report.json"
+    LATEST_RELEASE_FILE = "release-metadata.json"
 
 
 FILE_PATH_LOOKUP = {
@@ -69,6 +71,8 @@ FILE_PATH_LOOKUP = {
     / IngestFileName.FINAL_METADATA_FILE,
     IngestFileType.VALIDATION_REPORT_FILE: lambda pipeline_metadata: get_validation_directory(pipeline_metadata)
     / IngestFileName.VALIDATION_REPORT_FILE,
+    IngestFileType.LATEST_RELEASE_FILE: lambda pipeline_metadata: Path(INGESTS_DATA_PATH) / pipeline_metadata.source
+    / IngestFileName.LATEST_RELEASE_FILE,
 }
 
 
@@ -77,18 +81,14 @@ def get_versioned_file_paths(
 ) -> tuple[Path, Path] | Path:
     return FILE_PATH_LOOKUP[file_type](pipeline_metadata)
 
-
 def get_output_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return Path(INGESTS_DATA_PATH) / pipeline_metadata.source / pipeline_metadata.source_version
-
 
 def get_source_data_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / "source_data"
 
-
 def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / pipeline_metadata.transform_version
-
 
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_transform_directory(pipeline_metadata) / pipeline_metadata.node_norm_version
