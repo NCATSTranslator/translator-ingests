@@ -1,0 +1,26 @@
+name: dgidb
+
+reader:
+  format: "csv"
+  delimiter: "\t"
+  comment_char: "#"  ## first two lines are comments with version/date
+  ## ?? see if this works. If it doesn't, put 2 (int: column-names row is 3rd line, idx 2) 
+  header_mode: "infer"
+  files:
+    - "interactions.tsv"
+  ## including all the ones I want to use
+  ## Not sure if I'm supposed to include all column names in the file instead
+  columns:
+    - "gene_concept_id"
+    - "drug_concept_id"
+    - "interaction_source_db_name"
+    - "interaction_types"
+    ## DRAFT: "drug-gene" pair scores. Not sure whether to include
+    - "interaction_score"
+    - "evidence_score"
+    ## DRAFT: node properties. NOT including. FYI, list position doesn't match original file
+    # - "drug_is_approved"
+    # - "drug_is_immunotherapy"
+    # - "drug_is_antineoplastic"
+    # - "drug_specificity_score"
+    # - "gene_specificity_score"
