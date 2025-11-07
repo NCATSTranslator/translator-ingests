@@ -83,21 +83,29 @@ def validate_sources(expected: dict[str, str], returned: list[dict[str, str]]) -
     """
     return any(
         [
-            expected["resource_id"] in entry["resource_id"] and expected["resource_role"] in entry["resource_role"]
+            expected["resource_id"] in entry["resource_id"] and
+            expected["resource_role"] in entry["resource_role"]
             for entry in returned
         ]
     )
 
 
 def _compare_slot_values(returned_value, expected_value):
-    return returned_value == expected_value or (
-        isinstance(returned_value, list)
-        and isinstance(expected_value, list)
-        and set(returned_value) == set(expected_value)
+    return (
+            returned_value == expected_value
+            or (
+                    isinstance(returned_value, list) and
+                    isinstance(expected_value, list) and
+                    set(returned_value) == set(expected_value)
+            )
     )
 
 
-def _match_edge(returned_edge: dict, expected_edge: dict, target_slots: list[str]) -> Optional[str]:
+def _match_edge(
+        returned_edge:dict,
+        expected_edge:dict,
+        target_slots: list[str]
+) -> Optional[str]:
     returned_sources: Optional[list[dict[str, str]]]
     # We only bother with a comparison if the slot is included in both the
     # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
@@ -119,38 +127,33 @@ def _match_edge(returned_edge: dict, expected_edge: dict, target_slots: list[str
                         if isinstance(entry, str):
                             # Simple Membership value test.
                             if entry not in reasv:
-                                return (
-                                    f"Value '{entry}' for slot '{association_slot}' "
-                                    + f"is missing in returned edge values '{reasv}?'"
-                                )
+                                return f"Value '{entry}' for slot '{association_slot}' " + \
+                                f"is missing in returned edge values '{reasv}?'"
                         elif isinstance(entry, dict):
                             # A more complex validation of field
                             # content, e.g., Association.sources
-                            if association_slot == "sources":
+                            if association_slot == 'sources':
                                 if returned_sources is None:
                                     returned_sources = flatten_sources(reasv)
                                 if not validate_sources(expected=entry, returned=returned_sources):
                                     return f"Invalid returned sources '{returned_sources}'"
                         else:
-                            return (
-                                "Unexpected value type for "
-                                + f"{str(expected_edge[association_slot])} for slot '{association_slot}'"
-                            )
+                            return "Unexpected value type for "+\
+                                f"{str(expected_edge[association_slot])} for slot '{association_slot}'"
             else:
                 # Scalar value test
                 if reasv != expected_edge[association_slot]:
-                    return (
-                        f"Value '{expected_edge[association_slot]}' "
-                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv}'?"
-                    )
+                    return f"Value '{expected_edge[association_slot]}' "+\
+                           f"for slot '{association_slot}' not equal to returned edge value '{reasv}'?"
 
     # If we got to here, then success!
     # No errors were reported?
     return None
 
-
 def _found_edge(
-    returned_edge: dict, expected_edge_list: list[dict], target_slots: list[str]
+        returned_edge:dict,
+        expected_edge_list:list[dict],
+        target_slots: list[str]
 ) -> tuple[bool, Optional[list[str]]]:
     error_messages: list[str] = list()
     for expected_edge in expected_edge_list:
@@ -170,12 +173,12 @@ def _found_edge(
 
 
 def validate_transform_result(
-    result: KnowledgeGraph | None,
-    expected_nodes: Optional[list],
-    expected_edges: Optional[dict] | list[dict],
-    expected_no_of_edges: int = 1,
-    node_test_slots: list[str] = "id",
-    association_test_slots: Optional[list] = None,
+        result: KnowledgeGraph | None,
+        expected_nodes: Optional[list],
+        expected_edges: Optional[dict] | list[dict],
+        expected_no_of_edges: int = 1,
+        node_test_slots: list[str] = "id",
+        association_test_slots: Optional[list] = None
 ):
     """
     A generic method for testing the result of a single
@@ -212,9 +215,8 @@ def validate_transform_result(
 
     if expected_nodes is None:
         # Check for empty 'transformed_nodes' expectations
-        assert (
-            not transformed_nodes
-        ), f"unexpected non-empty set of nodes: {','.join([str(dict(node)) for node in transformed_nodes])}!"
+        assert not transformed_nodes, \
+            f"unexpected non-empty set of nodes: {','.join([str(dict(node)) for node in transformed_nodes])}!"
     else:
 
         assert transformed_nodes, "Expected a non-empty set of nodes to be returned!"
@@ -259,6 +261,9 @@ def validate_transform_result(
                 "Unexpected non-empty result list of ingest transform edges: "
                 + f"'{','.join(str(transformed_edges)[0:20])}'..."
             )
+            assert not transformed_edges, \
+                "Unexpected non-empty result list of ingest transform edges: "+\
+                 f"'{','.join(str(transformed_edges)[0:20])}'..."
         else:
             # Check contents of edge(s) returned.
             # Only 'expected_no_of_edges' are expected to be returned?
@@ -276,4 +281,4 @@ def validate_transform_result(
                 found: bool
                 error_messages: Optional[list[str]]
                 found, error_messages = _found_edge(returned_edge, expected_edge_list, association_test_slots)
-                assert found, "\n".join(error_messages)
+                assert found, '\n'.join(error_messages)
