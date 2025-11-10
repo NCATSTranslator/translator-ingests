@@ -15,6 +15,7 @@ INFORES_HPOA = "infores:hpo-annotations"
 INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
 INFORES_PATHBANK = "infores:pathbank"
+INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
 
 

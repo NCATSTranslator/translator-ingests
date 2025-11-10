@@ -37,7 +37,7 @@ Basic development environment setup:
 - [go_cam](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests/go_cam)
 - [goa](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests/goa)
 - [hpoa-reference-ingest](https://github.com/NCATSTranslator/translator-ingests/pull/25)
-- [ebi-gene2phenotype](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests/ebi-gene2phenotype)
+- [gene2phenotype](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests/gene2phenotype)
 
 ### Template instructions
 - Replace function bodies. Delete all template comments and unused functions

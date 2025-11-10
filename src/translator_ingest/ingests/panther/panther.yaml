@@ -1,0 +1,29 @@
+name: 'panther_genome_orthologs'
+
+reader:
+  files:
+    - 'RefGenomeOrthologs.tar.gz'
+  format: csv
+  delimiter: '\t'
+  header_mode: "none"
+  columns:
+    - 'Gene'                                 # species1|DB=id1|protdb=pdbid1
+    - 'Ortholog'                             # species2|DB=id2|protdb=pdbid2
+    - 'Type of ortholog'                     # [LDO, O, P, X ,LDX], Currently unused; see also http://data.pantherdb.org/ftp/ortholog/17.0/README
+    - 'Common ancestor for the orthologs'    # unused
+    - 'Panther Ortholog ID'                  # panther protein family ID
+  filters:
+    - inclusion: 'include'
+      column: 'Gene'
+      filter_code: 'in'
+      value:
+        - 'HUMAN'
+        - 'MOUSE'
+        - 'RAT'
+    - inclusion: 'include'
+      column: 'Ortholog'
+      filter_code: 'in'
+      value:
+        - 'HUMAN'
+        - 'MOUSE'
+        - 'RAT'
