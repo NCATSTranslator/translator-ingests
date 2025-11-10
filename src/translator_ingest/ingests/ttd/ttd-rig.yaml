@@ -23,7 +23,7 @@ source_info:
     - file_download
   data_formats:
     - other
-  data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't. The Downloads page has a 'Last update by' section with a date, but it's unclear if this applies to all files that lack version info in their header."
+  data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't."
 
 # Information about Ingested Content
 ingest_info:
