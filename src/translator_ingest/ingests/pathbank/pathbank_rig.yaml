@@ -1,0 +1,217 @@
+name: PathWhiz Reference Ingest Guide (RIG)
+
+source_info:
+  infores_id: infores:pathwhiz
+  name: PathWhiz
+  description: "PathBank is a comprehensive, visually rich pathway database (>110k pathways) providing machine-readable exports (PWML, BioPAX, SBML, SBGN) and CSV summaries for pathway metadata and links."
+  citations:
+    - "PathBank NAR article: https://doi.org/10.1093/nar/gkz861"
+    - "Downloads page: https://pathbank.org/downloads"
+  terms_of_use_info:
+    terms_of_use_url: "https://pathbank.org/about"
+    license_name: "See PathBank About/Downloads for reuse and citation guidance"
+  data_access_locations:
+    - "All downloads: https://pathbank.org/downloads"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - csv
+    - pwml
+  data_versioning_and_releases: "Treat each pull as a dated snapshot; downloads list 'Generated On' timestamps and large per-format archives."
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "Comprehensive pathway membership and mechanistic process data (reactions, transports, interactions) for Translator reasoning and pathway-centric analytics."
+  scope: "This ingest uses only two inputs: the master pathways CSV for biolink:Pathway nodes and the PWML archive for entities, processes, and edges."
+
+  relevant_files:
+    - file_name: "pathbank_all_pathways.csv.zip"
+      location: "https://pathbank.org/downloads"
+      description: "Master CSV with pathway subjects and descriptions; used to build Pathway nodes with IDs, names, descriptions, and species metadata."
+    - file_name: "pathbank_all_pwml.zip"
+      location: "https://pathbank.org/downloads"
+      description: "Per-pathway PWML files for detailed composition and connectivity (entities, processes, participants, localization, complexes)."
+
+  included_content:
+    - file_name: "pathbank_all_pathways.csv.zip"
+      included_records: "All pathway rows extracted to pathbank_pathways.csv"
+      fields_used: "pathway_id, pathway_name, description, species/taxon, external references if present"
+    - file_name: "pathbank_all_pwml.zip"
+      included_records: "All PWML pathway files"
+      fields_used: "entities (compounds, proteins, complexes, nucleic acids), processes (reactions, transports, interactions), participants (inputs/outputs), enzymes/transporters, localization (compartments/tissues)"
+
+  # FOR ADIL : Per the schema definition here (https://biolink.github.io/resource-ingest-guide-schema/FilteredContent/), 
+  # the 'filtered content' object describes a subset of records from the included files that are excluded from the ingest by some filtering logic.
+  # Not describe other formats or files that were not used.  If this info is relevant however, if should be documented in the scope field above. 
+  filtered_content: 
+    - file_name: "Other formats (BioPAX, SBML, SBGN, RXN, SVG, PNG, FASTA, SDF)"
+      filtered_records: "Excluded to enforce two-file ingest constraint; may be added later for enrichment"
+      rationale: "This RIG intentionally limits inputs to the master pathways CSV and PWML for parity with the SMPDB-style ETL while ensuring semantic completeness."
+
+  future_considerations:
+    
+target_info:
+  infores_id: infores:translator-pathwhiz-kgx
+
+  # FOR ADIL: we should be sure we represent all edges here in a manner consistent with how pathway knowledge from other sources is represented (Reactome/GO-CAM, Rhea, etc)
+  edge_type_info:
+    - subject_categories:
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:NucleicAcidEntity
+        - biolink:MacromolecularComplex
+      predicate: biolink:participates_in
+      object_categories:
+        - biolink:Pathway
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:       #  FOR ADIL: these need to have biolink prefixes if they are biolink properties. If not, they should not be included but may note for future consideration (or add a property to biolink)
+        - provided_by        # 'provided by' is no longer used in Translator KGs for describing source provenance.  What is is being used to capture here?
+        - pathway_id
+      ui_explanation: "Entity is listed as a member/participant of the specified pathway (from PWML membership and context)."
+
+    - subject_categories:
+        - biolink:BiologicalProcess
+      predicate: biolink:has_input
+      object_categories:
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:    #  FOR ADIL: these need to have biolink prefixes if they are biolink properties. If not, add them to biolink or drop them for now (and note in future considerations)
+        - stoichiometry
+        - participant_role
+        - provided_by
+      ui_explanation: "Process (reaction/transport) consumes specified inputs extracted from PWML participants."
+
+    - subject_categories:
+        - biolink:BiologicalProcess             # FOR ADIL: Are the subject entities here individual reactions?
+      predicate: biolink:has_output
+      object_categories:
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - stoichiometry
+        - participant_role
+        - provided_by
+      ui_explanation: "Process produces specified outputs as defined in PWML."
+
+    - subject_categories:
+        - biolink:BiologicalProcess
+      predicate: biolink:enabled_by         # FOR ADIL: GO Annotations uses has_participant (or sub-predicate) for linking BP to Gene/Product. Is there a reason to use 'enabled by' here. Also, 'enables' is the canonical predicate/direction. 
+      object_categories:
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - provided_by
+      ui_explanation: "Process is catalyzed/enabled by enzyme(s) or transporter(s) identified in PWML."
+
+    - subject_categories:
+        - biolink:Protein
+      predicate: biolink:part_of           # FOR ADIL: has_part is the canonical direction / predicate here. You have a separate (but broader) entry for this below.  Only need the has_part edge below I think. 
+      object_categories:
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - complex_role
+        - provided_by
+      ui_explanation: "Protein membership in a complex as specified by PWML complex definitions."
+
+    - subject_categories:
+        - biolink:MacromolecularComplex
+      predicate: biolink:has_part
+      object_categories:
+        - biolink:Protein
+        - biolink:SmallMolecule
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - provided_by
+      ui_explanation: "Complex contains proteins and small-molecule cofactors per PWML composition."
+
+    - subject_categories:
+        - biolink:Protein
+      predicate: biolink:interacts_with         # FOR ADIL: I assume we cannot be more specifichere (e.g. physically_interacts_with?). Are some of these 'affects / regulates relationships?
+      object_categories:
+        - biolink:Protein
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - interaction_type
+        - provided_by
+      ui_explanation: "Binary protein interactions derived from PWML interaction constructs."
+
+    - subject_categories:
+        - biolink:BiologicalProcess           # FOR ADIL: what entities are the subjects here? Pathways, or individual reactions in a pathway?
+      predicate: biolink:occurs_in
+      object_categories:
+        - biolink:CellularComponent
+        - biolink:AnatomicalEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - provided_by
+      ui_explanation: "Process localization to compartments/tissues when PWML provides explicit context."
+
+  node_type_info:                                         # FOR ADIL: do they create their own identifiers for each entity type, or use ones from other data abses (e.g. Uniprot)
+    - node_category: biolink:Pathway
+      source_identifier_types:
+        - "PathBank pathway identifiers (as listed in pathbank_pathways.csv)"      
+      additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/Pathway/"
+    - node_category: biolink:SmallMolecule
+      source_identifier_types:
+        - "Source-local IDs with cross-references; external IDs added in later enrichment"
+      additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/SmallMolecule/"
+    - node_category: biolink:Protein
+      source_identifier_types:
+        - "Source-local IDs with UniProtKB cross-references when available"
+      additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/Protein/"
+    - node_category: biolink:MacromolecularComplex
+      source_identifier_types:
+        - "Source-local complex identifiers"
+      additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/MacromolecularComplex/"
+    - node_category: biolink:NucleicAcidEntity
+      source_identifier_types:
+        - "Source-local nucleic acid identifiers"
+      additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/NucleicAcidEntity/"
+    - node_category: biolink:BiologicalProcess
+      source_identifier_types:
+        - "Process identifiers for reactions/transports/interactions extracted from PWML"
+      additional_notes: "Biolink class reference: https://biolink.github.io/biolink-model/BiologicalProcess/"
+
+provenance_info:
+  contributions:
+    - "Adilbek Bazarkulov: code author"
+    - "Evan Morris: code support"
+    - "Adilbek Bazarkulov: code support, domain expertise"
+    - "Sierra Moxon: data modeling, domain expertise"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "PathBank downloads: https://pathbank.org/downloads"
+    - "Biolink Model repository: https://github.com/biolink/biolink-model"
+    - "Biolink Model docs: https://biolink.github.io/biolink-model/"
+    - "KGX docs: https://biolink.github.io/kgx/"

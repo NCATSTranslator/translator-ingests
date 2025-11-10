@@ -1,0 +1,1 @@
+from .pathbank import get_latest_version  # re-export for pipeline discovery
