@@ -163,8 +163,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.3"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#c6d98ed69306702e98505f347c95f3e57a54503c" }
+version = "4.3.3.post6.dev0+e6e28a736"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=study-result-model#e6e28a736fa17437c70f98552bdd97c3b272a75f" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -294,7 +294,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=study-result-model" },
     { name = "bmt", git = "https://github.com/biolink/biolink-model-toolkit.git?rev=most-specific-category-method-patch" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },

@@ -31,6 +31,19 @@ def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
 
+@koza.on_data_begin(tag="icees_edges")
+def on_icees_edge_data_begin(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.state["association_classes_missing_qualifiers"] = set()
+
+
+@koza.on_data_end(tag="icees_edges")
+def on_icees_edge_data_end(koza_transform: koza.KozaTransform) -> None:
+    if len(koza_transform.state["association_classes_missing_qualifiers"])>0:
+        logger.warning("Association classes missing qualifiers: " +
+                    f"{'\n'.join(list(koza_transform.state['association_classes_missing_qualifiers']))}"+"\n")
+    else:
+        logger.info("No association classes missing qualifiers")
+
 @koza.transform_record(tag="icees_nodes")
 def transform_icees_node(
         koza_transform: koza.KozaTransform,
@@ -94,7 +107,6 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         # Convert many of the ICEES edge attributes into specific edge properties
         supporting_study_results: list[StudyResult] = []
         icees_qualifiers: dict[str,str] = {}
-        object_context_qualifier = None
         attributes = record["attributes"]
         for attribute_string in attributes:
             # is 'attribute' a dict, or string serialized version of a dict?
@@ -118,14 +130,20 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         #       which should later be list[StudyResult]
         has_supporting_study_results = [str(entry) for entry in supporting_study_results]
 
-        qualifiers: dict[str,str] = map_icees_qualifiers(association=edge_class, qualifiers=icees_qualifiers)
+        qualifiers: dict[str,str] = map_icees_qualifiers(
+            koza_transform,
+            association=edge_class,
+            subject_category=subject_category,
+            object_category=object_category,
+            qualifiers=icees_qualifiers
+        )
 
         association = edge_class(
             id=entity_id(),
             subject=icees_subject,
             predicate=icees_predicate,
             object=icees_object,
-            has_supporting_study_result=has_supporting_study_results,
+            has_supporting_study_results=has_supporting_study_results,
             sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.not_provided,

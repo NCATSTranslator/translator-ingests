@@ -174,8 +174,8 @@ def validate_transform_result(
     expected_nodes: Optional[list],
     expected_edges: Optional[dict] | list[dict],
     expected_no_of_edges: int = 1,
-    node_test_slots: list[str] = "id",
-    association_test_slots: Optional[list] = None,
+    node_test_slots: tuple = tuple("id"),
+    association_test_slots: Optional[tuple] = None,
 ):
     """
     A generic method for testing the result of a single
