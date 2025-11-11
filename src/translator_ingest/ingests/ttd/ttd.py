@@ -19,22 +19,22 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 ## ADDED packages for this ingest
 from datetime import datetime
 import re
-import itertools
+from itertools import islice, batched
 import requests
 
 ## for interoperability between diff Python versions
-try:
-    from itertools import batched  # new in Python 3.12
-except ImportError:
-    from itertools import islice
+# try:
+#     from itertools import batched  # new in Python 3.12
+# except ImportError:
+#     from itertools import islice
 
-    def batched(iterable, n):
-        # batched('ABCDEFG', 3) → ABC DEF G
-        if n < 1:
-            raise ValueError("n must be at least one")
-        iterator = iter(iterable)
-        while batch := tuple(islice(iterator, n)):
-            yield batch
+#     def batched(iterable, n):
+#         # batched('ABCDEFG', 3) → ABC DEF G
+#         if n < 1:
+#             raise ValueError("n must be at least one")
+#         iterator = iter(iterable)
+#         while batch := tuple(islice(iterator, n)):
+#             yield batch
 
 
 ## hard-coded values and mappings
@@ -152,7 +152,7 @@ def parse_P1_03(file_path, header_len: int) -> Dict[str, list]:
 
     with open(file_path, "r") as file:
         ## iterate from beginning of data (after 2nd dash divider line) to end of file
-        for line in itertools.islice(file, header_len, None):
+        for line in islice(file, header_len, None):
             ## skip "blank" lines that only contain whitespace (seem to be "\n")
             if line.isspace():
                 continue
@@ -268,7 +268,7 @@ def P1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     edges = list()  ## list of "edge" objects
     with open(P1_05_path, "r") as file:
         ## iterate from beginning of data (after 2nd dash divider line) to end of file
-        for line in itertools.islice(file, P1_05_header_info["len_header"], None):
+        for line in islice(file, P1_05_header_info["len_header"], None):
             ## skip "blank" lines that only contain whitespace (seem to be "\n")
             if line.isspace():
                 continue
