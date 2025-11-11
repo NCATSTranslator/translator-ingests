@@ -6,8 +6,8 @@ readers:
     json_path:
       - data
     files:
-      - "../../../../data/alliance/PHENOTYPE_MGI.json.gz"
-      - "../../../../data/alliance/PHENOTYPE_RGD.json.gz"
+      - "PHENOTYPE_MGI.json.gz"
+      - "PHENOTYPE_RGD.json.gz"
     required_properties:
       - objectId
       - phenotypeTermIdentifiers
@@ -18,8 +18,8 @@ readers:
     json_path:
       - data
     files:
-      - "../../../../data/alliance/EXPRESSION_MGI.json.gz"
-      - "../../../../data/alliance/EXPRESSION_RGD.json.gz"
+      - "EXPRESSION_MGI.json.gz"
+      - "EXPRESSION_RGD.json.gz"
     required_properties:
       - assay
 

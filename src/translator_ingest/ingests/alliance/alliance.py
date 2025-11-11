@@ -183,7 +183,7 @@ def get_data(data: dict, key: str):
 @koza.on_data_begin(tag="phenotype")
 def initialize_entity_lookup_phenotype(koza_transform):
     """Initialize entity lookup DB before processing phenotype data."""
-    build_entity_lookup_db()
+    build_entity_lookup_db(data_dir=koza_transform.input_files_dir)
 
 
 @koza.transform_record(tag="phenotype")
