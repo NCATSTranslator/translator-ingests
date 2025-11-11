@@ -1,3 +1,4 @@
+# MHB: general note based on the data examples you shared - you reported infores:Biolink as an aggregator on all edges - this is not correct.  No aggregator needed in these KGX ingest files (unless the external source is itself an aggregator)
 name: PathBank Reference Ingest Guide (RIG)
 
 source_info:
@@ -56,7 +57,7 @@ target_info:
   edge_type_info:
     - subject_categories:
         - biolink:Pathway
-      predicate: biolink:has_component
+      predicate: biolink:has_component        # MHB: Use has_particpant for consistency with other sources/edges like this. 
       object_categories:
         - biolink:SmallMolecule
         - biolink:Protein
@@ -72,7 +73,7 @@ target_info:
 
     - subject_categories:
         - biolink:MolecularActivity
-      predicate: biolink:has_input
+      predicate: biolink:has_input            # MHB: This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier
       object_categories:
         - biolink:SmallMolecule
         - biolink:Protein
@@ -110,7 +111,7 @@ target_info:
 
     - subject_categories:
         - biolink:MacromolecularComplex
-      predicate: biolink:has_part
+      predicate: biolink:has_part     # MHB: here we might use the more specific predicate has_component? But i see all that is in Biolink now is 'has_food_component?  Could we geenralize this relation?
       object_categories:
         - biolink:Protein
         - biolink:SmallMolecule
@@ -126,7 +127,7 @@ target_info:
         - biolink:Protein
         - biolink:ChemicalEntity
         - biolink:NucleicAcidEntity
-      predicate: biolink:same_as
+      predicate: biolink:same_as     # MHB: Did we decide all equivalence relationships woudl be the purview of the ontology group and NN/CoCo?  
       object_categories:
         - biolink:Pathway
         - biolink:SmallMolecule
@@ -144,7 +145,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      predicate: biolink:interacts_with
+      predicate: biolink:interacts_with    # MHB: can we dig into the data behind these edges - to see if we can be more precise/detaield w.r.t. our predicate (and possibly qualifiers) - absed on interaction types Pathbank provides.
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
