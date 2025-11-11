@@ -93,6 +93,8 @@ def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = Fa
             logger.error(f"Graph metadata file already exists: {graph_metadata_file_path}. Exiting...")
             return
         else:
+            merged_graph_nodes.unlink()
+            merged_graph_edges.unlink()
             logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. "
                         f"OVERWRITE mode enabled, overwriting...")
 
