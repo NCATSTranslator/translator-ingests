@@ -2,7 +2,7 @@ name: pathbank
 
 metadata:
   ingest_title: 'PathBank'
-  ingest_url: 'https://pathbank.org/'
+  ingest_url: 'https://pathbank.org/downloads'
   description: 'PathBank pathways (CSV metadata + PWML details)'
 
 readers:

@@ -1,4 +1,3 @@
-import uuid # generate unique identifiers
 import koza # koza library
 import os # for file operations
 import time # for timing progress
@@ -15,6 +14,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Pathway, NamedThing, Association,
     SmallMolecule, Protein, MacromolecularComplex, 
     MolecularActivity, NucleicAcidEntity, ChemicalEntity,
+    CellularComponent, AnatomicalEntity,
     KnowledgeLevelEnum, AgentTypeEnum
 ) # biolink model classes
 
@@ -23,10 +23,10 @@ from translator_ingest.util.http_utils import get_modify_date # for getting file
 
 def get_latest_version() -> str:
     """
-    Returns the most recent modify date of the PathBank source files, with no spaces "%Y_%m_%d".
+    Returns the most recent modify date of the PathBank source files in YYYY-MM-DD format.
     Compares the modification dates of both the pathways CSV and PWML zip files and returns the most recent.
     """
-    strformat = "%Y_%m_%d"
+    strformat = "%Y-%m-%d"
     
     # Get last-modified dates for each source data file
     pathways_modify_date = get_modify_date(
@@ -94,10 +94,27 @@ def prepare_pathways_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 break
     
     if pwml_zip.exists() and (not pwml_dir.exists() or not any(pwml_dir.glob("*.pwml"))):
-        koza.log(f"Extracting {pwml_zip.name}...")
-        with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
-            zip_ref.extractall(source_data_dir)
-        koza.log(f"Extracted PWML files to {pwml_dir}")
+        # Check available disk space before extracting (PWML zip expands to ~15GB)
+        try:
+            stat_result = os.statvfs(source_data_dir)
+            free_space_gb = (stat_result.f_bavail * stat_result.f_frsize) / (1024 ** 3)
+            if free_space_gb < 20:  # Need at least 20GB free
+                koza.log(
+                    f"Warning: Only {free_space_gb:.1f}GB free disk space. "
+                    f"PWML extraction requires ~15GB. Skipping PWML extraction.",
+                    level="WARNING"
+                )
+            else:
+                koza.log(f"Extracting {pwml_zip.name}...")
+                with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
+                    zip_ref.extractall(source_data_dir)
+                koza.log(f"Extracted PWML files to {pwml_dir}")
+        except OSError as e:
+            koza.log(
+                f"Error extracting PWML zip: {e}. "
+                f"This may be due to insufficient disk space. Skipping PWML extraction.",
+                level="WARNING"
+            )
     
     # Now read the CSV file and yield rows
     if csv_file.exists():
@@ -531,14 +548,14 @@ def _create_reaction_node_and_edges(reaction: dict[str, Any], pathway_id: str, d
             for equiv_id, prefix in equiv_ids.items():
                 # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
                 if ":" in equiv_id:
-                    subject_curie = equiv_id
+                    object_curie = equiv_id
                 else:
-                    subject_curie = f"{prefix}:{equiv_id}"
+                    object_curie = f"{prefix}:{equiv_id}"
                 reactant_edge = Association(
                     id=entity_id(),
-                    subject=subject_curie,
-                    predicate="biolink:participates_in",
-                    object=pwr_curie,
+                    subject=pwr_curie,
+                    predicate="biolink:has_input",
+                    object=object_curie,
                     sources=build_association_knowledge_sources(
                         primary=INFORES_PATHBANK,
                         aggregating={"infores:biolink": [INFORES_PATHBANK]},
@@ -730,7 +747,7 @@ def _create_element_collection_node_and_edges(ec: dict[str, Any], pathway_id: st
         return [], [], {}
     
     name = _normalize_xml_value(ec.get("name"))
-    external_id_type = ec.get("external-id-type", "")
+    external_id_type = _normalize_xml_value(ec.get("external-id-type", ""))
     external_id = _normalize_xml_value(ec.get("external-id"))
     
     # Create PathBank element collection node
@@ -795,6 +812,186 @@ def _create_element_collection_node_and_edges(ec: dict[str, Any], pathway_id: st
     edges.append(has_component_edge)
     
     return nodes, edges, {pwec_id: ec_translator}
+
+
+def _create_interaction_edges(interaction: dict[str, Any], pathway_id: str, data_translator: dict[str, dict[str, dict[str, str]]]) -> list[Association]:
+    """Create interacts_with edges for protein-protein or other entity interactions.
+    
+    Args:
+        interaction: The interaction data from PWML
+        pathway_id: The pathway ID this interaction belongs to
+        data_translator: Dictionary mapping element types to their IDs to equivalent IDs
+    
+    Returns:
+        List of Association edges
+    """
+    edges = []
+    
+    # Extract left elements
+    left_elements_data = interaction.get("interaction-left-elements", {})
+    left_elements = _normalize_to_list(left_elements_data.get("interaction-left-element") if isinstance(left_elements_data, dict) else None)
+    
+    # Extract right elements
+    right_elements_data = interaction.get("interaction-right-elements", {})
+    right_elements = _normalize_to_list(right_elements_data.get("interaction-right-element") if isinstance(right_elements_data, dict) else None)
+    
+    # Create edges between all left and right elements
+    for left_element in left_elements:
+        left_id_raw = left_element.get("element-id", {})
+        if isinstance(left_id_raw, dict):
+            left_id = left_id_raw.get("#text", "")
+        else:
+            left_id = str(left_id_raw) if left_id_raw else ""
+        
+        left_type = left_element.get("element-type", "")
+        
+        if not left_id or not left_type or left_type not in data_translator or left_id not in data_translator[left_type]:
+            continue
+        
+        # Get all equivalent IDs for left element
+        left_equiv_ids = data_translator[left_type][left_id]
+        for left_equiv_id, left_prefix in left_equiv_ids.items():
+            if ":" in left_equiv_id:
+                left_curie = left_equiv_id
+            else:
+                left_curie = f"{left_prefix}:{left_equiv_id}"
+            
+            for right_element in right_elements:
+                right_id_raw = right_element.get("element-id", {})
+                if isinstance(right_id_raw, dict):
+                    right_id = right_id_raw.get("#text", "")
+                else:
+                    right_id = str(right_id_raw) if right_id_raw else ""
+                
+                right_type = right_element.get("element-type", "")
+                
+                if not right_id or not right_type or right_type not in data_translator or right_id not in data_translator[right_type]:
+                    continue
+                
+                # Get all equivalent IDs for right element
+                right_equiv_ids = data_translator[right_type][right_id]
+                for right_equiv_id, right_prefix in right_equiv_ids.items():
+                    if ":" in right_equiv_id:
+                        right_curie = right_equiv_id
+                    else:
+                        right_curie = f"{right_prefix}:{right_equiv_id}"
+                    
+                    # Create interacts_with edge
+                    # Note: For now using generic interacts_with, could be more specific based on interaction_type
+                    interaction_edge = Association(
+                        id=entity_id(),
+                        subject=left_curie,
+                        predicate="biolink:interacts_with",
+                        object=right_curie,
+                        sources=build_association_knowledge_sources(
+                            primary=INFORES_PATHBANK,
+                            aggregating={"infores:biolink": [INFORES_PATHBANK]},
+                        ),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent,
+                    )
+                    edges.append(interaction_edge)
+    
+    return edges
+
+
+def _create_subcellular_location_nodes_and_edges(location: dict[str, Any], pathway_id: str) -> tuple[list[NamedThing], list[Association]]:
+    """Create CellularComponent node and occurs_in edge for subcellular location.
+    
+    Args:
+        location: The subcellular location data from PWML
+        pathway_id: The pathway ID this location is associated with
+    
+    Returns:
+        Tuple of (nodes, edges)
+    """
+    nodes = []
+    edges = []
+    
+    # Extract location data
+    name = _normalize_xml_value(location.get("name"))
+    ontology_id = _normalize_xml_value(location.get("ontology-id"))
+    
+    if not ontology_id:
+        return [], []
+    
+    # Create CellularComponent node using GO CURIE
+    location_curie = ontology_id  # Already in GO:0005737 format
+    location_node = CellularComponent(
+        id=location_curie,
+        name=name,
+    )
+    nodes.append(location_node)
+    
+    # Create occurs_in edge from pathway to location
+    pathway_curie = f"PathBank:{pathway_id}"
+    occurs_in_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:occurs_in",
+        object=location_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+            aggregating={"infores:biolink": [INFORES_PATHBANK]},
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(occurs_in_edge)
+    
+    return nodes, edges
+
+
+def _create_tissue_nodes_and_edges(tissue: dict[str, Any], pathway_id: str) -> tuple[list[NamedThing], list[Association]]:
+    """Create AnatomicalEntity node and occurs_in edge for tissue.
+    
+    Args:
+        tissue: The tissue data from PWML
+        pathway_id: The pathway ID this tissue is associated with
+    
+    Returns:
+        Tuple of (nodes, edges)
+    """
+    nodes = []
+    edges = []
+    
+    # Extract tissue data
+    name = _normalize_xml_value(tissue.get("name"))
+    ontology_id = _normalize_xml_value(tissue.get("ontology-id"))
+    
+    if not ontology_id:
+        return [], []
+    
+    # Create AnatomicalEntity node using BTO CURIE
+    # BTO IDs are in format "BTO:0000759", need to convert to proper CURIE format
+    if ontology_id.startswith("BTO:"):
+        tissue_curie = ontology_id
+    else:
+        tissue_curie = f"BTO:{ontology_id}"
+    
+    tissue_node = AnatomicalEntity(
+        id=tissue_curie,
+        name=name,
+    )
+    nodes.append(tissue_node)
+    
+    # Create occurs_in edge from pathway to tissue
+    pathway_curie = f"PathBank:{pathway_id}"
+    occurs_in_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:occurs_in",
+        object=tissue_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+            aggregating={"infores:biolink": [INFORES_PATHBANK]},
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(occurs_in_edge)
+    
+    return nodes, edges
 
 
 @koza.transform(tag="pwml")
@@ -902,6 +1099,29 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
                 nodes.extend(reaction_nodes)
                 edges.extend(reaction_edges)
         
+        # Process interactions (needs data_translator)
+        interactions = record.get("interactions", [])
+        if isinstance(interactions, list):
+            for interaction in interactions:
+                interaction_edges = _create_interaction_edges(interaction, pathway_id, data_translator)
+                edges.extend(interaction_edges)
+        
+        # Process subcellular locations
+        subcellular_locations = record.get("subcellular-locations", [])
+        if isinstance(subcellular_locations, list):
+            for location in subcellular_locations:
+                location_nodes, location_edges = _create_subcellular_location_nodes_and_edges(location, pathway_id)
+                nodes.extend(location_nodes)
+                edges.extend(location_edges)
+        
+        # Process tissues
+        tissues = record.get("tissues", [])
+        if isinstance(tissues, list):
+            for tissue in tissues:
+                tissue_nodes, tissue_edges = _create_tissue_nodes_and_edges(tissue, pathway_id)
+                nodes.extend(tissue_nodes)
+                edges.extend(tissue_edges)
+        
         # Log progress for first few records
         if record_count < 3:
             compounds_count = len(compounds) if isinstance(compounds, list) else 0
@@ -921,13 +1141,15 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
 @koza.transform_record(tag="pathways")
 def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     # Extract data from CSV columns
-    pathway_id = record.get("SMPDB ID") or record.get("PW ID")
+    smpdb_id = record.get("SMPDB ID")
+    pw_id = record.get("PW ID")
     name = record.get("Name")
     description = record.get("Description")
     subject = record.get("Subject")
 
     # Track missing fields
     koza.state["total_records"] += 1
+    pathway_id = smpdb_id or pw_id
     if not pathway_id:
         koza.state["missing_fields"]["pathway_id"] += 1
     if not name:
@@ -937,15 +1159,42 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
     if not subject:
         koza.state["missing_fields"]["subject"] += 1
 
-    # Only require pathway_id, others are optional
-    if not pathway_id:
+    # Need at least one ID to create nodes
+    if not smpdb_id and not pw_id:
         return None
 
-    # Create Biolink Pathway node
-    node_id = f"PathBank:{pathway_id}"
-    pathway = Pathway(id=node_id, name=name, description=description)
+    nodes = []
+    edges = []
+    
+    # Create SMPDB pathway node if SMPDB ID exists
+    if smpdb_id:
+        smpdb_node_id = f"PathBank:{smpdb_id}"
+        smpdb_pathway = Pathway(id=smpdb_node_id, name=name, description=description)
+        nodes.append(smpdb_pathway)
+    
+    # Create PathBank pathway node if PW ID exists
+    if pw_id:
+        pw_node_id = f"PathBank:{pw_id}"
+        pw_pathway = Pathway(id=pw_node_id, name=name, description=description)
+        nodes.append(pw_pathway)
+    
+    # Create same_as edge between SMPDB and PathBank pathway nodes if both exist
+    if smpdb_id and pw_id:
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=f"PathBank:{smpdb_id}",
+            predicate="biolink:same_as",
+            object=f"PathBank:{pw_id}",
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+                aggregating={"infores:biolink": [INFORES_PATHBANK]},
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
 
-    return KnowledgeGraph(nodes=[pathway], edges=[])
+    return KnowledgeGraph(nodes=nodes, edges=edges)
 
 @koza.on_data_end(tag="pathways")
 def on_data_end(koza: koza.KozaTransform):
@@ -978,7 +1227,7 @@ def _normalize_xml_value(value: Any) -> str | None:
         return None
     if isinstance(value, dict):
         # Check if it's a nil value
-        if value.get("@nil") == "true" or value.get("@nil") == True:
+        if value.get("@nil") in ("true", True):
             return None
         # If it's a dict with #text, extract the text
         if "#text" in value:
@@ -1024,10 +1273,27 @@ def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
                 break
     
     if pwml_zip.exists() and (not pwml_dir.exists() or not any(pwml_dir.glob("*.pwml"))):
-        koza.log(f"Extracting {pwml_zip.name}...")
-        with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
-            zip_ref.extractall(source_data_dir)
-        koza.log(f"Extracted PWML files to {pwml_dir}")
+        # Check available disk space before extracting (PWML zip expands to ~15GB)
+        try:
+            stat_result = os.statvfs(source_data_dir)
+            free_space_gb = (stat_result.f_bavail * stat_result.f_frsize) / (1024 ** 3)
+            if free_space_gb < 20:  # Need at least 20GB free
+                koza.log(
+                    f"Warning: Only {free_space_gb:.1f}GB free disk space. "
+                    f"PWML extraction requires ~15GB. Skipping PWML extraction.",
+                    level="WARNING"
+                )
+            else:
+                koza.log(f"Extracting {pwml_zip.name}...")
+                with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
+                    zip_ref.extractall(source_data_dir)
+                koza.log(f"Extracted PWML files to {pwml_dir}")
+        except OSError as e:
+            koza.log(
+                f"Error extracting PWML zip: {e}. "
+                f"This may be due to insufficient disk space. Skipping PWML extraction.",
+                level="WARNING"
+            )
     
     # Find all PWML files in the directory directly (ignore Koza's data iterator)
     pwml_files = list(pwml_dir.glob("*.pwml")) if pwml_dir.exists() else []
@@ -1098,6 +1364,9 @@ def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
                 bounds_data = context.get("bounds", {})
                 element_collections_data = context.get("element-collections", {})
                 references_data = pathway_data.get("references", {})
+                interactions_data = context.get("interactions", {})
+                subcellular_locations_data = context.get("subcellular-locations", {})
+                tissues_data = context.get("tissues", {})
                 
                 # Yield structured data for this pathway context
                 yield {
@@ -1111,6 +1380,9 @@ def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
                     "bounds": _normalize_to_list(bounds_data.get("bound") if isinstance(bounds_data, dict) else None),
                     "element-collections": _normalize_to_list(element_collections_data.get("element-collection") if isinstance(element_collections_data, dict) else None),
                     "references": _normalize_to_list(references_data.get("reference") if isinstance(references_data, dict) else None),
+                    "interactions": _normalize_to_list(interactions_data.get("interaction") if isinstance(interactions_data, dict) else None),
+                    "subcellular-locations": _normalize_to_list(subcellular_locations_data.get("subcellular-location") if isinstance(subcellular_locations_data, dict) else None),
+                    "tissues": _normalize_to_list(tissues_data.get("tissue") if isinstance(tissues_data, dict) else None),
                     "_file_path": str(pwml_file),
                 }
             
