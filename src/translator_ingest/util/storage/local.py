@@ -1,3 +1,4 @@
+import json
 from enum import Enum, StrEnum
 from pathlib import Path
 
@@ -15,30 +16,30 @@ class IngestFileType(Enum):
     NORMALIZATION_MAP_FILE = 7
     NORMALIZATION_FAILURES_FILE = 8
     PREDICATE_NORMALIZATION_MAP_FILE = 9
-    META_KG_FILE = 10
-    TEST_DATA_FILE = 11
-    EXAMPLE_DATA_FILE = 12
-    FINAL_METADATA_FILE = 13
-    VALIDATION_REPORT_FILE = 14
-    LATEST_RELEASE_FILE = 15
+    TEST_DATA_FILE = 10
+    EXAMPLE_EDGES_FILE = 11
+    INGEST_METADATA_FILE = 12
+    GRAPH_METADATA_FILE = 13
+    LATEST_RELEASE_FILE = 14
+    VALIDATION_REPORT_FILE = 15
 
 
 class IngestFileName(StrEnum):
     TRANSFORM_NODES = "nodes.jsonl"
     TRANSFORM_EDGES = "edges.jsonl"
-    TRANSFORM_METADATA = "transform_metadata.json"
+    TRANSFORM_METADATA = "transform-metadata.json"
     NORMALIZED_NODES = "normalized_nodes.jsonl"
     NORMALIZED_EDGES = "normalized_edges.jsonl"
-    NORMALIZATION_METADATA = "normalization_metadata.json"
+    NORMALIZATION_METADATA = "normalization-metadata.json"
     NORMALIZATION_MAP = "normalization_map.json"
     NORMALIZATION_FAILURES = "normalization_failures.txt"
     PREDICATE_NORMALIZATION_MAP = "predicate_map.json"
-    META_KG_FILENAME = "meta_knowledge_graph.json"
     TEST_DATA_FILENAME = "testing_data.json"
-    EXAMPLE_DATA_FILENAME = "example_edges.jsonl"
-    FINAL_METADATA_FILE = "final_metadata.json"
-    VALIDATION_REPORT_FILE = "validation_report.json"
+    EXAMPLE_EDGES_FILENAME = "example_edges.jsonl"
+    INGEST_METADATA_FILE = "ingest-metadata.json"
+    GRAPH_METADATA_FILE = "graph-metadata.json"
     LATEST_RELEASE_FILE = "release-metadata.json"
+    VALIDATION_REPORT_FILE = "validation-report.json"
 
 
 FILE_PATH_LOOKUP = {
@@ -61,20 +62,19 @@ FILE_PATH_LOOKUP = {
         pipeline_metadata
     )
     / IngestFileName.PREDICATE_NORMALIZATION_MAP,
-    IngestFileType.META_KG_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
-    / IngestFileName.META_KG_FILENAME,
     IngestFileType.TEST_DATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
     / IngestFileName.TEST_DATA_FILENAME,
-    IngestFileType.EXAMPLE_DATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
-    / IngestFileName.EXAMPLE_DATA_FILENAME,
-    IngestFileType.FINAL_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
-    / IngestFileName.FINAL_METADATA_FILE,
+    IngestFileType.EXAMPLE_EDGES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.EXAMPLE_EDGES_FILENAME,
+    IngestFileType.INGEST_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.INGEST_METADATA_FILE,
+    IngestFileType.GRAPH_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.GRAPH_METADATA_FILE,
     IngestFileType.VALIDATION_REPORT_FILE: lambda pipeline_metadata: get_validation_directory(pipeline_metadata)
     / IngestFileName.VALIDATION_REPORT_FILE,
     IngestFileType.LATEST_RELEASE_FILE: lambda pipeline_metadata: Path(INGESTS_DATA_PATH) / pipeline_metadata.source
     / IngestFileName.LATEST_RELEASE_FILE,
 }
-
 
 def get_versioned_file_paths(
     file_type: IngestFileType, pipeline_metadata: PipelineMetadata
@@ -120,3 +120,12 @@ def __find_kgx_files(directory: Path) -> (str, str):
                     f"This should not happen with normal ingest pipeline usage and is likely to cause bugs."
                 )
     return nodes_file_path, edges_file_path
+
+def write_ingest_file(file_type: IngestFileType,
+                      pipeline_metadata: PipelineMetadata,
+                      data: dict) -> None:
+    output_file_path = get_versioned_file_paths(
+        file_type=file_type, pipeline_metadata=pipeline_metadata
+    )
+    with output_file_path.open("w") as output_file:
+        output_file.write(json.dumps(data, indent=2))

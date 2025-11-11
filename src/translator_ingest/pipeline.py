@@ -1,6 +1,7 @@
 import logging
 import click
 import json
+import yaml
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
 from importlib import import_module
@@ -24,6 +25,7 @@ from translator_ingest.util.storage.local import (
     get_validation_directory,
     get_versioned_file_paths,
     IngestFileType,
+    write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx
 
@@ -94,14 +96,14 @@ def transform(pipeline_metadata: PipelineMetadata):
     # the path to the source config yaml file for this specific ingest
     source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
 
-    # the path for the versioned subdirectory for this transform
-    transform_dir = get_transform_directory(pipeline_metadata)
-    Path.mkdir(transform_dir, parents=True, exist_ok=True)
+    # the path for the versioned output subdirectory for this transform
+    transform_output_dir = get_transform_directory(pipeline_metadata)
+    Path.mkdir(transform_output_dir, parents=True, exist_ok=True)
 
     # use Koza to load the config and run the transform
     config, runner = KozaRunner.from_config_file(
         str(source_config_yaml_path),
-        output_dir=str(transform_dir),
+        output_dir=str(transform_output_dir),
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
@@ -129,12 +131,9 @@ def transform(pipeline_metadata: PipelineMetadata):
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
-
-    transform_metadata_file_path = get_versioned_file_paths(
-        file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
-    )
-    with transform_metadata_file_path.open("w") as normalization_metadata_file:
-        normalization_metadata_file.write(json.dumps(transform_metadata, indent=4))
+    write_ingest_file(file_type=IngestFileType.TRANSFORM_METADATA_FILE,
+                      pipeline_metadata=pipeline_metadata,
+                      data=transform_metadata)
 
 
 def is_normalization_complete(pipeline_metadata: PipelineMetadata):
@@ -206,7 +205,7 @@ def get_validation_result(pipeline_metadata: PipelineMetadata):
     if not is_validation_complete(pipeline_metadata):
         error_message = f"Validation report not found for {pipeline_metadata.source}."
         logger.error(error_message)
-        raise IOError(error_message)
+        raise FileNotFoundError(error_message)
 
     validation_file_path = get_versioned_file_paths(
         file_type=IngestFileType.VALIDATION_REPORT_FILE, pipeline_metadata=pipeline_metadata
@@ -218,47 +217,59 @@ def get_validation_result(pipeline_metadata: PipelineMetadata):
     return False
 
 
-def is_meta_kg_complete(pipeline_metadata: PipelineMetadata):
-    meta_kg_file_path = get_versioned_file_paths(
-        file_type=IngestFileType.META_KG_FILE, pipeline_metadata=pipeline_metadata
-    )
-    return meta_kg_file_path.exists()
-
-
-def meta_kg(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Generating Meta KG for {pipeline_metadata.source}...")
+def test_data(pipeline_metadata: PipelineMetadata):
+    # TODO It'd be more efficient to generate the test data and example edges at the same time as the graph summary.
+    #  ORION currently generates test data and example edges while building a metakg, so we still use that, even though
+    #  we're not saving the metakg anymore.
+    logger.info(f"Generating test data and example edges for {pipeline_metadata.source}...")
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
         IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
-    # Generate the Meta KG, test data and example data (holds them in memory)
+    # Generate the test data and example data
     mkgb = MetaKnowledgeGraphBuilder(
         nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
     )
-    # Write them all to files
-    meta_kg_file_path = get_versioned_file_paths(
-        file_type=IngestFileType.META_KG_FILE, pipeline_metadata=pipeline_metadata
-    )
-    mkgb.write_meta_kg_to_file(str(meta_kg_file_path))
+    # write test data to file
+    write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
+                      pipeline_metadata=pipeline_metadata,
+                      data=mkgb.testing_data)
+    # write example edges to file
+    write_ingest_file(file_type=IngestFileType.EXAMPLE_EDGES_FILE,
+                      pipeline_metadata=pipeline_metadata,
+                      data=mkgb.example_edges)
+    logger.info(f"Test data and example edges complete for {pipeline_metadata.source}.")
+
+
+def is_graph_metadata_complete(pipeline_metadata: PipelineMetadata):
     test_data_file_path = get_versioned_file_paths(
         file_type=IngestFileType.TEST_DATA_FILE, pipeline_metadata=pipeline_metadata
     )
-    mkgb.write_test_data_to_file(str(test_data_file_path))
-    example_data_file_path = get_versioned_file_paths(
-        file_type=IngestFileType.EXAMPLE_DATA_FILE, pipeline_metadata=pipeline_metadata
+    example_edges_file_path = get_versioned_file_paths(
+        file_type=IngestFileType.EXAMPLE_EDGES_FILE, pipeline_metadata=pipeline_metadata
     )
-    mkgb.write_example_data_to_file(str(example_data_file_path))
-    logger.info(f"Meta KG complete for {pipeline_metadata.source}.")
-
-
-def is_summary_complete(pipeline_metadata: PipelineMetadata):
-    final_metadata_file_path = get_versioned_file_paths(
-        file_type=IngestFileType.FINAL_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    graph_metadata_file_path = get_versioned_file_paths(
+        file_type=IngestFileType.GRAPH_METADATA_FILE, pipeline_metadata=pipeline_metadata
     )
-    return final_metadata_file_path.exists()
+    return graph_metadata_file_path.exists() and test_data_file_path.exists() and example_edges_file_path.exists()
 
 
-def summary(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Generating Graph Summary for {pipeline_metadata.source}...")
+def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
+    logger.info(f"Generating Graph Metadata for {pipeline_metadata.source}...")
+
+    # Generate test data and example edges
+    test_data(pipeline_metadata)
+
+    # Read in the source_info section of the rig.
+    # Currently, some rigs have -rig.yaml and some have _rig.yaml, just look for either.
+    rig_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}_rig.yaml"
+    if not rig_yaml_file.exists():
+        rig_yaml_file =  INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}-rig.yaml"
+        if not rig_yaml_file.exists():
+            raise FileNotFoundError(f"rig YAML file not found for {pipeline_metadata.source}.")
+    with rig_yaml_file.open("r") as rig_file:
+        rig_data = yaml.safe_load(rig_file)
+        graph_metadata = rig_data["source_info"]
+
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
         IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
@@ -266,16 +277,20 @@ def summary(pipeline_metadata: PipelineMetadata):
         nodes_file_path=graph_nodes_file_path,
         edges_file_path=graph_edges_file_path,
         graph_id=pipeline_metadata.source,
-        graph_version=pipeline_metadata.source_version,
+        graph_version=pipeline_metadata.build_version,
         logger=logger,
     )
+    graph_metadata.update(summary_results)
+    write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
+                      pipeline_metadata=pipeline_metadata,
+                      data=graph_metadata)
+    logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
-    logger.info(f"Graph Summary complete. Accumulating previous metadata for {pipeline_metadata.source}...")
     transform_metadata_file_path = get_versioned_file_paths(
         file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
     )
     if transform_metadata_file_path.exists():
-        with transform_metadata_file_path.open() as transform_metadata_file:
+        with transform_metadata_file_path.open("r") as transform_metadata_file:
             transform_metadata = json.load(transform_metadata_file)
     else:
         logger.error(f"Transform metadata not found for {pipeline_metadata.source}...")
@@ -284,24 +299,20 @@ def summary(pipeline_metadata: PipelineMetadata):
         file_type=IngestFileType.NORMALIZATION_METADATA_FILE, pipeline_metadata=pipeline_metadata
     )
     if normalization_metadata_path.exists():
-        with normalization_metadata_path.open() as normalization_metadata_file:
+        with normalization_metadata_path.open("r") as normalization_metadata_file:
             normalization_metadata = json.load(normalization_metadata_file)
     else:
         logger.error(f"Normalization metadata not found for {pipeline_metadata.source}...")
         normalization_metadata = {"Normalization metadata not found."}
-
-    # get source_metadata here too when it's implemented
-    all_metadata = {
+    ingest_metadata = {
         "transform": transform_metadata,
         "normalization": normalization_metadata,
-        "summary": summary_results,
     }
-    all_metadata_path = get_versioned_file_paths(
-        file_type=IngestFileType.FINAL_METADATA_FILE, pipeline_metadata=pipeline_metadata
-    )
-    with all_metadata_path.open("w") as all_metadata_file:
-        all_metadata_file.write(json.dumps(all_metadata, indent=4))
-    logger.info(f"Final metadata complete for {pipeline_metadata.source}.")
+    write_ingest_file(file_type=IngestFileType.INGEST_METADATA_FILE,
+                      pipeline_metadata=pipeline_metadata,
+                      data=ingest_metadata)
+    logger.info(f"Ingest metadata complete for {pipeline_metadata.source}.")
+
 
 # Open the latest release metadata and compare build versions with the current pipeline run to see if a new release needs to
 # be generated. build_version is used, intentionally ignoring the release version, because we don't need to make a
@@ -318,12 +329,10 @@ def is_release_current(pipeline_metadata: PipelineMetadata):
 def generate_release(pipeline_metadata: PipelineMetadata):
     release_version = datetime.now().strftime("%Y_%m_%d")
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... release: {release_version}")
-    release_metadata_path = get_versioned_file_paths(IngestFileType.LATEST_RELEASE_FILE,
-                                                     pipeline_metadata=pipeline_metadata)
     pipeline_metadata.release_version = release_version
-    with release_metadata_path.open("w") as latest_release_file:
-        release_metadata = asdict(pipeline_metadata)
-        latest_release_file.write(json.dumps(release_metadata, indent=2))
+    write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
+                      pipeline_metadata=pipeline_metadata,
+                      data=asdict(pipeline_metadata))
 
 
 def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
@@ -371,28 +380,17 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         logger.warning(f"Validation did not pass for {pipeline_metadata.source}! Aborting...")
         return
 
-    # Generate a Meta KG, test data, example edges
-    if is_meta_kg_complete(pipeline_metadata) and not overwrite:
-        logger.info(
-            f"Meta KG already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"transform: {pipeline_metadata.transform_version}, "
-            f"normalization: {pipeline_metadata.node_norm_version}"
-        )
-    else:
-        meta_kg(pipeline_metadata)
-
-    if is_summary_complete(pipeline_metadata) and not overwrite:
-        logger.info(
-            f"Graph summary already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"transform: {pipeline_metadata.transform_version}, "
-            f"normalization: {pipeline_metadata.node_norm_version}"
-        )
-    else:
-        summary(pipeline_metadata)
-
     pipeline_metadata.build_version = pipeline_metadata.generate_build_version()
+    if is_graph_metadata_complete(pipeline_metadata) and not overwrite:
+        logger.info(
+            f"Graph metadata already completed for {pipeline_metadata.source} ({pipeline_metadata.source_version})."
+        )
+    else:
+        generate_graph_metadata(pipeline_metadata)
+
     if is_release_current(pipeline_metadata) and not overwrite:
-        logger.info(f"Latest release already up to date for {pipeline_metadata.source}.")
+        logger.info(f"Latest release already up to date for {pipeline_metadata.source}, "
+                    f"build: {pipeline_metadata.build_version}")
     else:
         generate_release(pipeline_metadata)
 
