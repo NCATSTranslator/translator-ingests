@@ -38,7 +38,7 @@ import requests
 
 
 ## hard-coded values and mappings
-nameres_url = "https://name-resolution-sri.renci.org/bulk-lookup"  ## DEV instance
+NAMERES_URL = "https://name-resolution-sri.renci.org/bulk-lookup"  ## DEV instance
 ## biolink predicates
 BIOLINK_TREATS = "biolink:treats"
 BIOLINK_STUDIED_TREAT = "biolink:studied_to_treat"
@@ -46,7 +46,7 @@ BIOLINK_PRECLINICAL = "biolink:in_preclinical_trials_for"
 BIOLINK_CLINICAL_TRIALS = "biolink:in_clinical_trials_for"
 ## hard-coded mapping of "clinical status" values to biolink "treats" predicates
 ## purposely doesn't include all values - rest are filtered out
-clinical_status_map = {
+CLINICAL_STATUS_MAP = {
     ## treats
     "Approved": BIOLINK_TREATS,
     "Approved (orphan drug)": BIOLINK_TREATS,
@@ -81,7 +81,7 @@ clinical_status_map = {
     "Approval submitted": BIOLINK_CLINICAL_TRIALS,
 }
 ## indication names that are known to be problematic - not "conditions that are treated" or I'm worried how the statement will look
-strings_to_filter = [
+STRINGS_TO_FILTER = [
     "imaging",
     "radio",  ## related to imaging
     "esthesia",  ## for multiple spellings of an(a)esthesia
@@ -142,7 +142,7 @@ def parse_header(file_path) -> Dict[str, Union[str, int]]:
     return {"len_header": line_counter, "version": version, "date": date}
 
 
-def parse_P1_03(file_path, header_len: int) -> Dict[str, list]:
+def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
     """
     Parse P1-03 drug mapping file: maps TTD drug IDs to PUBCHEM.COMPOUND IDs (can NodeNorm)
 
@@ -235,40 +235,40 @@ def get_latest_version() -> str:
 
     strformat = "%Y_%m_%d"
     # get last-modified for each source data file
-    P1_03_modify_date = get_modify_date("https://ttd.idrblab.cn/files/download/P1-03-TTD_crossmatching.txt", strformat)
-    P1_05_modify_date = get_modify_date("https://ttd.idrblab.cn/files/download/P1-05-Drug_disease.txt", strformat)
+    p1_03_modify_date = get_modify_date("https://ttd.idrblab.cn/files/download/P1-03-TTD_crossmatching.txt", strformat)
+    p1_05_modify_date = get_modify_date("https://ttd.idrblab.cn/files/download/P1-05-Drug_disease.txt", strformat)
     # compare them and return the most recent date in the form m_d_Y
     ## will need diff way to sort, get latest once there's more than 2 files
-    if datetime.strptime(P1_05_modify_date, strformat) > datetime.strptime(P1_03_modify_date, strformat):
-        return P1_05_modify_date
+    if datetime.strptime(p1_05_modify_date, strformat) > datetime.strptime(p1_03_modify_date, strformat):
+        return p1_05_modify_date
     else:
-        return P1_03_modify_date
+        return p1_03_modify_date
 
 
 ## P1-05 parsing
 @koza.prepare_data(tag="P1_05_parsing")
-def P1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
     """
     Access files directly and parse. Take P1-05 indications data (edge-like) and map it into Translator standards
     """
     ## Parse P1-03: maps TTD drug IDs to PUBCHEM.COMPOUND IDs (can NodeNorm)
     koza.log("Parsing P1-03 to retrieve TTD drug ID - PUBCHEM.COMPOUND mappings")
 
-    P1_03_path = f"{koza.input_files_dir}/P1_03_drug_mapping.txt"  ## path to downloaded file
-    P1_03_header_info = parse_header(P1_03_path)  ## get number of lines in header
-    koza.transform_metadata["ttd_drug_mappings"] = parse_P1_03(P1_03_path, P1_03_header_info["len_header"])
+    p1_03_path = f"{koza.input_files_dir}/P1_03_drug_mapping.txt"  ## path to downloaded file
+    p1_03_header_info = parse_header(p1_03_path)  ## get number of lines in header
+    koza.transform_metadata["ttd_drug_mappings"] = parse_p1_03(p1_03_path, p1_03_header_info["len_header"])
     koza.log(f"Retrieved {len(koza.transform_metadata["ttd_drug_mappings"])} mappings from P1-03")
 
     ## Parse P1-05: maps TTD drug IDs to PUBCHEM.COMPOUND IDs (can NodeNorm)
     koza.log("Parsing P1-05 to retrieve TTD drug indications data")
-    P1_05_path = f"{koza.input_files_dir}/P1_05_indications.txt"  ## path to downloaded file
-    P1_05_header_info = parse_header(P1_05_path)  ## get number of lines in header
+    p1_05_path = f"{koza.input_files_dir}/P1_05_indications.txt"  ## path to downloaded file
+    p1_05_header_info = parse_header(p1_05_path)  ## get number of lines in header
 
     ## not wrapping in function because this code won't be reused
     edges = list()  ## list of "edge" objects
-    with open(P1_05_path, "r") as file:
+    with open(p1_05_path, "r") as file:
         ## iterate from beginning of data (after 2nd dash divider line) to end of file
-        for line in islice(file, P1_05_header_info["len_header"], None):
+        for line in islice(file, p1_05_header_info["len_header"], None):
             ## skip "blank" lines that only contain whitespace (seem to be "\n")
             if line.isspace():
                 continue
@@ -303,7 +303,7 @@ def P1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## MAP "clinical status" to biolink predicate
     ## get method returns None if key (clinical status) not found in mapping
-    df["biolink_predicate"] = [clinical_status_map.get(i) for i in df["clinical_status"]]
+    df["biolink_predicate"] = [CLINICAL_STATUS_MAP.get(i) for i in df["clinical_status"]]
     ## log how much data was successfully mapped
     n_mapped = df["biolink_predicate"].notna().sum()
     koza.log(f"{n_mapped} rows with mapped clinical status: {n_mapped / df.shape[0]:.1%}")
@@ -328,7 +328,7 @@ def P1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## Filter out some problematic indication names
     ## set case=False so it isn't case-sensitive on matches!
-    df = df[~df.object_indication_name.str.contains("|".join(strings_to_filter), case=False)].copy()
+    df = df[~df.object_indication_name.str.contains("|".join(STRINGS_TO_FILTER), case=False)].copy()
     koza.log(f"{df.shape[0]} after filtering out problematic indication names")
 
     ## MAP indication names to DiseaseOrPheno IDs using NameRes
@@ -340,9 +340,9 @@ def P1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     indication_batch_size = 100
     indication_score_threshold = 300
     indication_types = ["DiseaseOrPhenotypicFeature"]
-    ## use nameres_url initialized earlier
+    ## use NAMERES_URL initialized earlier
     koza.transform_metadata["indication_mapping"], koza.state["stats_indication_mapping_failures"] = run_nameres(
-        url=nameres_url,
+        url=NAMERES_URL,
         names=indication_names,
         types=indication_types,
         score_threshold=indication_score_threshold,
@@ -374,7 +374,7 @@ def P1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
 
 @koza.transform_record(tag="P1_05_parsing")
-def P1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## generate TTD urls
     ttd_urls = ["https://ttd.idrblab.cn/data/drug/details/" + i.lower() for i in record["subject_ttd_drug"]]
 

@@ -10,13 +10,13 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
 )
 from translator_ingest.ingests.ttd.ttd import (
-    P1_05_transform,
+    p1_05_transform,
 )
 
 
 ## P1-05
 @pytest.fixture
-def P1_05_output():
+def p1_05_output():
     writer = MockKozaWriter()
     ## example of df row after parsing with P1_05_prepare
     ## from notebook, row with multiple clinical status values
@@ -29,15 +29,15 @@ def P1_05_output():
         "clinical_status": {"Phase 2", "Phase 1/2"},
     }
     runner = KozaRunner(
-        data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[P1_05_transform])
+        data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[p1_05_transform])
     )
     runner.run()
     return writer.items
 
 
-def test_P1_05_output(P1_05_output):
+def test_p1_05_output(p1_05_output):
     ## check basic output
-    entities = P1_05_output
+    entities = p1_05_output
     assert entities
     ## 1 edge/association, 2 nodes
     assert len(entities) == 3
@@ -51,9 +51,9 @@ def test_P1_05_output(P1_05_output):
     ## sources stuff
     assert association.sources
     assert len(association.sources) == 1
-    P1_05_source = association.sources[0]
-    assert isinstance(P1_05_source, RetrievalSource)
-    assert P1_05_source.source_record_urls == [
+    p1_05_source = association.sources[0]
+    assert isinstance(p1_05_source, RetrievalSource)
+    assert p1_05_source.source_record_urls == [
         "https://ttd.idrblab.cn/data/drug/details/d0v8ag"
     ]
 
