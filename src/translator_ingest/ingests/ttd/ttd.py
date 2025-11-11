@@ -92,6 +92,7 @@ STRINGS_TO_FILTER = [
     "Pest attack",  ## plant disease?
     "Plant grey",  ## catches Plant grey mould disease
     "Stabil",  ## catches Stabilize muscle contraction
+    "canine",  ## Canine and feline spontaneous neoplasm
 ]
 
 
@@ -160,7 +161,7 @@ def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
     return ttd_drug_mappings
 
 
-def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, score_threshold: int):
+def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, score_threshold: int, exclude_namespace: str):
     """
     Parameters:
     - names: iterable of string names to NameRes
@@ -168,6 +169,7 @@ def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, sc
     - types: list of biolink categories that NameRes hits should have
     - url: NameRes url/endpoint to use
     - score_threshold: only accept hit if its score is greater than this, for quality
+    - exclude_namespaces: |-delimited string of ID namespaces to exclude, for quality
 
     Returns: tuple of mapping dict and failure stats dict
     """
@@ -185,7 +187,7 @@ def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, sc
             "autocomplete": False,  ## names are complete search term
             "limit": 1,  ## only want to review top hit
             "biolink_types": types,
-            "exclude_prefixes": "UMLS|MESH",  ## try to increase quality of hits
+            "exclude_prefixes": exclude_namespace,  ## try to increase quality of hits
         }
         r = requests.post(url, json=req_body)
         response = r.json()
@@ -327,6 +329,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     indication_batch_size = 100
     indication_score_threshold = 300
     indication_types = ["DiseaseOrPhenotypicFeature"]
+    indication_exclude_prefixes = "UMLS|MESH"
     ## use NAMERES_URL initialized earlier
     koza.transform_metadata["indication_mapping"], koza.state["stats_indication_mapping_failures"] = run_nameres(
         url=NAMERES_URL,
@@ -334,6 +337,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
         types=indication_types,
         score_threshold=indication_score_threshold,
         batch_size=indication_batch_size,
+        exclude_namespace=indication_exclude_prefixes
     )
     koza.log(f"Retrieved {len(koza.transform_metadata["indication_mapping"])} indication name -> ID mappings from NameRes")
 
