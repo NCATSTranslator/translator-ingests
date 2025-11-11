@@ -19,22 +19,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 ## ADDED packages for this ingest
 from datetime import datetime
 import re
+## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
 import requests
-
-## for interoperability between diff Python versions
-# try:
-#     from itertools import batched  # new in Python 3.12
-# except ImportError:
-#     from itertools import islice
-
-#     def batched(iterable, n):
-#         # batched('ABCDEFG', 3) → ABC DEF G
-#         if n < 1:
-#             raise ValueError("n must be at least one")
-#         iterator = iter(iterable)
-#         while batch := tuple(islice(iterator, n)):
-#             yield batch
 
 
 ## hard-coded values and mappings
