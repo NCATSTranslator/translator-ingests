@@ -91,10 +91,10 @@ def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = Fa
     if graph_metadata_file_path.exists():
         if not overwrite:
             logger.error(f"Graph metadata file already exists: {graph_metadata_file_path}. Exiting...")
+            return
         else:
             logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. "
                         f"OVERWRITE mode enabled, overwriting...")
-            return
 
     # TODO need to get the equivalent of the RIG source_info for this graph
     graph_metadata = generate_graph_summary(
@@ -112,9 +112,10 @@ def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = Fa
 @click.command()
 @click.argument("graph_id", required=True)
 @click.argument("sources", nargs=-1, required=True)
-def main(graph_id, sources):
-    graph_version = merge(graph_id, sources=list(sources))
-    merge_graph_metadata(graph_id, graph_version)
+@click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
+def main(graph_id, sources, overwrite):
+    graph_version = merge(graph_id, sources=list(sources), overwrite=overwrite)
+    merge_graph_metadata(graph_id, graph_version, overwrite=overwrite)
 
 
 if __name__ == "__main__":

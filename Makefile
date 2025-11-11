@@ -141,7 +141,7 @@ validate-only-%:
 .PHONY: merge
 merge:
 	@echo "Merging sources and building translator_kg...";
-	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES);
+	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
 
 ### Linting, Formatting, and Cleaning ###
 
