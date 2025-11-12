@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd ebi_gene2phenotype go_cam goa
+SOURCES ?= ctd diseases gene2phenotype go_cam goa hpoa sider
 
 # Include additional makefiles
 include rig.Makefile
@@ -28,9 +28,12 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     run                 Run pipeline (download→transform→normalize) │
+│     run                 Run pipeline (download→transform→normalize→validate) │
+│     transform           Transform the source to KGX       │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │
+│     validate-only       Validate without re-running pipeline │
+│     merge               Merge specified sources into one KG │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
@@ -52,6 +55,7 @@ define HELP
 │     make run                                              │
 │     make validate SOURCES="ctd go_cam"                    │
 │     make run SOURCES="go_cam"                             │
+│     make merge SOURCES="ctd go_cam goa"                   │
 ╰───────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -88,37 +92,47 @@ test:
 
 ### Running ###
 
-.PHONY: download
-download:
-	@for source in $(SOURCES); do \
-		echo "Downloading $$source..."; \
-		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
-	done
+.PHONY: run
+run:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix run-,$(SOURCES))
+
+.PHONY: run-%
+run-%:
+	@echo "Running pipeline for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $*
 
 .PHONY: transform
-transform: download
-	@for source in $(SOURCES); do \
-		echo "Transforming $$source..."; \
-		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
-	done
+transform:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
 
-.PHONY: normalize
-normalize: transform
-	@echo "Normalization placeholder for sources: $(SOURCES)"
+.PHONY: transform-%
+transform-%:
+	@echo "Transform only for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $* --transform-only
 
 .PHONY: validate
-validate: normalize
-	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+validate: run
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-,$(SOURCES))
 
-.PHONY: validate-single
-validate-single: normalize
-	@for source in $(SOURCES); do \
-		echo "Validating $$source..."; \
-		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
-	done
+.PHONY: validate-%
+validate-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
-.PHONY: run
-run: normalize
+.PHONY: validate-only
+validate-only:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
+
+.PHONY: validate-only-%
+validate-only-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
+
+
+.PHONY: merge
+merge:
+	@echo "Merging sources and building translator_kg...";
+	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES);
 
 ### Linting, Formatting, and Cleaning ###
 

@@ -2,6 +2,7 @@ import uuid
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
+from translator_ingest.util.http_utils import get_modify_date
 
 ## ADDED packages for this ingest
 from datetime import datetime
@@ -34,14 +35,20 @@ ID_start_strings = {
 }
 
 
-## ?? template doesn't have any tag on this
 def get_latest_version() -> str:
     """
-    Returns the current time with no spaces "%Y-%m-%dT%H:%M:%S.%f%:z"
-    Assuming this function is run at almost the same time that the resource files are downloaded
+    Returns the most recent modify date of the source files, with no spaces "%Y_%m_%d"
     """
-
-    return datetime.now(datetime.now().astimezone().tzinfo).isoformat()
+    strformat = "%Y_%m_%d"
+    # get last-modified for each source data file
+    textmining_modify_date = get_modify_date("https://download.jensenlab.org/human_disease_textmining_filtered.tsv", strformat)
+    knowledge_modify_date = get_modify_date("https://download.jensenlab.org/human_disease_knowledge_filtered.tsv", strformat)
+    # compare them and return the most recent date in the form m_d_Y
+    if (datetime.strptime(textmining_modify_date, strformat) >
+            datetime.strptime(knowledge_modify_date, strformat)):
+        return textmining_modify_date
+    else:
+        return knowledge_modify_date
 
 
 def remove_duplicates(dataframe: pd.DataFrame):

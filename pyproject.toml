@@ -9,12 +9,13 @@ description = "Translator Phase 3 Data Ingest Pipeline"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "beautifulsoup4>=4.13.4",
+    "beautifulsoup4>=4.14.2",
     "biolink-model",
-    "bmt>=1.4.5",
+    "bmt>=1.4.6",
     "click>=8.0.0",
     "kghub-downloader>=0.4.2",
     "koza",
+    "robokop-orion==0.1.6"
 ]
 
 [project.scripts]

@@ -3,6 +3,7 @@ import pytest
 from typing import Optional, Iterable, Any
 from os.path import join, abspath, dirname
 from loguru import logger
+from pathlib import Path
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
@@ -45,7 +46,7 @@ def mock_koza_transform_1() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = ["id", "name", "category", "provided_by", "inheritance"]
+NODE_TEST_SLOTS = ["id", "name", "category", "inheritance"]
 
 # list of slots whose values are
 # to be checked in a result edge
@@ -112,8 +113,7 @@ ASSOCIATION_TEST_SLOTS = [
                 {
                     "id": "OMIM:117650",
                     "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
+                    "category": ["biolink:Disease"]
                 },
                 {"id": "HP:0001249", "category": ["biolink:PhenotypicFeature"]},
             ],
@@ -164,8 +164,7 @@ ASSOCIATION_TEST_SLOTS = [
                 {
                     "id": "OMIM:117650",
                     "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
+                    "category": ["biolink:Disease"]
                 },
                 {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
             ],
@@ -211,8 +210,7 @@ ASSOCIATION_TEST_SLOTS = [
                 {
                     "id": "OMIM:117650",
                     "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
+                    "category": ["biolink:Disease"]
                 },
                 {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
             ],
@@ -256,7 +254,6 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "OMIM:300425",
                     "name": "Autism susceptibility, X-linked 1",
                     "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
                     "inheritance": "X-linked inheritance",
                 }
             ],
@@ -345,12 +342,10 @@ def test_gene_to_disease_transform(
 @pytest.fixture(scope="package")
 def mock_koza_transform_2() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    extra_fields: dict[str, Any] = {
-        "HPOA_PHENOTYPE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_phenotype.hpoa")),
-        "HPOA_GENES_TO_DISEASE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_genes_to_disease.txt")),
-        "HPOA_GENES_TO_PHENOTYPE_FILE": abspath(join(HPOA_TEST_DATA_PATH, "test_genes_to_phenotype.txt")),
-    }
-    return MockKozaTransform(extra_fields=extra_fields, writer=writer, mappings=dict())
+    return MockKozaTransform(writer=writer,
+                             mappings=dict(),
+                             extra_fields=dict(),
+                             input_files_dir=Path(HPOA_TEST_DATA_PATH))
 
 
 def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaTransform):

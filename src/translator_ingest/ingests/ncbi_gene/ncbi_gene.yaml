@@ -4,7 +4,7 @@ reader:
   format: csv
   delimiter: "\t"
   files:
-    - ../../../../data/ncbi_gene/gene_info.gz
+    - gene_info.gz
   columns:
     - tax_id
     - GeneID

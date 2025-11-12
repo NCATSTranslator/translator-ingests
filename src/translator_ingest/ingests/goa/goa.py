@@ -2,7 +2,6 @@ from typing import Iterable, Any
 
 import koza
 import requests
-from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -20,6 +19,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     MacromolecularComplex,
     RNAProduct,
 )
+from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import INFORES_GOA, INFORES_BIOLINK, entity_id, build_association_knowledge_sources
 
 # Constants
@@ -285,8 +285,8 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
             sources=build_association_knowledge_sources(
-                primary=INFORES_GOA,
-                aggregating={INFORES_BIOLINK: [INFORES_GOA]},
+                primary=INFORES_GOA,  # GOA as the primary source
+                aggregating={INFORES_BIOLINK: [INFORES_GOA]},  # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
