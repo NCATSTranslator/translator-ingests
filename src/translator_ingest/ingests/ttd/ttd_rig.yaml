@@ -23,7 +23,7 @@ source_info:
     - file_download
   data_formats:
     - other
-  data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't. The Downloads page has a 'Last update by' section with a date, but it's unclear if this applies to all files that lack version info in their header."
+  data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't."
 
 # Information about Ingested Content
 ingest_info:
@@ -48,13 +48,19 @@ ingest_info:
 
   filtered_content:
     - file_name: "P1-05-Drug_disease.txt"
-      filtered_records: "ICD-11 ID is 'N.A.'"
-      rationale: "This means there isn't an ID for this disease, and we need one for each node."
+      filtered_records: "Clinical status value was not included in clinical_status_map (hard-coded variable mapping clinical status values to biolink predicates)."
+      rationale: "These clinical status values need review. Colleen Xu was either (1) unsure what the term meant ('Application submitted') or (2) unsure what the consensus is for including this kind of data (discontinued, terminated, withdrawn); and if we want to keep these terms, what predicates to map to."
     - file_name: "P1-05-Drug_disease.txt"
-      filtered_records: "TTD drug ID doesn't have mapping to an external namespace, or its name doesn't successfully retrieve an entity in NameResolver."
+      filtered_records: "TTD drug ID doesn't have a mapping to NodeNorm-covered namespaces (mapping comes from specific TTD file(s))."
       rationale: "Need node IDs that are in NodeNorm's scope."
+    - file_name: "P1-05-Drug_disease.txt"
+      filtered_records: "Indication name is '#N/A' or contains specific substrings."
+      rationale: "This means there either isn't a name for the indication or the indication name is problematic (not 'conditions that are treated' or Colleen Xu was worried how the statement would look). We use the indication name to find a Translator entity ID for the node, using NameResolver."
+    - file_name: "P1-05-Drug_disease.txt"
+      filtered_records: "Indication name wasn't successfully mapped to a Translator entity ID using NameResolver."
+      rationale: "Those nodes don't have IDs. A non-successful mapping means NameResolver (with the query fields Colleen Xu set) either (1) didn't find a Translator entity that matched the indication name, or (2) the NameResolver hit had a score lower than the threshold (this was set to increase the quality of mappings)."
     - file_name: "P1-07-Drug-TargetMapping.xlsx"
-      filtered_records: "TTD drug ID doesn't have mapping to an external namespace, or its name doesn't successfully retrieve an entity in NameResolver."
+      filtered_records: "TTD drug ID doesn't have a mapping to NodeNorm-covered namespaces (mapping comes from specific TTD file(s))."
       rationale: "Need node IDs that are in NodeNorm's scope."
     - file_name: "P1-07-Drug-TargetMapping.xlsx"
       filtered_records: "TTD target ID doesn't have a mapping to a UniProt name, or that UniProt name doesn't successfully map to a UniProt ID."
@@ -62,11 +68,20 @@ ingest_info:
 
   future_considerations:
     - category: edge_content
+      consideration: "Review clinical status values that weren't included in clinical_status_map (see jupyter notebook's 'Map clinical_status' section for the generated list). Reach consensus on how to handle these values (whether to ingest, what predicates to use)."
+      relevant_files: "P1-05-Drug_disease.txt"
+    - category: edge_property_content
+      consideration: "Add >=1 edge properties that capture the original clinical status more precisely than just the predicate. Colleen Xu did not include this in the first pass at ingestion because (1) this ingest already took more time/effort than expected, (2) there are multiple properties to choose from and Colleen was unsure what to use, and (3) in many cases, there wasn't a property enum value that matched the TTD clinical status."
+      relevant_files: "P1-05-Drug_disease.txt"
+    - category: other
+      consideration: "Parse P1-02 file for TTD drug ID to INCHIKEY mappings. See if it fills gaps in the TTD drug ID mappings and allows more edges to be ingested."
+      relevant_files: "P1-02-TTD_drug_download.txt, P1-05-Drug_disease.txt"
+    - category: other
+      consideration: "If NameResolver's scoring changes, the threshold used to remove low-quality hits will need to be adjusted."
+      relevant_files: "P1-05-Drug_disease.txt"
+    - category: edge_content
       consideration: "Could ingest another file 'Target to compound mapping with activity data', which contains chemical/drug 'affects' protein associations. Involves more parsing and filtering work. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209860820 for details."
       relevant_files: "P1-09-Target_compound_activity.txt"
-    - category: other
-      consideration: "Could run disease names through NameResolver when ICD-11 ID is 'N.A.' (<200 records right now). But it'd involve manual review to see if the output seems accurate."
-      relevant_files: "P1-05-Drug_disease.txt"
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -84,7 +99,7 @@ target_info:
       edge_properties:
         - original_subject
         - original_object
-      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'approved', 'phase 4', 'approved (orphan drug)', or 'NDA filed'."
+      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Approved', 'Approved (orphan drug)', 'Approved in China)', 'Approved in EU', or 'Phase 4'."
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -98,7 +113,7 @@ target_info:
       edge_properties:
         - original_subject
         - original_object
-      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'investigative', 'patented', 'discontinued in preregistration', 'preregistration', or 'withdrawn from market'."
+      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Investigative' or 'Patented'."
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -112,7 +127,7 @@ target_info:
       edge_properties:
         - original_subject
         - original_object
-      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'preclinical'."
+      ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Preclinical' or 'IND submitted'."
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -126,8 +141,8 @@ target_info:
       edge_properties:
         - original_subject
         - original_object
-      ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registered, various submissions, discontinued in a specific phase, or terminated)."
-      additional_notes: "This includes >30 unique values. Some values have the same meaning (perhaps curators aren't consistent with what terminology they use), and perhaps the possible values will change between releases."
+      ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registration/preregistration, or submissions for approval)."
+      additional_notes: "This currently includes 19 unique values. Some values have the same meaning (perhaps curators aren't consistent with what terminology they use), and perhaps the possible values will change between releases."
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -161,15 +176,18 @@ target_info:
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
-      ## these are the options, not the actual ID namespaces included
       source_identifier_types:
         - "PUBCHEM.COMPOUND"
-        - "CAS"
-        - "CHEBI"
-      additional_notes: "Original ID is TTD drug ID, but we are using TTD mapping files to get these external IDs that can be NodeNormed."
-    - node_category: biolink:Disease
+      additional_notes: "Original ID is TTD drug ID, but we are using TTD mapping files to get IDs in NodeNorm-covered namespaces."
+    - node_category: biolink:DiseaseOrPhenotypicFeature
       source_identifier_types:
-        - "icd11"
+        - "DOID"
+        - "EFO"
+        - "HP"
+        - "MONDO"
+        - "NCIT"
+        - "OMIM"
+      additional_notes: "Used NameResolver on indication name to get IDs. Didn't use the data's 'icd-11 IDs' because (1) these were codes, not the actual ICD-11 foundation URIs; (2) NodeNorm currently has very little support for ICD-11 IDs (and the few IDs recognized are foundation URIs); and (3) the TTD values are sometimes a 'range' of codes that aren't listed individually, which we cannot handle (ex: for 'solid tumour/cancer', TTD uses '2A00-2F9Z' aka code '2A00' to '2F9Z')."
     - node_category: biolink:Gene
       source_identifier_types:
         - "UNIPROTKB"
@@ -180,8 +198,6 @@ target_info:
       additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
 
   future_considerations:
-    - category: other
-      consideration: "P1-02 ('Download TTD drug information in raw format') contains TTD drug ID to INCHIKEY mappings, which could be explored to see if it fills gaps in the TTD drug ID mappings and allows more edges to be ingested."
     - category: node_properties
       consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
 
@@ -193,3 +209,4 @@ provenance_info:
     - "Matthew Brush - data modeling, domain expertise"
   artifacts:
     - "https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30"
+    ## can add notebook once PR is merged, there's a stable link for it
