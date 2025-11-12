@@ -194,42 +194,81 @@ def _create_compound_node_and_edges(compound: dict[str, Any], pathway_id: str) -
     if kegg_id:
         compound_translator[kegg_id] = "KEGG.COMPOUND"
     
-    # Collect all equivalent IDs for same_as edges
-    equivalent_ids = [pwc_curie]
+    # Create same_as edges FROM PathBank node TO external IDs (unidirectional)
+    # Also create minimal nodes for external IDs to satisfy normalization requirements
     if chebi_id:
-        equivalent_ids.append(f"CHEBI:{chebi_id}")
+        chebi_curie = f"CHEBI:{chebi_id}"
+        # Create minimal node for external CHEBI ID (required for edge normalization)
+        chebi_node = SmallMolecule(
+            id=chebi_curie,
+            name=name,  # Use same name as PathBank compound
+        )
+        nodes.append(chebi_node)
+        # Create edge FROM PathBank TO CHEBI
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwc_curie,
+            predicate="biolink:same_as",
+            object=chebi_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     if drugbank_id:
-        equivalent_ids.append(f"DRUGBANK:{drugbank_id}")
+        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+        # Create minimal node for external DrugBank ID (required for edge normalization)
+        drugbank_node = SmallMolecule(
+            id=drugbank_curie,
+            name=name,  # Use same name as PathBank compound
+        )
+        nodes.append(drugbank_node)
+        # Create edge FROM PathBank TO DrugBank
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwc_curie,
+            predicate="biolink:same_as",
+            object=drugbank_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     if kegg_id:
-        equivalent_ids.append(f"KEGG.COMPOUND:{kegg_id}")
+        kegg_curie = f"KEGG.COMPOUND:{kegg_id}"
+        # Create minimal node for external KEGG ID (required for edge normalization)
+        kegg_node = SmallMolecule(
+            id=kegg_curie,
+            name=name,  # Use same name as PathBank compound
+        )
+        nodes.append(kegg_node)
+        # Create edge FROM PathBank TO KEGG
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwc_curie,
+            predicate="biolink:same_as",
+            object=kegg_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     
-    # Create same_as edges between all equivalent IDs
-    for i, subject_id in enumerate(equivalent_ids):
-        for object_id in equivalent_ids[i+1:]:
-            same_as_edge = Association(
-                id=entity_id(),
-                subject=subject_id,
-                predicate="biolink:same_as",
-                object=object_id,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                    aggregating={"infores:biolink": [INFORES_PATHBANK]},
-                ),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-            edges.append(same_as_edge)
-    
-    # Create has_component edge from pathway to compound
+    # Create has_participant edge from pathway to compound
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwc_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -277,40 +316,61 @@ def _create_protein_node_and_edges(protein: dict[str, Any], pathway_id: str) -> 
     if drugbank_id:
         protein_translator[drugbank_id] = "DRUGBANK"
     
-    # Collect all equivalent IDs for same_as edges
-    equivalent_ids = [pwp_curie]
+    # Create same_as edges FROM PathBank node TO external IDs (unidirectional)
+    # Also create minimal nodes for external IDs to satisfy normalization requirements
     if uniprot_id:
-        equivalent_ids.append(f"UniProtKB:{uniprot_id}")
+        uniprot_curie = f"UniProtKB:{uniprot_id}"
+        # Create minimal node for external UniProtKB ID (required for edge normalization)
+        uniprot_node = Protein(
+            id=uniprot_curie,
+            name=name,  # Use same name as PathBank protein
+        )
+        nodes.append(uniprot_node)
+        # Create edge FROM PathBank TO UniProtKB
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwp_curie,
+            predicate="biolink:same_as",
+            object=uniprot_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     if drugbank_id:
-        equivalent_ids.append(f"DRUGBANK:{drugbank_id}")
+        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+        # Create minimal node for external DrugBank ID (required for edge normalization)
+        # DrugBank can be protein or small molecule, defaulting to Protein
+        drugbank_node = Protein(
+            id=drugbank_curie,
+            name=name,  # Use same name as PathBank protein
+        )
+        nodes.append(drugbank_node)
+        # Create edge FROM PathBank TO DrugBank
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwp_curie,
+            predicate="biolink:same_as",
+            object=drugbank_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     
-    # Create same_as edges between all equivalent IDs
-    for i, subject_id in enumerate(equivalent_ids):
-        for object_id in equivalent_ids[i+1:]:
-            same_as_edge = Association(
-                id=entity_id(),
-                subject=subject_id,
-                predicate="biolink:same_as",
-                object=object_id,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                    aggregating={"infores:biolink": [INFORES_PATHBANK]},
-                ),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-            edges.append(same_as_edge)
-    
-    # Create has_component edge from pathway to protein
+    # Create has_participant edge from pathway to protein
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwp_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -387,23 +447,21 @@ def _create_protein_complex_node_and_edges(protein_complex: dict[str, Any], path
             object=protein_id,
             sources=build_association_knowledge_sources(
                 primary=INFORES_PATHBANK,
-                aggregating={"infores:biolink": [INFORES_PATHBANK]},
             ),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
         edges.append(has_protein_edge)
     
-    # Create has_component edge from pathway to complex
+    # Create has_participant edge from pathway to complex
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwp_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -444,38 +502,39 @@ def _create_nucleic_acid_node_and_edges(nucl_acid: dict[str, Any], pathway_id: s
     if chebi_id:
         na_translator[chebi_id] = "CHEBI"
     
-    # Collect all equivalent IDs for same_as edges
-    equivalent_ids = [pwna_curie]
+    # Create same_as edge FROM PathBank node TO external ID (unidirectional)
+    # Also create minimal node for external ID to satisfy normalization requirements
     if chebi_id:
-        equivalent_ids.append(f"CHEBI:{chebi_id}")
+        chebi_curie = f"CHEBI:{chebi_id}"
+        # Create minimal node for external CHEBI ID (required for edge normalization)
+        chebi_node = NucleicAcidEntity(
+            id=chebi_curie,
+            name=name,  # Use same name as PathBank nucleic acid
+        )
+        nodes.append(chebi_node)
+        # Create edge FROM PathBank TO CHEBI
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwna_curie,
+            predicate="biolink:same_as",
+            object=chebi_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     
-    # Create same_as edges between all equivalent IDs
-    for i, subject_id in enumerate(equivalent_ids):
-        for object_id in equivalent_ids[i+1:]:
-            same_as_edge = Association(
-                id=entity_id(),
-                subject=subject_id,
-                predicate="biolink:same_as",
-                object=object_id,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                    aggregating={"infores:biolink": [INFORES_PATHBANK]},
-                ),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-            edges.append(same_as_edge)
-    
-    # Create has_component edge from pathway to nucleic acid
+    # Create has_participant edge from pathway to nucleic acid
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwna_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -558,7 +617,6 @@ def _create_reaction_node_and_edges(reaction: dict[str, Any], pathway_id: str, d
                     object=object_curie,
                     sources=build_association_knowledge_sources(
                         primary=INFORES_PATHBANK,
-                        aggregating={"infores:biolink": [INFORES_PATHBANK]},
                     ),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
@@ -591,7 +649,6 @@ def _create_reaction_node_and_edges(reaction: dict[str, Any], pathway_id: str, d
                     object=object_curie,
                     sources=build_association_knowledge_sources(
                         primary=INFORES_PATHBANK,
-                        aggregating={"infores:biolink": [INFORES_PATHBANK]},
                     ),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
@@ -622,23 +679,21 @@ def _create_reaction_node_and_edges(reaction: dict[str, Any], pathway_id: str, d
                     object=pwr_curie,
                     sources=build_association_knowledge_sources(
                         primary=INFORES_PATHBANK,
-                        aggregating={"infores:biolink": [INFORES_PATHBANK]},
                     ),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
                 edges.append(enzyme_edge)
     
-    # Create has_component edge from pathway to reaction
+    # Create has_participant edge from pathway to reaction
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwr_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -705,23 +760,21 @@ def _create_bound_node_and_edges(bound: dict[str, Any], pathway_id: str, data_tr
                     object=object_curie,
                     sources=build_association_knowledge_sources(
                         primary=INFORES_PATHBANK,
-                        aggregating={"infores:biolink": [INFORES_PATHBANK]},
                     ),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
                 edges.append(has_part_edge)
     
-    # Create has_component edge from pathway to bound
+    # Create has_participant edge from pathway to bound
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwb_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -772,39 +825,53 @@ def _create_element_collection_node_and_edges(ec: dict[str, Any], pathway_id: st
         prefix = external_id_mapping[external_id_type]
         ec_translator[external_id] = prefix
     
-    # Collect all equivalent IDs for same_as edges
-    equivalent_ids = [pwec_curie]
+    # Create same_as edge FROM PathBank node TO external ID (unidirectional)
+    # Also create minimal node for external ID to satisfy normalization requirements
     if external_id_type in external_id_mapping and external_id:
         prefix = external_id_mapping[external_id_type]
-        equivalent_ids.append(f"{prefix}:{external_id}")
-    
-    # Create same_as edges between all equivalent IDs
-    for i, subject_id in enumerate(equivalent_ids):
-        for object_id in equivalent_ids[i+1:]:
-            same_as_edge = Association(
-                id=entity_id(),
-                subject=subject_id,
-                predicate="biolink:same_as",
-                object=object_id,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                    aggregating={"infores:biolink": [INFORES_PATHBANK]},
-                ),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
+        external_curie = f"{prefix}:{external_id}"
+        # Create minimal node for external ID (required for edge normalization)
+        # Determine category based on prefix
+        if prefix == "CHEBI":
+            external_node = ChemicalEntity(
+                id=external_curie,
+                name=name,  # Use same name as PathBank element collection
             )
-            edges.append(same_as_edge)
+        elif prefix == "KEGG.COMPOUND":
+            external_node = ChemicalEntity(
+                id=external_curie,
+                name=name,  # Use same name as PathBank element collection
+            )
+        else:
+            # Default to ChemicalEntity for unknown types
+            external_node = ChemicalEntity(
+                id=external_curie,
+                name=name,
+            )
+        nodes.append(external_node)
+        # Create edge FROM PathBank TO external ID
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=pwec_curie,
+            predicate="biolink:same_as",
+            object=external_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
     
-    # Create has_component edge from pathway to element collection
+    # Create has_participant edge from pathway to element collection
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
-        predicate="biolink:has_component",
+        predicate="biolink:has_participant",
         object=pwec_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -815,7 +882,13 @@ def _create_element_collection_node_and_edges(ec: dict[str, Any], pathway_id: st
 
 
 def _create_interaction_edges(interaction: dict[str, Any], pathway_id: str, data_translator: dict[str, dict[str, dict[str, str]]]) -> list[Association]:
-    """Create interacts_with edges for protein-protein or other entity interactions.
+    """Create interaction edges for protein-protein or other entity interactions.
+    
+    Maps PathBank interaction types to more specific Biolink predicates when possible:
+    - Inhibition → negatively_regulates
+    - Activation → positively_regulates
+    - Binding/Physical → physically_interacts_with
+    - Default → interacts_with
     
     Args:
         interaction: The interaction data from PWML
@@ -826,6 +899,24 @@ def _create_interaction_edges(interaction: dict[str, Any], pathway_id: str, data
         List of Association edges
     """
     edges = []
+    
+    # Extract interaction type and map to Biolink predicate
+    interaction_type_raw = interaction.get("interaction-type", "")
+    interaction_type = _normalize_xml_value(interaction_type_raw)
+    
+    # Map PathBank interaction types to Biolink predicates
+    # Using case-insensitive matching for robustness
+    interaction_type_lower = interaction_type.lower() if interaction_type else ""
+    
+    if "inhibit" in interaction_type_lower or "repress" in interaction_type_lower:
+        predicate = "biolink:negatively_regulates"
+    elif "activ" in interaction_type_lower or "induc" in interaction_type_lower or "promot" in interaction_type_lower:
+        predicate = "biolink:positively_regulates"
+    elif "bind" in interaction_type_lower or "physical" in interaction_type_lower or "complex" in interaction_type_lower:
+        predicate = "biolink:physically_interacts_with"
+    else:
+        # Default to generic interacts_with for unknown types
+        predicate = "biolink:interacts_with"
     
     # Extract left elements
     left_elements_data = interaction.get("interaction-left-elements", {})
@@ -876,16 +967,14 @@ def _create_interaction_edges(interaction: dict[str, Any], pathway_id: str, data
                     else:
                         right_curie = f"{right_prefix}:{right_equiv_id}"
                     
-                    # Create interacts_with edge
-                    # Note: For now using generic interacts_with, could be more specific based on interaction_type
+                    # Create interaction edge with predicate based on interaction type
                     interaction_edge = Association(
                         id=entity_id(),
                         subject=left_curie,
-                        predicate="biolink:interacts_with",
+                        predicate=predicate,
                         object=right_curie,
                         sources=build_association_knowledge_sources(
                             primary=INFORES_PATHBANK,
-                            aggregating={"infores:biolink": [INFORES_PATHBANK]},
                         ),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent,
@@ -932,7 +1021,6 @@ def _create_subcellular_location_nodes_and_edges(location: dict[str, Any], pathw
         object=location_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -984,7 +1072,6 @@ def _create_tissue_nodes_and_edges(tissue: dict[str, Any], pathway_id: str) -> t
         object=tissue_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
-            aggregating={"infores:biolink": [INFORES_PATHBANK]},
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -1187,7 +1274,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
             object=f"PathBank:{pw_id}",
             sources=build_association_knowledge_sources(
                 primary=INFORES_PATHBANK,
-                aggregating={"infores:biolink": [INFORES_PATHBANK]},
             ),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
