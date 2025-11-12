@@ -4,7 +4,7 @@ from loguru import logger
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    StudyResult,
+    Study,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -18,8 +18,8 @@ from bmt.pydantic import (
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.icees.icees_util import (
-    get_icees_study_result,
-    map_icees_qualifiers
+    get_icees_supporting_study,
+    # map_icees_qualifiers # more complex qualifier mapping approached, incomplete and skipped for now
 )
 
 # Use the default Biolink Model release
@@ -105,49 +105,43 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         logger.debug(f"edge_class: {edge_class.__name__}")
 
         # Convert many of the ICEES edge attributes into specific edge properties
-        supporting_study_results: list[StudyResult] = []
+        supporting_studies: dict[str, Study] = {}
         icees_qualifiers: dict[str,str] = {}
         attributes = record["attributes"]
         for attribute_string in attributes:
             # is 'attribute' a dict, or string serialized version of a dict?
             attribute_data = json.loads(attribute_string)
             if attribute_data["attribute_type_id"] == "icees_cohort_identifier":
-                supporting_study_results.append(
-                    get_icees_study_result(
-                        edge_id=edge_id,
-                        study_name=attribute_data["value"],
-                        metadata=attribute_data["attributes"]
-                    )
-                )
+                study_id = attribute_data["value"]
+                supporting_studies[study_id] = get_icees_supporting_study(
+                                                    edge_id=edge_id,
+                                                    study_id=study_id,
+                                                    result=attribute_data["attributes"]
+                                                )
             elif attribute_data["attribute_type_id"] in ["subject_feature_name","object_feature_name"]:
-                attribute_type_id = attribute_data["attribute_type_id"]
-                target = attribute_type_id.replace("_feature_name","")
-                icees_qualifiers[target] = attribute_data["value"]
+                icees_qualifiers[attribute_data["attribute_type_id"]] = attribute_data["value"]
             else:
                 pass # all other attributes ignored at this time
 
-        # TODO: temporary workaround for non-inlined study results,
-        #       which should later be list[StudyResult]
-        has_supporting_study_results = [str(entry) for entry in supporting_study_results]
-
-        qualifiers: dict[str,str] = map_icees_qualifiers(
-            koza_transform,
-            association=edge_class,
-            subject_category=subject_category,
-            object_category=object_category,
-            qualifiers=icees_qualifiers
-        )
+        # TODO: more complex qualifier mapping approach, incomplete and skipped for now
+        # qualifiers: dict[str,str] = map_icees_qualifiers(
+        #     koza_transform,
+        #     association=edge_class,
+        #     subject_category=subject_category,
+        #     object_category=object_category,
+        #     qualifiers=icees_qualifiers
+        # )
 
         association = edge_class(
             id=entity_id(),
             subject=icees_subject,
             predicate=icees_predicate,
             object=icees_object,
-            has_supporting_study_results=has_supporting_study_results,
+            has_supporting_studies=supporting_studies,
             sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.not_provided,
-            **qualifiers
+            **icees_qualifiers
         )
 
         return KnowledgeGraph(edges=[association])

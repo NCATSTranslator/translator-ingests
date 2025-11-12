@@ -28,12 +28,12 @@ def mock_koza_transform() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = [
+NODE_TEST_SLOTS = (
     "id",
     "name",
     "category",
     "equivalent_identifiers"
-]
+)
 
 # list of slots whose values are
 # to be checked in a result edge
@@ -44,7 +44,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
     "predicate",
     "object",
     "object_specialization_qualifier",
-    "has_supporting_study_result",
+    "has_supporting_studies",
     "sources",
     "knowledge_level",
     "agent_type",

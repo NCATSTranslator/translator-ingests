@@ -58,14 +58,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:Disease
-    # TODO: These 'qualifiers' likely need to be documented on every edge here.
     qualifiers:
-    - property: biolink:subject_context_qualifier
-      # TODO: The value_range needs to be clarified.
-      value_range: null
-    - property: biolink:object_context_qualifier
-      # TODO: The value_range needs to be clarified.
-      value_range: null
+    - property: biolink:subject_feature_name
+      value_range: str
+    - property: biolink:object_feature_name
+      value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -76,6 +73,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Disease
+    qualifiers:
+    - property: biolink:subject_feature_name
+      value_range: str
+    - property: biolink:object_feature_name
+      value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -86,6 +88,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:Disease
+    qualifiers:
+    - property: biolink:subject_feature_name
+      value_range: str
+    - property: biolink:object_feature_name
+      value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -96,6 +103,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:SmallMolecule
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -106,6 +118,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:SmallMolecule
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -116,6 +133,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:SmallMolecule
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -126,6 +148,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:ChemicalExposure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -136,6 +163,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:ChemicalExposure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -146,6 +178,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:ChemicalExposure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -156,6 +193,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:Drug
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -166,6 +208,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Drug
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -176,6 +223,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:Drug
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -186,6 +238,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:InformationContentEntity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -196,6 +253,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:InformationContentEntity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -206,6 +268,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:InformationContentEntity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -216,6 +283,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:PhysiologicalProcess
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -226,6 +298,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:PhysiologicalProcess
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -236,6 +313,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:PhysiologicalProcess
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -246,6 +328,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:ComplexMolecularMixture
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -256,6 +343,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:EnvironmentalExposure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -266,6 +358,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:PhenotypicFeature
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -276,6 +373,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:PhenotypicFeature
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -286,6 +388,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:PhenotypicFeature
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -296,6 +403,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:Activity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -306,6 +418,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Activity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -316,6 +433,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:PopulationOfIndividualOrganisms
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -326,6 +448,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:PhysicalEntity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -336,6 +463,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:GrossAnatomicalStructure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -346,6 +478,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:GrossAnatomicalStructure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -356,6 +493,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:GrossAnatomicalStructure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -366,6 +508,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:OrganismAttribute
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -376,6 +523,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:ChemicalEntity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -386,6 +538,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:ChemicalEntity
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -396,6 +553,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:Device
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -406,6 +568,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Device
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -416,6 +583,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Phenomenon
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -426,6 +598,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:Procedure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -436,6 +613,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Procedure
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -446,6 +628,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:MolecularMixture
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -456,6 +643,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:SequenceVariant
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -466,6 +658,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:Protein
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -476,6 +673,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Protein
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -486,6 +688,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:Gene
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -496,6 +703,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:Gene
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -506,6 +718,11 @@ target_info:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:OrganismTaxon
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -516,6 +733,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:OrganismTaxon
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -526,6 +748,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:OrganismTaxon
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -536,6 +763,11 @@ target_info:
     - biolink:positively_correlated_with
     object_categories:
     - biolink:ClinicalIntervention
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
@@ -546,6 +778,11 @@ target_info:
     - biolink:correlated_with
     object_categories:
     - biolink:ClinicalIntervention
+    qualifiers:
+      - property: biolink:subject_feature_name
+        value_range: str
+      - property: biolink:object_feature_name
+        value_range: str
     knowledge_level: knowledge_assertion
     agent_type: not_provided
     edge_properties:
