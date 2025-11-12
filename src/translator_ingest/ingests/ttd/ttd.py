@@ -1,5 +1,4 @@
 ## FROM template, modified for this ingest
-# import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable, Dict, Union
