@@ -4,5 +4,5 @@
 #
 # Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
 ---
-- url: https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/releases/chembl_35/chembl_35_sqlite.tar.gz
-  local_name: chembl_35_sqlite.tar.gz
+- url: https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/releases/chembl_36/chembl_36_sqlite.tar.gz
+  local_name: chembl_36_sqlite.tar.gz

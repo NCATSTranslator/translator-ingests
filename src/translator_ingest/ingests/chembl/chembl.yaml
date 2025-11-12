@@ -1,6 +1,8 @@
 name: chembl_ingest
 
 readers:
+  chembl_metabolites:
+    format: csv
   chembl_drug_mechanism:
     format: csv
   chembl_drug_mechanism_binding:

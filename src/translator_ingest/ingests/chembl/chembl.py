@@ -12,13 +12,18 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
     ChemicalAffectsGeneAssociation,
-    GeneAffectsChemicalAssociation
+    GeneAffectsChemicalAssociation,
+    ChemicalToChemicalAssociation
 )
+
 from koza.model.graphs import KnowledgeGraph
+
+from translator_ingest.util.biolink import build_association_knowledge_sources
+
 
 QUALIFIER_CONFIG_PATH = "src/translator_ingest/ingests/chembl/chembl_qualifiers.json"
 
-LATEST_VERSION = "35"
+LATEST_VERSION = "36"
 
 INFORES_CHEMBL = "infores:chembl"
 
@@ -37,7 +42,7 @@ MOA_QUERY = """
             target_dictionary.chembl_id AS target_chembl_id,
             target_dictionary.pref_name AS target_name,
             target_dictionary.target_type,
-            target_dictionary.tax_id AS target_organism_tax_id,
+            target_dictionary.tax_id AS organism_tax_id,
             binding_sites.site_name,
             drug_mechanism.binding_site_comment,
             source.src_description AS source_description,
@@ -58,6 +63,92 @@ MOA_QUERY = """
     """
 
 WHERE_DIRECT_INTERACTION = " WHERE direct_interaction = '1'"
+
+MOLECULE_QUERY = """
+    SELECT
+        molecule_dictionary.molregno,
+        molecule_dictionary.pref_name,
+        molecule_dictionary.chembl_id,
+        molecule_dictionary.max_phase,
+        molecule_dictionary.therapeutic_flag,
+        molecule_dictionary.dosed_ingredient,
+        lower(molecule_dictionary.molecule_type) AS molecule_type,
+        molecule_dictionary.first_approval,
+        molecule_dictionary.oral,
+        molecule_dictionary.parenteral,
+        molecule_dictionary.topical,
+        molecule_dictionary.black_box_warning,
+        molecule_dictionary.natural_product,
+        molecule_dictionary.first_in_class,
+        molecule_dictionary.chirality,
+        molecule_dictionary.prodrug,
+        molecule_dictionary.inorganic_flag,
+        molecule_dictionary.usan_year,
+        molecule_dictionary.availability_type,
+        molecule_dictionary.usan_stem,
+        molecule_dictionary.polymer_flag,
+        molecule_dictionary.usan_substem,
+        molecule_dictionary.usan_stem_definition,
+        molecule_dictionary.withdrawn_flag,
+        compound_structures.standard_inchi,
+        compound_structures.standard_inchi_key,
+        compound_structures.canonical_smiles
+    FROM molecule_dictionary
+    LEFT JOIN compound_structures ON compound_structures.molregno = molecule_dictionary.molregno
+    WHERE molecule_dictionary.molregno = ?
+"""
+
+COMPONENT_QUERY = """
+    SELECT
+        component_sequences.component_type,
+        component_sequences.accession,
+        component_sequences.description,
+        component_sequences.tax_id,
+        component_sequences.organism,
+        component_sequences.db_source
+    FROM target_components
+    JOIN component_sequences ON component_sequences.component_id = target_components.component_id
+"""
+
+WHERE_TID_CLAUSE = "    WHERE tid = ?"
+
+METABOLITES_QUERY = """
+    SELECT 
+        metabolism.met_id,
+        metabolism.met_conversion AS metabolic_conversion,
+        metabolism.met_comment AS metabolic_comment,
+        metabolism.organism,
+        metabolism.tax_id AS organism_tax_id,
+        drug_records.molregno AS drug_molregno,
+        drug_records.compound_name AS drug_name,
+        substrate_records.molregno AS substrate_molregno,
+        substrate_records.compound_name AS substrate_name,
+        metabolite_records.molregno AS metabolite_molregno,
+        metabolite_records.compound_name AS metabolite_name,
+        metabolism.enzyme_tid AS tid,
+        target_dictionary.chembl_id AS target_chembl_id,
+        target_dictionary.pref_name AS target_name,
+        target_dictionary.target_type AS enzyme_type
+    FROM metabolism
+    JOIN compound_records AS drug_records ON metabolism.drug_record_id = drug_records.record_id
+    JOIN compound_records AS substrate_records ON metabolism.substrate_record_id = substrate_records.record_id
+    JOIN compound_records AS metabolite_records ON metabolism.metabolite_record_id = metabolite_records.record_id
+    LEFT JOIN target_dictionary ON (target_dictionary.tid = enzyme_tid and target_type != 'UNCHECKED')
+"""
+
+REFERENCE_QUERY = """
+    SELECT 
+        ref_type, ref_id, ref_url
+    FROM {}
+    WHERE {} = ?
+"""
+
+SYNONYM_QUERY = """
+    SELECT syn_type, synonyms
+    FROM molecule_synonyms
+    WHERE molregno = ?
+"""
+
 
 TARGET_CLASS_MAP = {
     "ADMET": "Cell",
@@ -95,22 +186,11 @@ TAX_ID_PREFIX = "NCBITaxon:"
 PUBMED_PREFIX = "PMID:"
 DOI_PREFIX = "DOI:"
 CHEMBL_DODCUMENT_PREFIX = "CHEMBL.DOCUMENT:"
+UNIPROT_PREFIX = "UniProtKB:"
+
+REFERENCE_PREFIX_MAP = {'PMID':'PMID:', 'DOI':'doi:', 'ISBN': 'ISBN:', 'PubMed':'PMID:'}
 
 BIOLINK_DIRECTLY_INTERACTS_WITH = "biolink:directly_physically_interacts_with"
-
-COMPONENT_QUERY = """
-    SELECT
-        component_sequences.component_type,
-        component_sequences.accession,
-        component_sequences.description,
-        component_sequences.tax_id,
-        component_sequences.organism,
-        component_sequences.db_source
-    FROM target_components
-    JOIN component_sequences ON component_sequences.component_id = target_components.component_id
-"""
-
-WHERE_TID_CLAUSE = "    WHERE tid = ?"
 
 QUALIFIER_CONFIG = {}
 
@@ -140,10 +220,11 @@ def get_latest_version() -> str:
     return LATEST_VERSION
 
 
-def get_connection(log=None) -> sqlite3.Connection:
+def get_connection(koza: koza.KozaTransform) -> sqlite3.Connection:
+    log = koza.log if hasattr(koza, 'log') else None
     version = get_latest_version()
-    download_file = f'data/chembl/chembl_{version}_sqlite.tar.gz'
-    database_path = f'data/chembl/chembl_{version}/chembl_{version}_sqlite/chembl_{version}.db'
+    download_file = f"{koza.input_files_dir}/chembl_{version}_sqlite.tar.gz"
+    database_path = f"{koza.input_files_dir}/chembl_{version}/chembl_{version}_sqlite/chembl_{version}.db"
     if log:
         log(f"Using ChEMBL database at {database_path}", level="INFO")
     # uncompress tar.gz file
@@ -151,7 +232,7 @@ def get_connection(log=None) -> sqlite3.Connection:
         if log:
             log(f"Extracting {download_file} to {database_path} ...", level="INFO")
         with tarfile.open(download_file, "r:gz") as tar:
-            tar.extractall(path='data/chembl/')
+            tar.extractall(path=koza.input_files_dir)
         if log:
             log("Extraction complete.", level="INFO")
     # create and return sqlite3 connection
@@ -188,7 +269,7 @@ def build_protein_target(con, record):
     if components:
         if components["accession"]:
             xref = [id]
-            id = "UNIPROT:"+components["accession"]
+            id = UNIPROT_PREFIX+components["accession"]
         synonym = [components["description"]]
         tax_id = [TAX_ID_PREFIX+str(components["tax_id"])]
     else:
@@ -216,38 +297,102 @@ def build_target_node(koza: koza.KozaTransform, record: dict[str, Any]):
     return cls(id=id, name=name)
 
 
-def build_chemical_entity(record: dict[str, Any]):
-    return ChemicalEntity(
-        id=CHEMBL_COMPOUND_PREFIX+record["molecule_chembl_id"], 
-        name=record["molecule_name"]
-    )
+def get_synonyms(koza: koza.KozaTransform, molregno: int) -> list[str] | None:
+    cur = koza.state['chembl_db_connection'].cursor()
+    cur.execute(SYNONYM_QUERY, (molregno,))
+    synonyms = []
+    for row in cur.fetchall():
+        synonyms.append(row["synonyms"])
+    if len(synonyms) > 0:
+        return synonyms
+    return None
+
+
+def create_chemical_entity(koza: koza.KozaTransform, molregno: int, compound_name: str = None):
+    cur = koza.state['chembl_db_connection'].cursor()
+    cur.execute(MOLECULE_QUERY, (molregno,))
+    record = cur.fetchone()
+    if record:
+        name = record["pref_name"]
+        xref = []
+        if record["standard_inchi_key"] is not None:
+            xref.append("InChIKey:"+record["standard_inchi_key"])
+        if record["canonical_smiles"] is not None:
+            xref.append("SMILES:"+record["canonical_smiles"])
+        routes_of_delivery = []
+        if record["oral"] == 1:
+            routes_of_delivery.append("oral")
+        if record["parenteral"] == 1:
+            routes_of_delivery.append("injection")
+        if record["topical"] == 1:
+            routes_of_delivery.append("absorption_through_the_skin")
+        return ChemicalEntity(
+            id=CHEMBL_COMPOUND_PREFIX+record["chembl_id"],
+            name=name,
+            xref=xref if len(xref) > 0 else None,
+            synonym=get_synonyms(koza, molregno),
+            # TODO: routes_of_delivery=routes_of_delivery if len(routes_of_delivery) > 0 else None
+        )
+    return None
 
 
 def get_mutation_qualifier(record: dict[str, Any]):
     if record["mutation"] is not None:
-        # TODO: waiting for mutation to be added to biolink model
-        # return "mutation" 
-        return "modified_form"
+        return "mutant_form"
     return None
 
 
 def get_species_context_qualifier(record: dict[str, Any]):
-    if record["target_organism_tax_id"] is not None:
-        return TAX_ID_PREFIX+str(record["target_organism_tax_id"])
+    if record["organism_tax_id"] is not None:
+        return TAX_ID_PREFIX+str(record["organism_tax_id"])
     return None
 
 
-def get_publications(record: dict[str, Any]):
-    publications = []
+def get_enzyme_context_qualifier(koza: koza.KozaTransform, record: dict[str, Any]):
+    if record["tid"] is None:
+        return None
+    protein = build_protein_target(koza.state['chembl_db_connection'], record)
+    return protein.id
+
+
+def get_publications(koza: koza.KozaTransform, record: dict[str, Any]):
+    publication = None
     if record["pubmed_id"] is not None:
-        publications.append(PUBMED_PREFIX+str(record["pubmed_id"]))
+        publication = PUBMED_PREFIX+str(record["pubmed_id"])
     elif record["doi"] is not None:
-        publications.append(DOI_PREFIX+str(record["doi"]))
+        publication = DOI_PREFIX+str(record["doi"])
     elif record["document_chembl_id"] is not None:
-        publications.append(CHEMBL_DODCUMENT_PREFIX+str(record["document_chembl_id"]))
+        publication = CHEMBL_DODCUMENT_PREFIX+str(record["document_chembl_id"])
+
+    publications = []
+    if publication:
+        publications.append(publication)
+    for ref in get_references(koza.state['chembl_db_connection'], 'mechanism_refs', 'mec_id', record['mec_id']):
+        if ref != publication:
+            publications.append(ref)
     if len(publications) == 0:
         publications = None
     return publications
+
+
+def get_reference(ref_type: str, ref_id: str, ref_url: str) -> str:
+    if ref_type in REFERENCE_PREFIX_MAP:
+        prefix = REFERENCE_PREFIX_MAP[ref_type]
+        return prefix + str(ref_id)
+    if ref_url:
+        return ref_url
+    return None
+
+
+def get_references(con: sqlite3.Connection, reference_table: str, reference_id_field: str, reference_id: Any) -> list[str]:
+    cur = con.cursor()
+    cur.execute(REFERENCE_QUERY.format(reference_table, reference_id_field), (reference_id,))
+    references = []
+    for row in cur.fetchall():
+        reference = get_reference(row["ref_type"], row["ref_id"], row["ref_url"])
+        if reference:
+            references.append(reference)
+    return references
 
 
 def get_association_class(association_type: str):
@@ -257,10 +402,11 @@ def get_association_class(association_type: str):
         return GeneAffectsChemicalAssociation
     return None
 
+
 def get_association(koza, record, action_type_map):
     nodes = []
     edges = []
-    chemical = build_chemical_entity(record)
+    chemical = create_chemical_entity(koza, record['molregno'])
     target = build_target_node(koza, record)
     if target is not None and action_type_map is not None:
         predicate = action_type_map["predicate"]
@@ -275,7 +421,7 @@ def get_association(koza, record, action_type_map):
         species_context_qualifier = get_species_context_qualifier(record)
 
             # add publications if available
-        publications = get_publications(record)
+        publications = get_publications(koza, record)
 
         association_class = get_association_class(accociation_type)
         if association_class is None:
@@ -289,22 +435,46 @@ def get_association(koza, record, action_type_map):
                 object=target.id,
                 species_context_qualifier = species_context_qualifier,
                 object_form_or_variant_qualifier = mutation_qualifier,
-                primary_knowledge_source=INFORES_CHEMBL,
+                sources=build_association_knowledge_sources(INFORES_CHEMBL),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 publications=publications,
-                # TODO: add these fields when they are added to biolink model
-                # binding_site_name = record["site_name"],
-                # binding_site_comment = record["binding_site_comment"],
-                # mechanism_of_action_description = record["mechanism_of_action"],
-                # mechanism_of_action_comment = record["mechanism_comment"],
-                # selectivity_comment = record["selectivity_comment"],
-                # mutation = record["mutation"],
-                # mutation_accession = record["mutation_accession"]
+                # add these fields when they are added to biolink model
+                # TODO: binding_site_name = record["site_name"],
+                # TODO: binding_site_comment = record["binding_site_comment"],
+                # TODO: mechanism_of_action_description = record["mechanism_of_action"],
+                # TODO: mechanism_of_action_comment = record["mechanism_comment"],
+                # TODO: selectivity_comment = record["selectivity_comment"],
+                # TODO: mutation = record["mutation"],
+                # TODO: mutation_accession = record["mutation_accession"]
                 **qualifiers
             )
         edges=[association]
     return nodes,edges
+
+
+def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite, record: dict[str, Any]) -> ChemicalToChemicalAssociation:
+    species_context_qualifier = get_species_context_qualifier(record)
+    context_qualifier = get_enzyme_context_qualifier(koza, record)
+    connection = koza.state['chembl_db_connection']
+    references = get_references(connection, "metabolism_refs", "met_id", record["met_id"])
+    association = ChemicalToChemicalAssociation(
+        id=str(uuid.uuid4()),
+        subject=substrate.id,
+        predicate="biolink:has_metabolite",
+        object=metabolite.id,
+        # TODO: species_context_qualifier = species_context_qualifier,
+        # TODO: context_qualifier = context_qualifier,
+        sources=build_association_knowledge_sources(INFORES_CHEMBL),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        publications=references if len(references) > 0 else None,
+        # TODO: metabolic_conversion = record["metabolic_conversion"],
+        # TODO: metabolic_conversion_comment = record["metabolic_comment"],
+        # TODO: enzyme_type = record["enzyme_type"],
+        # TODO:  = record["target_name"],
+    )
+    return association
 
 
 # The prepare function is responsible for any data download, decompression, or other preparation required
@@ -313,7 +483,7 @@ def get_association(koza, record, action_type_map):
 def prepare_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
     koza.log("ChEMBL drug mechanism binding data ...", level="INFO")
-    con = get_connection(koza.log)
+    con = get_connection(koza)
     koza.state['chembl_db_connection'] = con
     cur = con.cursor()
     cur.execute(MOA_QUERY + WHERE_DIRECT_INTERACTION)
@@ -337,7 +507,7 @@ def transform_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
 def prepare_mechanism(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
     koza.log("ChEMBL drug mechanism data ...", level="INFO")
-    con = get_connection(koza.log)
+    con = get_connection(koza)
     koza.state['chembl_db_connection'] = con
     cur = con.cursor()
     cur.execute(MOA_QUERY)
@@ -354,4 +524,36 @@ def transform_mechanism(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
         edges = []
         action_type_map = QUALIFIER_CONFIG.get(record["action_type"])
         nodes, edges = get_association(koza, record, action_type_map)
+        yield KnowledgeGraph(nodes=nodes, edges=edges)
+
+
+@koza.prepare_data(tag="chembl_metabolites")
+def prepare_metabolites(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    koza.log("ChEMBL metabolites data ...", level="INFO")
+    con = get_connection(koza)
+    koza.state['chembl_db_connection'] = con
+    cur = con.cursor()
+    cur.execute(METABOLITES_QUERY)
+    records = cur.fetchall()
+    for record in records:
+         yield record
+    con.close()
+
+
+@koza.transform(tag="chembl_metabolites")
+def transform_metabolites(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    for record in data:
+        nodes = []
+        edges = []
+        substrate = create_chemical_entity(koza, record['substrate_molregno'])
+        metabolite = create_chemical_entity(koza, record['metabolite_molregno'])
+        if substrate and metabolite:
+            nodes.append(substrate)
+            nodes.append(metabolite)
+            association = create_chemical_association(koza, substrate, metabolite, record)
+            edges.append(association)
+            if record['drug_molregno'] != record['substrate_molregno']:
+                chemical = create_chemical_entity(koza, record['drug_molregno'])
+                nodes.append(chemical)
+                association = create_chemical_association(koza, chemical, metabolite, record)
         yield KnowledgeGraph(nodes=nodes, edges=edges)
