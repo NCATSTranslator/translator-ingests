@@ -16,6 +16,8 @@ dependencies = [
     "kghub-downloader>=0.4.2",
     "koza",
     "robokop-orion==0.1.6",
+    "hatchling",
+    "uv-dynamic-versioning>=0.11.2",
 ]
 
 [project.scripts]
