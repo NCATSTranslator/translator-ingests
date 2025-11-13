@@ -14,7 +14,7 @@ from koza.model.formats import OutputFormat as KozaOutputFormat
 from orion.meta_kg import MetaKnowledgeGraphBuilder
 from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
-from translator_ingest import INGESTS_PARSER_PATH
+from translator_ingest import INGESTS_PARSER_PATH, INGESTS_RELEASES_PATH
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.metadata import PipelineMetadata
@@ -344,7 +344,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
 # Open the latest release metadata and compare build versions with the current pipeline run to see if a new release needs to
 # be generated. build_version is used, intentionally ignoring the release version, because we don't need to make a
 # new release if the build hasn't actually changed.
-def is_release_current(pipeline_metadata: PipelineMetadata):
+def is_latest_release_current(pipeline_metadata: PipelineMetadata):
     release_metadata_path = get_versioned_file_paths(IngestFileType.LATEST_RELEASE_FILE,
                                                      pipeline_metadata=pipeline_metadata)
     if not release_metadata_path.exists():
@@ -353,12 +353,16 @@ def is_release_current(pipeline_metadata: PipelineMetadata):
         latest_release_metadata = PipelineMetadata(**json.load(latest_release_file))
     return pipeline_metadata.build_version == latest_release_metadata.build_version
 
-def generate_release(pipeline_metadata: PipelineMetadata):
+def generate_latest_release(pipeline_metadata: PipelineMetadata):
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
                 f"release: {pipeline_metadata.release_version}")
+    latest_release_metadata = {
+        "data": f"{INGESTS_RELEASES_PATH}{pipeline_metadata.source}/{pipeline_metadata.release_version}/",
+        **asdict(pipeline_metadata)
+    }
     write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=asdict(pipeline_metadata))
+                      data=latest_release_metadata)
 
 
 def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
@@ -418,11 +422,11 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     else:
         generate_graph_metadata(pipeline_metadata)
 
-    if is_release_current(pipeline_metadata) and not overwrite:
+    if is_latest_release_current(pipeline_metadata) and not overwrite:
         logger.info(f"Latest release already up to date for {pipeline_metadata.source}, "
                     f"build: {pipeline_metadata.build_version}")
     else:
-        generate_release(pipeline_metadata)
+        generate_latest_release(pipeline_metadata)
 
 
 @click.command()

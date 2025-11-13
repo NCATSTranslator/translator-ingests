@@ -137,11 +137,19 @@ validate-only-%:
 	@echo "Validating $*..."
 	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
-
 .PHONY: merge
 merge:
 	@echo "Merging sources and building translator_kg...";
 	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
+
+.PHONY: release
+release:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
+
+.PHONY: release-%
+release-%:
+	@echo "Creating release for $*..."
+	@$(RUN) python src/translator_ingest/release.py $*
 
 ### Linting, Formatting, and Cleaning ###
 
