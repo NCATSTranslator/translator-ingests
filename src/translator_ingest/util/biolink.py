@@ -21,6 +21,7 @@ INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
+INFORES_TTD = "infores:ttd"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
