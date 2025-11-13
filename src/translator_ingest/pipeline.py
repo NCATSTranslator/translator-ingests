@@ -17,7 +17,7 @@ from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.biolink import get_current_biolink_version
-from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -259,23 +259,9 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Generate test data and example edges
     test_data(pipeline_metadata)
 
-    # Read in the source_info section of the rig.
-    # Currently, some rigs have -rig.yaml and some have _rig.yaml, just look for either.
-    rig_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}_rig.yaml"
-    if not rig_yaml_file.exists():
-        raise FileNotFoundError(f"rig YAML file not found for {pipeline_metadata.source}.")
-    with rig_yaml_file.open("r") as rig_file:
-        rig_data = yaml.safe_load(rig_file)
-        rig_name = rig_data.get("name")
-        rig_source_info = rig_data["source_info"]
-
-    data_source_info = KGXSource(
-        id=pipeline_metadata.source,
-        name=rig_name if rig_name else pipeline_metadata.source,
-        description=rig_source_info["description"],
-        license=rig_source_info.get("terms_of_use_info", ""),
-        url=rig_source_info.get("data_access_locations", ""),
-    )
+    # Get KGXSource metadata from the rig file
+    data_source_info = get_kgx_source_from_rig(pipeline_metadata.source)
+    data_source_info.version = pipeline_metadata.source_version
 
     release_url = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
     source_metadata = KGXGraphMetadata(
@@ -302,9 +288,6 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         edges_file_path=graph_edges_file_path,
         graph_metadata=source_metadata,
     )
-    # missed a couple of things in the orion release, patching them in here temporarily
-    graph_metadata["version"] = pipeline_metadata.build_version
-    graph_metadata["isBasedOn"][0]["version"] = pipeline_metadata.source_version
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
