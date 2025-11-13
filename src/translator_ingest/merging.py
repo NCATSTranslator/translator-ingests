@@ -79,7 +79,11 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[s
     biolink_version = list(biolink_versions)[0]
     babel_version = list(babel_versions)[0]
 
-    graph_version = hashlib.md5("".join(graph_source_versions).encode()).hexdigest()[:12]
+    # TODO incorporate a build version and latest release file to check if the graph was actually built
+    # it worked before with the hashed id but we'd rather use human readable versions for the releases
+    #
+    # build_version = hashlib.md5("".join(graph_source_versions).encode()).hexdigest()[:12]
+    graph_version = datetime.datetime.now().strftime("%Y_%m_%d")
     logger.info(f"Graph version determined: {graph_version}")
     graph_spec = GraphSpec(
         graph_id=graph_id,
