@@ -52,7 +52,7 @@ def create_release(source: str):
         latest_release_data = PipelineMetadata(**json.load(f))
 
     # Create release directory
-    release_src_dir = Path(INGESTS_RELEASES_PATH) / source / latest_release_data.release_version
+    release_src_dir = Path(INGESTS_RELEASES_PATH) / source
     release_version_dir = release_src_dir / latest_release_data.release_version
     release_version_dir.mkdir(parents=True, exist_ok=True)
 
