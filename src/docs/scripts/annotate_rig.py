@@ -1,20 +1,21 @@
 """
 This script 'surgically' annotates specified RIG fields in a specified RIG YAML file.
 """
-from os import path, rename
+from os import path, replace
 import sys
+from copy import deepcopy
 import yaml
 import json
 import click
-from loguru import logger
 
 from translator_ingest import INGESTS_PARSER_PATH
 
 
 def rewrite_property(rig_data, properties, values):
     """
-    Recurse to modify the specified hierarchically specified property in the RIG data,
-    with the specified values (or delete the property if values are 'None').
+    Recurse to overwrite the specified hierarchically specified property in the RIG data,
+    with the specified value, which may be a complex, hierarchical JSON data specification
+    or the (default) value of 'None' which deletes the property.
     Note that the software is currently agnostic about the RIG schema data model,
     so the onus of correct value formats is placed on the user of the tool!
 
@@ -29,10 +30,10 @@ def rewrite_property(rig_data, properties, values):
     if len(properties) == 1:
         # terminal leaf of properties: perform the required surgery here
         if values is not None:
-            rig_data[properties[0]] = values
+            rig_data[properties[0]] = deepcopy(values)  # although not DRY, deepcopy ensures readable YAML?
         else:
-            # delete the property from the rig_data
-            rig_data.pop(properties[0])
+            # delete the property from the rig_data if present
+            rig_data.pop(properties[0], None)
 
     else:
         # not yet at the end of the path... recurse down the path
@@ -67,7 +68,7 @@ def rewrite_property(rig_data, properties, values):
     default=None,
     help='Values to which to set the specified property, '+
          'specified as a JSON object expressed as a valid quote-escaped string '+
-         '(default: None, deletes the property and its values)'
+         '(omitting the --value option triggers deletion of the property and its values)'
 )
 def main(ingest, rig, tag, value):
     """
@@ -88,10 +89,10 @@ def main(ingest, rig, tag, value):
 
     \b
     annotate_rig.py \
-        --ingest icees \
-        --rig my_rig.yaml \
-        --property "target_info.edge_type_info.qualifiers" \
-        --values "[{\"property\": \"biolink:subject_feature_name\", \"value_range\": \"str\"},{\"property\": \"biolink:object_feature_name\", \"value_range\": \"str\"}]"
+        --ingest=icees \
+        --rig=my_rig.yaml \
+        --tag=target_info.edge_type_info.qualifiers \
+        --values=[{\"property\": \"biolink:subject_feature_name\", \"value_range\": \"str\"},{\"property\": \"biolink:object_feature_name\", \"value_range\": \"str\"}]
     """
 
     ingest_path = INGESTS_PARSER_PATH / ingest
@@ -131,7 +132,7 @@ def main(ingest, rig, tag, value):
             rig_data = yaml.safe_load(r)
             rewrite_property(rig_data, properties,values)
 
-        rename(rig_path, str(rig_path)+".original")
+        replace(rig_path, str(rig_path)+".original")
 
         with open(rig_path, 'w') as r:
             yaml.safe_dump(rig_data, r, sort_keys=False)
