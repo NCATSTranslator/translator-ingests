@@ -2,6 +2,7 @@ import logging
 import click
 import json
 import yaml
+import os
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
 from importlib import import_module
@@ -11,7 +12,7 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 from orion.meta_kg import MetaKnowledgeGraphBuilder
-from orion.kgx_validation import validate_graph as generate_graph_summary
+from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
 from translator_ingest import INGESTS_PARSER_PATH
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
@@ -32,6 +33,7 @@ from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_va
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+TI_STORAGE_URL = os.environ.get("TI_STORAGE_URL", "https://stars.renci.org/var/translator/releases/")
 
 # Determine the latest available version for the source using the function from the ingest module
 def get_latest_source_version(source):
@@ -263,24 +265,50 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Currently, some rigs have -rig.yaml and some have _rig.yaml, just look for either.
     rig_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}_rig.yaml"
     if not rig_yaml_file.exists():
-        rig_yaml_file =  INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}-rig.yaml"
-        if not rig_yaml_file.exists():
-            raise FileNotFoundError(f"rig YAML file not found for {pipeline_metadata.source}.")
+        raise FileNotFoundError(f"rig YAML file not found for {pipeline_metadata.source}.")
     with rig_yaml_file.open("r") as rig_file:
         rig_data = yaml.safe_load(rig_file)
-        graph_metadata = rig_data["source_info"]
+        rig_name = rig_data.get("name")
+        rig_source_info = rig_data["source_info"]
 
+
+    data_source_info = KGXSource(
+        id=pipeline_metadata.source,
+        name=rig_name if rig_name else pipeline_metadata.source,
+        description=rig_source_info["description"],
+        license=rig_source_info["terms_of_use_info"],
+        url=rig_source_info["data_access_locations"],
+    )
+
+    release_url = f"{TI_STORAGE_URL}{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
+    source_metadata = KGXGraphMetadata(
+        id=release_url,
+        name=pipeline_metadata.source,
+        description=f"A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
+                    f", Biolink Model, and Node Normalizer.",
+        license="MIT",
+        url=release_url,
+        version=pipeline_metadata.release_version,
+        date_created=datetime.now().strftime("%Y_%m_%d"),
+        biolink_version=pipeline_metadata.biolink_version,
+        babel_version=pipeline_metadata.node_norm_version,
+        kgx_sources=[data_source_info]
+    )
+
+    # get paths to the final nodes and edges files
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
         IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
-    summary_results = generate_graph_summary(
+    # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
+    graph_metadata = analyze_graph(
         nodes_file_path=graph_nodes_file_path,
         edges_file_path=graph_edges_file_path,
-        graph_id=pipeline_metadata.source,
-        graph_version=pipeline_metadata.build_version,
-        logger=logger,
+        graph_metadata=source_metadata,
     )
-    graph_metadata.update(summary_results)
+    # missed a couple of things in the orion release, patching them in here temporarily
+    graph_metadata["version"] = pipeline_metadata.build_version
+    graph_metadata["isBasedOn"][0]["version"] = pipeline_metadata.source_version
+    print(asdict(source_metadata))
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
@@ -327,9 +355,8 @@ def is_release_current(pipeline_metadata: PipelineMetadata):
     return pipeline_metadata.build_version == latest_release_metadata.build_version
 
 def generate_release(pipeline_metadata: PipelineMetadata):
-    release_version = datetime.now().strftime("%Y_%m_%d")
-    logger.info(f"Generating release metadata for {pipeline_metadata.source}... release: {release_version}")
-    pipeline_metadata.release_version = release_version
+    logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
+                f"release: {pipeline_metadata.release_version}")
     write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=asdict(pipeline_metadata))
@@ -379,6 +406,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     if not passed:
         logger.warning(f"Validation did not pass for {pipeline_metadata.source}! Aborting...")
         return
+
+    # The release version needs to be established before the graph metadata phase because it's used in the outputs
+    release_version = datetime.now().strftime("%Y_%m_%d")
+    pipeline_metadata.release_version = release_version
 
     pipeline_metadata.build_version = pipeline_metadata.generate_build_version()
     if is_graph_metadata_complete(pipeline_metadata) and not overwrite:
