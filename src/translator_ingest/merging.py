@@ -66,11 +66,8 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> str:
         output_directory=str(output_dir),
         nodes_output_filename="nodes.jsonl",
         edges_output_filename="edges.jsonl",
+        save_memory=True
     )
-    # TODO: memory vs disk merging should be specified with an argument for the KGXFileMerger but currently ORION tries
-    #  to determine whether it needs to run on disk. In the short term monkey patch it so it always uses Disk.
-    file_merger.node_graph_merger = DiskGraphMerger(temp_directory=str(output_dir))
-    file_merger.edge_graph_merger = DiskGraphMerger(temp_directory=str(output_dir))
     file_merger.merge()
 
     merge_metadata = file_merger.get_merge_metadata()
