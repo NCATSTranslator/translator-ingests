@@ -308,7 +308,6 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # missed a couple of things in the orion release, patching them in here temporarily
     graph_metadata["version"] = pipeline_metadata.build_version
     graph_metadata["isBasedOn"][0]["version"] = pipeline_metadata.source_version
-    print(asdict(source_metadata))
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
