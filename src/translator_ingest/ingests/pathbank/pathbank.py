@@ -1,14 +1,13 @@
-import koza  # koza library
-import os  # for file operations
-import time  # for timing progress
-import zipfile  # for extracting zip files
-import shutil  # for copying files
-from pathlib import Path  # for file path operations
-from typing import Any, Iterable  # for type hints
-import xmltodict  # for XML parsing
-from datetime import datetime  # for date parsing
+import csv
+import time
+import zipfile
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Iterable
+import koza
+import xmltodict
 
-from koza.model.graphs import KnowledgeGraph  # koza's knowledge graph object (nodes and edges)
+from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Pathway,
@@ -24,124 +23,66 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AnatomicalEntity,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-)  # biolink model classes
+)
 
 from translator_ingest.util.biolink import (
     INFORES_PATHBANK,
     entity_id,
     build_association_knowledge_sources,
-)  # for source information
-from translator_ingest.util.http_utils import get_modify_date  # for getting file modification dates
+)
+from translator_ingest.util.http_utils import get_modify_date
 
 
 def get_latest_version() -> str:
-    """
-    Returns the most recent modify date of the PathBank source files in YYYY-MM-DD format.
-    Compares the modification dates of both the pathways CSV and PWML zip files and returns the most recent.
-    """
-    strformat = "%Y-%m-%d"
+    """Return the most recent modify date of PathBank source files in YYYY-MM-DD format.
 
-    # Get last-modified dates for each source data file
-    pathways_modify_date = get_modify_date("https://pathbank.org/downloads/pathbank_all_pathways.csv.zip", strformat)
-    pwml_modify_date = get_modify_date("https://pathbank.org/downloads/pathbank_all_pwml.zip", strformat)
+    Compares modification dates of both pathways CSV and PWML zip files.
+    """
+    date_format = "%Y-%m-%d"
+    pathways_date = get_modify_date(
+        "https://pathbank.org/downloads/pathbank_all_pathways.csv.zip", date_format
+    )
+    pwml_date = get_modify_date("https://pathbank.org/downloads/pathbank_all_pwml.zip", date_format)
 
-    # Compare them and return the most recent date
-    if datetime.strptime(pathways_modify_date, strformat) > datetime.strptime(pwml_modify_date, strformat):
-        return pathways_modify_date
-    else:
-        return pwml_modify_date
+    if datetime.strptime(pathways_date, date_format) > datetime.strptime(pwml_date, date_format):
+        return pathways_date
+    return pwml_date
 
 
 @koza.prepare_data(tag="pathways")
 def prepare_pathways_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    """Extract zip file and read CSV data for pathways."""
-    import csv as csv_module
+    """Extract zip file and read CSV data for pathways.
 
+    Files must be in input_files_dir as provided by Koza.
+    Raises FileNotFoundError if required files are missing.
+    """
     source_data_dir = Path(koza.input_files_dir)
-
-    # Extract pathbank_all_pathways.csv.zip if CSV doesn't exist
     pathways_zip = source_data_dir / "pathbank_all_pathways.csv.zip"
     csv_file = source_data_dir / "pathbank_pathways.csv"
 
-    # If zip doesn't exist in current directory, check parent directory for other versions
-    if not pathways_zip.exists():
-        # Go up to data/pathbank level to search for v*/source_data directories
-        pathbank_base_dir = source_data_dir.parent.parent
-        # Check common version directories (v1, v2, etc.)
-        for version_dir in pathbank_base_dir.glob("v*/source_data"):
-            potential_zip = version_dir / "pathbank_all_pathways.csv.zip"
-            if potential_zip.exists():
-                koza.log(f"Found zip file in {version_dir}, copying to current directory...")
-                # Ensure target directory exists
-                pathways_zip.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(potential_zip, pathways_zip)
-                break
-
-    if pathways_zip.exists() and not csv_file.exists():
+    # Extract zip if CSV doesn't exist
+    if not csv_file.exists():
+        if not pathways_zip.exists():
+            raise FileNotFoundError(
+                f"Required zip file not found: {pathways_zip}. "
+                f"Files must be in input_files_dir: {source_data_dir}"
+            )
         koza.log(f"Extracting {pathways_zip.name}...")
         with zipfile.ZipFile(pathways_zip, "r") as zip_ref:
             zip_ref.extractall(source_data_dir)
         koza.log(f"Extracted {csv_file.name}")
 
-    # Extract pathbank_all_pwml.zip if PWML directory doesn't exist or is empty
-    pwml_zip = source_data_dir / "pathbank_all_pwml.zip"
-    pwml_dir = source_data_dir / "pathbank_all_pwml"
+    with open(csv_file, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f, fieldnames=["SMPDB ID", "PW ID", "Name", "Subject", "Description"])
+        # Skip header row if present
+        first_row = next(reader, None)
+        if first_row and first_row.get("SMPDB ID") != "SMPDB ID":
+            # First row was data, yield it
+            yield first_row
 
-    # If zip doesn't exist in current directory, check parent directory for other versions
-    if not pwml_zip.exists():
-        # Go up to data/pathbank level to search for v*/source_data directories
-        pathbank_base_dir = source_data_dir.parent.parent
-        # Check common version directories (v1, v2, etc.)
-        for version_dir in pathbank_base_dir.glob("v*/source_data"):
-            potential_zip = version_dir / "pathbank_all_pwml.zip"
-            if potential_zip.exists():
-                koza.log(f"Found PWML zip file in {version_dir}, copying to current directory...")
-                # Ensure target directory exists
-                pwml_zip.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(potential_zip, pwml_zip)
-                break
-
-    if pwml_zip.exists() and (not pwml_dir.exists() or not any(pwml_dir.glob("*.pwml"))):
-        # Check available disk space before extracting (PWML zip expands to ~15GB)
-        try:
-            stat_result = os.statvfs(source_data_dir)
-            free_space_gb = (stat_result.f_bavail * stat_result.f_frsize) / (1024**3)
-            if free_space_gb < 20:  # Need at least 20GB free
-                koza.log(
-                    f"Warning: Only {free_space_gb:.1f}GB free disk space. "
-                    f"PWML extraction requires ~15GB. Skipping PWML extraction.",
-                    level="WARNING",
-                )
-            else:
-                koza.log(f"Extracting {pwml_zip.name}...")
-                with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
-                    zip_ref.extractall(source_data_dir)
-                koza.log(f"Extracted PWML files to {pwml_dir}")
-        except OSError as e:
-            koza.log(
-                f"Error extracting PWML zip: {e}. "
-                f"This may be due to insufficient disk space. Skipping PWML extraction.",
-                level="WARNING",
-            )
-
-    # Now read the CSV file and yield rows
-    if csv_file.exists():
-        with open(csv_file, "r", encoding="utf-8") as f:
-            reader = csv_module.DictReader(f, fieldnames=["SMPDB ID", "PW ID", "Name", "Subject", "Description"])
-            # Skip header row if it exists
-            first_row = next(reader, None)
-            if first_row and first_row.get("SMPDB ID") == "SMPDB ID":
-                # This was the header, skip it
-                pass
-            else:
-                # First row was data, yield it
-                yield first_row
-
-            # Yield remaining rows
-            for row in reader:
-                yield row
-    else:
-        koza.log(f"CSV file {csv_file} not found after extraction attempt", level="WARNING")
+        # Yield remaining rows
+        for row in reader:
+            yield row
 
 
 @koza.on_data_begin(tag="pathways")
@@ -1439,62 +1380,38 @@ def on_data_begin_pwml(koza: koza.KozaTransform) -> None:
 
 @koza.prepare_data(tag="pwml")
 def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    # Parse PWML XML files and extract structured data
-    # We discover files directly since Koza doesn't support glob patterns
+    """Parse PWML XML files and extract structured data.
 
+    Files must be in input_files_dir as provided by Koza.
+    Raises FileNotFoundError if required files are missing.
+    """
     source_data_dir = Path(koza.input_files_dir)
+    pwml_zip = source_data_dir / "pathbank_all_pwml.zip"
     pwml_dir = source_data_dir / "pathbank_all_pwml"
 
-    # Extract pathbank_all_pwml.zip if PWML directory doesn't exist or is empty
-    pwml_zip = source_data_dir / "pathbank_all_pwml.zip"
-
-    # If zip doesn't exist in current directory, check parent directory for other versions
-    if not pwml_zip.exists():
-        # Go up to data/pathbank level to search for v*/source_data directories
-        pathbank_base_dir = source_data_dir.parent.parent
-        # Check common version directories (v1, v2, etc.)
-        for version_dir in pathbank_base_dir.glob("v*/source_data"):
-            potential_zip = version_dir / "pathbank_all_pwml.zip"
-            if potential_zip.exists():
-                koza.log(f"Found PWML zip file in {version_dir}, copying to current directory...")
-                # Ensure target directory exists
-                pwml_zip.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(potential_zip, pwml_zip)
-                break
-
-    if pwml_zip.exists() and (not pwml_dir.exists() or not any(pwml_dir.glob("*.pwml"))):
-        # Check available disk space before extracting (PWML zip expands to ~15GB)
-        try:
-            stat_result = os.statvfs(source_data_dir)
-            free_space_gb = (stat_result.f_bavail * stat_result.f_frsize) / (1024**3)
-            if free_space_gb < 20:  # Need at least 20GB free
-                koza.log(
-                    f"Warning: Only {free_space_gb:.1f}GB free disk space. "
-                    f"PWML extraction requires ~15GB. Skipping PWML extraction.",
-                    level="WARNING",
-                )
-            else:
-                koza.log(f"Extracting {pwml_zip.name}...")
-                with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
-                    zip_ref.extractall(source_data_dir)
-                koza.log(f"Extracted PWML files to {pwml_dir}")
-        except OSError as e:
-            koza.log(
-                f"Error extracting PWML zip: {e}. "
-                f"This may be due to insufficient disk space. Skipping PWML extraction.",
-                level="WARNING",
+    # Extract zip if PWML directory doesn't exist or is empty
+    # PathBank PWML files follow the pattern PW*.pwml (e.g., PW000001.pwml)
+    pwml_pattern = "PW*.pwml"
+    if not pwml_dir.exists() or not any(pwml_dir.glob(pwml_pattern)):
+        if not pwml_zip.exists():
+            raise FileNotFoundError(
+                f"Required zip file not found: {pwml_zip}. "
+                f"Files must be in input_files_dir: {source_data_dir}"
             )
 
-    # Find all PWML files in the directory directly (ignore Koza's data iterator)
-    pwml_files = list(pwml_dir.glob("*.pwml")) if pwml_dir.exists() else []
+        koza.log(f"Extracting {pwml_zip.name}...")
+        with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
+            zip_ref.extractall(source_data_dir)
+        koza.log(f"Extracted PWML files to {pwml_dir}")
+
+    # Find all PathBank PWML files (PW*.pwml pattern)
+    pwml_files = sorted(pwml_dir.glob(pwml_pattern))
     total_files = len(pwml_files)
     koza.log(f"Found {total_files} PWML files to process")
 
-    # If no files found, yield an empty dict to satisfy Koza's requirement for at least one result
-    # The transform function will handle this gracefully
     if total_files == 0:
         koza.log("No PWML files found, skipping PWML processing", level="WARNING")
-        yield {}  # Yield empty dict so transform function is called and can handle gracefully
+        yield {}  # Yield empty dict so transform function is called
         return
 
     # Process each PWML file
