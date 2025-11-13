@@ -276,8 +276,8 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         id=pipeline_metadata.source,
         name=rig_name if rig_name else pipeline_metadata.source,
         description=rig_source_info["description"],
-        license=rig_source_info["terms_of_use_info"],
-        url=rig_source_info["data_access_locations"],
+        license=rig_source_info.get("terms_of_use_info", ""),
+        url=rig_source_info.get("data_access_locations", ""),
     )
 
     release_url = f"{TI_STORAGE_URL}{pipeline_metadata.source}/{pipeline_metadata.release_version}/"

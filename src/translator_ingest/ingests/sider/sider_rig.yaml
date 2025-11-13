@@ -9,7 +9,7 @@ source_info:
     of the database contains data on 1,430 drugs and 5,868 adverse drug reactions.
   citations:
     - "Kuhn M, Letunic I, Jensen LJ, Bork P. The SIDER database of drugs and side effects. Nucleic Acids Research. 2016;44(D1):D1075-9. DOI: 10.1093/nar/gkv1075"
-  terms_of_use: "Creative Commons Attribution-Noncommercial-Share Alike 4.0 License"
+  terms_of_use_info: "Creative Commons Attribution-Noncommercial-Share Alike 4.0 License"
   data_access_locations:
     - "http://sideeffects.embl.de/download/"
   data_provision_mechanisms:
