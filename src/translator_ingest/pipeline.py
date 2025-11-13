@@ -2,7 +2,7 @@ import logging
 import click
 import json
 import yaml
-import os
+
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
 from importlib import import_module
@@ -14,7 +14,7 @@ from koza.model.formats import OutputFormat as KozaOutputFormat
 from orion.meta_kg import MetaKnowledgeGraphBuilder
 from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
-from translator_ingest import INGESTS_PARSER_PATH, INGESTS_RELEASES_PATH
+from translator_ingest import INGESTS_PARSER_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.metadata import PipelineMetadata
@@ -32,8 +32,6 @@ from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_va
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-TI_STORAGE_URL = os.environ.get("TI_STORAGE_URL", "https://stars.renci.org/var/translator/releases/")
 
 # Determine the latest available version for the source using the function from the ingest module
 def get_latest_source_version(source):
@@ -271,7 +269,6 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         rig_name = rig_data.get("name")
         rig_source_info = rig_data["source_info"]
 
-
     data_source_info = KGXSource(
         id=pipeline_metadata.source,
         name=rig_name if rig_name else pipeline_metadata.source,
@@ -280,7 +277,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         url=rig_source_info.get("data_access_locations", ""),
     )
 
-    release_url = f"{TI_STORAGE_URL}{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
+    release_url = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
     source_metadata = KGXGraphMetadata(
         id=release_url,
         name=pipeline_metadata.source,
@@ -357,7 +354,7 @@ def generate_latest_release(pipeline_metadata: PipelineMetadata):
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
                 f"release: {pipeline_metadata.release_version}")
     latest_release_metadata = {
-        "data": f"{INGESTS_RELEASES_PATH}{pipeline_metadata.source}/{pipeline_metadata.release_version}/",
+        "data": f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/",
         **asdict(pipeline_metadata)
     }
     write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,

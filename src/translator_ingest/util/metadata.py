@@ -9,6 +9,7 @@ class PipelineMetadata:
     biolink_version: str | None = None
     build_version: str | None = None
     release_version: str | None = None
+    data: str | None = None
 
     def generate_build_version(self):
         versions = [
