@@ -1,0 +1,13 @@
+name: ontology_ingest
+
+metadata:
+  ingest_title: 'Ubergraph Ontological Hierarchy'
+  ingest_url: 'https://github.com/INCATools/ubergraph'
+  description: 'Subclass relationships from the redundant version of Ubergraph'
+  rights: 'https://raw.githubusercontent.com/INCATools/ubergraph/master/LICENSE.txt'
+
+readers:
+  redundant_graph:
+    format: tsv
+    files:
+      - redundant-graph-table.tgz
