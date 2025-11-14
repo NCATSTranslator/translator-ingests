@@ -64,7 +64,7 @@ target_info:
         - biolink:Proteinfamily
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
-      predicate: biolink:regulates
+      predicate: biolink:regulates            # MHB: this is now plural ('predicates'), and takes a list/array
       object_categories:
         - biolink:Protein
         - biolink:Proteinfamily
@@ -95,7 +95,7 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
+      edge_properties:            # MHB: edge properties need to include "biolink" prefix. 
         - publications
         - has_confidence_score
         - supporting_text
@@ -116,14 +116,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
+      edge_properties:           # MHB: edge properties need to include "biolink" prefix. 
         - publications
         - has_confidence_score
         - supporting_text
       ui_explanation: "Signor records indicate the protein to be 'form complex' another complex - which maps best to the Biolink predicate 'part of' with additional directional qualifier."
     - subject_categories:
         - biolink:ChemicalEntity
-      predicate: biolink:affects
+      predicate: biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -164,7 +164,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:Proteinfamily
         - biolink:SmallMolecule
-      predicate: biolink:affects
+      predicate: biolink:affects         # MHB: this is now plural ('predicates'), and takes a list/array
       object_categories:
         - biolink:ChemicalEntity
       qualifiers:
@@ -192,14 +192,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
+      edge_properties:               # MHB: edge properties need to include "biolink" prefix. 
         - publications
         - has_confidence_score
         - supporting_text
       ui_explanation: "Signor records indicate the protein / complex / proteinfamily / small molecule to be 'affects' another chemical - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
     - subject_categories:
         - biolink:ChemicalEntity
-      predicate: biolink:affects
+      predicate: biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array
       object_categories:
         - biolink:ChemicalEntity
       qualifiers:
@@ -227,7 +227,7 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
+      edge_properties:           # MHB: edge properties need to include "biolink" prefix. 
         - publications
         - has_confidence_score
         - supporting_text
@@ -238,7 +238,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      predicate: biolink:physically_interacts_with
+      predicate: biolink:physically_interacts_with        # MHB: this is now plural ('predicates'), and takes a list/array. Also, change to directly_physically_interacts with (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16)
       object_categories:
         - biolink:Protein
         - biolink:Proteinfamily
@@ -256,11 +256,13 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
+      edge_properties:                # MHB: edge properties need to include "biolink" prefix. 
         - publications
         - has_confidence_score
         - supporting_text
-      ui_explanation: "The 'MECHANISM' provided by Signor indicates that a physical interaction must exist between the subject and object entities - so this edge is created to report that, in addition to the causal association edge."
+      ui_explanation: "The 'MECHANISM' provided by Signor indicates that a physical interaction must exist between the subject and object entities - so this edge is created to report that, in addition to the primary affects/regulates causal association edge."
+     # MHB:  Update - SIGNOR includes a column that explicitly reports whether each causal association is direct or not - use this as a flag to determine for what records to create this additional 'directly_physically_interacts_with' edge, instead of implicit defs/mappings from MECHANISM terms. 
+     # MHB:   Update the ui_explanation here to reflect this. 
   node_type_info:
     - node_category: biolink:Protein
       source_identifier_types:
