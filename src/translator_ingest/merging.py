@@ -56,6 +56,11 @@ def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
     edges_file = release_version_dir / "edges.jsonl"
     metadata_file = release_version_dir / "graph-metadata.json"
 
+    # TODO Stephen Ramsey was right -
+    #  If we had a predictable deployment environment we could make this a lot faster using a subprocess call
+    #  subprocess.run(['tar', '-I', 'pixz', '-cf', ...
+    #  This is painfully slow for large KGs so we may want to implement a check to see if an environment could support
+    #  it, like shutil.which('pixz'): and then use the faster way if possible, but some machines might not even have tar
     with tarfile.open(tar_path, 'w:xz') as tar:
         if nodes_file.exists():
             tar.add(nodes_file, arcname=nodes_file.name)
