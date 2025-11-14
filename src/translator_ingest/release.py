@@ -38,7 +38,14 @@ def create_compressed_tar(pipeline_metadata: PipelineMetadata, release_dir: Path
     with tarfile.open(tar_path, 'w:xz') as tar:
         kgx_files = get_versioned_file_paths(IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata)
         for file_path in kgx_files:
-            tar.add(file_path, arcname=file_path.name)
+            # Rename normalized_nodes/edges to nodes/edges in the archive
+            if "nodes" in file_path.name:
+                arcname = "nodes.jsonl"
+            elif "edges" in file_path.name:
+                arcname = "edges.jsonl"
+            else:
+                arcname = file_path.name
+            tar.add(file_path, arcname=arcname)
         graph_metadata_path = get_versioned_file_paths(IngestFileType.GRAPH_METADATA_FILE, pipeline_metadata)
         tar.add(graph_metadata_path, arcname=graph_metadata_path.name)
 
