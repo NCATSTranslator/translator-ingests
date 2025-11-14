@@ -98,7 +98,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     Returns:
         Tuple of (merged_graph_metadata, kgx_sources)
     """
-    logger.info(f"Merging {graph_id} with {sources}.")
+    logger.info(f"Merging {graph_id}. Sources: {sources}.")
     graph_spec_sources = []
     graph_source_versions = []
     kgx_sources = []
