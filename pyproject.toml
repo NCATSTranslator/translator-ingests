@@ -13,9 +13,10 @@ dependencies = [
     "biolink-model",
     "bmt>=1.4.6",
     "click>=8.0.0",
+    "deepdiff>=8.6.1",
     "kghub-downloader>=0.4.2",
     "koza",
-    "robokop-orion==0.1.6"
+    "robokop-orion==0.1.6",
 ]
 
 [project.scripts]
@@ -29,7 +30,7 @@ dev = [
     "ruff>=0.12.8",
     "pandas",   # also installs numpy
     "requests",
-    # for CX notebook support: I use old version that works with extensions
+    # for CX notebook support: I use the old version that works with extensions
     "nbclassic",
     "jupyter_contrib_nbextensions",
     "jsonlines",
