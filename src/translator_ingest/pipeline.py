@@ -1,7 +1,6 @@
 import logging
 import click
 import json
-import yaml
 
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
@@ -12,9 +11,9 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 from orion.meta_kg import MetaKnowledgeGraphBuilder
-from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
+from orion.kgx_metadata import KGXGraphMetadata, analyze_graph
 
-from translator_ingest import INGESTS_PARSER_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
+from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
@@ -267,8 +266,8 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     source_metadata = KGXGraphMetadata(
         id=release_url,
         name=pipeline_metadata.source,
-        description=f"A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
-                    f", Biolink Model, and Node Normalizer.",
+        description="A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
+                    ", Biolink Model, and Node Normalizer.",
         license="MIT",
         url=release_url,
         version=pipeline_metadata.release_version,
@@ -333,12 +332,13 @@ def is_latest_release_current(pipeline_metadata: PipelineMetadata):
         latest_release_metadata = PipelineMetadata(**json.load(latest_release_file))
     return pipeline_metadata.build_version == latest_release_metadata.build_version
 
+
 def generate_latest_release(pipeline_metadata: PipelineMetadata):
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
                 f"release: {pipeline_metadata.release_version}")
     latest_release_metadata = {
+        **asdict(pipeline_metadata),
         "data": f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/",
-        **asdict(pipeline_metadata)
     }
     write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
                       pipeline_metadata=pipeline_metadata,
@@ -414,6 +414,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 @click.option("--transform-only", is_flag=True, help="Only perform the transformation.")
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(source, transform_only, overwrite):
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     run_pipeline(source, transform_only=transform_only, overwrite=overwrite)
 
 

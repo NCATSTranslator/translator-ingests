@@ -1,5 +1,4 @@
 import yaml
-from pathlib import Path
 from dataclasses import dataclass
 
 from orion.kgx_metadata import KGXSource
