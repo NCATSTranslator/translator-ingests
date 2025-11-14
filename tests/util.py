@@ -9,7 +9,7 @@ def find_project_root(start: Path = Path(__file__)) -> Path:
     raise FileNotFoundError("Could not find project root from starting point.")
 
 
-ingest_dir_ignore_list = ["__pycache__"]
+ingest_dir_ignore_list = ["__pycache__", "_ingest_template"]
 
 
 def get_all_source_ids():
@@ -24,6 +24,14 @@ ALL_SOURCE_IDS = get_all_source_ids()
 # source_id: the name of the source corresponding to a translator_ingest directory
 def get_ingest_config_yaml_path(source_id: str) -> Path | None:
     yaml_file_name = source_id + ".yaml"
+    top_level_dir = find_project_root()
+    config_yaml_file_path = top_level_dir / "src" / "translator_ingest" / "ingests" / source_id / yaml_file_name
+    return config_yaml_file_path if config_yaml_file_path.exists() else None
+
+# get the absolute path for a rig yaml file
+# source_id: the name of the source corresponding to a translator_ingest directory
+def get_ingest_rig_yaml_path(source_id: str) -> Path | None:
+    yaml_file_name = source_id + "_rig.yaml"
     top_level_dir = find_project_root()
     config_yaml_file_path = top_level_dir / "src" / "translator_ingest" / "ingests" / source_id / yaml_file_name
     return config_yaml_file_path if config_yaml_file_path.exists() else None
