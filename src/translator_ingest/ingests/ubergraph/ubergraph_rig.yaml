@@ -32,13 +32,20 @@ ingest_info:
 
   included_content:
     - file_name: "redundant-graph-table.tgz"
-      included_records: "All edges from edges.tsv with successfully mapped subject, predicate, and object CURIEs"
+      included_records: "Subclass (rdfs:subClassOf) edges where both subject and object are from selected biomedical ontologies"
       fields_used: "subject_id, predicate_id, object_id (mapped via node-labels.tsv and edge-labels.tsv)"
+      ontology_prefixes_included: "UBERON, CL, GO, CHEBI, PR, NCIT, HPO, MONDO, RO, SO, MP, PATO, ECTO, ENVO, OBI, MAXO, ECO, NCBITAXON, FOODON, MI, UO"
 
   filtered_content:
     - file_name: "redundant-graph-table.tgz"
       filtered_records: "Edges where subject, predicate, or object IRIs cannot be mapped to CURIEs"
       rationale: "CURIE conversion is essential for integration with Translator infrastructure. IRIs that cannot be mapped lack appropriate prefix mappings in Biolink Model, OBO, or custom converters."
+    - file_name: "redundant-graph-table.tgz"
+      filtered_records: "All non-subClassOf predicates (e.g., part_of, has_part, regulates, etc.)"
+      rationale: "Initial focus on hierarchical subclass relationships only. Other predicate types may be added in future iterations."
+    - file_name: "redundant-graph-table.tgz"
+      filtered_records: "Edges involving ontology terms not in the selected prefix list (e.g., non-biomedical ontologies, deprecated terms)"
+      rationale: "Focused on core biomedical ontologies most relevant to Translator use cases. Reduces graph size from 90+ million edges to ~2-3 million while maintaining comprehensive biomedical coverage."
 
   future_considerations:
     - category: edge_content
@@ -71,18 +78,28 @@ target_info:
   node_type_info:
     - node_category: biolink:NamedThing
       source_identifier_types:
-        - "GO"
-        - "UBERON"
-        - "CL"
-        - "CHEBI"
-        - "HP"
-        - "MONDO"
-        - "PATO"
-        - "RO"
-        - "NCBIGene"
-        - "HGNC"
-        - "SGD"
-      additional_notes: "Nodes represent ontology terms from multiple integrated biomedical ontologies. The specific category (Gene, Disease, ChemicalEntity, etc.) is determined during node normalization."
+        - "UBERON (anatomical structures)"
+        - "CL (cell types)"
+        - "GO (gene ontology: biological processes, molecular functions, cellular components)"
+        - "CHEBI (chemical entities)"
+        - "PR (proteins)"
+        - "NCIT (NCI Thesaurus)"
+        - "HPO (human phenotype ontology)"
+        - "MONDO (diseases)"
+        - "RO (relation ontology - used as subjects/objects in some cases)"
+        - "SO (sequence ontology)"
+        - "MP (mammalian phenotype)"
+        - "PATO (phenotype and trait ontology)"
+        - "ECTO (environmental conditions)"
+        - "ENVO (environmental ontology)"
+        - "OBI (ontology for biomedical investigations)"
+        - "MAXO (medical actions)"
+        - "ECO (evidence codes)"
+        - "NCBITAXON (taxonomic classifications)"
+        - "FOODON (food ontology)"
+        - "MI (molecular interactions)"
+        - "UO (units of measurement)"
+      additional_notes: "Nodes represent ontology terms from selected biomedical ontologies integrated into Ubergraph. The specific Biolink category (Gene, Disease, ChemicalEntity, AnatomicalEntity, etc.) is determined during node normalization based on the prefix."
 
   future_considerations:
     - category: predicates
