@@ -27,15 +27,15 @@ def mock_koza_transform() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = [
+NODE_TEST_SLOTS = (
     "id",
     "in_taxon",
     "category"
-]
+)
 
 # list of slots whose values are
 # to be checked in a result edge
-ASSOCIATION_TEST_SLOTS = [
+ASSOCIATION_TEST_SLOTS = (
     "category",
     "subject",
     "predicate",
@@ -44,7 +44,7 @@ ASSOCIATION_TEST_SLOTS = [
     "sources",
     "knowledge_level",
     "agent_type"
-]
+)
 
 
 @pytest.mark.parametrize(
@@ -320,5 +320,5 @@ def test_ingest_transform(
         expected_edges=result_edge,
         expected_no_of_edges=3,
         node_test_slots=NODE_TEST_SLOTS,
-        association_test_slots=ASSOCIATION_TEST_SLOTS
+        edge_test_slots=ASSOCIATION_TEST_SLOTS
     )
