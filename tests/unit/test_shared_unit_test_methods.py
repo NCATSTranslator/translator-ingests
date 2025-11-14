@@ -25,7 +25,7 @@ TEST_EDGE_1 = Association(
     agent_type=AgentTypeEnum.not_provided
 )
 
-TEST_ENTITY_ID_2= "tweedle:dum"
+TEST_ENTITY_ID_2= "tweedle:dumb"
 TEST_NODE_2 = NamedThing(id=TEST_ENTITY_ID_2)
 TEST_EDGE_2 = Association(
     id=TEST_ENTITY_ID_2,
