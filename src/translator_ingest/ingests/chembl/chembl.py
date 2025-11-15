@@ -190,6 +190,14 @@ UNIPROT_PREFIX = "UniProtKB:"
 
 REFERENCE_PREFIX_MAP = {'PMID':'PMID:', 'DOI':'doi:', 'ISBN': 'ISBN:', 'PubMed':'PMID:'}
 
+AVAILABILITY_TYPES = {
+    -2: "withdrawn",
+    -1: None,
+    0: "discontinued",
+    1: "prescription only",
+    2: "over the counter"
+}
+
 BIOLINK_DIRECTLY_INTERACTS_WITH = "biolink:directly_physically_interacts_with"
 
 QUALIFIER_CONFIG = {}
@@ -308,6 +316,8 @@ def get_synonyms(koza: koza.KozaTransform, molregno: int) -> list[str] | None:
     return None
 
 
+
+
 def create_chemical_entity(koza: koza.KozaTransform, molregno: int, compound_name: str = None):
     cur = koza.state['chembl_db_connection'].cursor()
     cur.execute(MOLECULE_QUERY, (molregno,))
@@ -331,7 +341,11 @@ def create_chemical_entity(koza: koza.KozaTransform, molregno: int, compound_nam
             name=name,
             xref=xref if len(xref) > 0 else None,
             synonym=get_synonyms(koza, molregno),
-            # TODO: routes_of_delivery=routes_of_delivery if len(routes_of_delivery) > 0 else None
+            # TODO: routes_of_delivery=routes_of_delivery if len(routes_of_delivery) > 0 else None,
+            availability = AVAILABILITY_TYPES.get(record["availability_type"]),
+            has_black_box_warning=bool(record["black_box_warning"]) if record["black_box_warning"] == 1 else None,
+            is_natural_product=bool(record["natural_product"]) if record["natural_product"] == 1 else None,
+            is_prodrug=bool(record["prodrug"]) if record["prodrug"] == 1 else None,
         )
     return None
 
@@ -444,9 +458,9 @@ def get_association(koza, record, action_type_map):
                 # TODO: binding_site_comment = record["binding_site_comment"],
                 # TODO: mechanism_of_action_description = record["mechanism_of_action"],
                 # TODO: mechanism_of_action_comment = record["mechanism_comment"],
-                # TODO: selectivity_comment = record["selectivity_comment"],
                 # TODO: mutation = record["mutation"],
-                # TODO: mutation_accession = record["mutation_accession"]
+                # TODO: mutation_accession = record["mutation_accession"],
+                # TODO: selectivity_comment = record["selectivity_comment"],
                 **qualifiers
             )
         edges=[association]
@@ -471,8 +485,6 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
         publications=references if len(references) > 0 else None,
         # TODO: metabolic_conversion = record["metabolic_conversion"],
         # TODO: metabolic_conversion_comment = record["metabolic_comment"],
-        # TODO: enzyme_type = record["enzyme_type"],
-        # TODO:  = record["target_name"],
     )
     return association
 
