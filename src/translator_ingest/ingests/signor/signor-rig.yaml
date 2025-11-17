@@ -25,7 +25,7 @@ ingest_info:
     - primary_knowledge_provider
   utility: "Signor is a rich source of manually curated genetic associations to other biological entities which are an important type of edge for Translator query and reasoning use cases, including treatment predictions, gene-gene regulation predictions, and pathfinder queries. It is one of the sources that focus on drug and genes."
   scope: "This initial ingest of Signor covers manually curated causal associations between proteins, protein families, complexes, small molecules (mainly endogenous chemical entities) and chemicals (mainly non-endogenous chemical entities), as well as parthood edges associations between proteins and complexes, and physical interaction associations that can be inferred from certain mechanisms of action in the SIGNOR dataset."
-  
+
   relevant_files:
     - file_name: "all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv"
       location: "https://signor.uniroma2.it/downloads.php"
@@ -53,8 +53,9 @@ ingest_info:
       consideration: "Consider ingesting the "DIRECT" column to be able to represent whether the causal association is mediated directly, or indirectly - may require new Biolink modeling to support this."
     - category: edge_content
       consideration: "Consider ingesting the Pathways data from SIGNOR, and using it for one or both of the following purposes: (1) edges linking Entities in causal associations to Pathways they participate in; (2) capturing the pathways in which the each causal association occurs, using a pathway_context_qualifier property (would need to add this to Biolink)."
-      
-# Information about the Graph Output by the ingest
+
+## Information about the Graph Output by the ingest
+## SIGNOR causual mechanism mapping (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16))
 target_info:
   infores_id: infores:translator-signor
 
@@ -64,7 +65,9 @@ target_info:
         - biolink:Proteinfamily
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
-      predicate: biolink:regulates            # MHB: this is now plural ('predicates'), and takes a list/array
+      # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed, please remove this comment once checked
+      predicates:
+        - biolink:regulates
       object_categories:
         - biolink:Protein
         - biolink:Proteinfamily
@@ -95,10 +98,11 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:            # MHB: edge properties need to include "biolink" prefix. 
-        - publications
-        - has_confidence_score
-        - supporting_text
+      # MHB: edge properties need to include "biolink" prefix.; QW: fixed, thanks for pointing this out!
+      edge_properties:
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule or complex / small molecule to 'regulate' another complex / protein / protein family / smallmolecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
     - subject_categories:
         - biolink:Protein
@@ -116,14 +120,15 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:           # MHB: edge properties need to include "biolink" prefix. 
-        - publications
-        - has_confidence_score
-        - supporting_text
+      edge_properties:           # MHB: edge properties need to include "biolink" prefix.; QW: fixed, thanks for pointing this out!
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein to be 'form complex' another complex - which maps best to the Biolink predicate 'part of' with additional directional qualifier."
     - subject_categories:
         - biolink:ChemicalEntity
-      predicate: biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array
+      predicates:
+        - biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -149,7 +154,7 @@ target_info:
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.          
+          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -164,7 +169,8 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:Proteinfamily
         - biolink:SmallMolecule
-      predicate: biolink:affects         # MHB: this is now plural ('predicates'), and takes a list/array
+      predicates:
+        - biolink:affects         # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
         - biolink:ChemicalEntity
       qualifiers:
@@ -187,19 +193,20 @@ target_info:
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.          
+          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:               # MHB: edge properties need to include "biolink" prefix. 
-        - publications
-        - has_confidence_score
-        - supporting_text
+      edge_properties:               # MHB: edge properties need to include "biolink" prefix.; QW: fixed
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein / complex / proteinfamily / small molecule to be 'affects' another chemical - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
     - subject_categories:
         - biolink:ChemicalEntity
-      predicate: biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array
+      predicates:
+        - biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
         - biolink:ChemicalEntity
       qualifiers:
@@ -222,15 +229,15 @@ target_info:
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.          
+          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:           # MHB: edge properties need to include "biolink" prefix. 
-        - publications
-        - has_confidence_score
-        - supporting_text
+      edge_properties:           # MHB: edge properties need to include "biolink" prefix.; QW: fixed
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
       ui_explanation: "When the mechanism implies a physical interaction, the ingestion create a separate 'physically_interacts_with' edge in addition to the affects/regulates edge (e.g. 'binding') "
     - subject_categories:
         - biolink:Protein
@@ -238,7 +245,8 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      predicate: biolink:physically_interacts_with        # MHB: this is now plural ('predicates'), and takes a list/array. Also, change to directly_physically_interacts with (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16)
+      predicates:
+        - biolink:directly_physically_interacts        # MHB: this is now plural ('predicates'), and takes a list/array. Also, change to directly_physically_interacts with (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16)
       object_categories:
         - biolink:Protein
         - biolink:Proteinfamily
@@ -251,18 +259,19 @@ target_info:
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.          
+          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:                # MHB: edge properties need to include "biolink" prefix. 
-        - publications
-        - has_confidence_score
-        - supporting_text
+      edge_properties:                # MHB: edge properties need to include "biolink" prefix. QW: fixed
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
+      ## Note to QW: SIGNOR includes a column that explicitly reports whether each causal association is direct or not - use this as a flag to determine for what records to create this additional 'directly_physically_interacts_with' edge, instead of implicit defs/mappings from MECHANISM terms.
       ui_explanation: "The 'MECHANISM' provided by Signor indicates that a physical interaction must exist between the subject and object entities - so this edge is created to report that, in addition to the primary affects/regulates causal association edge."
-     # MHB:  Update - SIGNOR includes a column that explicitly reports whether each causal association is direct or not - use this as a flag to determine for what records to create this additional 'directly_physically_interacts_with' edge, instead of implicit defs/mappings from MECHANISM terms. 
-     # MHB:   Update the ui_explanation here to reflect this. 
+     # MHB:  Update - SIGNOR includes a column that explicitly reports whether each causal association is direct or not - use this as a flag to determine for what records to create this additional 'directly_physically_interacts_with' edge, instead of implicit defs/mappings from MECHANISM terms.
+     # MHB:   Update the ui_explanation here to reflect this.
   node_type_info:
     - node_category: biolink:Protein
       source_identifier_types:
