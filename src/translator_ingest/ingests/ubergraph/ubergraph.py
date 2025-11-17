@@ -163,8 +163,10 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 edge_id, edge_iri = line.decode('utf-8').rstrip().split('\t')
                 edge_curie = curie_converter.compress(edge_iri)
                 if edge_iri == "http://www.w3.org/2000/01/rdf-schema#subClassOf":
-                    edge_curies[edge_id] = edge_curie
-
+                    if edge_curie is not None:
+                        edge_curies[edge_id] = edge_curie
+                    else:
+                        edge_mapping_failures.append(edge_iri)
         koza.log(f"Edges: {len(edge_curies):,} successfully converted, {len(edge_mapping_failures):,} failures.", level="INFO")
         if edge_mapping_failures:
             koza.log(f"Edge conversion failure examples: {edge_mapping_failures[:10]}", level="WARNING")
