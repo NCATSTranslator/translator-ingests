@@ -42,6 +42,8 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
     "UO"
 ]
 
+EXTRACTED_ONTOLOGY_PREFIXES_SET = set(EXTRACTED_ONTOLOGY_PREFIXES)
+
 OBO_MISSING_MAPPINGS = {
     'NCBIGene': 'http://purl.obolibrary.org/obo/NCBIGene_',
     'HGNC': 'http://purl.obolibrary.org/obo/HGNC_',
@@ -141,7 +143,6 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
 
     with tarfile.open(tar_path, 'r:gz') as tar:
         koza.log("Converting node IRIs to CURIEs...", level="INFO")
-        node_count = 0
         with tar.extractfile(f'{graph_base_path}/node-labels.tsv') as node_labels_file:
             for line in node_labels_file:
                 node_id, node_iri = line.decode('utf-8').rstrip().split('\t')
@@ -149,9 +150,9 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 if node_curie is None:
                     node_mapping_failures.append(node_iri)
                     continue
-                if node_curie.split(":")[0] in EXTRACTED_ONTOLOGY_PREFIXES:
+                node_prefix = node_curie.split(":", 1)[0]
+                if node_prefix in EXTRACTED_ONTOLOGY_PREFIXES_SET:
                     node_curies[node_id] = node_curie
-                    node_count += 1
 
         koza.log(f"Nodes: {len(node_curies):,} successfully converted, {len(node_mapping_failures):,} failures.", level="INFO")
         if node_mapping_failures:
@@ -180,12 +181,10 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
             for line in edges_file:
                 subject_id, predicate_id, object_id = line.decode('utf-8').rstrip().split('\t')
                 # Only include edges where predicate is in our edge_curies dict (subClassOf only)
-                if predicate_id not in koza.state.get("edge_curies", edge_curies):
+                if predicate_id not in edge_curies:
                     continue
-                # Only include edges where both subject and object are in filtered ontology prefixes
-                subject_curie = node_curies.get(subject_id)
-                object_curie = node_curies.get(object_id)
-                if not subject_curie or not object_curie:
+                # Only include edges where both subject and object are in our node_curies mapping
+                if subject_id not in node_curies or object_id not in node_curies:
                     continue
                 
                 edge_stream_count += 1
@@ -199,7 +198,7 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
 
 @koza.transform(tag="redundant_graph")
 def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    BATCH_SIZE = 500000
+    BATCH_SIZE = 2000000
     
     nodes_seen = set()
     nodes_batch = []
