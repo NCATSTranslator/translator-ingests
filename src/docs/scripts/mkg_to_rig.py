@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 import yaml
 import json
+import csv
 import click
 from translator_ingest import INGESTS_PARSER_PATH
 
@@ -130,7 +131,7 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     :param ingest: Target ingest folder name of the target data source folder (e.g., icees)
     :param mkg: Meta Knowledge Graph JSON file source of details to be
                 loaded into the RIG (assumed co-located with RIG in the ingest task folder
-    :param rig: Target RIG file (default: <ingest folder name>_rig.yaml)
+    :param rig: Target Reference Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml)
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
     :param output: Desired format of the output, i.e., rig or table (default: "rig")
@@ -148,6 +149,13 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     # If a table of edges is preferred, the --format option can be used.
     mk_to_rig.py --ingest icees --format table
     """
+    if output not in ['rig', 'table']:
+        click.echo(
+            message=f"Error: Invalid output format: {output}",
+            err=True
+        )
+        sys.exit(1)
+
     ingest_path = INGESTS_PARSER_PATH / ingest
     print(f"Ingest Data: {ingest_path}")
 
@@ -155,58 +163,77 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     print(f"Metadata: {mkg_path}")
 
     try:
-        rig_path: Optional[Path] = None
-        rig_data: dict
+        kg_data_path: Optional[Path]
+        kg_data: dict
         if output == 'rig':
 
             # Default RIG file name, if not given
             if rig is None:
                 rig = f"{ingest}_rig.yaml"
 
-            rig_path = ingest_path / rig
+            kg_data_path = ingest_path / rig
 
-            print(f"RIG: {rig_path}")
+            print(f"RIG: {kg_data_path}")
 
             # Check if the RIG file exists
-            if not path.exists(rig_path):
-                click.echo(f"Error: RIG yaml file not found: {rig_path}", err=True)
+            if not path.exists(kg_data_path):
+                click.echo(
+                    message=f"Error: RIG yaml file not found: {kg_data_path}",
+                    err=True
+                )
                 sys.exit(1)
 
-            with open(rig_path, 'r') as r:
-                rig_data = yaml.safe_load(r)
-                # target_info:
-                #   ...
+            with open(kg_data_path, 'r') as rig:
+                kg_data = yaml.safe_load(rig)
 
-                # conservative, in case target_info is already present
-                target_info = rig_data.setdefault('target_info', {})
+            # conservative, in case target_info is already present
+            target_info = kg_data.setdefault('target_info', {})
 
-                # We accept that all pre-existing node and edge data will be overwritten.
-                # We mitigate information loss by saving a copy of the original file later.
-                node_info = target_info['node_type_info'] = []
-                edge_info = target_info['edge_type_info'] = []
+            # We accept that all pre-existing node and edge data will be overwritten.
+            # We mitigate information loss by saving a copy of the original file later.
+            node_info = target_info['node_type_info'] = []
+            edge_info = target_info['edge_type_info'] = []
         else:
-            rig_path = ingest_path / f"{ingest}_table.csv"
+            # Assume a 'table' datafile but this will
+            # only be used for writing the output
+            kg_data_path = ingest_path / f"{ingest}_table.csv"
             node_info = []
             edge_info = []
 
         # Check if the meta-knowledge graph file exists
         if not path.exists(mkg_path):
-            click.echo(f"Error: Meta Knowledge Graph json file not found: {mkg_path}", err=True)
+            click.echo(
+                message=f"Error: Meta Knowledge Graph json file not found: {mkg_path}",
+                err=True
+            )
             sys.exit(1)
 
-        with open(mkg_path, 'r') as m:
+        with open(mkg_path, 'r') as mkg:
             mkg_data = json.load(mkg)
             read_mkg_nodes(mkg_data['nodes'], node_info)
             read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type)
 
         if output == 'rig':
-            rename(rig_path, str(rig_path)+".original")
-            with open(rig_path, 'w') as r:
-                yaml.safe_dump(rig_data, r, sort_keys=False)
+            rename(kg_data_path, str(kg_data_path)+".original")
+            with open(kg_data_path, 'w') as rig:
+                yaml.safe_dump(kg_data, rig, sort_keys=False)
         else:
-            with open(rig_path, 'w') as r:
-                # TODO: dump node_info and edge_info as a CSV table
-                pass
+            # Assume 'table' model output
+
+            # data = [
+            #     {"name": "Alice", "age": 30, "city": "Sooke"},
+            #     {"name": "Bob", "age": 25, "city": "Victoria"},
+            #     {"name": "Charlie", "age": 35, "city": "Vancouver"}
+            # ]
+            # If the data has inconsistent keys,
+            # consider using
+            #      set().union(*[d.keys() for d in data])
+            # to build a complete header list.
+
+            with open(kg_data_path, mode="w", newline="", encoding="utf-8") as table_file:
+                writer = csv.DictWriter(table_file, fieldnames=kg_data[0].keys())
+                writer.writeheader()
+                writer.writerows(kg_data)
 
     except Exception as e:
         click.echo(f"Error processing Meta Knowledge Graph JSON data: {e}", err=True)
