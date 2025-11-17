@@ -49,7 +49,7 @@ ingest_info:
 
   future_considerations:
     - category: edge_content
-      consideration: "Consider creating separate ingests for specific predicate types (e.g., rdfs:subClassOf only for strict ontological hierarchy)"
+      consideration: "Current ingest includes only rdfs:subClassOf (strict ontological hierarchy). In the future, consider adding support for other predicate types (e.g., part_of, regulates) as separate ingests or options."
     - category: node_property_content
       consideration: "Ubergraph provides node descriptions via SPARQL query (IAO_0000115 definitions). These could be added as node properties in future iterations."
     - category: edge_property_content
