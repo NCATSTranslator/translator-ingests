@@ -166,7 +166,6 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
             logger.info(f"Node conversion failure examples: {node_mapping_failures[:10]}")
 
         logger.info("Converting edge IRIs to CURIEs...")
-        edge_count = 0
         with tar.extractfile(f'{graph_base_path}/edge-labels.tsv') as edge_labels_file:
             for line in edge_labels_file:
                 edge_id, edge_iri = line.decode('utf-8').rstrip().split('\t')
