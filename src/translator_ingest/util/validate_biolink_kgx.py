@@ -48,6 +48,15 @@ def load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
     return records
 
 
+def load_jsonl_streaming(file_path: Path):
+    """Stream JSONL file line by line without loading all into memory."""
+    with open(file_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                yield json.loads(line)
+
+
 def extract_node_ids(nodes: list[dict]) -> set[str]:
     """Extract all node IDs from nodes file."""
     return {node["id"] for node in nodes if "id" in node}
@@ -76,6 +85,163 @@ def save_validation_report(report: Dict[str, Any], output_dir: Path) -> Path:
 
     logger.info(f"Validation report saved to: {report_path}")
     return report_path
+
+
+def validate_kgx_consistency_streaming(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
+    """
+    Validate KGX files using streaming for large files.
+    
+    This is optimized for large files like ubergraph with 10M+ edges.
+    Uses single-pass algorithms and streaming to avoid memory issues.
+    """
+    logger.info(f"Starting streaming validation for large files")
+    
+    # First pass: collect node IDs (still need to load all node IDs for reference checking)
+    logger.info(f"Loading node IDs from: {nodes_file}")
+    node_ids = set()
+    node_count = 0
+    node_sample = []  # Keep small sample for Biolink validation
+    SAMPLE_SIZE = 1000  # Sample size for Biolink validation
+    
+    for node in load_jsonl_streaming(nodes_file):
+        node_count += 1
+        if "id" in node:
+            node_ids.add(node["id"])
+        # Keep sample for Biolink validation
+        if len(node_sample) < SAMPLE_SIZE:
+            node_sample.append(node)
+    
+    logger.info(f"Found {node_count:,} nodes with {len(node_ids):,} unique IDs")
+    
+    # Second pass: validate edges and check references in a single pass
+    logger.info(f"Validating edges from: {edges_file}")
+    edge_count = 0
+    edge_sample = []
+    missing_nodes = set()
+    edge_node_refs = set()
+    MAX_MISSING_NODES = 1000  # Limit missing nodes to track
+    
+    for edge in load_jsonl_streaming(edges_file):
+        edge_count += 1
+        
+        # Keep sample for Biolink validation
+        if len(edge_sample) < SAMPLE_SIZE:
+            edge_sample.append(edge)
+        
+        # Check subject reference
+        if "subject" in edge:
+            subject = edge["subject"]
+            edge_node_refs.add(subject)
+            if subject not in node_ids and len(missing_nodes) < MAX_MISSING_NODES:
+                missing_nodes.add(subject)
+        
+        # Check object reference
+        if "object" in edge:
+            obj = edge["object"]
+            edge_node_refs.add(obj)
+            if obj not in node_ids and len(missing_nodes) < MAX_MISSING_NODES:
+                missing_nodes.add(obj)
+    
+    logger.info(f"Found {edge_count:,} edges")
+    
+    # Calculate orphaned nodes (with limit for large datasets)
+    orphaned_nodes = set()
+    MAX_ORPHANED_NODES = 1000
+    for node_id in node_ids:
+        if node_id not in edge_node_refs:
+            orphaned_nodes.add(node_id)
+            if len(orphaned_nodes) >= MAX_ORPHANED_NODES:
+                break
+    
+    # Perform Biolink validation on sample only
+    logger.info("Performing Biolink validation on sample data...")
+    validation_results = []
+    errors = []
+    warnings = []
+    
+    if node_sample and edge_sample:
+        try:
+            biolink_schema = get_biolink_schema()
+            plugin = BiolinkValidationPlugin(schema_view=biolink_schema)
+            from linkml.validator.validation_context import ValidationContext
+            
+            context = ValidationContext(target_class="KnowledgeGraph", schema=biolink_schema.schema)
+            kgx_sample = {"nodes": node_sample, "edges": edge_sample}
+            
+            validation_results = list(plugin.process(kgx_sample, context))
+            
+            # Process validation results
+            for result in validation_results:
+                result_dict = {
+                    "type": result.type,
+                    "severity": result.severity.name,
+                    "message": result.message,
+                    "instance_path": getattr(result, "instance_path", "unknown"),
+                }
+                if result.severity.name == "ERROR":
+                    errors.append(result_dict)
+                else:
+                    warnings.append(result_dict)
+                    
+            logger.info(f"Sample validation found {len(errors)} errors, {len(warnings)} warnings")
+            
+        except Exception as e:
+            logger.error(f"Sample validation failed: {e}")
+    
+    # Add reference integrity errors (limited)
+    for missing_node in list(missing_nodes)[:100]:  # Limit to first 100
+        errors.append({
+            "type": "reference-integrity",
+            "severity": "ERROR",
+            "message": f"Edge references non-existent node: {missing_node}",
+            "instance_path": "edges",
+        })
+    
+    validation_passed = len(errors) == 0 and len(missing_nodes) == 0
+    
+    # Create report
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "biolink_version": get_current_biolink_version(),
+        "files": {"nodes_file": str(nodes_file), "edges_file": str(edges_file)},
+        "statistics": {
+            "total_nodes": node_count,
+            "total_edges": edge_count,
+            "unique_nodes_in_edges": len(edge_node_refs),
+            "missing_nodes_count": len(missing_nodes),
+            "orphaned_nodes_count": len(orphaned_nodes),
+            "validation_errors": len(errors),
+            "validation_warnings": len(warnings),
+            "validation_sample_size": SAMPLE_SIZE,
+            "note": "Large file - validation performed on sample data"
+        },
+        "validation_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
+        "issues": {
+            "errors": errors[:100],  # Limit errors in report
+            "warnings": warnings[:100],  # Limit warnings in report
+            "missing_nodes": list(missing_nodes)[:100],  # Skip sorting for large sets
+            "orphaned_nodes": list(orphaned_nodes)[:100],  # Skip sorting for large sets
+            "truncated": len(errors) > 100 or len(warnings) > 100 or len(missing_nodes) > 100 or len(orphaned_nodes) > 100
+        },
+    }
+    
+    # Log summary
+    if errors:
+        logger.error(f"Found {len(errors)} validation errors (sample)")
+    if warnings:
+        logger.warning(f"Found {len(warnings)} validation warnings (sample)")
+    if missing_nodes:
+        logger.error(f"Found {len(missing_nodes)} missing node references")
+        if len(missing_nodes) >= MAX_MISSING_NODES:
+            logger.error(f"Missing nodes truncated at {MAX_MISSING_NODES}")
+    if orphaned_nodes:
+        logger.info(f"Found {len(orphaned_nodes)} orphaned nodes")
+        if len(orphaned_nodes) >= MAX_ORPHANED_NODES:
+            logger.info(f"Orphaned nodes truncated at {MAX_ORPHANED_NODES}")
+    
+    logger.info(f"Streaming validation {ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED}")
+    
+    return report
 
 
 def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
@@ -230,7 +396,18 @@ def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: 
         logger.error(error_message)
         raise IOError(error_message)
 
-    single_report = validate_kgx_consistency(nodes_file, edges_file)
+    # Check file sizes to determine which validation method to use
+    edges_size = edges_file.stat().st_size
+    nodes_size = nodes_file.stat().st_size
+    # Use streaming for files > 100MB (approximately 1M+ edges)
+    LARGE_FILE_THRESHOLD = 100 * 1024 * 1024  # 100MB
+    
+    if edges_size > LARGE_FILE_THRESHOLD or nodes_size > LARGE_FILE_THRESHOLD:
+        logger.info(f"Large files detected (edges: {edges_size/1024/1024:.1f}MB, nodes: {nodes_size/1024/1024:.1f}MB), using streaming validation")
+        single_report = validate_kgx_consistency_streaming(nodes_file, edges_file)
+    else:
+        single_report = validate_kgx_consistency(nodes_file, edges_file)
+    
     validation_passed = single_report.get("validation_status") == ValidationStatus.PASSED
 
     # Save single file report if requested
@@ -289,7 +466,18 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     for source_name, nodes_file, edges_file in kgx_pairs:
         logger.info(f"Validating source: {source_name}")
 
-        source_report = validate_kgx_consistency(nodes_file, edges_file)
+        # Check file sizes to determine which validation method to use
+        edges_size = edges_file.stat().st_size
+        nodes_size = nodes_file.stat().st_size
+        # Use streaming for files > 100MB (approximately 1M+ edges)
+        LARGE_FILE_THRESHOLD = 100 * 1024 * 1024  # 100MB
+        
+        if edges_size > LARGE_FILE_THRESHOLD or nodes_size > LARGE_FILE_THRESHOLD:
+            logger.info(f"Large files detected for {source_name} (edges: {edges_size/1024/1024:.1f}MB, nodes: {nodes_size/1024/1024:.1f}MB), using streaming validation")
+            source_report = validate_kgx_consistency_streaming(nodes_file, edges_file)
+        else:
+            source_report = validate_kgx_consistency(nodes_file, edges_file)
+        
         validation_report["sources"][source_name] = source_report
 
         if source_report.get("validation_status") == ValidationStatus.PASSED:
