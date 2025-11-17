@@ -88,9 +88,9 @@ def save_validation_report(report: Dict[str, Any], output_dir: Path) -> Path:
     return report_path
 
 
-def validate_kgx_consistency_streaming(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
+def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, Any]:
     """
-    Validate KGX files using streaming for large files.
+    Validate large KGX files using sampling and memory-efficient techniques.
 
     This is optimized for large files like ubergraph with 10M+ edges.
     Uses single-pass algorithms and streaming to avoid memory issues.
@@ -438,7 +438,7 @@ def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: 
 
     if edges_size > LARGE_FILE_THRESHOLD or nodes_size > LARGE_FILE_THRESHOLD:
         logger.info(f"Large files detected (edges: {edges_size/1024/1024:.1f}MB, nodes: {nodes_size/1024/1024:.1f}MB), using streaming validation")
-        single_report = validate_kgx_consistency_streaming(nodes_file, edges_file)
+        single_report = validate_large_kgx_files(nodes_file, edges_file)
     else:
         single_report = validate_kgx_consistency(nodes_file, edges_file)
 
@@ -508,7 +508,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
 
         if edges_size > LARGE_FILE_THRESHOLD or nodes_size > LARGE_FILE_THRESHOLD:
             logger.info(f"Large files detected for {source_name} (edges: {edges_size/1024/1024:.1f}MB, nodes: {nodes_size/1024/1024:.1f}MB), using streaming validation")
-            source_report = validate_kgx_consistency_streaming(nodes_file, edges_file)
+            source_report = validate_large_kgx_files(nodes_file, edges_file)
         else:
             source_report = validate_kgx_consistency(nodes_file, edges_file)
 
