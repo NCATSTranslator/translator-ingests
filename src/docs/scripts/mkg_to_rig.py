@@ -15,6 +15,7 @@ import yaml
 import json
 import csv
 import click
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 from translator_ingest import INGESTS_PARSER_PATH
 
 
@@ -124,16 +125,19 @@ def read_mkg_edges(
 )
 def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     """
-    Merge Meta Knowledge Graph node and edge information into RIG 'target_info'.
+    Either populate the 'target_info' section of a given RIG YAML file or
+    create a comparable CSV formatted edge inventory file, using node and
+    edge information from a (TRAPI-generated) Meta Knowledge Graph JSON file.
 
     :param ingest: Target ingest folder name of the target data source folder (e.g., icees)
     :param mkg: Meta Knowledge Graph JSON file source of details to be
                 loaded into the RIG (assumed co-located with RIG in the ingest task folder
-    :param rig: Target Reference Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml)
+    :param rig: Target Reference Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
+                This switch is ignored if the output format is "table".
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
-    :param output: Desired format of the output, i.e., rig or table (default: "rig")
-    :return:
+    :param output: Desired format of the output, i.e., "rig" or "table" (default: "rig")
+    :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
 
     Examples:
 
@@ -144,13 +148,27 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     # But default values for RIG creation can be overwritten
     mk_to_rig.py --ingest icees --mkg my_meta_graph.json --rig my_rig.yaml
 
-    # If a table of edges is preferred, the --format option can be used.
+    # If a table of edges is preferred, the --output switch option can be used.
     mk_to_rig.py --ingest icees --format table
     """
     if output not in ['rig', 'table']:
         click.echo(
             message=f"Error: Invalid output format: {output}",
             err=True
+        )
+        sys.exit(1)
+
+    # Biolink data quality assurance sanity checks
+    if knowledge_level not in KnowledgeLevelEnum:
+        click.echo(
+            message=f"Error: Invalid Biolink Knowledge Level: {knowledge_level}",
+            err=True
+        )
+        sys.exit(1)
+
+    if agent_type not in AgentTypeEnum:
+        click.echo(
+            message=f"Error: Invalid Biolink Agent Type: {agent_type}",
         )
         sys.exit(1)
 
