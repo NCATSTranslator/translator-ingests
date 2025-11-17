@@ -172,6 +172,11 @@ format:
 	$(RUN) ruff check --fix --exit-zero
 	$(RUN) black -l 120 src tests
 
+.PHONY: lint-fix
+lint-fix:
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+	$(RUN) ruff check --fix
+
 .PHONY: spell-fix
 spell-fix:
 	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
