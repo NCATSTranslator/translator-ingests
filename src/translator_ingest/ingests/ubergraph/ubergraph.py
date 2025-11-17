@@ -1,6 +1,5 @@
 import importlib.resources
 import json
-import logging
 import tarfile
 from typing import Any, Iterable
 
@@ -18,8 +17,6 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import entity_id, build_association_knowledge_sources
 
 INFORES_UBERGRAPH = "infores:ubergraph"
-
-logger = logging.getLogger(__name__)
 
 EXTRACTED_ONTOLOGY_PREFIXES = [
     "UBERON",
@@ -82,15 +79,12 @@ def get_biolink_prefix_map() -> dict:
         with importlib.resources.open_text("biolink_model.prefixmaps",
                                           "biolink_model_prefix_map.json") as f:
             biolink_prefix_map = json.load(f)
-            logger.debug("Successfully loaded Biolink prefix map from package")
-    except Exception as e:
-        logger.warning(f"Failed to load Biolink prefix map from package: {e}")
+    except Exception:
         url = "https://w3id.org/biolink/biolink-model/biolink_model_prefix_map.json"
         response = requests.get(url)
         if response.status_code != 200:
             response.raise_for_status()
         biolink_prefix_map = response.json()
-        logger.debug("Successfully loaded Biolink prefix map from URL")
 
     biolink_prefix_map.update(BIOLINK_MAPPING_CHANGES)
     return biolink_prefix_map
@@ -124,29 +118,29 @@ def on_begin_redundant_graph(koza: koza.KozaTransform) -> None:
 
 @koza.on_data_end(tag="redundant_graph")
 def on_end_redundant_graph(koza: koza.KozaTransform) -> None:
-    logger.info(f"Processed {koza.state['record_counter']} records")
-    logger.info(f"Skipped {koza.state['skipped_record_counter']} records")
+    koza.log(f"Processed {koza.state['record_counter']:,} records", level="INFO")
+    koza.log(f"Skipped {koza.state['skipped_record_counter']:,} records", level="INFO")
     koza.transform_metadata["redundant_graph"]["num_source_lines"] = koza.state["record_counter"]
     koza.transform_metadata["redundant_graph"]["unusable_source_lines"] = koza.state["skipped_record_counter"]
 
 
 @koza.prepare_data(tag="redundant_graph")
 def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    logger.info("Preparing ontology data: streaming from tar.gz and converting IRIs to CURIEs...")
+    koza.log("Preparing ontology data: streaming from tar.gz and converting IRIs to CURIEs...", level="INFO")
 
     tar_path = f"{koza.input_files_dir}/redundant-graph-table.tgz"
     graph_base_path = "redundant-graph-table"
 
     curie_converter = init_curie_converter()
 
-    logger.info("Building CURIE mapping tables from tar archive (streaming)...")
+    koza.log("Building CURIE mapping tables from tar archive (streaming)...", level="INFO")
     node_curies = {}
     node_mapping_failures = []
     edge_curies = {}
     edge_mapping_failures = []
 
     with tarfile.open(tar_path, 'r:gz') as tar:
-        logger.info("Converting node IRIs to CURIEs...")
+        koza.log("Converting node IRIs to CURIEs...", level="INFO")
         node_count = 0
         with tar.extractfile(f'{graph_base_path}/node-labels.tsv') as node_labels_file:
             for line in node_labels_file:
@@ -158,14 +152,12 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 if node_curie.split(":")[0] in EXTRACTED_ONTOLOGY_PREFIXES:
                     node_curies[node_id] = node_curie
                     node_count += 1
-                    if node_count % 100000 == 0:
-                        print(f"  Processed {node_count:,} node labels...")
 
-        logger.info(f"Nodes: {len(node_curies):,} successfully converted, {len(node_mapping_failures):,} failures.")
+        koza.log(f"Nodes: {len(node_curies):,} successfully converted, {len(node_mapping_failures):,} failures.", level="INFO")
         if node_mapping_failures:
-            logger.info(f"Node conversion failure examples: {node_mapping_failures[:10]}")
+            koza.log(f"Node conversion failure examples: {node_mapping_failures[:10]}", level="WARNING")
 
-        logger.info("Converting edge IRIs to CURIEs...")
+        koza.log("Converting edge IRIs to CURIEs...", level="INFO")
         with tar.extractfile(f'{graph_base_path}/edge-labels.tsv') as edge_labels_file:
             for line in edge_labels_file:
                 edge_id, edge_iri = line.decode('utf-8').rstrip().split('\t')
@@ -173,14 +165,14 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 if edge_iri == "http://www.w3.org/2000/01/rdf-schema#subClassOf":
                     edge_curies[edge_id] = edge_curie
 
-        logger.info(f"Edges: {len(edge_curies):,} successfully converted, {len(edge_mapping_failures):,} failures.")
+        koza.log(f"Edges: {len(edge_curies):,} successfully converted, {len(edge_mapping_failures):,} failures.", level="INFO")
         if edge_mapping_failures:
-            logger.info(f"Edge conversion failure examples: {edge_mapping_failures[:10]}")
+            koza.log(f"Edge conversion failure examples: {edge_mapping_failures[:10]}", level="WARNING")
 
         koza.state["node_curies"] = node_curies
         koza.state["edge_curies"] = edge_curies
 
-        logger.info("Streaming edges from tar archive...")
+        koza.log("Streaming edges from tar archive...", level="INFO")
         edge_stream_count = 0
         with tar.extractfile(f'{graph_base_path}/edges.tsv') as edges_file:
             for line in edges_file:
@@ -199,14 +191,12 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                     continue
                 
                 edge_stream_count += 1
-                if edge_stream_count % 100000 == 0:
-                    print(f"  Streaming edge {edge_stream_count:,}...")
                 yield {
                     "subject_id": subject_id,
                     "predicate_id": predicate_id,
                     "object_id": object_id
                 }
-        print(f"  Finished streaming {edge_stream_count:,} edges from tar archive.")
+        koza.log(f"Finished streaming {edge_stream_count:,} edges from tar archive.", level="INFO")
 
 
 @koza.transform(tag="redundant_graph")
@@ -222,9 +212,6 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
     
     for record in data:
         koza.state["record_counter"] += 1
-        
-        if koza.state["record_counter"] % 500000 == 0:
-            print(f"  Transformed {koza.state['record_counter']:,} edges, skipped {koza.state['skipped_record_counter']:,}...")
         
         subject_id = record["subject_id"]
         predicate_id = record["predicate_id"]
@@ -265,12 +252,12 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
         
         if len(edges_batch) >= BATCH_SIZE:
             batch_count += 1
-            print(f"  Yielding batch {batch_count} with {len(edges_batch):,} edges and {len(nodes_batch):,} nodes...")
+            koza.log(f"Yielding batch {batch_count} with {len(edges_batch):,} edges and {len(nodes_batch):,} nodes...", level="INFO")
             yield KnowledgeGraph(nodes=nodes_batch, edges=edges_batch)
             nodes_batch = []
             edges_batch = []
     
     if edges_batch:
         batch_count += 1
-        print(f"  Yielding final batch {batch_count} with {len(edges_batch):,} edges and {len(nodes_batch):,} nodes...")
+        koza.log(f"Yielding final batch {batch_count} with {len(edges_batch):,} edges and {len(nodes_batch):,} nodes...", level="INFO")
         yield KnowledgeGraph(nodes=nodes_batch, edges=edges_batch)

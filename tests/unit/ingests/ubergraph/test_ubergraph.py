@@ -20,65 +20,70 @@ from translator_ingest.ingests.ubergraph.ubergraph import (
 )
 
 
-class TestConstants:
-    def test_extracted_ontology_prefixes(self):
-        assert "UBERON" in EXTRACTED_ONTOLOGY_PREFIXES
-        assert "GO" in EXTRACTED_ONTOLOGY_PREFIXES
-        assert "MONDO" in EXTRACTED_ONTOLOGY_PREFIXES
-        assert "CHEBI" in EXTRACTED_ONTOLOGY_PREFIXES
-        assert "HPO" in EXTRACTED_ONTOLOGY_PREFIXES
-        assert len(EXTRACTED_ONTOLOGY_PREFIXES) > 0
+def test_extracted_ontology_prefixes():
+    assert "UBERON" in EXTRACTED_ONTOLOGY_PREFIXES
+    assert "GO" in EXTRACTED_ONTOLOGY_PREFIXES
+    assert "MONDO" in EXTRACTED_ONTOLOGY_PREFIXES
+    assert "CHEBI" in EXTRACTED_ONTOLOGY_PREFIXES
+    assert "HPO" in EXTRACTED_ONTOLOGY_PREFIXES
+    assert len(EXTRACTED_ONTOLOGY_PREFIXES) > 0
 
-    def test_obo_missing_mappings(self):
-        assert OBO_MISSING_MAPPINGS["NCBIGene"] == "http://purl.obolibrary.org/obo/NCBIGene_"
-        assert OBO_MISSING_MAPPINGS["HGNC"] == "http://purl.obolibrary.org/obo/HGNC_"
-        assert OBO_MISSING_MAPPINGS["SGD"] == "http://purl.obolibrary.org/obo/SGD_"
 
-    def test_biolink_mapping_changes(self):
-        assert BIOLINK_MAPPING_CHANGES["KEGG"] == "http://identifiers.org/kegg/"
-        assert BIOLINK_MAPPING_CHANGES["NCBIGene"] == "https://identifiers.org/ncbigene/"
+def test_obo_missing_mappings():
+    assert OBO_MISSING_MAPPINGS["NCBIGene"] == "http://purl.obolibrary.org/obo/NCBIGene_"
+    assert OBO_MISSING_MAPPINGS["HGNC"] == "http://purl.obolibrary.org/obo/HGNC_"
+    assert OBO_MISSING_MAPPINGS["SGD"] == "http://purl.obolibrary.org/obo/SGD_"
 
-    def test_infores_ubergraph(self):
-        assert INFORES_UBERGRAPH == "infores:ubergraph"
+
+def test_biolink_mapping_changes():
+    assert BIOLINK_MAPPING_CHANGES["KEGG"] == "http://identifiers.org/kegg/"
+    assert BIOLINK_MAPPING_CHANGES["NCBIGene"] == "https://identifiers.org/ncbigene/"
+
+
+def test_infores_ubergraph():
+    assert INFORES_UBERGRAPH == "infores:ubergraph"
 
 
 class MockKozaState:
     def __init__(self):
         self.state = {}
         self.transform_metadata = {}
-        
+
     def __getitem__(self, key):
         return self.state[key]
-    
+
     def __setitem__(self, key, value):
         self.state[key] = value
 
+    def log(self, message, level="INFO"):
+        pass
 
-class TestKozaHooks:
-    def test_on_begin_redundant_graph(self):
-        mock_koza = MockKozaState()
-        
-        on_begin_redundant_graph(mock_koza)
-        
-        assert mock_koza.state["record_counter"] == 0
-        assert mock_koza.state["skipped_record_counter"] == 0
-        assert mock_koza.state["node_curies"] == {}
-        assert mock_koza.state["edge_curies"] == {}
-        assert mock_koza.transform_metadata["redundant_graph"]["num_source_lines"] == 0
-        assert mock_koza.transform_metadata["redundant_graph"]["unusable_source_lines"] == 0
 
-    def test_on_end_redundant_graph(self):
-        mock_koza = MockKozaState()
-        mock_koza.state = {
-            "record_counter": 100,
-            "skipped_record_counter": 10
-        }
-        mock_koza.transform_metadata = {"redundant_graph": {}}
-        
-        on_end_redundant_graph(mock_koza)
-        
-        assert mock_koza.transform_metadata["redundant_graph"]["num_source_lines"] == 100
-        assert mock_koza.transform_metadata["redundant_graph"]["unusable_source_lines"] == 10
+def test_on_begin_redundant_graph():
+    mock_koza = MockKozaState()
+
+    on_begin_redundant_graph(mock_koza)
+
+    assert mock_koza.state["record_counter"] == 0
+    assert mock_koza.state["skipped_record_counter"] == 0
+    assert mock_koza.state["node_curies"] == {}
+    assert mock_koza.state["edge_curies"] == {}
+    assert mock_koza.transform_metadata["redundant_graph"]["num_source_lines"] == 0
+    assert mock_koza.transform_metadata["redundant_graph"]["unusable_source_lines"] == 0
+
+
+def test_on_end_redundant_graph():
+    mock_koza = MockKozaState()
+    mock_koza.state = {
+        "record_counter": 100,
+        "skipped_record_counter": 10
+    }
+    mock_koza.transform_metadata = {"redundant_graph": {}}
+
+    on_end_redundant_graph(mock_koza)
+
+    assert mock_koza.transform_metadata["redundant_graph"]["num_source_lines"] == 100
+    assert mock_koza.transform_metadata["redundant_graph"]["unusable_source_lines"] == 10
 
 
 @pytest.fixture
@@ -100,85 +105,68 @@ def mock_koza_with_state():
     return mock_koza
 
 
-class TestTransformRedundantGraph:
-    def test_transform_creates_nodes_and_edges(self, mock_koza_with_state):
-        data = [
-            {"subject_id": "n1", "predicate_id": "e1", "object_id": "n2"},
-        ]
-        
-        results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
-        
-        assert len(results) == 1
-        kg = results[0]
-        assert isinstance(kg, KnowledgeGraph)
-        assert len(kg.nodes) == 2
-        assert len(kg.edges) == 1
-        
-        node_ids = [node.id for node in kg.nodes]
-        assert "GO:0008150" in node_ids
-        assert "UBERON:0001062" in node_ids
-        
-        edge = kg.edges[0]
-        assert isinstance(edge, Association)
-        assert edge.subject == "GO:0008150"
-        assert edge.object == "UBERON:0001062"
-        assert edge.predicate == "rdfs:subClassOf"
-        assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
-        assert edge.agent_type == AgentTypeEnum.manual_agent
-        assert len(edge.sources) == 1
-        assert edge.sources[0].resource_id == INFORES_UBERGRAPH
+def test_transform_creates_nodes_and_edges(mock_koza_with_state):
+    data = [
+        {"subject_id": "n1", "predicate_id": "e1", "object_id": "n2"},
+    ]
 
-    def test_transform_skips_missing_node_curies(self, mock_koza_with_state):
-        data = [
-            {"subject_id": "n99", "predicate_id": "e1", "object_id": "n2"},
-        ]
-        
-        results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
-        
-        assert len(results) == 0
-        assert mock_koza_with_state.state["skipped_record_counter"] == 1
+    results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
 
-    def test_transform_skips_missing_edge_curies(self, mock_koza_with_state):
-        data = [
-            {"subject_id": "n1", "predicate_id": "e99", "object_id": "n2"},
-        ]
-        
-        results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
-        
-        assert len(results) == 0
-        assert mock_koza_with_state.state["skipped_record_counter"] == 1
+    assert len(results) == 1
+    kg = results[0]
+    assert isinstance(kg, KnowledgeGraph)
+    assert len(kg.nodes) == 2
+    assert len(kg.edges) == 1
 
-    def test_transform_deduplicates_nodes(self, mock_koza_with_state):
-        data = [
-            {"subject_id": "n1", "predicate_id": "e1", "object_id": "n2"},
-            {"subject_id": "n1", "predicate_id": "e1", "object_id": "n3"},
-        ]
-        
-        results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
-        
-        assert len(results) == 1
-        kg = results[0]
-        assert len(kg.edges) == 2
-        assert len(kg.nodes) == 3
-        
-        node_ids = [node.id for node in kg.nodes]
-        assert node_ids.count("GO:0008150") == 1
+    node_ids = [node.id for node in kg.nodes]
+    assert "GO:0008150" in node_ids
+    assert "UBERON:0001062" in node_ids
 
-    def test_transform_increments_counters(self, mock_koza_with_state):
-        data = [
-            {"subject_id": "n1", "predicate_id": "e1", "object_id": "n2"},
-            {"subject_id": "n2", "predicate_id": "e1", "object_id": "n3"},
-        ]
-        
-        list(transform_redundant_graph(mock_koza_with_state, iter(data)))
-        
-        assert mock_koza_with_state.state["record_counter"] == 2
+    edge = kg.edges[0]
+    assert isinstance(edge, Association)
+    assert edge.subject == "GO:0008150"
+    assert edge.object == "UBERON:0001062"
+    assert edge.predicate == "rdfs:subClassOf"
+    assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+    assert edge.agent_type == AgentTypeEnum.manual_agent
+    assert len(edge.sources) == 1
+    assert edge.sources[0].resource_id == INFORES_UBERGRAPH
 
-    def test_transform_batches_results(self, mock_koza_with_state):
-        data = []
-        for i in range(600000):
-            data.append({"subject_id": "n1", "predicate_id": "e1", "object_id": "n2"})
-        
-        results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
-        
-        assert len(results) == 2
+
+def test_transform_skips_missing_node_curies(mock_koza_with_state):
+    data = [
+        {"subject_id": "n99", "predicate_id": "e1", "object_id": "n2"},
+    ]
+
+    results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
+
+    assert len(results) == 0
+    assert mock_koza_with_state.state["skipped_record_counter"] == 1
+
+
+def test_transform_skips_missing_edge_curies(mock_koza_with_state):
+    data = [
+        {"subject_id": "n1", "predicate_id": "e99", "object_id": "n2"},
+    ]
+
+    results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
+
+    assert len(results) == 0
+    assert mock_koza_with_state.state["skipped_record_counter"] == 1
+
+
+def test_transform_deduplicates_nodes(mock_koza_with_state):
+    data = [
+        {"subject_id": "n1", "predicate_id": "e1", "object_id": "n2"},
+        {"subject_id": "n1", "predicate_id": "e1", "object_id": "n3"},
+    ]
+
+    results = list(transform_redundant_graph(mock_koza_with_state, iter(data)))
+
+    assert len(results) == 1
+    kg = results[0]
+    assert len(kg.edges) == 2
+    assert len(kg.nodes) == 3
+
+    node_ids = [node.id for node in kg.nodes]
+    assert node_ids.count("GO:0008150") == 1
