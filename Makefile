@@ -41,7 +41,6 @@ define HELP
 │     transform           Transform the source to KGX       │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │
-│     validate-only       Validate without re-running pipeline │
 │     merge               Merge specified sources into one KG │
 │                                                           │
 │     test                Run all tests                     │
@@ -126,28 +125,16 @@ validate: run
 .PHONY: validate-%
 validate-%:
 	@echo "Validating $*..."
-	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
-	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
+	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_nodes.jsonl" -type f | head -1 || find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
+	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_edges.jsonl" -type f | head -1 || find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
 	if [ -z "$$NODES_FILE" ] || [ -z "$$EDGES_FILE" ]; then \
 		echo "Error: Could not find nodes or edges files for $*"; \
 		exit 1; \
 	fi; \
+	echo "Using nodes file: $$NODES_FILE"; \
+	echo "Using edges file: $$EDGES_FILE"; \
 	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
-.PHONY: validate-only
-validate-only:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
-
-.PHONY: validate-only-%
-validate-only-%:
-	@echo "Validating $*..."
-	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
-	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
-	if [ -z "$$NODES_FILE" ] || [ -z "$$EDGES_FILE" ]; then \
-		echo "Error: Could not find nodes or edges files for $*"; \
-		exit 1; \
-	fi; \
-	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
 
 .PHONY: merge
