@@ -23,7 +23,7 @@ ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: "Ubergraph provides comprehensive ontological relationships essential for Translator's reasoning capabilities. The complete inference closure enables ontology-based query expansion, ancestor/descendant lookups, and semantic similarity calculations. These hierarchical relationships are fundamental for mapping between different levels of biological granularity and supporting TRAPI queries that require ontological reasoning."
-  scope: "This ingest focuses on the redundant graph which includes all subclass (rdfs:subClassOf) relationships and other ontological predicates with full transitive closure. The graph contains nodes and edges from integrated ontologies represented as CURIEs, enabling seamless integration with other Translator knowledge sources."
+  scope: "This ingest focuses on the redundant graph which includes all subclass (rdfs:subClassOf) relationships with full transitive closure. The graph contains nodes and edges from integrated ontologies represented as CURIEs, enabling seamless integration with other Translator knowledge sources."
 
   relevant_files:
     - file_name: "redundant-graph-table.tgz"
