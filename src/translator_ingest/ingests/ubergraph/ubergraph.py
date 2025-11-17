@@ -187,10 +187,6 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 object_curie = node_curies.get(object_id)
                 if not subject_curie or not object_curie:
                     continue
-                if subject_curie.split(":")[0] not in EXTRACTED_ONTOLOGY_PREFIXES:
-                    continue
-                if object_curie.split(":")[0] not in EXTRACTED_ONTOLOGY_PREFIXES:
-                    continue
                 
                 edge_stream_count += 1
                 yield {
