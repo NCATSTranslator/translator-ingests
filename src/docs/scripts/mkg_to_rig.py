@@ -18,78 +18,76 @@ import click
 from translator_ingest import INGESTS_PARSER_PATH
 
 
-def read_mkg_nodes(nodes,node_info):
+def read_mkg_nodes(nodes, node_info):
     """Read the Meta Knowledge Graph nodes from the given JSON file handle."""
     for category, details in nodes.items():
-
-        # 'target_info.node_type_info' is a list of rig_node entries
-        rig_node = dict()
+        node_data = dict()
 
         #   - node_category: "biolink:Disease"
-        rig_node['node_category'] = category
+        node_data['node_category'] = category
 
         #     source_identifier_types:
         #       - "OMIM" etc.
         id_prefixes: list[str] = details['id_prefixes']
-        rig_node['source_identifier_types'] = id_prefixes.copy()
+        node_data['source_identifier_types'] = id_prefixes.copy()
 
         #     node_properties:
         #     - "biolink:inheritance"
-        rig_node['node_properties'] = []
+        node_data['node_properties'] = []
         attributes = details['attributes']
         for attribute in attributes:
             attribute_type_id = attribute['attribute_type_id']
-            rig_node['node_properties'].append(attribute_type_id)
+            node_data['node_properties'].append(attribute_type_id)
 
             # TODO: unsure if or how to really record this at the moment,
             #       let alone, other associated properties?
             # original_attribute_names = attribute['original_attribute_names']
 
-        node_info.append(rig_node)
+        node_info.append(node_data)
 
 def read_mkg_edges(
         edges,
+        edge_info,
         knowledge_level,
-        agent_type,
-        edge_info
+        agent_type
 ):
     """Read the Meta Knowledge Graph edges from the given JSON file."""
     for edge in edges:
-        rig_edge = dict()
+        edge_data = dict()
 
         #       subject_categories:
         #       - "biolink:Disease"
-        rig_edge['subject'] = [edge['subject']]
+        edge_data['subject'] = [edge['subject']]
 
         #       predicates:
         #         - "biolink:has_phenotype"
-        rig_edge['predicates'] = [edge['predicate']]
+        edge_data['predicates'] = [edge['predicate']]
 
         #       object_categories:
         #       - "biolink:PhenotypicFeature"
-        rig_edge['object'] = [edge['object']]
+        edge_data['object'] = [edge['object']]
 
-        # TODO: rig_edge['qualifiers']
+        # TODO: edge_data['qualifiers']
 
         #       knowledge_level:
         #       - knowledge_assertion
-        rig_edge['knowledge_level'] = knowledge_level
+        edge_data['knowledge_level'] = knowledge_level
 
         #       agent_type:
         #       - manual_agent
-        rig_edge['agent_type'] = agent_type
+        edge_data['agent_type'] = agent_type
 
-        rig_edge['edge_properties'] = []
-        attributes = details['attributes']
+        edge_data['edge_properties'] = []
+        attributes = edge['attributes']
         for attribute in attributes:
             attribute_type_id = attribute['attribute_type_id']
-            rig_edge['edge_properties'].append(attribute_type_id)
+            edge_data['edge_properties'].append(attribute_type_id)
 
             # TODO: unsure if or how to really record this at the moment,
             #       let alone, other associated properties?
             # original_attribute_names = attribute['original_attribute_names']
 
-        edge_info.append(rig_edge)
+        edge_info.append(edge_data)
 
 
 @click.command()
