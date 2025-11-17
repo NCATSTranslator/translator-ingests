@@ -3,7 +3,7 @@ name: Ubergraph Ontological Hierarchy Reference Ingest Guide
 source_info:
   infores_id: infores:ubergraph
   name: Ubergraph
-  description: "Ubergraph is a unified OWL ontology integrating multiple biomedical ontologies including GO, UBERON, CL, CHEBI, HP, and others. It provides both redundant (with full inference closure for subclass and existential relations) and non-redundant graph representations. This ingest uses the redundant version which contains complete transitive, reflexive subclass relations for ontological hierarchy reasoning."
+  description: "Ubergraph is a unified OWL ontology integrating multiple biomedical ontologies including GO, UBERON, CL, CHEBI, HP, and others. It provides both redundant (with full inference closure for subclass relations) and non-redundant graph representations. This ingest uses the redundant version which contains complete transitive, reflexive subclass relations for ontological hierarchy reasoning."
   citations:
     - "Balhoff JP, Bayindir U, Caron AR, Matentzoglu N, Osumi-Sutherland D, Mungall CJ. Ubergraph: integrating OWL ontologies into a unified semantic graph. bioRxiv. 2022."
   terms_of_use_info:
