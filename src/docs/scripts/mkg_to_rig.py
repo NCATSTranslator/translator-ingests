@@ -23,9 +23,9 @@ def read_mkg_nodes(nodes, node_info):
     """
     Convert the input MKG node data into an output list of nodes.
 
-    :param nodes: from the given Meta Knowledge Graph JSON file.
-    :param node_info: parsed out node information for the output
-    :return: modified node_info list
+    :param nodes: Nodes from the given Meta Knowledge Graph JSON file.
+    :param node_info: Parsed out node information for the output.
+    :return: Modified node_info list.
     """
     for category, details in nodes.items():
         node_data = dict()
@@ -61,11 +61,11 @@ def read_mkg_edges(
     """
     Convert the input MKG edge data into an output list of edges.
 
-    :param edges: from the given Meta Knowledge Graph JSON file.
-    :param edge_info: parsed out edge information for the output
-    :param knowledge_level: knowledge level for the edge
-    :param agent_type: agent type for the edge
-    :return: modified edge_info list
+    :param edges: Edges from the given Meta Knowledge Graph JSON file.
+    :param edge_info: Parsed out edge information for the output.
+    :param knowledge_level: Knowledge level for the edge.
+    :param agent_type: Agent type for the edge.
+    :return: Modified edge_info list.
     """
     for edge in edges:
         edge_data = dict()
@@ -146,7 +146,7 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     :param ingest: Target ingest folder name of the target data source folder (e.g., icees)
     :param mkg: Meta Knowledge Graph JSON file source of details to be
                 loaded into the RIG (assumed co-located with RIG in the ingest task folder
-    :param rig: Target Reference Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
+    :param rig: Reference-Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
                 This switch is ignored if the output format is "table".
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
