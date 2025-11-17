@@ -20,7 +20,13 @@ from translator_ingest import INGESTS_PARSER_PATH
 
 
 def read_mkg_nodes(nodes, node_info):
-    """Read the Meta Knowledge Graph nodes from the given JSON file handle."""
+    """
+    Convert the input MKG node data into an output list of nodes.
+
+    :param nodes: from the given Meta Knowledge Graph JSON file.
+    :param node_info: parsed out node information for the output
+    :return: modified node_info list
+    """
     for category, details in nodes.items():
         node_data = dict()
 
@@ -35,7 +41,7 @@ def read_mkg_nodes(nodes, node_info):
         #     node_properties:
         #     - "biolink:inheritance"
         node_data['node_properties'] = []
-        attributes = details['attributes']
+        attributes = details.get('attributes',[])
         for attribute in attributes:
             attribute_type_id = attribute['attribute_type_id']
             node_data['node_properties'].append(attribute_type_id)
@@ -52,7 +58,15 @@ def read_mkg_edges(
         knowledge_level,
         agent_type
 ):
-    """Read the Meta Knowledge Graph edges from the given JSON file."""
+    """
+    Convert the input MKG edge data into an output list of edges.
+
+    :param edges: from the given Meta Knowledge Graph JSON file.
+    :param edge_info: parsed out edge information for the output
+    :param knowledge_level: knowledge level for the edge
+    :param agent_type: agent type for the edge
+    :return: modified edge_info list
+    """
     for edge in edges:
         edge_data = dict()
 
@@ -79,7 +93,7 @@ def read_mkg_edges(
         edge_data['agent_type'] = agent_type
 
         edge_data['edge_properties'] = []
-        attributes = edge['attributes']
+        attributes = edge.get('attributes',[])
         for attribute in attributes:
             attribute_type_id = attribute['attribute_type_id']
             edge_data['edge_properties'].append(attribute_type_id)
