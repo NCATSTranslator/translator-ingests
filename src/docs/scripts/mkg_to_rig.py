@@ -104,6 +104,35 @@ def read_mkg_edges(
 
         edge_info.append(edge_data)
 
+def prepare_table_data(node_info, edge_info) -> tuple[list[str],list[dict]]:
+    """
+    Prepare data for use in a Translator Phase 2 Ingest Inventory style spreadsheet.
+    :param node_info: List of node information.
+    :param edge_info: List of edge information.
+    :return: A 2-tuple[list[str],list[dict]] of
+             1) table headers
+             2) merged, flattened and renamed node and edge information, one dictionary per edge, per list row.
+    """
+    # Headers:
+    # -----------
+    # MetaEdge Subject Category
+    # MetaEdge Predicate
+    # MetaEdge Object Category
+    # MetaEdge Qualifiers
+    # KL
+    # AT
+    # Other Edge Attributes
+    # Subject Node Properties
+    # Object Node Properties
+    #
+    # Coercion:
+    # ------------
+    # use the first element of some list values: subject cat, pre, obj cat
+    # export KL and AT values
+    # flatten other lists as comma+\n delimited strings: other edge att, sub node prop, obj node prop
+    kg_data:list[dict] = [{"stub": ""}]
+    headers:list[str] = ["stub"]
+    return headers, kg_data
 
 @click.command()
 @click.option(
@@ -135,7 +164,7 @@ def read_mkg_edges(
 @click.option(
     '--output',
     default='rig',
-    help='Desired format of the output, i.e., rig or table (default: "rig")'
+    help='Desired format of the output, i.e., "rig" or "csv" (default: "rig")'
 )
 def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     """
@@ -150,7 +179,7 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
                 This switch is ignored if the output format is "table".
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
-    :param output: Desired format of the output, i.e., "rig" or "table" (default: "rig")
+    :param output: Desired format of the output, i.e., "rig" or "csv" (default: "rig")
     :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
 
     Examples:
@@ -163,9 +192,9 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     mk_to_rig.py --ingest icees --mkg my_meta_graph.json --rig my_rig.yaml
 
     # If a table of edges is preferred, the --output switch option can be used.
-    mk_to_rig.py --ingest icees --format table
+    mk_to_rig.py --ingest icees --output csv
     """
-    if output not in ['rig', 'table']:
+    if output not in ['rig', 'csv']:
         click.echo(
             message=f"Error: Invalid output format: {output}",
             err=True
@@ -194,7 +223,6 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
 
     try:
         kg_data_path: Optional[Path]
-        kg_data: dict
         if output == 'rig':
 
             # Default RIG file name, if not given
@@ -248,20 +276,10 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
             with open(kg_data_path, 'w') as rig:
                 yaml.safe_dump(kg_data, rig, sort_keys=False)
         else:
-            # Assume 'table' model output
-
-            # data = [
-            #     {"name": "Alice", "age": 30, "city": "Sooke"},
-            #     {"name": "Bob", "age": 25, "city": "Victoria"},
-            #     {"name": "Charlie", "age": 35, "city": "Vancouver"}
-            # ]
-            # If the data has inconsistent keys,
-            # consider using
-            #      set().union(*[d.keys() for d in data])
-            # to build a complete header list.
-
+            # Generate 'csv' output file
+            headers, kg_data = prepare_table_data(node_info, edge_info)
             with open(kg_data_path, mode="w", newline="", encoding="utf-8") as table_file:
-                writer = csv.DictWriter(table_file, fieldnames=kg_data[0].keys())
+                writer = csv.DictWriter(table_file, fieldnames=headers)
                 writer.writeheader()
                 writer.writerows(kg_data)
 
