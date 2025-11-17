@@ -126,7 +126,13 @@ validate: run
 .PHONY: validate-%
 validate-%:
 	@echo "Validating $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
+	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
+	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
+	if [ -z "$$NODES_FILE" ] || [ -z "$$EDGES_FILE" ]; then \
+		echo "Error: Could not find nodes or edges files for $*"; \
+		exit 1; \
+	fi; \
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
 .PHONY: validate-only
 validate-only:
@@ -135,7 +141,13 @@ validate-only:
 .PHONY: validate-only-%
 validate-only-%:
 	@echo "Validating $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
+	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
+	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
+	if [ -z "$$NODES_FILE" ] || [ -z "$$EDGES_FILE" ]; then \
+		echo "Error: Could not find nodes or edges files for $*"; \
+		exit 1; \
+	fi; \
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
 
 .PHONY: merge

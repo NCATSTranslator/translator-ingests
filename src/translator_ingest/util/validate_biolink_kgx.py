@@ -93,62 +93,85 @@ def validate_kgx_consistency_streaming(nodes_file: Path, edges_file: Path) -> Di
     
     This is optimized for large files like ubergraph with 10M+ edges.
     Uses single-pass algorithms and streaming to avoid memory issues.
+    Strategy: Sample edges first, then ensure all referenced nodes are included.
     """
     logger.info(f"Starting streaming validation for large files")
     
-    # First pass: collect node IDs (still need to load all node IDs for reference checking)
-    logger.info(f"Loading node IDs from: {nodes_file}")
+    # First pass: collect all node IDs and nodes for reference checking
+    logger.info(f"Loading nodes from: {nodes_file}")
     node_ids = set()
+    nodes_dict = {}  # Store nodes by ID for later retrieval
     node_count = 0
-    node_sample = []  # Keep small sample for Biolink validation
-    SAMPLE_SIZE = 1000  # Sample size for Biolink validation
     
     for node in load_jsonl_streaming(nodes_file):
         node_count += 1
         if "id" in node:
-            node_ids.add(node["id"])
-        # Keep sample for Biolink validation
-        if len(node_sample) < SAMPLE_SIZE:
-            node_sample.append(node)
+            node_id = node["id"]
+            node_ids.add(node_id)
+            nodes_dict[node_id] = node
     
     logger.info(f"Found {node_count:,} nodes with {len(node_ids):,} unique IDs")
     
-    # Second pass: validate edges and check references in a single pass
-    logger.info(f"Validating edges from: {edges_file}")
+    # Second pass: sample edges and collect referenced nodes
+    logger.info(f"Sampling edges from: {edges_file}")
     edge_count = 0
     edge_sample = []
     missing_nodes = set()
     edge_node_refs = set()
     MAX_MISSING_NODES = 1000  # Limit missing nodes to track
+    EDGE_SAMPLE_SIZE = 30000  # Sample 30K edges
     
     for edge in load_jsonl_streaming(edges_file):
         edge_count += 1
         
         # Keep sample for Biolink validation
-        if len(edge_sample) < SAMPLE_SIZE:
+        if len(edge_sample) < EDGE_SAMPLE_SIZE:
             edge_sample.append(edge)
+            
+            # Track nodes referenced in the sampled edges
+            if "subject" in edge:
+                edge_node_refs.add(edge["subject"])
+            if "object" in edge:
+                edge_node_refs.add(edge["object"])
         
-        # Check subject reference
+        # For all edges (not just sample), check for missing nodes
         if "subject" in edge:
             subject = edge["subject"]
-            edge_node_refs.add(subject)
             if subject not in node_ids and len(missing_nodes) < MAX_MISSING_NODES:
                 missing_nodes.add(subject)
         
-        # Check object reference
         if "object" in edge:
             obj = edge["object"]
-            edge_node_refs.add(obj)
             if obj not in node_ids and len(missing_nodes) < MAX_MISSING_NODES:
                 missing_nodes.add(obj)
     
-    logger.info(f"Found {edge_count:,} edges")
+    logger.info(f"Found {edge_count:,} edges, sampled {len(edge_sample):,} for validation")
     
-    # Calculate orphaned nodes (with limit for large datasets)
+    # Create node sample that includes all nodes referenced by sampled edges
+    node_sample = []
+    missing_in_sample = set()
+    for node_id in edge_node_refs:
+        if node_id in nodes_dict:
+            node_sample.append(nodes_dict[node_id])
+        else:
+            missing_in_sample.add(node_id)
+    
+    logger.info(f"Created node sample of {len(node_sample):,} nodes for validation")
+    if missing_in_sample:
+        logger.warning(f"Found {len(missing_in_sample)} nodes referenced in edge sample but missing from nodes file")
+    
+    # Calculate orphaned nodes from all edges (not just sample)
+    all_edge_node_refs = set()
+    for edge in load_jsonl_streaming(edges_file):
+        if "subject" in edge:
+            all_edge_node_refs.add(edge["subject"])
+        if "object" in edge:
+            all_edge_node_refs.add(edge["object"])
+    
     orphaned_nodes = set()
     MAX_ORPHANED_NODES = 1000
     for node_id in node_ids:
-        if node_id not in edge_node_refs:
+        if node_id not in all_edge_node_refs:
             orphaned_nodes.add(node_id)
             if len(orphaned_nodes) >= MAX_ORPHANED_NODES:
                 break
@@ -207,13 +230,14 @@ def validate_kgx_consistency_streaming(nodes_file: Path, edges_file: Path) -> Di
         "statistics": {
             "total_nodes": node_count,
             "total_edges": edge_count,
-            "unique_nodes_in_edges": len(edge_node_refs),
+            "unique_nodes_in_edges": len(all_edge_node_refs),
             "missing_nodes_count": len(missing_nodes),
             "orphaned_nodes_count": len(orphaned_nodes),
             "validation_errors": len(errors),
             "validation_warnings": len(warnings),
-            "validation_sample_size": SAMPLE_SIZE,
-            "note": "Large file - validation performed on sample data"
+            "edge_sample_size": EDGE_SAMPLE_SIZE,
+            "node_sample_size": len(node_sample),
+            "note": "Large file - validation performed on edge sample with matching nodes"
         },
         "validation_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
         "issues": {
