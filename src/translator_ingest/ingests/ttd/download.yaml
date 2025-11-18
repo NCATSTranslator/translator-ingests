@@ -1,0 +1,10 @@
+# The download.yaml file format is defined and used by the KGHub Downloader to download files.
+# https://monarch-initiative.github.io/kghub-downloader/
+#
+# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+## These txt files are varied, custom formats, not regular columnar data. 
+---
+- url: https://ttd.idrblab.cn/files/download/P1-03-TTD_crossmatching.txt
+  local_name: P1_03_drug_mapping.txt
+- url: https://ttd.idrblab.cn/files/download/P1-05-Drug_disease.txt
+  local_name: P1_05_indications.txt

@@ -1,0 +1,27 @@
+name: alliance
+
+readers:
+  phenotype:
+    format: json
+    json_path:
+      - data
+    files:
+      - "PHENOTYPE_MGI.json.gz"
+      - "PHENOTYPE_RGD.json.gz"
+    required_properties:
+      - objectId
+      - phenotypeTermIdentifiers
+      - evidence
+
+  expression:
+    format: json
+    json_path:
+      - data
+    files:
+      - "EXPRESSION_MGI.json.gz"
+      - "EXPRESSION_RGD.json.gz"
+    required_properties:
+      - assay
+
+transform:
+  code: "alliance.py"

@@ -1,0 +1,42 @@
+name: diseases
+
+## separate readers for textmining + knowledge files. They can be run independently of each other
+readers:
+  textmining:
+    format: csv    ## doesn't have a tsv format option
+    delimiter: "\t"
+    header_mode: none    ## there isn't a header/column names row
+    files:
+      - "diseases_textmining.tsv"
+    columns:
+    ## naming all of them, assigning type if not str (default). Not actually using protein_name, disease_name
+      - protein_id
+      - protein_name
+      - disease_id
+      - disease_name
+      - z_score: float
+      - confidence_score: float
+      - url
+  knowledge:
+    format: csv
+    delimiter: "\t"
+    header_mode: none
+    files:
+      - "diseases_knowledge.tsv"
+    columns:
+    ## naming all of them, assigning type if not str (default). Not actually using protein_name, disease_name, evidence_type
+      - protein_id
+      - protein_name
+      - disease_id
+      - disease_name
+      - source_db
+      - evidence_type
+      ## actually an int, but making this float to match text-mining's attribute later. ?? see how it goes
+      - confidence_score: float
+    filters:
+      ## remove rows when source_db == "UniProtKB-KW": ingest directly through that resource instead
+      ## don't need to record stats on this
+      - inclusion: exclude
+        column: source_db
+        filter_code: eq
+        value: UniProtKB-KW
