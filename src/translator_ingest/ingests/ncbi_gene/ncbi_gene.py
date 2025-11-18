@@ -4,7 +4,7 @@ from typing import Any
 from biolink_model.datamodel.pydanticmodel_v2 import Gene
 from koza.model.graphs import KnowledgeGraph
 import koza
-from translator_ingest.util.biolink import INFORES_NCBIGENE, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_NCBIGENE
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
