@@ -222,8 +222,13 @@ def parse_attributes_json(
                     attr_type_id.replace("biolink:", "") if attr_type_id.startswith("biolink:") else attr_type_id
                 )
 
+                # Handle confidence score mapping
+                if attr_type_id == "biolink:confidence_score":
+                    mapped_attributes["biolink:has_confidence_level"] = value
+                    continue
+                
                 # Handle supporting_study_result with nested attributes
-                if attr_type_id == "biolink:has_supporting_study_result" and "attributes" in attr:
+                if (attr_type_id == "biolink:supporting_study_result" or attr_type_id == "biolink:has_supporting_study_result") and "attributes" in attr:
                     # This is a supporting study result with nested attributes
                     study_result_data = {
                         "id": value,  # The study result ID
@@ -246,32 +251,46 @@ def parse_attributes_json(
                                 # Convert to list if it's a string
                                 if isinstance(nested_value, str):
                                     study_result_data["supporting_text"] = [nested_value]
+                                    # Also add to top-level for backward compatibility
+                                    mapped_attributes["biolink:supporting_text"] = nested_value
                                 else:
                                     study_result_data["supporting_text"] = nested_value
+                                    mapped_attributes["biolink:supporting_text"] = nested_value
                             elif nested_attr_name == "subject_location_in_text":
                                 # Convert pipe-separated string to a list of integers
                                 if isinstance(nested_value, str) and "|" in nested_value:
                                     try:
-                                        study_result_data["subject_location_in_text"] = [
-                                            int(x) for x in nested_value.split("|")
-                                        ]
+                                        loc_list = [int(x) for x in nested_value.split("|")]
+                                        study_result_data["subject_location_in_text"] = loc_list
+                                        # Also add to top-level for backward compatibility
+                                        mapped_attributes["subject_location_in_text"] = loc_list
                                     except ValueError:
                                         study_result_data["subject_location_in_text"] = nested_value
+                                        mapped_attributes["subject_location_in_text"] = nested_value
                                 else:
                                     study_result_data["subject_location_in_text"] = nested_value
+                                    mapped_attributes["subject_location_in_text"] = nested_value
                             elif nested_attr_name == "object_location_in_text":
                                 # Convert pipe-separated string to a list of integers
                                 if isinstance(nested_value, str) and "|" in nested_value:
                                     try:
-                                        study_result_data["object_location_in_text"] = [
-                                            int(x) for x in nested_value.split("|")
-                                        ]
+                                        loc_list = [int(x) for x in nested_value.split("|")]
+                                        study_result_data["object_location_in_text"] = loc_list
+                                        # Also add to top-level for backward compatibility
+                                        mapped_attributes["object_location_in_text"] = loc_list
                                     except ValueError:
                                         study_result_data["object_location_in_text"] = nested_value
+                                        mapped_attributes["object_location_in_text"] = nested_value
                                 else:
                                     study_result_data["object_location_in_text"] = nested_value
+                                    mapped_attributes["object_location_in_text"] = nested_value
                             elif nested_attr_name == "extraction_confidence_score":
+                                # Convert to integer if it's a float
+                                if isinstance(nested_value, float):
+                                    nested_value = int(nested_value * 100)  # Convert to percentage
                                 study_result_data["extraction_confidence_score"] = nested_value
+                                # Also add to top-level for backward compatibility
+                                mapped_attributes["biolink:extraction_confidence_score"] = nested_value
                             elif nested_attr_name == "supporting_document_year":
                                 study_result_data["supporting_document_year"] = nested_value
                             elif nested_attr_name == "supporting_document_type":
@@ -289,6 +308,11 @@ def parse_attributes_json(
                         # Create TextMiningStudyResult instance with text-mining-specific fields
                         study_result_obj = TextMiningStudyResult(**study_result_data)
                         study_results.append(study_result_obj)
+                        
+                        # Also add the study result to the mapped attributes for backward compatibility
+                        if "biolink:has_supporting_study_result" not in mapped_attributes:
+                            mapped_attributes["biolink:has_supporting_study_result"] = []
+                        mapped_attributes["biolink:has_supporting_study_result"].append(study_result_obj)
                     except Exception as e:
                         koza_instance.log(f"Error creating TextMiningStudyResult: {e}, data: {study_result_data}")
 
@@ -415,7 +439,7 @@ def prepare_text_mining_kp_data(koza_instance: KozaTransform, data: Iterable[Dic
 
 
 @koza.transform()
-def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict]) -> Iterable[KnowledgeGraph]:
+def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict]) -> KnowledgeGraph:
     """
     Transform Text Mining KP data with attribute processing.
     """
@@ -557,4 +581,4 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
 
     koza_instance.log(f"Processed {node_count} nodes and {edge_count} edges ({attribute_errors} errors)")
 
-    yield KnowledgeGraph(nodes=nodes, edges=edges)
+    return KnowledgeGraph(nodes=nodes, edges=edges)
