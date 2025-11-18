@@ -11,7 +11,9 @@ ReferenceIngestGuide:
       
     citations:
       - Corsello SM, Bittker JA, Liu Z, Gould J, McCarren P, Hirschman JE, Johnston SE, Vrcic A, Wong B, Khan M, Asiedu J, Narayan R, Mader CC, Subramanian A, Golub TR. The Drug Repurposing Hub: a next-generation drug library and information resource. Nature Medicine. 23, 405–408 (2017).
-    terms_of_use: The Repurposing Hub compound metadata (including compound names, structures, targets, mechanisms, and indications) are made available under the permissive CC-BY 4.0 license. Restrictions: The Drug Repurposing Hub data is provided for non-commercial use only.
+    terms_of_use: 
+        license_name: The Repurposing Hub compound metadata (including compound names, structures, targets, mechanisms, and indications) are made available under the permissive CC-BY 4.0 license. Restrictions: The Drug Repurposing Hub data is provided for non-commercial use only.
+        license_url: https://repo-hub.broadinstitute.org/repurposing#about
     data_access_locations: 
       - https://repo-hub.broadinstitute.org/repurposing#download-data
     data_provision_mechanisms: 
