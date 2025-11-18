@@ -1,4 +1,3 @@
-import logging
 from typing import Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import Gene
