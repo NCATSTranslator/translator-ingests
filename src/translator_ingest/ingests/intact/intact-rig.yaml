@@ -1,0 +1,186 @@
+ReferenceIngestGuide:
+  name:  IntAct Reference Ingest Guide
+
+# Information about the Source of the ingest
+  source_info:  
+    infores_id:  infores:intact
+    description: >-
+      IntAct is a curated, open data resource of molecular interactions hosted
+      by EMBL-EBI. It stores experimentally determined molecular interactions,
+      primarily protein–protein interactions, derived from literature curation
+      and direct user submissions. IntAct uses detailed controlled vocabularies
+      (e.g., PSI-MI) to describe experimental details such as interaction type,
+      detection method, and participant roles, enabling consistent representation
+      and downstream re-use of fine-grained interaction evidence.
+    citations:  
+      - del-Toro N, Duesbury M, Koch M, et al. The IntAct molecular interaction database in 2022. Nucleic Acids Res. 2022;50(D1):D648–D653
+      - Hermjakob H, Montecchi-Palazzi L, Bader G, et al. IntAct: an open source molecular interaction database. Nucleic Acids Res. 2004;32(Database issue):D452–D455.
+    terms_of_use: IntAct is a fully open-source, open-data resource whose materials are freely available to anyone. All IntAct data—including PSI-MI XML, MI-JSON, MITAB
+      files, and data accessed through the website or web services—are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) license, which allows 
+      users to use, reproduce, share, and adapt the data as long as appropriate credit is given. All IntAct software, including the Curator Tool, derived websites and services, 
+      SQL and graph database dumps, and branding materials, are provided under the Apache License 2.0, a permissive open-source license that allows reuse and modification with 
+      standard notice requirements. IntAct collects minimal personal data (author names and corresponding emails) solely for data traceability, and its curation activities 
+      follow EBI’s long-term data preservation policies. The licensing policy is described here: https://www.ebi.ac.uk/intact/about#license_privacy
+    data_access_locations: 
+      - IntAct main site: https://www.ebi.ac.uk/intact/
+      - IntAct Download / FTP or bulk access: https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
+    data_provision_mechanisms:
+      - file_download
+      - web_interface
+      - web_service_api
+    data_formats: 
+      - PSI-MI TAB (MITAB)
+      - PSI-MI XML
+    data_versioning_and_releases: >-
+      IntAct is released in regular monthly updates: https://www.ebi.ac.uk/legacy-intact/downloads.
+      Each release is identified by a release number and associated with a release date. The ingest documented here is
+      based on IntAct Release 251 - September 2025; last modified on August 28, 2025 and downloaded on November 16, 2025, 
+      using psimitab 2.7 format from: https://ftp.ebi.ac.uk/pub/databases/intact/current. See the IntAct FTP page about the release 
+      and contents of the FTP directory: https://www.ebi.ac.uk/intact/download/ftp. 
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+  ingest_info: 
+    ingest_categories:  
+      - Primary Knowledge Provider
+    utility: >-
+      IntAct is a key curated source of experimentally supported molecular
+      interactions, particularly protein–protein interactions, which are
+      critical for many NCATS Translator use cases including pathway and
+      network-based reasoning, target discovery, mechanism-of-action
+      hypotheses, and evaluation of biological plausibility for
+      drug–disease or gene–disease connections. It provides detailed
+      interaction-level metadata (e.g., detection method, interaction type,
+      source database, publications) that supports evidence tracking and
+      assessment of interaction quality and context.
+    scope: >-
+      IntAct ingest focuses on experimentally determined
+      molecular interactions where at least one participant can be
+      normalized to a Biolink-compatible protein or small molecule
+      identifier, with an emphasis on human protein–protein interactions.
+      All interaction records with valid PSI-MI interaction types and
+      detection methods are considered within scope. The ingest is
+      designed to preserve interaction evidence metadata (detection method,
+      interaction type, source database, publications) while providing a
+      Biolink-compliant edge representation.
+
+    relevant_files:  
+      - file_name: intact.zip
+        location:  https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/ 
+        description: MITAB file containing binary molecular interaction records 
+                    from IntAct for the selected release and organism/filtering 
+                    configuration used in this ingest. The compressed file has 
+                    both .txt and negative.txt files; only the positive interactions 
+                    from the intact.txt file are ingested.
+        
+    included_content:  
+      - file_name: intact.txt
+        included_records:  Human–human positive interaction records only. A record is included if both interactors have 
+          organism identifiers containing "taxid:9606". These represent experimentally observed molecular interactions 
+          curated by IntAct/IMEx, encoded in MITAB 2.7 format
+        fields_used:  All MITAB 2.7 fields: idA, idB, altIdsA, altIdsB, aliasesA, aliasesB, interactionDetectionMethod, 
+          firstAuthor, publicationIDs, taxidA, taxidB, interactionTypes, sourceDatabase, interactionIDs, confidenceScores, 
+          complexExpansion, biologicalRoleA, biologicalRoleB, experimentalRoleA, experimentalRoleB, interactorTypeA, 
+          interactorTypeB, xrefA, xrefB, xrefInteraction, annotationsA, annotationsB, annotationsInteraction, hostOrganism, 
+          interactionParameters, creationDate, updateDate, checksumA, checksumB, interactionChecksum, negative, featureA, 
+          featureB, stoichiometryA, stoichiometryB, participantIdentificationMethodA, participantIdentificationMethodB
+
+    filtered_content: 
+     - file_name: intact.txt
+      filtered_records: All non-human interactions are excluded. A record is removed if either interactor lacks "taxid:9606". 
+        No additional filtering is applied.
+      rationale: For Translator use cases, only human molecular interactions are required. Filtering to human–human interactions 
+        reduces noise from model organisms and preserves relevant biological context.
+
+    - file_name: intact_negative.txt
+      filtered_records: All rows are excluded. 
+      rationale: Negative interaction evidence does not correspond to a Biolink predicate and is not needed for molecular interaction 
+        reasoning. Only positive interactions are used.
+
+    future_considerations:  
+      - category:  edge_content
+        consideration: Consider expanding beyond human-only interactions to include
+          selected non-human organisms (e.g., key model organisms) where
+          this adds substantial value for mechanistic or translational
+          reasoning, while still maintaining manageable graph size.
+        relevant_files: intact.txt
+        
+    additional_notes:  Exploratory data analysis (EDA) of the IntAct MITAB dataset revealed 59 unique PSI-MI interaction types across
+      the full resource, of which 41 appear in the human-only subset for this ingest. A similar 'long tail' distribution was observed 
+      for detection methods and source databases, with a small number of highly frequent, widely used terms (e.g., association, physical 
+      association, self interaction) and many low-frequency or highly specific terms. Based on these findings, the ingest strategy retains 
+      all positive human–human interactions and preserves all observed interaction types, detection methods, and source database annotations 
+      (without removing rare terms), while constraining biological scope to human-only records. Negative interactions were excluded for this 
+      version of the ingest, as they are not currently used in Translator molecular interaction reasoning or Biolink predicate mapping.
+
+# Information about the Graph Output by the ingest 
+  target_info:
+    infores_id: 
+    edge_type_info:
+      - subject_categories:  
+          - 
+        predicate:  
+        object_categories: 
+          - 
+        knowledge_level:  
+          - 
+        agent_type:  
+          - 
+        edge_properties: 
+          - 
+        ui_explanation: 
+        additional_notes: 
+      - subject_categories:
+          - 
+        predicate: 
+        object_categories:
+          - 
+        knowledge_level:  
+          - 
+        agent_type:  
+          - 
+        edge_properties: 
+          - 
+        ui_explanation: 
+        additional_notes: 
+      - subject_categories:
+        - 
+        predicate: 
+        object_categories:
+          - 
+        knowledge_level:
+          - 
+        agent_type:
+          - 
+        edge_properties:
+          - 
+          - 
+        ui_explanation: 
+        additional_notes: 
+
+    node_type_info:  
+      - node_category: 
+        source_identifier_types: 
+        additional_notes: 
+      - node_category: 
+        source_identifier_types: 
+
+    future_considerations:  
+      - category: 
+        consideration: 
+      - category: 
+        consideration: 
+
+    additional_notes: >-
+      
+
+
+# Information about the how the ingest was specified and performed
+  provenance_info: 
+    contributions:  
+      - Shilpa Sundar: ingest owner, code author
+      - Matthew Brush: data modeling, domain expertise
+    artifacts:
+      - Ingest Survey: https://docs.google.com/spreadsheets/d/1sgiHZ_d_o7FWDxhfaP72BVg0FPCNJ7Vx9N6IBuEzHbs/edit?gid=0#gid=0
+      - Causal Mechanism Mappings: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=1886396936#gid=1886396936
+      - IntAct EDA Summary: https://docs.google.com/spreadsheets/d/1-WF7veY_UXXRogq8f7uRMpgYgiv6lJdx/edit?gid=2068335761#gid=2068335761
+      - Ingest Ticket: 
