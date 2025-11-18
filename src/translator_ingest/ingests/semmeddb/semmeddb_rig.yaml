@@ -1,0 +1,165 @@
+name: SemMedDB Minimal Reference Ingest Guide (RIG)
+
+source_info:
+  infores_id: infores:semmeddb
+  name: Semantic MEDLINE Database (SemMedDB)
+  description: "Literature-derived semantic predications extracted by SemRep from PubMed; this RIG documents a post-processed RTX-KG2 edges subset rather than a raw MySQL ingest."
+  data_access_locations:
+    - "SemMedDB downloads: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/SemMedDB_download.html"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - jsonl
+  data_versioning_and_releases: "Versioning inherited from the RTX-KG2 snapshot built from SemMedDB VER43-era releases."
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "Large-scale literature-derived relationships suitable for hypothesis generation and cross-graph enrichment with evidence-bearing edges."
+  scope: "Edges taken directly from RTX-KG2’s SemMedDB slice (nodes.jsonl/edges.jsonl), restricted to a selected predicate set and evidence-bearing records."
+
+  relevant_files:
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
+      location: "internal graph build artifact"
+      description: "KGX-compatible edges with SemMedDB predicate CURIEs and literature evidence."
+    - file_name: "kg2.10.3-semmeddb-nodes.jsonl (RTX-KG2 SemMedDB slice)"
+      location: "internal graph build artifact"
+      description: "KGX-compatible nodes referenced by the edges subset."
+
+  included_content:
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      included_records: "Edges whose predicate is in the selected predicate set; edges retain evidence and negation flags."
+      fields_used: "subject, predicate, object, publications, publications_info, negated, domain_range_exclusion, provided_by, knowledge_level, agent_type"
+    - file_name: "kg2.10.3-semmeddb-nodes.jsonl"
+      included_records: "Only nodes referenced by included edges."
+      fields_used: "id, name, category, xrefs (as available)"
+
+  filtered_content:
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: "Edges with predicates outside the selected set"
+      rationale: "Reduce predicate heterogeneity to a core set used operationally."
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: "Edges lacking publication evidence payload"
+      rationale: "Ensure each edge has traceable literature support."
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: "Self-loops for specific relation types"
+      rationale: "Avoid trivial or uninformative self-relations."
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: "Domain/range violations per exclusion configuration when present"
+      rationale: "Improve semantic coherence against Biolink-like domain/range expectations."
+
+target_info:
+  infores_id: infores:translator-semmeddb-kgx
+
+  edge_type_info:
+    - predicate: biolink:affects
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:located_in
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:related_to
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:interacts_with
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:coexists_with
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:treats_or_applied_or_studied_to_treat
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:causes
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:disrupts
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:predisposes_to_condition
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:preventative_for_condition
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+    - predicate: biolink:associated_with
+      edge_properties:
+        - publications
+        - publications_info
+        - negated
+        - domain_range_exclusion
+        - knowledge_level
+        - agent_type
+        - provided_by
+
+provenance_info:
+  contributions:
+      - "Erica Wood: code author"
+      - "Evan Morris: code support"
+      - "Adilbek Bazarkulov: code support, domain expertise"
+      - "Sierra Moxon: data modeling, domain expertise"
+      - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "SemMedDB overview: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html"
+    - "Biolink Model (schema): https://github.com/biolink/biolink-model"
+    - "KGX documentation: https://kgx.readthedocs.io"

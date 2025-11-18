@@ -1,7 +1,21 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd go_cam goa
+SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider
+# Set to any non-empty value to overwrite previously generated files
+OVERWRITE ?=
+# Clear OVERWRITE if explicitly set to "false" or "False"
+ifeq ($(OVERWRITE),false)
+OVERWRITE :=
+endif
+ifeq ($(OVERWRITE),False)
+OVERWRITE :=
+endif
+
+# Include additional makefiles
+include rig.Makefile
+include doc.Makefile
+
 
 ### Help ###
 
@@ -23,15 +37,24 @@ define HELP
 │     clobber             Clean up generated files          │
 │                                                           │
 │     install             install python requirements       │
-│     run                 Run pipeline (download→transform→normalize) │
+│     run                 Run pipeline (download→transform→normalize→validate) │
+│     transform           Transform the source to KGX       │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │
+│     validate-only       Validate without re-running pipeline │
+│     merge               Merge specified sources into one KG │
 │                                                           │
 │     test                Run all tests                     │
 │                                                           │
 │     lint                Lint all code                     │
 │     format              Format all code                   │
 │     spell-fix           Fix spelling errors interactively │
+│     new-rig             Create a new RIG from template (requires INFORES and NAME)" │
+│			validate-rigs       Validate all RIG files against the schema" │
+│                                                           │
+│     docs                Build documentation locally       │
+│     docs-serve          Build and serve docs on port 8000│
+│     docs-clean          Clean documentation build        │
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │
@@ -41,6 +64,7 @@ define HELP
 │     make run                                              │
 │     make validate SOURCES="ctd go_cam"                    │
 │     make run SOURCES="go_cam"                             │
+│     make merge SOURCES="ctd go_cam goa"                   │
 ╰───────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -71,43 +95,53 @@ install: python
 .PHONY: test
 test:
 	$(RUN) pytest tests
-	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
 	$(RUN) ruff check
 
 
 ### Running ###
 
-.PHONY: download
-download:
-	@for source in $(SOURCES); do \
-		echo "Downloading $$source..."; \
-		$(RUN) downloader --output-dir $(ROOTDIR)/data/$$source src/translator_ingest/ingests/$$source/download.yaml; \
-	done
+.PHONY: run
+run:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix run-,$(SOURCES))
+
+.PHONY: run-%
+run-%:
+	@echo "Running pipeline for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
 
 .PHONY: transform
-transform: download
-	@for source in $(SOURCES); do \
-		echo "Transforming $$source..."; \
-		$(RUN) koza transform src/translator_ingest/ingests/$$source/$$source.yaml --output-dir $(ROOTDIR)/data/$$source --output-format jsonl; \
-	done
+transform:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
 
-.PHONY: normalize
-normalize: transform
-	@echo "Normalization placeholder for sources: $(SOURCES)"
+.PHONY: transform-%
+transform-%:
+	@echo "Transform only for $*..."
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
 
 .PHONY: validate
-validate: normalize
-	$(RUN) python src/translator_ingest/util/validate_kgx.py --data-dir $(ROOTDIR)/data
+validate: run
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-,$(SOURCES))
 
-.PHONY: validate-single
-validate-single: normalize
-	@for source in $(SOURCES); do \
-		echo "Validating $$source..."; \
-		$(RUN) python src/translator_ingest/util/validate_kgx.py --files $(ROOTDIR)/data/$$source/*_nodes.jsonl $(ROOTDIR)/data/$$source/*_edges.jsonl; \
-	done
+.PHONY: validate-%
+validate-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
-.PHONY: run
-run: download transform normalize
+.PHONY: validate-only
+validate-only:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
+
+.PHONY: validate-only-%
+validate-only-%:
+	@echo "Validating $*..."
+	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
+
+
+.PHONY: merge
+merge:
+	@echo "Merging sources and building translator_kg...";
+	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
 
 ### Linting, Formatting, and Cleaning ###
 
@@ -140,4 +174,4 @@ format:
 
 .PHONY: spell-fix
 spell-fix:
-	$(RUN) codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
