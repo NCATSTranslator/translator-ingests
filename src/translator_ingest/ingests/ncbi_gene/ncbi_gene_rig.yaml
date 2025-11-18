@@ -1,8 +1,93 @@
-# This is just a placeholder to satisfy the valid rig test
+# NCBI Gene Reference Ingest Guide (RIG)
+name: NCBI Gene Reference Ingest Guide
+
+# Information about the Source of the data ingest
 source_info:
+  infores_id: infores:ncbi-gene
+  name: NCBI Gene
+  description: >-
+    "The NCBI Gene integrates information from a wide range of species.
+    A record may include nomenclature, Reference Sequences (RefSeqs), maps, pathways, variations, phenotypes,
+    and links to genome-, phenotype-, and locus-specific resources worldwide."
+  citations:
+    - "National Center for Biotechnology Information (NCBI)[Internet]. Bethesda (MD): National Library of Medicine (US), National Center for Biotechnology Information; [1988] – [cited 2024 Dec]. Available from: https://www.ncbi.nlm.nih.gov/"
+  terms_of_use_info:
+    terms_of_use_url: "https://www.ncbi.nlm.nih.gov/home/about/policies/"
+    license_name: "NCBI Public Domain"
+    license_url: "https://www.ncbi.nlm.nih.gov/home/about/policies/"
+  data_access_locations:
+    - "NCBI FTP Site: https://ftp.ncbi.nih.gov/gene/DATA/"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: >-
+    "NCBI Gene data is updated regularly. Gene information files are available as current snapshots from the FTP site."
 
+# Information about Ingested Content
 ingest_info:
+  ingest_categories:
+    - primary_provider
+  utility: >-
+    "NCBI Gene provides authoritative gene information for human, mouse, and rat genes, including official gene
+    symbols, descriptions, and taxonomic information critical for gene normalization and identification in
+    biomedical knowledge graphs."
+  scope: >-
+    "This ingest focuses on human (NCBITaxon:9606), mouse (NCBITaxon:10090), and rat (NCBITaxon:10116)
+    genes only from the gene_info.gz file. All gene records for these species are included to provide
+    comprehensive gene coverage."
 
+  relevant_files:
+    - file_name: "gene_info.gz"
+      location: "https://ftp.ncbi.nih.gov/gene/DATA/gene_info.gz"
+      description: "Tab-delimited file containing gene information for all NCBI species, filtered to human, mouse, and rat genes"
+
+  included_content:
+    - file_name: "gene_info.gz"
+      included_records: "Gene records for human (taxon ID 9606), mouse (taxon ID 10090), and rat (taxon ID 10116) only"
+      fields_used: "tax_id, GeneID, Symbol, description, Full_name_from_nomenclature_authority"
+
+  filtered_content:
+    - file_name: "gene_info.gz"
+      filtered_records: "All gene records for species other than human, mouse, and rat"
+      rationale: "This ingest focuses specifically on human, mouse, and rat genes as these are the primary model organisms of interest for biomedical research and translation."
+
+  future_considerations:
+    - category: node_content
+      consideration: "Consider expanding to include additional model organisms (e.g., zebrafish, fly, worm, yeast) if needed for broader comparative genomics support"
+      relevant_files: "gene_info.gz (additional taxon IDs)"
+    - category: node_property_content
+      consideration: "Consider adding additional gene properties such as map_location, chromosome, synonyms, or dbXrefs for richer gene annotation"
+
+  additional_notes: "The NCBI Gene ingest provides foundational gene nodes that serve as authoritative identifiers and basic properties for downstream integration with other biomedical data sources."
+
+# Information about the Graph Output by the ingest
 target_info:
+  infores_id: infores:translator-ncbi-gene-kgx
 
+  node_type_info:
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "NCBIGene (NCBI Gene ID)"
+      node_properties:
+        - id
+        - category
+        - symbol
+        - description
+        - in_taxon
+        - in_taxon_label
+        - provided_by
+      additional_notes: "Gene nodes include official gene symbols, descriptions, and taxonomic information. The provided_by field is set to 'infores:ncbi-gene' for provenance tracking."
+
+  future_considerations:
+    - category: node_properties
+      consideration: "Consider adding full_name property from Full_name_from_nomenclature_authority field if more detailed gene naming information is needed"
+    - category: edge_content
+      consideration: "Future iterations could include gene-to-gene orthology relationships or gene-to-pathway associations if such data becomes available from NCBI Gene"
+
+  additional_notes: "This ingest creates comprehensive gene nodes for human, mouse, and rat that serve as foundational entities for biomedical knowledge graphs, providing authoritative gene identifiers and basic properties."
+
+# Information about how the ingest was specified and performed
 provenance_info:
+  contributions:
+    - "Generated following NCBI Gene documentation and requirements for human, mouse, and rat gene coverage"

@@ -1,4 +1,9 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
 ---
-# NCBI Gene database - gene_info file containing gene metadata for all species
-- url: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
-  local_name: gene_info.gz
+-
+  url: https://ftp.ncbi.nih.gov/gene/DATA/gene_info.gz
+  local_name: data/gene_info.gz
+  tag: ncbi_gene

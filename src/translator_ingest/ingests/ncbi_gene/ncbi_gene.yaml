@@ -4,7 +4,7 @@ reader:
   format: csv
   delimiter: "\t"
   files:
-    - gene_info.gz
+    - data/gene_info.gz
   columns:
     - tax_id
     - GeneID
@@ -39,9 +39,9 @@ writer:
     - id
     - name
     - category
-    - in_taxon
     - symbol
-    - synonyms
-    - xref
+    - full_name
     - description
+    - in_taxon
+    - in_taxon_label
     - provided_by
