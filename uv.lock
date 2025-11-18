@@ -270,6 +270,7 @@ dependencies = [
     { name = "biolink-model" },
     { name = "bmt" },
     { name = "click" },
+    { name = "deepdiff" },
     { name = "hatchling" },
     { name = "kghub-downloader" },
     { name = "koza" },
@@ -285,6 +286,7 @@ dev = [
     { name = "jupyter-contrib-nbextensions" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
+    { name = "mkdocs-minify-plugin" },
     { name = "nbclassic" },
     { name = "pandas" },
     { name = "pytest" },
@@ -299,6 +301,7 @@ requires-dist = [
     { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
     { name = "bmt", git = "https://github.com/biolink/biolink-model-toolkit.git?rev=master" },
     { name = "click", specifier = ">=8.0.0" },
+    { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "hatchling" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
@@ -314,11 +317,12 @@ dev = [
     { name = "jupyter-contrib-nbextensions" },
     { name = "mkdocs", specifier = ">=1.6.0" },
     { name = "mkdocs-material", specifier = ">=9.5.0" },
+    { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "nbclassic" },
     { name = "pandas" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "requests" },
-    { name = "resource-ingest-guide-schema", git = "https://github.com/biolink/resource-ingest-guide-schema.git?rev=meta-knowledge-graph-json-ingest" },
+    { name = "resource-ingest-guide-schema" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
@@ -615,6 +619,12 @@ wheels = [
 ]
 
 [[package]]
+name = "csscompressor"
+version = "0.9.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/2a/8c3ac3d8bc94e6de8d7ae270bb5bc437b210bb9d6d9e46630c98f4abd20c/csscompressor-0.9.5.tar.gz", hash = "sha256:afa22badbcf3120a4f392e4d22f9fff485c044a1feda4a950ecc5eba9dd31a05", size = 237808, upload-time = "2017-11-26T21:13:08.238Z" }
+
+[[package]]
 name = "curies"
 version = "0.9.2"
 source = { registry = "https://pypi.org/simple" }
@@ -652,6 +662,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/43/fa/6d96a0978d19e17b68d634497769987b16c8f4cd0a7a05048bec693caa6b/decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360", size = 56711, upload-time = "2025-02-24T04:41:34.073Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4e/8c/f3147f5c4b73e7550fe5f9352eaa956ae838d5c51eb58e7a25b9f3e2643b/decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a", size = 9190, upload-time = "2025-02-24T04:41:32.565Z" },
+]
+
+[[package]]
+name = "deepdiff"
+version = "8.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "orderly-set" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/76/36c9aab3d5c19a94091f7c6c6e784efca50d87b124bf026c36e94719f33c/deepdiff-8.6.1.tar.gz", hash = "sha256:ec56d7a769ca80891b5200ec7bd41eec300ced91ebcc7797b41eb2b3f3ff643a", size = 634054, upload-time = "2025-09-03T19:40:41.461Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/e6/efe534ef0952b531b630780e19cabd416e2032697019d5295defc6ef9bd9/deepdiff-8.6.1-py3-none-any.whl", hash = "sha256:ee8708a7f7d37fb273a541fa24ad010ed484192cd0c4ffc0fa0ed5e2d4b9e78b", size = 91378, upload-time = "2025-09-03T19:40:39.679Z" },
 ]
 
 [[package]]
@@ -1050,6 +1072,14 @@ wheels = [
 ]
 
 [[package]]
+name = "htmlmin2"
+version = "0.1.13"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/31/a76f4bfa885f93b8167cb4c85cf32b54d1f64384d0b897d45bc6d19b7b45/htmlmin2-0.1.13-py3-none-any.whl", hash = "sha256:75609f2a42e64f7ce57dbff28a39890363bde9e7e5885db633317efbdf8c79a2", size = 34486, upload-time = "2023-03-14T21:28:30.388Z" },
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -1283,6 +1313,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/00/2a/e867e8531cf3e36b4
 wheels = [
     { url = "https://files.pythonhosted.org/packages/31/b4/b9b800c45527aadd64d5b442f9b932b00648617eb5d63d2c7a6587b7cafc/jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980", size = 20256, upload-time = "2022-06-17T18:00:10.251Z" },
 ]
+
+[[package]]
+name = "jsmin"
+version = "3.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/73/e01e4c5e11ad0494f4407a3f623ad4d87714909f50b17a06ed121034ff6e/jsmin-3.0.1.tar.gz", hash = "sha256:c0959a121ef94542e807a674142606f7e90214a2b3d1eb17300244bbb5cc2bfc", size = 13925, upload-time = "2022-01-16T20:35:59.13Z" }
 
 [[package]]
 name = "json-flattener"
@@ -1960,6 +1996,21 @@ wheels = [
 ]
 
 [[package]]
+name = "mkdocs-minify-plugin"
+version = "0.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "csscompressor" },
+    { name = "htmlmin2" },
+    { name = "jsmin" },
+    { name = "mkdocs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/52/67/fe4b77e7a8ae7628392e28b14122588beaf6078b53eb91c7ed000fd158ac/mkdocs-minify-plugin-0.8.0.tar.gz", hash = "sha256:bc11b78b8120d79e817308e2b11539d790d21445eb63df831e393f76e52e753d", size = 8366, upload-time = "2024-01-29T16:11:32.982Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/cd/2e8d0d92421916e2ea4ff97f10a544a9bd5588eb747556701c983581df13/mkdocs_minify_plugin-0.8.0-py3-none-any.whl", hash = "sha256:5fba1a3f7bd9a2142c9954a6559a57e946587b21f133165ece30ea145c66aee6", size = 6723, upload-time = "2024-01-29T16:11:31.851Z" },
+]
+
+[[package]]
 name = "more-itertools"
 version = "10.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2179,6 +2230,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/4c/ca/bfac8bc689799bcca4157e0e0ced07e70ce125193fc2e166d2e685b7e2fe/ordered-set-4.1.0.tar.gz", hash = "sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8", size = 12826, upload-time = "2022-01-26T14:38:56.6Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/33/55/af02708f230eb77084a299d7b08175cff006dea4f2721074b92cdb0296c0/ordered_set-4.1.0-py3-none-any.whl", hash = "sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562", size = 7634, upload-time = "2022-01-26T14:38:48.677Z" },
+]
+
+[[package]]
+name = "orderly-set"
+version = "5.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/88/39c83c35d5e97cc203e9e77a4f93bf87ec89cf6a22ac4818fdcc65d66584/orderly_set-5.5.0.tar.gz", hash = "sha256:e87185c8e4d8afa64e7f8160ee2c542a475b738bc891dc3f58102e654125e6ce", size = 27414, upload-time = "2025-07-10T20:10:55.885Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/27/fb8d7338b4d551900fa3e580acbe7a0cf655d940e164cb5c00ec31961094/orderly_set-5.5.0-py3-none-any.whl", hash = "sha256:46f0b801948e98f427b412fcabb831677194c05c3b699b80de260374baa0b1e7", size = 13068, upload-time = "2025-07-10T20:10:54.377Z" },
 ]
 
 [[package]]
@@ -3055,14 +3115,18 @@ wheels = [
 
 [[package]]
 name = "resource-ingest-guide-schema"
-version = "0.1.3.dev5+g7f566849e"
-source = { git = "https://github.com/biolink/resource-ingest-guide-schema.git?rev=meta-knowledge-graph-json-ingest#7f566849e18485e9d89362d307dc3faeb3b55fc8" }
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "jinja2" },
     { name = "linkml" },
     { name = "linkml-runtime" },
     { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/17/a6/0135578a821641f0b7d10277a1e51148f6e540f864a002eef8b51d12fa71/resource_ingest_guide_schema-0.1.2.tar.gz", hash = "sha256:1cc3c85cf561fae4193722fe90338f18f6c868a94da3f049988a1c56e30bd5e1", size = 2415371, upload-time = "2025-10-14T22:03:59.871Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/17/7248bacfb5891b7c86b3b58d90f11ad8589b97e3e9b2641e61b8764505bb/resource_ingest_guide_schema-0.1.2-py3-none-any.whl", hash = "sha256:dcfcec77f3256bce2637254a1f8c1e856364b9d742f0a43958aace38dac31cfa", size = 14484, upload-time = "2025-10-14T22:03:58.135Z" },
 ]
 
 [[package]]
