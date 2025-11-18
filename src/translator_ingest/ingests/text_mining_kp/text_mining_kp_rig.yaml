@@ -5,7 +5,12 @@ name: Text Mining Knowledge Provider (TMKP) Reference Ingest Guide
 source_info:
   infores_id: infores:text-mining-provider-targeted
   name: Text Mining Knowledge Provider Targeted
-  description: "The Text Mining Knowledge Provider (TMKP) is an automated knowledge extraction system that analyzes biomedical literature to identify associations between biological entities. It uses natural language processing and machine learning techniques to extract relationships from PubMed abstracts and full-text articles, providing confidence-scored associations with supporting text evidence and character-level text locations."
+  description: >-
+    "The Text Mining Knowledge Provider (TMKP) is an automated knowledge extraction system that analyzes
+    biomedical literature to identify associations between biological entities. It uses natural language
+    processing and machine learning techniques to extract relationships from PubMed abstracts and full-text
+    articles, providing confidence-scored associations with supporting text evidence and character-level
+    text locations."
   citations:
     - "Text Mining Knowledge Provider (TMKP) Documentation: https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap"
   terms_of_use_info:
@@ -13,26 +18,35 @@ source_info:
     license_name: "MIT License"
     license_url: "https://opensource.org/licenses/MIT"
   data_access_locations:
-    - "KGX data downloads: https://stars.renci.org/var/babel_outputs/tmkp/"
+    - https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/2023-03-05/targeted_assertions.tar.gz
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - kgx_tsv
     - tar.gz
-  data_versioning_and_releases: "TMKP releases data periodically with date-based versioning (YYYY-MM-DD format). Each release includes updated text mining results from recent literature."
+  data_versioning_and_releases: >-
+    "TMKP releases data periodically with date-based versioning (YYYY-MM-DD format).
+    Each release includes updated text mining results from recent literature."
 
 # Information about Ingested Content
 ingest_info:
   ingest_categories:
     - primary_knowledge_source
-  utility: "TMKP provides literature-derived associations between chemicals, genes/proteins, diseases, and phenotypes. These associations include confidence scores, supporting text evidence, and precise character offsets within source documents. This supports Translator queries requiring text-mined evidence for biological relationships."
-  scope: "This ingest processes targeted assertions from TMKP, which include high-confidence associations extracted from biomedical literature. The data includes nodes (genes, chemicals, diseases, phenotypes) and edges (various association types) with rich metadata including supporting study results, confidence scores, and text locations."
-  
+  utility: >-
+    "TMKP provides literature-derived associations between chemicals, genes/proteins, diseases, and phenotypes.
+    These associations include confidence scores, supporting text evidence, and precise character offsets
+    within source documents. This supports Translator queries requiring text-mined evidence for biological
+    relationships."
+  scope: >-
+    "This ingest processes targeted assertions from TMKP, which include high-confidence associations
+    extracted from biomedical literature. The data includes nodes (genes, chemicals, diseases, phenotypes)
+    and edges (various association types) with rich metadata including supporting study results, confidence
+    scores, and text locations."
+
   relevant_files:
     - file_name: "targeted_assertions.tar.gz"
-      location: "https://stars.renci.org/var/babel_outputs/tmkp/[version]/targeted_assertions.tar.gz"
+      location: "https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/2023-03-05/targeted_assertions.tar.gz"
       description: "Compressed archive containing KGX TSV files with nodes and edges extracted from biomedical literature"
-  
+
   included_content:
     - Gene/protein to chemical associations
     - Gene to disease associations
@@ -42,11 +56,11 @@ ingest_info:
     - Supporting text evidence with character offsets
     - Confidence scores and extraction metadata
     - Publication references (PMIDs)
-  
+
   filtered_content:
     - Low confidence associations (based on configurable threshold)
     - Associations without supporting text evidence
-  
+
   future_considerations:
     - Integration of full-text mining results (beyond abstracts)
     - Addition of temporal information for associations
@@ -55,7 +69,7 @@ ingest_info:
 # Information about the Target Graph
 target_info:
   infores_id: infores:text-mining-provider-targeted
-  
+
   edge_type_info:
     - edge_category: biolink:ChemicalAffectsGeneAssociation
       predicates:
@@ -105,7 +119,7 @@ target_info:
         - has_supporting_study_result
         - publications
         - supporting_text
-  
+
   node_type_info:
     - node_category: biolink:Gene
       properties:
@@ -125,11 +139,6 @@ target_info:
     - node_category: biolink:PhenotypicFeature
       properties:
         - name
-  
-  future_considerations:
-    - Addition of study metadata as separate Study nodes
-    - Expansion of qualifier support for directional associations
-    - Integration of co-occurrence network data
 
 # Information about Provenance
 provenance_info:
@@ -140,11 +149,3 @@ provenance_info:
     - full_name: "Translator Ingest Team"
       institution: "NCATS Biomedical Data Translator"
       contributions: "KGX transformation and Biolink mapping"
-  
-  artifacts:
-    - repository_url: "https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap"
-      repository_name: "Text Mining Provider Roadmap"
-      description: "Main TMKP repository with documentation and roadmap"
-    - repository_url: "https://github.com/NCATSTranslator/translator-ingests"
-      repository_name: "Translator Ingests"
-      description: "Repository containing the TMKP ingest implementation"
