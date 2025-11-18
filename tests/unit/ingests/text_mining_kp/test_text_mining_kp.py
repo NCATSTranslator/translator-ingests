@@ -5,7 +5,6 @@ from unittest.mock import patch, MagicMock
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
-    KnowledgeGraph,
     ResourceRoleEnum,
     AgentTypeEnum,
     KnowledgeLevelEnum,
