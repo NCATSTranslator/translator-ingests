@@ -123,15 +123,6 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             else:
                 pass # all other attributes ignored at this time
 
-        # TODO: more complex qualifier mapping approach, incomplete and skipped for now
-        # qualifiers: dict[str,str] = map_icees_qualifiers(
-        #     koza_transform,
-        #     association=edge_class,
-        #     subject_category=subject_category,
-        #     object_category=object_category,
-        #     qualifiers=icees_qualifiers
-        # )
-
         association = edge_class(
             id=entity_id(),
             subject=icees_subject,

@@ -40,10 +40,10 @@ NODE_TEST_SLOTS = (
 CORE_ASSOCIATION_TEST_SLOTS = (
     "category",
     "subject",
-    "subject_specialization_qualifier",
+    "subject_feature_name",
     "predicate",
     "object",
-    "object_specialization_qualifier",
+    "object_feature_name",
     "has_supporting_studies",
     "sources",
     "knowledge_level",
@@ -193,10 +193,10 @@ def test_transform_icees_nodes(
             {
                 "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
                 "subject": "PUBCHEM.COMPOUND:2083",
-                "subject_specialization_qualifier": "AlbuterolRx",
+                "subject_feature_name": "AlbuterolRx",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "MONDO:0007079",
-                "object_specialization_qualifier": "AlcoholDependenceDx",
+                "object_feature_name": "AlcoholDependenceDx",
                 #
                 # Can't yet test for this given current status of the Biolink Model
                 #
@@ -214,8 +214,8 @@ def test_transform_icees_nodes(
                 "agent_type": AgentTypeEnum.not_provided
             },
             (
-                "subject_specialization_qualifier",
-                "object_specialization_qualifier"
+                "subject_feature_name",
+                "object_feature_name"
             )
         ),
         (  # Query 2 - A complete record with different qualifiers
@@ -234,10 +234,10 @@ def test_transform_icees_nodes(
             {
                 "category": ["biolink:VariantToDiseaseAssociation"],
                 "subject": "NCBIGene:3105",
-                "subject_aspect_qualifier": "A*02:01",
+                "subject_feature_name": "A*02:01",
                 "predicate": "biolink:correlated_with",
                 "object": "NCBITaxon:12092",
-                "object_aspect_qualifier": "Anti_HAV",
+                "object_feature_name": "Anti_HAV",
                 #
                 # Can't yet test for this given current status of the Biolink Model
                 #
@@ -254,8 +254,8 @@ def test_transform_icees_nodes(
                 "agent_type": AgentTypeEnum.not_provided
             },
             (
-                "subject_aspect_qualifier",
-                "object_aspect_qualifier"
+                "subject_feature_name",
+                "object_feature_name"
             )
         ),
         (   # Query 3 - A complete record with different qualifiers
@@ -274,10 +274,10 @@ def test_transform_icees_nodes(
             {
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:3105",
-                "subject_form_or_variant_qualifier": "A*02:01",
+                "subject_feature_name": "A*02:01",
                 "predicate": "biolink:correlated_with",
-                "object": "NCBITaxon:12092",
-                # "object_aspect_qualifier": "Anti_HAV",
+                "object": "UMLS:C4049590",
+                "object_feature_name": "Anti_HBc_IgM",
                 #
                 # Can't yet test for this given current status of the Biolink Model
                 #
@@ -294,7 +294,7 @@ def test_transform_icees_nodes(
                 "agent_type": AgentTypeEnum.not_provided
             },
             (
-                "subject_form_or_variant_qualifier",
+                "subject_feature_name",
             )
         )
 

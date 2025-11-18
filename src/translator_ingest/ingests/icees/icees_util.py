@@ -66,7 +66,9 @@ def get_icees_supporting_study(
     )
 
 #
-# TODO: this is a partial implementation of a more sophisticated qualifier mapping approach, ignored for now
+# TODO: this is a partial implementation of a more
+#       sophisticated qualifier mapping approach,
+#       ignored and unused for now
 #
 # _associations_missing_qualifiers: set[type[Association]] = set()
 #
