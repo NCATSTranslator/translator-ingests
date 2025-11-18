@@ -20,7 +20,6 @@ from koza.transform import KozaTransform
 from src.translator_ingest.ingests.text_mining_kp.text_mining_kp import (
     transform_text_mining_kp,
     parse_attributes_json,
-    map_attribute_to_biolink_slot,
     extract_tar_gz,
     get_latest_version,
     TMKP_INFORES
@@ -60,18 +59,9 @@ def test_get_latest_version():
     assert version.count('-') == 2
 
 
-def test_map_attribute_to_biolink_slot(mock_koza):
-    # Test valid mapping
-    result = map_attribute_to_biolink_slot('confidence_score', mock_koza)
-    assert result == 'biolink:has_confidence_level'
-    
-    # Test unknown attribute
-    result = map_attribute_to_biolink_slot('unknown_attribute', mock_koza)
-    assert result is None
-    
-    # Test text mining specific attribute
-    result = map_attribute_to_biolink_slot('supporting_text', mock_koza)
-    assert result == 'biolink:supporting_text'
+# def test_map_attribute_to_biolink_slot(mock_koza):
+#     # Function removed - attribute mapping is now handled in parse_attributes_json
+#     pass
 
 
 def test_parse_attributes_json_empty(mock_koza):

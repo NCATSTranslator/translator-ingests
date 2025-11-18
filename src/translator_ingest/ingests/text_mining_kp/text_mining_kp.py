@@ -22,8 +22,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
     Association,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-    ChemicalToGeneAssociation,
-    GeneRegulatoryRelationship,
+    ChemicalAffectsGeneAssociation,
+    GeneToGeneAssociation,
     GeneToDiseaseAssociation,
     RetrievalSource,
     ResourceRoleEnum,
@@ -40,20 +40,20 @@ TMKP_INFORES = "infores:text-mining-provider-targeted"
 # Mapping from subject/predicate/object patterns to Association classes
 # Based on content_metadata.json from the Text Mining KP data
 SPO_TO_ASSOCIATION_MAP = {
-    # ChemicalToGeneAssociation patterns
-    ('biolink:Protein', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalToGeneAssociation,
-    ('biolink:Protein', 'biolink:affects', 'biolink:NamedThing'): ChemicalToGeneAssociation,
-    ('biolink:Protein', 'biolink:affects', 'biolink:ChemicalEntity'): ChemicalToGeneAssociation,
-    ('biolink:Protein', 'biolink:affects', 'biolink:MolecularMixture'): ChemicalToGeneAssociation,
-    ('biolink:Protein', 'biolink:affects', 'biolink:ComplexMolecularMixture'): ChemicalToGeneAssociation,
-    ('biolink:SmallMolecule', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
-    ('biolink:MolecularMixture', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
-    ('biolink:ChemicalEntity', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
-    ('biolink:NamedThing', 'biolink:affects', 'biolink:Protein'): ChemicalToGeneAssociation,
-    ('biolink:NamedThing', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalToGeneAssociation,
+    # ChemicalAffectsGeneAssociation patterns
+    ('biolink:Protein', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalAffectsGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:NamedThing'): ChemicalAffectsGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:ChemicalEntity'): ChemicalAffectsGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:MolecularMixture'): ChemicalAffectsGeneAssociation,
+    ('biolink:Protein', 'biolink:affects', 'biolink:ComplexMolecularMixture'): ChemicalAffectsGeneAssociation,
+    ('biolink:SmallMolecule', 'biolink:affects', 'biolink:Protein'): ChemicalAffectsGeneAssociation,
+    ('biolink:MolecularMixture', 'biolink:affects', 'biolink:Protein'): ChemicalAffectsGeneAssociation,
+    ('biolink:ChemicalEntity', 'biolink:affects', 'biolink:Protein'): ChemicalAffectsGeneAssociation,
+    ('biolink:NamedThing', 'biolink:affects', 'biolink:Protein'): ChemicalAffectsGeneAssociation,
+    ('biolink:NamedThing', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalAffectsGeneAssociation,
     
-    # GeneRegulatoryRelationship patterns  
-    ('biolink:Protein', 'biolink:affects', 'biolink:Protein'): GeneRegulatoryRelationship,
+    # GeneRegulatesGeneAssociation patterns  
+    ('biolink:Protein', 'biolink:affects', 'biolink:Protein'): GeneRegulatesGeneAssociation,
     
     # GeneToDiseaseAssociation patterns
     ('biolink:Disease', 'biolink:contributes_to', 'biolink:Protein'): GeneToDiseaseAssociation,
@@ -340,8 +340,9 @@ def prepare_text_mining_kp_data(koza_instance: KozaTransform, data: Iterable[Dic
     """
     koza_instance.log("Preparing Text Mining KP data: extracting tar.gz")
 
-    # Path to the downloaded tar.gz file
-    tar_path = "data/text_mining_kp/targeted_assertions.tar.gz"
+    # Path to the downloaded tar.gz file (use latest version directory)
+    version = get_latest_version()
+    tar_path = f"data/text_mining_kp/{version}/source_data/targeted_assertions.tar.gz"
 
     # Extract the tar.gz file
     extracted_path = extract_tar_gz(tar_path, koza_instance)
