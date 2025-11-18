@@ -47,6 +47,7 @@ define HELP
 │     test                Run all tests                     │
 │                                                           │
 │     lint                Lint all code                     │
+│     lint-fix            Fix linting errors automatically │
 │     format              Format all code                   │
 │     spell-fix           Fix spelling errors interactively │
 │     new-rig             Create a new RIG from template (requires INFORES and NAME)" │
@@ -166,6 +167,10 @@ clobber:
 lint:
 	$(RUN) ruff check --diff --exit-zero
 	$(RUN) black -l 120 --check --diff src tests
+
+.PHONY: lint-fix
+lint-fix:
+	$(RUN) ruff check --fix
 
 .PHONY: format
 format:
