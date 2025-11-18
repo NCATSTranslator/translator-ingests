@@ -46,11 +46,11 @@ def mock_koza_transform_1() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = ["id", "name", "category", "provided_by", "inheritance"]
+NODE_TEST_SLOTS = ("id", "name", "category", "inheritance")
 
 # list of slots whose values are
 # to be checked in a result edge
-ASSOCIATION_TEST_SLOTS = [
+ASSOCIATION_TEST_SLOTS = (
     "category",
     "subject",
     "predicate",
@@ -67,7 +67,7 @@ ASSOCIATION_TEST_SLOTS = [
     "sources",
     "knowledge_level",
     "agent_type",
-]
+)
 
 
 @pytest.mark.parametrize(
@@ -113,8 +113,7 @@ ASSOCIATION_TEST_SLOTS = [
                 {
                     "id": "OMIM:117650",
                     "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
+                    "category": ["biolink:Disease"]
                 },
                 {"id": "HP:0001249", "category": ["biolink:PhenotypicFeature"]},
             ],
@@ -165,8 +164,7 @@ ASSOCIATION_TEST_SLOTS = [
                 {
                     "id": "OMIM:117650",
                     "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
+                    "category": ["biolink:Disease"]
                 },
                 {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
             ],
@@ -212,8 +210,7 @@ ASSOCIATION_TEST_SLOTS = [
                 {
                     "id": "OMIM:117650",
                     "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
+                    "category": ["biolink:Disease"]
                 },
                 {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
             ],
@@ -257,7 +254,6 @@ ASSOCIATION_TEST_SLOTS = [
                     "id": "OMIM:300425",
                     "name": "Autism susceptibility, X-linked 1",
                     "category": ["biolink:Disease"],
-                    "provided_by": ["infores:hpo-annotations", "infores:omim"],
                     "inheritance": "X-linked inheritance",
                 }
             ],
@@ -276,7 +272,7 @@ def test_disease_to_phenotype_transform(
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
-        association_test_slots=ASSOCIATION_TEST_SLOTS,
+        edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
 
 
@@ -339,7 +335,7 @@ def test_gene_to_disease_transform(
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
-        association_test_slots=ASSOCIATION_TEST_SLOTS,
+        edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
 
 
@@ -529,5 +525,5 @@ def test_gene_to_phenotype_transform(
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
-        association_test_slots=ASSOCIATION_TEST_SLOTS,
+        edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )

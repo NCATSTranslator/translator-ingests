@@ -9,17 +9,15 @@ Validates KGX files against Biolink Model requirements using LinkML validation p
 import json
 import logging
 import sys
-import importlib.resources
 from datetime import datetime
 from enum import StrEnum
-from functools import lru_cache
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 import click
+from translator_ingest.util.biolink import get_biolink_schema, get_current_biolink_version
 from translator_ingest.util.storage.local import IngestFileName
 
-from linkml_runtime.utils.schemaview import SchemaView
 
 try:
     from .biolink_validation_plugin import BiolinkValidationPlugin
@@ -29,23 +27,6 @@ except ImportError:
     from biolink_validation_plugin import BiolinkValidationPlugin
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-@lru_cache(maxsize=1)
-def get_biolink_schema() -> SchemaView:
-    """Get cached Biolink schema, loading it if not already cached."""
-
-    # Try to load from local biolink model first (same version as ingests)
-    try:
-        with importlib.resources.path("biolink_model.schema", "biolink_model.yaml") as schema_path:
-            schema_view = SchemaView(str(schema_path))
-            logger.debug("Successfully loaded Biolink schema from local file")
-            return schema_view
-    except Exception as e:
-        logger.warning(f"Failed to load local Biolink schema: {e}")
-        # Fallback to loading from official URL
-        schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
-        logger.debug("Successfully loaded Biolink schema from URL")
-        return schema_view
 
 
 class ValidationStatus(StrEnum):
@@ -175,6 +156,7 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
     # Create structured validation report
     report = {
         "timestamp": datetime.now().isoformat(),
+        "biolink_version": get_current_biolink_version(),
         "files": {"nodes_file": str(nodes_file), "edges_file": str(edges_file)},
         "statistics": {
             "total_nodes": len(nodes),
@@ -256,6 +238,7 @@ def validate_kgx(nodes_file: Path, edges_file: Path, output_dir: Path, no_save: 
         # Create a minimal report structure for single file validation
         validation_report = {
             "timestamp": datetime.now().isoformat(),
+            "biolink_version": get_current_biolink_version(),
             "data_directory": "single_file_validation",
             "sources": {"single_validation": single_report},
             "summary": {
@@ -285,6 +268,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
         logger.info(f"No KGX file pairs found in {data_dir}")
         return {
             "timestamp": datetime.now().isoformat(),
+            "biolink_version": get_current_biolink_version(),
             "data_directory": str(data_dir),
             "sources": {},
             "summary": {"total_sources": 0, "passed": 0, "failed": 0, "overall_status": "NO_DATA"},
@@ -295,6 +279,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None) -
     # Create validation report
     validation_report = {
         "timestamp": datetime.now().isoformat(),
+        "biolink_version": get_current_biolink_version(),
         "data_directory": str(data_dir),
         "sources": {},
         "summary": {"total_sources": len(kgx_pairs), "passed": 0, "failed": 0, "overall_status": "PENDING"},
