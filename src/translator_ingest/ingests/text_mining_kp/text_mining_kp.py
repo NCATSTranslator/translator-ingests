@@ -35,7 +35,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
 )
 from koza.model.graphs import KnowledgeGraph
-from .parsers import parse_attributes_json
+from .tmkp_utils import parse_attributes_json
 
 
 # Global state for statistics tracking
@@ -67,7 +67,7 @@ def cleanup_and_report(koza: KozaTransform) -> None:
     if processing_stats["extraction_start_time"]:
         duration = datetime.now() - processing_stats["extraction_start_time"]
         logger.info(f"Text Mining KP processing completed in {duration.total_seconds():.2f} seconds")
-    
+
     logger.info(
         f"Final statistics - Nodes: {processing_stats['nodes_processed']:,}, "
         f"Edges: {processing_stats['edges_processed']:,}, "
@@ -240,7 +240,7 @@ def prepare_text_mining_kp_data(koza: KozaTransform, data: Iterable[Dict]) -> It
 
     # Use koza's input files directory instead of hardcoded paths
     tar_path = f"{koza.input_files_dir}/targeted_assertions.tar.gz"
-    
+
     # Check if file exists
     if not os.path.exists(tar_path):
         logger.error(f"Archive not found: {tar_path}")

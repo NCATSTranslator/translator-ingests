@@ -1,0 +1,12 @@
+name: text_mining_kp
+
+reader:
+  format: json
+  files:
+    - targeted_assertions.tar.gz
+
+writer:
+  format: jsonl
+
+env:
+  TMKP_VERSION: "latest"

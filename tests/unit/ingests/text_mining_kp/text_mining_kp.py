@@ -17,7 +17,7 @@ from src.translator_ingest.ingests.text_mining_kp.text_mining_kp import (
     get_latest_version,
     TMKP_INFORES,
 )
-from src.translator_ingest.ingests.text_mining_kp.parsers import parse_attributes_json
+from src.translator_ingest.ingests.text_mining_kp.tmkp_utils import parse_attributes_json
 
 
 class MockWriter(KozaWriter):
