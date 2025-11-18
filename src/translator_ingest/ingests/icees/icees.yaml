@@ -1,4 +1,4 @@
-name: 'integrated_clinical_and_environmental_exposures_service'
+name: 'icees'
 
 readers:
   icees_nodes:
