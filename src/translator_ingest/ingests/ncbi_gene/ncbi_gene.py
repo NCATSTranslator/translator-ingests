@@ -81,5 +81,4 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
     koza_app.state["genes_created"] += 1
     koza_app.state["genes_by_taxon"][record["tax_id"]] += 1
 
-    koza_app.log(f"Created Gene node: {gene.id} ({gene.symbol})", level="INFO")
     return KnowledgeGraph(nodes=[gene], edges=[])
