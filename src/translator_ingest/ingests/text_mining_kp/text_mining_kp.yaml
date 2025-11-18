@@ -7,6 +7,3 @@ reader:
 
 writer:
   format: jsonl
-
-env:
-  TMKP_VERSION: "latest"

@@ -6,11 +6,10 @@ by extracting a tar.gz archive and passing through nodes while processing
 edge attributes to map them to Biolink model slots.
 """
 
-import json
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import Dict, Iterable, Any
+from typing import Dict, Iterable
 from datetime import datetime
 import os
 import koza
@@ -31,11 +30,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ResourceRoleEnum,
     AgentTypeEnum,
     KnowledgeLevelEnum,
-    TextMiningStudyResult,
-    Study,
 )
 from koza.model.graphs import KnowledgeGraph
-from .tmkp_utils import parse_attributes_json
+from translator_ingest.ingests.text_mining_kp.tmkp_utils import parse_attributes_json
 
 
 # Global state for statistics tracking

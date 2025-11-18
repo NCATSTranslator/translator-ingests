@@ -43,10 +43,6 @@ def parse_attributes_json(
                 attr_type_id = attr["attribute_type_id"]
                 value = attr.get("value")
 
-                # Extract the attribute name without biolink: prefix for checking
-                attr_name = (
-                    attr_type_id.replace("biolink:", "") if attr_type_id.startswith("biolink:") else attr_type_id
-                )
 
                 # Handle confidence score mapping
                 if attr_type_id == "biolink:confidence_score":
