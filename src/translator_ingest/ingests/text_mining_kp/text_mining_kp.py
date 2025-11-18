@@ -290,7 +290,8 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                 
                 # Handle text mining metadata attributes that should be grouped into Study objects
                 elif attr_type_id in ['biolink:has_evidence_count', 'biolink:tmkp_confidence_score', 
-                                    'biolink:supporting_document', 'biolink:semmed_agreement_count']:
+                                    'biolink:supporting_document', 'biolink:semmed_agreement_count',
+                                    'biolink:supporting_study_result']:
                     # Store these in text mining metadata to be processed later
                     text_mining_metadata[attr_name] = value
                     continue
