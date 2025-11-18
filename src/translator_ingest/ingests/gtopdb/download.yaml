@@ -15,3 +15,5 @@
   local_name: ligands.csv
 - url: https://www.guidetopharmacology.org/DATA/peptides.csv
   local_name: peptides.csv
+- url: https://www.guidetopharmacology.org/DATA/GtP_to_HGNC_mapping.csv
+  local_name: GtP_to_HGNC_mapping.csv

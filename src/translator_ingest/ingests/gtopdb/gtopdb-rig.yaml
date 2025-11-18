@@ -69,21 +69,9 @@ ingest_info:
       fields_used: "HGNC Symbol,	HGNC ID,	IUPHAR Name,	IUPHAR ID"
 
   filtered_content:
-    - file_name: "interactions.csv"
-      filtered_records: "None"
-      rationale: ""
-    - file_name: "targets_and_families.csv"
-      filtered_records: "None"
-      rationale: ""
-    - file_name: "ligands.csv"
-      filtered_records: "None"
-      rationale: ""
     - file_name: "peptides.csv"
       filtered_records: "remove records with species in: Mouse, Rat, Pig, Bovine, Sheep, Bovine, Dog, Rabbit, European common frog, Rhesus macaque"
       rationale: "Only include records with Human in Species"
-    - file_name: "GtP_to_HGNC_mapping.tsv"
-      filtered_records: "None"
-      rationale: "This is just a mapping file"
 
   future_considerations:
     - category: edge_content
@@ -101,7 +89,8 @@ target_info:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
         - biolink:SmallMolecule
-      predicate: biolink:affects
+      predicates:
+        - biolink:affects
       object_categories:
         - biolink:Gene
       qualifiers:
@@ -110,212 +99,132 @@ target_info:
               - causes
         - property: biolink:object_aspect_qualifier
           value_enumerations:
-              - activity_or_abundance
               - activity
-              - abundance
-              - expression
-              - stability
         - property: biolink:object_direction_qualifier
           value_enumerations:
             - downregulated
             - upregulated
-        - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns,
-        - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
-      ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule or complex / small molecule to 'regulate' another complex / protein / protein family / smallmolecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
-    - subject_categories:
-        - biolink:Protein
-      predicate: biolink:part_of
-      object_categories:
-        - biolink:MacromolecularComplex
-      qualifiers:
-        - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
-        - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
-      ui_explanation: "Signor records indicate the protein to be 'form complex' another complex - which maps best to the Biolink predicate 'part of' with additional directional qualifier."
-    - subject_categories:
-        - biolink:ChemicalEntity
-      predicate: biolink:affects
-      object_categories:
-        - biolink:Protein
-        - biolink:MacromolecularComplex
-        - biolink:Proteinfamily
-        - biolink:SmallMolecule
-      qualifiers:
-        - property: biolink:qualified_predicate
-          value_enumerations:
-              - causes
-        - property: biolink:object_aspect_qualifier
-          value_enumerations:
-            - activity_or_abundance
-            - activity
-            - abundance
-            - expression
-            - stability
-        - property: biolink:object_direction_qualifier
-          value_enumerations:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
           value_range: CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
-          value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
+          value_description: N/A
         - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
       edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
-      ui_explanation: "Signor records indicate the chemical to be 'affects' another protein / complex / proteinfamily / small molecule - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
-    - subject_categories:
-        - biolink:Protein
-        - biolink:MacromolecularComplex
-        - biolink:Proteinfamily
-        - biolink:SmallMolecule
-      predicate: biolink:affects
-      object_categories:
-        - biolink:ChemicalEntity
-      qualifiers:
-        - property: biolink:qualified_predicate
-          value_enumerations:
-            - causes
-        - property: biolink:object_aspect_qualifier
-          value_enumerations:
-            - activity_or_abundance
-            - activity
-            - abundance
-            - expression
-            - stability
-        - property: biolink:object_direction_qualifier
-          value_enumerations:
-            - increased
-            - decreased
-        - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
-        - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
-      ui_explanation: "Signor records indicate the protein / complex / proteinfamily / small molecule to be 'affects' another chemical - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
+      ui_explanation: "decision between up/down regulated or increased/decreased based on combination of type and action columns in gtopdb"
     - subject_categories:
         - biolink:ChemicalEntity
-      predicate: biolink:affects
-      object_categories:
-        - biolink:ChemicalEntity
-      qualifiers:
-        - property: biolink:qualified_predicate
-          value_enumerations:
-            - causes
-        - property: biolink:object_aspect_qualifier
-          value_enumerations:
-            - activity_or_abundance
-            - activity
-            - abundance
-            - expression
-            - stability
-        - property: biolink:object_direction_qualifier
-          value_enumerations:
-            - increased
-            - decreased
-        - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
-        - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
-      ui_explanation: "When the mechanism implies a physical interaction, the ingestion create a separate 'physically_interacts_with' edge in addition to the affects/regulates edge (e.g. 'binding') "
-    - subject_categories:
-        - biolink:Protein
-        - biolink:Proteinfamily
-        - biolink:MacromolecularComplex
+        - biolink:MolecularMixture
         - biolink:SmallMolecule
-        - biolink:ChemicalEntity
-      predicate: biolink:physically_interacts_with
+      predicates:
+        - - biolink:directly_physically_interacts
       object_categories:
-        - biolink:Protein
-        - biolink:Proteinfamily
-        - biolink:MacromolecularComplex
-        - biolink:SmallMolecule
-        - biolink:ChemicalEntity
+        - biolink:Gene
       qualifiers:
         - property: biolink:causal_mechanism_qualifier
           value_range: CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
-          value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
+          value_description: N/A
         - property: biolink:species_context_qualifier
-          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
       edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
-      ui_explanation: "The 'MECHANISM' provided by Signor indicates that a physical interaction must exist between the subject and object entities - so this edge is created to report that, in addition to the causal association edge."
+        - biolink:endogenous
+        - biolink:primaryTarget
+        - biolink:publications
+      ui_explanation: "this separate directly_physically_interacts edge is created when the endogenous column == True"
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:gene_product_of
+      object_categories:
+        - biolink:Gene
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ""
+    - subject_categories:
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:has_part
+      object_categories:
+        - biolink:SmallMolecule
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ""
+    - subject_categories:
+        - biolink:SmallMolecule
+        - biolink:MolecularMixture
+      predicates:
+        - biolink:related_to
+      object_categories:
+        - biolink:Gene
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ""
+
   node_type_info:
-    - node_category: biolink:Protein
-      source_identifier_types:
-        - "UNIPROT"
-    - node_category: biolink:ProteinFamily
-      source_identifier_types:
-        - "UNIPROT"
-    - node_category: biolink:SmallMolecule
-      source_identifier_types:
-        - "ChEMBL"
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
-        - "ChEMBL"
-    - node_category: biolink:MacromolecularComplex
+        - "PubChem SID"
+    - node_category: biolink:MolecularMixture
       source_identifier_types:
-        - "SIGNOR ID"
+        - "PubChem SID"
+    - node_category: biolink:SmallMolecule
+      source_identifier_types:
+        - "PubChem SID"
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "Ensembl Gene ID"
+        - "HGNC ID"
   future_considerations:
     - category: node_content
       consideration: "Considering future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
-    - category: edge_content
-      consideration: Note that fact that X modifies Y (e.g. phosphorylates) is represented indirectly here, by an 'affects' predicate plus a mechanism qualifier that captures the type of modification.  Do we want a more direct edge (e.g. X phosphorylates Y) to be created at ingest?  Or derived afterward? Or perhaps live only in a 'predicate-semantics' KG derived from the primary 'qualifier-semantics' KG)?
 
 # Information about the how the ingest was specified and performed
 provenance_info:
@@ -326,5 +235,5 @@ provenance_info:
     - "Sierra Moxon: code support"
     - "Matthew Brush: data modeling, domain expertise"
   artifacts:
-    - "Ingest Survey: https://docs.google.com/spreadsheets/d/1tqimhXxpWzQdfNxanpW-rAaLnmsP80YZUthY5O4mEc8/edit?gid=1223527032#gid=1223527032"
-    - "Ingest Ticket: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/29"
+    - "Ingest Survey: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=583858205#gid=583858205"
+    - "Ingest Ticket: "
