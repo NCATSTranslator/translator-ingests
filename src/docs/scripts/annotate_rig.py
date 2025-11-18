@@ -1,6 +1,7 @@
 """
 This script 'surgically' annotates specified RIG fields in a specified RIG YAML file.
 """
+
 from os import path, replace
 import sys
 from copy import deepcopy
@@ -49,26 +50,20 @@ def rewrite_property(rig_data, properties, values):
 
 @click.command()
 @click.option(
-    '--ingest',
+    "--ingest", required=True, help="Target ingest folder name of the target data source folder (e.g., icees)"
+)
+@click.option("--rig", default=None, help="Target RIG file (default: <ingest folder name>_rig.yaml)")
+@click.option(
+    "--tag",
     required=True,
-    help='Target ingest folder name of the target data source folder (e.g., icees)'
+    help="Dot-delimited target yaml property path for modification (e.g. target_info.edge_type_info.qualifiers)",
 )
 @click.option(
-    '--rig',
+    "--value",
     default=None,
-    help='Target RIG file (default: <ingest folder name>_rig.yaml)'
-)
-@click.option(
-    '--tag',
-    required=True,
-    help='Dot-delimited target yaml property path for modification (e.g. target_info.edge_type_info.qualifiers)'
-)
-@click.option(
-    '--value',
-    default=None,
-    help='Values to which to set the specified property, '+
-         'specified as a JSON object expressed as a valid quote-escaped string '+
-         '(omitting the --value option triggers deletion of the property and its values)'
+    help="Values to which to set the specified property, "
+    + "specified as a JSON object expressed as a valid quote-escaped string "
+    + "(omitting the --value option triggers deletion of the property and its values)",
 )
 def main(ingest, rig, tag, value):
     """
@@ -113,7 +108,7 @@ def main(ingest, rig, tag, value):
         sys.exit(1)
 
     # Parse out dot-delimited YAML property path to the value(s) to be revised
-    properties = tag.split('.')
+    properties = tag.split(".")
 
     if value is not None:
         # parse the revised string encoded JSON value giving
@@ -128,13 +123,13 @@ def main(ingest, rig, tag, value):
 
     try:
         rig_data: dict
-        with open(rig_path, 'r') as r:
+        with open(rig_path, "r") as r:
             rig_data = yaml.safe_load(r)
-            rewrite_property(rig_data, properties,values)
+            rewrite_property(rig_data, properties, values)
 
-        replace(rig_path, str(rig_path)+".original")
+        replace(rig_path, str(rig_path) + ".original")
 
-        with open(rig_path, 'w') as r:
+        with open(rig_path, "w") as r:
             yaml.safe_dump(rig_data, r, sort_keys=False)
 
     except Exception as e:
@@ -142,5 +137,5 @@ def main(ingest, rig, tag, value):
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

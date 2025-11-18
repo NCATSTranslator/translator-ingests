@@ -53,9 +53,7 @@ def test_p1_05_output(p1_05_output):
     assert len(association.sources) == 1
     p1_05_source = association.sources[0]
     assert isinstance(p1_05_source, RetrievalSource)
-    assert p1_05_source.source_record_urls == [
-        "https://ttd.idrblab.cn/data/drug/details/d0v8ag"
-    ]
+    assert p1_05_source.source_record_urls == ["https://ttd.idrblab.cn/data/drug/details/d0v8ag"]
 
     chem = [e for e in entities if isinstance(e, ChemicalEntity)][0]
     assert chem.id == "PUBCHEM.COMPOUND:136033680"

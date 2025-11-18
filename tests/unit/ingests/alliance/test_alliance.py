@@ -29,17 +29,14 @@ TEST_ENTITY_LOOKUP = {
 
 # ===== PHENOTYPE TESTS =====
 
+
 @pytest.fixture
 def mgi_phenotype_row():
     """Mouse phenotype association"""
     return {
         "objectId": "MGI:98834",
-        "phenotypeTermIdentifiers": [
-            {"termId": "MP:0001262", "termOrder": 1}
-        ],
-        "evidence": {
-            "publicationId": "PMID:12345678"
-        }
+        "phenotypeTermIdentifiers": [{"termId": "MP:0001262", "termOrder": 1}],
+        "evidence": {"publicationId": "PMID:12345678"},
     }
 
 
@@ -50,18 +47,16 @@ def mgi_phenotype_multi_term_row():
         "objectId": "MGI:98834",
         "phenotypeTermIdentifiers": [
             {"termId": "MP:0001262", "termOrder": 1},
-            {"termId": "MP:0002169", "termOrder": 2}
+            {"termId": "MP:0002169", "termOrder": 2},
         ],
-        "evidence": {
-            "publicationId": "PMID:12345678"
-        }
+        "evidence": {"publicationId": "PMID:12345678"},
     }
 
 
 def test_mgi_phenotype(mgi_phenotype_row):
     """Test mouse phenotype is processed and nodes are created"""
     # Mock the entity lookup to return values from our test dictionary
-    with patch('translator_ingest.ingests.alliance.alliance.lookup_entity_category') as mock_lookup:
+    with patch("translator_ingest.ingests.alliance.alliance.lookup_entity_category") as mock_lookup:
         mock_lookup.side_effect = lambda entity_id: TEST_ENTITY_LOOKUP.get(entity_id)
 
         result = transform_phenotype(None, mgi_phenotype_row)
@@ -101,7 +96,7 @@ def test_mgi_phenotype(mgi_phenotype_row):
 def test_mgi_phenotype_multi_term(mgi_phenotype_multi_term_row):
     """Test mouse phenotype with multiple terms creates multiple associations and nodes"""
     # Mock the entity lookup to return values from our test dictionary
-    with patch('translator_ingest.ingests.alliance.alliance.lookup_entity_category') as mock_lookup:
+    with patch("translator_ingest.ingests.alliance.alliance.lookup_entity_category") as mock_lookup:
         mock_lookup.side_effect = lambda entity_id: TEST_ENTITY_LOOKUP.get(entity_id)
 
         result = transform_phenotype(None, mgi_phenotype_multi_term_row)
@@ -137,24 +132,17 @@ def test_mgi_phenotype_multi_term(mgi_phenotype_multi_term_row):
 
 # ===== EXPRESSION TESTS =====
 
+
 @pytest.fixture
 def mgi_expression_anatomy_row():
     """Mouse expression association with anatomical structure"""
     return {
         "geneId": "MGI:98834",
         "assay": "MMO:0000655",
-        "whereExpressed": {
-            "anatomicalStructureTermId": "EMAPA:17524"
-        },
-        "whenExpressed": {
-            "stageTermId": "MmusDv:0000003"
-        },
-        "evidence": {
-            "publicationId": "PMID:12345678"
-        },
-        "crossReference": {
-            "id": "MGI:5555555"
-        }
+        "whereExpressed": {"anatomicalStructureTermId": "EMAPA:17524"},
+        "whenExpressed": {"stageTermId": "MmusDv:0000003"},
+        "evidence": {"publicationId": "PMID:12345678"},
+        "crossReference": {"id": "MGI:5555555"},
     }
 
 
@@ -164,18 +152,10 @@ def mgi_expression_cellular_component_row():
     return {
         "geneId": "MGI:98834",
         "assay": "MMO:0000655",
-        "whereExpressed": {
-            "cellularComponentTermId": "GO:0005737"
-        },
-        "whenExpressed": {
-            "stageTermId": "MmusDv:0000003"
-        },
-        "evidence": {
-            "publicationId": "PMID:12345678"
-        },
-        "crossReference": {
-            "id": "MGI:5555555"
-        }
+        "whereExpressed": {"cellularComponentTermId": "GO:0005737"},
+        "whenExpressed": {"stageTermId": "MmusDv:0000003"},
+        "evidence": {"publicationId": "PMID:12345678"},
+        "crossReference": {"id": "MGI:5555555"},
     }
 
 

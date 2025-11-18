@@ -75,7 +75,8 @@ def build_entity_lookup_db(data_dir: str = "data/alliance"):
 
     try:
         # Load genes from BGI JSON files - DuckDB reads .gz directly
-        conn.execute(f"""
+        conn.execute(
+            f"""
             CREATE TABLE entities AS
             SELECT
                 unnest.basicGeneticEntity.primaryId as id,
@@ -86,12 +87,13 @@ def build_entity_lookup_db(data_dir: str = "data/alliance"):
             unnest(data)
             WHERE unnest.basicGeneticEntity.primaryId IS NOT NULL
                 AND unnest.basicGeneticEntity.taxonId IN ('NCBITaxon:10090', 'NCBITaxon:10116')
-        """)
+        """
+        )
 
         # Create index for fast lookup
         conn.execute("CREATE INDEX idx_entity_id ON entities(id)")
 
-        gene_count = conn.execute('SELECT COUNT(*) FROM entities').fetchone()[0]
+        gene_count = conn.execute("SELECT COUNT(*) FROM entities").fetchone()[0]
         logger.info(f"Built gene lookup table with {gene_count:,} genes")
 
         _entity_lookup_conn = conn
@@ -118,10 +120,7 @@ def lookup_entity_category(entity_id: str) -> str | None:
         return None
 
     try:
-        result = _entity_lookup_conn.execute(
-            "SELECT category FROM entities WHERE id = ?",
-            [entity_id]
-        ).fetchone()
+        result = _entity_lookup_conn.execute("SELECT category FROM entities WHERE id = ?", [entity_id]).fetchone()
 
         return result[0] if result else None
     except Exception as e:
@@ -154,7 +153,7 @@ def get_latest_version() -> str:
         response.raise_for_status()
 
         data = response.json()
-        version = data.get('releaseVersion')
+        version = data.get("releaseVersion")
 
         if version:
             logger.info(f"Found Alliance version: {version}")
@@ -170,7 +169,7 @@ def get_latest_version() -> str:
 
 def get_data(data: dict, key: str):
     """Extract data from nested dict using dot notation."""
-    keys = key.split('.')
+    keys = key.split(".")
     value = data
     for k in keys:
         if isinstance(value, dict) and k in value:
@@ -204,7 +203,7 @@ def transform_phenotype(koza_transform, row: dict) -> List:
     category = lookup_entity_category(gene_id)
 
     # Only process gene-phenotype associations (skip genotypes/variants)
-    if category != 'biolink:Gene':
+    if category != "biolink:Gene":
         return []
 
     entities = []
@@ -232,7 +231,7 @@ def transform_phenotype(koza_transform, row: dict) -> List:
             object=phenotypic_feature_id,
             publications=[row["evidence"]["publicationId"]],
             aggregator_knowledge_source=["infores:monarchinitiative", "infores:agrkb"],
-            primary_knowledge_source=SOURCE_MAP[gene_id.split(':')[0]],
+            primary_knowledge_source=SOURCE_MAP[gene_id.split(":")[0]],
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
@@ -327,9 +326,7 @@ def transform_expression(koza_transform, row: dict) -> List:
                 )
             )
         else:
-            logger.error(
-                f"Gene expression record has no ontology terms specified for expression site: {str(row)}"
-            )
+            logger.error(f"Gene expression record has no ontology terms specified for expression site: {str(row)}")
             return []
 
         return entities + associations

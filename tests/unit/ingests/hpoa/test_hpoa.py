@@ -110,11 +110,7 @@ ASSOCIATION_TEST_SLOTS = (
             },
             # Captured node identifiers
             [
-                {
-                    "id": "OMIM:117650",
-                    "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"]
-                },
+                {"id": "OMIM:117650", "name": "Cerebrocostomandibular syndrome", "category": ["biolink:Disease"]},
                 {"id": "HP:0001249", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -161,11 +157,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
             [
-                {
-                    "id": "OMIM:117650",
-                    "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"]
-                },
+                {"id": "OMIM:117650", "name": "Cerebrocostomandibular syndrome", "category": ["biolink:Disease"]},
                 {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
             ],
             {
@@ -207,11 +199,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
             [
-                {
-                    "id": "OMIM:117650",
-                    "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"]
-                },
+                {"id": "OMIM:117650", "name": "Cerebrocostomandibular syndrome", "category": ["biolink:Disease"]},
                 {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
             ],
             {
@@ -342,10 +330,9 @@ def test_gene_to_disease_transform(
 @pytest.fixture(scope="package")
 def mock_koza_transform_2() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    return MockKozaTransform(writer=writer,
-                             mappings=dict(),
-                             extra_fields=dict(),
-                             input_files_dir=Path(HPOA_TEST_DATA_PATH))
+    return MockKozaTransform(
+        writer=writer, mappings=dict(), extra_fields=dict(), input_files_dir=Path(HPOA_TEST_DATA_PATH)
+    )
 
 
 def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaTransform):

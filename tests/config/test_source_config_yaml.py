@@ -34,5 +34,3 @@ def test_valid_rig_yaml(source_id):
         assert "source_info" in rig_data
         assert "ingest_info" in rig_data
         assert "provenance_info" in rig_data
-
-

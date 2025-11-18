@@ -131,9 +131,9 @@ def transform(pipeline_metadata: PipelineMetadata):
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
-    write_ingest_file(file_type=IngestFileType.TRANSFORM_METADATA_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=transform_metadata)
+    write_ingest_file(
+        file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata, data=transform_metadata
+    )
 
 
 def is_normalization_complete(pipeline_metadata: PipelineMetadata):
@@ -230,13 +230,13 @@ def test_data(pipeline_metadata: PipelineMetadata):
         nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
     )
     # write test data to file
-    write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=mkgb.testing_data)
+    write_ingest_file(
+        file_type=IngestFileType.TEST_DATA_FILE, pipeline_metadata=pipeline_metadata, data=mkgb.testing_data
+    )
     # write example edges to file
-    write_ingest_file(file_type=IngestFileType.EXAMPLE_EDGES_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=mkgb.example_edges)
+    write_ingest_file(
+        file_type=IngestFileType.EXAMPLE_EDGES_FILE, pipeline_metadata=pipeline_metadata, data=mkgb.example_edges
+    )
     logger.info(f"Test data and example edges complete for {pipeline_metadata.source}.")
 
 
@@ -263,7 +263,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Currently, some rigs have -rig.yaml and some have _rig.yaml, just look for either.
     rig_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}_rig.yaml"
     if not rig_yaml_file.exists():
-        rig_yaml_file =  INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}-rig.yaml"
+        rig_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / f"{pipeline_metadata.source}-rig.yaml"
         if not rig_yaml_file.exists():
             raise FileNotFoundError(f"rig YAML file not found for {pipeline_metadata.source}.")
     with rig_yaml_file.open("r") as rig_file:
@@ -281,9 +281,9 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         logger=logger,
     )
     graph_metadata.update(summary_results)
-    write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=graph_metadata)
+    write_ingest_file(
+        file_type=IngestFileType.GRAPH_METADATA_FILE, pipeline_metadata=pipeline_metadata, data=graph_metadata
+    )
     logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
     transform_metadata_file_path = get_versioned_file_paths(
@@ -308,9 +308,9 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         "transform": transform_metadata,
         "normalization": normalization_metadata,
     }
-    write_ingest_file(file_type=IngestFileType.INGEST_METADATA_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=ingest_metadata)
+    write_ingest_file(
+        file_type=IngestFileType.INGEST_METADATA_FILE, pipeline_metadata=pipeline_metadata, data=ingest_metadata
+    )
     logger.info(f"Ingest metadata complete for {pipeline_metadata.source}.")
 
 
@@ -318,21 +318,25 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
 # be generated. build_version is used, intentionally ignoring the release version, because we don't need to make a
 # new release if the build hasn't actually changed.
 def is_release_current(pipeline_metadata: PipelineMetadata):
-    release_metadata_path = get_versioned_file_paths(IngestFileType.LATEST_RELEASE_FILE,
-                                                     pipeline_metadata=pipeline_metadata)
+    release_metadata_path = get_versioned_file_paths(
+        IngestFileType.LATEST_RELEASE_FILE, pipeline_metadata=pipeline_metadata
+    )
     if not release_metadata_path.exists():
         return False
     with release_metadata_path.open("r") as latest_release_file:
         latest_release_metadata = PipelineMetadata(**json.load(latest_release_file))
     return pipeline_metadata.build_version == latest_release_metadata.build_version
 
+
 def generate_release(pipeline_metadata: PipelineMetadata):
     release_version = datetime.now().strftime("%Y_%m_%d")
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... release: {release_version}")
     pipeline_metadata.release_version = release_version
-    write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=asdict(pipeline_metadata))
+    write_ingest_file(
+        file_type=IngestFileType.LATEST_RELEASE_FILE,
+        pipeline_metadata=pipeline_metadata,
+        data=asdict(pipeline_metadata),
+    )
 
 
 def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
@@ -370,8 +374,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     # First retrieve and set the current biolink version to make sure validation is run using that version
     pipeline_metadata.biolink_version = get_current_biolink_version()
     if is_validation_complete(pipeline_metadata) and not overwrite:
-        logger.info(f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-                    f"biolink: {pipeline_metadata.biolink_version}")
+        logger.info(
+            f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
+            f"biolink: {pipeline_metadata.biolink_version}"
+        )
     else:
         validate(pipeline_metadata)
 
@@ -389,8 +395,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         generate_graph_metadata(pipeline_metadata)
 
     if is_release_current(pipeline_metadata) and not overwrite:
-        logger.info(f"Latest release already up to date for {pipeline_metadata.source}, "
-                    f"build: {pipeline_metadata.build_version}")
+        logger.info(
+            f"Latest release already up to date for {pipeline_metadata.source}, "
+            f"build: {pipeline_metadata.build_version}"
+        )
     else:
         generate_release(pipeline_metadata)
 

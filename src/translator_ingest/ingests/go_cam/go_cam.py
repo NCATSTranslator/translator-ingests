@@ -86,7 +86,6 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     """Extract tar.gz and yield JSON model data, filtering by taxon from configuration."""
     logger.info("Preparing GO-CAM data: extracting tar.gz and finding all JSON files...")
 
-
     # Path to the downloaded tar.gz file (from kghub-downloader)
     tar_path = f"{koza.input_files_dir}/go-cam-networkx.tar.gz"
 

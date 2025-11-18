@@ -26,7 +26,7 @@ VALID_CURIES = [
     "PUBCHEM.COMPOUND:12345",
     "VALID-id:234235",
     "1:2",
-    "EC_NUMBER:2.2.3"
+    "EC_NUMBER:2.2.3",
 ]
 
 

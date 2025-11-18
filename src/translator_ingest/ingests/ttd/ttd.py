@@ -18,6 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 ## ADDED packages for this ingest
 from datetime import datetime
 import re
+
 ## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
 import requests
@@ -160,7 +161,9 @@ def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
     return ttd_drug_mappings
 
 
-def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, score_threshold: int, exclude_namespace: str):
+def run_nameres(
+    names: Iterable[str], batch_size: int, types: list, url: str, score_threshold: int, exclude_namespace: str
+):
     """
     Parameters:
     - names: iterable of string names to NameRes
@@ -336,13 +339,17 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
         types=indication_types,
         score_threshold=indication_score_threshold,
         batch_size=indication_batch_size,
-        exclude_namespace=indication_exclude_prefixes
+        exclude_namespace=indication_exclude_prefixes,
     )
-    koza.log(f"Retrieved {len(koza.transform_metadata["indication_mapping"])} indication name -> ID mappings from NameRes")
+    koza.log(
+        f"Retrieved {len(koza.transform_metadata["indication_mapping"])} indication name -> ID mappings from NameRes"
+    )
 
     ## MAP
-    ## get method returns None if key (indication name) not found in mapping 
-    df["object_nameres_id"] = [koza.transform_metadata["indication_mapping"].get(i) for i in df["object_indication_name"]]
+    ## get method returns None if key (indication name) not found in mapping
+    df["object_nameres_id"] = [
+        koza.transform_metadata["indication_mapping"].get(i) for i in df["object_indication_name"]
+    ]
     ## log how much data was successfully mapped
     n_mapped = df["object_nameres_id"].notna().sum()
     koza.log(f"{n_mapped} rows with mapped drug IDs: {n_mapped / df.shape[0]:.1%}")
@@ -353,7 +360,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## With the current pipeline and data-modeling, only the mapped columns uniquely define an edge
     cols_define_edge = ["subject_pubchem", "biolink_predicate", "object_nameres_id"]
     df = df.groupby(by=cols_define_edge).agg(set).reset_index().copy()
-    
+
     ## log what data looks like at end!
     koza.log(f"{df.shape[0]} rows at end of parsing, after handling 'edge-level' duplicates")
     koza.log(f"{df["subject_pubchem"].nunique()} unique mapped drug IDs")

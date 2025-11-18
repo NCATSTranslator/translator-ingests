@@ -1,6 +1,7 @@
 """
 Ingest of Reference Genome Orthologs from Panther
 """
+
 from typing import Any
 import requests
 import re
@@ -11,12 +12,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneFamilyAssociation,
     Gene,
     KnowledgeLevelEnum,
-    AgentTypeEnum, GeneFamily
+    AgentTypeEnum,
+    GeneFamily,
 )
-from translator_ingest.util.biolink import (
-    entity_id,
-    build_association_knowledge_sources
-)
+from translator_ingest.util.biolink import entity_id, build_association_knowledge_sources
 
 import koza
 from koza.model.graphs import KnowledgeGraph
@@ -24,15 +23,13 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
     parse_gene_info,
     panther_taxon_map,
-    db_to_curie_map
+    db_to_curie_map,
 )
 
 
 def get_latest_version() -> str:
     try:
-        response = requests.get(
-            "https://data.pantherdb.org/ftp/ortholog/current_release/README"
-        )
+        response = requests.get("https://data.pantherdb.org/ftp/ortholog/current_release/README")
         response.raise_for_status()
         text = response.text
         match = re.search(pattern=r"version:\s*v\.(\d+\.\d+)", string=text)
@@ -47,6 +44,7 @@ def get_latest_version() -> str:
         print(f"Could not determine latest version for Panther: {e}")
         return "unknown"
 
+
 @koza.on_data_begin()
 def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     """
@@ -55,6 +53,7 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     """
     koza_transform.log("Starting Panther Gene Orthology processing")
     koza_transform.log(f"Version: {get_latest_version()}")
+
 
 @koza.on_data_end()
 def on_data_end_panther(koza_transform: koza.KozaTransform):
@@ -67,8 +66,7 @@ def on_data_end_panther(koza_transform: koza.KozaTransform):
 
 @koza.transform_record()
 def transform_gene_to_gene_orthology(
-        koza_transform: koza.KozaTransform,
-        record: dict[str, Any]
+    koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
     Transform a Panther protein orthology relationship entry into a
@@ -81,16 +79,8 @@ def transform_gene_to_gene_orthology(
     try:
         # Parse the gene information for both species and format gene id to curie:gene_id
         # (Gene and Ortholog columns are formatted the same, but for different species/gene info)
-        species_a, gene_a_id = parse_gene_info(
-            record["Gene"],
-            panther_taxon_map,
-            db_to_curie_map
-        )
-        species_b, gene_b_id = parse_gene_info(
-            record["Ortholog"],
-            panther_taxon_map,
-            db_to_curie_map
-        )
+        species_a, gene_a_id = parse_gene_info(record["Gene"], panther_taxon_map, db_to_curie_map)
+        species_b, gene_b_id = parse_gene_info(record["Ortholog"], panther_taxon_map, db_to_curie_map)
 
         # Only consume species we are interested in (i.e.,
         # those that are in our NCBI Taxon catalog)
@@ -101,8 +91,8 @@ def transform_gene_to_gene_orthology(
         ncbitaxon_a = "NCBITaxon:{}".format(panther_taxon_map[species_a])
         ncbitaxon_b = "NCBITaxon:{}".format(panther_taxon_map[species_b])
 
-        gene_a = Gene(id=gene_a_id, in_taxon=[ncbitaxon_a],**{})
-        gene_b = Gene(id=gene_b_id, in_taxon=[ncbitaxon_b],**{})
+        gene_a = Gene(id=gene_a_id, in_taxon=[ncbitaxon_a], **{})
+        gene_b = Gene(id=gene_b_id, in_taxon=[ncbitaxon_b], **{})
 
         # Our ortholog identifier (panther protein family name), and predicate
         panther_ortholog_id = record["Panther Ortholog ID"]
@@ -120,7 +110,7 @@ def transform_gene_to_gene_orthology(
             has_evidence=orthology_evidence,
             sources=build_association_knowledge_sources(primary="infores:panther"),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent,
         )
         gene_a_family_relationship = GeneToGeneFamilyAssociation(
             id=entity_id(),
@@ -129,7 +119,7 @@ def transform_gene_to_gene_orthology(
             predicate="biolink:member_of",
             sources=build_association_knowledge_sources(primary="infores:panther"),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent,
         )
         gene_b_family_relationship = GeneToGeneFamilyAssociation(
             id=entity_id(),
@@ -138,25 +128,16 @@ def transform_gene_to_gene_orthology(
             predicate="biolink:member_of",
             sources=build_association_knowledge_sources(primary="infores:panther"),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+            agent_type=AgentTypeEnum.manual_validation_of_automated_agent,
         )
         return KnowledgeGraph(
-            nodes=[
-                gene_a,
-                gene_b,
-                gene_family
-            ],
-            edges=[
-                orthology_relationship,
-                gene_a_family_relationship,
-                gene_b_family_relationship
-            ]
+            nodes=[gene_a, gene_b, gene_family],
+            edges=[orthology_relationship, gene_a_family_relationship, gene_b_family_relationship],
         )
 
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_record_gene_to_disease() - record: '{str(record)}' " +
-            f"with {type(e)} exception: "+str(e)
+            f"transform_record_gene_to_disease() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
         )
         return None

@@ -97,11 +97,7 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
-def _match_edge(
-        returned_edge: dict,
-        expected_edge: dict,
-        target_slots: tuple[str,...]
-) -> Optional[str]:
+def _match_edge(returned_edge: dict, expected_edge: dict, target_slots: tuple[str, ...]) -> Optional[str]:
     returned_sources: Optional[list[dict[str, str]]]
     # We only bother with a comparison if the slot is included in both the
     # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
@@ -154,9 +150,7 @@ def _match_edge(
 
 
 def _found_edge(
-    returned_edge: dict,
-        expected_edge_list: list[dict],
-        target_slots: tuple[str,...]
+    returned_edge: dict, expected_edge_list: list[dict], target_slots: tuple[str, ...]
 ) -> tuple[bool, Optional[list[str]]]:
     error_messages: list[str] = list()
     for expected_edge in expected_edge_list:
@@ -180,8 +174,8 @@ def validate_transform_result(
     expected_nodes: Optional[list],
     expected_edges: Optional[dict] | list[dict],
     expected_no_of_edges: int = 1,
-    node_test_slots: Optional[tuple[str,...]] = ("id",),
-    edge_test_slots: Optional[tuple[str,...]] = None,
+    node_test_slots: Optional[tuple[str, ...]] = ("id",),
+    edge_test_slots: Optional[tuple[str, ...]] = None,
 ):
     """
     A generic method for testing the result of a single
@@ -211,11 +205,13 @@ def validate_transform_result(
     else:
         # but one or the other of nodes and edges could still be empty, but the test would go on
         nodes: Iterable[NamedThing] = result.nodes if result.nodes is not None else []
-        assert (nodes and expected_nodes is not None) or (not nodes and expected_nodes is None), \
-            "Unexpected number of nodes returned by record transformation!"
+        assert (nodes and expected_nodes is not None) or (
+            not nodes and expected_nodes is None
+        ), "Unexpected number of nodes returned by record transformation!"
         edges: Iterable[Association] = result.edges if result.edges is not None else []
-        assert (edges and expected_edges is not None) or (not edges and expected_edges is None), \
-            "Unexpected number of edges returned by record transformation!"
+        assert (edges and expected_edges is not None) or (
+            not edges and expected_edges is None
+        ), "Unexpected number of edges returned by record transformation!"
 
     # if we get this far, we're only interested in testing a non-empty list of nodes
     if nodes and node_test_slots is not None:

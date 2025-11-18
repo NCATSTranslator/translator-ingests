@@ -41,11 +41,14 @@ def get_latest_version() -> str:
     """
     strformat = "%Y_%m_%d"
     # get last-modified for each source data file
-    textmining_modify_date = get_modify_date("https://download.jensenlab.org/human_disease_textmining_filtered.tsv", strformat)
-    knowledge_modify_date = get_modify_date("https://download.jensenlab.org/human_disease_knowledge_filtered.tsv", strformat)
+    textmining_modify_date = get_modify_date(
+        "https://download.jensenlab.org/human_disease_textmining_filtered.tsv", strformat
+    )
+    knowledge_modify_date = get_modify_date(
+        "https://download.jensenlab.org/human_disease_knowledge_filtered.tsv", strformat
+    )
     # compare them and return the most recent date in the form m_d_Y
-    if (datetime.strptime(textmining_modify_date, strformat) >
-            datetime.strptime(knowledge_modify_date, strformat)):
+    if datetime.strptime(textmining_modify_date, strformat) > datetime.strptime(knowledge_modify_date, strformat):
         return textmining_modify_date
     else:
         return knowledge_modify_date

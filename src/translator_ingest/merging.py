@@ -83,6 +83,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> str:
 
     return graph_version
 
+
 def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = False):
     merged_graph_dir = Path(INGESTS_DATA_PATH) / graph_id / graph_version
     merged_graph_nodes = merged_graph_dir / "nodes.jsonl"
@@ -95,8 +96,10 @@ def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = Fa
         else:
             merged_graph_nodes.unlink()
             merged_graph_edges.unlink()
-            logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. "
-                        f"OVERWRITE mode enabled, overwriting...")
+            logger.info(
+                f"Graph metadata file already exists: {graph_metadata_file_path}. "
+                f"OVERWRITE mode enabled, overwriting..."
+            )
 
     # TODO need to get the equivalent of the RIG source_info for this graph
     graph_metadata = generate_graph_summary(
@@ -108,7 +111,6 @@ def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = Fa
     )
     with graph_metadata_file_path.open("w") as output_file:
         output_file.write(json.dumps(graph_metadata, indent=2))
-
 
 
 @click.command()
