@@ -82,7 +82,8 @@ def read_mkg_edges(
         #       - "biolink:PhenotypicFeature"
         edge_data['object'] = [edge['object']]
 
-        # TODO: edge_data['qualifiers']
+        # TODO: Not really sure how best to capture qualifiers yet, if they are available
+        edge_data['qualifiers'] = edge.get('qualifiers',[])
 
         #       knowledge_level:
         #       - knowledge_assertion
@@ -101,9 +102,6 @@ def read_mkg_edges(
             # TODO: unsure if or how to really record this at the moment,
             #       let alone, other associated properties?
             # original_attribute_names = attribute['original_attribute_names']
-
-        # TODO: Not really sure how to capture qualifiers yet, if they are available
-        edge_data['qualifiers'] = edge.get('qualifiers',[])
 
         edge_info.append(edge_data)
 
