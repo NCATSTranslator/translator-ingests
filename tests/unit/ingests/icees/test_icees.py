@@ -198,12 +198,28 @@ def test_transform_icees_nodes(
                 "object": "MONDO:0007079",
                 "object_feature_name": "AlcoholDependenceDx",
                 #
-                # Can't yet test for this given current status of the Biolink Model
+                # Testing the expected contents of this slot is a bit too challenging at this point in time...
                 #
-                # "has_supporting_study_results": [
-                #     "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22",
-                #     "Asthma_UNC_EPR_patient_2013_v5_binned_deidentified|asthma|2013|2024_03_19_10_34_15"
-                # ],
+                # "has_supporting_studies": {
+                #     "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22": {
+                #         "id": "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22",
+                #         "category": ["biolink:Study"],
+                #         "has_study_results": [
+                #             {
+                #                 "category": ["biolink:IceesStudyResult"],
+                #                 "chi_squared_statistic": 26.38523077566414,
+                #                 "chi_squared_dof": 1,
+                #                 "chi_squared_p": 2.7967079822744063e-07,
+                #                 "total_sample_size": 4753,
+                #                 "fisher_exact_odds_ratio": 3.226188583240579,
+                #                 "fisher_exact_p": 2.8581244515361156e-06,
+                #                 "log_odds_ratio": 1.1713014352915974,
+                #                 "log_odds_ratio_95_ci": [0.6996904681742875, 1.6429124024089072]
+                #             }
+                #         ]
+                #     } ,
+                #     "Asthma_UNC_EPR_patient_2013_v5_binned_deidentified|asthma|2013|2024_03_19_10_34_15": "etc..."
+                # },
                 "sources": [
                     {
                         "resource_role": "primary_knowledge_source",
@@ -238,12 +254,7 @@ def test_transform_icees_nodes(
                 "predicate": "biolink:correlated_with",
                 "object": "NCBITaxon:12092",
                 "object_feature_name": "Anti_HAV",
-                #
-                # Can't yet test for this given current status of the Biolink Model
-                #
-                # "has_supporting_study_results": [
-                #     "Augmentin_DILI_patient_v4_binned_deidentified|dili|binned|2024_03_15_17_08_01",
-                # ],
+                # See Query 1 comments above, regarding "has_supporting_studies"
                 "sources": [
                     {
                         "resource_role": "primary_knowledge_source",
@@ -278,12 +289,7 @@ def test_transform_icees_nodes(
                 "predicate": "biolink:correlated_with",
                 "object": "UMLS:C4049590",
                 "object_feature_name": "Anti_HBc_IgM",
-                #
-                # Can't yet test for this given current status of the Biolink Model
-                #
-                # "has_supporting_study_results": [
-                #     "Augmentin_DILI_patient_v4_binned_deidentified|dili|binned|2024_03_15_17_08_01",
-                # ],
+                # See Query 1 comments above, regarding "has_supporting_studies"
                 "sources": [
                     {
                         "resource_role": "primary_knowledge_source",

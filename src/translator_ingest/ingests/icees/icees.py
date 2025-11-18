@@ -17,10 +17,7 @@ from bmt.pydantic import (
 )
 from koza.model.graphs import KnowledgeGraph
 
-from translator_ingest.ingests.icees.icees_util import (
-    get_icees_supporting_study,
-    # map_icees_qualifiers # more complex qualifier mapping approached, incomplete and skipped for now
-)
+from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study
 
 # Use the default Biolink Model release
 # for now, unless otherwise indicated
