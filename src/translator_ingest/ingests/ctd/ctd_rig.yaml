@@ -2,7 +2,7 @@
   name: CTD Resource Ingest Guide
 
 # Information about the Source of the ingest data
-  source_info:  
+  source_info:
     infores_id:  infores:ctd
     description: >-
       CTD is a robust, publicly available database that aims to advance understanding
@@ -15,17 +15,17 @@
       analyzing the knowledge they curate/create - based on statistically significant connections
       with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations
       with a common set of genes).
-    citations:   
+    citations:
       - "Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD). update 2023. Nucleic Acids Res. 2022 Sep 28"
-    terms_of_use_info:  
+    terms_of_use_info:
       terms_of_use_url: "https://ctdbase.org/about/legal.jsp"
       terms_of_use_description: "Bespoke terms describing specific conditions for use of CTD data. No formal license."
-    data_access_locations: 
+    data_access_locations:
       - CTD Bulk Downloads - http://ctdbase.org/downloads/ (this page includes file sizes and simple data dictionaries for each download)
       - CTD Catalog - https://ctdbase.org/reports/ (a simple list of files, reports the number of rows in each file)
     data_provision_mechanisms:
       - file_download
-    data_formats: 
+    data_formats:
       - tsv
       - csv
       - obo
@@ -37,8 +37,8 @@
       Latest status page: https://ctdbase.org/about/dataStatus.go
 
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
-  ingest_info: 
-    ingest_categories:  
+  ingest_info:
+    ingest_categories:
       - primary_knowledge_provider
     utility: >-
       CTD is a rich source of manually curated chemical associations to other biological entities
@@ -49,31 +49,31 @@
     scope: >-
       Covers a diverse range of Chemical association knowledge types provided across several files
       provided by CTD, based on many knowledge curation/creation approaches.
-      
-    relevant_files:  
+
+    relevant_files:
       - file_name: CTD_chemicals_diseases.tsv.gz
-        location: http://ctdbase.org/downloads/ 
+        location: http://ctdbase.org/downloads/
         description: Manually curated and computationally inferred associations between chemicals and diseases
       - file_name: CTD_exposure_events.tsv.gz
-        location: http://ctdbase.org/downloads/ 
+        location: http://ctdbase.org/downloads/
         description: Descriptions of statistical studies of how exposure to chemicals affects a particular population, with some records providing outcomes
       - file_name: CTD_chem_gene_ixns_structured.xml
-        location: http://ctdbase.org/downloads/ 
-        description: Descriptions of curated, detailed causal associations describing how chemicals affect genes/gene products. 
+        location: http://ctdbase.org/downloads/
+        description: Descriptions of curated, detailed causal associations describing how chemicals affect genes/gene products.
       - file_name: CTD_chem_go_enriched.tsv
-        location: http://ctdbase.org/downloads/ 
+        location: http://ctdbase.org/downloads/
         description: CTD calculates which GO terms are statistically enriched among the genes/proteins that interact with each chemical or its descendants.
       - file_name: CTD_chem_pathways_enriched.tsv
-        location: http://ctdbase.org/downloads/ 
+        location: http://ctdbase.org/downloads/
         description: Inferred associations between chemicals and biological pathways - computationally derived enrichments based on curated chemical–gene and gene–pathway data in CTD.
-       - file_name: CTD_chem_pathways_enriched.tsv
-         location: http://ctdbase.org/downloads/ 
-         description: Curated, literature-based associations between chemicals and phenotypes (often disease-like or physiological outcomes).
-       - file_name: CTD_genes_diseases.tsv
-         location: http://ctdbase.org/downloads/ 
-         description: Manually curated and computationally inferred associations between genes and diseases (to be ingested in future iteration)
-        
-    included_content:  
+      - file_name: CTD_chem_pathways_enriched.tsv
+        location: http://ctdbase.org/downloads/
+        description: Curated, literature-based associations between chemicals and phenotypes (often disease-like or physiological outcomes).
+      - file_name: CTD_genes_diseases.tsv
+        location: http://ctdbase.org/downloads/
+        description: Manually curated and computationally inferred associations between genes and diseases (to be ingested in future iteration)
+
+    included_content:
       - file_name:  CTD_chemicals_diseases.tsv.gz
         included_records:  All records, including curated therapeutic and marker/mechanism associations, as well as inferred associtionas (records lacking a value in the DirectEvidence column).
         fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs
@@ -88,17 +88,17 @@
       - file_name: CTD_chem_pathways_enriched.tsv
         included_records: All records (none filtered)
 
-# TO DO: EVAN AND VLADO - review included content description above and descriptions of any filtered content below, for accuracy. 
+# TO DO: EVAN AND VLADO - review included content description above and descriptions of any filtered content below, for accuracy.
 
-    future_considerations:  
+    future_considerations:
       - category:  edge_content
-        consideration: We should ingest gene-disease association edges from the CTD_genes_diseases.tsv file. Lots of content here. Assess quality and compare to other gene-disease association sources when we do a comprehensive review of content/modeling in this area. 
+        consideration: We should ingest gene-disease association edges from the CTD_genes_diseases.tsv file. Lots of content here. Assess quality and compare to other gene-disease association sources when we do a comprehensive review of content/modeling in this area.
       - category:  edge_content
         consideration: For inferred Chemical-Disease associations, consider adding a cutoff to remove lower quality/confidence inferences (e.g. based on shared gene count, publication count, or inference score). At present we include even inferences based on a single shared gene/pub - which is not really meaningful.
         relevant_files: CTD_chemicals_diseases.tsv.gz
       - category:  edge_content
         consideration: For enrichment-based Chemical-GO term associations, consider adding a cutoff to remove lower quality/confidence associatiosn based on p-values.
-        relevant_files: CTD_chem_go_enriched.tsv      
+        relevant_files: CTD_chem_go_enriched.tsv
       - category:  edge_content
         consideration: For enrichment-based Chemical-Pathway associations, consider adding a cutoff to remove lower quality/confidence associatiosn based on p-values.
         relevant_files: CTD_chem_pathways_enriched.tsv
@@ -109,16 +109,16 @@
         consideration: Molepro ingested chemical properties in its previous ingests - which we will likely bring in at some point. In particular, data from the CTD_chemicals.tsv file
         relevant_files: CTD_chemicals.tsv
       - category: edge_property_content
-        consideration: The exposures event file provides a lot of provenance/evidence metadata about supporting studies, including characteristics of subject populations, location of the study, and experimental/statistical data values. Consider for inclusion using a StudyResult object. 
+        consideration: The exposures event file provides a lot of provenance/evidence metadata about supporting studies, including characteristics of subject populations, location of the study, and experimental/statistical data values. Consider for inclusion using a StudyResult object.
         relevant_files: CTD_exposure_events.tsv.gz
-        
-# Information about the Graph Output by the ingest 
+
+# Information about the Graph Output by the ingest
   target_info:
     infores_id:  infores:translator-ctd
     edge_type_info:
       - subject_categories:
           - biolink:ChemicalEntity
-        predicates:  
+        predicates:
           - biolink:treats_or_applied_or_studied_to_treat
         object_categories:
           - biolink:DiseaseOrPhenotypicFeature
@@ -129,11 +129,12 @@
         edge_properties:
           - publications
         ui_explanation: CTD Chemical-Disease records with a "T" (therapeutic) DirectEvidence code indicate the chemical to be a "potential" treatment in virtue of its clinical use or study - which maps best to the Biolink predicate 'treats_or_applied_or_studied_to_treat'.
-        additional_notes: source file(s): CTD_chemicals_diseases.tsv. Note that the 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
-        
+        additional_notes:
+          source file(s): CTD_chemicals_diseases.tsv. Note that the 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease. All edges are manual agent knowledge assertions, as the ingested data is based on manual literature curation.
+
       - subject_categories:
           - biolink:ChemicalEntity
-        predicates: 
+        predicates:
           - biolink:correlated_with
         object_categories:
           - biolink:DiseaseOrPhenotypicFeature
@@ -144,11 +145,12 @@
         edge_properties:
           - publications
         ui_explanation: CTD Chemical-Disease records with a DirectEvidence code of "M" (marker/mechanism) indicate that the chemical is manually flagged as a marker or contributing factor for a condition. This implies that at minimum there is correlation between the presence of the chemical and condition, for which we use the Biolink 'correlated_with' predicate.
-        additional_notes: source file(s): CTD_chemicals_diseases.tsv
-        
+        additional_notes:
+          source file(s): CTD_chemicals_diseases.tsv
+
       - subject_categories:
           - biolink:ChemicalEntity
-        predicates: 
+        predicates:
           - biolink:associated_with
         object_categories:
           - biolink:DiseaseOrPhenotypicFeature
@@ -160,9 +162,10 @@
           - publications
           - has_confidence_score
         ui_explanation: CTD Chemical-Disease records with an inference score have a statistically significant number of shared gene associations that suggest a biological relationship may exist. The statistical basis of this general inferred relationship is best reported using the Biolink 'associated_with' predicate.
-        additional_notes: source file(s): CTD_chemicals_diseases.tsv
-        
-      - subject_categories: 
+        additional_notes:
+          source file(s): CTD_chemicals_diseases.tsv
+
+      - subject_categories:
           - biolink:ChemicalEntity
           - biolink:ComplexMolecularMixture
           - biolink:MolecularMixture
@@ -180,13 +183,14 @@
         edge_properties:
           - biolink:publications
         ui_explanation: A positive or negative correlation edge is created when the results of an environmental exposure study curated by CTD reports a statistically significant association between the exposure (usually a chemical) and outcome measure (usually a disease or phenotype). Note that this edge is based on results from a single study.
-        additional_notes: source file(s): CTD_exposure_events.tsv.gz
-        
+        additional_notes:
+          source file(s): CTD_exposure_events.tsv.gz
+
       - subject_categories:
           - biolink:ChemicalEntity
           - biolink:MolecularMixture
           - biolink:SmallMolecule
-        predicates: 
+        predicates:
           - biolink:affects
         object_categories:
           - biolink:Gene
@@ -202,16 +206,16 @@
               - biolink:DirectionQualifierEnum
           - property: biolink:object_form_or_variant_qualifier
             value_range:
-              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum              
+              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
           - property: biolink:object_part_qualifier
             value_range:
               - biolink:GeneOrGeneProductOrChemicalPartQualifierEnum
           - property: biolink:subject_aspect_qualifier
             value_range:
-              - biolink:GeneOrGeneProductOrChemicalEntityAspectEnums              
+              - biolink:GeneOrGeneProductOrChemicalEntityAspectEnums
           - property: biolink:subject_derivative_qualifier
             value_range:
-              - biolink:ChemicalEntityDerivativeEnum              
+              - biolink:ChemicalEntityDerivativeEnum
           - property: biolink:subject_direction_qualifier
             value_range:
               - biolink:DirectionQualifierEnum
@@ -228,11 +232,12 @@
         edge_properties:
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about how chemical entities affect genes/gene products in the body, often reporting a particular aspect or form of the gene that is effected, and the direction of the effect. Translator represents details of these causal associations using specific combinations of predicates (biolink:affects / biolink:causes) and qualifier properties (e.g. object_aspect, object_direction).
-        additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
+        additional_notes:
+          source file(s): CTD_chem_gene_ixns_structured.xml
 
       - subject_categories:
           - biolink:Gene
-        predicates: 
+        predicates:
           - biolink:affects
         object_categories:
           - biolink:ChemicalEntity
@@ -250,16 +255,16 @@
               - biolink:DirectionQualifierEnum
           - property: biolink:object_form_or_variant_qualifier
             value_range:
-              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum              
+              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
           - property: biolink:object_derivative_qualifier
             value_range:
               -  biolink:ChemicalEntityDerivativeEnum
           - property: biolink:subject_form_or_variant_qualifier
             value_range:
-              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum              
+              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
           - property: biolink:subject_part_qualifier
             value_range:
-              - biolink:GeneOrGeneProductOrChemicalPartQualifierEnum              
+              - biolink:GeneOrGeneProductOrChemicalPartQualifierEnum
           - property: biolink:species_context_qualifier
             value_id_prefixes:
               - NCBITaxon
@@ -270,19 +275,20 @@
         edge_properties:
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about how genes affect chemical entities in the body, often reporting a particular form or aspect of the chemical that is effected, and the direction of the effect. Translator represents details of these causal associations using specific combinations of predicates (biolink:affects / biolink:causes) and qualifier properties (e.g. object_aspect, object_direction).
-        additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
+        additional_notes:
+          source file(s): CTD_chem_gene_ixns_structured.xml
 
       - subject_categories:
           - biolink:Gene
-        predicates: 
+        predicates:
           - biolink:affects_sensitivity_to
           - biolink:increases_sensitivity_to
-          - biolink:decreases_sensitivity_to          
+          - biolink:decreases_sensitivity_to
         object_categories:
           - biolink:ChemicalEntity
           - biolink:MolecularMixture
           - biolink:SmallMolecule
-        qualifiers:          
+        qualifiers:
           - property: biolink:species_context_qualifier
             value_id_prefixes:
               - NCBITaxon
@@ -293,19 +299,20 @@
         edge_properties:
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications reporting that a gene or gene product (usually a mutant form) may affect susceptibility/sensitivity to the effects of a particular chemical exposure. Translator represents this relationship using the biolink:affects_sensitivity_to predicate, or biolink:increases/decreases_sensitivity_to predicates if a direction is provided.
-        additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
+        additional_notes:
+          source file(s): CTD_chem_gene_ixns_structured.xml
 
       - subject_categories:
           - biolink:ChemicalEntity
           - biolink:MolecularMixture
-          - biolink:SmallMolecule      
-        predicates: 
+          - biolink:SmallMolecule
+        predicates:
           - biolink:affects_sensitivity_to
           - biolink:increases_sensitivity_to
-          - biolink:decreases_sensitivity_to          
+          - biolink:decreases_sensitivity_to
         object_categories:
           - biolink:Gene
-        qualifiers:          
+        qualifiers:
           - property: biolink:species_context_qualifier
             value_id_prefixes:
               - NCBITaxon
@@ -313,16 +320,17 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        edge_properties: 
+        edge_properties:
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications reporting that exposure to a chemical entity may affect susceptibility/sensitivity to the effects of particular gene or gene product (e.g. a signaling molecule like TNF). Translator represents this relationship using the biolink:affects_sensitivity_to predicate, or biolink:increases/decreases_sensitivity_to predicates if a direction is provided.
-        additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
-        
+        additional_notes:
+          source file(s): CTD_chem_gene_ixns_structured.xml
+
       - subject_categories:
           - biolink:ChemicalEntity
           - biolink:MolecularMixture
           - biolink:SmallMolecule
-        predicates: 
+        predicates:
           - biolink:affects
         object_categories:
           - biolink:BiologicalProcess
@@ -349,29 +357,30 @@
         edge_properties:
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about how chemicals affect processes, activities, or pathways in the body, often reporting the direction of the effect. Translator represents details of these causal associations using specific combinations of predicates (biolink:affects, biolink:causes) and qualifier properties (e.g. object_direction).
-        additional_notes: source file(s): CTD_pheno_term_ixns.tsv
-        
+        additional_notes:
+          source file(s): CTD_pheno_term_ixns.tsv
+
       - subject_categories:
           - biolink:ChemicalEntity
           - biolink:MolecularMixture
           - biolink:SmallMolecule
-        predicates: 
+        predicates:
           - biolink:directly_physically_interacts_with
         object_categories:
           - biolink:Gene
         qualifiers:
           - property: biolink:object_form_or_variant_qualifier
             value_range:
-              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum              
+              - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
           - property: biolink:object_part_qualifier
             value_range:
-              - biolink:GeneOrGeneProductOrChemicalPartQualifierEnum          
+              - biolink:GeneOrGeneProductOrChemicalPartQualifierEnum
           - property: biolink:subject_form_or_variant_qualifier
             value_range:
               - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
           - property: biolink:subject_derivative_qualifier
             value_range:
-              - biolink:ChemicalEntityDerivativeEnum              
+              - biolink:ChemicalEntityDerivativeEnum
           - property: biolink:species_context_qualifier
             value_id_prefixes:
               - NCBITaxon
@@ -382,7 +391,8 @@
         edge_properties:
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about chemicals 'binding' to gene products. Translator represents this using the biolink:directly_physically_interacts_with predicate, and qualifiers to indicate when a certain form, part, or derivative of the chemical or gene product are relevant to this interaction.
-        additional_notes: source file(s): CTD_chem_gene_ixns_structured.xml
+        additional_notes:
+          source file(s): CTD_chem_gene_ixns_structured.xml
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -395,14 +405,15 @@
           - biolink:MolecularActivity
           - biolink:CellularComponent
         knowledge_level:
-          - statistical_association 
+          - statistical_association
         agent_type:
           - data_analysis_pipeline
         edge_properties:
           - biolink:adjusted_p_value
           - biolink:p_value
-        ui_explanation: A CTD analysis defines associations between a chemical entity and a GO term based on statistically significant enrichment (p < 0.05) of the GO term among the genes that are reported to be affected by the chemical in CTD's curated data. Translator reports this using the biolnk:associated_with predicate, and provides the p-value as supporting evidence. 
-        additional_notes: source file(s): CTD_chem_go_enriched.tsv
+        ui_explanation: A CTD analysis defines associations between a chemical entity and a GO term based on statistically significant enrichment (p < 0.05) of the GO term among the genes that are reported to be affected by the chemical in CTD's curated data. Translator reports this using the biolnk:associated_with predicate, and provides the p-value as supporting evidence.
+        additional_notes:
+          source file(s): CTD_chem_go_enriched.tsv
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -413,20 +424,21 @@
         object_categories:
           - biolink:Pathway
         knowledge_level:
-          - statistical_association 
+          - statistical_association
         agent_type:
           - data_analysis_pipeline
         edge_properties:
           - biolink:adjusted_p_value
           - biolink:p_value
-        ui_explanation: CTD defines associations between a chemical entity and a pathway based on statistically significant overrepresentation/enrichment (p < 0.05) in the Pathway of the genes reported to be affected by the chemical in CTD's curated data. Translator reports this using the biolnk:associated_with predicate, and provides the p-value as supporting evidence. 
-        additional_notes: source file(s): CTD_chem_pathways_enriched.tsv
+        ui_explanation: CTD defines associations between a chemical entity and a pathway based on statistically significant overrepresentation/enrichment (p < 0.05) in the Pathway of the genes reported to be affected by the chemical in CTD's curated data. Translator reports this using the biolnk:associated_with predicate, and provides the p-value as supporting evidence.
+        additional_notes:
+          source file(s): CTD_chem_pathways_enriched.tsv
 
 
-# TO DO: EVAN AND VLADO review/update the description of node types, identifiers, and properties - I didn't have enough info to fully populate. 
+# TO DO: EVAN AND VLADO review/update the description of node types, identifiers, and properties - I didn't have enough info to fully populate.
 
-    node_type_info:  
-      - node_categories: 
+    node_type_info:
+      - node_categories:
           - biolink:ChemicalEntity
           - biolink:SmallMolecule
           - biolink:MolecularMixture
@@ -434,7 +446,7 @@
           - MeSH
           - CAS RN
         additional_notes: Majority are Biolink SmallMolecules
-      - node_categories: 
+      - node_categories:
           - biolink:DiseaseOrPhenotypicFeature
           - biolink:Disease
           - biolink:PhenotypicFeature
@@ -464,14 +476,14 @@
         source_identifier_types:
           - MeSH
 
-    future_considerations:  
-      - category: edge_properties 
+    future_considerations:
+      - category: edge_properties
         consideration: Revisit use of 'has_confidence_score' edge property if/when we refactor this part of the Biolink Model.
       - category: predicates
         consideration: Revisit 'correlated_with' and 'treats_or_studied_or_applied_to_treat' predicates if/when we refactor modeling or conventions here.
       - category: other
-        consideration: May want to improve ui_explanations for the chemical-gene interactions edge types, once we understand how the UI will stitch together / display predicates and qualifier values for these edges. 
-        
+        consideration: May want to improve ui_explanations for the chemical-gene interactions edge types, once we understand how the UI will stitch together / display predicates and qualifier values for these edges.
+
     additional_notes: >-
       CTD_chemicals_diseases.tsv. data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores.
       Separate edges will be created for each type of association reported between a chemical and a given disease, according to the mappings described above.
@@ -480,8 +492,8 @@
 
 
 # Information about how the task ingest was specified and performed
-  provenance_info: 
-    contributions:  
+  provenance_info:
+    contributions:
       - "Kevin Schaper: code author"
       - "Evan Morris: code support"
       - "Sierra Moxon: code support"
