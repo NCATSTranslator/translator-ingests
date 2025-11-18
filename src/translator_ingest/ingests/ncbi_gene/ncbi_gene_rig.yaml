@@ -74,14 +74,13 @@ target_info:
         - category
         - symbol
         - description
+        - full_name
         - in_taxon
         - in_taxon_label
         - provided_by
-      additional_notes: "Gene nodes include official gene symbols, descriptions, and taxonomic information. The provided_by field is set to 'infores:ncbi-gene' for provenance tracking."
+      additional_notes: "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information. The provided_by field is set to 'infores:ncbi-gene' for provenance tracking."
 
   future_considerations:
-    - category: node_properties
-      consideration: "Consider adding full_name property from Full_name_from_nomenclature_authority field if more detailed gene naming information is needed"
     - category: edge_content
       consideration: "Future iterations could include gene-to-gene orthology relationships or gene-to-pathway associations if such data becomes available from NCBI Gene"
 

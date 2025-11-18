@@ -21,7 +21,7 @@ def get_taxon_name(taxon_id: str) -> str:
 
 
 def get_latest_version() -> str:
-    return "2024-12-01"
+    return "latest"
 
 
 @koza.on_data_begin()
@@ -64,14 +64,15 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
     in_taxon_label = get_taxon_name(record["tax_id"])
 
     gene = Gene(
-        id='NCBIGene:' + record["GeneID"],
+        id=f'NCBIGene:{record["GeneID"]}',
         symbol=record["Symbol"],
         name=record["Symbol"],
         full_name=record["Full_name_from_nomenclature_authority"],
         description=record["description"],
-        in_taxon=['NCBITaxon:' + record["tax_id"]],
+        in_taxon=[f'NCBITaxon:{record["tax_id"]}'],
         in_taxon_label=in_taxon_label,
-        provided_by=[INFORES_NCBIGENE]
+        provided_by=[INFORES_NCBIGENE],
+        category=["biolink:Gene"]
     )
 
     # Track genes by taxon and increment created count
