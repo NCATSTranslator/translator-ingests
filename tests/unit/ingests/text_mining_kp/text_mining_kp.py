@@ -13,11 +13,11 @@ from koza.io.writer.writer import KozaWriter
 from koza.transform import KozaTransform
 from src.translator_ingest.ingests.text_mining_kp.text_mining_kp import (
     transform_text_mining_kp,
-    parse_attributes_json,
     extract_tar_gz,
     get_latest_version,
     TMKP_INFORES,
 )
+from src.translator_ingest.ingests.text_mining_kp.parsers import parse_attributes_json
 
 
 class MockWriter(KozaWriter):

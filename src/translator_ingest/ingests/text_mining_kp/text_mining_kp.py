@@ -12,8 +12,10 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, Any
 from datetime import datetime
+import os
 import koza
 from koza import KozaTransform
+from loguru import logger
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     ChemicalEntity,
@@ -33,6 +35,44 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
 )
 from koza.model.graphs import KnowledgeGraph
+from .parsers import parse_attributes_json
+
+
+# Global state for statistics tracking
+processing_stats = {
+    "nodes_processed": 0,
+    "edges_processed": 0,
+    "attribute_errors": 0,
+    "extraction_start_time": None,
+}
+
+
+@koza.on_data_begin()
+def initialize_processing(koza: KozaTransform) -> None:
+    """
+    Initialize processing state and log startup information.
+    """
+    global processing_stats
+    processing_stats["extraction_start_time"] = datetime.now()
+    logger.info(f"Starting Text Mining KP data processing with TMKP_INFORES: {TMKP_INFORES}")
+    logger.info(f"Input files directory: {koza.input_files_dir}")
+
+
+@koza.on_data_end()
+def cleanup_and_report(koza: KozaTransform) -> None:
+    """
+    Report final statistics and cleanup resources.
+    """
+    global processing_stats
+    if processing_stats["extraction_start_time"]:
+        duration = datetime.now() - processing_stats["extraction_start_time"]
+        logger.info(f"Text Mining KP processing completed in {duration.total_seconds():.2f} seconds")
+    
+    logger.info(
+        f"Final statistics - Nodes: {processing_stats['nodes_processed']:,}, "
+        f"Edges: {processing_stats['edges_processed']:,}, "
+        f"Errors: {processing_stats['attribute_errors']:,}"
+    )
 
 
 # Constants for the Text Mining KP
@@ -127,9 +167,12 @@ def get_association_class(subject_category: str, predicate: str, object_category
 def get_latest_version() -> str:
     """
     Return the version of the Text Mining KP data being processed.
-    Uses the current date when the pipeline runs.
+    Uses environment variable if set, otherwise current date.
     """
-    return datetime.now().strftime("%Y-%m-%d")
+    version = os.environ.get("TMKP_VERSION", "latest")
+    if version == "latest":
+        return datetime.now().strftime("%Y-%m-%d")
+    return version
 
 
 def create_biolink_entity(node_id: str, category: str, name: str):
@@ -163,260 +206,61 @@ def create_biolink_entity(node_id: str, category: str, name: str):
     return entity_class(id=node_id, category=[category], name=name)
 
 
-def extract_tar_gz(tar_path: str, koza_instance: KozaTransform) -> str:
+def extract_tar_gz(tar_path: str, koza: KozaTransform) -> str:
     """
     Extract tar.gz file to a temporary directory and return the path.
 
     Args:
         tar_path: Path to the tar.gz file
-        koza_instance: KozaTransform instance for logging
+        koza: KozaTransform instance for context
 
     Returns:
         Path to the extracted directory
     """
     extract_dir = tempfile.mkdtemp(prefix="text_mining_kp_extract_")
 
-    koza_instance.log(f"Extracting {tar_path} to {extract_dir}")
-    with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(extract_dir)
+    logger.info(f"Extracting {tar_path} to {extract_dir}")
+    try:
+        with tarfile.open(tar_path, "r:gz") as tar:
+            tar.extractall(extract_dir)
+    except Exception as e:
+        logger.error(f"Failed to extract {tar_path}: {e}")
+        raise
 
     return extract_dir
 
 
-def parse_attributes_json(
-    attributes_str: str, koza_instance: KozaTransform, record: Dict[str, Any] = None
-) -> Dict[str, Any]:
-    """
-    Parse the _attributes JSON string and create Study and TextMiningStudyResult objects.
-    Text mining specific attributes are structured as Study objects with TextMiningStudyResult objects.
-
-    Args:
-        attributes_str: JSON string containing attributes
-        koza_instance: KozaTransform instance for logging
-        record: The edge record being processed (for context in logging)
-
-    Returns:
-        Dictionary of mapped attributes including has_supporting_studies
-    """
-    if not attributes_str:
-        return {}
-
-    try:
-        attributes = json.loads(attributes_str)
-        if not isinstance(attributes, list):
-            return {}
-
-        mapped_attributes = {}
-        study_results = []
-        text_mining_metadata = {}
-        unmapped_attributes = []
-
-        for attr in attributes:
-            if isinstance(attr, dict) and "attribute_type_id" in attr:
-                # The attributes already come with biolink: prefix
-                attr_type_id = attr["attribute_type_id"]
-                value = attr.get("value")
-
-                # Extract the attribute name without biolink: prefix for checking
-                attr_name = (
-                    attr_type_id.replace("biolink:", "") if attr_type_id.startswith("biolink:") else attr_type_id
-                )
-
-                # Handle confidence score mapping
-                if attr_type_id == "biolink:confidence_score":
-                    mapped_attributes["biolink:has_confidence_level"] = value
-                    continue
-                
-                # Handle supporting_study_result with nested attributes
-                if (attr_type_id == "biolink:supporting_study_result" or attr_type_id == "biolink:has_supporting_study_result") and "attributes" in attr:
-                    # This is a supporting study result with nested attributes
-                    study_result_data = {
-                        "id": value,  # The study result ID
-                        "category": ["biolink:TextMiningStudyResult"],
-                    }
-
-                    # Process nested attributes (also in TRAPI format)
-                    for nested_attr in attr.get("attributes", []):
-                        if isinstance(nested_attr, dict) and "attribute_type_id" in nested_attr:
-                            nested_attr_type_id = nested_attr["attribute_type_id"]
-                            nested_value = nested_attr.get("value")
-                            nested_attr_name = (
-                                nested_attr_type_id.replace("biolink:", "")
-                                if nested_attr_type_id.startswith("biolink:")
-                                else nested_attr_type_id
-                            )
-
-                            # Map text mining attributes to TextMiningStudyResult fields
-                            if nested_attr_name == "supporting_text":
-                                # Convert to list if it's a string
-                                if isinstance(nested_value, str):
-                                    study_result_data["supporting_text"] = [nested_value]
-                                    # Also add to top-level for backward compatibility
-                                    mapped_attributes["biolink:supporting_text"] = nested_value
-                                else:
-                                    study_result_data["supporting_text"] = nested_value
-                                    mapped_attributes["biolink:supporting_text"] = nested_value
-                            elif nested_attr_name == "subject_location_in_text":
-                                # Convert pipe-separated string to a list of integers
-                                if isinstance(nested_value, str) and "|" in nested_value:
-                                    try:
-                                        loc_list = [int(x) for x in nested_value.split("|")]
-                                        study_result_data["subject_location_in_text"] = loc_list
-                                        # Also add to top-level for backward compatibility
-                                        mapped_attributes["subject_location_in_text"] = loc_list
-                                    except ValueError:
-                                        study_result_data["subject_location_in_text"] = nested_value
-                                        mapped_attributes["subject_location_in_text"] = nested_value
-                                else:
-                                    study_result_data["subject_location_in_text"] = nested_value
-                                    mapped_attributes["subject_location_in_text"] = nested_value
-                            elif nested_attr_name == "object_location_in_text":
-                                # Convert pipe-separated string to a list of integers
-                                if isinstance(nested_value, str) and "|" in nested_value:
-                                    try:
-                                        loc_list = [int(x) for x in nested_value.split("|")]
-                                        study_result_data["object_location_in_text"] = loc_list
-                                        # Also add to top-level for backward compatibility
-                                        mapped_attributes["object_location_in_text"] = loc_list
-                                    except ValueError:
-                                        study_result_data["object_location_in_text"] = nested_value
-                                        mapped_attributes["object_location_in_text"] = nested_value
-                                else:
-                                    study_result_data["object_location_in_text"] = nested_value
-                                    mapped_attributes["object_location_in_text"] = nested_value
-                            elif nested_attr_name == "extraction_confidence_score":
-                                # Convert to integer if it's a float
-                                if isinstance(nested_value, float):
-                                    nested_value = int(nested_value * 100)  # Convert to percentage
-                                study_result_data["extraction_confidence_score"] = nested_value
-                                # Also add to top-level for backward compatibility
-                                mapped_attributes["biolink:extraction_confidence_score"] = nested_value
-                            elif nested_attr_name == "supporting_document_year":
-                                study_result_data["supporting_document_year"] = nested_value
-                            elif nested_attr_name == "supporting_document_type":
-                                study_result_data["supporting_document_type"] = nested_value
-                            elif nested_attr_name == "supporting_text_section_type":
-                                study_result_data["supporting_text_section_type"] = nested_value
-                            elif (
-                                nested_attr_name == "supporting_document" or nested_attr_name == "supporting_documents"
-                            ):
-                                # TextMiningStudyResult doesn't have a publications field,
-                                # so we skip this attribute - it should be handled at the Association level
-                                continue
-
-                    try:
-                        # Create TextMiningStudyResult instance with text-mining-specific fields
-                        study_result_obj = TextMiningStudyResult(**study_result_data)
-                        study_results.append(study_result_obj)
-                        
-                        # Also add the study result to the mapped attributes for backward compatibility
-                        if "biolink:has_supporting_study_result" not in mapped_attributes:
-                            mapped_attributes["biolink:has_supporting_study_result"] = []
-                        mapped_attributes["biolink:has_supporting_study_result"].append(study_result_obj)
-                    except Exception as e:
-                        koza_instance.log(f"Error creating TextMiningStudyResult: {e}, data: {study_result_data}")
-
-                    continue
-
-                # Handle text mining metadata attributes that should be grouped into Study objects
-                elif attr_type_id in [
-                    "biolink:has_evidence_count",
-                    "biolink:tmkp_confidence_score",
-                    "biolink:supporting_document",
-                    "biolink:semmed_agreement_count",
-                    "biolink:supporting_study_result",
-                ]:
-                    # Store these in text mining metadata to be processed later
-                    text_mining_metadata[attr_name] = value
-                    continue
-
-                # Handle regular attributes
-                if attr_type_id == "biolink:publications" and isinstance(value, str):
-                    # Handle pipe-separated publications
-                    mapped_attributes[attr_type_id] = value.split("|") if "|" in value else [value]
-                elif attr_type_id in ["biolink:primary_knowledge_source", "biolink:aggregator_knowledge_source"]:
-                    # Preserve these for creating RetrievalSource objects
-                    mapped_attributes[attr_type_id] = value
-                elif attr_type_id == "biolink:supporting_data_source":
-                    # This is auxiliary info, could be stored but not critical
-                    continue
-                else:
-                    # Store the value with the biolink-prefixed name
-                    mapped_attributes[attr_type_id] = value
-
-                    # Check if this attribute exists in the Association model
-                    if not hasattr(Association, attr_name):
-                        unmapped_attributes.append(attr_type_id)
-
-        # Create a Study object with TextMiningStudyResult objects if we have text mining data
-        if study_results or text_mining_metadata:
-            # Create a study ID based on the edge ID
-            edge_id = record.get("id", "unknown") if record else "unknown"
-            study_id = f"text_mining_study_{edge_id}"
-
-            study_data = {
-                "id": study_id,
-                "category": ["biolink:Study"],
-                "name": f"Text mining study for edge {edge_id}",
-                "description": "Text mining analysis supporting this association",
-            }
-
-            # Add study results if any
-            if study_results:
-                study_data["has_study_results"] = study_results
-
-            try:
-                study_obj = Study(**study_data)
-                mapped_attributes["has_supporting_studies"] = {study_id: study_obj}
-            except Exception as e:
-                koza_instance.log(f"Error creating Study: {e}, data: {study_data}")
-
-        # Log unmapped attributes with context
-        if unmapped_attributes and record:
-            subject = record.get("subject", "unknown")
-            predicate = record.get("predicate", "unknown")
-            object_id = record.get("object", "unknown")
-            edge_id = record.get("id", "unknown")
-
-            koza_instance.log(
-                f"Unmapped Biolink attributes for association {edge_id} "
-                f"({subject} --[{predicate}]--> {object_id}): "
-                f"{', '.join(unmapped_attributes)}"
-            )
-
-        return mapped_attributes
-
-    except json.JSONDecodeError as e:
-        koza_instance.log(f"Error parsing attributes JSON: {e}")
-        return {}
-
 
 @koza.prepare_data()
-def prepare_text_mining_kp_data(koza_instance: KozaTransform, data: Iterable[Dict]) -> Iterable[Dict]:
+def prepare_text_mining_kp_data(koza: KozaTransform, data: Iterable[Dict]) -> Iterable[Dict]:
     """
     Extract tar.gz and yield nodes and edges from KGX files.
     """
-    koza_instance.log("Preparing Text Mining KP data: extracting tar.gz")
+    logger.info("Preparing Text Mining KP data: extracting tar.gz")
 
-    # Path to the downloaded tar.gz file (use latest version directory)
-    version = get_latest_version()
-    tar_path = f"data/text_mining_kp/{version}/source_data/targeted_assertions.tar.gz"
+    # Use koza's input files directory instead of hardcoded paths
+    tar_path = f"{koza.input_files_dir}/targeted_assertions.tar.gz"
+    
+    # Check if file exists
+    if not os.path.exists(tar_path):
+        logger.error(f"Archive not found: {tar_path}")
+        return
 
     # Extract the tar.gz file
-    extracted_path = extract_tar_gz(tar_path, koza_instance)
+    extracted_path = extract_tar_gz(tar_path, koza)
 
     # Find the nodes and edges files
     nodes_file = Path(extracted_path) / "nodes.tsv"
     edges_file = Path(extracted_path) / "edges.tsv"
 
     if not nodes_file.exists() or not edges_file.exists():
-        koza_instance.log(f"ERROR: Could not find nodes.tsv or edges.tsv in {extracted_path}")
+        logger.error(f"Could not find nodes.tsv or edges.tsv in {extracted_path}")
         return
 
-    koza_instance.log(f"Found KGX files: {nodes_file} and {edges_file}")
+    logger.info(f"Found KGX files: {nodes_file} and {edges_file}")
 
     # First, yield all nodes
-    koza_instance.log("Processing nodes...")
+    logger.info("Processing nodes...")
     with open(nodes_file, "r", encoding="utf-8") as f:
         header = f.readline().strip().split("\t")
         for line in f:
@@ -427,7 +271,7 @@ def prepare_text_mining_kp_data(koza_instance: KozaTransform, data: Iterable[Dic
                 yield node_dict
 
     # Then, yield all edges
-    koza_instance.log("Processing edges...")
+    logger.info("Processing edges...")
     with open(edges_file, "r", encoding="utf-8") as f:
         header = f.readline().strip().split("\t")
         for line in f:
@@ -439,7 +283,7 @@ def prepare_text_mining_kp_data(koza_instance: KozaTransform, data: Iterable[Dic
 
 
 @koza.transform()
-def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict]) -> KnowledgeGraph:
+def transform_text_mining_kp(koza: KozaTransform, data: Iterable[Dict]) -> KnowledgeGraph:
     """
     Transform Text Mining KP data with attribute processing.
     """
@@ -474,6 +318,7 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
 
             nodes.append(node)
             node_count += 1
+            processing_stats["nodes_processed"] += 1
 
         elif record_type == "edge":
             # Process edges with attribute extraction
@@ -487,7 +332,7 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
 
             # Parse and map attributes
             attributes_str = record.get("_attributes", "[]")
-            mapped_attributes = parse_attributes_json(attributes_str, koza_instance, record)
+            mapped_attributes = parse_attributes_json(attributes_str, koza, record)
 
             # Extract knowledge source information from attributes if available
             primary_source = mapped_attributes.get("biolink:primary_knowledge_source", TMKP_INFORES)
@@ -553,7 +398,7 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
                         if hasattr(association_class, attr_name):
                             association_data[attr_name] = value
                         else:
-                            koza_instance.log(f"{association_class.__name__} does not have attribute: {attr_name}")
+                            logger.debug(f"{association_class.__name__} does not have attribute: {attr_name}")
 
             # Handle qualified predicates if the association class supports it
             if record.get("qualified_predicate") and hasattr(association_class, "qualified_predicate"):
@@ -575,10 +420,12 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
                 association = association_class(**association_data)
                 edges.append(association)
                 edge_count += 1
+                processing_stats["edges_processed"] += 1
             except Exception as e:
                 attribute_errors += 1
-                koza_instance.log(f"Error creating {association_class.__name__}: {e}")
+                processing_stats["attribute_errors"] += 1
+                logger.error(f"Error creating {association_class.__name__}: {e}")
 
-    koza_instance.log(f"Processed {node_count} nodes and {edge_count} edges ({attribute_errors} errors)")
+    logger.info(f"Processed {node_count} nodes and {edge_count} edges ({attribute_errors} errors)")
 
     return KnowledgeGraph(nodes=nodes, edges=edges)
