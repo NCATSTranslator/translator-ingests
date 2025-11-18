@@ -1,95 +1,129 @@
 ReferenceIngestGuide:
-  name:  # (optional, range = string)
+  name: Drug-Repurposing Hub Reference Ingest Guide
 
-# Information about the Source of the ingest
-  source_info:  # (required, range = SourceInfo)
-    infores_id:  # (required, range = UriOrCurie)
-    description:  # (optional, range = string)
-    citations:  # (optional, multivalued, range = string)
-      -
-    terms_of_use:  # (required, range = string)
-    data_access_locations:  # (optional, multivalued, range = string)
-      -
-    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
-      -
-    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
-      -
-    data_versioning_and_releases:  # (optional, range = string)
-    additional_notes:  # (optional, range = string)
+  source_info: 
+    infores_id: infores:drug-repurposing-hub
+    description: >-
+      The Drug Repurposing Hub is a curated and annotated collection of FDA-approved drugs, clinical trial drugs,
+      and selected pre-clinical tool compounds. Because the compounds are annotated and well characterized, the 
+      collection is a novel tool to explore known biological targets and pathways, and a powerful way to discover 
+      new biological insights, better understand disease mechanisms, and discover new activities of existing molecules. 
+      
+    citations:
+      - Corsello SM, Bittker JA, Liu Z, Gould J, McCarren P, Hirschman JE, Johnston SE, Vrcic A, Wong B, Khan M, Asiedu J, Narayan R, Mader CC, Subramanian A, Golub TR. The Drug Repurposing Hub: a next-generation drug library and information resource. Nature Medicine. 23, 405–408 (2017).
+    terms_of_use: The Repurposing Hub compound metadata (including compound names, structures, targets, mechanisms, and indications) are made available under the permissive CC-BY 4.0 license. Restrictions: The Drug Repurposing Hub data is provided for non-commercial use only.
+    data_access_locations: 
+      - https://repo-hub.broadinstitute.org/repurposing#download-data
+    data_provision_mechanisms: 
+      - file_download
+    data_formats: 
+      - tsv
+    data_versioning_and_releases: irregular, Latest version: 8/19/2025, Archived versions: 3/24/2020 | 9/7/2018 | 5/16/2018 | 3/27/2017
 
 
-# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
-  ingest_info:  # (required, range = IngestInfo)
-    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
-      -
-    utility:  # (required, range = string)
-    scope:  # (optional, range = string)
+  ingest_info:
+    ingest_categories:
+      - primary_knowledge_provider
+    utility: powerful way to discover new biological insights, better understand disease mechanisms, and discover new activities of existing molecules.
+    scope: FDA-approved drugs, clinical trial drugs, and selected pre-clinical tool compounds
 
-    relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest.
-      - file_name:  # (required, range = string)
-        location:  # (required, range = UriOrCurie)
-        description:  # (optional, range = string)
+    relevant_files: 
+      - file_name: repo-drug-annotation-20200324.txt
+        location: https://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20200324.txt
 
-    included_content:  # (optional, multivalued, range = IncludedContent) Records from the relevant files that are included, and optionally a list of fields in the data that are part of or inform the ingest.
-      - file_name:  # (required, range = string)
-        included_records:  # (required, range = string)
-        fields_used:  # (optional, range = string)
+    included_content:
+      - file_name: repo-drug-annotation-20200324.txt
+        included_records: all rows
+        fields_used: pert_iname, clinical_phase, moa, target, disease_area, indication
 
-    filtered_content:  # (optional, multivalued, range = FilteredContent)  Records from relevant files that are not included in the ingest, and why.
-      - file_name:  # (required, range = string)
-        filtered_records:  # (required, range = string)
-        rationale:  # (required, range = string)
 
-    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations)  Content addditions/changes to consider for future iterations.
-      - category:  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
-        consideration:  # (required, range = string)
-        relevant_files:  # (optional, range = string)
+  target_info:
+    infores_id: infores:drug-repurposing-hub
 
-    additional_notes:  # (optional, range = string)
+    edge_type_info:
+      - subject_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+        predicates: 
+          - biolink:affects
+        object_categories:
+          - Gene
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - mechanism_of_action_description
+        ui_explanation: mechanism of mechanism and target information
 
-# Information about the Graph Output by the ingest
-  target_info:  # (required, range = TargetInfo)
-    infores_id:  # (optional, range = UriOrCurie)
-
-    edge_type_info:  # (required, multivalued, range = EdgeType)
-      - subject_categories:  # (required, multivalued, range = UriOrCurie)
-          -
-        predicate:  # (required, range = UriOrCurie)
-        object_categories:  # (required, multivalued, range = UriOrCurie)
-          -
-        qualified_predicate:  # (optional, range = UriOrCurie)
-        biolink_qualifier_1:  # (optional, range = UriOrCurie)
-        biolink_qualifier_1_value_type:  # (optional, range = UriOrCurie)
-        biolink_qualifier_2:  # (optional, range = UriOrCurie)
-        biolink_qualifier_2_value_type:  # (optional, range = UriOrCurie)
-        biolink_qualifier_3:  # (optional, range = UriOrCurie)
-        biolink_qualifier_3_value_type:  # (optional, range = UriIrCurie)
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          -
-        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
-          -
-        edge_properties:  # (optional, multivalued, range = UriOrCurie)
-          -
-        ui_explanation:  # (required, range = string)
-        additional_notes:  # (optional, range = string)
+      - subject_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+        predicates: 
+          - biolink:treats
+          - biolink:ameliorates_condition
+          - biolink:in_preclinical_trials_for
+          - biolink:diagnoses
+          - biolink:disrupts
+        object_categories:
+          - DiseaseOrPhenotypicFeature
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - mechanism_of_action_description
+        ui_explanation: drug indication
 
     node_type_info:  # (required, multivalued, range = NodeType)
-      - node_category:  # (required, range = UriOrCurie)
-        source_identifier_types:  # (required, range = string)
-        node_properties:  # (optional, multivalued, range = UriOrCurie)
-          -
-        additional_notes:  # (optional, range = string)
 
-    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteratiosn of the ingest
-      - category:  # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
-        consideration:  # (required, range = string)
+      - node_category: ChemicalEntity
+        source_identifier_types: 
+          - PubChem
+        node_properties:
+          - biolink:name
+          - biolink:synonym
+          - disease_area
 
-    additional_notes:  # (optional, range = string)
+      - node_category: DiseaseOrPhenotypicFeature
+        source_identifier_types: 
+          - MONDO
+        node_properties:
+          - biolink:name
+
+      - node_category: Gene
+        source_identifier_types: 
+          - HGNC
+        node_properties:
+          - biolink:symbol
+
+      - node_category: MolecularMixture
+        source_identifier_types: 
+          - PubChem
+        node_properties:
+          - biolink:name
+          - biolink:synonym
+          - disease_area
+
+      - node_category: SmallMolecule
+        source_identifier_types: 
+          - PubChem
+        node_properties:
+          - biolink:name
+          - biolink:synonym
+          - disease_area
+
+    future_considerations:
+      - category: qualifiers
+        consideration: map mechanism description text to qualifiers (e.g. "serine protease inhibitor" => "causal_mechanism_qualifier: inhibition"
 
 
-# Information about the how the ingest was specified and performed
-  provenance_info:  # (optional, range = ProvenanceInfo)
-    contributions:  # (optional, multivalued, range = string)
-      -
-    artifacts:  # (optional, multivalued, range = string)
-      -
+  provenance_info:
+    contributions:
+    - "Vlado Dancik - code author, domain expertise"
+    - "Kevin Schaper - code support"
+    - "Evan Morris - code support"
+    - "Sierra Moxon - data modeling, code support"
+    - "Matthew Brush - data modeling, domain expertise"
