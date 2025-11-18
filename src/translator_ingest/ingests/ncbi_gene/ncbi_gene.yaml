@@ -5,6 +5,8 @@ reader:
   delimiter: "\t"
   files:
     - data/gene_info.gz
+  header_delimiter: "\t"
+  header_prefix: "#"
   columns:
     - tax_id
     - GeneID

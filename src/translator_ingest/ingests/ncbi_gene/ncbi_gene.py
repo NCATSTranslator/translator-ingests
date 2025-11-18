@@ -1,10 +1,6 @@
 import logging
-import os
-from typing import Any, Tuple
-from functools import lru_cache
+from typing import Any
 
-import requests
-from dotenv import load_dotenv
 from biolink_model.datamodel.pydanticmodel_v2 import Gene
 from koza.model.graphs import KnowledgeGraph
 import koza
@@ -13,47 +9,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-@lru_cache(maxsize=128)
 def get_taxon_name(taxon_id: str) -> str:
     """
-    Fetch the scientific name for a given NCBI taxon ID via E-utilities.
+    Get the scientific name for human, mouse, and rat taxon IDs.
     """
-    ncbi_info = get_ncbi_access_data()
-    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
-    params = {
-        "db": "taxonomy",
-        "id": taxon_id,
-        "retmode": "json",
-        "api_key": ncbi_info[0],
-        "email": ncbi_info[1]
+    taxon_names = {
+        "9606": "Homo sapiens",
+        "10090": "Mus musculus", 
+        "10116": "Rattus norvegicus"
     }
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-
-    data = response.json()
-    result = data.get("result", {})
-    taxon_info = result.get(taxon_id)
-
-    if taxon_info and "scientificname" in taxon_info:
-        name = taxon_info["scientificname"]
-        return name
-    else:
-        logger.warning(f"No scientific name found for taxon ID {taxon_id}")
-        return ""
-
-
-def get_ncbi_access_data() -> Tuple[str, str]:
-    load_dotenv()
-    api_key = os.getenv("NCBI_API_KEY")
-    mail = os.getenv("NCBI_MAIL")
-
-    if not api_key:
-        logger.debug("No NCBI_API_KEY provided. Will use none.")
-
-    if not mail:
-        logger.debug("No NCBI_MAIL provided. Will use none.")
-
-    return api_key, mail
+    
+    return taxon_names.get(taxon_id, "")
 
 
 def get_latest_version() -> str:
