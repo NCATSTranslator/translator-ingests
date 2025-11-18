@@ -24,7 +24,7 @@ def get_taxon_name(taxon_id: str) -> str:
 
 
 def get_latest_version() -> str:
-    return "2024-12-01"
+    return "latest"
 
 
 @koza.on_data_begin()
