@@ -224,8 +224,8 @@ css = [
 
 [[package]]
 name = "bmt"
-version = "1.4.6.post11.dev0+51fe254"
-source = { git = "https://github.com/biolink/biolink-model-toolkit.git?rev=most-specific-category-method-patch#51fe254754f7f036e96af3a08888bd7c5b079bc0" }
+version = "1.4.6.post12.dev0+d45b569"
+source = { git = "https://github.com/biolink/biolink-model-toolkit.git?rev=master#d45b569c320ef3322441147a5e20a4816d2dc49d" }
 dependencies = [
     { name = "biolink-model" },
     { name = "deprecation" },
@@ -297,11 +297,11 @@ dev = [
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
     { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
-    { name = "bmt", git = "https://github.com/biolink/biolink-model-toolkit.git?rev=most-specific-category-method-patch" },
+    { name = "bmt", git = "https://github.com/biolink/biolink-model-toolkit.git?rev=master" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "hatchling" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir-2" },
+    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
     { name = "robokop-orion", specifier = "==0.1.6" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
 ]
@@ -1649,7 +1649,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests-input-dir-2#b569428efcf488e1c577c18e18be90b377ad654d" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests#caddd55168e5df4a859cb9a4d8d0edcbe2373484" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
