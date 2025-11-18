@@ -29,7 +29,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ResourceRoleEnum,
     AgentTypeEnum,
     KnowledgeLevelEnum,
-    TextMiningStudyResult
+    TextMiningStudyResult,
+    Study
 )
 from koza.model.graphs import KnowledgeGraph
 
@@ -52,8 +53,8 @@ SPO_TO_ASSOCIATION_MAP = {
     ('biolink:NamedThing', 'biolink:affects', 'biolink:Protein'): ChemicalAffectsGeneAssociation,
     ('biolink:NamedThing', 'biolink:affects', 'biolink:SmallMolecule'): ChemicalAffectsGeneAssociation,
     
-    # GeneRegulatesGeneAssociation patterns  
-    ('biolink:Protein', 'biolink:affects', 'biolink:Protein'): GeneRegulatesGeneAssociation,
+    # GeneToGeneAssociation patterns  
+    ('biolink:Protein', 'biolink:affects', 'biolink:Protein'): GeneToGeneAssociation,
     
     # GeneToDiseaseAssociation patterns
     ('biolink:Disease', 'biolink:contributes_to', 'biolink:Protein'): GeneToDiseaseAssociation,
@@ -192,8 +193,8 @@ def extract_tar_gz(tar_path: str, koza_instance: KozaTransform) -> str:
 
 def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, record: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Parse the _attributes JSON string and pass through biolink-prefixed attributes.
-    Logs any attributes that are not found in the Biolink model.
+    Parse the _attributes JSON string and create Study and TextMiningStudyResult objects.
+    Text mining specific attributes are structured as Study objects with TextMiningStudyResult objects.
 
     Args:
         attributes_str: JSON string containing attributes
@@ -201,7 +202,7 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
         record: The edge record being processed (for context in logging)
 
     Returns:
-        Dictionary of mapped attributes with biolink: prefixed keys
+        Dictionary of mapped attributes including has_supporting_studies
     """
     if not attributes_str:
         return {}
@@ -212,7 +213,8 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
             return {}
 
         mapped_attributes = {}
-        supporting_study_results = []
+        study_results = []
+        text_mining_metadata = {}
         unmapped_attributes = []
 
         for attr in attributes:
@@ -229,6 +231,7 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                     # This is a supporting study result with nested attributes
                     study_result_data = {
                         'id': value,  # The study result ID
+                        'category': ['biolink:TextMiningStudyResult']
                     }
 
                     # Process nested attributes (also in TRAPI format)
@@ -279,10 +282,17 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                     try:
                         # Create TextMiningStudyResult instance with text mining-specific fields
                         study_result_obj = TextMiningStudyResult(**study_result_data)
-                        supporting_study_results.append(study_result_obj)
+                        study_results.append(study_result_obj)
                     except Exception as e:
                         koza_instance.log(f"Error creating TextMiningStudyResult: {e}, data: {study_result_data}")
 
+                    continue
+                
+                # Handle text mining metadata attributes that should be grouped into Study objects
+                elif attr_type_id in ['biolink:has_evidence_count', 'biolink:tmkp_confidence_score', 
+                                    'biolink:supporting_document', 'biolink:semmed_agreement_count']:
+                    # Store these in text mining metadata to be processed later
+                    text_mining_metadata[attr_name] = value
                     continue
 
                 # Handle regular attributes
@@ -296,11 +306,6 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                 elif attr_type_id == 'biolink:supporting_data_source':
                     # This is auxiliary info, could be stored but not critical
                     continue
-                elif attr_type_id in ['biolink:has_evidence_count', 'biolink:tmkp_confidence_score', 
-                                    'biolink:supporting_document', 'biolink:supporting_study_result']:
-                    # These attributes are not valid for Association objects, skip them
-                    unmapped_attributes.append(attr_type_id)
-                    continue
                 else:
                     # Store the value with the biolink-prefixed name
                     mapped_attributes[attr_type_id] = value
@@ -309,9 +314,28 @@ def parse_attributes_json(attributes_str: str, koza_instance: KozaTransform, rec
                     if not hasattr(Association, attr_name):
                         unmapped_attributes.append(attr_type_id)
 
-        # Add supporting study results if any
-        if supporting_study_results:
-            mapped_attributes['biolink:has_supporting_study_result'] = supporting_study_results
+        # Create Study object with TextMiningStudyResult objects if we have text mining data
+        if study_results or text_mining_metadata:
+            # Create a study ID based on the edge ID
+            edge_id = record.get('id', 'unknown') if record else 'unknown'
+            study_id = f"text_mining_study_{edge_id}"
+            
+            study_data = {
+                'id': study_id,
+                'category': ['biolink:Study'],
+                'name': f"Text mining study for edge {edge_id}",
+                'description': 'Text mining analysis supporting this association'
+            }
+            
+            # Add study results if any
+            if study_results:
+                study_data['has_study_results'] = study_results
+            
+            try:
+                study_obj = Study(**study_data)
+                mapped_attributes['has_supporting_studies'] = {study_id: study_obj}
+            except Exception as e:
+                koza_instance.log(f"Error creating Study: {e}, data: {study_data}")
 
         # Log unmapped attributes with context
         if unmapped_attributes and record:
@@ -481,13 +505,17 @@ def transform_text_mining_kp(koza_instance: KozaTransform, data: Iterable[Dict])
             # Add mapped attributes using correct biolink space case format
             if mapped_attributes:
                 for key, value in mapped_attributes.items():
-                    # Remove biolink: prefix to get the space case attribute name
-                    attr_name = key.replace('biolink:', '')
-                    # Check against the specific association class, not just base Association
-                    if hasattr(association_class, attr_name):
-                        association_data[attr_name] = value
+                    # Handle has_supporting_studies directly since it doesn't have biolink prefix
+                    if key == 'has_supporting_studies':
+                        association_data[key] = value
                     else:
-                        koza_instance.log(f"{association_class.__name__} does not have attribute: {attr_name}")
+                        # Remove biolink: prefix to get the space case attribute name
+                        attr_name = key.replace('biolink:', '')
+                        # Check against the specific association class, not just base Association
+                        if hasattr(association_class, attr_name):
+                            association_data[attr_name] = value
+                        else:
+                            koza_instance.log(f"{association_class.__name__} does not have attribute: {attr_name}")
 
             # Handle qualified predicates if the association class supports it
             if record.get('qualified_predicate') and hasattr(association_class, 'qualified_predicate'):
