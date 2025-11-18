@@ -99,8 +99,6 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
 
         edge_class = get_edge_class(edge_id, associations=association_list)
 
-        logger.debug(f"edge_class: {edge_class.__name__}")
-
         # Convert many of the ICEES edge attributes into specific edge properties
         supporting_studies: dict[str, Study] = {}
         icees_qualifiers: dict[str,str] = {}
