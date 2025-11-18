@@ -102,37 +102,79 @@ def read_mkg_edges(
             #       let alone, other associated properties?
             # original_attribute_names = attribute['original_attribute_names']
 
+        # TODO: Not really sure how to capture qualifiers yet, if they are available
+        edge_data['qualifiers'] = edge.get('qualifiers',[])
+
         edge_info.append(edge_data)
 
-def prepare_table_data(node_info, edge_info) -> tuple[list[str],list[dict]]:
+CSV_TABLE_HEADERS:list[str] = [
+    "MetaEdge Subject Category",
+    "MetaEdge Predicate",
+    "MetaEdge Object Category",
+    "MetaEdge Qualifiers",
+    "KL",
+    "AT",
+    "Other Edge Attributes",
+    "Subject Node Properties",
+    "Subject Identifier Prefixes",
+    "Object Node Properties",
+    "Object Identifier Prefixes"
+]
+def prepare_table_data(node_info, edge_info) -> list[dict]:
     """
     Prepare data for use in a Translator Phase 2 Ingest Inventory style spreadsheet.
     :param node_info: List of node information.
     :param edge_info: List of edge information.
-    :return: A 2-tuple[list[str],list[dict]] of
-             1) table headers
-             2) merged, flattened and renamed node and edge information, one dictionary per edge, per list row.
+    :return: A list[dict] of merged, flattened and renamed
+             node and edge information, one dictionary per edge, per list row.
     """
-    # Headers:
-    # -----------
-    # MetaEdge Subject Category
-    # MetaEdge Predicate
-    # MetaEdge Object Category
-    # MetaEdge Qualifiers
-    # KL
-    # AT
-    # Other Edge Attributes
-    # Subject Node Properties
-    # Object Node Properties
-    #
-    # Coercion:
-    # ------------
-    # use the first element of some list values: subject cat, pre, obj cat
-    # export KL and AT values
-    # flatten other lists as comma+\n delimited strings: other edge att, sub node prop, obj node prop
-    kg_data:list[dict] = [{"stub": ""}]
-    headers:list[str] = ["stub"]
-    return headers, kg_data
+    kg_nodes: dict = dict()
+    for node in node_info:
+        node_category = node['node_category'].replace("biolink:","")
+        id_prefixes = node.get('source_identifier_types', [])
+        node_properties = node.get('node_properties', [])
+
+        kg_nodes[node_category] = {
+            "id_prefixes": ",".join(id_prefixes),
+            "node_properties": ",".join(node_properties)
+        }
+
+    kg_data: list[dict] = list()
+    for edge in edge_info:
+        try:
+            subject_category = edge['subject'][0]
+            subject_category = subject_category.replace("biolink:", "")
+            subject_metadata: Optional[dict] = kg_nodes.get(subject_category, None)
+            object_category = edge['object'][0]
+            object_category = object_category.replace("biolink:", "")
+            object_metadata: Optional[dict] = kg_nodes.get(object_category, None)
+            # Sanity check: skip edges with missing subject or object nodes
+            if subject_metadata is None or object_metadata is None:
+                continue
+            predicate = edge['predicates'][0].replace("biolink:","")
+            qualifiers = edge.get('qualifiers',[])
+            qualifiers = ",".join(qualifiers) if qualifiers else ""
+            edge_properties = edge.get('edge_properties',[])
+            edge_properties = ",".join(edge_properties) if edge_properties else ""
+        except Exception:
+            continue  # just ignore faulty or missing data
+
+        kg_data.append(
+            {
+                "MetaEdge Subject Category": subject_category,
+                "MetaEdge Predicate": predicate,
+                "MetaEdge Object Category": object_category,
+                "MetaEdge Qualifiers": qualifiers,
+                "KL": edge['knowledge_level'],
+                "AT": edge['agent_type'],
+                "Other Edge Attributes": edge_properties,
+                "Subject Node Properties": subject_metadata['node_properties'],
+                "Subject Identifier Prefixes": subject_metadata['id_prefixes'],
+                "Object Node Properties": object_metadata['node_properties'],
+                "Object Identifier Prefixes": object_metadata['id_prefixes']
+            }
+        )
+    return kg_data
 
 @click.command()
 @click.option(
@@ -277,9 +319,9 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
                 yaml.safe_dump(kg_data, rig, sort_keys=False)
         else:
             # Generate 'csv' output file
-            headers, kg_data = prepare_table_data(node_info, edge_info)
+            kg_data = prepare_table_data(node_info, edge_info)
             with open(kg_data_path, mode="w", newline="", encoding="utf-8") as table_file:
-                writer = csv.DictWriter(table_file, fieldnames=headers)
+                writer = csv.DictWriter(table_file, fieldnames=CSV_TABLE_HEADERS)
                 writer.writeheader()
                 writer.writerows(kg_data)
 
