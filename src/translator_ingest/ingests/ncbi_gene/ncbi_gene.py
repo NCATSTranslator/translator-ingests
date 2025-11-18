@@ -74,7 +74,8 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
         description=record["description"],
         in_taxon=['NCBITaxon:' + record["tax_id"]],
         in_taxon_label=in_taxon_label,
-        provided_by=[INFORES_NCBIGENE]
+        provided_by=[INFORES_NCBIGENE],
+        category=["biolink:Gene"]
     )
 
     # Track genes by taxon and increment created count
