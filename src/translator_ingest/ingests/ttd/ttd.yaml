@@ -1,0 +1,8 @@
+name: ttd
+
+readers:
+  P1_05_parsing:
+    format: json
+    files:
+      - P1_03_drug_mapping.txt
+      - P1_05_indications.txt

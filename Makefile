@@ -1,7 +1,16 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= ctd diseases ebi_gene2phenotype go_cam goa hpoa sider
+SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider
+# Set to any non-empty value to overwrite previously generated files
+OVERWRITE ?=
+# Clear OVERWRITE if explicitly set to "false" or "False"
+ifeq ($(OVERWRITE),false)
+OVERWRITE :=
+endif
+ifeq ($(OVERWRITE),False)
+OVERWRITE :=
+endif
 
 # Include additional makefiles
 include rig.Makefile
@@ -99,7 +108,7 @@ run:
 .PHONY: run-%
 run-%:
 	@echo "Running pipeline for $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $*
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
 
 .PHONY: transform
 transform:
@@ -108,7 +117,7 @@ transform:
 .PHONY: transform-%
 transform-%:
 	@echo "Transform only for $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $* --transform-only
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
 
 .PHONY: validate
 validate: run
@@ -132,7 +141,7 @@ validate-only-%:
 .PHONY: merge
 merge:
 	@echo "Merging sources and building translator_kg...";
-	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES);
+	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
 
 ### Linting, Formatting, and Cleaning ###
 

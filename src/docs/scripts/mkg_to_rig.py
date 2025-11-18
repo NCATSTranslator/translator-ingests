@@ -62,7 +62,7 @@ def main(ingest, mkg, rig, knowledge_level, agent_type):
 
     print(f"Metadata: {mkg_path}")
 
-    # Validate infores format
+    # Default RIG file name, if not given
     if rig is None:
         rig = f"{ingest}_rig.yaml"
 
@@ -70,12 +70,12 @@ def main(ingest, mkg, rig, knowledge_level, agent_type):
 
     print(f"RIG: {rig_path}")
 
-    # Check if RIG file exists
+    # Check if the RIG file exists
     if not path.exists(rig_path):
         click.echo(f"Error: RIG yaml file not found: {rig_path}", err=True)
         sys.exit(1)
 
-    # Check if mkg json file exists
+    # Check if the meta-knowledge graph file exists
     if not path.exists(mkg_path):
         click.echo(f"Error: Meta Knowledge Graph json file not found: {mkg_path}", err=True)
         sys.exit(1)
