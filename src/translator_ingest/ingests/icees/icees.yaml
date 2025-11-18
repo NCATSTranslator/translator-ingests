@@ -3,7 +3,7 @@ name: 'integrated_clinical_and_environmental_exposures_service'
 readers:
   icees_nodes:
     files:
-      - 'icees_nodes.jsonl.gz'
+      - 'nodes.jsonl.gz'
     format: 'jsonl'
     required_properties:
       - 'id'
@@ -12,7 +12,7 @@ readers:
       - 'equivalent_identifiers'  # rename this field to KGX 'xref' list value
   icees_edges:
     files:
-      - 'icees_edges.jsonl.gz'
+      - 'edges.jsonl.gz'
     format: 'jsonl'
     required_properties:
       - 'id'
