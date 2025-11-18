@@ -1,0 +1,8 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+# 30 September 2025: PANTHER RefGenomeOrthologs is adequate to be used instead of All_Orthologs?
+- url: http://data.pantherdb.org/ftp/ortholog/current_release/RefGenomeOrthologs.tar.gz
+  local_name: RefGenomeOrthologs.tar.gz

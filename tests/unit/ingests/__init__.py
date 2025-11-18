@@ -4,7 +4,7 @@ Generic utility code for use in the ingest unit tests.
 The main function of interest is validate_transform_result(), which is used to test
 the output of a single @koza.transform_record() decorated method invocation, looking for the
 expected content in node and edge slots, with test expectations defined by constraints
-'expected_nodes', 'expected_edge', 'node_test_slots' and 'association_test_slots'
+'expected_nodes', 'expected_edge', expected_no_of_edges, 'node_test_slots' and 'association_test_slots'
 """
 
 import pytest
@@ -97,7 +97,11 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
-def _match_edge(returned_edge: dict, expected_edge: dict, target_slots: list[str]) -> Optional[str]:
+def _match_edge(
+        returned_edge: dict,
+        expected_edge: dict,
+        target_slots: tuple[str,...]
+) -> Optional[str]:
     returned_sources: Optional[list[dict[str, str]]]
     # We only bother with a comparison if the slot is included in both the
     # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
@@ -150,7 +154,9 @@ def _match_edge(returned_edge: dict, expected_edge: dict, target_slots: list[str
 
 
 def _found_edge(
-    returned_edge: dict, expected_edge_list: list[dict], target_slots: list[str]
+    returned_edge: dict,
+        expected_edge_list: list[dict],
+        target_slots: tuple[str,...]
 ) -> tuple[bool, Optional[list[str]]]:
     error_messages: list[str] = list()
     for expected_edge in expected_edge_list:
@@ -162,7 +168,7 @@ def _found_edge(
         # We track returned error messages indicating possible sources
         # missed edge expectations, but the caller will need to decide
         # for themselves exactly which specific expectation failed.
-        # To guide assessment, the full list of error messages are
+        # To guide assessment, the full list of error messages is
         # (only) returned when 'returned_edge' matches no expected edge.
         error_messages.append(error_msg)
 
@@ -174,8 +180,8 @@ def validate_transform_result(
     expected_nodes: Optional[list],
     expected_edges: Optional[dict] | list[dict],
     expected_no_of_edges: int = 1,
-    node_test_slots: list[str] = "id",
-    association_test_slots: Optional[list] = None,
+    node_test_slots: Optional[tuple[str,...]] = ("id",),
+    edge_test_slots: Optional[tuple[str,...]] = None,
 ):
     """
     A generic method for testing the result of a single
@@ -191,8 +197,9 @@ def validate_transform_result(
                            The expected slot values in the dictionary can be scalars
                            or a list of dictionaries that are edge sources to match.
     :param expected_no_of_edges: The expected number of association edges returned (default: 1).
-    :param node_test_slots: String list of node slots to be tested (default: 'id' - only the node 'id' slot is tested)
-    :param association_test_slots: String list of edge slots to be tested (default: None - no edge slots are tested)
+    :param node_test_slots: String list of node slots to be tested (default: 'id' - only
+                            the node 'id' slot is tested; set to 'None' to skip node slot testing)
+    :param edge_test_slots: String list of edge slots to be tested (default: None - no edge slots are tested)
     :return: None
     :raises: AssertionError condition with a candidate list of possible errors, if result expectations were not met
     """
@@ -200,24 +207,23 @@ def validate_transform_result(
         if expected_nodes is None and expected_edges is None:
             return  # we're good! No result was expected.
         else:
-            assert False, "Unexpected null result from **`@koza.transform_record`** decorated method call!"
-
-    nodes: Iterable[NamedThing] = result.nodes if result.nodes is not None else []
-    edges: Iterable[Association] = result.edges if result.edges is not None else []
-
-    # Convert the 'nodes' Iterable NamedThing content into
-    # a list of Python dictionaries by comprehension
-    node: NamedThing
-    transformed_nodes: list[dict[str, Any]] = [dict(node) for node in nodes]
-
-    if expected_nodes is None:
-        # Check for empty 'transformed_nodes' expectations
-        assert (
-            not transformed_nodes
-        ), f"unexpected non-empty set of nodes: {','.join([str(dict(node)) for node in transformed_nodes])}!"
+            assert False, "Unexpected null result from the **`@koza.transform_record`** decorated method call!"
     else:
+        # but one or the other of nodes and edges could still be empty, but the test would go on
+        nodes: Iterable[NamedThing] = result.nodes if result.nodes is not None else []
+        assert (nodes and expected_nodes is not None) or (not nodes and expected_nodes is None), \
+            "Unexpected number of nodes returned by record transformation!"
+        edges: Iterable[Association] = result.edges if result.edges is not None else []
+        assert (edges and expected_edges is not None) or (not edges and expected_edges is None), \
+            "Unexpected number of edges returned by record transformation!"
 
-        assert transformed_nodes, "Expected a non-empty set of nodes to be returned!"
+    # if we get this far, we're only interested in testing a non-empty list of nodes
+    if nodes and node_test_slots is not None:
+
+        # Convert the 'nodes' Iterable NamedThing content into
+        # a list of Python dictionaries by comprehension
+        node: NamedThing
+        transformed_nodes: list[dict[str, Any]] = [dict(node) for node in nodes]
 
         # if nodes are returned, then are they the expected ones?
         # for uniformity in checking details, we convert the
@@ -248,32 +254,27 @@ def validate_transform_result(
                     f" not returned in transformed list of nodes: '{transformed_nodes}' "
                 )
 
-    if association_test_slots is not None:
-        # Convert the 'edges' Iterable content
+    # if we get this far, we're only interested in testing a non-empty list of edges
+    if edges and edge_test_slots is not None:
+
+        # Convert the 'edges' Iterable Association content
         # into a list by comprehension
         transformed_edges = [dict(edge) for edge in edges]
 
-        if expected_edges is None:
-            # Check for empty 'transformed_edges' expectations
-            assert not transformed_edges, (
-                "Unexpected non-empty result list of ingest transform edges: "
-                + f"'{','.join(str(transformed_edges)[0:20])}'..."
-            )
+        # Check contents of edge(s) returned.
+        # Only 'expected_no_of_edges' is expected to be returned?
+        assert len(transformed_edges) == expected_no_of_edges
+
+        expected_edge_list: list[dict] = list()
+        if isinstance(expected_edges, list):
+            # Blissfully assume that a list of edge slot=value dictionaries was specified
+            expected_edge_list.extend(expected_edges)
         else:
-            # Check contents of edge(s) returned.
-            # Only 'expected_no_of_edges' are expected to be returned?
-            assert len(transformed_edges) == expected_no_of_edges
+            # Blissfully assume just a single edge slot=value dictionary was specified
+            expected_edge_list.append(expected_edges)
 
-            expected_edge_list: list[dict] = list()
-            if isinstance(expected_edges, list):
-                # Blissfully assume that a list of edge slot=value dictionaries was specified
-                expected_edge_list.extend(expected_edges)
-            else:
-                # Blissfully assume just a single edge slot=value dictionary was specified
-                expected_edge_list.append(expected_edges)
-
-            for returned_edge in transformed_edges:
-                found: bool
-                error_messages: Optional[list[str]]
-                found, error_messages = _found_edge(returned_edge, expected_edge_list, association_test_slots)
-                assert found, "\n".join(error_messages)
+        for returned_edge in transformed_edges:
+            found: bool
+            error_messages: Optional[list[str]]
+            found, error_messages = _found_edge(returned_edge, expected_edge_list, edge_test_slots)
+            assert found, "\n".join(error_messages)
