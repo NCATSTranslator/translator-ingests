@@ -136,7 +136,7 @@ def transform(pipeline_metadata: PipelineMetadata):
                       data=transform_metadata)
 
 
-def is_normalization_complete(pipeline_metadata: PipelineMetadata):
+def is_normalization_complete(pipeline_metadata: PipelineMetadata, nodes_only: bool = False):
     norm_nodes, norm_edges = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
@@ -146,16 +146,30 @@ def is_normalization_complete(pipeline_metadata: PipelineMetadata):
     norm_map = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
-    return norm_nodes.exists() and norm_edges.exists() and norm_metadata.exists() and norm_map.exists()
+    
+    if nodes_only:
+        # For nodes-only ingests, we don't require the edges file to exist
+        return norm_nodes.exists() and norm_metadata.exists() and norm_map.exists()
+    else:
+        return norm_nodes.exists() and norm_edges.exists() and norm_metadata.exists() and norm_map.exists()
 
 
-def normalize(pipeline_metadata: PipelineMetadata):
+def normalize(pipeline_metadata: PipelineMetadata, nodes_only: bool = False):
     logger.info(f"Starting normalization for {pipeline_metadata.source}...")
+    if nodes_only:
+        logger.info(f"Running in nodes-only mode for {pipeline_metadata.source}")
+    
     normalization_output_dir = get_normalization_directory(pipeline_metadata=pipeline_metadata)
     normalization_output_dir.mkdir(exist_ok=True)
     input_nodes_path, input_edges_path = get_versioned_file_paths(
         file_type=IngestFileType.TRANSFORM_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
+    
+    # For nodes-only mode, skip edge processing if no edges file exists
+    if nodes_only and (input_edges_path is None or not Path(input_edges_path).exists()):
+        logger.info(f"Skipping edge processing for nodes-only ingest {pipeline_metadata.source}")
+        input_edges_path = None
+    
     norm_node_path, norm_edge_path = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
@@ -171,16 +185,41 @@ def normalize(pipeline_metadata: PipelineMetadata):
     predicate_map_path = get_versioned_file_paths(
         file_type=IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
-    normalize_kgx_files(
-        input_nodes_file_path=str(input_nodes_path),
-        input_edges_file_path=str(input_edges_path),
-        nodes_output_file_path=str(norm_node_path),
-        node_norm_map_file_path=str(node_norm_map_path),
-        node_norm_failures_file_path=str(norm_failures_path),
-        edges_output_file_path=str(norm_edge_path),
-        predicate_map_file_path=str(predicate_map_path),
-        normalization_metadata_file_path=str(norm_metadata_path),
-    )
+    
+    # Call the modified normalize_kgx_files function
+    if nodes_only and input_edges_path is None:
+        # For true nodes-only processing, we need to modify the normalize function
+        # For now, create an empty edges file to avoid the error
+        import tempfile
+        import os
+        temp_edges_file = tempfile.NamedTemporaryFile(mode='w', suffix='_edges.jsonl', delete=False)
+        temp_edges_file.close()
+        
+        try:
+            normalize_kgx_files(
+                input_nodes_file_path=str(input_nodes_path),
+                input_edges_file_path=temp_edges_file.name,
+                nodes_output_file_path=str(norm_node_path),
+                node_norm_map_file_path=str(node_norm_map_path),
+                node_norm_failures_file_path=str(norm_failures_path),
+                edges_output_file_path=str(norm_edge_path),
+                predicate_map_file_path=str(predicate_map_path),
+                normalization_metadata_file_path=str(norm_metadata_path),
+            )
+        finally:
+            # Clean up the temporary file
+            os.unlink(temp_edges_file.name)
+    else:
+        normalize_kgx_files(
+            input_nodes_file_path=str(input_nodes_path),
+            input_edges_file_path=str(input_edges_path),
+            nodes_output_file_path=str(norm_node_path),
+            node_norm_map_file_path=str(node_norm_map_path),
+            node_norm_failures_file_path=str(norm_failures_path),
+            edges_output_file_path=str(norm_edge_path),
+            predicate_map_file_path=str(predicate_map_path),
+            normalization_metadata_file_path=str(norm_metadata_path),
+        )
     logger.info(f"Normalization complete for {pipeline_metadata.source}.")
 
 
@@ -191,7 +230,7 @@ def is_validation_complete(pipeline_metadata: PipelineMetadata):
     return validation_report_file_path.exists()
 
 
-def validate(pipeline_metadata: PipelineMetadata):
+def validate(pipeline_metadata: PipelineMetadata, nodes_only: bool = False):
     logger.info(f"Starting validation for {pipeline_metadata.source}... biolink: {pipeline_metadata.biolink_version}")
     nodes_file, edges_file = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
@@ -335,7 +374,7 @@ def generate_release(pipeline_metadata: PipelineMetadata):
                       data=asdict(pipeline_metadata))
 
 
-def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
+def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False, nodes_only: bool = False):
     source_version = get_latest_source_version(source)
     pipeline_metadata: PipelineMetadata = PipelineMetadata(source, source_version=source_version)
     Path.mkdir(get_output_directory(pipeline_metadata), parents=True, exist_ok=True)
@@ -358,13 +397,13 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Normalize the post-transform KGX files
     pipeline_metadata.node_norm_version = get_current_node_norm_version()
-    if is_normalization_complete(pipeline_metadata) and not overwrite:
+    if is_normalization_complete(pipeline_metadata, nodes_only=nodes_only) and not overwrite:
         logger.info(
             f"Normalization already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
             f"normalization: {pipeline_metadata.node_norm_version}"
         )
     else:
-        normalize(pipeline_metadata)
+        normalize(pipeline_metadata, nodes_only=nodes_only)
 
     # Validate the post-normalization files
     # First retrieve and set the current biolink version to make sure validation is run using that version
@@ -373,7 +412,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         logger.info(f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
                     f"biolink: {pipeline_metadata.biolink_version}")
     else:
-        validate(pipeline_metadata)
+        validate(pipeline_metadata, nodes_only=nodes_only)
 
     passed = get_validation_result(pipeline_metadata)
     if not passed:
@@ -399,8 +438,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 @click.argument("source", type=str)
 @click.option("--transform-only", is_flag=True, help="Only perform the transformation.")
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
-def main(source, transform_only, overwrite):
-    run_pipeline(source, transform_only=transform_only, overwrite=overwrite)
+@click.option("--nodes-only", is_flag=True, help="Process as nodes-only ingest (skip edge file processing).")
+def main(source, transform_only, overwrite, nodes_only):
+    run_pipeline(source, transform_only=transform_only, overwrite=overwrite, nodes_only=nodes_only)
 
 
 if __name__ == "__main__":

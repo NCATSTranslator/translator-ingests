@@ -6,9 +6,6 @@ from koza.model.graphs import KnowledgeGraph
 import koza
 from translator_ingest.util.biolink import INFORES_NCBIGENE
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 
 def get_taxon_name(taxon_id: str) -> str:
     """
