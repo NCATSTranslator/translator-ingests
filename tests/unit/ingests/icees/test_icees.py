@@ -7,7 +7,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTy
 import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
-from rdflib.plugins.parsers.rdfxml import CORE_SYNTAX_TERMS
 
 from translator_ingest.ingests.icees.icees import (
     transform_icees_node,
@@ -318,6 +317,6 @@ def test_transform_icees_edges(
         result=transform_icees_edge(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
-        association_test_slots=CORE_ASSOCIATION_TEST_SLOTS+qualifiers,
+        edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS+qualifiers,
     )
     on_icees_edge_data_end(mock_koza_transform)
