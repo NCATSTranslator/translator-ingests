@@ -15,7 +15,6 @@ readers:
       - 'edges.jsonl.gz'
     format: 'jsonl'
     required_properties:
-      - 'id'
       - 'subject'
       - 'predicate'
       - 'object'
