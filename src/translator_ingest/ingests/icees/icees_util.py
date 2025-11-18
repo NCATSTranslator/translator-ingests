@@ -1,15 +1,10 @@
 """
 This file contains utility functions for ICEES data processing
 """
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    Study,
-    IceesStudyResult
-)
-import koza
+from biolink_model.datamodel.pydanticmodel_v2 import Study, IceesStudyResult
 
 #
 # An example of the TRAPI-like attribute data structure for a Study Result.
-
 # {
 #     "attribute_type_id": "icees_cohort_identifier",
 #     "value": "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22",
@@ -51,13 +46,22 @@ import koza
 #         }
 #     ]
 # }
-# The embedded 'attributes' of this ICEES study result data
-# are the IceesStudyResult to be captured here
+
 def get_icees_supporting_study(
         edge_id: str,
         study_id: str,
         result: list[dict[str, str]]
 )->Study:
+    """
+    The embedded 'attributes' of ICEES study result data
+    are wrapped as instances of IceesStudyResult, then
+    embedded in its Study object, which is returned.
+
+    :param edge_id: String identifier for the edge
+    :param study_id: String identifier for the study
+    :param result: List of Study Results consisting of slot-indexed values, like result statistics.
+    :return:
+    """
     result_data = {attribute['attribute_type_id']: attribute['value'] for attribute in result}
     result = IceesStudyResult(id=edge_id, **result_data)
     return Study(
