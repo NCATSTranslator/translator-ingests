@@ -31,8 +31,7 @@ NODE_TEST_SLOTS = (
     "id",
     "name",
     "category",
-    "equivalent_identifiers",
-    "has_attribute_type"
+    "equivalent_identifiers"
 )
 
 # list of slots whose values are
@@ -164,9 +163,6 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "equivalent_identifiers": [
                         "UMLS:C3836535"
                     ],
-                    # special case in which we also have an EnvironmentalExposure
-                    # 'has_attribute_type' slot which is set to the node's identifier (a temporary hack!)
-                    "has_attribute_type": "UMLS:C3836535"
                 }
             ],
             # Captured edge contents - n/a

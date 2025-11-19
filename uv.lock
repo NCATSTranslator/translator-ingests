@@ -163,8 +163,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.4.post21.dev0+cff41d1e0"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#cff41d1e070962abef3c599cb7b8770484bcf000" }
+version = "4.3.4.post47.dev0+b06ff61ba"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#b06ff61baea44722944b151dd45a1295ef189b84" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
