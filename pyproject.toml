@@ -16,7 +16,7 @@ dependencies = [
     "deepdiff>=8.6.1",
     "kghub-downloader>=0.4.2",
     "koza",
-    "robokop-orion==0.1.9"
+    "robokop-orion==0.1.10"
 ]
 
 [project.scripts]
