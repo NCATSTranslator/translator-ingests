@@ -333,7 +333,7 @@ def is_latest_release_current(pipeline_metadata: PipelineMetadata):
     return pipeline_metadata.build_version == latest_release_metadata.build_version
 
 
-def generate_latest_release(pipeline_metadata: PipelineMetadata):
+def generate_latest_release_metadata(pipeline_metadata: PipelineMetadata):
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
                 f"release: {pipeline_metadata.release_version}")
     latest_release_metadata = {
@@ -403,10 +403,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         generate_graph_metadata(pipeline_metadata)
 
     if is_latest_release_current(pipeline_metadata) and not overwrite:
-        logger.info(f"Latest release already up to date for {pipeline_metadata.source}, "
+        logger.info(f"Latest release metadata already up to date for {pipeline_metadata.source}, "
                     f"build: {pipeline_metadata.build_version}")
     else:
-        generate_latest_release(pipeline_metadata)
+        generate_latest_release_metadata(pipeline_metadata)
 
 
 @click.command()
