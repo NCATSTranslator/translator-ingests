@@ -5,6 +5,7 @@ name: Therapeutic Target Database (TTD) Reference Ingest Guide
 source_info:
   infores_id: infores:ttd
   name: Therapeutic Target Database (TTD)
+  description: "TTD is a database providing information about the known and explored therapeutic protein and nucleic acid targets, the targeted disease, pathway information and the corresponding drugs directed at each of these targets."
   citations:
     - "2024: https://doi.org/10.1093/nar/gkad751"
     - "2022: https://doi.org/10.1093/nar/gkab953"
@@ -31,7 +32,7 @@ ingest_info:
     - primary_knowledge_provider
   utility: "TTD provides associations for drugs/chemicals, therapeutic targets (mostly proteins), and diseases that appear to be manually curated from literature review. This literature review includes information that may not be covered by other resources, including: drug industry reports, drug pipeline reports of hundreds of companies, patents from multiple countries, and manual review of Pubmed literature searches. This associations could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
   scope: "This ingest covers the drug-disease associations and the protein-drug associations from one file. For more details on the data content and decision-making on what files to ingest, see Colleen Xu's internal document and https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30."
-  
+
   relevant_files:
     - file_name: "P1-05-Drug_disease.txt"
       location: "https://db.idrblab.net/ttd/full-data-download"
@@ -153,7 +154,7 @@ target_info:
       ## qualifiers depends on mode of action (some don't have any, ~45 possible values)
       qualifiers:
         - property: biolink:qualified_predicate    ## if other qualifiers exist, will always assign this
-          value_enumeration: 
+          value_enumeration:
             - "biolink:causes"
         - property: biolink:object_aspect_qualifier
           value_range:        ## will likely always be 'activity' or 'activity_or_abundance'
