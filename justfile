@@ -19,7 +19,7 @@ shebang := if os() == 'windows' {
 }
 
 rootdir :=`pwd`
-sources := "ctd go_cam goa"
+sources := "alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider"
 
 ### Help ###
 
@@ -93,6 +93,8 @@ install: _python
 # Run all tests
 test:
     {{run}} python -m pytest tests
+    {{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+    {{run}} ruff check
 
 ### Running ###
 
@@ -114,7 +116,7 @@ normalize: transform
 validate: normalize
 	for source in {{sources}}; do \
 		echo "Validating $source..."; \
-		{{run}} python src/translator_ingest/util/validate_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
+		{{run}} python src/translator_ingest/util/validate_biolink_kgx.py --files {{rootdir}}/data/$source/*_nodes.jsonl {{rootdir}}/data/$source/*_edges.jsonl; \
 	done
 
 run: validate
@@ -142,6 +144,7 @@ format:
 	{{run}} black -l 120 src tests
 
 spell_fix:
-	{{run}} codespell --skip="./data/*" --ignore-words=.codespellignore --write-changes --interactive=3
+	{{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
 
 import "project.justfile"
+import "rig.justfile"

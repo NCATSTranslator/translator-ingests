@@ -11,7 +11,6 @@ https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 
 from loguru import logger
 from typing import Optional, Any, Iterable
-from os.path import join, abspath
 
 import duckdb
 
@@ -28,16 +27,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     CorrelatedGeneToDiseaseAssociation,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum,
 )
 
-from translator_ingest import PRIMARY_DATA_PATH
 from translator_ingest.util.github import GitHubReleases
-from translator_ingest.util.biolink import (
-    INFORES_HPOA,
-    entity_id,
-    build_association_knowledge_sources
-)
+from translator_ingest.util.biolink import INFORES_HPOA, entity_id, build_association_knowledge_sources
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_hpoa_association_sources,
@@ -47,7 +41,7 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     Frequency,
     phenotype_frequency_to_hpo_term,
     get_hpoa_genetic_predicate,
-    hpo_to_mode_of_inheritance
+    hpo_to_mode_of_inheritance,
 )
 
 
@@ -82,10 +76,11 @@ This parser only processes out "phenotypic anomaly" (aspect == 'P')
 and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
+
+
 @koza.transform_record(tag="disease_to_phenotype")
 def transform_record_disease_to_phenotype(
-        koza_transform: koza.KozaTransform,
-        record: dict[str, Any]
+    koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
     Transform a 'phenotype.hpoa' data entry into a
@@ -93,18 +88,16 @@ def transform_record_disease_to_phenotype(
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
-    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
     try:
         ## Subject: Disease
-
-        disease_id = record["database_id"]
+        disease_id = record["database_id"].replace("ORPHA:", "Orphanet:")  # match `Orphanet` as used in Mondo SSSOM
         disease_name = record["disease_name"]
         disease: Disease = Disease(
             id=disease_id,
             name=disease_name,
-            provided_by=get_hpoa_association_sources(source_id=disease_id, as_list=True),
-            **{}
+            **{},
         )
 
         ## Object: PhenotypicFeature defined by an HPO term
@@ -132,7 +125,7 @@ def transform_record_disease_to_phenotype(
             ### male -> PATO:0000384
             sex: Optional[str] = record["sex"] if record["sex"] else None  # may be translated by local table
             sex_qualifier = sex_to_pato[sex_format[sex]] if sex and sex in sex_format else None
-            #sex_qualifier = sex_format[sex] if sex in sex_format else None
+            # sex_qualifier = sex_format[sex] if sex in sex_format else None
 
             ## Onset
             onset = record["onset"] if record["onset"] else None
@@ -164,7 +157,7 @@ def transform_record_disease_to_phenotype(
             # Association/Edge
             association = DiseaseToPhenotypicFeatureAssociation(
                 id=entity_id(),
-                subject=disease_id.replace("ORPHA:", "Orphanet:"),  # match `Orphanet` as used in Mondo SSSOM
+                subject=disease_id,
                 predicate="biolink:has_phenotype",
                 negated=negated,
                 object=hpo_id,
@@ -180,7 +173,7 @@ def transform_record_disease_to_phenotype(
                 sources=get_hpoa_association_sources(disease_id),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                **{}
+                **{},
             )
             return KnowledgeGraph(nodes=[disease, phenotype], edges=[association])
 
@@ -196,7 +189,8 @@ def transform_record_disease_to_phenotype(
 
             else:
                 raise RuntimeWarning(
-                    f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?")
+                    f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?"
+                )
 
             # ...only the disease node - annotated with its inheritance - is returned
             return KnowledgeGraph(nodes=[disease])
@@ -207,8 +201,9 @@ def transform_record_disease_to_phenotype(
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_record_disease_to_phenotype():  - record: '{str(record)}' " +
-            f"with {type(e)} exception: "+str(e)
+            f"transform_record_disease_to_phenotype():  - record: '{str(record)}' "
+            + f"with {type(e)} exception: "
+            + str(e)
         )
         return None
 
@@ -234,8 +229,7 @@ def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
 
 @koza.transform_record(tag="gene_to_disease")
 def transform_record_gene_to_disease(
-        koza_transform: koza.KozaTransform,
-        record: dict[str, Any]
+    koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
     Transform an HPOA 'genes_to_disease.txt' data entry into a
@@ -243,11 +237,11 @@ def transform_record_gene_to_disease(
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
-    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
     try:
         gene_id = record["ncbi_gene_id"]
-        gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
+        gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
         predicate = get_hpoa_genetic_predicate(record["association_type"])
 
@@ -267,7 +261,7 @@ def transform_record_gene_to_disease(
             sources=get_hpoa_association_sources(record["source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
-            **{}
+            **{},
         )
 
         return KnowledgeGraph(nodes=[gene, disease], edges=[association])
@@ -275,8 +269,7 @@ def transform_record_gene_to_disease(
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_record_gene_to_disease() - record: '{str(record)}' " +
-            f"with {type(e)} exception: "+str(e)
+            f"transform_record_gene_to_disease() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
         )
         return None
 
@@ -302,8 +295,7 @@ def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
 
 @koza.prepare_data(tag="gene_to_phenotype")
 def prepare_data_gene_to_phenotype(
-        koza_transform: koza.KozaTransform,
-        data: Iterable[dict[str, Any]]
+    koza_transform: koza.KozaTransform, data: Iterable[dict[str, Any]]
 ) -> Iterable[dict[str, Any]] | None:
     """
     For HPOA, we need to preprocess data to join data
@@ -312,21 +304,17 @@ def prepare_data_gene_to_phenotype(
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
     """
-    phenotype_file_path = koza_transform.extra_fields.get(
-        "HPOA_PHENOTYPE_FILE",
-        abspath(join(PRIMARY_DATA_PATH, "hpoa", "phenotype.hpoa"))
-    )
-    genes_to_phenotype_file_path = koza_transform.extra_fields.get(
-        "HPOA_GENES_TO_PHENOTYPE_FILE",
-        abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_phenotype.txt"))
-    )
-    genes_to_disease_file_path = koza_transform.extra_fields.get(
-        "HPOA_GENES_TO_DISEASE_FILE",
-        abspath(join(PRIMARY_DATA_PATH, "hpoa", "genes_to_disease.txt"))
-    )
+    hpoa_data_path = koza_transform.input_files_dir
+    if not hpoa_data_path:
+        raise IOError("Koza transform input_files_dir was not configured, source data path could not be resolved.")
+    phenotype_file_path = hpoa_data_path / "phenotype.hpoa"
+    genes_to_phenotype_file_path = hpoa_data_path / "genes_to_phenotype.txt"
+    genes_to_disease_file_path = hpoa_data_path / "genes_to_disease.txt"
 
     db = duckdb.connect(":memory:", read_only=False)
-    return db.execute(f"""
+    return (
+        db.execute(
+            f"""
     with
       hpoa as (select * from read_csv('{phenotype_file_path}')),
       g2p as (select * from read_csv('{genes_to_phenotype_file_path}')),
@@ -351,13 +339,16 @@ def prepare_data_gene_to_phenotype(
          left outer join g2d_grouped on g2p.ncbi_gene_id = g2d_grouped.ncbi_gene_id_clean
                      and g2p.disease_id = g2d_grouped.disease_id
     group by all
-    """).fetchdf().to_dict('records')
+    """
+        )
+        .fetchdf()
+        .to_dict("records")
+    )
 
 
 @koza.transform_record(tag="gene_to_phenotype")
 def transform_record_gene_to_phenotype(
-        koza_transform: koza.KozaTransform,
-        record: dict[str, Any]
+    koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
     Transform a (preprocessed) genes_to_disease.txt data entry into a
@@ -365,12 +356,12 @@ def transform_record_gene_to_phenotype(
 
     :param koza_transform: KozaTransform object (unused in this implementation)
     :param record: Dict contents of a single input data record
-    :return: 2-Tuple of Iterable instances for generated node (NamedThing) and edge (Association)
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
 
     try:
         gene_id = "NCBIGene:" + str(record["ncbi_gene_id"])
-        gene = Gene(id=gene_id, name=record["gene_symbol"],**{})
+        gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
         hpo_id = record["hpo_id"]
         assert hpo_id, "HPOA Disease to Phenotype has missing HP ontology ('HPO_ID') field identifier?"
@@ -414,7 +405,7 @@ def transform_record_gene_to_phenotype(
             sources=build_association_knowledge_sources(primary=INFORES_HPOA),
             knowledge_level=KnowledgeLevelEnum.logical_entailment,
             agent_type=AgentTypeEnum.automated_agent,
-            **{}
+            **{},
         )
 
         return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
@@ -422,7 +413,6 @@ def transform_record_gene_to_phenotype(
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_record_gene_to_phenotype() - record: '{str(record)}' " +
-            f"with {type(e)} exception: "+str(e)
+            f"transform_record_gene_to_phenotype() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
         )
         return None

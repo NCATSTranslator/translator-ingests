@@ -1,0 +1,91 @@
+name: "SIDER Reference Ingest Guide"
+
+# Information about the Source of the ingest
+source_info:
+  infores_id: infores:sider
+  description: >-
+    SIDER contains information on marketed drugs and their recorded adverse drug reactions.
+    The information is extracted from public documents and package inserts. The current version
+    of the database contains data on 1,430 drugs and 5,868 adverse drug reactions.
+  citations:
+    - "Kuhn M, Letunic I, Jensen LJ, Bork P. The SIDER database of drugs and side effects. Nucleic Acids Research. 2016;44(D1):D1075-9. DOI: 10.1093/nar/gkv1075"
+  terms_of_use_info: "Creative Commons Attribution-Noncommercial-Share Alike 4.0 License"
+  data_access_locations:
+    - "http://sideeffects.embl.de/download/"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: "SIDER version 4.1 released in 2015. Updates are irregular and infrequent. Database maintenance is limited."
+  additional_notes: "It may not include the most recent drug approvals or complete adverse event profiles."
+
+
+# Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "Provides drug-adverse drug reaction associations for pharmacovigilance, drug safety analysis, and adverse drug reaction prediction studies."
+  scope: "Covers marketed drugs and their documented adverse drug reactions as found in public documents and package inserts."
+
+  relevant_files:
+    - file_name: meddra_all_label_se.tsv.gz
+      location: "http://sideeffects.embl.de/media/download/meddra_all_label_se.tsv.gz"
+      description: "Side effects specifically found on drug labels"
+    - file_name: drug_names.tsv
+      location: "http://sideeffects.embl.de/media/download/drug_names.tsv"
+      description: "Drug identifiers and common names mapping STITCH IDs to drug names"
+    - file_name: meddra.tsv
+      location: "http://sideeffects.embl.de/media/download/meddra.tsv"
+      description: "MedDRA terms and hierarchy information"
+
+
+  included_content:
+    - file_name: meddra_all_label_se.tsv.gz
+      included_records: "All records (~63,473 label-specific side effect associations)"
+      fields_used: "STITCH_compound_id_flat, UMLS_concept_id_label, MedDRA_concept_type, UMLS_concept_id_MedDRA, side_effect_name"
+
+  filtered_content:
+    - file_name: meddra_all_label_se.tsv.gz
+      filtered_records: include only MedDRA_concept_type = PT (preferred term)
+      rationale: >-
+        from http://sideeffects.embl.de/media/download/README:
+        There is at least one PT for every LLT, but sometimes the PT is the same as the LLT. LLTs are sometimes too detailed, 
+        and therefore you might want to filter for PT."
+
+
+# Information about the Graph Output by the ingest
+target_info:  # (required, range = TargetInfo)
+  infores_id: "infores:translator-sider-kgx"
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicate: biolink:has_side_effect
+      object_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Drug X causes adverse drug reaction Y"
+
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types: PUBCHEM.COMPOUND
+      node_properties:
+        - biolink:name
+    - node_category: biolink:DiseaseOrPhenotypicFeature
+      source_identifier_types: UMLS
+      node_properties:
+        - biolink:name
+
+
+# Information about the how the ingest was specified and performed
+provenance_info:
+  contributions:
+  - "Vlado Dancik - code author, domain expertise"
+  - "Kevin Schaper - code support"
+  - "Evan Morris - code support"
+  - "Sierra Moxon - data modeling, code support"
+  - "Matthew Brush - data modeling, domain expertise"
+
