@@ -4,11 +4,13 @@ import hashlib
 import logging
 import datetime
 import tarfile
+import shutil
+import subprocess
 from dataclasses import asdict
 from pathlib import Path
 
-from orion.kgx_file_merger import KGXFileMerger
-from orion.kgxmodel import GraphSpec, GraphSource
+from orion.kgx_file_merger import KGXFileMerger #, DONT_MERGE
+from orion.kgxmodel import GraphSpec, SubGraphSource
 from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
@@ -56,18 +58,40 @@ def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
     edges_file = release_version_dir / "edges.jsonl"
     metadata_file = release_version_dir / "graph-metadata.json"
 
-    # TODO Stephen Ramsey was right -
-    #  If we had a predictable deployment environment we could make this a lot faster using a subprocess call
-    #  subprocess.run(['tar', '-I', 'pixz', '-cf', ...
-    #  This is painfully slow for large KGs so we may want to implement a check to see if an environment could support
-    #  it, like shutil.which('pixz'): and then use the faster way if possible, but some machines might not even have tar
-    with tarfile.open(tar_path, 'w:xz') as tar:
-        if nodes_file.exists():
-            tar.add(nodes_file, arcname=nodes_file.name)
-        if edges_file.exists():
-            tar.add(edges_file, arcname=edges_file.name)
-        if metadata_file.exists():
-            tar.add(metadata_file, arcname=metadata_file.name)
+    # Check if tar is available for faster compression
+    has_tar = shutil.which('tar') is not None
+    if has_tar:
+        try:
+            # Build the command with files that exist
+            cmd = ['tar', 'cfJ', str(tar_path)]
+            files_to_add = []
+            if nodes_file.exists():
+                files_to_add.append(nodes_file.name)
+            if edges_file.exists():
+                files_to_add.append(edges_file.name)
+            if metadata_file.exists():
+                files_to_add.append(metadata_file.name)
+            cmd.extend(files_to_add)
+            logger.info(f"Using subprocess for faster compression: {" ".join(cmd)})")
+            subprocess.run(cmd, check=True, cwd=str(release_version_dir))
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            logger.warning(f"Fast compression failed: {e}. Falling back to Python tarfile...")
+            # Remove partial tar file if it was created
+            if tar_path.exists():
+                tar_path.unlink()
+            has_tar = False  # Trigger fallback
+
+    if not has_tar:
+        logger.info(f"Using Python tarfile for compression...")
+        with tarfile.open(tar_path, 'w:xz') as tar:
+            if nodes_file.exists():
+                tar.add(nodes_file, arcname=nodes_file.name)
+            if edges_file.exists():
+                tar.add(edges_file, arcname=edges_file.name)
+            if metadata_file.exists():
+                tar.add(metadata_file, arcname=metadata_file.name)
+
+    # Clean up the original files
     if nodes_file.exists():
         nodes_file.unlink()
     if edges_file.exists():
@@ -145,7 +169,13 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         norm_node_path, norm_edge_path = get_versioned_file_paths(
             file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
         )
-        graph_spec_sources.append(GraphSource(id=source, file_paths=[str(norm_node_path), str(norm_edge_path)]))
+        graph_spec_sources.append(SubGraphSource(id=source,
+                                              file_paths=[str(norm_node_path), str(norm_edge_path)],
+                                              graph_version=pipeline_metadata.source_version))
+                                              # This really means don't merge edges, nodes are always merged.
+                                              # Once we're merging individual sources after normalization we don't
+                                              # need to merge edges here.
+                                              # merge_strategy=DONT_MERGE))
         graph_source_versions.append(pipeline_metadata.build_version)
 
     # Validate that all sources have the same biolink and babel versions
