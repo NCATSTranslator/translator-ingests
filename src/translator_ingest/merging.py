@@ -82,7 +82,7 @@ def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
             has_tar = False  # Trigger fallback
 
     if not has_tar:
-        logger.info(f"Using Python tarfile for compression...")
+        logger.info("Using Python tarfile for compression...")
         with tarfile.open(tar_path, 'w:xz') as tar:
             if nodes_file.exists():
                 tar.add(nodes_file, arcname=nodes_file.name)
