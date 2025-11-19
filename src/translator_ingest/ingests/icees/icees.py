@@ -60,11 +60,20 @@ def transform_icees_node(
             return None
 
         equivalent_identifiers: Optional[list[str]] = record.get("equivalent_identifiers", None)
+
+        special_slot_values: dict = {}
+        # TODO: consider fixing the Biolink Model for 'EnvironmentalExposure'
+        #       which inherits a mandatory 'has_attribute_type' slot.
+        #       Here we set this slot to the node identifier CURIE,
+        #       which is definitively not DRY information coding!
+        if "has_attribute_type" in node_class.model_fields:
+            special_slot_values["has_attribute_type"] = node_id
+
         node = node_class(
             id=node_id,
             name=record["name"],
             equivalent_identifiers=equivalent_identifiers,
-            **{}
+            **special_slot_values
         )
         return KnowledgeGraph(nodes=[node])
 

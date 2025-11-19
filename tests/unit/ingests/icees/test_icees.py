@@ -31,7 +31,8 @@ NODE_TEST_SLOTS = (
     "id",
     "name",
     "category",
-    "equivalent_identifiers"
+    "equivalent_identifiers",
+    "has_attribute_type"
 )
 
 # list of slots whose values are
@@ -136,8 +137,43 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             ],
             # Captured edge contents - n/a
             None
+        ),
+        (  # Query 3- One strange actual ICEES record (triggers a validation error?)
+            {
+                "id": "UMLS:C3836535",
+                "name": "patient education about activity/exercise prescribed",
+                "category": [
+                    "biolink:Occurrent",
+                    "biolink:PhysicalEssenceOrOccurrent",
+                    "biolink:Activity",
+                    "biolink:EnvironmentalExposure",
+                    "biolink:ActivityAndBehavior",
+                    "biolink:NamedThing"
+                ],
+                "equivalent_identifiers": [
+                    "UMLS:C3836535"
+                ]
+            },
+            #
+            # Captured node contents
+            [
+                {
+                    "id": "UMLS:C3836535",
+                    "name": "patient education about activity/exercise prescribed",
+                    "category": ["biolink:EnvironmentalExposure"],
+                    "equivalent_identifiers": [
+                        "UMLS:C3836535"
+                    ],
+                    # special case in which we also have an EnvironmentalExposure
+                    # 'has_attribute_type' slot which is set to the node's identifier (a temporary hack!)
+                    "has_attribute_type": "UMLS:C3836535"
+                }
+            ],
+            # Captured edge contents - n/a
+            None
         )
     ],
+    #
 )
 def test_transform_icees_nodes(
         mock_koza_transform: koza.KozaTransform,
