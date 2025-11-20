@@ -34,8 +34,8 @@ ingest_info:
     included_records: null
     fields_used: null
   filtered_content:
-  - file_name: null
-    filtered_records: null
+  - file_name: BindingDB_All_{version}_tsv.zip
+    filtered_records: 'Ki','IC50','Kd','EC50','kon','koff' < 10000nm
     rationale: null
   future_considerations:
   - category: null

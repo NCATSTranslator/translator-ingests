@@ -1,4 +1,4 @@
-name: ingest_template
+name: bindingdb
 
 readers:
   ingest_by_record:
@@ -7,51 +7,23 @@ readers:
     header_mode: 27
     header_prefix: "#"
     files:
-      - "example_data.tsv.gz"
+      - "BindingDB_All_current_tsv.zip"
     columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
-  ingest_all:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
-    files:
-      - "example_data_2.tsv.gz"
-    columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
-  ingest_all_streaming:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
-    files:
-      - "example_data_3.tsv.gz"
-    columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
+#      - ChemicalName
+#      - ChemicalID
+#      - CasRN
+#      - DiseaseName
+#      - DiseaseID
+#      - DirectEvidence
+#      - InferenceGeneSymbol
+#      - InferenceScore
+#      - OmimIDs
+#      - PubMedIDs
+  filters:
+    - inclusion: 'include'
+      column: 'Gene'
+      filter_code: 'in'
+      value:
+        - 'HUMAN'
+        - 'MOUSE'
+        - 'RAT'

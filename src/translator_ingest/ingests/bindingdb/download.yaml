@@ -1,12 +1,8 @@
-# Specify the file that needs to be downloaded for this ingest
+# Specify the file that needs to be downloaded for this ingest process
 # The download.yaml file format is defined and used by the KGHub Downloader to download files.
 # https://monarch-initiative.github.io/kghub-downloader/
 #
-# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+# Files are saved as `local_name` which must match the file name used in the main ingest yaml
 ---
-- url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data.tsv.gz
-  local_name: example_data.tsv.gz
-- url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data_2.tsv.gz
-  local_name: example_data_2.tsv.gz
-- url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data_3.tsv.gz
-  local_name: example_data_3.tsv.gz
+- url: https://www.bindingdb.org/rwd/bind/downloads/BindingDB_All_202511_tsv.zip
+  local_name: BindingDB_All_current_tsv.zip
