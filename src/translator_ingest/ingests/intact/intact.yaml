@@ -5,6 +5,7 @@ reader:
   delimiter: "\t"
   comment_char: "#"
   header_mode: none
+  file_archive: /Users/shalu/translator-ingests/data/intact/intact.zip
   files:
     - intact.txt
   columns:
@@ -50,18 +51,3 @@ reader:
     - stoichiometryB
     - participantIdentificationMethodA
     - participantIdentificationMethodB
-  filters:
-    - inclusion: include
-      column: taxidA
-      filter_code: in
-      value:
-        - taxid:9606
-        - taxid:9606(Human)
-        - taxid:9606(Homo sapiens)
-    - inclusion: include
-      column: taxidB
-      filter_code: in
-      value:
-        - taxid:9606
-        - taxid:9606(Human)
-        - taxid:9606(Homo sapiens)

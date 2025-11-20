@@ -1,7 +1,7 @@
-import uuid
-import koza
-from typing import Any, Iterable
+from typing import Any
 import re
+import requests
+import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
@@ -11,14 +11,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-
-# Constants
-INFORES_INTACT = "infores:intact"
-
-# Dynamic category assignments from Biolink pydantic models
-PROTEIN_CATEGORY = Protein.model_fields['category'].default
-GENE_CATEGORY = Gene.model_fields['category'].default
-SMALL_MOLECULE_CATEGORY = SmallMolecule.model_fields['category'].default
+from translator_ingest.util.biolink import INFORES_INTACT, entity_id, build_association_knowledge_sources
+from koza.model.graphs import KnowledgeGraph
 
 # PSI-MI interaction type to Biolink predicate mapping
 # Based on common PSI-MI interaction types and their semantic equivalents in Biolink
@@ -28,23 +22,58 @@ PSI_MI_TYPE_TO_PREDICATE = {
     "association": "biolink:physically_interacts_with",
     "direct interaction": "biolink:physically_interacts_with",
     "colocalization": "biolink:colocalized_with",
-
     # Molecular interactions
     "phosphorylation reaction": "biolink:affects",
     "ubiquitination reaction": "biolink:affects",
     "acetylation reaction": "biolink:affects",
     "methylation reaction": "biolink:affects",
     "sumoylation reaction": "biolink:affects",
-
     # Protein complexes
     "protein complex": "biolink:interacts_with",
-
     # Default fallback
     "self interaction": "biolink:physically_interacts_with",
 }
 
 # Default predicate for unmapped interaction types
 DEFAULT_PREDICATE = "biolink:interacts_with"
+
+
+def get_latest_version() -> str:
+    """
+    Retrieve the latest IntAct release version from the FTP README file.
+
+    IntAct provides release information in their FTP directory README.
+    The version format is like "Release 251 - September 2025"
+    """
+    try:
+        # Fetch the README from IntAct FTP directory
+        response = requests.get("https://ftp.ebi.ac.uk/pub/databases/intact/current/README")
+        response.raise_for_status()
+
+        # Look for release information in the README
+        # Example: "Release 251 - September 2025"
+        match = re.search(r'Release\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d{4})', response.text)
+        if match:
+            release_num = match.group(1)
+            month = match.group(2)
+            year = match.group(3)
+            return f"Release_{release_num}_{month}_{year}"
+
+        # Fallback: try to get last modified date from the header
+        if 'Last-Modified' in response.headers:
+            last_modified = response.headers['Last-Modified']
+            # Parse and format as YYYY-MM-DD
+            from datetime import datetime
+            dt = datetime.strptime(last_modified, '%a, %d %b %Y %H:%M:%S %Z')
+            return dt.strftime('%Y-%m-%d')
+
+    except Exception:
+        # If we can't determine version from README, use a timestamp approach
+        pass
+
+    # Final fallback: return a generic version
+    from datetime import datetime
+    return datetime.now().strftime('%Y-%m-%d')
 
 
 def parse_psi_mi_field(field_value: str) -> dict[str, str]:
@@ -183,14 +212,14 @@ def get_primary_identifier(id_field: str, alt_ids_field: str) -> tuple[str | Non
     return None, None
 
 
-def extract_publications(publications_field: str) -> list[str]:
+def extract_publications(publications_field: str) -> list[str] | None:
     """
     Extract publication identifiers from the publicationIDs field.
 
     Only PMIDs are included, as per RIG guidance.
     """
     if not publications_field or publications_field == "-":
-        return []
+        return None
 
     parsed_pubs = parse_multi_value_field(publications_field)
     pmids = []
@@ -199,7 +228,7 @@ def extract_publications(publications_field: str) -> list[str]:
         if pub['db'] and pub['db'].lower() == 'pubmed' and pub['id']:
             pmids.append(f"PMID:{pub['id']}")
 
-    return pmids
+    return pmids if pmids else None
 
 
 def get_predicate_from_interaction_type(interaction_types_field: str) -> str:
@@ -247,7 +276,7 @@ def extract_name_from_aliases(aliases_field: str) -> str | None:
 
 
 @koza.transform_record()
-def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterable[Any]:
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
     Transform a single IntAct MITAB record into Biolink nodes and edges.
 
@@ -261,6 +290,18 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     4. Preserving key metadata (publications, detection methods, confidence)
     """
 
+    # Filter for human-human interactions only
+    # TaxidA and TaxidB fields can contain multiple pipe-separated values
+    taxid_a = record.get('taxidA', '')
+    taxid_b = record.get('taxidB', '')
+
+    if not taxid_a or not taxid_b:
+        return None
+
+    # Check if both contain human taxid (9606)
+    if 'taxid:9606' not in taxid_a or 'taxid:9606' not in taxid_b:
+        return None
+
     # Extract identifiers and determine entity types
     id_a, type_a = get_primary_identifier(record['idA'], record['altIdsA'])
     id_b, type_b = get_primary_identifier(record['idB'], record['altIdsB'])
@@ -268,7 +309,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     # Skip if we couldn't extract valid identifiers
     if not id_a or not id_b:
         koza.log(f"Skipping record with missing identifiers: idA={record['idA']}, idB={record['idB']}", level="WARNING")
-        return []
+        return None
 
     # Extract human-readable names
     name_a = extract_name_from_aliases(record['aliasesA'])
@@ -298,37 +339,16 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     # Extract publications (PMIDs only)
     publications = extract_publications(record['publicationIDs'])
 
-    # Extract detection method and interaction IDs for attributes
-    detection_methods = parse_multi_value_field(record['interactionDetectionMethod'])
-    detection_method_ids = [extract_curie(dm) for dm in detection_methods if dm['id']]
-
-    # Parse source database
-    source_databases = parse_multi_value_field(record['sourceDatabase'])
-
-    # Parse interaction types for edge attributes
-    interaction_types = parse_multi_value_field(record['interactionTypes'])
-    interaction_type_ids = [extract_curie(it) for it in interaction_types if it['id']]
-
-    # Create edge attributes dictionary
-    # Note: Biolink doesn't have specific fields for some of these,
-    # so they would typically go into a generic attributes field if available
-
-    # Determine knowledge level and agent type
-    # IntAct is manually curated, so we use knowledge_assertion and manual_agent
-    # However, some interactions may be computationally predicted
-    knowledge_level = KnowledgeLevelEnum.knowledge_assertion
-    agent_type = AgentTypeEnum.manual_agent
-
     # Create the interaction edge
     interaction = PairwiseMolecularInteraction(
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=entity_a.id,
         predicate=predicate,
         object=entity_b.id,
-        publications=publications if publications else None,
-        primary_knowledge_source=INFORES_INTACT,
-        knowledge_level=knowledge_level,
-        agent_type=agent_type,
+        publications=publications,
+        sources=build_association_knowledge_sources(primary=INFORES_INTACT),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
     )
 
-    return [entity_a, entity_b, interaction]
+    return KnowledgeGraph(nodes=[entity_a, entity_b], edges=[interaction])
