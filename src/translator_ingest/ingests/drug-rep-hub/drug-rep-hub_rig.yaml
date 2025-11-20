@@ -40,42 +40,42 @@ ReferenceIngestGuide:
 
 
   target_info:
-    infores_id: infores:drug-repurposing-hub
+    infores_id: infores:translator-drug-repurposing-hub
 
     edge_type_info:
       - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
+          - biolink:SmallMolecule                         # I added biolink prefixes here - values need to be curies
+          - biolink:MolecularMixture
+          - biolink:ChemicalEntity
         predicates: 
           - biolink:affects
         object_categories:
-          - Gene
+          - biolink:Gene
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
         edge_properties:
-          - mechanism_of_action_description
+          - mechanism_of_action_description             # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation?
         ui_explanation: mechanism of mechanism and target information
 
       - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
-        predicates: 
+          - biolink:SmallMolecule
+          - biolink:MolecularMixture
+          - biolink:ChemicalEntity
+        predicates:                                      # MHB: What cues in the data map to these predicates 
           - biolink:treats
           - biolink:ameliorates_condition
           - biolink:in_preclinical_trials_for
           - biolink:diagnoses
           - biolink:disrupts
         object_categories:
-          - DiseaseOrPhenotypicFeature
+          - biolink:DiseaseOrPhenotypicFeature
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
-        edge_properties:
+        edge_properties:                                 # MHB: I expected to see approval status / reserach phase properties on these edges (or maybe on the chemical nodes)? 
           - mechanism_of_action_description
         ui_explanation: drug indication
 
@@ -83,21 +83,21 @@ ReferenceIngestGuide:
 
       - node_category: ChemicalEntity
         source_identifier_types: 
-          - PubChem
+          - PubChem                      # MHB: Does the source provide these identifeirs - i don't see them in the tsv file?
         node_properties:
           - biolink:name
           - biolink:synonym
-          - disease_area
+          - disease_area                 # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation? 
 
       - node_category: DiseaseOrPhenotypicFeature
         source_identifier_types: 
-          - MONDO
+          - MONDO                        # MHB: Does the source provide these identifeirs - i don't see them in the tsv file?
         node_properties:
           - biolink:name
 
       - node_category: Gene
         source_identifier_types: 
-          - HGNC
+          - HGNC                         # MHB: Does the source provide these identifeirs - i don't see them in the tsv file?
         node_properties:
           - biolink:symbol
 
