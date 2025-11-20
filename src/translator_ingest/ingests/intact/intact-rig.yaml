@@ -74,10 +74,10 @@ ReferenceIngestGuide:
         
     included_content:  
       - file_name: intact.txt
-        included_records:  Human–human positive interaction records only. A record is included if both interactors have 
+        included_records:  Human–human protein positive interaction records only. A record is included if both interactors have 
           organism identifiers containing "taxid:9606". These represent experimentally observed molecular interactions 
           curated by IntAct/IMEx, encoded in MITAB 2.7 format
-        fields_used:  All MITAB 2.7 fields: idA, idB, altIdsA, altIdsB, aliasesA, aliasesB, interactionDetectionMethod, 
+        fields_used:  All MITAB 2.7 fields: idA, idB, altIdsA, altIdsB, aliasesA, aliasesB, interactionDetectionMethod,                  # MHB: only need to list the fields you imported or used in the ingest - trim others out.  
           firstAuthor, publicationIDs, taxidA, taxidB, interactionTypes, sourceDatabase, interactionIDs, confidenceScores, 
           complexExpansion, biologicalRoleA, biologicalRoleB, experimentalRoleA, experimentalRoleB, interactorTypeA, 
           interactorTypeB, xrefA, xrefB, xrefInteraction, annotationsA, annotationsB, annotationsInteraction, hostOrganism, 
@@ -90,7 +90,9 @@ ReferenceIngestGuide:
         No additional filtering is applied.
       rationale: For Translator use cases, only human molecular interactions are required. Filtering to human–human interactions 
         reduces noise from model organisms and preserves relevant biological context.
-
+     - file_name: intact.txt                                            # MHB: I added this important filter description
+      filtered_records: All records where the Interaction type(s) are not one of [`association`, `physical association`, `putative self interaction`, `self interaction`] - which account for >95% of the records. Other interaction types mainly describe specific molecular modifications (e.g. phosphorylation, acetylation), or cleavage interactions - and may  be imported in future iterations. 
+      rationale: Filtered records account for a very small number/proportion of the data, and would require significant effort to go into mapping/modeling/transform logic. 
     - file_name: intact_negative.txt
       filtered_records: All rows are excluded. 
       rationale: Negative interaction evidence does not correspond to a Biolink predicate and is not needed for molecular interaction 
@@ -103,6 +105,15 @@ ReferenceIngestGuide:
           this adds substantial value for mechanistic or translational
           reasoning, while still maintaining manageable graph size.
         relevant_files: intact.txt
+      - category:  edge_content
+        consideration: Consider importing the long tail of records with additional interaction types
+        not taken in first iteration.
+        relevant_files: intact.txt
+      - category:  edge_property_content
+        consideration: Longer term, consider creating ExperiemtnalStudyResult objects to capture metadata for each experiment that supports an edge  (e.g. interactor roles, host organism, stoichiometries, features, parameters, experiment-associated publications etc).
+        relevant_files: intact.txt
+
+
         
     additional_notes:  Exploratory data analysis (EDA) of the IntAct MITAB dataset revealed 59 unique PSI-MI interaction types across
       the full resource, of which 41 appear in the human-only subset for this ingest. A similar 'long tail' distribution was observed 
@@ -117,61 +128,49 @@ ReferenceIngestGuide:
     infores_id: 
     edge_type_info:
       - subject_categories:  
-          - 
-        predicate:  
+          - biolink:Protein
+        predicates:
+          - biolink:physically_interacts_with
         object_categories: 
-          - 
+          - biolink:Protein
         knowledge_level:  
-          - 
+          - knowledge_assertion
         agent_type:  
-          - 
-        edge_properties: 
-          - 
-        ui_explanation: 
-        additional_notes: 
-      - subject_categories:
-          - 
-        predicate: 
-        object_categories:
-          - 
-        knowledge_level:  
-          - 
-        agent_type:  
-          - 
-        edge_properties: 
-          - 
-        ui_explanation: 
-        additional_notes: 
-      - subject_categories:
-        - 
-        predicate: 
-        object_categories:
-          - 
-        knowledge_level:
-          - 
-        agent_type:
-          - 
-        edge_properties:
-          - 
-          - 
-        ui_explanation: 
-        additional_notes: 
+          - manual_agent
+        edge_properties:     
+          - biolink:intact_confidence_value                 # will hold the confidence value/score that is shared across merged records
+          - biolink:supporting_study_method_types           # will hold a list of methods used across all merged records
+          - biolink:publications                            # a list of pubs used across all merged records
+
+   # MHB: also be sure to capture a list of sources used across all merged records in the biolink:RetrievalSource object (where they will each get the role of "supporting_data_source")
+
+	 # MHB: Notes on how capture Publication Identifier(s, Interaction detection method(s) and Source database(s) values:
+   
+		# Publication Identifier(s): assuming all ids in these cells represent the same pub, select one based on this order of preference:
+			# pubmed (but use 'pmid' as the prefix)
+			# doi
+			# mint
+			# intact
+			# imex
+			# (not sure if there are others)
+      
+		# Interaction detection method(s): for now, report values like:			
+      # "psi-mi:"MI:1112"(two hybrid prey pooling approach)" 
+			# as
+			# "MI:1112 (two hybrid prey pooling approach)"
+		
+		# Source database(s): same convention as for methods, e.g. report values like
+			# "psi-mi:"MI:0469"(European Bioinformatics Institute)"
+			# as
+			# "MI:0469 (European Bioinformatics Institute)"
+    
+        ui_explanation: TO DO - can adopt some of the text form the additional note below. 
+        additional_notes:  IntAct records report the results/conclusion of a single study or experiment as curated from  a publication. There may be many records that describe the same set of interactors and interaction type - which we merge to create a single Biolink edge. It is at this level that IntAct appears to assign their confidence score, so this is applied to each such edge. Supporting publications and methods used across the set of merged experiment-level records are collapsed into a list and attached to these edges. Similarly, all sources of records that get merged into this edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to this edge.  
 
     node_type_info:  
-      - node_category: 
-        source_identifier_types: 
+      - node_category: biolink:Protein
+        source_identifier_types: uniprot
         additional_notes: 
-      - node_category: 
-        source_identifier_types: 
-
-    future_considerations:  
-      - category: 
-        consideration: 
-      - category: 
-        consideration: 
-
-    additional_notes: >-
-      
 
 
 # Information about the how the ingest was specified and performed

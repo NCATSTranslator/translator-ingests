@@ -1,4 +1,5 @@
 import pytest
+
 # import warnings
 
 from koza.runner import KozaRunner
@@ -19,9 +20,7 @@ def test_koza_runner_init_from_config(source_id, tmp_path):
     # ensure at least one transform function was identified for every tag
     for tag, hooks in runner.hooks_by_tag.items():
         if not (hooks and (hooks.transform or hooks.transform_record)):
-            pytest.fail(f"Transform function not recognized for {source_id}. "
-                        f"Must define a function decorated with `@koza.transform` or `@koza.transform_record`")
-
-
-
-
+            pytest.fail(
+                f"Transform function not recognized for {source_id}. "
+                f"Must define a function decorated with `@koza.transform` or `@koza.transform_record`"
+            )

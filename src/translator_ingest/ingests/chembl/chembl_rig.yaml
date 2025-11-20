@@ -1,0 +1,404 @@
+  name: "ChEMBL Reference Ingest Guide"
+
+  source_info:
+    infores_id: infores:chembl
+    description: "ChEMBL is a manually curated database of bioactive molecules with drug-like properties. It brings together chemical, bioactivity and genomic data to aid the translation of genomic information into effective new drugs."
+    citations:
+      - "Barbara Zdrazil, Eloy Felix, Fiona Hunter, Emma J Manners, James Blackshaw, Sybilla Corbett, Marleen de Veij, Harris Ioannidis, David Mendez Lopez, Juan F Mosquera, Maria Paula Magarinos, Nicolas Bosc, Ricardo Arcila, Tevik Kizilören, Anna Gaulton, A Patrícia Bento, Melissa. F Adasme, Pater Monecke, Gregory A Landrum, Andrew R Leach. Nucleic Acids Res. 2023: gkad1004. doi: 10.1093/nar/gkad1004"
+      - "Davies M, Nowotka M, Papadatos G, Dedman N, Gaulton A, Atkinson F, Bellis L, Overington JP. Nucleic Acids Res. 2015; 43(W1):W612-20, doi: 10.1093/nar/gkv352"
+    terms_of_use_info:
+      license_name: "Creative Commons Attribution-ShareAlike 3.0 Unported license"
+      license_url: "https://creativecommons.org/licenses/by-sa/3.0/"
+    data_access_locations:
+      - https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/
+    data_provision_mechanisms:
+      - file_download
+      - database_dump
+    data_formats:
+      - mysql
+      - postgresql
+      - sqlite
+    data_versioning_and_releases: semiannual
+
+
+  ingest_info:
+    ingest_categories:
+      - primary_knowledge_provider
+    utility: "ChEMBL is a manually curated database of bioactive molecules with drug-like properties. It brings together chemical, bioactivity and genomic data to aid the translation of genomic information into effective new drugs."
+    scope: "Drugs and probes mechanisms, metabolism, bioactivity, gene targets"
+
+    relevant_files:
+      - file_name: chembl_35_sqlite.tar.gz
+        location: https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/
+        description: "ChEMBL SQLite database"
+
+    included_content: 
+      - file_name: chembl_35_sqlite.tar.gz
+        included_records: "Drug mechanisms from the following tables: drug_mechanism, molecule_dictionary, target_dictionary, binding_sites, compound_records, docs, source, target_components, component_sequences, variant_sequences."
+        fields_used: "drug_mechanism: mec_id, molregno, mechanism_of_action, action_type, direct_interaction, mechanism_comment, selectivity_comment, binding_site_comment, variant_id; molecule_dictionary: molregno, chembl_id; target_dictionary: tid, chembl_id (AS target_chembl_id), pref_name (AS target_name), target_type, organism (AS target_organism); binding_sites: site_id, site_name; compound_records: record_id, doc_id, src_id; docs: doc_id, chembl_id (AS document_chembl_id); source: src_id, src_description (AS source_description); target_components: tid, component_id; component_sequences: component_id, component_type, accession, description, tax_id, organism; variant_sequences: variant_id, mutation, accession (AS mutation_accession)"
+      - file_name: chembl_35_sqlite.tar.gz
+        included_records: "Gene targets - same as drug mechanisms with targets mapped to genets"
+        fields_used: "drug_mechanism: mec_id, molregno, mechanism_of_action, action_type, direct_interaction, mechanism_comment, selectivity_comment, binding_site_comment, variant_id; molecule_dictionary: molregno, chembl_id; target_dictionary: tid, chembl_id (AS target_chembl_id), pref_name (AS target_name), target_type, organism (AS target_organism); binding_sites: site_id, site_name; compound_records: record_id, doc_id, src_id; docs: doc_id, chembl_id (AS document_chembl_id); source: src_id, src_description (AS source_description); target_components: tid, component_id; component_sequences: component_id, component_type, accession, description, tax_id, organism; variant_sequences: variant_id, mutation, accession (AS mutation_accession)"
+      - file_name: chembl_35_sqlite.tar.gz
+        included_records: "Metabolism information from the following tables: metabolism, molecule_dictionary, compound_records, compound_structures, target_dictionary, metabolism_refs"
+        fields_used: "metabolism: drug_record_id, substrate_record_id, metabolite_record_id, met_id, enzyme_name, met_conversion, met_comment, organism, tax_id, enzyme_tid; molecule_dictionary: molregno, chembl_id, pref_name; compound_records: molregno, record_id, compound_name; target_dictionary: tid, target_type, chembl_id; compound_structures: molregno, standard_inchi, standard_inchi_key, canonical_smiles; metabolism_refs: met_id, ref_type, ref_id, ref_url"
+      - file_name: chembl_35_sqlite.tar.gz
+        included_records: "Bioactivity and assay information from the following tables: activities, molecule_dictionary, assays, bioassay_ontology, target_dictionary, target_components, component_sequences, cell_dictionary, assay_type, tissue_dictionary, docs, source, ligand_eff, relationship_type, confidence_score_lookup, confidence_score_lookup"
+        fields_used: "activities: activity_id, standard_type, standard_relation, standard_value, standard_units, pchembl_value, activity_comment, data_validity_comment, standard_text_value, standard_upper_value, uo_units, potential_duplicate, action_type, src_id, doc_id; molecule_dictionary: molregno, chembl_id; assays: assay_id, chembl_id, description, assay_organism, assay_cell_type, assay_subcellular_fraction, bao_format, assay_category, assay_tax_id, assay_tissue, relationship_type, confidence_score, curated_by, src_id, assay_type, cell_id, tissue_id, tid; bioassay_ontology: bao_id, label; target_dictionary: tid, chembl_id, pref_name, organism, target_type; target_components: tid, component_id; component_sequences: component_id, component_type, accession; cell_dictionary: cell_id, chembl_id, cell_name, cell_description, cell_source_tissue, cell_source_organism, cell_source_tax_id, clo_id, efo_id, cellosaurus_id, cl_lincs_id, cell_ontology_id; assay_type: assay_type, assay_desc; tissue_dictionary: tissue_id, chembl_id, pref_name; docs: doc_id, chembl_id, journal, title, year, authors, pubmed_id, doi; source: src_id, src_description; ligand_eff: activity_id, bei, le, lle, sei; relationship_type: relationship_type, relationship_desc; confidence_score_lookup: confidence_score, description, target_mapping; curation_lookup: curated_by, description"
+
+    filtered_content:
+      - file_name: chembl_35_sqlite.tar.gz
+        filtered_records: "Gene targets - removed targets that cannot be mapped to genes (like cell-lines)"
+        rationale: "targets that cannot be mapped to genes"
+
+  target_info: 
+    infores_id: "infores:translator-chembl-kgx"
+    edge_type_info:
+      - subject_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+          - Protein
+        predicates: 
+          - biolink:affects
+          - biolink:disrupts
+          - biolink:regulates
+        object_categories:
+          - Gene
+          - MacromolecularComplexMixin
+          - NucleicAcidEntity
+          - Organism
+          - BiologicalProcess
+          - Protein
+          - ProteinComplex
+        qualifiers:
+          - property: "biolink:qualified_predicate"
+            value_enumeration:
+              - "biolink:causes"        
+          - property: "biolink:object_direction_qualifier"
+            value_range:
+              - "biolink:DirectionQualifierEnum"
+          - property: "biolink:object_aspect_qualifier"
+            value_range:
+              - "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum"
+          - property: "biolink:causal_mechanism_qualifier"
+            value_range:
+              - "biolink:CausalMechanismQualifierEnum"
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - action_type
+          - biolink:mechanism_of_action
+          - biolink:publications
+          - direct_interaction
+          - document_chembl_id
+          - selectivity_comment
+          - site_name
+        ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
+      - subject_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+          - Protein
+        predicates: 
+          - biolink:directly_physically_interacts_with
+        object_categories:
+          - Gene
+          - MacromolecularComplexMixin
+          - NucleicAcidEntity
+          - Organism
+          - BiologicalProcess
+          - Protein
+          - ProteinComplex
+        qualifiers:
+          - property: "biolink:causal_mechanism_qualifier"
+            value_range:
+              - "biolink:CausalMechanismQualifierEnum"        
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - action_type
+          - biolink:mechanism_of_action
+          - biolink:publications
+          - direct_interaction
+          - document_chembl_id
+          - selectivity_comment
+          - site_name
+        ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
+      - subject_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+          - Protein
+        predicates: 
+          - biolink:assesses
+        object_categories:
+          - AnatomicalEntity
+          - Cell
+          - CellLine
+          - OrganismTaxon
+          - PhenotypicFeature
+        qualifiers:
+          - property: "biolink:object_aspect_qualifier"
+            value_range:
+              - "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum"
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+            value_description: "A term from the 'cellular organisms' (NCBITaxon:131567) or 'viruses' (NCBITaxon:10239) branch of the NCBITaxon Ontology"
+        knowledge_level:
+          - observation
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - Binding_Efficiency_Index
+          - action_type
+          - assay_chembl_id
+          - assay_tax_id
+          - assay_tissue_chembl_id
+          - biolink:publications
+          - data_validity_comment
+          - potential_duplicate
+          - standard_value
+        ui_explanation: "Drug activities from ChEMBL"
+      - subject_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+        predicates: 
+          - biolink:has_metabolite
+        object_categories:
+          - SmallMolecule
+          - MolecularMixture
+          - ChemicalEntity
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - OBI:0000427
+          - biolink:publications
+          - enzyme_chembl_id
+          - enzyme_name
+          - metabolic conversion
+          - metabolic conversion comment
+          - organism
+          - tax_id
+        ui_explanation: "Metabolism information from ChEMBL"
+
+    node_type_info:
+      - node_category: AnatomicalEntity
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - target_mapping
+          - target_organism
+      - node_category: Cell
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - atc_classification
+          - atc_classifications
+          - biolink:highest_FDA_approval_status
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - chirality
+          - max_phase
+          - molecule_type
+          - query name
+          - target_mapping
+          - therapeutic_flag
+          - usan_stem
+          - usan_stem_definition
+          - usan_substem
+          - usan_year
+      - node_category: CellLine
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: CellularComponent
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: ChemicalEntity
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - atc_classification
+          - atc_classifications
+          - availability_type
+          - biolink:highest_FDA_approval_status
+          - biolink:routes_of_delivery
+          - black_box_warning
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - chirality
+          - dosed_ingredient
+          - drug_warning
+          - first_approval
+          - first_in_class
+          - indication_class
+          - inorganic_flag
+          - max_phase
+          - molecule_type
+          - polymer_flag
+          - prodrug
+          - target_mapping
+          - target_organism
+          - target_type
+          - therapeutic_flag
+          - usan_stem
+          - usan_stem_definition
+          - usan_substem
+          - usan_year
+          - withdrawn_flag
+      - node_category: Gene
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - atc_classification
+          - atc_classifications
+          - biolink:description
+          - biolink:highest_FDA_approval_status
+          - biolink:in_taxon
+          - chirality
+          - first_in_class
+          - max_phase
+          - molecule_type
+          - mutation
+          - mutation_accession
+          - organism
+          - target_organism
+          - therapeutic_flag
+          - usan_stem
+          - usan_stem_definition
+          - usan_substem
+          - usan_year
+      - node_category: MacromolecularComplexMixin
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - biolink:description
+          - biolink:in_taxon
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - component_type
+          - organism
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: MolecularMixture
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - atc_classification
+          - usan_year
+          - withdrawn_flag
+      - node_category: ProteinComplex
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - biolink:description
+          - biolink:in_taxon
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - component_type
+          - mutation
+          - mutation_accession
+          - organism
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: ProteinFamily
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - assay_subcellular_fraction
+          - assay_tissue_name
+          - biolink:description
+          - biolink:in_taxon
+          - cell_description
+          - cell_source_tax_id
+          - cell_source_tissue
+          - component_type
+          - organism
+          - target_mapping
+          - target_organism
+          - target_type
+      - node_category: SmallMolecule
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - atc_classification
+          - atc_classifications
+          - availability_type
+          - biolink:highest_FDA_approval_status
+          - biolink:routes_of_delivery
+          - black_box_warning
+          - chirality
+          - dosed_ingredient
+          - drug_warning
+          - first_approval
+          - first_in_class
+          - indication_class
+          - inorganic_flag
+          - max_phase
+          - molecule_type
+          - natural_product
+          - polymer_flag
+          - prodrug
+          - target_mapping
+          - target_organism
+          - target_type
+          - therapeutic_flag
+          - usan_stem
+          - usan_stem_definition
+          - usan_substem
+          - usan_year
+          - withdrawn_flag
+
+  provenance_info:
+    contributions:
+    - "Vlado Dancik - code author, domain expertise"
+    - "Kevin Schaper - code support"
+    - "Evan Morris - code support"
+    - "Sierra Moxon - data modeling, code support"
+    - "Matthew Brush - data modeling, domain expertise"
+    artifacts:  # (optional, multivalued, range = string)
+      - "Ingest Survey: https://docs.google.com/spreadsheets/d/1CENLoKukPCHW2SimabAm6HfXeldeRYmPTV_--Fs9whg/edit?gid=0#gid=0"
