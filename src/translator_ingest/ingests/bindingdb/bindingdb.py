@@ -15,6 +15,20 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
+BASE_LINK_TO_MONOMER: str = "http://www.bindingdb.org/bind/chemsearch/marvin/MolStructure.jsp?monomerid={monomerid}"
+BASE_LINK_TO_TARGET: str = ("http://www.bindingdb.org/rwd/jsp/dbsearch/PrimarySearch_ki.jsp"
+                            "?energyterm=kJ/mole"
+                            "&tag=com"
+                            "&complexid=56"
+                            "&target={target}"
+                            "&column=ki&startPg=0&Increment=50&submit=Search")
+
+LINK_TO_LIGAND_TARGET_PAIR: str = (
+    "http://www.bindingdb.org/rwd/jsp/dbsearch/PrimarySearch_ki.jsp"
+    "?energyterm=kJ/mole&tag=r21&monomerid={monomerid}"
+    "&enzyme={enzyme}"
+    "&column=ki&startPg=0&Increment=50&submit=Search"
+)
 
 # !!! README First !!!
 #
@@ -116,49 +130,3 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
         agent_type=AgentTypeEnum.manual_agent,
     )
     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
-
-
-# As an alternative to transform_record, functions decorated with @koza.transform() take a KozaTransform and an Iterable
-# of dictionaries, typically corresponding to all the rows in a source data file, and return an iterable of
-# KnowledgeGraph, each containing any number of nodes and/or edges. Any number of KnowledgeGraphs can be returned:
-# all at once, in batches, or using a generator for streaming.
-# @koza.transform(tag="ingest_all")
-# def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-#     nodes: list[NamedThing] = []
-#     edges: list[Association] = []
-#     for record in data:
-#         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-#         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-#         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-#             id=str(uuid.uuid4()),
-#             subject=chemical.id,
-#             predicate="biolink:related_to",
-#             object=disease.id,
-#             primary_knowledge_source=INFORES_CTD,
-#             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-#             agent_type=AgentTypeEnum.manual_agent,
-#         )
-#         nodes.append(chemical)
-#         nodes.append(disease)
-#         edges.append(association)
-#     return [KnowledgeGraph(nodes=nodes, edges=edges)]
-
-
-# Here is an example using a generator to stream results
-# @koza.transform(tag="ingest_all_streaming")
-# def transform_ingest_all_streaming(
-#     koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
-# ) -> Iterable[KnowledgeGraph]:
-#     for record in data:
-#         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-#         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-#         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-#             id=str(uuid.uuid4()),
-#             subject=chemical.id,
-#             predicate="biolink:related_to",
-#             object=disease.id,
-#             primary_knowledge_source=INFORES_CTD,
-#             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-#             agent_type=AgentTypeEnum.manual_agent,
-#         )
-#         yield KnowledgeGraph(nodes=[chemical, disease], edges=[association])

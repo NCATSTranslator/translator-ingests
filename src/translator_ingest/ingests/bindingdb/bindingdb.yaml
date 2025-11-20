@@ -4,26 +4,35 @@ readers:
   ingest_by_record:
     format: "csv"
     delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
+    header_mode: 0
     files:
       - "BindingDB_All_current_tsv.zip"
     columns:
-#      - ChemicalName
-#      - ChemicalID
-#      - CasRN
-#      - DiseaseName
-#      - DiseaseID
-#      - DirectEvidence
-#      - InferenceGeneSymbol
-#      - InferenceScore
-#      - OmimIDs
-#      - PubMedIDs
+      - BindingDB Reactant_set_id
+      - C2
+      - C3
+      - C4
+      - BindingDB MonomerID
+      - BindingDB Ligand Name
+      - Target Name
+      - Target Source Organism According to Curator or DataSource
+      - Ki (nM)
+      - IC50 (nM)
+      - Kd (nM)
+      - EC50 (nM)
+      - kon (M-1-s-1)
+      - koff (s-1)
+      - C15
+      - C16
+      - C17
+      - Article DOI
+      - BindingDB Entry DOI
+      - PMID
+      - PubChem AID
+#     can I ignore the remaining columns for now?
   filters:
     - inclusion: 'include'
-      column: 'Gene'
+      column: 'Target Source Organism According to Curator or DataSource'
       filter_code: 'in'
       value:
-        - 'HUMAN'
-        - 'MOUSE'
-        - 'RAT'
+        - 'Homo sapiens'
