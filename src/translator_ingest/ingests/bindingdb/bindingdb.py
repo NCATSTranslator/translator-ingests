@@ -1,16 +1,13 @@
-import uuid
-import koza
-import pandas as pd
-from typing import Any, Iterable
+from typing import Any
+from datetime import datetime
 
+import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
-    NamedThing,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
-    Association,
+    AgentTypeEnum
 )
 from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
@@ -47,11 +44,15 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
 # corresponding to the current version. For sources that are updated regularly, use file modification dates if
 # possible, or the current date. Versions should (ideally) be sortable (ie YYYY-MM-DD) and should contain no spaces.
 def get_latest_version() -> str:
-    return "202511"  # asking the BindingDB team how to get their latest versions
+    # According to the BindingDb team, a fresh year+month date-stamped release
+    # of BindingDb data is made at the start of each month,
+    # so we use the heuristic of a date function to return
+    # this candidate 'latest release' value.
+    return datetime.today().strftime("%Y%m")
 
 
 # Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
-# If implemented they will be called at the beginning and/or end of the transform process.
+# If implemented, they will be called at the beginning and/or end of the transform process.
 # @koza.on_data_begin(tag="ingest_by_record")
 # def on_begin_ingest_by_record(koza: koza.KozaTransform) -> None:
 #     # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.

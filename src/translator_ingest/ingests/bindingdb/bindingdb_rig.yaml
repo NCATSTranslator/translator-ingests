@@ -5,8 +5,9 @@ source_info:
   description: The Binding Database ("BindingDb") is a public, web-accessible database
     of measured binding affinities, focusing chiefly on the interactions of protein
     considered to be drug-targets with small, drug-like molecules. As of July 31,
-    2021, BindingDB contains 41,300 Entries, each with a DOI, containing 2,303,972
-    binding data for 8,561 protein targets and 995,797 small molecules.
+    2021, BindingDB contains thousands of dataset Entries, each with a DOI,
+    containing millions of binding assay results for thousands of protein targets
+    assayed against over a million distinct small molecule ligands.
   citations:
     - https://doi.org/10.1093/nar/gkae1075
   terms_of_use_info:
@@ -19,7 +20,9 @@ source_info:
     - file_download
   data_formats:
     - tsv
-  data_versioning_and_releases: dated releases
+  data_versioning_and_releases: >-
+    Regular releases at the start of each month date stamped with the
+    year and month of the release (i.e. 202511), incorporated into the data file name.
 ingest_info:
   ingest_categories:
   - null
@@ -31,12 +34,39 @@ ingest_info:
     description: All data in BindingdDB
   included_content:
   - file_name: null
-    included_records: null
-    fields_used: null
+    included_records: Homo sapien-related entries only
+    fields_used:
+      - BindingDB Reactant_set_id - 'C1' ("Column 1" in the file)
+      - BindingDB MonomerID- C5
+      - BindingDB Ligand Name- C6
+      - Target Name- C7
+      - Target Source Organism According to Curator or DataSource - C8
+      - Ki (nM)- C9
+      - IC50 (nM)- C10
+      - Kd (nM)- C11
+      - EC50 (nM)- C12
+      - kon (M-1-s-1)- C13
+      - koff (s-1)- C14
+      - C15- C15
+      - Article DOI- C18
+      - BindingDB Entry DOI- C19
+      - PMID- C20
+      - PubChem AID- C20
   filtered_content:
   - file_name: BindingDB_All_{version}_tsv.zip
     filtered_records: 'Ki','IC50','Kd','EC50','kon','koff' < 10000nm
-    rationale: null
+    rationale: >-
+      The units of these kinetic parameters are nM. 
+      Lower values imply stronger binding affinity
+      or functional effects. Imposing a threshold
+      focuses on the most relevant interactions.
+      For Ki, IC50, EC50, the value relates to
+      the concentration of ligand (or drug) 
+      needed to inhibit 50% of enzyme activity.
+      Kon and Koff rates are, respectively, the rate
+      which a ligand binds and dissociates from a protein.
+      The ratio of Koff/Kon is Kd, the binding affinity
+      between a ligand and its target.
   future_considerations:
   - category: null
     consideration: null
