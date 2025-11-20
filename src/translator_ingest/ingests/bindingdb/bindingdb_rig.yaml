@@ -1,0 +1,411 @@
+name: BindingDb
+source_info:
+  infores_id: infores:bindingdb
+  name: BindingDb
+  description: The Binding Database ("BindingDb") is a public, web-accessible database
+    of measured binding affinities, focusing chiefly on the interactions of protein
+    considered to be drug-targets with small, drug-like molecules. As of July 31,
+    2021, BindingDB contains 41,300 Entries, each with a DOI, containing 2,303,972
+    binding data for 8,561 protein targets and 995,797 small molecules.
+  citations:
+    - https://doi.org/10.1093/nar/gkae1075
+  terms_of_use_info:
+    terms_of_use_description: >-
+      All data and download files in bindingDB are freely
+      available under a 'Creative Commons BY 3.0' license.
+  data_access_locations:
+    - BindingDb bulk downloads - https://www.bindingdb.org/rwd/bind/downloads/
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: dated releases
+ingest_info:
+  ingest_categories:
+  - null
+  utility: null
+  scope: null
+  relevant_files:
+  - file_name: BindingDB_All_{version}_tsv.zip
+    location: https://www.bindingdb.org/rwd/bind/downloads/
+    description: All data in BindingdDB
+  included_content:
+  - file_name: null
+    included_records: null
+    fields_used: null
+  filtered_content:
+  - file_name: null
+    filtered_records: null
+    rationale: null
+  future_considerations:
+  - category: null
+    consideration: null
+    relevant_files: null
+  additional_notes: null
+target_info:
+  infores_id: null
+  edge_type_info:
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:related_to
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:directly_physically_interacts_with
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:related_to
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:directly_physically_interacts_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:related_to
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:directly_physically_interacts_with
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:related_to
+    object:
+    - biolink:ChemicalEntity
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:related_to
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:directly_physically_interacts_with
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:related_to
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - subject:
+    - biolink:ChemicalMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: knowledge_assertion
+    agent_type: not_provided
+    edge_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  node_type_info:
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - CHEBI
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - node_category: biolink:Protein
+    source_identifier_types:
+    - UniProtKB
+    - PR
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - CHEMBL.COMPOUND
+    - UNII
+    - CHEBI
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - UNII
+    - CHEBI
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  - node_category: biolink:ChemicalMixture
+    source_identifier_types:
+    - CHEBI
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+    - dct:description
+  future_considerations:
+  - category: null
+    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - null
+  artifacts:
+  - null
