@@ -218,7 +218,7 @@ target_info:
         - biolink:publications
       ui_explanation: ""
 
-  node_type_info:
+  node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes. 
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
         - "PubChem SID"                               # MHB: value of this field should be just a prefix, and the decription field can report more detail (e.g. that it is an SID)
