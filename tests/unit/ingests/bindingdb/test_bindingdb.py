@@ -63,16 +63,13 @@ ASSOCIATION_TEST_SLOTS = (
         ),
         (  # Query 1 - Another record complete with PubMedIDs
             {
-                "ChemicalName": "10074-G5",
-                "ChemicalID": "C534883",
-                "CasRN": "",
-                "DiseaseName": "Androgen-Insensitivity Syndrome",
-                "DiseaseID": "MESH:D013734",
-                "DirectEvidence": "",
-                "InferenceGeneSymbol": "AR",
-                "InferenceScore": "6.89",
-                "OmimIDs": "300068|312300",
-                "PubMedIDs": "1303262|8281139",
+                # 199,
+                # CN(Cc1ccc(s1)C(=O)N[C@@H](CC(O)=O)C(=O)CSCc1ccccc1Cl)Cc1ccc(O)c(c1)C(O)=O |r|,
+                # "InChI=1S/C27H27ClN2O7S2/c1-30(12-16-6-8-22(31)19(10-16)27(36)37)13-18-7-9-24(39-18)26(35)29-21(11-25(33)34)23(32)15-38-14-17-4-2-3-5-20(17)28/h2-10,21,31H,11-15H2,1H3,(H,29,35)(H,33,34)(H,36,37)",
+                # FIEQQFOHZKVJLV-UHFFFAOYSA-N,
+                # 219,
+                # 5-({[(5-{[(2S)-1-carboxy-4-{[(2-chlorophenyl)methyl]sulfanyl}-3-oxobutan-2-yl]carbamoyl}thiophen-2-yl)methyl](methyl)amino}methyl)-2-hydroxybenzoic acid::Thiophene Scaffold 47c::Inhibitor 47c,
+                # Caspase-3,Homo sapiens, 90,,,,,,7.4000,25.00 C,Curated from the literature by BindingDB,10.1021/jm020230j,10.7270/Q2B56GW5,12408711,aid1795219
             },
             # Captured node contents
             [
