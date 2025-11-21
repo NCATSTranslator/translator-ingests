@@ -28,6 +28,7 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx
+from translator_ingest.util.download_utils import substitute_version_in_download_yaml
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,11 +61,11 @@ def get_latest_source_version(source):
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
     logger.info(f"Downloading source data for {pipeline_metadata.source}...")
-    # Find the path to the source specific download yaml
+    # Find the path to the source-specific download yaml
     download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
 
     # Substitute version placeholders in download.yaml if they exist
-    from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+
     download_yaml_with_version = substitute_version_in_download_yaml(
         download_yaml_file,
         pipeline_metadata.source_version
