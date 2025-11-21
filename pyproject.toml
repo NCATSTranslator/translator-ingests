@@ -15,7 +15,7 @@ dependencies = [
     "click>=8.0.0",
     "kghub-downloader>=0.4.2",
     "koza",
-    "robokop-orion==0.1.6",
+    "robokop-orion==0.1.9",
     "xmltodict>=1.0.2",
 ]
 
