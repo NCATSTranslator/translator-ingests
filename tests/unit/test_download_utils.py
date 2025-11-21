@@ -65,7 +65,7 @@ def test_no_placeholder_returns_original():
         with open(download_yaml, 'w') as f:
             yaml.safe_dump(test_config, f)
 
-        # Substitute version (should return original path)
+        # Substitute version (should return the original path)
         version = "2024-01-15"
         result_yaml = substitute_version_in_download_yaml(download_yaml, version)
 
@@ -79,7 +79,7 @@ def test_custom_placeholder():
         tmpdir = Path(tmpdir)
         download_yaml = tmpdir / "download.yaml"
 
-        # Write a test download.yaml with custom placeholder
+        # Write a test download.yaml with a custom placeholder
         test_config = [
             {
                 "url": "https://example.com/data_VERSION/file.tsv.gz",
