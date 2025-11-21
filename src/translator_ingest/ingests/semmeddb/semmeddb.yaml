@@ -5,7 +5,7 @@ readers:
   filter_edges:
     format: jsonl
     files:
-      - ../../../../data/semmeddb/kg2.10.3-semmeddb-edges.jsonl
+      - kg2.10.3-semmeddb-edges.jsonl
     filters:
       - inclusion: include
         column: predicate
