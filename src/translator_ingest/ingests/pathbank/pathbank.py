@@ -1020,6 +1020,10 @@ def _create_interaction_edges(
                         interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
                         interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
                         interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
+                    else:
+                        # If we don't have qualifiers, we MUST use the base Association class
+                        # because specialized classes (like GeneRegulatesGeneAssociation) REQUIRE them.
+                        assoc_class = Association
                     
                     interaction_edge = assoc_class(**interaction_edge_kwargs)
                     edges.append(interaction_edge)
