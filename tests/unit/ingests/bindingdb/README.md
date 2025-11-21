@@ -53,12 +53,51 @@ Detailed documentation of each test record with expected transformation results.
 
 ```python
 import pytest
+
+import koza
+from koza.transform import Mappings
+from koza.io.writer.writer import KozaWriter
+
+from translator_ingest.ingests.bindingdb.bindingdb import transform_ingest_by_record
+from tests.unit.ingests import validate_transform_result
+
 from tests.unit.ingests.bindingdb.test_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     NO_PMID_RECORD
 )
-from translator_ingest.ingests.bindingdb.bindingdb import transform_ingest_by_record
+from translator_ingest.ingests.bindingdb.bindingdb import (
+    transform_ingest_by_record,
+    
+)
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
+
+@pytest.fixture(scope="package")
+def mock_koza_transform() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = dict()
+    return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
+
+
+# list of slots whose values are
+# to be checked in a result node
+NODE_TEST_SLOTS = ("id", "name", "category")
+
+
+# list of slots whose values are
+# to be checked in a result edge
+ASSOCIATION_TEST_SLOTS = (
+    "category",
+    "subject",
+    "predicate",
+    "negated",
+    "object",
+    "publications",
+    "sources",
+    "knowledge_level",
+    "agent_type",
+)
+
 
 @pytest.mark.parametrize(
     "test_record,expected_nodes,expected_edge",
@@ -98,8 +137,13 @@ from translator_ingest.ingests.bindingdb.bindingdb import transform_ingest_by_re
         ),
     ],
 )
-def test_ingest_transform(test_record, expected_nodes, expected_edge):
-    result = transform_ingest_by_record(mock_koza, test_record)
+def test_ingest_transform(
+        mock_koza_transform: koza.KozaTransform,
+        test_record,
+        expected_nodes,
+        expected_edge
+):
+    result = transform_ingest_by_record(mock_koza_transform, test_record)
     validate_transform_result(
         result=result,
         expected_nodes=expected_nodes,
@@ -114,7 +158,7 @@ def test_ingest_transform(test_record, expected_nodes, expected_edge):
 - All records are from the same publication (PMID: 12408711)
 - All targets are Human (Homo sapiens)
 - All measurements done at pH 7.4, 25°C
-- IDs may need to be adjusted based on final BindingDB transform implementation
+- IDs may need to be adjusted based on the final BindingDB transform implementation
 - The actual node and edge structure will depend on your transform function implementation
 
 ## Data Source
