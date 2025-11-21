@@ -1,0 +1,193 @@
+# ReferenceIngestGuide schema based content.
+  name:  BGee Ingest Guide
+
+# Information about upstream sources of data that are used by an ingested source to derive the knowledge that we ingest.
+# This slot is OPTIONAL and can be OMITTED for typical data ingest of an external knowledge source.
+# It is only relevant RIGs for "data-derived" KPs like ICEES, COHD, various Multiomics KPs, etc.
+  source_info: # (optional, multivalued, range = SupportingDataSourceInformation)
+    - infores_id: infores:bgee # (required, range = URIorCURIE)
+      name: # (optional, range = string)
+      description: >-
+	    Bgee is a database for retrieval and comparison of gene expression patterns across multiple animal species. It provides an intuitive answer to the question "where is a gene expressed?" and supports research in cancer and agriculture, as well as evolutionary biology.# (optional, range = string)
+	  citations:   
+        - "Frederic B Bastian, Julien Roux, Anne Niknejad, Aurélie Comte, Sara S Fonseca Costa, Tarcisio Mendes de Farias, Sébastien Moretti, Gilles Parmentier, Valentine Rech de Laval, Marta Rosikiewicz, Julien Wollbrett, Amina Echchiki, Angélique Escoriza, Walid H Gharib, Mar Gonzales-Porta, Yohan Jarosz, Balazs Laurenczy, Philippe Moret, Emilie Person, Patrick Roelli, Komal Sanjeev, Mathieu Seppey, Marc Robinson-Rechavi, The Bgee suite: integrated curated expression atlas and comparative transcriptomics in animals, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D831–D847, https://doi.org/10.1093/nar/gkaa793"
+      terms_of_use_info: # (required, range = TermsOfUseInfo)
+        terms_of_use_url: https://www.bgee.org/about/ # (optional, range = URIorCURIE)
+        terms_of_use_description: You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission. # (optional, range = string)
+        license_name: CC0 # (optional, range = string)
+        license_url: https://creativecommons.org/publicdomain/zero/1.0/ # (optional, range = URIorCURIE)
+    data_formats:  
+      - tsv.gz        
+    data_provision_mechanisms:  
+      - file_download
+    data_versioning_and_releases:  v15.0
+# Information about the Source of the data ingest
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+  ingest_info:  # (required, range = IngestInformation)
+    ingest_categories:  
+      - primary_knowledge_provider
+    utility: >- 
+      The information provided by Bgee gives us insight into how gene expression is located within specific cell lines and
+      anatomical locations across a multitude of organisms.
+    scope: >-
+      Gene expression in specific UBERON and CL curies. Provides various metrics to help researchers assess veracity of each call.
+
+    relevant_files:  # (required, multivalued, range = RelevantFiles) List source files with content we aim to ingest.
+      - file_name:  Homo_sapiens_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Homo sapiens (human) gene expression information.
+      - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Rattus norvegicus (brown rat) gene expression information.
+      - file_name:  Mus_musculus_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Mus musculus (house mouse) gene expression information.
+      - file_name:  Danio_rerio_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Danio rerio (zebra fish) gene expression information.
+      - file_name:  Xenopus_laevis_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Xenopus laevis (African clawed frog) gene expression information.
+      - file_name:  Drosophila_melanogaster_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Drosophila melanogaster (fruit fly) gene expression information.
+      - file_name:  Caenorhabditis_elegans_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Caenorhabditis elegans (roundworm) gene expression information.
+      - file_name:  Canis_lupus_familiaris_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Canis lupus familiaris (dog) gene expression information.
+      - file_name:  Bos_taurus_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Bos taurus (cattle) gene expression information.
+      - file_name:  Sus_scrofa_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Sus scrofa (wild boar) gene expression information.
+      - file_name:  Gallus_gallus_expr_simple.tsv.gz
+        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
+        description:  Gallus gallus (red junglefowl) gene expression information.
+    included_content:  # (required, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
+      - file_name:  Homo_sapiens_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Mus_musculus_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Danio_rerio_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Xenopus_laevis_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Drosophila_melanogaster_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Caenorhabditis_elegans_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Canis_lupus_familiaris_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Bos_taurus_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Sus_scrofa_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+      - file_name:  Gallus_gallus_expr_simple.tsv.gz
+        included_records:  
+        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank
+
+    filtered_content:  # (optional, multivalued, range = FilteredContent) Records from relevant files that are not included in the ingest, and why.
+      - file_name:  Homo_sapiens_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"  
+        rationale:  
+      - file_name:  Mus_musculus_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Danio_rerio_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Xenopus_laevis_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Drosophila_melanogaster_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Caenorhabditis_elegans_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Canis_lupus_familiaris_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Bos_taurus_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Sus_scrofa_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == "absent"
+        rationale:  
+      - file_name:  Gallus_gallus_expr_simple.tsv.gz
+        filtered_records: 'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05  
+        rationale:  
+
+    future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
+      - category:  edge_content# (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+        consideration:  Filter some organisms which are already filtered by Monarch.# (required, range = string)
+        relevant_files:  Caenorhabditis_elegans_expr_simple.tsv.gz, Danio_rerio_expr_simple.tsv.gz, Drosophila_melanogaster_expr_simple.tsv.gz, Mus_musculus_expr_simple.tsv.gz, Rattus_norvegicus_expr_simple.tsv.gz, Xenopus_laevis_expr_simple.tsv.gz# (optional, range = string)
+ 
+# Information about the Graph Output by the ingest
+  target_info:  # (required, range = TargetInformation)
+    infores_id:  infores:translator-bgee-kgx# (optional, range = URIorCURIE)
+    edge_type_info:  # (required, multivalued, range = EdgeType)
+      - subject_categories:  # (required, multivalued, range = URIorCURIE) Note: multiple sub_cat and obj_cat values for an edge type does not mean that the full cross-product must be instantiated in the data. See schema for more details.
+          - biolink:Gene
+        predicates:  # (required, multivaluded, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
+          - predicate: biolink:expressed_in
+        object_categories: # (required, multivalued, range = URIorCURIE)
+          - biolink:AnatomicalEntity
+          - biolink:Cell
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+          - knowledge_assertion
+        agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+          - computational_model
+        edge_properties:  # (optional, multivalued, range = URIorCURIE)
+          - FDR
+          - Expressionrank
+          - Expressionscore
+        ui_explanation: BGee edges included incidicate a strong association between a specific gene expression and a given anatomical region in an organism. # (required, range = string)
+        additional_notes:  # (optional, range = string)
+
+    node_type_info:  # (required, multivalued, range = NodeType)
+      - node_category: biolink:Gene  # (required, range = URIorCURIE)
+        source_identifier_types:  # (required, multivalued, range = string)
+          - "ENSEMBL"
+      - node_category: biolink:Cell  # (required, range = URIorCURIE)
+        source_identifier_types:  # (required, multivalued, range = string)
+          - "CL"
+      - node_category: biolink:AnatomicalEntity  # (required, range = URIorCURIE)
+        source_identifier_types:  # (required, multivalued, range = string)
+          - "UBERON"
+
+    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
+      - category:  edge_properties# (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
+        consideration: Add in incorporation of Expressionrank, Expressionscore, and FDR as edge properties. # (required, range = string)
+
+
+# Information about how the ingest was specified and performed
+  provenance_info: 
+    contributions:  
+      - "Daniel korn: code support"
+      - "Kevin Schaper: code support"
+      - "Evan Morris: code support"
+      - "Sierra Moxon: code support"
+      - "Matthew Brush: data modeling, domain expertise"
+    artifacts:
+      - "Ingest Survey: https://docs.google.com/spreadsheets/d/1bx4OSH1_HR69sKXIL1UBbelbUEx8X0b-gZTi8F81ypo/"
+      - "Ingest Ticket: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/54"
