@@ -148,7 +148,17 @@ target_info:
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
       predicate: biolink:interacts_with    # MHB: can we dig into the data behind these edges - to see if we can be more precise/detailed w.r.t. our predicate (and possibly qualifiers) - based on interaction types Pathbank provides. 
-                                            # AB: Addressed - Implemented interaction type mapping to use more specific Biolink predicates based on PathBank interaction-type field: Inhibition/Repression → negatively_regulates, Activation/Induction/Promotion → positively_regulates, Binding/Physical/Complex → physically_interacts_with, unknown types → interacts_with. This provides more semantic precision while maintaining backward compatibility for unmapped types.
+                                            # AB: Addressed - Implemented interaction type mapping using Biolink qualifiers: Inhibition/Repression → regulates with qualified_predicate=causes, object_aspect_qualifier=activity_or_abundance, object_direction_qualifier=downregulated; Activation/Induction/Promotion → regulates with qualified_predicate=causes, object_aspect_qualifier=activity_or_abundance, object_direction_qualifier=upregulated; Binding/Physical/Complex → physically_interacts_with; unknown types → interacts_with. This provides semantic precision using proper Biolink qualifier patterns.
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+            - "biolink:causes"
+        - property: biolink:object_aspect_qualifier
+          value_range:
+            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+        - property: biolink:object_direction_qualifier
+          value_range:
+            - biolink:DirectionQualifierEnum
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -158,7 +168,7 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      ui_explanation: "Binary interactions between entities (e.g., protein-protein, compound-protein) extracted from PWML interaction data. Predicates are mapped from PathBank interaction types: Inhibition/Repression → negatively_regulates, Activation/Induction/Promotion → positively_regulates, Binding/Physical/Complex → physically_interacts_with, others → interacts_with."
+      ui_explanation: "Binary interactions between entities (e.g., protein-protein, compound-protein) extracted from PWML interaction data. Interaction types are mapped using Biolink qualifiers: Inhibition/Repression → regulates with downregulates qualifier, Activation/Induction/Promotion → regulates with upregulates qualifier, Binding/Physical/Complex → physically_interacts_with, others → interacts_with."
 
     - subject_categories:
         - biolink:Pathway

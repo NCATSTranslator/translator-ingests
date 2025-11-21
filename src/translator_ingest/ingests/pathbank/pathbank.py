@@ -23,6 +23,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AnatomicalEntity,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    ChemicalAffectsBiologicalEntityAssociation,
+    GeneRegulatesGeneAssociation,
+    GeneAffectsChemicalAssociation,
+    DirectionQualifierEnum,
+    GeneOrGeneProductOrChemicalEntityAspectEnum,
 )
 
 from translator_ingest.util.biolink import (
@@ -866,10 +871,10 @@ def _create_interaction_edges(
 ) -> list[Association]:
     """Create interaction edges for protein-protein or other entity interactions.
 
-    Maps PathBank interaction types to more specific Biolink predicates when possible:
-    - Inhibition → negatively_regulates
-    - Activation → positively_regulates
-    - Binding/Physical → physically_interacts_with
+    Maps PathBank interaction types to Biolink predicates with qualifiers:
+    - Inhibition/Repression → regulates with downregulates qualifier
+    - Activation/Induction/Promotion → regulates with upregulates qualifier
+    - Binding/Physical/Complex → physically_interacts_with
     - Default → interacts_with
 
     Args:
@@ -882,18 +887,29 @@ def _create_interaction_edges(
     """
     edges = []
 
-    # Extract interaction type and map to Biolink predicate
+    # Extract interaction type and map to Biolink predicate and qualifiers
     interaction_type_raw = interaction.get("interaction-type", "")
     interaction_type = _normalize_xml_value(interaction_type_raw)
 
-    # Map PathBank interaction types to Biolink predicates
+    # Map PathBank interaction types to Biolink predicates and qualifiers
     # Using case-insensitive matching for robustness
     interaction_type_lower = interaction_type.lower() if interaction_type else ""
 
+    # Initialize qualifier variables
+    qualified_predicate = None
+    object_aspect_qualifier = None
+    object_direction_qualifier = None
+
     if "inhibit" in interaction_type_lower or "repress" in interaction_type_lower:
-        predicate = "biolink:negatively_regulates"
+        predicate = "biolink:regulates"
+        qualified_predicate = "biolink:causes"
+        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+        object_direction_qualifier = DirectionQualifierEnum.downregulated
     elif "active" in interaction_type_lower or "induc" in interaction_type_lower or "promot" in interaction_type_lower:
-        predicate = "biolink:positively_regulates"
+        predicate = "biolink:regulates"
+        qualified_predicate = "biolink:causes"
+        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+        object_direction_qualifier = DirectionQualifierEnum.upregulated
     elif (
         "bind" in interaction_type_lower or "physical" in interaction_type_lower or "complex" in interaction_type_lower
     ):
@@ -913,6 +929,10 @@ def _create_interaction_edges(
     right_elements = _normalize_to_list(
         right_elements_data.get("interaction-right-element") if isinstance(right_elements_data, dict) else None
     )
+
+    # Define entity types for association class selection
+    CHEMICAL_TYPES = {"Compound", "Bound", "ElementCollection"}
+    BIO_TYPES = {"Protein", "ProteinComplex", "NucleicAcid", "Reaction"}
 
     # Create edges between all left and right elements
     for left_element in left_elements:
@@ -965,18 +985,43 @@ def _create_interaction_edges(
                     else:
                         right_curie = f"{right_prefix}:{right_equiv_id}"
 
-                    # Create interaction edge with predicate based on interaction type
-                    interaction_edge = Association(
-                        id=entity_id(),
-                        subject=left_curie,
-                        predicate=predicate,
-                        object=right_curie,
-                        sources=build_association_knowledge_sources(
+                    # Determine appropriate Association class based on types
+                    assoc_class = Association
+                    
+                    # Check types against sets
+                    is_left_chem = left_type in CHEMICAL_TYPES
+                    is_left_bio = left_type in BIO_TYPES
+                    is_right_chem = right_type in CHEMICAL_TYPES
+                    is_right_bio = right_type in BIO_TYPES
+
+                    if is_left_chem and is_right_bio:
+                        assoc_class = ChemicalAffectsBiologicalEntityAssociation
+                    elif is_left_bio and is_right_bio:
+                        assoc_class = GeneRegulatesGeneAssociation
+                    elif is_left_bio and is_right_chem:
+                        assoc_class = GeneAffectsChemicalAssociation
+                    
+                    # Create interaction edge with predicate and qualifiers based on interaction type
+                    interaction_edge_kwargs = {
+                        "id": entity_id(),
+                        "subject": left_curie,
+                        "predicate": predicate,
+                        "object": right_curie,
+                        "sources": build_association_knowledge_sources(
                             primary=INFORES_PATHBANK,
                         ),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                    )
+                        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                        "agent_type": AgentTypeEnum.manual_agent,
+                    }
+                    
+                    # Add qualifiers if present AND supported by class
+                    # Fallback to generic Association (no qualifiers) if we can't use a specialized class
+                    if qualified_predicate and assoc_class != Association:
+                        interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
+                        interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
+                        interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
+                    
+                    interaction_edge = assoc_class(**interaction_edge_kwargs)
                     edges.append(interaction_edge)
 
     return edges
