@@ -13,7 +13,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
-    ChemicalToChemicalAssociation
+    ChemicalToChemicalAssociation,
+    AnatomicalEntityToAnatomicalEntityPartOfAssociation
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -98,20 +99,6 @@ MOLECULE_QUERY = """
     WHERE molecule_dictionary.molregno = ?
 """
 
-COMPONENT_QUERY = """
-    SELECT
-        component_sequences.component_type,
-        component_sequences.accession,
-        component_sequences.description,
-        component_sequences.tax_id,
-        component_sequences.organism,
-        component_sequences.db_source
-    FROM target_components
-    JOIN component_sequences ON component_sequences.component_id = target_components.component_id
-"""
-
-WHERE_TID_CLAUSE = "    WHERE tid = ?"
-
 METABOLITES_QUERY = """
     SELECT 
         metabolism.met_id,
@@ -147,6 +134,41 @@ SYNONYM_QUERY = """
     SELECT syn_type, synonyms
     FROM molecule_synonyms
     WHERE molregno = ?
+"""
+
+COMPONENT_QUERY = """
+    SELECT
+        target_dictionary.tid,
+        target_dictionary.target_type,
+        target_dictionary.pref_name AS target_name,
+        target_dictionary.chembl_id AS target_chembl_id,
+        target_dictionary.tax_id AS organism_tax_id,
+        component_sequences.component_type,
+        component_sequences.accession,
+        component_sequences.description,
+        component_sequences.organism,
+        component_sequences.tax_id AS component_tax_id,
+        component_sequences.db_source
+    FROM target_dictionary  
+    JOIN target_components ON target_components.tid = target_dictionary.tid
+    JOIN component_sequences ON component_sequences.component_id = target_components.component_id
+    WHERE component_sequences.accession IS NOT NULL
+"""
+
+WHERE_TARGET_TYPE_IS_SINGLE_PROTEIN = """
+    AND target_dictionary.target_type = 'SINGLE PROTEIN'
+"""
+
+WHERE_TARGET_TYPE_IS_COMPLEX = """
+    AND target_dictionary.target_type in (
+        'CHIMERIC PROTEIN',
+        'PROTEIN COMPLEX',
+        'PROTEIN COMPLEX GROUP',
+        'PROTEIN FAMILY',
+        'PROTEIN NUCLEIC-ACID COMPLEX',
+        'PROTEIN-PROTEIN INTERACTION',
+        'SELECTIVITY GROUP'
+    )
 """
 
 
@@ -249,56 +271,48 @@ def get_connection(koza: koza.KozaTransform) -> sqlite3.Connection:
     return con
 
 
-def get_target_components(con: sqlite3.Connection, tid: int) -> list[dict[str, Any]]:
-    cur = con.cursor()
-    cur.execute(COMPONENT_QUERY+WHERE_TID_CLAUSE, (tid,))
-    components = []
-    for row in cur.fetchall():
-        if row["component_type"] == "PROTEIN" and row["db_source"] in ("UNIPROT", "SWISS-PROT", "TREMBL"):
-            record = {
-                "accession": row["accession"],
-                "description": row["description"],
-                "tax_id": row["tax_id"],
-                "organism": row["organism"],
-                "db_source": row["db_source"]
-            }
-            components.append(record)
-    if len(components) == 1:
-        return components[0]
-    return None
-
-
-def build_protein_target(con, record):
-    tid = record["tid"]
-    id = CHEMBL_TARGET_PREFIX+record["target_chembl_id"]
-    name = record["target_name"]
-
-    components = get_target_components(con, tid)
-    if components:
-        if components["accession"]:
-            xref = [id]
-            id = UNIPROT_PREFIX+components["accession"]
-        synonym = [components["description"]]
-        tax_id = [TAX_ID_PREFIX+str(components["tax_id"])]
-    else:
-        synonym = None
-        xref = None
-        tax_id = None
+def get_protein(chembl_id: str, name: str, record: dict[str, Any]) -> bm.Protein | None:
+    if record["accession"] is None:
+        return None
+    if record["component_type"] != "PROTEIN":
+        return None
+    if record["db_source"] not in ("UNIPROT", "SWISS-PROT", "TREMBL"):
+        return None
+    
+    uniprot_id = UNIPROT_PREFIX+record["accession"]
+    synonym = record["description"]
+    tax_id = TAX_ID_PREFIX+str(record["component_tax_id"]) if record["component_tax_id"] else None
     return bm.Protein(
-        id=id,
+        id=uniprot_id,
         name=name,
-        synonym=synonym,
-        xref=xref,
-        in_taxon = tax_id
+        synonym=[synonym] if synonym and synonym != name else None,
+        xref=[chembl_id] if chembl_id else None,
+        in_taxon = [tax_id]
     )
+
+
+def get_all_proteins(koza: koza.KozaTransform) -> list[dict[str, Any]]:
+    con = koza.state['chembl_db_connection']
+    cur = con.cursor()
+    cur.execute(COMPONENT_QUERY+WHERE_TARGET_TYPE_IS_SINGLE_PROTEIN)
+    proteins = {}
+    for record in cur.fetchall():
+        chembl_id = CHEMBL_TARGET_PREFIX+record["target_chembl_id"]
+        name = record["target_name"]
+        protein = get_protein(chembl_id, name, record)
+        if protein:
+            proteins[chembl_id] = protein
+            proteins[protein.id] = protein
+    return proteins
 
 
 def build_target_node(koza: koza.KozaTransform, record: dict[str, Any]):
     category = record["target_type"]
     if category not in TARGET_CLASS_MAP or TARGET_CLASS_MAP[category] is None:
         return None
-    if TARGET_CLASS_MAP[category] == "Protein":
-        return build_protein_target(koza.state['chembl_db_connection'], record)
+    if category in ("PROTEIN", "SINGLE PROTEIN"):
+        chembl_id = CHEMBL_TARGET_PREFIX+record["target_chembl_id"]
+        return koza.state['chembl_proteins'].get(chembl_id)
     cls = getattr(bm, TARGET_CLASS_MAP[category])
     id = CHEMBL_TARGET_PREFIX+record["target_chembl_id"]
     name = record["target_name"]
@@ -314,8 +328,6 @@ def get_synonyms(koza: koza.KozaTransform, molregno: int) -> list[str] | None:
     if len(synonyms) > 0:
         return synonyms
     return None
-
-
 
 
 def create_chemical_entity(koza: koza.KozaTransform, molregno: int, compound_name: str = None):
@@ -342,11 +354,21 @@ def create_chemical_entity(koza: koza.KozaTransform, molregno: int, compound_nam
             xref=xref if len(xref) > 0 else None,
             synonym=get_synonyms(koza, molregno),
             # TODO: routes_of_delivery=routes_of_delivery if len(routes_of_delivery) > 0 else None,
-            availability = AVAILABILITY_TYPES.get(record["availability_type"]),
-            has_black_box_warning=bool(record["black_box_warning"]) if record["black_box_warning"] == 1 else None,
-            is_natural_product=bool(record["natural_product"]) if record["natural_product"] == 1 else None,
-            is_prodrug=bool(record["prodrug"]) if record["prodrug"] == 1 else None,
+            # TODO: availability = AVAILABILITY_TYPES.get(record["availability_type"]),
+            # TODO: has_black_box_warning=True if record["black_box_warning"] == 1 else None,
+            # TODO: is_natural_product=True if record["natural_product"] == 1 else None,
+            # TODO: is_prodrug=True if record["prodrug"] == 1 else None,
         )
+    return None
+
+
+def create_component_node(koza: koza.KozaTransform, record: dict[str, Any]):
+    category = record["component_type"]
+    if category == "PROTEIN" and record["accession"] is not None:
+        uniprot_id = UNIPROT_PREFIX+record["accession"]
+        if uniprot_id in koza.state['chembl_proteins']:
+            return koza.state['chembl_proteins'][uniprot_id]
+        return get_protein(None, record["description"], record)
     return None
 
 
@@ -363,10 +385,11 @@ def get_species_context_qualifier(record: dict[str, Any]):
 
 
 def get_enzyme_context_qualifier(koza: koza.KozaTransform, record: dict[str, Any]):
-    if record["tid"] is None:
+    if record["tid"] is None or record["target_chembl_id"] is None:
         return None
-    protein = build_protein_target(koza.state['chembl_db_connection'], record)
-    return protein.id
+    chembl_id = CHEMBL_TARGET_PREFIX+str(record["target_chembl_id"])
+    protein = koza.state['chembl_proteins'].get(chembl_id)
+    return protein.id if protein else None
 
 
 def get_publications(koza: koza.KozaTransform, record: dict[str, Any]):
@@ -489,6 +512,21 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
     return association
 
 
+def get_has_part_association(koza: koza.KozaTransform, component, target, record: dict[str, Any]) -> AnatomicalEntityToAnatomicalEntityPartOfAssociation:
+    species_context_qualifier = get_species_context_qualifier(record)
+    association = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+        id=str(uuid.uuid4()),
+        subject=target.id,
+        predicate="biolink:has_part",
+        object=component.id,
+        # TODO: species_context_qualifier = species_context_qualifier,
+        sources=build_association_knowledge_sources(INFORES_CHEMBL),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    return association
+
+
 # The prepare function is responsible for any data download, decompression, or other preparation required
 # before transformation. It should yield dictionaries, each representing a single record to be transformed.
 @koza.prepare_data(tag="chembl_drug_mechanism_binding")
@@ -497,6 +535,8 @@ def prepare_bind(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> It
     koza.log("ChEMBL drug mechanism binding data ...", level="INFO")
     con = get_connection(koza)
     koza.state['chembl_db_connection'] = con
+    proteins = get_all_proteins(koza)
+    koza.state['chembl_proteins'] = proteins
     cur = con.cursor()
     cur.execute(MOA_QUERY + WHERE_DIRECT_INTERACTION)
     records = cur.fetchall()
@@ -521,6 +561,8 @@ def prepare_mechanism(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
     koza.log("ChEMBL drug mechanism data ...", level="INFO")
     con = get_connection(koza)
     koza.state['chembl_db_connection'] = con
+    proteins = get_all_proteins(koza)
+    koza.state['chembl_proteins'] = proteins
     cur = con.cursor()
     cur.execute(MOA_QUERY)
     records = cur.fetchall()
@@ -544,6 +586,8 @@ def prepare_metabolites(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     koza.log("ChEMBL metabolites data ...", level="INFO")
     con = get_connection(koza)
     koza.state['chembl_db_connection'] = con
+    proteins = get_all_proteins(koza)
+    koza.state['chembl_proteins'] = proteins
     cur = con.cursor()
     cur.execute(METABOLITES_QUERY)
     records = cur.fetchall()
@@ -568,4 +612,35 @@ def transform_metabolites(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 chemical = create_chemical_entity(koza, record['drug_molregno'])
                 nodes.append(chemical)
                 association = create_chemical_association(koza, chemical, metabolite, record)
+        yield KnowledgeGraph(nodes=nodes, edges=edges)
+
+
+@koza.prepare_data(tag="chembl_complexes")
+def prepare_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    koza.log("ChEMBL complexes data ...", level="INFO")
+    con = get_connection(koza)
+    koza.state['chembl_db_connection'] = con
+    proteins = get_all_proteins(koza)
+    koza.state['chembl_proteins'] = proteins
+    cur = con.cursor()
+    cur.execute(COMPONENT_QUERY + WHERE_TARGET_TYPE_IS_COMPLEX)
+    records = cur.fetchall()
+    for record in records:
+         yield record
+    con.close()
+
+
+@koza.transform(tag="chembl_complexes")
+def transform_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    for record in data:
+        nodes = []
+        edges = []
+        target = build_target_node(koza, record)
+        if target:
+            component = create_component_node(koza, record)
+            if component:
+                nodes.append(component)
+                nodes.append(target)    
+                association = get_has_part_association(koza, component, target, record)
+                edges.append(association)
         yield KnowledgeGraph(nodes=nodes, edges=edges)
