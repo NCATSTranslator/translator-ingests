@@ -87,6 +87,8 @@ ASSOCIATION_TEST_SLOTS = (
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -122,6 +124,8 @@ ASSOCIATION_TEST_SLOTS = (
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -157,6 +161,8 @@ ASSOCIATION_TEST_SLOTS = (
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -192,6 +198,8 @@ ASSOCIATION_TEST_SLOTS = (
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -228,6 +236,8 @@ ASSOCIATION_TEST_SLOTS = (
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:uspto-patent"}
                 ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -267,6 +277,8 @@ ASSOCIATION_TEST_SLOTS = (
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [

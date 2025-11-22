@@ -222,35 +222,3 @@ CASPASE3_KI_RECORD_DUPLICATION = {
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P42574",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-3",
 }
-
-# Test record 5: US Patent Record
-CASPASE3_KI_RECORD_DUPLICATION = {
-    "BindingDB Reactant_set_id": "199",
-    "Ligand SMILES": "CN(Cc1ccc(s1)C(=O)N[C@@H](CC(O)=O)C(=O)CSCc1ccccc1Cl)Cc1ccc(O)c(c1)C(O)=O",
-    "Ligand InChI": "InChI=1S/C27H27ClN2O7S2/c1-30(12-16-6-8-22(31)19(10-16)27(36)37)13-18-7-9-24(39-18)26(35)29-21(11-25(33)34)23(32)15-38-14-17-4-2-3-5-20(17)28/h2-10,21,31H,11-15H2,1H3,(H,29,35)(H,33,34)(H,36,37)",
-    "Ligand InChI Key": "FIEQQFOHZKVJLV-UHFFFAOYSA-N",
-    "BindingDB MonomerID": "219",
-    "BindingDB Ligand Name": "Thiophene Scaffold 47c",
-    "Target Name": "Caspase-3",
-    "Target Source Organism According to Curator or DataSource": "Homo sapiens",
-    "Ki (nM)": "",
-    "IC50 (nM)": "6676.9",
-    "Kd (nM)": "",
-    "EC50 (nM)": "",
-    "kon (M-1-s-1)": "",
-    "koff (s-1)": "",
-    "pH": "7.4",
-    "Temp (C)": "25.00",
-    "Curation/DataSource": "Curated from the literature by BindingDB",
-    "Article DOI": "10.1021/jm020230j",
-    "BindingDB Entry DOI": "10.7270/Q2B56GW5",
-    "PMID": "12408711",
-    "Patent Number": "",
-    "PubChem CID": "5327301",
-    "PubChem SID": "8030144",
-    "ChEBI ID of Ligand": "",
-    "ChEMBL ID of Ligand": "CHEMBL3885650",
-    "UniProt (SwissProt) Primary ID of Target Chain 1": "P42574",
-    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-3",
-}
-
