@@ -74,6 +74,15 @@ def get_latest_version() -> str:
 def on_bindingdb_data_begin(koza_transform: koza.KozaTransform) -> None:
     koza_transform.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
 
+DATASOURCE_TO_IDENTIFIER_MAPPING = {
+    "CSAR": "infores:community-sar",
+    "ChEMBL": "infores:chembl",
+    "D3R": "infores:drug-design",
+    "PDSP Ki": "infores:ki-database",
+    "PubChem": "infores:pubchem",
+    "Taylor Research Group, UCSD": "infores:taylor-research-group-ucsd",
+    "US Patent": "infores:uspto-patent"
+}
 
 @koza.prepare_data()
 def prepare_bindingdb_data(
@@ -109,8 +118,7 @@ def prepare_bindingdb_data(
         #       in the next iteration
         output: dict[str, Any] = current_record.copy()
 
-        # TODO: capture sensible supporting data identifiers here
-        output["supporting_data_id"] = None
+        output["supporting_data_id"] = DATASOURCE_TO_IDENTIFIER_MAPPING.get(output[DATASOURCE], None)
 
         # Export the best record publication here, based on PMID > Patent ID > Article DOI
         # Ignore the record if no publication is available, but log the miss

@@ -23,6 +23,8 @@ from tests.unit.ingests.bindingdb.test_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     CASPASE1_WEAK_KI_RECORD,
+    CASPASE1_RECORD_WITH_DOI,
+    BINDINGDB_RECORD_WITH_A_US_PATENT,
     CASPASE3_KI_RECORD_DUPLICATION
 )
 
@@ -44,7 +46,6 @@ ASSOCIATION_TEST_SLOTS = (
     "category",
     "subject",
     "predicate",
-    "negated",
     "object",
     "publications",
     "sources",
@@ -65,7 +66,7 @@ ASSOCIATION_TEST_SLOTS = (
             [CASPASE3_KI_RECORD],
             [
                 {
-                    "id": "CID:5327301",  # or appropriate ID format
+                    "id": "CID:5327301",
                     "name": "Thiophene Scaffold 47c",
                     "category": ["biolink:ChemicalEntity"]
                 },
@@ -83,6 +84,9 @@ ASSOCIATION_TEST_SLOTS = (
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
                 "publications": ["PMID:12408711"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
+                ],
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -97,7 +101,7 @@ ASSOCIATION_TEST_SLOTS = (
             [CASPASE1_KI_RECORD],
             [
                 {
-                    "id": "CID:5327302",  # or appropriate ID format
+                    "id": "CID:5327302",
                     "name": "Inhibitor 3",
                     "category": ["biolink:ChemicalEntity"]
                 },
@@ -115,6 +119,9 @@ ASSOCIATION_TEST_SLOTS = (
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
+                ],
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -129,7 +136,7 @@ ASSOCIATION_TEST_SLOTS = (
             [CASPASE1_WEAK_KI_RECORD],
             [
                 {
-                    "id": "CID:5327304",  # or appropriate ID format
+                    "id": "CID:5327304",
                     "name": "Pyridine Scaffold 4",
                     "category": ["biolink:ChemicalEntity"]
                 },
@@ -147,6 +154,9 @@ ASSOCIATION_TEST_SLOTS = (
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
+                ],
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
@@ -157,15 +167,86 @@ ASSOCIATION_TEST_SLOTS = (
                 # ]
             }
         ),
-        (   # Test record 2: Duplication of Caspase-3 inhibitor assays,
-            #                to test merging of edges with identical ligand and target.
+        (   # Test record 4: Caspase-1 record with only a DOI publication citation
+            [CASPASE1_RECORD_WITH_DOI],
+            [
+                {
+                    "id": "CID:5327304",
+                    "name": "Pyridine Scaffold 4",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:P29466",
+                    "name": "Caspase-1",
+                    "category": ["biolink:Protein"]
+                },
+            ],
+            {
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
+                "subject": "CID:5327304",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:P29466",
+                "publications": ["doi:10.1021/jm020230j"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
+                ],
+                #
+                # The initial iteration of BindingDb will ignore study results
+                # "has_attribute": [
+                #     {
+                #         "has_attribute_type": "biolink:ki_inhibition_constant",
+                #         "has_quantitative_value": "3900"
+                #     }
+                # ]
+            }
+        ),
+        (  # Test record 5: BindingDb record with a US Patent citation
+            [BINDINGDB_RECORD_WITH_A_US_PATENT],
+            [
+                {
+                    "id": "CID:71463198",
+                    "name": "US9447092, 3",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:P08684",
+                    "name": "Cytochrome P450 3A4",
+                    "category": ["biolink:Protein"]
+                },
+            ],
+            {
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
+                "subject": "CID:71463198",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:P08684",
+                "publications": ["uspto-patent:9447092"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:uspto-patent"}
+                ],
+                #
+                # The initial iteration of BindingDb will ignore study results
+                # "has_attribute": [
+                #     {
+                #         "has_attribute_type": "biolink:ki_inhibition_constant",
+                #         "has_quantitative_value": "3900"
+                #     }
+                # ]
+            }
+        ),
+        (   # Test record 6: Duplication of Caspase-3 inhibitor assays, unit test to
+            #                test merging of edges with identical ligand and target.
             [
                 CASPASE3_KI_RECORD,
                 CASPASE3_KI_RECORD_DUPLICATION
             ],
             [
                 {
-                    "id": "CID:5327301",  # or appropriate ID format
+                    "id": "CID:5327301",
                     "name": "Thiophene Scaffold 47c",
                     "category": ["biolink:ChemicalEntity"]
                 },
@@ -183,6 +264,9 @@ ASSOCIATION_TEST_SLOTS = (
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
                 "publications": ["PMID:12408711"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
+                ],
                 #
                 # The initial iteration of BindingDb will ignore study results
                 # "has_attribute": [
