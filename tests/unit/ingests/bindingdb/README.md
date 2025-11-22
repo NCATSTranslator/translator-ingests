@@ -58,13 +58,14 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.bindingdb.bindingdb import transform_ingest_by_record
+from translator_ingest.ingests.bindingdb.bindingdb import transform_bindingdb_by_record
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 from tests.unit.ingests.bindingdb.test_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     NO_PMID_RECORD
 )
+
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
@@ -76,7 +77,6 @@ def mock_koza_transform() -> koza.KozaTransform:
 # list of slots whose values are
 # to be checked in a result node
 NODE_TEST_SLOTS = ("id", "name", "category")
-
 
 # list of slots whose values are
 # to be checked in a result edge
@@ -97,37 +97,37 @@ ASSOCIATION_TEST_SLOTS = (
     "test_record,expected_nodes,expected_edge",
     [
         (
-            NO_PMID_RECORD,
-            None,  # Should be filtered out
-            None,
+                NO_PMID_RECORD,
+                None,  # Should be filtered out
+                None,
         ),
         (
-            CASPASE3_KI_RECORD,
-            [
-                {
-                    "id": "BindingDB:219",  # or appropriate ID format
-                    "name": "Thiophene Scaffold 47c",
-                    "category": ["biolink:ChemicalEntity"]
-                },
-                {
-                    "id": "UniProtKB:P42574",
-                    "name": "Caspase-3",
-                    "category": ["biolink:Protein"]
-                },
-            ],
-            {
-                "category": ["biolink:ChemicalAffectsGeneAssociation"],
-                "subject": "BindingDB:219",
-                "predicate": "biolink:affects",
-                "object": "UniProtKB:P42574",
-                "publications": ["PMID:12408711"],
-                "qualifiers": [
+                CASPASE3_KI_RECORD,
+                [
                     {
-                        "qualifier_type_id": "biolink:binding_constant_ki",
-                        "qualifier_value": "90"
-                    }
+                        "id": "BindingDB:219",  # or appropriate ID format
+                        "name": "Thiophene Scaffold 47c",
+                        "category": ["biolink:ChemicalEntity"]
+                    },
+                    {
+                        "id": "UniProtKB:P42574",
+                        "name": "Caspase-3",
+                        "category": ["biolink:Protein"]
+                    },
                 ],
-            },
+                {
+                    "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                    "subject": "BindingDB:219",
+                    "predicate": "biolink:affects",
+                    "object": "UniProtKB:P42574",
+                    "publications": ["PMID:12408711"],
+                    "qualifiers": [
+                        {
+                            "qualifier_type_id": "biolink:binding_constant_ki",
+                            "qualifier_value": "90"
+                        }
+                    ],
+                },
         ),
     ],
 )
@@ -137,7 +137,7 @@ def test_ingest_transform(
         expected_nodes,
         expected_edge
 ):
-    result = transform_ingest_by_record(mock_koza_transform, test_record)
+    result = transform_bindingdb_by_record(mock_koza_transform, test_record)
     validate_transform_result(
         result=result,
         expected_nodes=expected_nodes,

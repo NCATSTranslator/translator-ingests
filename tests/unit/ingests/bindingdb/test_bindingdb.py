@@ -9,8 +9,9 @@ from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.bindingdb.bindingdb import (
+    on_bindingdb_data_begin,
     prepare_bindingdb_data,
-    transform_ingest_by_record
+    transform_bindingdb_by_record
 )
 from tests.unit.ingests import (
     validate_transform_result,
@@ -75,7 +76,9 @@ ASSOCIATION_TEST_SLOTS = (
                 },
             ],
             {
-                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
                 "subject": "CID:5327301",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
@@ -105,7 +108,9 @@ ASSOCIATION_TEST_SLOTS = (
                 },
             ],
             {
-                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
                 "subject": "CID:5327302",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
@@ -135,7 +140,9 @@ ASSOCIATION_TEST_SLOTS = (
                 },
             ],
             {
-                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
                 "subject": "CID:5327304",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
@@ -169,7 +176,9 @@ ASSOCIATION_TEST_SLOTS = (
                 },
             ],
             {
-                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
                 "subject": "CID:5327301",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
@@ -197,25 +206,31 @@ def test_ingest_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
+    # Need to call to initialize missed publications counter
+    on_bindingdb_data_begin(mock_koza_transform)
+
     # The prepare_bindingdb_data() method returns an iterable of records,
     # where duplication in the original assay records is removed, merging into a single edge...
     merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, test_records)
 
     # ... the resulting record stream is processed
-    # by the transform_ingest_by_record() method.
-    # First, we simulate the pipeline streaming of the records....
+    # by the transform_bindingdb_by_record() method.
+    # First, we simulate the pipeline streaming of the records...
     merged_records_iterator = iter(merged_records_iterable)
-    test_record = next(merged_records_iterator)
+    test_record = next(merged_records_iterator, None)
 
-    # ... one record at a time...
-    validate_transform_result(
-        result=transform_ingest_by_record(mock_koza_transform, test_record),
-        expected_nodes=result_nodes,
-        expected_edges=result_edge,
-        node_test_slots=NODE_TEST_SLOTS,
-        edge_test_slots=ASSOCIATION_TEST_SLOTS,
-    )
+    if result_nodes is None and result_edge is None:
+        assert test_record is None
+    else:
+        # ... one record at a time...
+        validate_transform_result(
+            result=transform_bindingdb_by_record(mock_koza_transform, test_record),
+            expected_nodes=result_nodes,
+            expected_edges=result_edge,
+            node_test_slots=NODE_TEST_SLOTS,
+            edge_test_slots=ASSOCIATION_TEST_SLOTS,
+        )
 
-    # ... but we should only see at most one record per unit test
-    with pytest.raises(StopIteration):
-        next(merged_records_iterator)
+        # ... but we should only see at most one record per unit test
+        with pytest.raises(StopIteration):
+            next(merged_records_iterator)
