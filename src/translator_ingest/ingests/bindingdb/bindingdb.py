@@ -2,6 +2,7 @@ from typing import Optional, Any, Iterable
 from datetime import datetime
 
 import koza
+from anyio import current_time
 from biolink_model.datamodel.model import UNIPROT_ISOFORM
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -16,7 +17,7 @@ from koza.model.graphs import KnowledgeGraph
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
 #
-# "BindingDB Reactant_set_id" = "200",
+BINDING_ENTRY_ID = "BindingDB Reactant_set_id"
 # "Ligand SMILES" = "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)cc1)C=O",
 # "Ligand InChI" = "InChI=1S/C19H18N2O9S/c22-10-13(7-17(24)25)21-18(26)12-3-1-11(2-4-12)9-20-31(29,30)14-5-6-16(23)15(8-14)19(27)28/h1-6,8,10,13,20,23H,7,9H2,(H,21,26)(H,24,25)(H,27,28)",
 # "Ligand InChI Key" = "FMTZTJFXNZOBIQ-UHFFFAOYSA-N",
@@ -84,6 +85,28 @@ DATASOURCE_TO_IDENTIFIER_MAPPING = {
     "US Patent": "infores:uspto-patent"
 }
 
+def _get_publication(koza_transform: koza.KozaTransform, data: dict[str, Any]) -> Optional[str]:
+    """
+    Export the best record publication here, based on PMID > Patent ID > Article DOI
+
+    :param koza_transform: The koza.KozaTransform context of the data processing.
+    :param data: Iterable[dict[str, Any]], Original BindingDb records
+    :return: Best publication CURIE or None if not available
+    """
+    publication: Optional[str] = None
+    if data:
+        if data[PMID]:
+            publication = f"PMID:{data[PMID]}"
+        elif data[PATENT_ID]:
+            publication = f"uspto-patent:{data[PATENT_ID].replace('US', "")}"
+        elif data[ARTICLE_DOI]:
+            publication = f"doi:{data[ARTICLE_DOI]}"
+        else:
+            koza_transform.log(f"No publication found for {data[BINDING_ENTRY_ID]}")
+            koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"] += 1
+
+    return publication
+
 @koza.prepare_data()
 def prepare_bindingdb_data(
         koza_transform: koza.KozaTransform,
@@ -96,45 +119,67 @@ def prepare_bindingdb_data(
     edges across rows, returning a single edge per unique ligand-target pair.
 
     For the time being, we blissfully make an assumption that the data from the iterable
-    is grouped by identical ligand-target pairs from a single experimental project (i.e., publication).
-
-    The second sideeffect of this method is to decide upon and record
-    the 'best' publication for the edge, from the several available fields.
+    is aggregated by in blocks from a single experimental project (i.e., publication),
+    then grouped by sets of assays for the same ligand-target pair.
 
     :param koza_transform: The koza.KozaTransform context of the data processing.
     :param data: Iterable[dict[str, Any]], Original BindingDb records
+
     :return: Iterable[dict[str, Any]], Consolidation of related assay records
-                                       for each unique ligand-target pair, with possible aggregation
-                                       of distinct annotation encountered across the original set of assays.
+             for each unique ligand-target pair, with possible aggregation
+             of distinct annotation encountered across the original set of assays.
     """
+    output_for_publication: Optional[dict[str, Any]] = None
+    current_output: Optional[dict[str, Any]] = None
+
     it = iter(data)
+
     while True:
         current_record = next(it, None)
-        if current_record is None:
-            break
+        if current_record is not None:
+            # We have a new record to process...
+            current_record["publication"] = _get_publication(koza_transform, current_record)
+            if not current_record["publication"]:
+                # We can't publish this record without
+                # a publication CURIE, so we skip it
+                continue
 
-        # TODO: direct copy of current_record for now.
-        #       We'll work on eliminating duplications
-        #       in the next iteration
-        output: dict[str, Any] = current_record.copy()
+            current_record["supporting_data_id"] = \
+                DATASOURCE_TO_IDENTIFIER_MAPPING.get(current_record[DATASOURCE], None)
 
-        output["supporting_data_id"] = DATASOURCE_TO_IDENTIFIER_MAPPING.get(output[DATASOURCE], None)
+            if (    # we check our boundary conditions for publishing the
+                    # last aggregated record, then starting a new collection
+                    not current_output
+                    or current_record["publication"] != current_output["publication"]
+                    or current_record[PUBMED_CID] != current_output[PUBMED_CID]
+                    or current_record[UNIPROT_ID] != current_output[UNIPROT_ID]
+            ):
+                # The "current_output" could still be None if we are just starting out.
+                output_for_publication = current_output
+                current_output = current_record.copy()
+            else:
+                # This is a bit of a dodgy shortcut
+                # to collect 'new' edge annotations, simply because
+                # some of the data collected from earlier matching
+                # SPO+publications records is likely being overwritten.
+                # TODO: devise a more robust approach to aggregate multiple records
+                current_output.update(current_record)
 
-        # Export the best record publication here, based on PMID > Patent ID > Article DOI
-        # Ignore the record if no publication is available, but log the miss
-        output["publication"]: Optional[str] = None
-        if output[PMID]:
-            output["publication"] = f"PMID:{output[PMID]}"
-        elif output[PATENT_ID]:
-            output["publication"] = f"uspto-patent:{output[PATENT_ID].replace('US', "")}"
-        elif output[ARTICLE_DOI]:
-            output["publication"] = f"doi:{output[ARTICLE_DOI]}"
         else:
-            koza_transform.log(f"No publication found for {output}")
-            koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"] += 1
-            continue
+            # No more records. If there were no data in the first place,
+            # then the "current_output" could still be None here, but just in case
+            # we did collect something already, then we should publish it.
+            output_for_publication = current_output
 
-        yield output
+        # Publish the latest content seen...
+        if output_for_publication is not None:
+            yield output_for_publication
+            output_for_publication = None
+
+        if not current_record:
+            # we've reached the end of the data stream
+            # with all data published, so we can stop processing
+            return
 
 
 @koza.transform_record()
