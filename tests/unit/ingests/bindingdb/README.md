@@ -59,18 +59,12 @@ from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.bindingdb.bindingdb import transform_ingest_by_record
-from tests.unit.ingests import validate_transform_result
-
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 from tests.unit.ingests.bindingdb.test_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     NO_PMID_RECORD
 )
-from translator_ingest.ingests.bindingdb.bindingdb import (
-    transform_ingest_by_record,
-    
-)
-from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:

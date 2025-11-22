@@ -5,6 +5,36 @@ These records represent real data from BindingDB that can be used
 to test the bindingdb transform function.
 """
 
+# Test record 0: Record with no PMID (should be filtered out)
+NO_PMID_RECORD = {
+    "BindingDB Reactant_set_id": "999",
+    "Ligand SMILES": "CC(C)C",
+    "Ligand InChI": "InChI=1S/C3H8/c1-3-2/h3H,1-2H3",
+    "Ligand InChI Key": "ATUOYWHBWRKTHZ-UHFFFAOYSA-N",
+    "BindingDB MonomerID": "9999",
+    "BindingDB Ligand Name": "Test Compound",
+    "Target Name": "Test Target",
+    "Target Source Organism According to Curator or DataSource": "Homo sapiens",
+    "Ki (nM)": "100",
+    "IC50 (nM)": "",
+    "Kd (nM)": "",
+    "EC50 (nM)": "",
+    "kon (M-1-s-1)": "",
+    "koff (s-1)": "",
+    "pH": "7.4",
+    "Temp (C)": "25.00",
+    "Curation/DataSource": "Test",
+    "Article DOI": "",
+    "BindingDB Entry DOI": "",
+    "PMID": "",  # No PMID - should cause the record to be skipped
+    "PubChem CID": "",
+    "PubChem SID": "",
+    "ChEBI ID of Ligand": "",
+    "ChEMBL ID of Ligand": "",
+    "UniProt (SwissProt) Primary ID of Target Chain 1": "P99999",
+    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Test Protein",
+}
+
 # Test record 1: Caspase-3 inhibitor with Ki = 90 nM
 CASPASE3_KI_RECORD = {
     "BindingDB Reactant_set_id": "199",
@@ -95,32 +125,33 @@ CASPASE1_WEAK_KI_RECORD = {
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-1",
 }
 
-# Test record 4: Record with no PMID (should be filtered out)
-NO_PMID_RECORD = {
-    "BindingDB Reactant_set_id": "999",
-    "Ligand SMILES": "CC(C)C",
-    "Ligand InChI": "InChI=1S/C3H8/c1-3-2/h3H,1-2H3",
-    "Ligand InChI Key": "ATUOYWHBWRKTHZ-UHFFFAOYSA-N",
-    "BindingDB MonomerID": "9999",
-    "BindingDB Ligand Name": "Test Compound",
-    "Target Name": "Test Target",
+# Test record 4: Duplication of Caspase-3 inhibitor, to test merging of records.
+#                Caspase-3 inhibitor with IC50 (nM) = 6676.9"
+CASPASE3_KI_RECORD_DUPLICATION = {
+    "BindingDB Reactant_set_id": "199",
+    "Ligand SMILES": "CN(Cc1ccc(s1)C(=O)N[C@@H](CC(O)=O)C(=O)CSCc1ccccc1Cl)Cc1ccc(O)c(c1)C(O)=O",
+    "Ligand InChI": "InChI=1S/C27H27ClN2O7S2/c1-30(12-16-6-8-22(31)19(10-16)27(36)37)13-18-7-9-24(39-18)26(35)29-21(11-25(33)34)23(32)15-38-14-17-4-2-3-5-20(17)28/h2-10,21,31H,11-15H2,1H3,(H,29,35)(H,33,34)(H,36,37)",
+    "Ligand InChI Key": "FIEQQFOHZKVJLV-UHFFFAOYSA-N",
+    "BindingDB MonomerID": "219",
+    "BindingDB Ligand Name": "Thiophene Scaffold 47c",
+    "Target Name": "Caspase-3",
     "Target Source Organism According to Curator or DataSource": "Homo sapiens",
-    "Ki (nM)": "100",
-    "IC50 (nM)": "",
+    "Ki (nM)": "",
+    "IC50 (nM)": "6676.9",
     "Kd (nM)": "",
     "EC50 (nM)": "",
     "kon (M-1-s-1)": "",
     "koff (s-1)": "",
     "pH": "7.4",
     "Temp (C)": "25.00",
-    "Curation/DataSource": "Test",
-    "Article DOI": "",
-    "BindingDB Entry DOI": "",
-    "PMID": "",  # No PMID - should cause record to be skipped
-    "PubChem CID": "",
-    "PubChem SID": "",
+    "Curation/DataSource": "Curated from the literature by BindingDB",
+    "Article DOI": "10.1021/jm020230j",
+    "BindingDB Entry DOI": "10.7270/Q2B56GW5",
+    "PMID": "12408711",
+    "PubChem CID": "5327301",
+    "PubChem SID": "8030144",
     "ChEBI ID of Ligand": "",
-    "ChEMBL ID of Ligand": "",
-    "UniProt (SwissProt) Primary ID of Target Chain 1": "P99999",
-    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Test Protein",
+    "ChEMBL ID of Ligand": "CHEMBL3885650",
+    "UniProt (SwissProt) Primary ID of Target Chain 1": "P42574",
+    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-3",
 }

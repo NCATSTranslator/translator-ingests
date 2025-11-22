@@ -8,12 +8,22 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests._ingest_template._ingest_template import (
-    on_begin_ingest_by_record,
-    transform_ingest_by_record,
+from translator_ingest.ingests.bindingdb.bindingdb import (
+    prepare_bindingdb_data,
+    transform_ingest_by_record
 )
-
-from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
+from tests.unit.ingests import (
+    validate_transform_result,
+    MockKozaWriter,
+    MockKozaTransform
+)
+from tests.unit.ingests.bindingdb.test_data import (
+    NO_PMID_RECORD,
+    CASPASE3_KI_RECORD,
+    CASPASE1_KI_RECORD,
+    CASPASE1_WEAK_KI_RECORD,
+    CASPASE3_KI_RECORD_DUPLICATION
+)
 
 
 @pytest.fixture(scope="package")
@@ -43,60 +53,161 @@ ASSOCIATION_TEST_SLOTS = (
 
 
 @pytest.mark.parametrize(
-    "test_record,result_nodes,result_edge",
+    "test_records,result_nodes,result_edge",
     [
-        (  # Query 0 - Missing PubMedIDs - returns None
-            {
-                "ChemicalName": "10074-G5",
-                "ChemicalID": "C534883",
-                "CasRN": "",
-                "DiseaseName": "Burkitt Lymphoma",
-                "DiseaseID": "MESH:D002051",
-                "DirectEvidence": "",
-                "InferenceGeneSymbol": "MYC",
-                "InferenceScore": "",
-                "OmimIDs": "113970",
-                "PubMedIDs": "",  # empty expected field, hence, parse doesn't return a knowledge graph
-            },
-            None,
+        (   # Test record 0: Record with no PMID (should be filtered out)
+            [NO_PMID_RECORD],
+            None,  # Should be filtered out
             None,
         ),
-        (  # Query 1 - Another record complete with PubMedIDs
-            {
-                # 199,
-                # CN(Cc1ccc(s1)C(=O)N[C@@H](CC(O)=O)C(=O)CSCc1ccccc1Cl)Cc1ccc(O)c(c1)C(O)=O |r|,
-                # "InChI=1S/C27H27ClN2O7S2/c1-30(12-16-6-8-22(31)19(10-16)27(36)37)13-18-7-9-24(39-18)26(35)29-21(11-25(33)34)23(32)15-38-14-17-4-2-3-5-20(17)28/h2-10,21,31H,11-15H2,1H3,(H,29,35)(H,33,34)(H,36,37)",
-                # FIEQQFOHZKVJLV-UHFFFAOYSA-N,
-                # 219,
-                # 5-({[(5-{[(2S)-1-carboxy-4-{[(2-chlorophenyl)methyl]sulfanyl}-3-oxobutan-2-yl]carbamoyl}thiophen-2-yl)methyl](methyl)amino}methyl)-2-hydroxybenzoic acid::Thiophene Scaffold 47c::Inhibitor 47c,
-                # Caspase-3,Homo sapiens, 90,,,,,,7.4000,25.00 C,Curated from the literature by BindingDB,10.1021/jm020230j,10.7270/Q2B56GW5,12408711,aid1795219
-            },
-            # Captured node contents
+        (   # Test record 1: Caspase-3 inhibitor with Ki = 90 nM
+            [CASPASE3_KI_RECORD],
             [
-                {"id": "MESH:C534883", "name": "10074-G5", "category": ["biolink:ChemicalEntity"]},
-                {"id": "MESH:D013734", "name": "Androgen-Insensitivity Syndrome", "category": ["biolink:Disease"]},
+                {
+                    "id": "CID:5327301",  # or appropriate ID format
+                    "name": "Thiophene Scaffold 47c",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:P42574",
+                    "name": "Caspase-3",
+                    "category": ["biolink:Protein"]
+                },
             ],
-            # Captured edge contents
             {
-                "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
-                "subject": "MESH:C534883",
-                "predicate": "biolink:related_to",
-                "object": "MESH:D013734",
-                "publications": ["PMID:1303262", "PMID:8281139"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                "subject": "CID:5327301",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:P42574",
+                "publications": ["PMID:12408711"],
+                #
+                # The initial iteration of BindingDb will ignore study results
+                # "has_attribute": [
+                #     {
+                #         "has_attribute_type": "biolink:ki_inhibition_constant",
+                #         "has_quantitative_value": "90"
+                #     }
+                # ]
+            }
         ),
-    ],
+        (   # Test record 2: Caspase-1 inhibitor with Ki = 160 nM
+            [CASPASE1_KI_RECORD],
+            [
+                {
+                    "id": "CID:5327302",  # or appropriate ID format
+                    "name": "Inhibitor 3",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:P29466",
+                    "name": "Caspase-1",
+                    "category": ["biolink:Protein"]
+                },
+            ],
+            {
+                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                "subject": "CID:5327302",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:P29466",
+                "publications": ["PMID:12408711"],
+                #
+                # The initial iteration of BindingDb will ignore study results
+                # "has_attribute": [
+                #     {
+                #         "has_attribute_type": "biolink:ki_inhibition_constant",
+                #         "has_quantitative_value": "160"
+                #     }
+                # ]
+            }
+        ),
+        (   # Test record 3: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
+            [CASPASE1_WEAK_KI_RECORD],
+            [
+                {
+                    "id": "CID:5327304",  # or appropriate ID format
+                    "name": "Pyridine Scaffold 4",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:P29466",
+                    "name": "Caspase-1",
+                    "category": ["biolink:Protein"]
+                },
+            ],
+            {
+                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                "subject": "CID:5327304",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:P29466",
+                "publications": ["PMID:12408711"],
+                #
+                # The initial iteration of BindingDb will ignore study results
+                # "has_attribute": [
+                #     {
+                #         "has_attribute_type": "biolink:ki_inhibition_constant",
+                #         "has_quantitative_value": "3900"
+                #     }
+                # ]
+            }
+        ),
+        (   # Test record 2: Duplication of Caspase-3 inhibitor assays,
+            #                to test merging of edges with identical ligand and target.
+            [
+                CASPASE3_KI_RECORD,
+                CASPASE3_KI_RECORD_DUPLICATION
+            ],
+            [
+                {
+                    "id": "CID:5327301",  # or appropriate ID format
+                    "name": "Thiophene Scaffold 47c",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:P42574",
+                    "name": "Caspase-3",
+                    "category": ["biolink:Protein"]
+                },
+            ],
+            {
+                "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                "subject": "CID:5327301",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:P42574",
+                "publications": ["PMID:12408711"],
+                #
+                # The initial iteration of BindingDb will ignore study results
+                # "has_attribute": [
+                #     {
+                #         "has_attribute_type": "biolink:ki_inhibition_constant",
+                #         "has quantitative value": "90"
+                #     },
+                #     {
+                #         "has_attribute_type": "biolink:ic50_half_maximal_inhibitory_concentration",
+                #         "has_quantitative_value": "6676.9"
+                #     }
+                # ]
+            }
+        )
+
+    ]
 )
 def test_ingest_transform(
     mock_koza_transform: koza.KozaTransform,
-    test_record: dict,
+    test_records: list[dict],
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
-    on_begin_ingest_by_record(mock_koza_transform)
+    # The prepare_bindingdb_data() method returns an iterable of records,
+    # where duplication in the original assay records is removed, merging into a single edge...
+    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, test_records)
+
+    # ... the resulting record stream is processed
+    # by the transform_ingest_by_record() method.
+    # First, we simulate the pipeline streaming of the records....
+    merged_records_iterator = iter(merged_records_iterable)
+    test_record = next(merged_records_iterator)
+
+    # ... one record at a time...
     validate_transform_result(
         result=transform_ingest_by_record(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -104,3 +215,7 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
+
+    # ... but we should only see at most one record per unit test
+    with pytest.raises(StopIteration):
+        next(merged_records_iterator)
