@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 import click
-from translator_ingest.util.biolink import get_biolink_schema, get_current_biolink_version
+from bmt.pydantic import get_biolink_schema, get_current_biolink_version
 from translator_ingest.util.storage.local import IngestFileName
 
 

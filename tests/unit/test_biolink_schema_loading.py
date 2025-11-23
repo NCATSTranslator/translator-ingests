@@ -7,7 +7,7 @@ import pytest
 import importlib.resources
 from linkml_runtime.utils.schemaview import SchemaView
 
-from translator_ingest.util.biolink import get_biolink_schema
+from bmt.pydantic import get_biolink_schema
 
 
 @pytest.fixture(autouse=True)
