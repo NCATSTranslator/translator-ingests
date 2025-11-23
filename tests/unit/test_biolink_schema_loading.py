@@ -1,12 +1,13 @@
 """
 Tests for biolink schema loading functionality in validate_biolink_kgx.py
+TODO: does this code belong in bmt.pydantic?
 """
 
 import pytest
 import importlib.resources
 from linkml_runtime.utils.schemaview import SchemaView
 
-from src.translator_ingest.util.validate_biolink_kgx import get_biolink_schema
+from translator_ingest.util.biolink import get_biolink_schema
 
 
 @pytest.fixture(autouse=True)

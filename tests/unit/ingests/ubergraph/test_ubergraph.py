@@ -115,14 +115,15 @@ def test_transform_creates_nodes_and_edges(mock_koza_with_state):
     assert len(results) == 1
     kg = results[0]
     assert isinstance(kg, KnowledgeGraph)
-    assert len(kg.nodes) == 2
-    assert len(kg.edges) == 1
+    nodes = list(kg.nodes)
+    assert len(nodes) == 2
+    assert len(nodes) == 1
 
     node_ids = [node.id for node in kg.nodes]
     assert "GO:0008150" in node_ids
     assert "UBERON:0001062" in node_ids
 
-    edge = kg.edges[0]
+    edge = list(kg.edges)[0]
     assert isinstance(edge, Association)
     assert edge.subject == "GO:0008150"
     assert edge.object == "UBERON:0001062"

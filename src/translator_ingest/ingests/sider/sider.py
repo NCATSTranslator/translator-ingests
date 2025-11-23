@@ -15,7 +15,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from translator_ingest import INGESTS_PARSER_PATH
-from translator_ingest.util.biolink import build_association_knowledge_sources
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 from koza.model.graphs import KnowledgeGraph
 
