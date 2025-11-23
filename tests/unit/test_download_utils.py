@@ -188,7 +188,7 @@ def test_fake_download(download_url):
         # Check that for either case of a
         # 'download_url' *with* or *withOUT* a version placeholder
         # that the original "download_yaml" file is **NOT** deleted
-        assert download_yaml.exists() == True
+        assert download_yaml.exists()
 
         # Check that when a versioned "url" is provided, thus the target download.yaml file path
         # points to a different (temporary) file which is not the original download.yaml path,
