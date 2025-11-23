@@ -6,7 +6,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from translator_ingest.util.download_utils import substitute_version_in_download_yaml
-from translator_ingest.util.metadata import PipelineMetadata
 
 
 def test_substitute_version_in_urls():
