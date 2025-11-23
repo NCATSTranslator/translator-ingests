@@ -83,7 +83,7 @@ def transform_ingest_all_streaming(
             continue
         all_triples.add((chemical.id, predicate, disease.id))
         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=chemical.id,
             predicate=predicate,
             object=disease.id,
