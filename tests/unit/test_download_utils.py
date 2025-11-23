@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.metadata import PipelineMetadata
 
 
 def test_substitute_version_in_urls():
@@ -116,3 +117,80 @@ def test_file_not_found():
             "nonexistent/download.yaml",
             "2024-01-15"
         )
+
+
+def _fake_download(download_yaml_file: Path):
+    # This method replicates the essential parts of 'url' version management within the
+    # code design pattern flanking the 'kghub_download' within the pipeline.download() method
+
+    # Substitute version placeholders in download.yaml if they exist
+    download_yaml_with_version = substitute_version_in_download_yaml(
+        download_yaml_file,
+        version="testing-1-2-3"
+    )
+
+    ########################################################################################################
+    # Ignored code context of the 'kghub_download' within the pipeline.download() method
+    #
+    # # Get a path for the subdirectory for the source data
+    # source_data_output_dir = get_source_data_directory(pipeline_metadata)
+    # Path.mkdir(source_data_output_dir, exist_ok=True)
+    try:
+    #     # Download the data
+    #     # Don't need to check if file(s) already downloaded, kg downloader handles that
+    #     kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        pass
+    finally:
+    #     ... indentation
+    ########################################################################################################
+
+        # Clean up the specified 'download_yaml' file if it exists and
+        # is a temporary file with versioning resolved but is
+        # **NOT** rather the original unmodified download.yaml!
+        if download_yaml_with_version and \
+                download_yaml_with_version != download_yaml_file:
+            download_yaml_with_version.unlink(missing_ok=True)
+
+    # returning the 'target' path, which will either be a temporary file
+    # with versioning resolved or the original unmodified download.yaml
+    return download_yaml_with_version
+
+
+@pytest.mark.parametrize(
+    "download_url",
+    [
+        # URL *withOUT* the default 'version' placeholder
+        "https://example.com/current/file.tsv.gz",
+
+        # URL *with* the default 'version' placeholder
+        "https://example.com/version/file.tsv.gz"
+    ]
+)
+def test_fake_download(download_url):
+    """Test that the code design pattern which wraps 'kghub_download' in the
+       pipeline.download() method, properly handles temporary file management."""
+    with TemporaryDirectory() as tmpdir:
+
+        tmpdir = Path(tmpdir)
+        download_yaml = tmpdir / "download.yaml"
+
+        test_config = [
+            {
+                "url": download_url,
+                "local_name": "file.tsv.gz"
+            }
+        ]
+        with open(download_yaml, 'w') as f:
+            yaml.safe_dump(test_config, f)
+
+        target_download_yaml = _fake_download(download_yaml)
+
+        # Check that for either case of a
+        # 'download_url' *with* or *withOUT* a version placeholder
+        # that the original "download_yaml" file is **NOT** deleted
+        assert download_yaml.exists() == True
+
+        # Check that when a versioned "url" is provided, thus the target download.yaml file path
+        # points to a different (temporary) file which is not the original download.yaml path,
+        # then the (temporary) target file is deleted within once the (simulated) download is done.
+        assert not (target_download_yaml != download_yaml and target_download_yaml.exists())

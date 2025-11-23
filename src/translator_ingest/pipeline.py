@@ -77,8 +77,11 @@ def download(pipeline_metadata: PipelineMetadata):
         # Don't need to check if file(s) already downloaded, kg downloader handles that
         kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
-        # Clean up the temporary file
-        if download_yaml_with_version:
+        # Clean up the specified download_yaml file if it exists and
+        # is a temporary file with versioning resolved but is
+        # **NOT** rather the original unmodified download.yaml!
+        if download_yaml_with_version and \
+                download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
 
 
