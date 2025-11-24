@@ -52,13 +52,6 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
 
     koza_app.state["total_records_processed"] += 1
 
-    # Skip any records not in our target taxa
-    target_taxa = {"9606", "10090", "10116"}  # Human, Mouse, Rat
-    if record["tax_id"] not in target_taxa:
-        koza_app.state["filtered_records"] += 1
-        return None
-
-
     # Get taxon label
     in_taxon_label = get_taxon_name(record["tax_id"])
 
