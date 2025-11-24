@@ -282,7 +282,7 @@ def validate(pipeline_metadata: PipelineMetadata):
         
         # Use regular validation
         validate_kgx(
-            nodes_file=nodes_file, 
+            nodes_file=nodes_file,
             edges_file=edges_file, 
             output_dir=validation_output_dir
         )
