@@ -4,7 +4,7 @@ ETL pipeline implemented with a Koza framework to map external data to Biolink M
 
 ## Repo management
 
-This repo uses `python` for managing dependencies. Never use commands like `pip` to add or manage dependencies.
+This repo uses `uv` for managing dependencies. Never use commands like `pip` to add or manage dependencies.
 
 Layout:
 
