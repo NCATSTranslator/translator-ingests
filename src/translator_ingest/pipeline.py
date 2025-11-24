@@ -37,19 +37,15 @@ logger.setLevel(logging.INFO)
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
     """Load koza config to get ingest-specific settings like max_edge_count."""
     source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
-    try:
-        config, _ = KozaRunner.from_config_file(
-            str(source_config_yaml_path),
-            output_dir=str(get_transform_directory(pipeline_metadata)),
-            output_format=KozaOutputFormat.jsonl,
-            input_files_dir=str(get_source_data_directory(pipeline_metadata)),
-        )
-        pipeline_metadata.koza_config = {
-            'max_edge_count': config.writer.max_edge_count if config.writer else None
-        }
-    except Exception as e:
-        logger.warning(f"Could not load koza config for {source}: {e}")
-        pipeline_metadata.koza_config = {}
+    config, _ = KozaRunner.from_config_file(
+        str(source_config_yaml_path),
+        output_dir=str(get_transform_directory(pipeline_metadata)),
+        output_format=KozaOutputFormat.jsonl,
+        input_files_dir=str(get_source_data_directory(pipeline_metadata)),
+    )
+    pipeline_metadata.koza_config = {
+        'max_edge_count': config.writer.max_edge_count if config.writer else None
+    }
 
 
 # Determine the latest available version for the source using the function from the ingest module
