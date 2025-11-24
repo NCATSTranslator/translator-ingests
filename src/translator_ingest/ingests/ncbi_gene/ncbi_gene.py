@@ -3,7 +3,6 @@ from typing import Any
 from biolink_model.datamodel.pydanticmodel_v2 import Gene
 from koza.model.graphs import KnowledgeGraph
 import koza
-from translator_ingest.util.biolink import INFORES_NCBIGENE
 
 
 def get_taxon_name(taxon_id: str) -> str:
@@ -52,18 +51,13 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
 
     koza_app.state["total_records_processed"] += 1
 
-    # Get taxon label
-    in_taxon_label = get_taxon_name(record["tax_id"])
-
     gene = Gene(
         id=f'NCBIGene:{record["GeneID"]}',
         symbol=record["Symbol"],
         name=record["Symbol"],
         full_name=record["Full_name_from_nomenclature_authority"],
         description=record["description"],
-        in_taxon=[f'NCBITaxon:{record["tax_id"]}'],
-        in_taxon_label=in_taxon_label,
-        provided_by=[INFORES_NCBIGENE],
+        taxon=[f'NCBITaxon:{record["tax_id"]}'],
         category=["biolink:Gene"]
     )
 
