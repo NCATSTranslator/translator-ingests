@@ -15,6 +15,7 @@ wheels/
 .venv
 output
 data
+releases
 
 # Documentation build artifacts (only used locally and in CI)
 /docs/
