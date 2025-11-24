@@ -507,7 +507,7 @@ def validate_data_directory(data_dir: Path, output_dir: Optional[Path] = None, n
 
     # Validate each source
     for source_name, nodes_file, edges_file in kgx_pairs:
-        logger.info(f"Validating source: {source_name}")    
+        logger.info(f"Validating source: {source_name}")
 
         # Check file sizes to determine which validation method to use
         edges_size = edges_file.stat().st_size
