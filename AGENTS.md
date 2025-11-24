@@ -1,4 +1,4 @@
-# AGENTS.md for go-fastapi
+# AGENTS.md for translator-ingests
 
 ETL pipeline implemented with Koza framework to map external data to Biolink Model for NCATS Translator project.
 
