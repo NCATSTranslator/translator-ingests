@@ -5,19 +5,6 @@ from koza.model.graphs import KnowledgeGraph
 import koza
 
 
-def get_taxon_name(taxon_id: str) -> str:
-    """
-    Get the scientific name for human, mouse, and rat taxon IDs.
-    """
-    taxon_names = {
-        "9606": "Homo sapiens",
-        "10090": "Mus musculus",
-        "10116": "Rattus norvegicus"
-    }
-
-    return taxon_names.get(taxon_id, "")
-
-
 def get_latest_version() -> str:
     return "latest"
 

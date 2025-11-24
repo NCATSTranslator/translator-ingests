@@ -218,40 +218,18 @@ def normalize(pipeline_metadata: PipelineMetadata):
         file_type=IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
 
-    # Call the modified normalize_kgx_files function
-    if max_edge_count == 0 and input_edges_path is None:
-        # For true nodes-only processing, we need to modify the normalize function
-        # For now, create an empty edges file to avoid the error
-        import tempfile
-        import os
-        temp_edges_file = tempfile.NamedTemporaryFile(mode='w', suffix='_edges.jsonl', delete=False)
-        temp_edges_file.close()
-
-        try:
-            normalize_kgx_files(
-                input_nodes_file_path=str(input_nodes_path),
-                input_edges_file_path=temp_edges_file.name,
-                nodes_output_file_path=str(norm_node_path),
-                node_norm_map_file_path=str(node_norm_map_path),
-                node_norm_failures_file_path=str(norm_failures_path),
-                edges_output_file_path=str(norm_edge_path),
-                predicate_map_file_path=str(predicate_map_path),
-                normalization_metadata_file_path=str(norm_metadata_path),
-            )
-        finally:
-            # Clean up the temporary file
-            os.unlink(temp_edges_file.name)
-    else:
-        normalize_kgx_files(
-            input_nodes_file_path=str(input_nodes_path),
-            input_edges_file_path=str(input_edges_path),
-            nodes_output_file_path=str(norm_node_path),
-            node_norm_map_file_path=str(node_norm_map_path),
-            node_norm_failures_file_path=str(norm_failures_path),
-            edges_output_file_path=str(norm_edge_path),
-            predicate_map_file_path=str(predicate_map_path),
-            normalization_metadata_file_path=str(norm_metadata_path),
-        )
+    # Call normalize_kgx_files with pipeline_metadata to handle nodes-only ingests
+    normalize_kgx_files(
+        input_nodes_file_path=str(input_nodes_path),
+        input_edges_file_path=str(input_edges_path) if input_edges_path else None,
+        nodes_output_file_path=str(norm_node_path),
+        node_norm_map_file_path=str(node_norm_map_path),
+        node_norm_failures_file_path=str(norm_failures_path),
+        edges_output_file_path=str(norm_edge_path),
+        predicate_map_file_path=str(predicate_map_path),
+        normalization_metadata_file_path=str(norm_metadata_path),
+        pipeline_metadata=pipeline_metadata,
+    )
     logger.info(f"Normalization complete for {pipeline_metadata.source}.")
 
 
