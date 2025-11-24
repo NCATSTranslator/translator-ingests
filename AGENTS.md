@@ -20,7 +20,7 @@ Best practice:
 * For tests that have external dependencies, you can do `@pytest.mark.integration`
 * Do not "fix" issues by changing or weakening test conditions. Try harder, or ask questions if a test fails.
 * Avoid try/except blocks, these can mask bugs
-* Fail fast is a good principle
+* Failing fast is a good principle
 * Follow the DRY principle
 * Avoid repeating chunks of code, but also avoid premature over-abstraction
 * Declarative principles are favored
