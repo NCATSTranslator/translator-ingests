@@ -270,7 +270,7 @@ def validate(pipeline_metadata: PipelineMetadata):
         logger.info(f"Running validation in nodes-only mode for {pipeline_metadata.source}")
         # Use nodes-only validation function
         validate_kgx_nodes_only(
-            nodes_file=nodes_file, 
+            nodes_file=nodes_file,
             output_dir=validation_output_dir
         )
     else:
