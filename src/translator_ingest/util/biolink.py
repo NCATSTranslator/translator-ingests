@@ -22,7 +22,6 @@ INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
 INFORES_TTD = "infores:ttd"
-INFORES_NCBIGENE = "infores:ncbi-gene"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
