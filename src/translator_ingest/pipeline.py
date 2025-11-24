@@ -28,6 +28,7 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx
+from translator_ingest.util.download_utils import substitute_version_in_download_yaml
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,14 +61,28 @@ def get_latest_source_version(source):
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
     logger.info(f"Downloading source data for {pipeline_metadata.source}...")
-    # Find the path to the source specific download yaml
+    # Find the path to the source-specific download yaml
     download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
+
+    # Substitute version placeholders in download.yaml if they exist
+    download_yaml_with_version = substitute_version_in_download_yaml(
+        download_yaml_file,
+        pipeline_metadata.source_version
+    )
     # Get a path for the subdirectory for the source data
     source_data_output_dir = get_source_data_directory(pipeline_metadata)
     Path.mkdir(source_data_output_dir, exist_ok=True)
-    # Download the data
-    # Don't need to check if file(s) already downloaded, kg downloader handles that
-    kghub_download(yaml_file=str(download_yaml_file), output_dir=str(source_data_output_dir))
+    try:
+        # Download the data
+        # Don't need to check if file(s) already downloaded, kg downloader handles that
+        kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+    finally:
+        # Clean up the specified download_yaml file if it exists and
+        # is a temporary file with versioning resolved but is
+        # **NOT** rather the original unmodified download.yaml!
+        if download_yaml_with_version and \
+                download_yaml_with_version != download_yaml_file:
+            download_yaml_with_version.unlink(missing_ok=True)
 
 
 # Check if the transform stage was already completed
