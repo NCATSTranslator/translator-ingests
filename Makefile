@@ -137,17 +137,6 @@ validate-%:
 	echo "Using edges file: $$EDGES_FILE"; \
 	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
-
-.PHONY: validate-only
-validate-only:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
-
-.PHONY: validate-only-%
-validate-only-%:
-	@echo "Validating $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
-
-
 .PHONY: merge
 merge:
 	@echo "Merging sources and building translator_kg...";
