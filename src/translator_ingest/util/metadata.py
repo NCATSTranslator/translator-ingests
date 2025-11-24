@@ -1,5 +1,6 @@
 import yaml
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any, Dict
 
 from orion.kgx_metadata import KGXSource
 
@@ -16,6 +17,7 @@ class PipelineMetadata:
     build_version: str | None = None
     release_version: str | None = None
     data: str | None = None
+    koza_config: Dict[str, Any] = field(default_factory=dict)
 
     def generate_build_version(self):
         versions = [

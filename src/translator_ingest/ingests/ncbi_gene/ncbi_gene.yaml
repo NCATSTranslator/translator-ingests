@@ -1,4 +1,5 @@
 name: ncbi_gene
+max_edge_count: 0
 
 reader:
   format: csv

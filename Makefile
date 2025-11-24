@@ -1,8 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-NODES_ONLY_SOURCES ?= ncbi_gene
-SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider ubergraph
+SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa ncbi_gene panther sider ubergraph
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
 # Clear OVERWRITE if explicitly set to "false" or "False"
@@ -59,9 +58,7 @@ define HELP
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │
-│                         Default: ctd go_cam goa           │
-│     NODES_ONLY_SOURCES  Space-separated list of nodes-only sources │
-│                         Default: ncbi_gene                │
+│                         Default: all available sources    │
 │                                                           │
 │ Examples:                                                 │
 │     make run                                              │
@@ -111,23 +108,7 @@ run:
 .PHONY: run-%
 run-%:
 	@echo "Running pipeline for $*..."
-	@if echo "$(NODES_ONLY_SOURCES)" | grep -q "\b$*\b"; then \
-		echo "Detected $* as nodes-only source, adding --nodes-only flag"; \
-		$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --nodes-only; \
-	else \
-		$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite); \
-	fi
-
-.PHONY: run-nodes-only-%
-run-nodes-only-%:
-	@echo "Running nodes-only pipeline for $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --nodes-only
-
-# Specific target for debugging
-.PHONY: run-nodes-only-ncbi_gene
-run-nodes-only-ncbi_gene:
-	@echo "Running nodes-only pipeline for ncbi_gene..."
-	@$(RUN) python src/translator_ingest/pipeline.py ncbi_gene $(if $(OVERWRITE),--overwrite) --nodes-only
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
 
 .PHONY: transform
 transform:
@@ -136,22 +117,12 @@ transform:
 .PHONY: transform-%
 transform-%:
 	@echo "Transform only for $*..."
-	@if echo "$(NODES_ONLY_SOURCES)" | grep -q "\b$*\b"; then \
-		echo "Detected $* as nodes-only source, adding --nodes-only flag"; \
-		$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only --nodes-only; \
-	else \
-		$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only; \
-	fi
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only
 
-.PHONY: transform-nodes-only-%
-transform-nodes-only-%:
-	@echo "Transform only for nodes-only $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only --nodes-only
 
 .PHONY: validate
 validate: run
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-,$(SOURCES))
-	@$(MAKE) -j $(words $(NODES_ONLY_SOURCES)) $(addprefix validate-nodes-only-,$(NODES_ONLY_SOURCES))
 
 .PHONY: validate-%
 validate-%:
@@ -166,25 +137,16 @@ validate-%:
 	echo "Using edges file: $$EDGES_FILE"; \
 	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
-.PHONY: validate-nodes-only-%
-validate-nodes-only-%:
-	@echo "Validating nodes-only $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl --nodes-only
 
 .PHONY: validate-only
 validate-only:
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
-	@$(MAKE) -j $(words $(NODES_ONLY_SOURCES)) $(addprefix validate-only-nodes-only-,$(NODES_ONLY_SOURCES))
 
 .PHONY: validate-only-%
 validate-only-%:
 	@echo "Validating $*..."
 	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
 
-.PHONY: validate-only-nodes-only-%
-validate-only-nodes-only-%:
-	@echo "Validating nodes-only $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl --nodes-only
 
 .PHONY: merge
 merge:
