@@ -97,9 +97,8 @@ def is_transform_complete(pipeline_metadata: PipelineMetadata):
 
     # For regular ingests, also check edges file
     if edges_file_path and not edges_file_path.exists():
-        # If edges_file_path is defined but doesn't exist, it might not be complete
-        # unless this is a nodes-only ingest which we'll check later
-        pass
+        # If edges_file_path is defined but doesn't exist, transformation is not complete
+        return False
 
     transform_metadata = get_versioned_file_paths(
         file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
