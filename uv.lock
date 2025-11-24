@@ -1554,7 +1554,7 @@ wheels = [
 [[package]]
 name = "koza"
 version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests#caddd55168e5df4a859cb9a4d8d0edcbe2373484" }
+source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests#f45fd218a3798ee47a9bbc9a5d8e5c09d495a89b" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
