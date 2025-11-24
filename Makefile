@@ -175,10 +175,6 @@ lint:
 	$(RUN) ruff check --diff --exit-zero
 	$(RUN) black -l 120 --check --diff src tests
 
-.PHONY: lint-fix
-lint-fix:
-	$(RUN) ruff check --fix
-
 .PHONY: format
 format:
 	$(RUN) ruff check --fix --exit-zero
