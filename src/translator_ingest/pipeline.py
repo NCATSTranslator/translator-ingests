@@ -135,7 +135,7 @@ def transform(pipeline_metadata: PipelineMetadata):
     # Store Koza config properties in PipelineMetadata for later use
     # This allows any ingest-specific properties to be accessible throughout the pipeline
     pipeline_metadata.koza_config = {
-        'max_edge_count': config.reader.max_edge_count if config.reader else None
+        'max_edge_count': config.writer.max_edge_count if config.writer else None
     }
 
     # retrieve source level metadata from the koza config
@@ -486,7 +486,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
             input_files_dir=str(get_source_data_directory(pipeline_metadata)),
         )
         pipeline_metadata.koza_config = {
-            'max_edge_count': config.reader.max_edge_count if config.reader else None
+            'max_edge_count': config.writer.max_edge_count if config.writer else None
         }
     else:
         transform(pipeline_metadata)
