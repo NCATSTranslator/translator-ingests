@@ -60,6 +60,10 @@ def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
     koza.state["bad_id_format"] = 0
     koza.state["invalid_edges"] = 0
     koza.state["invalid_nodes"] = 0
+    koza.state["negated_edges_skipped"] = 0
+    koza.state["domain_range_exclusion_skipped"] = 0
+    koza.state["low_publication_count_skipped"] = 0
+    koza.state["zero_novelty_skipped"] = 0
 
 @koza.on_data_end(tag="filter_edges")
 def on_end_filter_edges(koza: koza.KozaTransform) -> None:
@@ -77,6 +81,14 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:
         koza.log(f"  Invalid edges skipped: {koza.state['invalid_edges']}", level="WARNING")
     if koza.state["invalid_nodes"] > 0:
         koza.log(f"  Invalid nodes skipped: {koza.state['invalid_nodes']}", level="WARNING")
+    if koza.state["negated_edges_skipped"] > 0:
+        koza.log(f"  Negated edges skipped: {koza.state['negated_edges_skipped']}", level="INFO")
+    if koza.state["domain_range_exclusion_skipped"] > 0:
+        koza.log(f"  Domain/range exclusion skipped: {koza.state['domain_range_exclusion_skipped']}", level="INFO")
+    if koza.state["low_publication_count_skipped"] > 0:
+        koza.log(f"  Low publication count skipped: {koza.state['low_publication_count_skipped']}", level="INFO")
+    if koza.state["zero_novelty_skipped"] > 0:
+        koza.log(f"  Zero novelty skipped: {koza.state['zero_novelty_skipped']}", level="INFO")
 
 @koza.transform_record(tag="filter_edges")
 def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
@@ -90,9 +102,39 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
         koza.state["bad_id_format"] = 0
         koza.state["invalid_edges"] = 0
         koza.state["invalid_nodes"] = 0
+        koza.state["negated_edges_skipped"] = 0
+        koza.state["domain_range_exclusion_skipped"] = 0
+        koza.state["low_publication_count_skipped"] = 0
+        koza.state["zero_novelty_skipped"] = 0
     
     koza.state["total_edges_processed"] += 1
     
+    # 1. Filter: Negation
+    # remove all edges that represent negations
+    if record.get("negated"):
+        koza.state["negated_edges_skipped"] += 1
+        return None
+
+    # 2. Filter: Domain/Range Exclusion
+    # domain_range_exclusion == true
+    if record.get("domain_range_exclusion"):
+        koza.state["domain_range_exclusion_skipped"] += 1
+        return None
+
+    # 3. Filter: Publication Count
+    # number of publications > 3
+    publications = record.get("publications", [])
+    if len(publications) <= 3:
+        koza.state["low_publication_count_skipped"] += 1
+        return None
+
+    # 4. Filter: Novelty
+    # subject novelty or object novelty == 0
+    # Note: Checking if these fields exist in the record, as they are not always standard
+    if record.get("subject_novelty") == 0 or record.get("object_novelty") == 0:
+        koza.state["zero_novelty_skipped"] += 1
+        return None
+
     # extract required fields
     subject_id = record.get("subject")
     object_id = record.get("object")
@@ -127,7 +169,6 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
             return None
     
     # track publication statistics
-    publications = record.get("publications", [])
     if publications:
         koza.state["edges_with_publications"] += 1
     else:
@@ -144,9 +185,5 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent,
     )
-    
-    # add negation information if present
-    if record.get("negated"):
-        association.negated = record["negated"]
     
     return KnowledgeGraph(nodes=nodes, edges=[association])
