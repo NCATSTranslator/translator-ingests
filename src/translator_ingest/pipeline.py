@@ -33,6 +33,25 @@ from translator_ingest.util.download_utils import substitute_version_in_download
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
+def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
+    """Load koza config to get ingest-specific settings like max_edge_count."""
+    source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
+    try:
+        config, _ = KozaRunner.from_config_file(
+            str(source_config_yaml_path),
+            output_dir=str(get_transform_directory(pipeline_metadata)),
+            output_format=KozaOutputFormat.jsonl,
+            input_files_dir=str(get_source_data_directory(pipeline_metadata)),
+        )
+        pipeline_metadata.koza_config = {
+            'max_edge_count': config.writer.max_edge_count if config.writer else None
+        }
+    except Exception as e:
+        logger.warning(f"Could not load koza config for {source}: {e}")
+        pipeline_metadata.koza_config = {}
+
+
 # Determine the latest available version for the source using the function from the ingest module
 def get_latest_source_version(source):
     try:
@@ -95,8 +114,11 @@ def is_transform_complete(pipeline_metadata: PipelineMetadata):
     if not (nodes_file_path and nodes_file_path.exists()):
         return False
 
-    # For regular ingests, also check edges file
-    if edges_file_path and not edges_file_path.exists():
+    # Check if this is a nodes-only ingest based on max_edge_count
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    
+    # For regular ingests (not nodes-only), also check edges file
+    if max_edge_count != 0 and edges_file_path and not edges_file_path.exists():
         # If edges_file_path is defined but doesn't exist, transformation is not complete
         return False
 
@@ -130,12 +152,10 @@ def transform(pipeline_metadata: PipelineMetadata):
     )
     runner.run()
     logger.info(f"Finished transform for {source}")
-
-    # Store Koza config properties in PipelineMetadata for later use
-    # This allows any ingest-specific properties to be accessible throughout the pipeline
-    pipeline_metadata.koza_config = {
-        'max_edge_count': config.writer.max_edge_count if config.writer else None
-    }
+    
+    # Reload koza config after transform to ensure we have the latest values
+    # This is important because the transform might have updated config values
+    load_koza_config(source, pipeline_metadata)
 
     # retrieve source level metadata from the koza config
     # (this is currently populated from the metadata field of the source yaml but gets cast to a koza.DatasetDescription
@@ -445,6 +465,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
+    
+    # Load koza config early to get max_edge_count for all pipeline stages
+    load_koza_config(source, pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # TODO we need a way to version the transform (see issue #97)
@@ -454,17 +477,6 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
             f"Transform already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
             f"transform: {pipeline_metadata.transform_version}"
         )
-        # Load koza config to get max_edge_count when transform was already done
-        source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
-        config, _ = KozaRunner.from_config_file(
-            str(source_config_yaml_path),
-            output_dir=str(get_transform_directory(pipeline_metadata)),
-            output_format=KozaOutputFormat.jsonl,
-            input_files_dir=str(get_source_data_directory(pipeline_metadata)),
-        )
-        pipeline_metadata.koza_config = {
-            'max_edge_count': config.writer.max_edge_count if config.writer else None
-        }
     else:
         transform(pipeline_metadata)
     if transform_only:
