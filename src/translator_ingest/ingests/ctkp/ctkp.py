@@ -19,6 +19,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
     Drug,
     ComplexMolecularMixture,
+    ChemicalMixture,
     OrganismTaxon,
     NamedThing,
     Association,
@@ -186,7 +187,7 @@ def transform_nodes(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
             "biolink:PhenotypicFeature": PhenotypicFeature,
             "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
             "biolink:OrganismTaxon": OrganismTaxon,
-            "biolink:ChemicalMixture": ChemicalEntity,  # ChemicalMixture -> ChemicalEntity
+            "biolink:ChemicalMixture": ChemicalMixture,
         }
         
         node_class = category_to_class.get(category)
