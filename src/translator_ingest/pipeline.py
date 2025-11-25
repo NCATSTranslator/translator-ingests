@@ -112,7 +112,7 @@ def is_transform_complete(pipeline_metadata: PipelineMetadata):
 
     # Check if this is a nodes-only ingest based on max_edge_count
     max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
-    
+
     # For regular ingests (not nodes-only), also check edges file
     if max_edge_count != 0 and edges_file_path and not edges_file_path.exists():
         # If edges_file_path is defined but doesn't exist, transformation is not complete
@@ -148,7 +148,7 @@ def transform(pipeline_metadata: PipelineMetadata):
     )
     runner.run()
     logger.info(f"Finished transform for {source}")
-    
+
     # Reload koza config after transform to ensure we have the latest values
     # This is important because the transform might have updated config values
     load_koza_config(source, pipeline_metadata)
@@ -169,7 +169,7 @@ def transform(pipeline_metadata: PipelineMetadata):
         "source": pipeline_metadata.source,
         **{k: v for k, v in source_metadata.items() if v is not None},
         "source_version": pipeline_metadata.source_version,
-        "transform_version": "1.0",
+        "transform_version": pipeline_metadata.transform_version,
         "transform_metadata": runner.transform_metadata,
     }
     # we probably still want to do more here, maybe stuff like:
@@ -279,11 +279,11 @@ def validate(pipeline_metadata: PipelineMetadata):
             error_message = f"Expected edges file for {pipeline_metadata.source} but file not found"
             logger.error(error_message)
             raise FileNotFoundError(error_message)
-        
+
         # Use regular validation
         validate_kgx(
             nodes_file=nodes_file,
-            edges_file=edges_file, 
+            edges_file=edges_file,
             output_dir=validation_output_dir
         )
 
@@ -461,12 +461,12 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
-    
+
     # Transform the source data into KGX files if needed
     # TODO we need a way to version the transform (see issue #97)
     # Set transform_version before load_koza_config since it uses get_transform_directory
     pipeline_metadata.transform_version = "1.0"
-    
+
     # Load koza config early to get max_edge_count for all pipeline stages
     load_koza_config(source, pipeline_metadata)
     if is_transform_complete(pipeline_metadata) and not overwrite:
