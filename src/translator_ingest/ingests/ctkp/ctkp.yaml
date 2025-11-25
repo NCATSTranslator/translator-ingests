@@ -1,0 +1,11 @@
+name: ctkp
+
+readers:
+  nodes:
+    format: "jsonl"
+    files:
+      - "manifest.json"  # Dummy file, actual nodes file downloaded in prepare_data
+  edges:
+    format: "jsonl"
+    files:
+      - "manifest.json"  # Dummy file, actual edges file downloaded in prepare_data

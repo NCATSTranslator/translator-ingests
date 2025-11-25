@@ -1,0 +1,4 @@
+---
+# First download the manifest to get version information
+- url: https://raw.githubusercontent.com/multiomicsKP/clinical_trials_kp/main/manifest.json
+  local_name: manifest.json
