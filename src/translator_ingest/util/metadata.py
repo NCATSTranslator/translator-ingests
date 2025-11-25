@@ -1,5 +1,5 @@
 import yaml
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Any, Dict
 
 from orion.kgx_metadata import KGXSource
@@ -28,6 +28,11 @@ class PipelineMetadata:
             self.biolink_version,
         ]
         return "_".join(versions)
+
+    def get_release_metadata(self):
+        pipeline_metadata_dict = asdict(self)
+        del(pipeline_metadata_dict['koza_config'])
+        return pipeline_metadata_dict
 
 def get_kgx_source_from_rig(source: str) -> KGXSource:
     """Read a source's rig YAML file and create a KGXSource instance."""

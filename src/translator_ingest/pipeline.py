@@ -445,13 +445,10 @@ def is_latest_release_current(pipeline_metadata: PipelineMetadata):
 def generate_latest_release_metadata(pipeline_metadata: PipelineMetadata):
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
                 f"release: {pipeline_metadata.release_version}")
-    latest_release_metadata = {
-        **asdict(pipeline_metadata),
-        "data": f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/",
-    }
+    pipeline_metadata.data = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
     write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=latest_release_metadata)
+                      data=pipeline_metadata.get_release_metadata())
 
 
 def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
