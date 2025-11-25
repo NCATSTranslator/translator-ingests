@@ -7,7 +7,7 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 
-from bmt.pydantic import get_current_biolink_version
+from translator_ingest.util.biolink import get_current_biolink_version
 
 from kghub_downloader.main import main as kghub_download
 
