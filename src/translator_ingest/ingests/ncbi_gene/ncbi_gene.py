@@ -36,15 +36,12 @@ def on_end_ncbi_gene(koza_app: koza.KozaTransform) -> None:
 def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
     Transform NCBI Gene record into biolink:Gene node.
+
+    Records are already filtered by tax_id. Currently, only 9606 (human), 10090 (mouse), and 10116 (rat) are included.
+    See the koza config for details. (ncbi_gene.yaml)
     """
 
     koza_app.state["total_records_processed"] += 1
-
-    # Double-check the filter - only process allowed taxon IDs
-    allowed_taxons = ["9606", "10090", "10116"]
-    if record["tax_id"] not in allowed_taxons:
-        koza_app.state["filtered_records"] += 1
-        return None
 
     gene = Gene(
         id=f'NCBIGene:{record["GeneID"]}',

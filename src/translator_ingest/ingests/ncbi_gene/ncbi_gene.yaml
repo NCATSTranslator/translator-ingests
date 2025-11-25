@@ -29,7 +29,7 @@ reader:
   filters:
     - inclusion: include
       column: tax_id
-      filter_code: in
+      filter_code: in_exact
       value:
         - "9606"   # Human
         - "10090"  # Mouse
