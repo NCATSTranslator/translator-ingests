@@ -4,9 +4,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import Gene
 from koza.model.graphs import KnowledgeGraph
 import koza
 
+from translator_ingest.util.http_utils import get_modify_date
+
 
 def get_latest_version() -> str:
-    return "latest"
+    return get_modify_date("https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz")
 
 
 @koza.on_data_begin()
