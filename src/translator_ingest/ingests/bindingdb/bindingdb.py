@@ -65,7 +65,8 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
 
 
 def get_latest_version() -> str:
-    # According to the BindingDb team, a fresh year+month date-stamped release
+    # According to the BindingDb team,
+    # a fresh year+month date-stamped release
     # of BindingDb data is made at the start of each month,
     # so we use the heuristic of a date function to return
     # this candidate 'latest release' value.
