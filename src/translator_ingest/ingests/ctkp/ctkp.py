@@ -3,7 +3,7 @@ import gzip
 import logging
 import urllib.request
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Dict
 import uuid
 
 import koza
@@ -37,6 +37,81 @@ INFORES_CTKP = "infores:multiomics-clinicaltrials"
 logger = logging.getLogger(__name__)
 
 
+# Helper function to create node from data
+def create_node(node_data: dict) -> Any:
+    node_id = node_data.get("id")
+    name = node_data.get("name")
+    categories = node_data.get("category", [])
+
+    if not categories:
+        return NamedThing(
+            id=node_id,
+            name=name,
+            category=["biolink:NamedThing"]
+        )
+
+    category = categories[0]
+
+    # Special handling for clinical trial nodes
+    if node_id.startswith("CLINICALTRIALS:"):
+        # Convert age boolean properties to multivalued age_stage
+        age_stages = []
+        if node_data.get("clinical_trial_child", False):
+            age_stages.append("child")
+        if node_data.get("clinical_trial_adult", False):
+            age_stages.append("adult")
+        if node_data.get("clinical_trial_older_adult", False):
+            age_stages.append("older_adult")
+
+        return ClinicalTrial(
+            id=node_id,
+            name=name,
+            category=["biolink:ClinicalTrial"],
+            clinical_trial_phase=node_data.get("clinical_trial_phase"),
+            clinical_trial_tested_intervention=node_data.get("clinical_trial_tested_intervention"),
+            clinical_trial_overall_status=node_data.get("clinical_trial_overall_status"),
+            clinical_trial_start_date=node_data.get("clinical_trial_start_date"),
+            clinical_trial_enrollment=node_data.get("clinical_trial_enrollment"),
+            clinical_trial_enrollment_type=node_data.get("clinical_trial_enrollment_type"),
+            clinical_trial_age_range=node_data.get("clinical_trial_age_range"),
+            clinical_trial_age_stage=age_stages if age_stages else None,
+            clinical_trial_primary_purpose=node_data.get("clinical_trial_primary_purpose"),
+            clinical_trial_intervention_model=node_data.get("clinical_trial_intervention_model"),
+        )
+
+    # Map category to appropriate Pydantic class
+    category_to_class = {
+        "biolink:SmallMolecule": SmallMolecule,
+        "biolink:MolecularMixture": MolecularMixture,
+        "biolink:ChemicalEntity": ChemicalEntity,
+        "biolink:Protein": Protein,
+        "biolink:Drug": Drug,
+        "biolink:ComplexMolecularMixture": ComplexMolecularMixture,
+        "biolink:ChemicalMixture": ChemicalMixture,
+        "biolink:Disease": Disease,
+        "biolink:PhenotypicFeature": PhenotypicFeature,
+        "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
+        "biolink:OrganismTaxon": OrganismTaxon,
+    }
+
+    node_class = category_to_class.get(category)
+
+    if node_class:
+        return node_class(
+            id=node_id,
+            name=name,
+            category=categories
+        )
+    else:
+        # For unknown categories, use NamedThing as default
+        logger.debug(f"Unknown category {category} for node {node_id}, using NamedThing")
+        return NamedThing(
+            id=node_id,
+            name=name,
+            category=categories
+        )
+
+
 def get_latest_version() -> str:
     """Get version from the manifest file."""
     # This function is called by the pipeline before Koza context is available.
@@ -45,10 +120,9 @@ def get_latest_version() -> str:
     return "pending"
 
 
-
-@koza.prepare_data(tag="nodes")
-def prepare_nodes_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    """Download and prepare nodes data based on manifest version."""
+@koza.prepare_data(tag="edges")
+def prepare_edges_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    """Download files and prepare data for processing."""
 
     # Read manifest to get version
     manifest_path = Path(koza.input_files_dir) / "manifest.json"
@@ -57,46 +131,41 @@ def prepare_nodes_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]])
 
     # Get version directly from the version property
     version = manifest.get("version", "unknown")
-    
-    # Store version in koza.state
-    koza.state["ctkp_version"] = version
-    
+
     logger.info(f"Using CTKP version: {version}")
 
     # Construct JSONL.gz URLs
     nodes_jsonl_url = f"https://db.systemsbiology.net/gestalt/KG/clinical_trials_kg_nodes_v{version}.jsonl.gz"
     edges_jsonl_url = f"https://db.systemsbiology.net/gestalt/KG/clinical_trials_kg_edges_v{version}.jsonl.gz"
 
-    # Download nodes file
+    # Download files
     nodes_file_path = Path(koza.input_files_dir) / "clinical_trials_kg_nodes.jsonl.gz"
+    edges_file_path = Path(koza.input_files_dir) / "clinical_trials_kg_edges.jsonl.gz"
+
     logger.info(f"Downloading nodes from {nodes_jsonl_url}")
     urllib.request.urlretrieve(nodes_jsonl_url, nodes_file_path)
 
-    # Also download edges file for later use
-    edges_file_path = Path(koza.input_files_dir) / "clinical_trials_kg_edges.jsonl.gz"
     logger.info(f"Downloading edges from {edges_jsonl_url}")
     urllib.request.urlretrieve(edges_jsonl_url, edges_file_path)
 
-    # Store node information in state for edge processing
-    koza.state["nodes_lookup"] = {}
+    # Load all nodes into memory
+    logger.info("Loading all nodes into memory...")
+    nodes_lookup = {}
+    node_count = 0
 
-    # Read and yield nodes data
     with gzip.open(nodes_file_path, 'rt') as f:
         for line in f:
             if line.strip():
                 node = json.loads(line)
-                # Store node info for edge processing
-                koza.state["nodes_lookup"][node.get("id")] = node
-                yield node
+                node_id = node.get("id")
+                if node_id:
+                    nodes_lookup[node_id] = node
+                    node_count += 1
 
+    logger.info(f"Loaded {node_count} nodes into memory")
+    koza.state["nodes_lookup"] = nodes_lookup
 
-@koza.prepare_data(tag="edges")
-def prepare_edges_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    """Read edges data from downloaded file."""
-
-    edges_file_path = Path(koza.input_files_dir) / "clinical_trials_kg_edges.jsonl.gz"
-
-    # Read and yield edges data
+    # Yield edges for processing
     with gzip.open(edges_file_path, 'rt') as f:
         for line in f:
             if line.strip():
@@ -104,115 +173,9 @@ def prepare_edges_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]])
                 yield edge
 
 
-@koza.transform_record(tag="nodes")
-def transform_nodes(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-    """Transform node records, especially handling clinical trial nodes."""
-
-    node_id = record.get("id")
-    if not node_id:
-        return None
-
-    # Get node categories
-    categories = record.get("category", [])
-    if not categories:
-        # If no category, create a NamedThing node
-        logger.debug(f"Node {node_id} has no category, creating NamedThing")
-        node = NamedThing(
-            id=node_id,
-            name=record.get("name"),
-            category=["biolink:NamedThing"]
-        )
-        return KnowledgeGraph(nodes=[node], edges=[])
-    
-    category = categories[0]  # Use first category for determining node type
-    
-    # Check if this is a clinical trial node
-    if node_id.startswith("CLINICALTRIALS:"):
-        # Convert age boolean properties to multivalued age_stage
-        age_stages = []
-        if record.get("clinical_trial_child", False):
-            age_stages.append("child")
-        if record.get("clinical_trial_adult", False):
-            age_stages.append("adult")
-        if record.get("clinical_trial_older_adult", False):
-            age_stages.append("older_adult")
-        
-        # Create ClinicalTrial node
-        node = ClinicalTrial(
-            id=node_id,
-            name=record.get("name"),
-            category=["biolink:ClinicalTrial"],  # Add missing category
-            clinical_trial_phase=record.get("clinical_trial_phase"),
-            clinical_trial_tested_intervention=record.get("clinical_trial_tested_intervention"),
-            clinical_trial_overall_status=record.get("clinical_trial_overall_status"),
-            clinical_trial_start_date=record.get("clinical_trial_start_date"),
-            clinical_trial_enrollment=record.get("clinical_trial_enrollment"),
-            clinical_trial_enrollment_type=record.get("clinical_trial_enrollment_type"),
-            clinical_trial_age_range=record.get("clinical_trial_age_range"),
-            clinical_trial_age_stage=age_stages if age_stages else None,
-            clinical_trial_primary_purpose=record.get("clinical_trial_primary_purpose"),
-            clinical_trial_intervention_model=record.get("clinical_trial_intervention_model"),
-        )
-        
-        # Store the transformed node data back in the lookup with ALL properties
-        transformed_node_data = {
-            "id": node_id,
-            "name": record.get("name"),
-            "category": ["biolink:ClinicalTrial"],
-            "clinical_trial_phase": record.get("clinical_trial_phase"),
-            "clinical_trial_tested_intervention": record.get("clinical_trial_tested_intervention"),
-            "clinical_trial_overall_status": record.get("clinical_trial_overall_status"),
-            "clinical_trial_start_date": record.get("clinical_trial_start_date"),
-            "clinical_trial_enrollment": record.get("clinical_trial_enrollment"),
-            "clinical_trial_enrollment_type": record.get("clinical_trial_enrollment_type"),
-            "clinical_trial_age_range": record.get("clinical_trial_age_range"),
-            "clinical_trial_age_stage": age_stages if age_stages else None,
-            "clinical_trial_primary_purpose": record.get("clinical_trial_primary_purpose"),
-            "clinical_trial_intervention_model": record.get("clinical_trial_intervention_model"),
-            "interventions": record.get("interventions"),
-            "conditions": record.get("conditions"),
-        }
-        koza.state["nodes_lookup"][node_id] = transformed_node_data
-    
-    else:
-        # Map category to appropriate Pydantic class
-        category_to_class = {
-            "biolink:SmallMolecule": SmallMolecule,
-            "biolink:MolecularMixture": MolecularMixture,
-            "biolink:ChemicalEntity": ChemicalEntity,
-            "biolink:Protein": Protein,
-            "biolink:Drug": Drug,
-            "biolink:ComplexMolecularMixture": ComplexMolecularMixture,
-            "biolink:Disease": Disease,
-            "biolink:PhenotypicFeature": PhenotypicFeature,
-            "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
-            "biolink:OrganismTaxon": OrganismTaxon,
-            "biolink:ChemicalMixture": ChemicalMixture,
-        }
-        
-        node_class = category_to_class.get(category)
-        
-        if node_class:
-            node = node_class(
-                id=node_id,
-                name=record.get("name"),
-                category=categories
-            )
-        else:
-            # For unknown categories, use ChemicalEntity as default
-            logger.debug(f"Unknown category {category} for node {node_id}, using ChemicalEntity")
-            node = ChemicalEntity(
-                id=node_id,
-                name=record.get("name"),
-                category=categories
-            )
-    
-    return KnowledgeGraph(nodes=[node], edges=[])
-
-
 @koza.transform_record(tag="edges")
-def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-    """Transform edge records into KnowledgeGraph objects."""
+def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    """Transform edge records into KnowledgeGraph objects with both nodes and edges."""
 
     # Get edge properties
     subject_id = record.get("subject")
@@ -223,8 +186,10 @@ def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         logger.warning(f"Skipping edge missing required fields: {record}")
         return None
 
-    # Look up nodes from state
+    # Get nodes lookup from state
     nodes_lookup = koza.state.get("nodes_lookup", {})
+
+    # Look up subject and object nodes
     subject_node_data = nodes_lookup.get(subject_id)
     object_node_data = nodes_lookup.get(object_id)
 
@@ -232,40 +197,15 @@ def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         logger.warning(f"Skipping edge - missing node data for {subject_id} or {object_id}")
         return None
 
-    # Create node objects based on categories
-    nodes = []
 
-    # Create subject node (intervention - chemical or molecular mixture)
-    subject_categories = subject_node_data.get("category", [])
-    if "biolink:MolecularMixture" in subject_categories:
-        subject_node = MolecularMixture(
-            id=subject_id,
-            name=subject_node_data.get("name"),
-            category=subject_categories
-        )
-    else:
-        # Default to ChemicalEntity
-        subject_node = ChemicalEntity(
-            id=subject_id,
-            name=subject_node_data.get("name"),
-            category=subject_categories or ["biolink:ChemicalEntity"]
-        )
-    nodes.append(subject_node)
+    # Create subject and object nodes
+    subject_node = create_node(subject_node_data)
+    object_node = create_node(object_node_data)
 
-    # Create object node (disease/phenotype)
-    object_node = DiseaseOrPhenotypicFeature(
-        id=object_id,
-        name=object_node_data.get("name"),
-        category=object_node_data.get("category", ["biolink:DiseaseOrPhenotypicFeature"])
-    )
-    nodes.append(object_node)
-
-    # Get association properties from the edge record
+    # Build edge properties
     publications = record.get("publications", [])
     qualifiers = record.get("qualifiers", [])
-    
-    # Map CTKP edge properties to Biolink properties
-    # Note: elevate_to_prediction is not in Biolink and will be excluded
+
     edge_props = {
         "id": record.get("id", str(uuid.uuid4())),
         "subject": subject_id,
@@ -276,7 +216,7 @@ def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         "knowledge_level": record.get("knowledge_level", KnowledgeLevelEnum.knowledge_assertion),
         "agent_type": record.get("agent_type", AgentTypeEnum.manual_agent),
     }
-    
+
     # Add optional edge properties if present
     if "max_research_phase" in record:
         edge_props["max_research_phase"] = record["max_research_phase"]
@@ -284,12 +224,13 @@ def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         edge_props["has_supporting_studies"] = record["has_supporting_studies"]
     if "tested_intervention" in record:
         edge_props["clinical_trial_tested_intervention"] = record["tested_intervention"]
-    
+
     # Handle sources field - convert from CTKP format to proper RetrievalSource
     if "sources" in record:
         sources = []
         for source in record["sources"]:
             retrieval_source = RetrievalSource(
+                id=str(uuid.uuid4()),  # Generate unique ID
                 resource_id=source.get("resource_id"),
                 resource_role=source.get("resource_role", "primary_knowledge_source"),
                 upstream_resource_ids=source.get("upstream_resource_ids"),
@@ -304,11 +245,8 @@ def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
     # Determine which association class to use based on category
     categories = record.get("category", ["biolink:Association"])
     category = categories[0] if categories else "biolink:Association"
-    
+
     # Map category to the appropriate association class
-    # Based on analysis of CTKP data, there are only two categories:
-    # - biolink:EntityToDiseaseAssociation (368,424 occurrences)
-    # - biolink:EntityToPhenotypicFeatureAssociation (53,813 occurrences)
     if category == "biolink:EntityToDiseaseAssociation":
         association = EntityToDiseaseAssociation(**edge_props)
     elif category == "biolink:EntityToPhenotypicFeatureAssociation":
@@ -318,4 +256,5 @@ def transform_edges(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         logger.warning(f"Unexpected association category: {category}, using generic Association")
         association = Association(**edge_props)
 
-    return KnowledgeGraph(nodes=nodes, edges=[association])
+    # Return KnowledgeGraph with both nodes and the edge
+    return KnowledgeGraph(nodes=[subject_node, object_node], edges=[association])
