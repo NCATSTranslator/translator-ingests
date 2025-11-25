@@ -44,7 +44,7 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
         name=record["Symbol"],
         full_name=record["Full_name_from_nomenclature_authority"],
         description=record["description"],
-        taxon=[f'NCBITaxon:{record["tax_id"]}'],
+        taxon=f'NCBITaxon:{record["tax_id"]}',
         category=["biolink:Gene"]
     )
 
