@@ -12,6 +12,7 @@ Layout:
 
 Best practice:
 
+
 * Use doctests liberally—these serve as both explanatory examples for humans and as unit tests
 * For longer examples, write pytest tests
 * always write pytest functional style rather than unittest OO style

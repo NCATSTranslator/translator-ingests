@@ -1,8 +1,10 @@
 import json
 import logging
+import tempfile
 
 from pathlib import Path
 
+import jsonlines
 from orion.kgx_file_normalizer import KGXFileNormalizer
 from orion.normalization import NodeNormalizer, NormalizationScheme
 
@@ -49,26 +51,31 @@ def normalize_kgx_files(
         "process_in_memory": True,
     }
     
-    # Only add edge-related parameters if not nodes-only
-    if max_edge_count != 0:
-        normalizer_kwargs.update({
-            "source_edges_file_path": str(input_edges_file_path),
-            "edges_output_file_path": str(edges_output_file_path),
-            "edge_norm_predicate_map_file_path": str(predicate_map_file_path),
-            "preserve_unconnected_nodes": False,
-        })
-    else:
-        # For nodes-only, pass None for edge parameters
-        normalizer_kwargs.update({
-            "source_edges_file_path": None,
-            "edges_output_file_path": None,
-            "edge_norm_predicate_map_file_path": None,
-            "preserve_unconnected_nodes": True,
-        })
+    # For nodes-only ingests, create temporary empty edges file
+    if max_edge_count == 0:
         logger.info("Running nodes-only normalization (max_edge_count = 0)")
+        temp_dir = tempfile.mkdtemp()
+        temp_edges_file = Path(temp_dir) / "empty_edges.jsonl"
+        temp_edges_file.touch()
+        input_edges_file_path = str(temp_edges_file)
+    
+    # Add edge-related parameters
+    normalizer_kwargs.update({
+        "source_edges_file_path": str(input_edges_file_path),
+        "edges_output_file_path": str(edges_output_file_path),
+        "edge_norm_predicate_map_file_path": str(predicate_map_file_path),
+        "preserve_unconnected_nodes": max_edge_count == 0,  # True for nodes-only
+    })
     
     file_normalizer = KGXFileNormalizer(**normalizer_kwargs)
     normalization_metadata = file_normalizer.normalize_kgx_files()
+    
+    # Clean up temp file if created
+    if max_edge_count == 0:
+        Path(input_edges_file_path).unlink(missing_ok=True)
+        # Create empty output edges file for consistency
+        Path(edges_output_file_path).touch()
+    
     with Path(normalization_metadata_file_path).open("w") as normalization_metadata_file:
         normalization_metadata_file.write(json.dumps(normalization_metadata, indent=4))
 
