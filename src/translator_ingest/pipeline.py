@@ -462,12 +462,13 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     # Download the source data
     download(pipeline_metadata)
     
-    # Load koza config early to get max_edge_count for all pipeline stages
-    load_koza_config(source, pipeline_metadata)
-
     # Transform the source data into KGX files if needed
     # TODO we need a way to version the transform (see issue #97)
+    # Set transform_version before load_koza_config since it uses get_transform_directory
     pipeline_metadata.transform_version = "1.0"
+    
+    # Load koza config early to get max_edge_count for all pipeline stages
+    load_koza_config(source, pipeline_metadata)
     if is_transform_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Transform already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
