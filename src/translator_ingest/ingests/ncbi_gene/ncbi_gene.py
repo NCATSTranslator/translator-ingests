@@ -38,6 +38,12 @@ def transform_record(koza_app: koza.KozaTransform, record: dict[str, Any]) -> Kn
 
     koza_app.state["total_records_processed"] += 1
 
+    # Double-check the filter - only process allowed taxon IDs
+    allowed_taxons = ["9606", "10090", "10116"]
+    if record["tax_id"] not in allowed_taxons:
+        koza_app.state["filtered_records"] += 1
+        return None
+
     gene = Gene(
         id=f'NCBIGene:{record["GeneID"]}',
         symbol=record["Symbol"],
