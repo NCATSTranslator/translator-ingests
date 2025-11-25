@@ -58,8 +58,13 @@ def normalize_kgx_files(
             "preserve_unconnected_nodes": False,
         })
     else:
-        # For nodes-only, preserve all nodes
-        normalizer_kwargs["preserve_unconnected_nodes"] = True
+        # For nodes-only, pass None for edge parameters
+        normalizer_kwargs.update({
+            "source_edges_file_path": None,
+            "edges_output_file_path": None,
+            "edge_norm_predicate_map_file_path": None,
+            "preserve_unconnected_nodes": True,
+        })
         logger.info("Running nodes-only normalization (max_edge_count = 0)")
     
     file_normalizer = KGXFileNormalizer(**normalizer_kwargs)
