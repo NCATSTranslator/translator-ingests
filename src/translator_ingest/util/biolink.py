@@ -18,6 +18,7 @@ INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
 INFORES_TTD = "infores:ttd"
+INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:

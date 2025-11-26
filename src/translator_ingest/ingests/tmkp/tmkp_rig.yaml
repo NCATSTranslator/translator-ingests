@@ -2,11 +2,11 @@ name: Text Mining Knowledge Provider (TMKP)
 source_info:
   infores_id: infores:text-mining-provider-targeted
   description: |
-    The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts 
-    biomedical assertions from scientific literature using advanced text mining techniques. 
-    It processes PubMed abstracts and full-text articles to identify relationships between 
-    biological entities such as chemicals, genes, diseases, and phenotypes. The system uses 
-    natural language processing and machine learning approaches to extract high-confidence 
+    The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts
+    biomedical assertions from scientific literature using advanced text mining techniques.
+    It processes PubMed abstracts and full-text articles to identify relationships between
+    biological entities such as chemicals, genes, diseases, and phenotypes. The system uses
+    natural language processing and machine learning approaches to extract high-confidence
     assertions about how these entities interact.
   citations:
   - https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap
@@ -186,6 +186,6 @@ target_info:
 provenance_info:
   contributions:
   - "TMKP Team - data generation and text mining pipeline"
-  - "Your Name - ingest implementation"
+  - "Sierra Moxon - ingest, code, data modeling"
   artifacts:
   - "TMKP GitHub: https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap"
