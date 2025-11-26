@@ -78,12 +78,8 @@ ingest_info:
           organism identifiers containing "taxid:9606". These represent experimentally observed molecular interactions
           curated by IntAct/IMEx, encoded in MITAB 2.7 format
         fields_used: >-
-          All MITAB 2.7 fields: idA, idB, altIdsA, altIdsB, aliasesA, aliasesB, interactionDetectionMethod,                  # MHB: only need to list the fields you imported or used in the ingest - trim others out.
-          firstAuthor, publicationIDs, taxidA, taxidB, interactionTypes, sourceDatabase, interactionIDs, confidenceScores,
-          complexExpansion, biologicalRoleA, biologicalRoleB, experimentalRoleA, experimentalRoleB, interactorTypeA,
-          interactorTypeB, xrefA, xrefB, xrefInteraction, annotationsA, annotationsB, annotationsInteraction, hostOrganism,
-          interactionParameters, creationDate, updateDate, checksumA, checksumB, interactionChecksum, negative, featureA,
-          featureB, stoichiometryA, stoichiometryB, participantIdentificationMethodA, participantIdentificationMethodB
+          idA, idB, altIdsA, altIdsB, aliasesA, aliasesB, interactionDetectionMethod, firstAuthor, publicationIDs, taxidA, taxidB, interactionTypes, sourceDatabase, interactionIDs, confidenceScores
+          # MHB: only need to list the fields you imported or used in the ingest - trim others out.
     filtered_content:
       - file_name: intact.txt
         filtered_records: >-
