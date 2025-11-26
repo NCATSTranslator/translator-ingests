@@ -45,11 +45,19 @@
          <lastmod>2025-11-26</lastmod>
     </url>
     <url>
+         <loc>https://ncatstranslator.github.io/translator-ingests/rigs/icees_rig/</loc>
+         <lastmod>2025-11-26</lastmod>
+    </url>
+    <url>
          <loc>https://ncatstranslator.github.io/translator-ingests/rigs/ncbi_gene_rig/</loc>
          <lastmod>2025-11-26</lastmod>
     </url>
     <url>
          <loc>https://ncatstranslator.github.io/translator-ingests/rigs/panther_rig/</loc>
+         <lastmod>2025-11-26</lastmod>
+    </url>
+    <url>
+         <loc>https://ncatstranslator.github.io/translator-ingests/rigs/panther_rig_with_automat_edges/</loc>
          <lastmod>2025-11-26</lastmod>
     </url>
     <url>
