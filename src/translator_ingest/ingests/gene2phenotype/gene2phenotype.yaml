@@ -22,7 +22,7 @@ reader:
     ## remove rows with specific confidence values: negated or likely-no relationship
     - inclusion: exclude
       column: "confidence"
-      filter_code: in
+      filter_code: in_exact
       value:
         - "refuted"
         - "disputed"
