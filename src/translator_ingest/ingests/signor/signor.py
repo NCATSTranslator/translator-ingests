@@ -33,9 +33,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     PredicateMapping,
 )
 from translator_ingest.util.biolink import (
-    INFORES_SIGNOR,
-    entity_id,
-    build_association_knowledge_sources
+    INFORES_SIGNOR
 )
 from koza.model.graphs import KnowledgeGraph
 

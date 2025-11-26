@@ -6,7 +6,7 @@ reader:
   comment_char: "!" # Header line starts with !
   header_mode: none
   files:
-    - all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv # Signor association file
+    - all_data_24_09_25.tsv # Signor association file, note: all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv
   columns: # 17 columns from the file
     - ENTITYA # subject name
     - TYPEA # subject type
