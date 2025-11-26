@@ -354,10 +354,10 @@ def create_chemical_entity(koza: koza.KozaTransform, molregno: int, compound_nam
             xref=xref if len(xref) > 0 else None,
             synonym=get_synonyms(koza, molregno),
             # TODO: routes_of_delivery=routes_of_delivery if len(routes_of_delivery) > 0 else None,
-            # TODO: availability = AVAILABILITY_TYPES.get(record["availability_type"]),
-            # TODO: has_black_box_warning=True if record["black_box_warning"] == 1 else None,
-            # TODO: is_natural_product=True if record["natural_product"] == 1 else None,
-            # TODO: is_prodrug=True if record["prodrug"] == 1 else None,
+            chembl_availability_type = AVAILABILITY_TYPES.get(record["availability_type"]),
+            chembl_black_box_warning="True" if record["black_box_warning"] == 1 else None,
+            chembl_natural_product=True if record["natural_product"] == 1 else None,
+            chembl_prodrug=True if record["prodrug"] == 1 else None,
         )
     return None
 
@@ -500,7 +500,7 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
         subject=substrate.id,
         predicate="biolink:has_metabolite",
         object=metabolite.id,
-        # TODO: species_context_qualifier = species_context_qualifier,
+        species_context_qualifier = species_context_qualifier,
         # TODO: context_qualifier = context_qualifier,
         sources=build_association_knowledge_sources(INFORES_CHEMBL),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,

@@ -26,7 +26,7 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity",
             "object_direction_qualifier": "decreased",
-            "TODO:causal_mechanism_qualifier": "allosteric_antagonism"
+            "causal_mechanism_qualifier": "allosteric_antagonism"
         }
     },
     "ANTAGONIST": {
@@ -46,13 +46,15 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "expression",
             "object_direction_qualifier": "decreased",
-            "TODO:causal_mechanism_qualifier": "antisense_inhibition"
+            "causal_mechanism_qualifier": "antisense_oligonucleotide_inhibition"
         }
     },
     "BINDING AGENT": {
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
-        "qualifiers": {}
+        "qualifiers": {
+            "causal_mechanism_qualifier": "binding"
+        }
     },
     "BLOCKER": {
         "association": "ChemicalAffectsGeneAssociation",
@@ -68,14 +70,14 @@
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
-            "TODO:causal_mechanism_qualifier": "chelation"
+            "causal_mechanism_qualifier": "chelation"
         }
     },
     "CROSS-LINKING AGENT": {
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
-            "TODO:causal_mechanism_qualifier": "crosslinking"
+            "causal_mechanism_qualifier": "crosslinking"
         }
     },
     "DEGRADER": {
@@ -83,36 +85,33 @@
         "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
-            "object_aspect_qualifier": "degradation",
-            "object_direction_qualifier": "increased"
+            "object_aspect_qualifier": "abundance",
+            "object_direction_qualifier": "increased",
+            "causal_mechanism_qualifier": "degradation"
         }
     },
     "DISRUPTING AGENT": {
         "association": "ChemicalAffectsGeneAssociation",
-        "predicate": "biolink:disrupts",
+        "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
-            "TODO:object_aspect_qualifier": "disruption"
+            "object_aspect_qualifier": "stability",
+            "object_direction_qualifier": "decreased",
+            "causal_mechanism_qualifier": "disruption"
         }
     },
     "EXOGENOUS GENE": {
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:affects",
         "qualifiers": {
-            "qualified_predicate": "biolink:causes",
-            "object_aspect_qualifier": "activity",
-            "object_direction_qualifier": "increased",
-            "TODO:causal_mechanism_qualifier": "exogenous_gene"
+            "causal_mechanism_qualifier": "exogenous_gene"
         }
     },
     "EXOGENOUS PROTEIN": {
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:affects",
         "qualifiers": {
-            "qualified_predicate": "biolink:causes",
-            "object_aspect_qualifier": "activity",
-            "object_direction_qualifier": "increased",
-            "TODO:causal_mechanism_qualifier": "exogenous_protein"
+            "causal_mechanism_qualifier": "exogenous_protein"
         }
     },
     "HYDROLYTIC ENZYME": {
@@ -145,7 +144,7 @@
         }
     },
     "METHYLATING AGENT": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "GeneAffectsChemicalAssociation",
         "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
@@ -158,7 +157,7 @@
         "predicate": "biolink:affects",
         "qualifiers": {
             "object_aspect_qualifier": "activity",
-            "TODO:causal_mechanism_qualifier": "modulation"
+            "causal_mechanism_qualifier": "modulation"
         }
     },
     "NEGATIVE ALLOSTERIC MODULATOR": {
@@ -178,7 +177,7 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity",
             "object_direction_qualifier": "decreased",
-            "TODO:causal_mechanism_qualifier": "negative_modulation"
+            "causal_mechanism_qualifier": "negative_modulation"
         }
     },
     "OPENER": {
@@ -188,15 +187,14 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity",
             "object_direction_qualifier": "increased",
-            "TODO:causal_mechanism_qualifier": "opening"
+            "causal_mechanism_qualifier": "opening",
+            "TODO: causal_mechanism_qualifier": "molecular_channel_opening"
         }
     },
     "OTHER": {
         "association": "ChemicalAffectsGeneAssociation",
-        "predicate": "biolink:affects",
-        "qualifiers": {
-            "object_aspect_qualifier": "activity"
-        }
+        "predicate": "biolink:interacts_with",
+        "qualifiers": {}
     },
     "OXIDATIVE ENZYME": {
         "association": "GeneAffectsChemicalAssociation",
@@ -214,7 +212,7 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity",
             "object_direction_qualifier": "increased",
-            "TODO:causal_mechanism_qualifier": "partial_agonism"
+            "causal_mechanism_qualifier": "partial_agonism"
         }
     },
     "POSITIVE ALLOSTERIC MODULATOR": {
@@ -234,7 +232,7 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity",
             "object_direction_qualifier": "increased",
-            "TODO:causal_mechanism_qualifier": "positive_modulation"
+            "causal_mechanism_qualifier": "positive_modulation"
         }
     },
     "PROTEOLYTIC ENZYME": {
@@ -242,16 +240,17 @@
         "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
-            "TODO:object_aspect_qualifier": "proteolysis",
+            "object_aspect_qualifier": "hydrolysis",
             "object_direction_qualifier": "increased"
         }
     },
     "REDUCING AGENT": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "GeneAffectsChemicalAssociation",
         "predicate": "biolink:affects",
         "qualifiers": {
-            "object_aspect_qualifier": "metabolic_processing",
-            "TODO:causal_mechanism_qualifier": "reducing_agent"
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "reduction",
+            "object_direction_qualifier": "increased"
         }
     },
     "RELEASING AGENT": {
@@ -259,7 +258,7 @@
         "predicate": "biolink:affects",
         "qualifiers": {
             "object_aspect_qualifier": "transport",
-            "TODO:causal_mechanism_qualifier": "releasing_agent"
+            "causal_mechanism_qualifier": "release"
         }
     },
     "RNAI INHIBITOR": {
@@ -267,17 +266,16 @@
         "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
-            "TODO:subject_form_or_variant_qualifier": "RNAi",
             "object_direction_qualifier": "decreased",
             "object_aspect_qualifier": "expression",
-            "causal_mechanism_qualifier": "inhibition"
+            "causal_mechanism_qualifier": "rna_interference_inhibition"
         }
     },
     "SEQUESTERING AGENT": {
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
-            "TODO:causal_mechanism_qualifier": "sequestering"
+            "causal_mechanism_qualifier": "sequestration"
         }
     },
     "STABILISER": {
@@ -285,8 +283,9 @@
         "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
-            "object_aspect_qualifier": "stability",
-            "object_direction_qualifier": "increased"
+            "object_aspect_qualifier": "abundance",
+            "object_direction_qualifier": "increased",
+            "causal_mechanism_qualifier": "stabilization"
         }
     },
     "SUBSTRATE": {
@@ -298,7 +297,7 @@
         "association": "ChemicalAffectsGeneAssociation",
         "predicate": "biolink:affects",
         "qualifiers": {
-            "TODO:causal_mechanism_qualifier": "vaccine_antigen"
+            "causal_mechanism_qualifier": "vaccine_antigen"
         }
     }
 }
