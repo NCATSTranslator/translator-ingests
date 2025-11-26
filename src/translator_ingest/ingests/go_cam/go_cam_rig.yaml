@@ -63,9 +63,10 @@ ingest_info:
     - category: other
       consideration: "Consider including additional species beyond human and mouse in future iterations."
     - category: other
-      consideration: "currently node normalization filters out all nodes with reactome identifiers as well as certain kinds of Uniprot ids like UniProtKB:P0DTD1-PRO_0000449630
-UniProtKB:P0DTD1-PRO_0000449631
-UniProtKB:P0DTD1-PRO_0000449633."
+      consideration: |
+        currently node normalization filters out all nodes with reactome identifiers as well as certain kinds of Uniprot ids like UniProtKB:P0DTD1-PRO_0000449630
+        UniProtKB:P0DTD1-PRO_0000449631
+        UniProtKB:P0DTD1-PRO_0000449633.
   # Note: additional_notes field has been removed from this section according to new schema
   # Previous use cases: Use cases for Translator usage of this data: chemical to disease but put g2g in there then more pathways are available. gene to chemical target then to a secondary disease drugmechdb <-- how do all drugs interact with a target that treats a disease or the disease itself drug treats aspirin - but not useful if you put genes into it
 
