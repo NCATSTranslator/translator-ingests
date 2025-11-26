@@ -1,0 +1,7 @@
+name: ctkp
+
+readers:
+  edges:
+    format: "jsonl"
+    files:
+      - "clinical_trials_kg_edges.jsonl.gz"

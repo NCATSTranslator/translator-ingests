@@ -16,6 +16,7 @@ from loguru import logger
 from pathlib import Path
 import duckdb
 
+
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     GeneToPhenotypicFeatureAssociation,
