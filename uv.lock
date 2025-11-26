@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -320,7 +320,7 @@ requires-dist = [
     { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
     { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
-    { name = "robokop-orion", specifier = "==0.1.9" },
+    { name = "robokop-orion", specifier = "==0.1.10" },
 ]
 
 [package.metadata.requires-dev]
@@ -3080,7 +3080,7 @@ wheels = [
 
 [[package]]
 name = "robokop-orion"
-version = "0.1.9"
+version = "0.1.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bmt" },
@@ -3093,9 +3093,9 @@ dependencies = [
     { name = "robokop-genetics" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/ea/7a8a67feb260829f63d2d677a9dea17631b0394549bb6f4a3eefc3d5fa04/robokop_orion-0.1.9.tar.gz", hash = "sha256:be1ad68425b8685163896ad4f3f4fc8cacacdb2b06d35c7b4f7a83919a96214c", size = 82610, upload-time = "2025-11-13T23:08:56.727Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/93/d2a5de5c097e351a5961f994cb4e0b7b81f703e50175e190f6a409a94882/robokop_orion-0.1.10.tar.gz", hash = "sha256:9eb83aa8b5abfde5e46d28a5d14646032dfbcdaf967c042428d1453d434e3820", size = 83103, upload-time = "2025-11-19T05:12:57.235Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/13/d44e61357420df0cf34ccc7ffe9dd67538c010d228ee3b83512685f24d08/robokop_orion-0.1.9-py3-none-any.whl", hash = "sha256:621224d7eae63d8d3cc911f15c0fc178b40df4bb7cb61d6fe0f57afc39291f67", size = 95715, upload-time = "2025-11-13T23:08:55.634Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/30/c35455068a65c8599b1043d07f574676477247b34ab2f0d32c1992ba8a68/robokop_orion-0.1.10-py3-none-any.whl", hash = "sha256:c51b37343c31064e2997547dd7b017d64bbf1ccb4c2d5d012e9fe84ac3b9276d", size = 96220, upload-time = "2025-11-19T05:12:55.909Z" },
 ]
 
 [[package]]

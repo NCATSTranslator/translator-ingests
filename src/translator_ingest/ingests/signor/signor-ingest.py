@@ -173,3 +173,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         nodes.append(Protein_object)
         edges.append(association)
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
+
+## Functions decorated with @koza.on_data_begin() run before transform or transform_record
+
+## koza.state is a dictionary that can be used to store arbitrary variables
+## Now create specific transform ingest function for each pair of edges in SIGNOR

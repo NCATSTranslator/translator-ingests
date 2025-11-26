@@ -1,0 +1,239 @@
+## The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) Reference Ingest Guide (RIG)
+name: The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) Reference Ingest Guide
+
+## Information about the Source of the data ingest
+source_info:
+  infores_id: infores:gtopdb
+  name: The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb)
+  description: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb; https://www.guidetopharmacology.org) is an open-access, expert-curated, online
+database that provides succinct overviews and key references for pharmacological targets and their recommended experimental ligands. It
+includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies. GtoPdb) was established
+and developed by the International Union of Basic and Clinical Pharmacology (IUPHAR) and the British Pharmacological Society (BPS).
+It originated from the IUPHAR-DB, a former resource focused on receptors and channels that was first compiled in 2003 and from the
+BPS‘ Guide to Receptors and Channels’, a compendium of a wider range of targets than those originally covered in IUPHAR-DB"
+  citations:
+    - "Harding SD, Armstrong JF, Faccenda E, Southan C, Alexander SPH, Davenport AP, Spedding M, Davies JA. (2023) The IUPHAR/BPS Guide to PHARMACOLOGY in 2024. Nucl. Acids Res. 2024; 52(D1):D1438-D1449. doi:10.1093/nar/gkad944. [Full text]. PMID: 37897341."
+  terms_of_use_info:
+    license_name: "Creative Commons Attribution 4.0 International"
+    license_url: "https://creativecommons.org/licenses/by/4.0/legalcode"
+  data_access_locations:
+    - "gtoPdb Downloads: https://www.guidetopharmacology.org/download.jsp (this page includes file sizes and simple data dictionaries for each download)"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - csv
+  data_versioning_and_releases: "Based on the FAQ section:
+    Content expansion and feature enhancements are announced on the front page. Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in October 2023 etc.).
+    The current database content for version 2025.3 released 10 September 2025. https://www.guidetopharmacology.org/databaseContent.jsp"
+
+## Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "The International Union of Basic and Clinical Pharmacology (IUPHAR) / British Pharmacological Society (BPS) Guide to PHARMACOLOGY is an expert-curated resource of ligand-activity-target relationships, the majority of which come from high-quality pharmacological and medicinal chemistry literature."
+  scope: "GtoPdb includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies."
+
+  relevant_files:
+    - file_name: "interactions.csv"
+      location: "https://www.guidetopharmacology.org/DATA/interactions.csv"
+      description: "all interaction data for ligands and targets"
+    - file_name: "targets_and_families.csv"
+      location: "https://www.guidetopharmacology.org/DATA/targets_and_families.csv"
+      description: "complete target and family list"
+    - file_name: "ligands.csv"
+      location: "https://www.guidetopharmacology.org/DATA/ligands.csv"
+      description: "complete ligand list"
+    - file_name: "peptides.csv"
+      location: "https://www.guidetopharmacology.org/DATA/peptides.csv"
+      description: "complete peptide ligand list:"
+    - file_name: "GtP_to_HGNC_mapping.csv"
+      location: "https://www.guidetopharmacology.org/DATA/GtP_to_HGNC_mapping.csv"
+      description: "mapping Guide to PHARMACOLOGY target and peptide ligand IDs and URLs to HGNC gene IDs and symbols"
+
+  included_content:
+    - file_name: "interactions.csv"
+      included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: affects. And subject: Gene, object: chemical entity, small molecule; predicate: directly_physically_interacts_with.
+      Rows with target Species as: Human, Pig, Rat, Mouse, Gorilla, Guinea pig, NaN, Bovine, Rabbit, Unknown, Monkey, Dog, Hamster, Ferret, SARS-CoV-2, SARS-CoV, MERS-CoV, HCoV-OC43, Sheep, spiny starfish, Escherichia coli, Honeybee, Hepatitis C virus, Chicken, Turkey, Plasmodium falciparum A2, Plasmodium falciparum Dd2, Plasmodium falciparum HB3, Plasmodium falciparum, Plasmodium falciparum W2, Plasmodium falciparum NF54, Plasmodium falciparum D6, Plasmodium falciparum TM90C2A, Plasmodium falciparum 7G8, Plasmodium falciparum K1, Plasmodium falciparum V1/S, Plasmodium falciparum TM4, Plasmodium vivax, Plasmodium falciparum 3D7, Plasmodium berghei, Plasmodium falciparum FCR3, Plasmodium falciparum TM90C2B, Plasmodium falciparum TM91C235, Plasmodium cynomolgi, Plasmodium knowlesi, Plasmodium yoelii, Mycobacterium tuberculosis, Zika virus, Plasmodium falciparum FC27"
+      fields_used: "Ligand Id, Target Species, Type, Target Ensembl Gene ID"
+    - file_name: "targets_and_families.csv"
+      included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: directly_physically_interacts_with"
+      fields_used: "Type,	Family id,	Family name,	Target id,	Target name,	Subunit id,	Subunit name,	Target systematic name,	Target abbreviated name,	synonyms,	HGNC id,	HGNC symbol,	HGNC name,	Human genetic localisation,	Human nucleotide RefSeq,	Human protein RefSeq,	Human SwissProt,	Human Entrez Gene,	Human Ensembl Gene,	RGD id,	RGD symbol,	RGD name,	Rat genetic localisation,	Rat nucleotide RefSeq,	Rat protein RefSeq,	Rat SwissProt,	Rat Entrez Gene,	Rat Ensembl Gene,	MGI id,	MGI symbol	MGI name	Mouse genetic localisation	Mouse nucleotide RefSeq	Mouse protein RefSeq	Mouse SwissProt	Mouse Entrez Gene	Mouse Ensembl Gene"
+    - file_name: "ligands.csv"
+      included_records: ""
+      fields_used: "Ligand ID	Name	Species	Type	Approved	Withdrawn	Labelled	Radioactive	PubChem SID	PubChem CID	UniProt ID	Ensembl ID	ChEMBL ID	Ligand Subunit IDs	Ligand Subunit Name	Ligand Subunit UniProt IDs	Ligand Subunit Ensembl IDs	IUPAC name	INN	Synonyms	SMILES	InChIKey	InChI	GtoImmuPdb	GtoMPdb	Antibacterial"
+    - file_name: "peptides.csv"
+      included_records: "subject: Small Molecule; object: Small Molecule; predicate: has_part; Only if Human in Species"
+      fields_used: "Species, Ligand Id, Subunit Ids"
+    - file_name: "GtP_to_HGNC_mapping.csv"
+      included_records: "Use GtP to HGNC mappings to convert Gene symbols to HGNC ids"
+      fields_used: "HGNC Symbol,	HGNC ID,	IUPHAR Name,	IUPHAR ID"
+
+  filtered_content:
+    - file_name: "peptides.csv"
+      filtered_records: "remove records with species in: Mouse, Rat, Pig, Bovine, Sheep, Bovine, Dog, Rabbit, European common frog, Rhesus macaque"
+      rationale: "Only include records with Human in Species"
+
+  future_considerations:
+    - category: edge_content
+      consideration: "Consider ingest the file 'approved_drug_primary_target_interactions.csv' which contains approved drugs detailed interactions list"
+    - category: edge_content
+      consideration: "Consider ingest peptides.csv with species other than Human"
+
+## Information about the Graph Output by the ingest
+## based on https://github.com/biolink/biolink-model/blob/master/predicate_mapping.yaml
+target_info:
+  infores_id: infores:gtopdb
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:MolecularMixture
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:affects
+      object_categories:
+        - biolink:Gene
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumerations:
+              - causes
+        - property: biolink:object_aspect_qualifier
+          value_enumerations:
+              - activity
+        - property: biolink:object_direction_qualifier
+          value_enumerations:
+            - downregulated
+            - upregulated
+            - increased
+            - decreased
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
+      ui_explanation: "decision between up/down regulated or increased/decreased based on combination of type and action columns in gtopdb"
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:MolecularMixture
+        - biolink:SmallMolecule
+      predicates:
+        - - biolink:directly_physically_interacts
+      object_categories:
+        - biolink:Gene
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:endogenous
+        - biolink:primaryTarget
+        - biolink:publications
+      ui_explanation: "this separate directly_physically_interacts edge is created when the endogenous column == True"
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:gene_product_of
+      object_categories:
+        - biolink:Gene
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ""
+    - subject_categories:
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:has_part
+      object_categories:
+        - biolink:SmallMolecule
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ""
+    - subject_categories:
+        - biolink:SmallMolecule
+        - biolink:MolecularMixture
+      predicates:
+        - biolink:related_to
+      object_categories:
+        - biolink:Gene
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_range: CausalMechanismQualifierEnum
+        - property: biolink:anatomical_context_qualifier
+          value_description: N/A
+        - property: biolink:species_context_qualifier
+          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ""
+
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - "PubChem SID"
+    - node_category: biolink:MolecularMixture
+      source_identifier_types:
+        - "PubChem SID"
+    - node_category: biolink:SmallMolecule
+      source_identifier_types:
+        - "PubChem SID"
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "Ensembl Gene ID"
+        - "HGNC ID"
+  future_considerations:
+    - category: node_content
+      consideration: "Considering future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
+
+# Information about the how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Qi Wei: code author, data modeling"
+    - "Yue Zhang: data modeling"
+    - "Guangrong Qin: data modeling, domain expertise"
+    - "Sierra Moxon: code support"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "Ingest Survey: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=583858205#gid=583858205"
+    - "Ingest Ticket: "
