@@ -29,7 +29,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 
 
 INFORES_CTKP = "infores:multiomics-clinicaltrials"
