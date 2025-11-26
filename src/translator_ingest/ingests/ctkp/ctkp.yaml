@@ -4,4 +4,6 @@ readers:
   edges:
     format: "jsonl"
     files:
+      # Note: manifest.json is not edges data - actual edges are downloaded
+      # and yielded programmatically in prepare_edges_data()
       - "manifest.json"
