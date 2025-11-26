@@ -47,12 +47,19 @@ def normalize_id(node_id: str) -> str:
         return f"reactome:{reacto_id}"
 
     # Handle other OBO URIs if present
-    if node_id.startswith("obo:") and "#" in node_id:
-        # Generic OBO URI handling
-        parts = node_id.split("#")
-        if len(parts) == 2:
-            # Extract the ID part after #
-            return parts[1]
+    if node_id.startswith("obo:"):
+        # Handle OBO URIs with '#' delimiter
+        if "#" in node_id:
+            parts = node_id.split("#")
+            if len(parts) == 2:
+                # Extract the ID part after #
+                return parts[1]
+        else:
+            # Handle OBO URIs without '#' delimiter, e.g., obo:GO:12345
+            parts = node_id.split(":")
+            if len(parts) == 3:
+                # Extract the CURIE part after 'obo:'
+                return f"{parts[1]}:{parts[2]}"
 
     # Handle http URIs
     if node_id.startswith("http://identifiers.org/"):
