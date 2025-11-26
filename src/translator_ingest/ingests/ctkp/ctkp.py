@@ -220,10 +220,52 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     # Add optional edge properties if present
     if "max_research_phase" in record:
         edge_props["max_research_phase"] = record["max_research_phase"]
+    
+    # Handle has_supporting_studies - retrieve actual node objects
     if "has_supporting_studies" in record:
-        edge_props["has_supporting_studies"] = record["has_supporting_studies"]
-    if "tested_intervention" in record:
-        edge_props["clinical_trial_tested_intervention"] = record["tested_intervention"]
+        supporting_studies_ids = record["has_supporting_studies"]
+        if isinstance(supporting_studies_ids, list):
+            # Convert list of IDs to dict of ClinicalTrial objects
+            supporting_studies = {}
+            for study_id in supporting_studies_ids:
+                if study_id in nodes_lookup:
+                    node_data = nodes_lookup[study_id]
+                    # Create ClinicalTrial object directly since these are clinical trial IDs
+                    if study_id.startswith("CLINICALTRIALS:"):
+                        # Convert age boolean properties to multivalued age_stage
+                        age_stages = []
+                        if node_data.get("clinical_trial_child", False):
+                            age_stages.append("child")
+                        if node_data.get("clinical_trial_adult", False):
+                            age_stages.append("adult")
+                        if node_data.get("clinical_trial_older_adult", False):
+                            age_stages.append("older_adult")
+                        
+                        clinical_trial = ClinicalTrial(
+                            id=study_id,
+                            name=node_data.get("name"),
+                            category=["biolink:ClinicalTrial"],
+                            clinical_trial_phase=node_data.get("clinical_trial_phase"),
+                            clinical_trial_tested_intervention=node_data.get("clinical_trial_tested_intervention"),
+                            clinical_trial_overall_status=node_data.get("clinical_trial_overall_status"),
+                            clinical_trial_start_date=node_data.get("clinical_trial_start_date"),
+                            clinical_trial_enrollment=node_data.get("clinical_trial_enrollment"),
+                            clinical_trial_enrollment_type=node_data.get("clinical_trial_enrollment_type"),
+                            clinical_trial_age_range=node_data.get("clinical_trial_age_range"),
+                            clinical_trial_age_stage=age_stages if age_stages else None,
+                            clinical_trial_primary_purpose=node_data.get("clinical_trial_primary_purpose"),
+                            clinical_trial_intervention_model=node_data.get("clinical_trial_intervention_model"),
+                        )
+                        supporting_studies[study_id] = clinical_trial
+                    else:
+                        logger.warning(f"Unexpected non-clinical trial ID in has_supporting_studies: {study_id}")
+                else:
+                    logger.warning(f"Clinical trial {study_id} not found in nodes lookup")
+            if supporting_studies:
+                edge_props["has_supporting_studies"] = supporting_studies
+        else:
+            # If it's already a dict, pass it through
+            edge_props["has_supporting_studies"] = record["has_supporting_studies"]
 
     # Handle sources field - convert from CTKP format to proper RetrievalSource
     if "sources" in record:
