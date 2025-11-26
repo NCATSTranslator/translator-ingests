@@ -1,6 +1,7 @@
 from typing import Any
 import re
 import requests
+from datetime import datetime
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -14,6 +15,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.util.biolink import INFORES_INTACT
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
+
+# Allowed interaction types as per RIG documentation
+ALLOWED_INTERACTION_TYPES = {
+    "association",
+    "physical association",
+    "putative self interaction",
+    "self interaction",
+}
 
 # PSI-MI interaction type to Biolink predicate mapping
 # Based on common PSI-MI interaction types and their semantic equivalents in Biolink
@@ -33,6 +42,7 @@ PSI_MI_TYPE_TO_PREDICATE = {
     "protein complex": "biolink:interacts_with",
     # Default fallback
     "self interaction": "biolink:physically_interacts_with",
+    "putative self interaction": "biolink:physically_interacts_with",
 }
 
 # Default predicate for unmapped interaction types
@@ -64,7 +74,6 @@ def get_latest_version() -> str:
         if 'Last-Modified' in response.headers:
             last_modified = response.headers['Last-Modified']
             # Parse and format as YYYY-MM-DD
-            from datetime import datetime
             dt = datetime.strptime(last_modified, '%a, %d %b %Y %H:%M:%S %Z')
             return dt.strftime('%Y-%m-%d')
 
@@ -73,7 +82,6 @@ def get_latest_version() -> str:
         pass
 
     # Final fallback: return a generic version
-    from datetime import datetime
     return datetime.now().strftime('%Y-%m-%d')
 
 
@@ -276,6 +284,47 @@ def extract_name_from_aliases(aliases_field: str) -> str | None:
     return None
 
 
+def extract_confidence_score(confidence_field: str) -> float | None:
+    """
+    Extract the IntAct confidence score from the confidenceScores field.
+    
+    Returns the IntAct confidence value if found, None otherwise.
+    """
+    if not confidence_field or confidence_field == "-":
+        return None
+    
+    parsed_scores = parse_multi_value_field(confidence_field)
+    
+    for score in parsed_scores:
+        # Look for intact-miscore
+        if score['db'] and 'intact' in score['db'].lower() and score['id']:
+            try:
+                return float(score['id'])
+            except ValueError:
+                continue
+    
+    return None
+
+
+def extract_detection_methods(detection_method_field: str) -> list[str] | None:
+    """
+    Extract detection method identifiers from the interactionDetectionMethod field.
+    
+    Returns a list of PSI-MI identifiers for detection methods.
+    """
+    if not detection_method_field or detection_method_field == "-":
+        return None
+    
+    parsed_methods = parse_multi_value_field(detection_method_field)
+    methods = []
+    
+    for method in parsed_methods:
+        if method['db'] and method['db'].lower() == 'psi-mi' and method['id']:
+            methods.append(f"MI:{method['id']}")
+    
+    return methods if methods else None
+
+
 @koza.transform_record()
 def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
@@ -303,6 +352,27 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
     if 'taxid:9606' not in taxid_a or 'taxid:9606' not in taxid_b:
         return None
 
+    # Filter for allowed interaction types as per RIG documentation
+    interaction_types_field = record.get('interactionTypes', '')
+    if not interaction_types_field or interaction_types_field == '-':
+        koza.log("Skipping record with no interaction types", level="WARNING")
+        return None
+    
+    # Parse interaction types and check if any are allowed
+    parsed_types = parse_multi_value_field(interaction_types_field)
+    interaction_types_found = set()
+    for parsed in parsed_types:
+        if parsed['desc']:
+            interaction_types_found.add(parsed['desc'].lower())
+    
+    # Check if any of the interaction types are in the allowed list
+    if not interaction_types_found.intersection(ALLOWED_INTERACTION_TYPES):
+        koza.log(
+            f"Skipping record due to disallowed interaction type(s): {interaction_types_found}",
+            level="WARNING"
+        )
+        return None
+
     # Extract identifiers and determine entity types
     id_a, type_a = get_primary_identifier(record['idA'], record['altIdsA'])
     id_b, type_b = get_primary_identifier(record['idB'], record['altIdsB'])
@@ -320,18 +390,25 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
     entity_a_class = Protein if type_a == 'protein' else (Gene if type_a == 'gene' else SmallMolecule)
     entity_b_class = Protein if type_b == 'protein' else (Gene if type_b == 'gene' else SmallMolecule)
 
+    # Map entity types to Biolink categories
+    type_to_category = {
+        'protein': "biolink:Protein",
+        'gene': "biolink:Gene",
+        'small_molecule': "biolink:SmallMolecule",
+    }
+
     entity_a = entity_a_class(
         id=id_a,
         name=name_a if name_a else id_a,
-        category=entity_a_class.model_fields['category'].default,
-        in_taxon=["NCBITaxon:9606"],  # Human only, as per filters
+        category=type_to_category[type_a],
+        taxon=["NCBITaxon:9606"],  # Human only, as per filters
     )
 
     entity_b = entity_b_class(
         id=id_b,
         name=name_b if name_b else id_b,
-        category=entity_b_class.model_fields['category'].default,
-        in_taxon=["NCBITaxon:9606"],  # Human only, as per filters
+        category=type_to_category[type_b],
+        taxon=["NCBITaxon:9606"],  # Human only, as per filters
     )
 
     # Extract predicate from interaction type
@@ -339,6 +416,19 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
 
     # Extract publications (PMIDs only)
     publications = extract_publications(record['publicationIDs'])
+
+    # Extract confidence score
+    confidence_score = extract_confidence_score(record.get('confidenceScores', ''))
+    
+    # Extract detection methods
+    detection_methods = extract_detection_methods(record.get('interactionDetectionMethod', ''))
+
+    # Build qualifiers for edge properties
+    qualifiers = []
+    if confidence_score is not None:
+        qualifiers.append({"qualifier_type_id": "biolink:intact_confidence_value", "qualifier_value": confidence_score})
+    if detection_methods:
+        qualifiers.append({"qualifier_type_id": "biolink:supporting_study_method_types", "qualifier_value": detection_methods})
 
     # Create the interaction edge
     interaction = PairwiseMolecularInteraction(
@@ -350,6 +440,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
         sources=build_association_knowledge_sources(primary=INFORES_INTACT),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
+        qualifiers=qualifiers if qualifiers else None
     )
 
     return KnowledgeGraph(nodes=[entity_a, entity_b], edges=[interaction])

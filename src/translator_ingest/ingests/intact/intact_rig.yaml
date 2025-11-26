@@ -78,12 +78,10 @@ ingest_info:
           organism identifiers containing "taxid:9606". These represent experimentally observed molecular interactions
           curated by IntAct/IMEx, encoded in MITAB 2.7 format
         fields_used: >-
-          All MITAB 2.7 fields: idA, idB, altIdsA, altIdsB, aliasesA, aliasesB, interactionDetectionMethod,                  # MHB: only need to list the fields you imported or used in the ingest - trim others out.
-          firstAuthor, publicationIDs, taxidA, taxidB, interactionTypes, sourceDatabase, interactionIDs, confidenceScores,
-          complexExpansion, biologicalRoleA, biologicalRoleB, experimentalRoleA, experimentalRoleB, interactorTypeA,
-          interactorTypeB, xrefA, xrefB, xrefInteraction, annotationsA, annotationsB, annotationsInteraction, hostOrganism,
-          interactionParameters, creationDate, updateDate, checksumA, checksumB, interactionChecksum, negative, featureA,
-          featureB, stoichiometryA, stoichiometryB, participantIdentificationMethodA, participantIdentificationMethodB
+          idA, idB (primary identifiers), altIdsA, altIdsB (alternative identifiers), 
+          aliasesA, aliasesB (for extracting gene names), taxidA, taxidB (organism filtering),
+          interactionTypes (for predicate mapping), publicationIDs (for evidence),
+          confidenceScores (for edge properties), interactionDetectionMethod (for edge properties)
     filtered_content:
       - file_name: intact.txt
         filtered_records: >-
@@ -135,10 +133,14 @@ target_info:
     edge_type_info:
       - subject_categories:
           - biolink:Protein
+          - biolink:Gene
+          - biolink:SmallMolecule
         predicates:
           - biolink:physically_interacts_with
         object_categories:
           - biolink:Protein
+          - biolink:Gene
+          - biolink:SmallMolecule
         knowledge_level:
           - knowledge_assertion
         agent_type:
@@ -154,7 +156,17 @@ target_info:
     node_type_info:
       - node_category: biolink:Protein
         source_identifier_types: uniprot
-        additional_notes:
+        additional_notes: >-
+          Protein nodes are created when the primary or alternative identifiers include UniProtKB entries.
+      - node_category: biolink:Gene  
+        source_identifier_types: ensembl, ncbigene, refseq
+        additional_notes: >-
+          Gene nodes are created when the primary or alternative identifiers include Ensembl, NCBIGene (Entrez), or RefSeq entries,
+          but no UniProtKB identifier is found.
+      - node_category: biolink:SmallMolecule
+        source_identifier_types: chebi
+        additional_notes: >-
+          Small molecule nodes are created when the primary or alternative identifiers include CHEBI entries.
 
 # Information about the how the ingest was specified and performed
 provenance_info:
