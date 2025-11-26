@@ -7,15 +7,18 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 
+from translator_ingest.util.biolink import get_current_biolink_version
+
 from kghub_downloader.main import main as kghub_download
+
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
+
 from orion.meta_kg import MetaKnowledgeGraphBuilder
 from orion.kgx_metadata import KGXGraphMetadata, analyze_graph
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
-from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import (
     get_output_directory,

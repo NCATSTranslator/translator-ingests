@@ -1,10 +1,10 @@
-from os.path import abspath
-import uuid
-import koza
 from typing import Any, Iterable
-
+from os.path import abspath
 import json
 import re
+
+import koza
+from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -13,11 +13,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 from translator_ingest import INGESTS_PARSER_PATH
-from translator_ingest.util.biolink import build_association_knowledge_sources
-
-from koza.model.graphs import KnowledgeGraph
 
 SIDER_INGEST_PATH = INGESTS_PARSER_PATH / "sider"
 SIDER_INGEST_CONFIG_PATH = SIDER_INGEST_PATH / "sider.config.json"
@@ -83,7 +81,7 @@ def transform_ingest_all_streaming(
             continue
         all_triples.add((chemical.id, predicate, disease.id))
         association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=chemical.id,
             predicate=predicate,
             object=disease.id,
