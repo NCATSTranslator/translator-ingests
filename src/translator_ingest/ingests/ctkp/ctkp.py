@@ -254,33 +254,14 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
             for study_id in supporting_studies_ids:
                 if study_id in nodes_lookup:
                     node_data = nodes_lookup[study_id]
-                    # Create ClinicalTrial object directly since these are clinical trial IDs
+                    # Create ClinicalTrial object using create_node function
                     if study_id.startswith("CLINICALTRIALS:"):
-                        # Convert age boolean properties to multivalued age_stage
-                        age_stages = []
-                        if node_data.get("clinical_trial_child", False):
-                            age_stages.append("child")
-                        if node_data.get("clinical_trial_adult", False):
-                            age_stages.append("adult")
-                        if node_data.get("clinical_trial_older_adult", False):
-                            age_stages.append("older_adult")
-
-                        clinical_trial = ClinicalTrial(
-                            id=study_id,
-                            name=node_data.get("name"),
-                            category=["biolink:ClinicalTrial"],
-                            clinical_trial_phase=node_data.get("clinical_trial_phase"),
-                            clinical_trial_tested_intervention=node_data.get("clinical_trial_tested_intervention"),
-                            clinical_trial_overall_status=node_data.get("clinical_trial_overall_status"),
-                            # clinical_trial_start_date=node_data.get("clinical_trial_start_date"),  # Commented out due to incomplete date formats
-                            clinical_trial_enrollment=node_data.get("clinical_trial_enrollment"),
-                            clinical_trial_enrollment_type=node_data.get("clinical_trial_enrollment_type"),
-                            clinical_trial_age_range=node_data.get("clinical_trial_age_range"),
-                            clinical_trial_age_stage=age_stages if age_stages else None,
-                            clinical_trial_primary_purpose=node_data.get("clinical_trial_primary_purpose"),
-                            clinical_trial_intervention_model=node_data.get("clinical_trial_intervention_model"),
-                        )
-                        supporting_studies[study_id] = clinical_trial
+                        clinical_trial = create_node(node_data)
+                        # Ensure it's a ClinicalTrial instance
+                        if isinstance(clinical_trial, ClinicalTrial):
+                            supporting_studies[study_id] = clinical_trial
+                        else:
+                            logger.warning(f"Expected ClinicalTrial but got {type(clinical_trial).__name__} for {study_id}")
                     else:
                         logger.warning(f"Unexpected non-clinical trial ID in has_supporting_studies: {study_id}")
                 else:
