@@ -7,7 +7,7 @@ reader:
   filters:
     - inclusion: include
       column: taxon
-      filter_code: in
+      filter_code: in_exact
       value:
         - NCBITaxon:9606  # Human
         - NCBITaxon:10090 # Mouse

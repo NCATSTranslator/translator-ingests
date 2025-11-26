@@ -30,11 +30,26 @@ from translator_ingest.util.storage.local import (
     IngestFileType,
     write_ingest_file,
 )
-from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx
+from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
 from translator_ingest.util.download_utils import substitute_version_in_download_yaml
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
+    """Load koza config to get ingest-specific settings like max_edge_count."""
+    source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
+    config, _ = KozaRunner.from_config_file(
+        str(source_config_yaml_path),
+        output_dir=str(get_transform_directory(pipeline_metadata)),
+        output_format=KozaOutputFormat.jsonl,
+        input_files_dir=str(get_source_data_directory(pipeline_metadata)),
+    )
+    pipeline_metadata.koza_config = {
+        'max_edge_count': config.writer.max_edge_count if config.writer else None
+    }
+
 
 # Determine the latest available version for the source using the function from the ingest module
 def get_latest_source_version(source):
@@ -94,8 +109,18 @@ def is_transform_complete(pipeline_metadata: PipelineMetadata):
         file_type=IngestFileType.TRANSFORM_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
 
-    if not (nodes_file_path and nodes_file_path.exists() and edges_file_path and edges_file_path.exists()):
+    # For nodes-only ingests, we only check for nodes file
+    if not (nodes_file_path and nodes_file_path.exists()):
         return False
+
+    # Check if this is a nodes-only ingest based on max_edge_count
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+
+    # For regular ingests (not nodes-only), also check edges file
+    if max_edge_count != 0 and edges_file_path and not edges_file_path.exists():
+        # If edges_file_path is defined but doesn't exist, transformation is not complete
+        return False
+
     transform_metadata = get_versioned_file_paths(
         file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
     )
@@ -127,6 +152,10 @@ def transform(pipeline_metadata: PipelineMetadata):
     runner.run()
     logger.info(f"Finished transform for {source}")
 
+    # Reload koza config after transform to ensure we have the latest values
+    # This is important because the transform might have updated config values
+    load_koza_config(source, pipeline_metadata)
+
     # retrieve source level metadata from the koza config
     # (this is currently populated from the metadata field of the source yaml but gets cast to a koza.DatasetDescription
     # object so you can't include arbitrary fields)
@@ -143,7 +172,7 @@ def transform(pipeline_metadata: PipelineMetadata):
         "source": pipeline_metadata.source,
         **{k: v for k, v in source_metadata.items() if v is not None},
         "source_version": pipeline_metadata.source_version,
-        "transform_version": "1.0",
+        "transform_version": pipeline_metadata.transform_version,
         "transform_metadata": runner.transform_metadata,
     }
     # we probably still want to do more here, maybe stuff like:
@@ -163,16 +192,35 @@ def is_normalization_complete(pipeline_metadata: PipelineMetadata):
     norm_map = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
-    return norm_nodes.exists() and norm_edges.exists() and norm_metadata.exists() and norm_map.exists()
+
+    # Check if this is a nodes-only ingest based on max_edge_count
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    if max_edge_count == 0:
+        # For nodes-only ingests (max_edge_count = 0), we don't require the edges file to exist
+        return norm_nodes.exists() and norm_metadata.exists() and norm_map.exists()
+    else:
+        return norm_nodes.exists() and norm_edges.exists() and norm_metadata.exists() and norm_map.exists()
 
 
 def normalize(pipeline_metadata: PipelineMetadata):
     logger.info(f"Starting normalization for {pipeline_metadata.source}...")
+
+    # Check if this is a nodes-only ingest based on max_edge_count
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    if max_edge_count == 0:
+        logger.info(f"Running in nodes-only mode for {pipeline_metadata.source} (max_edge_count = 0)")
+
     normalization_output_dir = get_normalization_directory(pipeline_metadata=pipeline_metadata)
     normalization_output_dir.mkdir(exist_ok=True)
     input_nodes_path, input_edges_path = get_versioned_file_paths(
         file_type=IngestFileType.TRANSFORM_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
+
+    # For nodes-only mode (max_edge_count = 0), skip edge processing if no edges file exists
+    if max_edge_count == 0 and (input_edges_path is None or not Path(input_edges_path).exists()):
+        logger.info(f"Skipping edge processing for nodes-only ingest {pipeline_metadata.source}")
+        input_edges_path = None
+
     norm_node_path, norm_edge_path = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
@@ -188,15 +236,18 @@ def normalize(pipeline_metadata: PipelineMetadata):
     predicate_map_path = get_versioned_file_paths(
         file_type=IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
+
+    # Call normalize_kgx_files with pipeline_metadata to handle nodes-only ingests
     normalize_kgx_files(
         input_nodes_file_path=str(input_nodes_path),
-        input_edges_file_path=str(input_edges_path),
+        input_edges_file_path=str(input_edges_path) if input_edges_path else None,
         nodes_output_file_path=str(norm_node_path),
         node_norm_map_file_path=str(node_norm_map_path),
         node_norm_failures_file_path=str(norm_failures_path),
         edges_output_file_path=str(norm_edge_path),
         predicate_map_file_path=str(predicate_map_path),
         normalization_metadata_file_path=str(norm_metadata_path),
+        pipeline_metadata=pipeline_metadata,
     )
     logger.info(f"Normalization complete for {pipeline_metadata.source}.")
 
@@ -215,7 +266,29 @@ def validate(pipeline_metadata: PipelineMetadata):
     )
     validation_output_dir = get_validation_directory(pipeline_metadata=pipeline_metadata)
     validation_output_dir.mkdir(exist_ok=True)
-    validate_kgx(nodes_file=nodes_file, edges_file=edges_file, output_dir=validation_output_dir)
+
+    # Check if this is a nodes-only ingest based on max_edge_count
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    if max_edge_count == 0:
+        logger.info(f"Running validation in nodes-only mode for {pipeline_metadata.source}")
+        # Use nodes-only validation function
+        validate_kgx_nodes_only(
+            nodes_file=nodes_file,
+            output_dir=validation_output_dir
+        )
+    else:
+        # For regular ingests with edges, ensure edges file exists
+        if edges_file is None or not Path(edges_file).exists():
+            error_message = f"Expected edges file for {pipeline_metadata.source} but file not found"
+            logger.error(error_message)
+            raise FileNotFoundError(error_message)
+
+        # Use regular validation
+        validate_kgx(
+            nodes_file=nodes_file,
+            edges_file=edges_file,
+            output_dir=validation_output_dir
+        )
 
 
 def get_validation_result(pipeline_metadata: PipelineMetadata):
@@ -242,18 +315,31 @@ def test_data(pipeline_metadata: PipelineMetadata):
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
         IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
-    # Generate the test data and example data
-    mkgb = MetaKnowledgeGraphBuilder(
-        nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
-    )
-    # write test data to file
-    write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=mkgb.testing_data)
-    # write example edges to file
-    write_ingest_file(file_type=IngestFileType.EXAMPLE_EDGES_FILE,
-                      pipeline_metadata=pipeline_metadata,
-                      data=mkgb.example_edges)
+
+    # Check if this is a nodes-only ingest
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    if max_edge_count == 0:
+        logger.info(f"Skipping test data generation for nodes-only ingest {pipeline_metadata.source}")
+        # For nodes-only ingests, create minimal test data
+        write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
+                         pipeline_metadata=pipeline_metadata,
+                         data=[])
+        write_ingest_file(file_type=IngestFileType.EXAMPLE_EDGES_FILE,
+                         pipeline_metadata=pipeline_metadata,
+                         data=[])
+    else:
+        # Generate the test data and example data
+        mkgb = MetaKnowledgeGraphBuilder(
+            nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
+        )
+        # write test data to file
+        write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
+                          pipeline_metadata=pipeline_metadata,
+                          data=mkgb.testing_data)
+        # write example edges to file
+        write_ingest_file(file_type=IngestFileType.EXAMPLE_EDGES_FILE,
+                          pipeline_metadata=pipeline_metadata,
+                          data=mkgb.example_edges)
     logger.info(f"Test data and example edges complete for {pipeline_metadata.source}.")
 
 
@@ -299,12 +385,20 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
         IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
-    # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
-    graph_metadata = analyze_graph(
-        nodes_file_path=graph_nodes_file_path,
-        edges_file_path=graph_edges_file_path,
-        graph_metadata=source_metadata,
-    )
+
+    # Check if this is a nodes-only ingest
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    if max_edge_count == 0 and (graph_edges_file_path is None or not Path(graph_edges_file_path).exists()):
+        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
+        # For nodes-only ingests, use the source_metadata as is without analysis
+        graph_metadata = source_metadata
+    else:
+        # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
+        graph_metadata = analyze_graph(
+            nodes_file_path=graph_nodes_file_path,
+            edges_file_path=graph_edges_file_path,
+            graph_metadata=source_metadata,
+        )
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
@@ -354,13 +448,10 @@ def is_latest_release_current(pipeline_metadata: PipelineMetadata):
 def generate_latest_release_metadata(pipeline_metadata: PipelineMetadata):
     logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
                 f"release: {pipeline_metadata.release_version}")
-    latest_release_metadata = {
-        **asdict(pipeline_metadata),
-        "data": f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/",
-    }
+    pipeline_metadata.data = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
     write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=latest_release_metadata)
+                      data=pipeline_metadata.get_release_metadata())
 
 
 def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
@@ -373,7 +464,11 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Transform the source data into KGX files if needed
     # TODO we need a way to version the transform (see issue #97)
+    # Set transform_version before load_koza_config since it uses get_transform_directory
     pipeline_metadata.transform_version = "1.0"
+
+    # Load koza config early to get max_edge_count for all pipeline stages
+    load_koza_config(source, pipeline_metadata)
     if is_transform_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Transform already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "

@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider ubergraph
+SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa ncbi_gene panther sider ubergraph
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
 # Clear OVERWRITE if explicitly set to "false" or "False"
@@ -46,6 +46,7 @@ define HELP
 │     test                Run all tests                     │
 │                                                           │
 │     lint                Lint all code                     │
+│     lint-fix            Fix linting errors automatically │
 │     format              Format all code                   │
 │     spell-fix           Fix spelling errors interactively │
 │     new-rig             Create a new RIG from template (requires INFORES and NAME)" │
@@ -57,7 +58,7 @@ define HELP
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │
-│                         Default: ctd go_cam goa           │
+│                         Default: all available sources    │
 │                                                           │
 │ Examples:                                                 │
 │     make run                                              │
@@ -116,7 +117,8 @@ transform:
 .PHONY: transform-%
 transform-%:
 	@echo "Transform only for $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only
+
 
 .PHONY: validate
 validate: run
@@ -134,7 +136,6 @@ validate-%:
 	echo "Using nodes file: $$NODES_FILE"; \
 	echo "Using edges file: $$EDGES_FILE"; \
 	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
-
 
 .PHONY: merge
 merge:
