@@ -31,7 +31,7 @@ dev = [
     "black>=24.1.0",
     "codespell>=2.2.0",
     "ruff>=0.12.8",
-    "pandas",   # also installs numpy
+    "pandas", # also installs numpy
     "requests",
     # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
@@ -42,6 +42,7 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
+    "biolink-model>=4.3.5.post29.dev0",
 ]
 
 [tool.pytest.ini_options]
