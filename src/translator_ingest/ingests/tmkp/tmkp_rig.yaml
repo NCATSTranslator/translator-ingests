@@ -1,0 +1,191 @@
+name: Text Mining Knowledge Provider (TMKP)
+source_info:
+  infores_id: infores:text-mining-provider-targeted
+  description: |
+    The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts 
+    biomedical assertions from scientific literature using advanced text mining techniques. 
+    It processes PubMed abstracts and full-text articles to identify relationships between 
+    biological entities such as chemicals, genes, diseases, and phenotypes. The system uses 
+    natural language processing and machine learning approaches to extract high-confidence 
+    assertions about how these entities interact.
+  citations:
+  - https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: "Open access data provided through the Translator consortium"
+  data_access_locations:
+  - https://storage.googleapis.com/translator-text-workflow-dev-public/
+  data_provision_mechanisms:
+  - file_download
+  data_formats:
+  - tar.gz
+  - tsv
+  - json
+  data_versioning_and_releases:
+    "Periodic releases managed through Google Cloud Storage. Version dates included in file paths."
+  additional_notes: null
+
+ingest_info:
+  ingest_categories:
+  - primary_knowledge_provider
+  utility: |
+    TMKP provides literature-mined assertions that complement manually curated knowledge sources.
+    It enables discovery of relationships that may not be captured in structured databases,
+    particularly for emerging research areas and novel connections between biological entities.
+  scope: |
+    Covers text-mined relationships between chemicals, genes/proteins, diseases, and phenotypes
+    extracted from PubMed literature. Each assertion includes supporting evidence from the
+    source text and publication metadata.
+  relevant_files:
+  - file_name: targeted_assertions.tar.gz
+    location: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/2023-03-05/
+    description: Archive containing nodes.tsv, edges.tsv, and content_metadata.json
+  included_content:
+  - file_name: nodes.tsv
+    included_records: All biological entities (chemicals, proteins, diseases, phenotypes)
+    fields_used: id, name, category
+  - file_name: edges.tsv
+    included_records: All text-mined assertions between entities
+    fields_used: subject, predicate, object, qualified_predicate, qualifiers, attributes
+  - file_name: content_metadata.json
+    included_records: Metadata about available biolink classes and predicates
+    fields_used: nodes, edges
+  filtered_content: null
+  future_considerations: null
+  additional_notes: |
+    Attributes in the data are encoded as JSON objects that may contain nested attributes
+    representing supporting studies and evidence.
+
+target_info:
+  infores_id: "infores:translator-text-mining-kgx"
+  edge_type_info:
+    - subject_categories:
+      - "biolink:Protein"
+      predicates:
+        - "biolink:affects"
+      object_categories:
+      - "biolink:SmallMolecule"
+      - "biolink:ChemicalEntity"
+      - "biolink:MolecularMixture"
+      - "biolink:Protein"
+      qualifiers:
+        - property: "biolink:qualified_predicate"
+          value_enumeration:
+            - "biolink:causes"
+        - property: "biolink:subject_aspect_qualifier"
+          value_enumeration:
+            - "activity_or_abundance"
+        - property: "biolink:subject_direction_qualifier"
+          value_enumeration:
+            - "increased"
+            - "decreased"
+        - property: "biolink:object_aspect_qualifier"
+          value_enumeration:
+            - "activity_or_abundance"
+        - property: "biolink:object_direction_qualifier"
+          value_enumeration:
+            - "increased"
+            - "decreased"
+      knowledge_level:
+      - not_provided
+      agent_type:
+      - text_mining_agent
+      edge_properties:
+        - "biolink:has_supporting_studies"
+        - "biolink:publications"
+        - "biolink:has_evidence_count"
+        - "biolink:tmkp_confidence_score"
+      ui_explanation: |
+        Text mining identified that a protein affects a chemical or other protein,
+        with evidence from scientific literature.
+      additional_notes: null
+    - subject_categories:
+      - "biolink:Disease"
+      predicates:
+        - "biolink:contributes_to"
+        - "biolink:treats"
+        - "biolink:affects"
+      object_categories:
+      - "biolink:Protein"
+      - "biolink:SmallMolecule"
+      - "biolink:ChemicalEntity"
+      - "biolink:MolecularMixture"
+      knowledge_level:
+      - not_provided
+      agent_type:
+      - text_mining_agent
+      edge_properties:
+        - "biolink:has_supporting_studies"
+        - "biolink:publications"
+      ui_explanation: |
+        Text mining identified relationships between diseases and chemicals/proteins
+        based on co-occurrence and linguistic patterns in literature.
+      additional_notes: null
+    - subject_categories:
+      - "biolink:PhenotypicFeature"
+      predicates:
+        - "biolink:contributes_to"
+        - "biolink:treats"
+        - "biolink:affects"
+      object_categories:
+      - "biolink:Protein"
+      - "biolink:SmallMolecule"
+      - "biolink:ChemicalEntity"
+      knowledge_level:
+      - not_provided
+      agent_type:
+      - text_mining_agent
+      edge_properties:
+        - "biolink:has_supporting_studies"
+        - "biolink:publications"
+      ui_explanation: |
+        Text mining identified relationships between phenotypes and chemicals/proteins.
+      additional_notes: null
+  node_type_info:
+  - node_category: "biolink:ChemicalEntity"
+    source_identifier_types:
+      - "DRUGBANK"
+    node_properties: null
+    additional_notes: null
+  - node_category: "biolink:Protein"
+    source_identifier_types:
+      - "UniProtKB"
+      - "DRUGBANK"
+    node_properties: null
+    additional_notes: null
+  - node_category: "biolink:SmallMolecule"
+    source_identifier_types:
+      - "DRUGBANK"
+      - "CHEBI"
+    node_properties: null
+    additional_notes: null
+  - node_category: "biolink:Disease"
+    source_identifier_types:
+      - "MONDO"
+      - "HP"
+    node_properties: null
+    additional_notes: null
+  - node_category: "biolink:MolecularMixture"
+    source_identifier_types:
+      - "DRUGBANK"
+      - "CHEBI"
+    node_properties: null
+    additional_notes: null
+  - node_category: "biolink:PhenotypicFeature"
+    source_identifier_types:
+      - "HP"
+    node_properties: null
+    additional_notes: null
+  - node_category: "biolink:ComplexMolecularMixture"
+    source_identifier_types:
+      - "DRUGBANK"
+    node_properties: null
+    additional_notes: null
+  future_considerations: null
+
+provenance_info:
+  contributions:
+  - "TMKP Team - data generation and text mining pipeline"
+  - "Your Name - ingest implementation"
+  artifacts:
+  - "TMKP GitHub: https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap"
