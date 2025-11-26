@@ -174,13 +174,17 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
             if value := record.get(qualifier):
                 assoc_kwargs[qualifier] = value
         
-        # For GeneRegulatesGeneAssociation, ensure required fields have defaults
+        # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
         if assoc_class == GeneRegulatesGeneAssociation:
-            if "object_aspect_qualifier" not in assoc_kwargs:
-                assoc_kwargs["object_aspect_qualifier"] = "activity_or_abundance"
-            if "object_direction_qualifier" not in assoc_kwargs:
-                assoc_kwargs["object_direction_qualifier"] = "upregulated"
-            
+            # If either qualifier is missing, skip the edge to avoid semantic errors.
+            if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
+                logger.warning(
+                    "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
+                    f"object_aspect_qualifier={assoc_kwargs.get('object_aspect_qualifier')}, "
+                    f"object_direction_qualifier={assoc_kwargs.get('object_direction_qualifier')}. "
+                    "These qualifiers are required for semantic correctness."
+                )
+                return None
         # Create association with all fields
         association = assoc_class(**assoc_kwargs)
 
