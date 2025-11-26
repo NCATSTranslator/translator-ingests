@@ -5,8 +5,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Iterable
 import uuid
-from datetime import datetime
-
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -71,7 +69,7 @@ def create_node(node_data: dict) -> Any:
             clinical_trial_phase=node_data.get("clinical_trial_phase"),
             clinical_trial_tested_intervention=node_data.get("clinical_trial_tested_intervention"),
             clinical_trial_overall_status=node_data.get("clinical_trial_overall_status"),
-            clinical_trial_start_date=node_data.get("clinical_trial_start_date"),
+            # clinical_trial_start_date=node_data.get("clinical_trial_start_date"),  # Commented out due to incomplete date formats
             clinical_trial_enrollment=node_data.get("clinical_trial_enrollment"),
             clinical_trial_enrollment_type=node_data.get("clinical_trial_enrollment_type"),
             clinical_trial_age_range=node_data.get("clinical_trial_age_range"),
@@ -249,7 +247,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
                             clinical_trial_phase=node_data.get("clinical_trial_phase"),
                             clinical_trial_tested_intervention=node_data.get("clinical_trial_tested_intervention"),
                             clinical_trial_overall_status=node_data.get("clinical_trial_overall_status"),
-                            clinical_trial_start_date=node_data.get("clinical_trial_start_date"),
+                            # clinical_trial_start_date=node_data.get("clinical_trial_start_date"),  # Commented out due to incomplete date formats
                             clinical_trial_enrollment=node_data.get("clinical_trial_enrollment"),
                             clinical_trial_enrollment_type=node_data.get("clinical_trial_enrollment_type"),
                             clinical_trial_age_range=node_data.get("clinical_trial_age_range"),
