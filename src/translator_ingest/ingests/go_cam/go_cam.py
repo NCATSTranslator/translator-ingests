@@ -228,39 +228,10 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             if node_id:
                 normalized_id = normalize_id(node_id)
 
-                # Check if this node is from a different species based on prefix patterns
-                node_prefix = normalized_id.split(":")[0] if ":" in normalized_id else ""
-
-                # Define prefixes for non-human/mouse/rat species
-                non_target_prefixes = {
-                    "PomBase",  # S. pombe (fission yeast)
-                    "SGD",      # S. cerevisiae (budding yeast)
-                    "WB",       # C. elegans (worm)
-                    "Xenbase",  # Xenopus (frog)
-                    "EcoCyc",   # E. coli
-                    "TAIR",     # Arabidopsis (plant)
-                    "AGI_LocusCode"  # Arabidopsis
-                }
-
-                if node_prefix in non_target_prefixes:
-                    non_model_taxon_nodes.append({
-                        "id": normalized_id,
-                        "original_id": node_id,
-                        "label": node.get("label"),
-                        "prefix": node_prefix
-                    })
-
                 # Store both original and normalized for edge lookup
                 node_lookup[node_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
                 if normalized_id != node_id:
                     node_lookup[normalized_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
-
-        # Log if this model contains nodes from other species
-        if non_model_taxon_nodes:
-            logger.debug(
-                f"Model {model_name} (taxon: {taxon}) contains "
-                f"{len(non_model_taxon_nodes)} nodes from other species"
-            )
 
         # Determine knowledge sources based on model_id
         sources = []
