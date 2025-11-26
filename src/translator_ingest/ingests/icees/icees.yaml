@@ -1,0 +1,22 @@
+name: 'icees'
+
+readers:
+  icees_nodes:
+    files:
+      - 'nodes.jsonl.gz'
+    format: 'jsonl'
+    required_properties:
+      - 'id'
+      - 'name'
+      - 'category'
+      - 'equivalent_identifiers'  # rename this field to KGX 'xref' list value
+  icees_edges:
+    files:
+      - 'edges.jsonl.gz'
+    format: 'jsonl'
+    required_properties:
+      - 'subject'
+      - 'predicate'
+      - 'object'
+      - 'primary_knowledge_source'
+      - 'attributes'
