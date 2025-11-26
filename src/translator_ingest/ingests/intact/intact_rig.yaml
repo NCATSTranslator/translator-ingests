@@ -154,8 +154,8 @@ target_info:
     node_type_info:
       - node_category: biolink:Protein
         source_identifier_types: uniprot
-        additional_notes:
-
+        additional_notes: >-
+          Protein nodes are identified using UniProt accessions and normalized to the biolink:Protein category. Only reviewed (Swiss-Prot) entries are included to ensure high-quality protein representation.
 # Information about the how the ingest was specified and performed
 provenance_info:
     contributions:
