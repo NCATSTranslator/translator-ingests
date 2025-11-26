@@ -29,7 +29,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
 )
 from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.biolink import build_association_knowledge_sources
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+
 
 INFORES_CTKP = "infores:multiomics-clinicaltrials"
 
@@ -133,6 +134,12 @@ def prepare_edges_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]])
 
     logger.info(f"Using CTKP version: {version}")
 
+    # Store the actual version in Koza state so it can be used by the pipeline
+    koza.state["actual_version"] = version
+
+    # Also store in transform metadata so it's accessible after transform completes
+    koza.transform_metadata["actual_version"] = version
+
     # Construct JSONL.gz URLs
     nodes_jsonl_url = f"https://db.systemsbiology.net/gestalt/KG/clinical_trials_kg_nodes_v{version}.jsonl.gz"
     edges_jsonl_url = f"https://db.systemsbiology.net/gestalt/KG/clinical_trials_kg_edges_v{version}.jsonl.gz"
@@ -219,7 +226,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     # Add optional edge properties if present
     if "max_research_phase" in record:
         edge_props["max_research_phase"] = record["max_research_phase"]
-    
+
     # Handle has_supporting_studies - retrieve actual node objects
     if "has_supporting_studies" in record:
         supporting_studies_ids = record["has_supporting_studies"]
@@ -239,7 +246,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
                             age_stages.append("adult")
                         if node_data.get("clinical_trial_older_adult", False):
                             age_stages.append("older_adult")
-                        
+
                         clinical_trial = ClinicalTrial(
                             id=study_id,
                             name=node_data.get("name"),
