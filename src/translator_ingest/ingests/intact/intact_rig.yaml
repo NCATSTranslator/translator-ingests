@@ -92,7 +92,7 @@ ingest_info:
           reduces noise from model organisms and preserves relevant biological context.
       - file_name: intact.txt                                            # MHB: I added this important filter description
         filtered_records: >-
-          All records where the Interaction type(s) are not one of [`association`, `physical association`, `putative self interaction`, `self interaction`] - which account for >95% of the records. Other interaction types mainly describe specific molecular modifications (e.g. phosphorylation, acetylation), or cleavage interactions - and may  be imported in future iterations.
+          All records where the Interaction type(s) are not one of [`association`, `physical association`, `putative self interaction`, `self interaction`, `direct interaction`] - which account for >95% of the records. Other interaction types mainly describe specific molecular modifications (e.g. phosphorylation, acetylation), or cleavage interactions - and may  be imported in future iterations.
         rationale: >-
           Filtered records account for a very small number/proportion of the data, and would require significant effort to go into mapping/modeling/transform logic.
       - file_name: intact_negative.txt
@@ -146,11 +146,9 @@ target_info:
         agent_type:
           - manual_agent
         edge_properties:
-          - biolink:intact_confidence_value                 # will hold the confidence value/score that is shared across merged records
-          - biolink:supporting_study_method_types           # will hold a list of methods used across all merged records
           - biolink:publications                            # a list of pubs used across all merged records
         ui_explanation: >-
-          Each edge in the UI represents a merged set of IntAct experiment records describing the same protein–protein interaction. The edge displays the confidence score assigned by IntAct, a list of supporting publications, and the experimental methods used across all merged records. All data sources contributing to the merged edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to the edge.
+          Each edge in the UI represents a merged set of IntAct experiment records describing the same molecular interaction. The edge displays a list of supporting publications. All data sources contributing to the merged edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to the edge.
         additional_notes: >-
           IntAct records report the results/conclusion of a single study or experiment as curated from  a publication. There may be many records that describe the same set of interactors and interaction type - which we merge to create a single Biolink edge. It is at this level that IntAct appears to assign their confidence score, so this is applied to each such edge. Supporting publications and methods used across the set of merged experiment-level records are collapsed into a list and attached to these edges. Similarly, all sources of records that get merged into this edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to this edge.
     node_type_info:
