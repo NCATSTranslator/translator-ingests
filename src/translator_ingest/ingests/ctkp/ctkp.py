@@ -45,17 +45,8 @@ def create_node(node_data: dict) -> Any:
     name = node_data.get("name")
     categories = node_data.get("category", [])
 
-    if not categories:
-        return NamedThing(
-            id=node_id,
-            name=name,
-            category=["biolink:NamedThing"]
-        )
-
-    category = categories[0]
-
-    # Special handling for clinical trial nodes
-    if node_id.startswith("CLINICALTRIALS:"):
+    # Special handling for clinical trial nodes - check ID first
+    if node_id and node_id.startswith("CLINICALTRIALS:"):
         # Convert age boolean properties to multivalued age_stage
         age_stages = []
         if node_data.get("clinical_trial_child", False):
@@ -80,6 +71,15 @@ def create_node(node_data: dict) -> Any:
             clinical_trial_primary_purpose=node_data.get("clinical_trial_primary_purpose"),
             clinical_trial_intervention_model=node_data.get("clinical_trial_intervention_model"),
         )
+
+    if not categories:
+        return NamedThing(
+            id=node_id,
+            name=name,
+            category=["biolink:NamedThing"]
+        )
+
+    category = categories[0]
 
     # Map category to appropriate Pydantic class
     category_to_class = {
