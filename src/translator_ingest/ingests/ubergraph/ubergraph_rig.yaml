@@ -1,0 +1,118 @@
+name: Ubergraph Ontological Hierarchy Reference Ingest Guide
+
+source_info:
+  infores_id: infores:ubergraph
+  name: Ubergraph
+  description: "Ubergraph is a unified OWL ontology integrating multiple biomedical ontologies including GO, UBERON, CL, CHEBI, HP, and others. It provides both redundant (with full inference closure for subclass relations) and non-redundant graph representations. This ingest uses the redundant version which contains complete transitive, reflexive subclass relations for ontological hierarchy reasoning."
+  citations:
+    - "Balhoff JP, Bayindir U, Caron AR, Matentzoglu N, Osumi-Sutherland D, Mungall CJ. Ubergraph: integrating OWL ontologies into a unified semantic graph. bioRxiv. 2022."
+  terms_of_use_info:
+    license_name: "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+    license_url: "https://raw.githubusercontent.com/INCATools/ubergraph/master/LICENSE.txt"
+  data_access_locations:
+    - "Ubergraph Downloads: https://ubergraph.apps.renci.org/downloads/current/"
+    - "redundant-graph-table.tgz contains complete inference closure"
+    - "nonredundant-graph-table.tgz contains direct assertions only"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: "Ubergraph is updated regularly. Version information is available via SPARQL query against the ontology metadata. The created date is stored in the ontology and can be retrieved programmatically."
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "Ubergraph provides comprehensive ontological relationships essential for Translator's reasoning capabilities. The complete inference closure enables ontology-based query expansion, ancestor/descendant lookups, and semantic similarity calculations. These hierarchical relationships are fundamental for mapping between different levels of biological granularity and supporting TRAPI queries that require ontological reasoning."
+  scope: "This ingest focuses on the redundant graph which includes all subclass (rdfs:subClassOf) relationships with full transitive closure. The graph contains nodes and edges from integrated ontologies represented as CURIEs, enabling seamless integration with other Translator knowledge sources."
+
+  relevant_files:
+    - file_name: "redundant-graph-table.tgz"
+      location: "https://ubergraph.apps.renci.org/downloads/current/redundant-graph-table.tgz"
+      description: "Tar archive containing node-labels.tsv, edge-labels.tsv, and edges.tsv with complete inference closure"
+
+  included_content:
+    - file_name: "redundant-graph-table.tgz"
+      included_records: "Subclass (rdfs:subClassOf) edges where both subject and object are from selected biomedical ontologies"
+      fields_used: "subject_id, predicate_id, object_id (mapped via node-labels.tsv and edge-labels.tsv)"
+      ontology_prefixes_included: "UBERON, CL, GO, CHEBI, PR, NCIT, HPO, MONDO, RO, SO, MP, PATO, ECTO, ENVO, OBI, MAXO, ECO, NCBITAXON, FOODON, MI, UO"
+
+  filtered_content:
+    - file_name: "redundant-graph-table.tgz"
+      filtered_records: "Edges where subject, predicate, or object IRIs cannot be mapped to CURIEs"
+      rationale: "CURIE conversion is essential for integration with Translator infrastructure. IRIs that cannot be mapped lack appropriate prefix mappings in Biolink Model, OBO, or custom converters."
+    - file_name: "redundant-graph-table.tgz"
+      filtered_records: "All non-subClassOf predicates (e.g., part_of, has_part, regulates, etc.)"
+      rationale: "Initial focus on hierarchical subclass relationships only. Other predicate types may be added in future iterations."
+    - file_name: "redundant-graph-table.tgz"
+      filtered_records: "Edges involving ontology terms not in the selected prefix list (e.g., non-biomedical ontologies, deprecated terms)"
+      rationale: "Focused on core biomedical ontologies most relevant to Translator use cases. Reduces graph size from 90+ million edges to ~2-3 million while maintaining comprehensive biomedical coverage."
+
+  future_considerations:
+    - category: edge_content
+      consideration: "Current ingest includes only rdfs:subClassOf (strict ontological hierarchy). In the future, consider adding support for other predicate types (e.g., part_of, regulates) as separate ingests or options."
+    - category: node_property_content
+      consideration: "Ubergraph provides node descriptions via SPARQL query (IAO_0000115 definitions). These could be added as node properties in future iterations."
+    - category: edge_property_content
+      consideration: "Additional edge properties from OWL axiom annotations could be included to provide provenance and context for ontological relationships"
+    - category: other
+      consideration: "Evaluate ingesting the non-redundant graph as a separate resource for users who need only direct asserted relationships without inference closure"
+
+target_info:
+  infores_id: infores:translator-ubergraph-kgx
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:NamedThing
+      predicates:
+        - rdfs:subClassOf
+      object_categories:
+        - biolink:NamedThing
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties: []
+      ui_explanation: "Ontological subclass relationships from Ubergraph representing hierarchical is-a relationships between biomedical concepts. These edges support ontology-based reasoning and query expansion in Translator."
+      additional_notes: "The redundant graph includes both direct and inferred subclass relationships with complete transitive closure. All relationships are derived from manually curated ontologies integrated into Ubergraph."
+
+  node_type_info:
+    - node_category: biolink:NamedThing
+      source_identifier_types:
+        - "UBERON (anatomical structures)"
+        - "CL (cell types)"
+        - "GO (gene ontology: biological processes, molecular functions, cellular components)"
+        - "CHEBI (chemical entities)"
+        - "PR (proteins)"
+        - "NCIT (NCI Thesaurus)"
+        - "HPO (human phenotype ontology)"
+        - "MONDO (diseases)"
+        - "RO (relation ontology - used as subjects/objects in some cases)"
+        - "SO (sequence ontology)"
+        - "MP (mammalian phenotype)"
+        - "PATO (phenotype and trait ontology)"
+        - "ECTO (environmental conditions)"
+        - "ENVO (environmental ontology)"
+        - "OBI (ontology for biomedical investigations)"
+        - "MAXO (medical actions)"
+        - "ECO (evidence codes)"
+        - "NCBITAXON (taxonomic classifications)"
+        - "FOODON (food ontology)"
+        - "MI (molecular interactions)"
+        - "UO (units of measurement)"
+      additional_notes: "Nodes represent ontology terms from selected biomedical ontologies integrated into Ubergraph. In the raw ingest, all nodes are assigned the generic biolink:NamedThing category. NodeNormalization subsequently enriches these nodes with more specific Biolink categories (e.g., biolink:Disease, biolink:ChemicalEntity, biolink:AnatomicalEntity, biolink:BiologicalProcess, biolink:CellularComponent, biolink:MolecularActivity, biolink:PhenotypicFeature) based on the ontology prefix and internal mappings. This normalization step provides proper semantic typing for downstream Translator operations."
+
+  future_considerations:
+    - category: predicates
+      consideration: "Map additional OWL/RDF predicates beyond rdfs:subClassOf to appropriate Biolink predicates where applicable"
+    - category: edge_properties
+      consideration: "Add edge properties for axiom annotations, provenance, and source ontology identifiers"
+    - category: node_properties
+      consideration: "Include node labels, definitions, synonyms, and other metadata from Ubergraph SPARQL endpoint"
+
+provenance_info:
+  contributions:
+    - "Sierra Moxon: code, data modeling"
+    - "Evan Morris: code, data modeling"
+    - "Jim Balhoff: code, domain expertise, Ubergraph development, artifact development"
+  artifacts:
+    - "Ubergraph GitHub: https://github.com/INCATools/ubergraph"

@@ -123,7 +123,7 @@ def __find_kgx_files(directory: Path) -> (str, str):
 
 def write_ingest_file(file_type: IngestFileType,
                       pipeline_metadata: PipelineMetadata,
-                      data: dict) -> None:
+                      data) -> None:
     output_file_path = get_versioned_file_paths(
         file_type=file_type, pipeline_metadata=pipeline_metadata
     )

@@ -1,7 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider
+SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa ncbi_gene panther sider ubergraph
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
 # Clear OVERWRITE if explicitly set to "false" or "False"
@@ -41,7 +41,6 @@ define HELP
 │     transform           Transform the source to KGX       │
 │     validate            Validate all sources in data/     │
 │     validate-single     Validate only specified sources   │
-│     validate-only       Validate without re-running pipeline │
 │     merge               Merge specified sources into one KG │
 │                                                           │
 │     test                Run all tests                     │
@@ -59,7 +58,7 @@ define HELP
 │                                                           │
 │ Configuration:                                            │
 │     SOURCES             Space-separated list of sources   │
-│                         Default: ctd go_cam goa           │
+│                         Default: all available sources    │
 │                                                           │
 │ Examples:                                                 │
 │     make run                                              │
@@ -118,7 +117,8 @@ transform:
 .PHONY: transform-%
 transform-%:
 	@echo "Transform only for $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only
+
 
 .PHONY: validate
 validate: run
@@ -127,22 +127,29 @@ validate: run
 .PHONY: validate-%
 validate-%:
 	@echo "Validating $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
-
-.PHONY: validate-only
-validate-only:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix validate-only-,$(SOURCES))
-
-.PHONY: validate-only-%
-validate-only-%:
-	@echo "Validating $*..."
-	@$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files $(ROOTDIR)/data/$*/*_nodes.jsonl $(ROOTDIR)/data/$*/*_edges.jsonl
-
+	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_nodes.jsonl" -type f | head -1 || find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
+	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_edges.jsonl" -type f | head -1 || find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
+	if [ -z "$$NODES_FILE" ] || [ -z "$$EDGES_FILE" ]; then \
+		echo "Error: Could not find nodes or edges files for $*"; \
+		exit 1; \
+	fi; \
+	echo "Using nodes file: $$NODES_FILE"; \
+	echo "Using edges file: $$EDGES_FILE"; \
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
 
 .PHONY: merge
 merge:
 	@echo "Merging sources and building translator_kg...";
 	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
+
+.PHONY: release
+release:
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
+
+.PHONY: release-%
+release-%:
+	@echo "Creating release for $*..."
+	@$(RUN) python src/translator_ingest/release.py $*
 
 ### Linting, Formatting, and Cleaning ###
 
@@ -176,6 +183,11 @@ lint-fix:
 format:
 	$(RUN) ruff check --fix --exit-zero
 	$(RUN) black -l 120 src tests
+
+.PHONY: lint-fix
+lint-fix:
+	$(RUN) codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+	$(RUN) ruff check --fix
 
 .PHONY: spell-fix
 spell-fix:
