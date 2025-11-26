@@ -1,6 +1,6 @@
 name: Text Mining Knowledge Provider (TMKP)
 source_info:
-  infores_id: infores:text-mining-provider-targeted
+  infores_id: infores:text-mining-provider-cooccurrence
   description: |
     The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts
     biomedical assertions from scientific literature using advanced text mining techniques.
