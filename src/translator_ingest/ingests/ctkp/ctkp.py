@@ -3,8 +3,9 @@ import gzip
 import logging
 import urllib.request
 from pathlib import Path
-from typing import Any, Iterable, Dict
+from typing import Any, Iterable
 import uuid
+from datetime import datetime
 
 import koza
 
