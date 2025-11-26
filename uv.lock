@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -175,8 +175,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.5.post12.dev0+15078891a"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#15078891a78f66ccad0b40ba93ffb5e80e039c67" }
+version = "4.3.5.post23.dev0+c287f9f66"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#c287f9f66acb312e9537910a1516fa04375fb142" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
