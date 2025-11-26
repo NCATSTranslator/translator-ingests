@@ -1,5 +1,5 @@
 ---
 - url: https://db.systemsbiology.net/gestalt/KG/drug_approvals_kg_nodes_v{version}.jsonl.gz
-  local_name: drug_approvals_kg_nodes_v{version}.jsonl.gz
+  local_name: drug_approvals_kg_nodes.jsonl.gz
 - url: https://db.systemsbiology.net/gestalt/KG/drug_approvals_kg_edges_v{version}.jsonl.gz
-  local_name: drug_approvals_kg_edges_v{version}.jsonl.gz
+  local_name: drug_approvals_kg_edges.jsonl.gz
