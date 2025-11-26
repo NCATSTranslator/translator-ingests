@@ -212,8 +212,6 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
     unmapped_predicates = set()  # Track unique unmapped predicates
 
     for model_data in data:
-        file_path = model_data.get("_file_path", "unknown")
-        model_name = Path(file_path).name
 
         # Get model info (filtering is now handled by Koza filters in YAML)
         model_id = model_data.get("graph", {}).get("model_info", {}).get("id", "")
@@ -221,7 +219,6 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
         # Build lookup of nodes for label/name resolution
         node_lookup = {}
-        non_model_taxon_nodes = []  # Track nodes that don't match the model's taxon
 
         for node in model_data.get("nodes", []):
             node_id = node.get("id")
