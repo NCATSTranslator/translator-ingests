@@ -270,7 +270,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             publications=publications_list,
             sources=build_association_knowledge_sources(
                 primary=INFORES_GOA,  # GOA as the primary source
-                aggregating={INFORES_BIOLINK: [INFORES_GOA]},  # This repository as the aggregator
+                aggregating=INFORES_BIOLINK,  # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
@@ -287,7 +287,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             publications=publications_list,
             sources=build_association_knowledge_sources(
                 primary=INFORES_GOA,  # GOA as the primary source
-                aggregating={INFORES_BIOLINK: [INFORES_GOA]},  # This repository as the aggregator
+                aggregating=INFORES_BIOLINK,  # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,

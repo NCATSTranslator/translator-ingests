@@ -14,7 +14,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.biolink import entity_id, build_association_knowledge_sources
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 INFORES_UBERGRAPH = "infores:ubergraph"
 
