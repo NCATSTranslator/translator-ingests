@@ -118,7 +118,7 @@ def extract_tmkp_archive(pipeline_metadata: PipelineMetadata):
     
     # Extract to the same directory
     with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(source_data_dir)
+        tar.extractall(source_data_dir, filter='data')
     
     logger.info(f"Extracted {tar_path.name} to {source_data_dir}")
 
