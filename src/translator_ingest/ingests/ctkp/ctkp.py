@@ -2,7 +2,6 @@ import json
 import gzip
 import logging
 import urllib.request
-from pathlib import Path
 from typing import Any, Iterable
 import uuid
 import tempfile
