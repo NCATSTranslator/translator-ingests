@@ -10,7 +10,7 @@ source_info:
       and direct user submissions. IntAct uses detailed controlled vocabularies
       (e.g., PSI-MI) to describe experimental details such as interaction type,
       detection method, and participant roles, enabling consistent representation
-      and downstream re-use of fine-grained interaction evidence.
+      and downstream reuse of fine-grained interaction evidence.
     citations:
       - del-Toro N, Duesbury M, Koch M, et al. The IntAct molecular interaction database in 2022. Nucleic Acids Res. 2022;50(D1):D648–D653
       - Hermjakob H, Montecchi-Palazzi L, Bader G, et al. IntAct: an open source molecular interaction database. Nucleic Acids Res. 2004;32(Database issue):D452–D455.
