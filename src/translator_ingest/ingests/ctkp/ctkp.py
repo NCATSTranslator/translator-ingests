@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 import uuid
+import tempfile
+import os
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -114,11 +116,27 @@ def create_node(node_data: dict) -> Any:
 
 
 def get_latest_version() -> str:
-    """Get version from the manifest file."""
-    # This function is called by the pipeline before Koza context is available.
-    # The actual version will be extracted from the manifest during prepare_data.
-    # Return a placeholder that will be replaced with the actual version.
-    return "pending"
+    """Get version from the manifest file by downloading it first."""
+    # Download the manifest file to a temporary location
+    manifest_url = "https://raw.githubusercontent.com/multiomicsKP/clinical_trials_kp/main/manifest.json"
+    
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as tmp_file:
+        tmp_path = tmp_file.name
+    
+    logger.info(f"Downloading manifest from {manifest_url}")
+    urllib.request.urlretrieve(manifest_url, tmp_path)
+    
+    # Read the manifest to get the version
+    with open(tmp_path, 'r') as f:
+        manifest = json.load(f)
+        
+    version = manifest.get("version", "unknown")
+    logger.info(f"CTKP version from manifest: {version}")
+    
+    # Clean up the temporary file
+    os.unlink(tmp_path)
+    
+    return version
 
 
 @koza.prepare_data(tag="edges")
