@@ -1,6 +1,7 @@
 import logging
 import click
 import json
+import tarfile
 
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
@@ -101,6 +102,25 @@ def download(pipeline_metadata: PipelineMetadata):
         if download_yaml_with_version and \
                 download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
+
+
+def extract_tmkp_archive(pipeline_metadata: PipelineMetadata):
+    """Extract TMKP tar.gz archive after download."""
+    logger.info("Extracting TMKP archive...")
+    source_data_dir = get_source_data_directory(pipeline_metadata)
+    
+    # Find the tar.gz file
+    tar_files = list(source_data_dir.glob("*.tar.gz"))
+    if not tar_files:
+        raise FileNotFoundError(f"No tar.gz file found in {source_data_dir}")
+    
+    tar_path = tar_files[0]
+    
+    # Extract to the same directory
+    with tarfile.open(tar_path, "r:gz") as tar:
+        tar.extractall(source_data_dir)
+    
+    logger.info(f"Extracted {tar_path.name} to {source_data_dir}")
 
 
 # Check if the transform stage was already completed
@@ -486,6 +506,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
+    
+    # Special handling for tmkp: extract tar.gz after download
+    if source == "tmkp":
+        extract_tmkp_archive(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # TODO we need a way to version the transform (see issue #97)

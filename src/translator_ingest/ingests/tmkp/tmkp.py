@@ -10,9 +10,6 @@ Data comes as tar.gz archives containing:
 """
 
 import json
-import tarfile
-import tempfile
-from pathlib import Path
 from typing import Any, Dict, List
 from loguru import logger
 
@@ -33,6 +30,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToDiseaseAssociation,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     GeneRegulatesGeneAssociation,
+    Study,
     TextMiningStudyResult,
     KnowledgeLevelEnum,
     AgentTypeEnum,
@@ -67,17 +65,6 @@ def get_latest_version() -> str:
     return "tmkp-2023-03-05"
 
 
-def extract_tar_gz(tar_path: str) -> str:
-    """Extract tar.gz file to a temporary directory and return the path."""
-    extract_dir = tempfile.mkdtemp(prefix="tmkp_extract_")
-
-    logger.info(f"Extracting {tar_path} to {extract_dir}")
-    with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(extract_dir)
-
-    return extract_dir
-
-
 def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> List[TextMiningStudyResult]:
     """
     Parse attribute objects and extract supporting studies.
@@ -100,7 +87,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
             # Create TextMiningStudyResult object
             tm_result = TextMiningStudyResult(
                 id=value,
-                category="biolink:TextMiningStudyResult"
+                category=["biolink:TextMiningStudyResult"]
             )
 
             # Process nested attributes for this result
@@ -110,7 +97,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                 nested_value = nested.get("value")
 
                 if nested_type == "biolink:supporting_text":
-                    tm_result.supporting_text = nested_value
+                    tm_result.supporting_text = [nested_value] if nested_value else []
                 elif nested_type == "biolink:supporting_document":
                     # Store document ID in xref field for now
                     tm_result.xref = [nested_value] if nested_value else []
@@ -120,50 +107,8 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
     return text_mining_results
 
 
-@koza.prepare_data(tag="nodes")
-def prepare_tmkp_nodes():
-    """Prepare TMKP nodes data by extracting tar.gz archive."""
-    input_dir = Path(koza.config.data_dir) if hasattr(koza.config, 'data_dir') else Path(".")
-
-    # Find the tar.gz file
-    tar_files = list(input_dir.glob("*.tar.gz"))
-    if not tar_files:
-        raise Exception(f"No tar.gz file found in {input_dir}")
-
-    tar_path = tar_files[0]
-    extract_dir = extract_tar_gz(str(tar_path))
-
-    # Yield nodes file path
-    nodes_path = Path(extract_dir) / "nodes.tsv"
-    if nodes_path.exists():
-        yield str(nodes_path)
-    else:
-        raise Exception("nodes.tsv not found in extracted archive")
-
-
-@koza.prepare_data(tag="edges")
-def prepare_tmkp_edges():
-    """Prepare TMKP edges data by extracting tar.gz archive."""
-    input_dir = Path(koza.config.data_dir) if hasattr(koza.config, 'data_dir') else Path(".")
-
-    # Find the tar.gz file
-    tar_files = list(input_dir.glob("*.tar.gz"))
-    if not tar_files:
-        raise Exception(f"No tar.gz file found in {input_dir}")
-
-    tar_path = tar_files[0]
-    extract_dir = extract_tar_gz(str(tar_path))
-
-    # Yield edges file path
-    edges_path = Path(extract_dir) / "edges.tsv"
-    if edges_path.exists():
-        yield str(edges_path)
-    else:
-        raise Exception("edges.tsv not found in extracted archive")
-
-
 @koza.transform_record(tag="nodes")
-def transform_tmkp_node(koza: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
+def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP node records."""
     try:
         node_id = record.get("id")
@@ -178,7 +123,7 @@ def transform_tmkp_node(koza: koza.KozaTransform, record: Dict[str, Any]) -> Kno
 
         # Create node
         node = node_class(
-            id=entity_id(node_id),
+            id=node_id,
             name=name,
             category=node_class.model_fields["category"].default
         )
@@ -192,7 +137,7 @@ def transform_tmkp_node(koza: koza.KozaTransform, record: Dict[str, Any]) -> Kno
 
 
 @koza.transform_record(tag="edges")
-def transform_tmkp_edge(koza: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
+def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP edge records with attribute parsing."""
     try:
         subject_id = record.get("subject")
@@ -206,25 +151,38 @@ def transform_tmkp_edge(koza: koza.KozaTransform, record: Dict[str, Any]) -> Kno
         # Get association class
         assoc_class = ASSOCIATION_MAP.get(relation, Association)
 
-        # Create basic association
-        association = assoc_class(
-            id=record.get("id"),
-            subject=entity_id(subject_id),
-            predicate=predicate,
-            object=entity_id(object_id),
-            knowledge_level=KnowledgeLevelEnum.not_provided,
-            agent_type=AgentTypeEnum.text_mining_agent,
-        )
-
-        # Add qualified predicate if present
+        # Build association kwargs with all fields
+        assoc_kwargs = {
+            "id": record.get("id", entity_id()),
+            "subject": subject_id,
+            "predicate": predicate,
+            "object": object_id,
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+        }
+        
+        # Add all qualifiers to kwargs if present
         if qualified_pred := record.get("qualified_predicate"):
-            association.qualified_predicate = qualified_pred
-
-        # Add qualifiers
+            assoc_kwargs["qualified_predicate"] = qualified_pred
+        elif assoc_class == GeneRegulatesGeneAssociation:
+            # For GeneRegulatesGeneAssociation, use predicate as qualified_predicate if not provided
+            assoc_kwargs["qualified_predicate"] = predicate
+            
+        # Add all other qualifiers
         for qualifier in ["subject_aspect_qualifier", "subject_direction_qualifier",
                          "object_aspect_qualifier", "object_direction_qualifier"]:
             if value := record.get(qualifier):
-                setattr(association, qualifier, value)
+                assoc_kwargs[qualifier] = value
+        
+        # For GeneRegulatesGeneAssociation, ensure required fields have defaults
+        if assoc_class == GeneRegulatesGeneAssociation:
+            if "object_aspect_qualifier" not in assoc_kwargs:
+                assoc_kwargs["object_aspect_qualifier"] = "activity_or_abundance"
+            if "object_direction_qualifier" not in assoc_kwargs:
+                assoc_kwargs["object_direction_qualifier"] = "upregulated"
+            
+        # Create association with all fields
+        association = assoc_class(**assoc_kwargs)
 
         # Parse attributes JSON
         if attributes_json := record.get("_attributes"):
@@ -233,9 +191,17 @@ def transform_tmkp_edge(koza: koza.KozaTransform, record: Dict[str, Any]) -> Kno
             # Extract supporting studies
             text_mining_results = parse_attributes(attributes, association)
 
-            # Add to association
+            # Create a Study object to contain the TextMiningStudyResult objects
             if text_mining_results:
-                association.has_supporting_studies = text_mining_results
+                # Create a single Study that contains all the text mining results
+                study = Study(
+                    id=entity_id(),  # Generate unique ID for this study
+                    category=["biolink:Study"],
+                    has_study_results=text_mining_results
+                )
+                # Add the Study to the association
+                studies_dict = {study.id: study}
+                association.has_supporting_studies = studies_dict
 
         # Add knowledge sources
         association.sources = build_association_knowledge_sources(
@@ -247,11 +213,11 @@ def transform_tmkp_edge(koza: koza.KozaTransform, record: Dict[str, Any]) -> Kno
         nodes = []
 
         # Create subject node (we don't have name info in edges, so minimal node)
-        subject_node = NamedThing(id=entity_id(subject_id))
+        subject_node = NamedThing(id=subject_id)
         nodes.append(subject_node)
 
         # Create object node
-        object_node = NamedThing(id=entity_id(object_id))
+        object_node = NamedThing(id=object_id)
         nodes.append(object_node)
 
         # Return graph with nodes and edges
