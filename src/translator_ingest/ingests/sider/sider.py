@@ -14,7 +14,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from bmt.pydantic import entity_id, build_association_knowledge_sources
-
 from translator_ingest import INGESTS_PARSER_PATH
 
 SIDER_INGEST_PATH = INGESTS_PARSER_PATH / "sider"
@@ -41,7 +40,7 @@ def to_object(parsed_json) -> Any:
         return parsed_json
 
 
-def load_config() -> tuple[str, str]:
+def load_config() -> tuple[str,...]:
     config = json.load(open(abspath(SIDER_INGEST_CONFIG_PATH), "r"))
     obj = to_object(config)
     return (obj.infores, obj.latest_version, obj.column, obj.curie_prefix, obj.predicate, obj.transformations)
