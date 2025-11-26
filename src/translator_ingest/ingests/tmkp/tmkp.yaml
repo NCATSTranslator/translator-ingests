@@ -2,14 +2,14 @@ name: tmkp
 
 readers:
   nodes:
-    format: tsv
+    format: csv
     delimiter: '\t'
     columns:
       - 'id'
       - 'name'
       - 'category'
   edges:
-    format: tsv
+    format: csv
     delimiter: '\t'
     columns:
       - 'subject'
