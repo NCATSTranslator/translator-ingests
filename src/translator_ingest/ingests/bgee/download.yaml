@@ -1,0 +1,38 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+# For bgee
+- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Bos_taurus_expr_simple.tsv.gz
+  local_name: Bos_taurus_expr_simple.tsv.gz
+
+- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Canis_lupus_familiaris_expr_simple.tsv.gz
+  local_name: Canis_lupus_familiaris_expr_simple.tsv.gz
+
+- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Gallus_gallus_expr_simple.tsv.gz
+  local_name: Gallus_gallus_expr_simple.tsv.gz
+
+- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Homo_sapiens_expr_simple.tsv.gz
+  local_name: Homo_sapiens_expr_simple.tsv.gz
+
+- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Sus_scrofa_expr_simple.tsv.gz
+  local_name: Sus_scrofa_expr_simple.tsv.gz
+
+#- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Rattus_norvegicus_expr_simple.tsv.gz
+#  local_name: Rattus_norvegicus_expr_simple.tsv.gz
+#
+#- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Mus_musculus_expr_simple.tsv.gz
+#  local_name: Mus_musculus_expr_simple.tsv.gz
+#
+#- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Danio_rerio_expr_simple.tsv.gz
+#  local_name: Danio_rerio_expr_simple.tsv.gz
+#
+#- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Xenopus_laevis_expr_simple.tsv.gz
+#  local_name: Xenopus_laevis_expr_simple.tsv.gz
+#
+#- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Drosophila_melanogaster_expr_simple.tsv.gz
+#  local_name: Drosophila_melanogaster_expr_simple.tsv.gz
+#
+#- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Caenorhabditis_elegans_expr_simple.tsv.gz
+#  local_name: Caenorhabditis_elegans_expr_simple.tsv.gz

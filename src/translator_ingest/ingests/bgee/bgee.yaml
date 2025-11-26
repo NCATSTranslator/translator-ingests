@@ -1,0 +1,55 @@
+name: bgee
+
+metadata:
+  ingest_title: 'Bgee'
+  ingest_url: 'https://www.bgee.org/'
+  description: 'The Comparative Toxicogenomics Database'
+  rights: 'https://www.bgee.org/about/'
+
+
+readers:
+  bgee_expressed_in:
+    format: "csv"
+    delimiter: "\t"
+    header_mode: 0
+    files:
+      - 'Bos_taurus_expr_simple.tsv.gz'
+      - 'Canis_lupus_familiaris_expr_simple.tsv.gz'
+      - 'Gallus_gallus_expr_simple.tsv.gz'
+      - 'Homo_sapiens_expr_simple.tsv.gz'
+      - 'Sus_scrofa_expr_simple.tsv.gz'
+#  - 'Caenorhabditis_elegans_expr_simple.tsv.gz'
+#  - 'Danio_rerio_expr_simple.tsv.gz'
+#  - 'Drosophila_melanogaster_expr_simple.tsv.gz'
+#  - 'Mus_musculus_expr_simple.tsv.gz'
+#  - 'Rattus_norvegicus_expr_simple.tsv.gz'
+#  - 'Xenopus_laevis_expr_simple.tsv.gz'
+    filters:
+      - inclusion: 'include'
+        column: 'Expression rank'
+        filter_code: 'lt'
+        value: 10000
+      - inclusion: 'include'
+        column: 'Expression score'
+        filter_code: 'gt'
+        value: 70
+      - inclusion: 'include'
+        column: 'FDR'
+        filter_code: 'lt'
+        value: 0.05
+      - inclusion: 'include'
+        column: 'Expression'
+        filter_code: 'eq'
+        value: "present"
+      
+
+    columns:
+      - 'Gene ID'
+      - 'Gene name'
+      - 'Anatomical entity ID'
+      - 'Anatomical entity name'
+      - 'Expression'
+      - 'Call quality'
+      - 'FDR': 'float'
+      - 'Expression score' : 'float'
+      - 'Expression rank' : 'float'
