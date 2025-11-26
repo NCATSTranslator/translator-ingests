@@ -7,16 +7,19 @@ name = "bridge"
 dynamic = ["version"]
 description = "Translator Phase 3 Data Ingest Pipeline"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
-    "biolink-model",
-    "bmt",
+    "biolink-model", # need to pull 'master' for now, until dust settles on ingest-related model revisions
+    "bmt", # need to pull 'master' for now, until a fresh release past 1.4.6
     "click>=8.0.0",
     "deepdiff>=8.6.1",
+    "hatchling",
     "kghub-downloader>=0.4.2",
     "koza",
+    "mkdocs-minify-plugin>=0.8.0",
     "robokop-orion==0.1.10",
+    "uv-dynamic-versioning>=0.11.2",
 ]
 
 [project.scripts]
@@ -30,7 +33,7 @@ dev = [
     "ruff>=0.12.8",
     "pandas", # also installs numpy
     "requests",
-    # for CX notebook support: I use the old version that works with extensions
+    # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
     "jupyter_contrib_nbextensions",
     "jsonlines",
