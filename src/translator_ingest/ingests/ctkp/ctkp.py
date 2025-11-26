@@ -3,10 +3,8 @@ import gzip
 import logging
 import urllib.request
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 import uuid
-import tempfile
-import os
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -122,7 +120,7 @@ def get_latest_version() -> str:
 
     try:
         version = manifest['version']
-    except KeyError as e:
+    except KeyError:
         raise RuntimeError('Version field could not be found in manifest file.')
     return version
 
