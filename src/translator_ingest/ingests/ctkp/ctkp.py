@@ -2,6 +2,7 @@ import json
 import gzip
 import logging
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 import uuid
@@ -117,7 +118,7 @@ def get_latest_version() -> str:
     # This function is called by the pipeline before Koza context is available.
     # The actual version will be extracted from the manifest during prepare_data.
     # Return a placeholder that will be replaced with the actual version.
-    return "pending"
+    return datetime.now().strftime("%Y_%m_%d")
 
 
 @koza.prepare_data(tag="edges")
