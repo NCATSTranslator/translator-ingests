@@ -320,7 +320,11 @@ def extract_detection_methods(detection_method_field: str) -> list[str] | None:
     
     for method in parsed_methods:
         if method['db'] and method['db'].lower() == 'psi-mi' and method['id']:
-            methods.append(f"MI:{method['id']}")
+            # Check if the ID already starts with "MI:"
+            if method['id'].startswith('MI:'):
+                methods.append(method['id'])
+            else:
+                methods.append(f"MI:{method['id']}")
     
     return methods if methods else None
 
