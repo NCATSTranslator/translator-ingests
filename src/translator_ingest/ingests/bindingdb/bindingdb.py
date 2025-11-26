@@ -2,8 +2,6 @@ from typing import Optional, Any, Iterable
 from datetime import datetime
 
 import koza
-from anyio import current_time
-from biolink_model.datamodel.model import UNIPROT_ISOFORM
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalGeneInteractionAssociation,
@@ -96,6 +94,7 @@ def _get_publication(koza_transform: koza.KozaTransform, data: dict[str, Any]) -
     """
     publication: Optional[str] = None
     if data:
+        # Precedence is PMID > Patent ID > Article DOI
         if data[PMID]:
             publication = f"PMID:{data[PMID]}"
         elif data[PATENT_ID]:
@@ -213,11 +212,10 @@ def transform_bindingdb_by_record(
     supporting_data_id = record["supporting_data_id"]
     supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
     sources = build_association_knowledge_sources(
-        primary="infores:bindingdb",
-
-        # TODO: source_record_urls needs implementation in "build_association_knowledge_sources()"
-        # source_record_urls=LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_name),
-
+        primary=(
+            "infores:bindingdb",
+            [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_name)]
+        ),
         supporting=supporting_data
     )
     association = ChemicalGeneInteractionAssociation(

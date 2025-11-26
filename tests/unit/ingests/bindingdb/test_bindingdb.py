@@ -18,7 +18,7 @@ from tests.unit.ingests import (
     MockKozaWriter,
     MockKozaTransform
 )
-from tests.unit.ingests.bindingdb.test_data import (
+from tests.unit.ingests.bindingdb.sample_data import (
     NO_PMID_RECORD,
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
