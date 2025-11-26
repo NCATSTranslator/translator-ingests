@@ -25,7 +25,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Drug,
     MicroRNA,
     NoncodingRNAProduct,
-    MacromolecularComplexMixin,
+    MacromolecularComplex,
     NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
