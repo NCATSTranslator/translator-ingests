@@ -123,7 +123,7 @@ def get_latest_version() -> str:
     try:
         version = manifest['version']
     except KeyError as e:
-        raise RuntimeError(f'Version field could not be found in manifest file.')
+        raise RuntimeError('Version field could not be found in manifest file.')
     return version
 
 
