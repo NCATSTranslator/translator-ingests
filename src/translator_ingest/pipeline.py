@@ -180,6 +180,31 @@ def transform(pipeline_metadata: PipelineMetadata):
     write_ingest_file(file_type=IngestFileType.TRANSFORM_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=transform_metadata)
+    
+    # For CTKP, rename the directory from "pending" to the actual version
+    if source == "ctkp" and pipeline_metadata.source_version == "pending":
+        actual_version = runner.transform_metadata.get("actual_version")
+        if actual_version and actual_version != "pending":
+            logger.info(f"Renaming CTKP directory from 'pending' to '{actual_version}'")
+            
+            # Get the current (pending) and new directory paths
+            pending_dir = get_output_directory(pipeline_metadata)
+            new_pipeline_metadata = PipelineMetadata(
+                source=pipeline_metadata.source,
+                source_version=actual_version,
+                transform_version=pipeline_metadata.transform_version,
+                node_norm_version=pipeline_metadata.node_norm_version,
+                biolink_version=pipeline_metadata.biolink_version,
+                release_version=pipeline_metadata.release_version
+            )
+            new_dir = get_output_directory(new_pipeline_metadata)
+            
+            # Rename the directory
+            pending_dir.rename(new_dir)
+            
+            # Update the pipeline metadata with the actual version
+            pipeline_metadata.source_version = actual_version
+            logger.info(f"Successfully renamed CTKP directory to version {actual_version}")
 
 
 def is_normalization_complete(pipeline_metadata: PipelineMetadata):
