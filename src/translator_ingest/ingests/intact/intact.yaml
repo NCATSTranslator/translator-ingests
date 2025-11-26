@@ -5,7 +5,6 @@ reader:
   delimiter: "\t"
   comment_char: "#"
   header_mode: none
-  file_archive: /Users/shalu/translator-ingests/data/intact/intact.zip
   files:
     - intact.txt
   columns:

@@ -11,7 +11,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from translator_ingest.util.biolink import INFORES_INTACT, entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_INTACT
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
 # PSI-MI interaction type to Biolink predicate mapping
