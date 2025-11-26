@@ -115,62 +115,23 @@ def create_node(node_data: dict) -> Any:
 
 
 def get_latest_version() -> str:
-    """Get version from the manifest file by downloading it first."""
-    # Download the manifest file to a temporary location
+    """Get version from the manifest file"""
     manifest_url = "https://raw.githubusercontent.com/multiomicsKP/clinical_trials_kp/main/manifest.json"
-    
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as tmp_file:
-        tmp_path = tmp_file.name
-    
-    logger.info(f"Downloading manifest from {manifest_url}")
-    urllib.request.urlretrieve(manifest_url, tmp_path)
-    
-    # Read the manifest to get the version
-    with open(tmp_path, 'r') as f:
-        manifest = json.load(f)
-        
-    version = manifest.get("version", "unknown")
-    logger.info(f"CTKP version from manifest: {version}")
-    
-    # Clean up the temporary file
-    os.unlink(tmp_path)
-    
+    with urllib.request.urlopen(manifest_url) as response:
+        manifest = json.load(response)
+
+    try:
+        version = manifest['version']
+    except KeyError as e:
+        raise RuntimeError(f'Version field could not be found in manifest file.')
     return version
 
 
-@koza.prepare_data(tag="edges")
-def prepare_edges_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
-    """Download files and prepare data for processing."""
-
-    # Read manifest to get version
-    manifest_path = Path(koza.input_files_dir) / "manifest.json"
-    with open(manifest_path, 'r') as f:
-        manifest = json.load(f)
-
-    # Get version directly from the version property
-    version = manifest.get("version", "unknown")
-
-    logger.info(f"Using CTKP version: {version}")
-
-    # Store the actual version in Koza state so it can be used by the pipeline
-    koza.state["actual_version"] = version
-
-    # Also store in transform metadata so it's accessible after transform completes
-    koza.transform_metadata["actual_version"] = version
-
-    # Construct JSONL.gz URLs
-    nodes_jsonl_url = f"https://db.systemsbiology.net/gestalt/KG/clinical_trials_kg_nodes_v{version}.jsonl.gz"
-    edges_jsonl_url = f"https://db.systemsbiology.net/gestalt/KG/clinical_trials_kg_edges_v{version}.jsonl.gz"
+@koza.on_data_begin(tag="edges")
+def on_data_begin_edges(koza: koza.KozaTransform) -> None:
 
     # Download files
     nodes_file_path = Path(koza.input_files_dir) / "clinical_trials_kg_nodes.jsonl.gz"
-    edges_file_path = Path(koza.input_files_dir) / "clinical_trials_kg_edges.jsonl.gz"
-
-    logger.info(f"Downloading nodes from {nodes_jsonl_url}")
-    urllib.request.urlretrieve(nodes_jsonl_url, nodes_file_path)
-
-    logger.info(f"Downloading edges from {edges_jsonl_url}")
-    urllib.request.urlretrieve(edges_jsonl_url, edges_file_path)
 
     # Load all nodes into memory
     logger.info("Loading all nodes into memory...")
@@ -188,13 +149,6 @@ def prepare_edges_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]])
 
     logger.info(f"Loaded {node_count} nodes into memory")
     koza.state["nodes_lookup"] = nodes_lookup
-
-    # Yield edges for processing
-    with gzip.open(edges_file_path, 'rt') as f:
-        for line in f:
-            if line.strip():
-                edge = json.loads(line)
-                yield edge
 
 
 @koza.transform_record(tag="edges")
