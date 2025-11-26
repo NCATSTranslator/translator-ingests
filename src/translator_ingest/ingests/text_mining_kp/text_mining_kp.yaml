@@ -1,0 +1,51 @@
+name: 'text_mining_kp'
+delimiter: '\t'
+
+files:
+  - 'targeted_assertions.tar.gz'
+
+transform_code: 'text_mining_kp.py'
+transform_function: 'prepare_text_mining_kp_data'
+
+output_format: 'kgx-tsv'
+
+prefix_map:
+  HGNC: 'http://www.genenames.org/cgi-bin/gene_symbol_report?hgnc_id='
+  MONDO: 'http://purl.obolibrary.org/obo/MONDO_'
+  HP: 'http://purl.obolibrary.org/obo/HP_'
+  UMLS: 'http://linkedlifedata.com/resource/umls/id/'
+  MESH: 'http://id.nlm.nih.gov/mesh/'
+  PUBCHEM.COMPOUND: 'http://pubchem.ncbi.nlm.nih.gov/compound/'
+  CHEMBL.COMPOUND: 'http://identifiers.org/chembl.compound/'
+  DRUGBANK: 'http://identifiers.org/drugbank/'
+  NCBIGene: 'http://identifiers.org/ncbigene/'
+  ENSEMBL: 'http://identifiers.org/ensembl/'
+  UniProtKB: 'http://identifiers.org/uniprot/'
+  PR: 'http://purl.obolibrary.org/obo/PR_'
+  GO: 'http://purl.obolibrary.org/obo/GO_'
+  DOID: 'http://purl.obolibrary.org/obo/DOID_'
+  CHEBI: 'http://purl.obolibrary.org/obo/CHEBI_'
+  CL: 'http://purl.obolibrary.org/obo/CL_'
+  UBERON: 'http://purl.obolibrary.org/obo/UBERON_'
+
+node_properties:
+  - 'id'
+  - 'category'
+  - 'name'
+
+edge_properties:
+  - 'id'
+  - 'subject'
+  - 'predicate'
+  - 'object'
+  - 'sources'
+  - 'has_confidence_level'
+  - 'has_supporting_studies'
+  - 'knowledge_level'
+  - 'agent_type'
+  - 'qualified_predicate'
+  - 'subject_aspect_qualifier'
+  - 'subject_direction_qualifier'
+  - 'object_aspect_qualifier'
+  - 'object_direction_qualifier'
+  - 'publications'
