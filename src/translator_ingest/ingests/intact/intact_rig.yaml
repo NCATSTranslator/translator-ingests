@@ -127,7 +127,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-    infores_id:
+    infores_id: infores:intact
     edge_type_info:
       - subject_categories:
           - biolink:Protein
