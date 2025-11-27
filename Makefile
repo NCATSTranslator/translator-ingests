@@ -135,7 +135,7 @@ validate-%:
 	fi; \
 	echo "Using nodes file: $$NODES_FILE"; \
 	echo "Using edges file: $$EDGES_FILE"; \
-	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" --files "$$EDGES_FILE"
 
 .PHONY: merge
 merge:
