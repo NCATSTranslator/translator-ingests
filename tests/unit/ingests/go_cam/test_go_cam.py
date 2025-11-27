@@ -100,7 +100,7 @@ def test_gocam_entities(gocam_output):
     association = associations[0]
     assert association.subject == "UniProtKB:P12345"
     assert association.object == "UniProtKB:Q67890"
-    assert association.predicate == "biolink:directly_positively_regulates"
+    assert association.predicate == "biolink:regulates"
     assert association.original_predicate == "RO:0002629"
     assert association.publications == ["PMID:12345678"]
     # Check that sources are properly set
