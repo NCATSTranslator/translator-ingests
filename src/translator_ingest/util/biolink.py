@@ -18,7 +18,12 @@ INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
 INFORES_TTD = "infores:ttd"
+INFORES_BGEE = "infores:bgee"
 INFORES_INTACT = "infores:intact"
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
