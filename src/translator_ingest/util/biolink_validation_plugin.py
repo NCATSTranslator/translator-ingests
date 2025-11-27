@@ -56,14 +56,14 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
-        # Get all classes that are subclasses of NamedThing
+        # Get all classes that are subclasses of named thing
         valid_categories = set()
         try:
-            named_thing_class = schema_view.get_class("NamedThing")
+            named_thing_class = schema_view.get_class("named thing")
             if named_thing_class:
-                # Get all descendants of NamedThing
-                descendants = schema_view.class_descendants("NamedThing")
-                valid_categories.update(f"biolink:{cls}" for cls in descendants)
+                # Get all descendants of named thing (space case)
+                descendants = schema_view.class_descendants("named thing")
+                valid_categories.update(f"biolink:{cls.replace(' ', '')}" for cls in descendants)
                 valid_categories.add("biolink:NamedThing")
         except Exception as e:
             # Having a working schema with NamedThing descendants is required
@@ -77,12 +77,12 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
-        # Get all predicates (slots that are subclasses of related_to)
+        # Get all predicates (slots that are subclasses of related to)
         valid_predicates = set()
         try:
-            # Get all slots that are descendants of related_to
-            descendants = schema_view.slot_descendants("related_to")
-            valid_predicates.update(f"biolink:{slot}" for slot in descendants)
+            # Get all slots that are descendants of related to (space case)
+            descendants = schema_view.slot_descendants("related to")
+            valid_predicates.update(f"biolink:{slot.replace(' ', '_')}" for slot in descendants)
             valid_predicates.add("biolink:related_to")
         except Exception as e:
             # Having a working schema with predicate descendants is required
