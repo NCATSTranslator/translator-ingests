@@ -19,21 +19,21 @@ def clear_lru_cache():
 
 def test_can_import_biolink_model():
     """Test that we can access biolink_model resources with importlib."""
-    with files("biolink_model.schema").joinpath("biolink_model.yaml") as schema_file:
-        assert schema_file.exists()
+    schema_file = files("biolink_model.schema").joinpath("biolink_model.yaml")
+    assert schema_file.exists()
 
 
 def test_can_load_schema_from_local_biolink_model():
     """Test that we can load biolink schema from a local biolink_model import."""
-    with files("biolink_model.schema").joinpath("biolink_model.yaml") as schema_file:
-        schema_view = SchemaView(str(schema_file))
-        assert schema_view is not None
-        assert hasattr(schema_view, 'schema')
-        assert schema_view.schema is not None
+    schema_file = files("biolink_model.schema").joinpath("biolink_model.yaml")
+    schema_view = SchemaView(str(schema_file))
+    assert schema_view is not None
+    assert hasattr(schema_view, 'schema')
+    assert schema_view.schema is not None
 
-        # Verify this is actually a biolink schema
-        assert schema_view.get_class("named thing") is not None
-        assert schema_view.get_slot("related to") is not None
+    # Verify this is actually a biolink schema
+    assert schema_view.get_class("named thing") is not None
+    assert schema_view.get_slot("related to") is not None
 
 def test_can_load_schema_from_url():
     """Test that we can load biolink schema from the official URL."""
