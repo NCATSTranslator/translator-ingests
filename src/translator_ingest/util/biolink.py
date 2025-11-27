@@ -25,24 +25,27 @@ INFORES_INTACT = "infores:intact"
 def get_biolink_schema() -> SchemaView:
     """Get cached Biolink schema, loading it if not already cached."""
 
-    # Suppress linkml warnings about namespace overrides
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
-        warnings.filterwarnings("ignore", category=UserWarning)
-        
-        # Try to load from the local Biolink Model package
-        # from the locally installed distribution
-        try:
-            schema_path = files("biolink_model.schema").joinpath("biolink_model.yaml")
+    # Try to load from the local Biolink Model package
+    # from the locally installed distribution
+    try:
+        schema_path = files("biolink_model.schema").joinpath("biolink_model.yaml")
+        # Suppress linkml warnings about namespace overrides
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
+            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
             schema_view = SchemaView(str(schema_path))
-            logger.debug("Successfully loaded Biolink schema from local file")
-            return schema_view
-        except Exception as e:
-            logger.warning(f"Failed to load local Biolink schema: {e}")
-            # Fallback to loading from official URL
+        logger.debug("Successfully loaded Biolink schema from local file")
+        return schema_view
+    except Exception as e:
+        logger.warning(f"Failed to load local Biolink schema: {e}")
+        # Fallback to loading from official URL
+        # Suppress linkml warnings about namespace overrides
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
+            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
             schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
-            logger.debug("Successfully loaded Biolink schema from URL")
-            return schema_view
+        logger.debug("Successfully loaded Biolink schema from URL")
+        return schema_view
 
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version

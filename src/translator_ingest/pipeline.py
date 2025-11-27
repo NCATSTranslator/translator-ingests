@@ -359,7 +359,6 @@ def test_data(pipeline_metadata: PipelineMetadata):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
             warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
-            warnings.filterwarnings("ignore", category=UserWarning)
             
             mkgb = MetaKnowledgeGraphBuilder(
                 nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
@@ -430,7 +429,6 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
             warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
-            warnings.filterwarnings("ignore", category=UserWarning)
             
             graph_metadata = analyze_graph(
                 nodes_file_path=graph_nodes_file_path,
