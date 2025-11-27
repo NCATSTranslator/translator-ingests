@@ -1,6 +1,7 @@
 import logging
 import click
 import json
+import warnings
 
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
@@ -354,9 +355,15 @@ def test_data(pipeline_metadata: PipelineMetadata):
                          data=[])
     else:
         # Generate the test data and example data
-        mkgb = MetaKnowledgeGraphBuilder(
-            nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
-        )
+        # Suppress linkml warnings when creating MetaKnowledgeGraphBuilder
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
+            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
+            warnings.filterwarnings("ignore", category=UserWarning)
+            
+            mkgb = MetaKnowledgeGraphBuilder(
+                nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
+            )
         # write test data to file
         write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
                           pipeline_metadata=pipeline_metadata,
@@ -419,11 +426,17 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         graph_metadata = source_metadata
     else:
         # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
-        graph_metadata = analyze_graph(
-            nodes_file_path=graph_nodes_file_path,
-            edges_file_path=graph_edges_file_path,
-            graph_metadata=source_metadata,
-        )
+        # Suppress linkml warnings when analyzing the graph
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
+            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
+            warnings.filterwarnings("ignore", category=UserWarning)
+            
+            graph_metadata = analyze_graph(
+                nodes_file_path=graph_nodes_file_path,
+                edges_file_path=graph_edges_file_path,
+                graph_metadata=source_metadata,
+            )
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
@@ -553,6 +566,11 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(source, transform_only, overwrite):
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    
+    # Suppress linkml namespace override warnings at the logging level
+    logging.getLogger('linkml_runtime').setLevel(logging.ERROR)
+    logging.getLogger('linkml').setLevel(logging.ERROR)
+    
     run_pipeline(source, transform_only=transform_only, overwrite=overwrite)
 
 

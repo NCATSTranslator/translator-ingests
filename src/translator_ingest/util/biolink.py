@@ -2,6 +2,7 @@
 from functools import lru_cache
 from importlib.resources import files
 import logging
+import warnings
 from linkml_runtime.utils.schemaview import SchemaView
 
 logger = logging.getLogger(__name__)
@@ -24,19 +25,24 @@ INFORES_INTACT = "infores:intact"
 def get_biolink_schema() -> SchemaView:
     """Get cached Biolink schema, loading it if not already cached."""
 
-    # Try to load from the local Biolink Model package
-    # from the locally installed distribution
-    try:
-        with files("biolink_model.schema").joinpath("biolink_model.yaml") as schema_path:
+    # Suppress linkml warnings about namespace overrides
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
+        warnings.filterwarnings("ignore", category=UserWarning)
+        
+        # Try to load from the local Biolink Model package
+        # from the locally installed distribution
+        try:
+            schema_path = files("biolink_model.schema").joinpath("biolink_model.yaml")
             schema_view = SchemaView(str(schema_path))
             logger.debug("Successfully loaded Biolink schema from local file")
             return schema_view
-    except Exception as e:
-        logger.warning(f"Failed to load local Biolink schema: {e}")
-        # Fallback to loading from official URL
-        schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
-        logger.debug("Successfully loaded Biolink schema from URL")
-        return schema_view
+        except Exception as e:
+            logger.warning(f"Failed to load local Biolink schema: {e}")
+            # Fallback to loading from official URL
+            schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
+            logger.debug("Successfully loaded Biolink schema from URL")
+            return schema_view
 
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version
