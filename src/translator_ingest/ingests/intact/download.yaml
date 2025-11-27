@@ -1,0 +1,6 @@
+# IntAct molecular interaction database download configuration
+# Downloads the complete IntAct dataset in PSI-MI TAB format
+# Source: https://www.ebi.ac.uk/intact/
+---
+- url: https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
+  local_name: intact.txt

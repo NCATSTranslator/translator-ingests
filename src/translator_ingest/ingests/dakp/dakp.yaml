@@ -1,0 +1,7 @@
+name: dakp
+
+readers:
+  edges:
+    format: "jsonl"
+    files:
+      - "drug_approvals_kg_edges.jsonl.gz"
