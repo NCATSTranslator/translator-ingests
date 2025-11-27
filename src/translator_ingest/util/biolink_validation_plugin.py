@@ -56,15 +56,18 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
-        # Get all classes that are subclasses of named thing
+        # Get all classes that are subclasses of named thing using BMT
         valid_categories = set()
         try:
-            named_thing_class = schema_view.get_class("named thing")
-            if named_thing_class:
-                # Get all descendants of named thing (space case)
-                descendants = schema_view.class_descendants("named thing")
-                valid_categories.update(f"biolink:{cls.replace(' ', '')}" for cls in descendants)
-                valid_categories.add("biolink:NamedThing")
+            # Get all class descendants using BMT
+            descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
+            
+            # For each descendant, get the proper biolink CURIE format
+            for desc in descendants:
+                element = self._bmt.get_element(desc)
+                if element and hasattr(element, 'class_uri') and element.class_uri:
+                    valid_categories.add(element.class_uri)
+                    
         except Exception as e:
             # Having a working schema with NamedThing descendants is required
             raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
@@ -77,13 +80,22 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
-        # Get all predicates (slots that are subclasses of related to)
+        # Get all predicates (slots that are subclasses of related to) using BMT
         valid_predicates = set()
         try:
-            # Get all slots that are descendants of related to (space case)
-            descendants = schema_view.slot_descendants("related to")
-            valid_predicates.update(f"biolink:{slot.replace(' ', '_')}" for slot in descendants)
-            valid_predicates.add("biolink:related_to")
+            # Get all slot descendants using BMT
+            descendants = self._bmt.get_descendants("related to", reflexive=True, mixin=True)
+            
+            # For each descendant, get the proper biolink CURIE format
+            for desc in descendants:
+                try:
+                    element = self._bmt.get_element(desc)
+                    if element and hasattr(element, 'slot_uri') and element.slot_uri:
+                        valid_predicates.add(element.slot_uri)
+                except Exception:
+                    # If we can't get the element, skip it
+                    pass
+                    
         except Exception as e:
             # Having a working schema with predicate descendants is required
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
