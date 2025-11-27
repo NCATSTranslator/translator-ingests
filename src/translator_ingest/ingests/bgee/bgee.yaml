@@ -13,16 +13,16 @@ readers:
     delimiter: "\t"
     header_mode: 0
     files:
-      - 'Bos_taurus_expr_simple.tsv.gz'
-      - 'Canis_lupus_familiaris_expr_simple.tsv.gz'
-      - 'Gallus_gallus_expr_simple.tsv.gz'
       - 'Homo_sapiens_expr_simple.tsv.gz'
-      - 'Sus_scrofa_expr_simple.tsv.gz'
+      - 'Mus_musculus_expr_simple.tsv.gz'
+      - 'Rattus_norvegicus_expr_simple.tsv.gz'
+#      - 'Bos_taurus_expr_simple.tsv.gz'
+#      - 'Canis_lupus_familiaris_expr_simple.tsv.gz'
+#      - 'Gallus_gallus_expr_simple.tsv.gz'
+#      - 'Sus_scrofa_expr_simple.tsv.gz'
 #  - 'Caenorhabditis_elegans_expr_simple.tsv.gz'
 #  - 'Danio_rerio_expr_simple.tsv.gz'
 #  - 'Drosophila_melanogaster_expr_simple.tsv.gz'
-#  - 'Mus_musculus_expr_simple.tsv.gz'
-#  - 'Rattus_norvegicus_expr_simple.tsv.gz'
 #  - 'Xenopus_laevis_expr_simple.tsv.gz'
     filters:
       - inclusion: 'include'
