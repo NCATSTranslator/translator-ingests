@@ -49,7 +49,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._node_ids_cache = set()
         self._bmt = None
 
-    def _get_valid_categories(self, schema_view: SchemaView) -> Set[str]:
+    def _get_valid_categories(self) -> Set[str]:
         """Get valid Biolink Model categories."""
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
@@ -78,7 +78,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._valid_categories_cache = valid_categories
         return valid_categories
 
-    def _get_valid_predicates(self, schema_view: SchemaView) -> Set[str]:
+    def _get_valid_predicates(self) -> Set[str]:
         """Get valid Biolink Model predicates."""
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
@@ -158,18 +158,16 @@ class BiolinkValidationPlugin(ValidationPlugin):
             if isinstance(categories, str):
                 categories = [categories]
 
-            schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if schema_view:
-                valid_categories = self._get_valid_categories(schema_view)
-                for category in categories:
-                    if category not in valid_categories:
-                        yield ValidationResult(
-                            type="biolink-model validation",
-                            severity=Severity.WARN,
-                            instance=node_obj,
-                            instantiates=context.target_class,
-                            message=f"Node at /{path} has potentially invalid category '{category}'",
-                        )
+            valid_categories = self._get_valid_categories()
+            for category in categories:
+                if category not in valid_categories:
+                    yield ValidationResult(
+                        type="biolink-model validation",
+                        severity=Severity.WARN,
+                        instance=node_obj,
+                        instantiates=context.target_class,
+                        message=f"Node at /{path} has potentially invalid category '{category}'",
+                    )
 
         # Check for name field (recommended)
         if "name" not in node_obj:
@@ -215,17 +213,15 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         if "predicate" in edge_obj:
             predicate = edge_obj["predicate"]
-            schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if schema_view:
-                valid_predicates = self._get_valid_predicates(schema_view)
-                if predicate not in valid_predicates:
-                    yield ValidationResult(
-                        type="biolink-model validation",
-                        severity=Severity.WARN,
-                        instance=edge_obj,
-                        instantiates=context.target_class,
-                        message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
-                    )
+            valid_predicates = self._get_valid_predicates()
+            if predicate not in valid_predicates:
+                yield ValidationResult(
+                    type="biolink-model validation",
+                    severity=Severity.WARN,
+                    instance=edge_obj,
+                    instantiates=context.target_class,
+                    message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
+                )
 
         # Validate subject and object CURIEs
         for field in ["subject", "object"]:
