@@ -2,27 +2,139 @@ import click
 import json
 import hashlib
 import logging
+import datetime
+import tarfile
+import shutil
+import subprocess
+from dataclasses import asdict
 from pathlib import Path
 
-from orion.kgx_file_merger import KGXFileMerger
-from orion.kgxmodel import GraphSpec, GraphSource
-from orion.kgx_validation import validate_graph as generate_graph_summary
-from orion.merging import DiskGraphMerger
+from orion.kgx_file_merger import KGXFileMerger #, DONT_MERGE
+from orion.kgxmodel import GraphSpec, SubGraphSource
+from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
-
-from translator_ingest import INGESTS_DATA_PATH
-from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
+from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> str:
-    """Use ORION to merge multiple sources together into a single KGX output."""
-    logger.info(f"Merging {graph_id} with {sources}.")
+def is_merged_graph_release_current(merged_graph_metadata: PipelineMetadata) -> bool:
+    """Check if a merged graph release is already current by comparing build versions.
+
+    Unlike individual source releases which use get_versioned_file_paths and write to INGESTS_DATA_PATH,
+    merged graphs write directly to INGESTS_RELEASES_PATH.
+    """
+    release_metadata_path = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / "release-metadata.json"
+    if not release_metadata_path.exists():
+        return False
+    with release_metadata_path.open("r") as latest_release_file:
+        latest_release_metadata = PipelineMetadata(**json.load(latest_release_file))
+    return merged_graph_metadata.build_version == latest_release_metadata.build_version
+
+
+def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
+    """Create a tar.xz compressed archive of the merged graph KGX files and metadata.
+
+    Unlike individual sources which use get_versioned_file_paths, merged graphs
+    are already in INGESTS_RELEASES_PATH, so we compress from there directly.
+    After compression, the original nodes.jsonl and edges.jsonl files are removed.
+    """
+    graph_id = merged_graph_metadata.source
+    release_version = merged_graph_metadata.release_version
+    release_version_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version
+
+    tar_filename = f"{graph_id}.tar.xz"
+    tar_path = release_version_dir / tar_filename
+
+    if tar_path.exists():
+        logger.info(f"Compressed archive already exists: {tar_path}")
+        return
+
+    logger.info(f"Creating compressed archive {tar_filename}...")
+    nodes_file = release_version_dir / "nodes.jsonl"
+    edges_file = release_version_dir / "edges.jsonl"
+    metadata_file = release_version_dir / "graph-metadata.json"
+
+    # Check if tar is available for faster compression
+    has_tar = shutil.which('tar') is not None
+    if has_tar:
+        try:
+            # Build the command with files that exist
+            cmd = ['tar', 'cfJ', str(tar_path)]
+            files_to_add = []
+            if nodes_file.exists():
+                files_to_add.append(nodes_file.name)
+            if edges_file.exists():
+                files_to_add.append(edges_file.name)
+            if metadata_file.exists():
+                files_to_add.append(metadata_file.name)
+            cmd.extend(files_to_add)
+            logger.info(f"Using subprocess for faster compression: {" ".join(cmd)})")
+            subprocess.run(cmd, check=True, cwd=str(release_version_dir))
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            logger.warning(f"Fast compression failed: {e}. Falling back to Python tarfile...")
+            # Remove partial tar file if it was created
+            if tar_path.exists():
+                tar_path.unlink()
+            has_tar = False  # Trigger fallback
+
+    if not has_tar:
+        logger.info("Using Python tarfile for compression...")
+        with tarfile.open(tar_path, 'w:xz') as tar:
+            if nodes_file.exists():
+                tar.add(nodes_file, arcname=nodes_file.name)
+            if edges_file.exists():
+                tar.add(edges_file, arcname=edges_file.name)
+            if metadata_file.exists():
+                tar.add(metadata_file, arcname=metadata_file.name)
+
+    # Clean up the original files
+    if nodes_file.exists():
+        nodes_file.unlink()
+    if edges_file.exists():
+        edges_file.unlink()
+    logger.info(f"Compressed archive created: {tar_path}")
+
+
+def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
+    """Generate release metadata and compressed archive for a merged graph."""
+    logger.info(f"Generating release for merged graph {merged_graph_metadata.source}... "
+                f"release: {merged_graph_metadata.release_version}")
+
+    # Create compressed tar.xz archive
+    create_merged_graph_compressed_tar(merged_graph_metadata)
+
+    # Write release metadata
+    latest_release_metadata = {
+        **asdict(merged_graph_metadata),
+        "data": f"{INGESTS_STORAGE_URL}/{merged_graph_metadata.source}/{merged_graph_metadata.release_version}/",
+    }
+
+    release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source
+    release_dir.mkdir(parents=True, exist_ok=True)
+    release_metadata_path = release_dir / "release-metadata.json"
+    with release_metadata_path.open("w") as release_file:
+        json.dump(latest_release_metadata, release_file, indent=2)
+    logger.info(f"Release metadata written to {release_metadata_path}")
+
+
+def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[PipelineMetadata, list[KGXSource]]:
+    """Use ORION to merge multiple sources together into a single KGX output.
+
+    Returns:
+        Tuple of (merged_graph_metadata, kgx_sources)
+    """
+    logger.info(f"Merging {graph_id}. Sources: {sources}.")
     graph_spec_sources = []
     graph_source_versions = []
+    kgx_sources = []
+    biolink_versions = set()
+    babel_versions = set()
+
+    # Collect metadata from all sources and validate version consistency
     for source in sources:
         latest_path = Path(INGESTS_DATA_PATH) / source / IngestFileName.LATEST_RELEASE_FILE
         if not latest_path.exists():
@@ -32,82 +144,161 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> str:
             latest_pipeline_metadata = json.load(latest_pipeline_metadata_file)
             pipeline_metadata = PipelineMetadata(**latest_pipeline_metadata)
 
+        # Validate that this source has all required version information
+        if pipeline_metadata.biolink_version is None:
+            logger.error(f"Source {source} has None for biolink_version")
+            raise ValueError(f"Source {source} must have a valid biolink_version in release metadata.")
+
+        if pipeline_metadata.node_norm_version is None:
+            logger.error(f"Source {source} has None for node_norm_version")
+            raise ValueError(f"Source {source} must have a valid node_norm_version in release metadata.")
+
+        if pipeline_metadata.transform_version is None:
+            logger.error(f"Source {source} has None for transform_version")
+            raise ValueError(f"Source {source} must have a valid transform_version in release metadata.")
+
+        # Collect versions for validation
+        biolink_versions.add(pipeline_metadata.biolink_version)
+        babel_versions.add(pipeline_metadata.node_norm_version)
+
+        # Get KGXSource metadata from the rig file
+        data_source_info = get_kgx_source_from_rig(source)
+        data_source_info.version = pipeline_metadata.source_version
+        kgx_sources.append(data_source_info)
+
         norm_node_path, norm_edge_path = get_versioned_file_paths(
             file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
         )
-        graph_spec_sources.append(GraphSource(id=source, file_paths=[str(norm_node_path), str(norm_edge_path)]))
+        graph_spec_sources.append(SubGraphSource(id=source,
+                                              file_paths=[str(norm_node_path), str(norm_edge_path)],
+                                              graph_version=pipeline_metadata.source_version))
+                                              # This really means don't merge edges, nodes are always merged.
+                                              # Once we're merging individual sources after normalization we don't
+                                              # need to merge edges here.
+                                              # merge_strategy=DONT_MERGE))
         graph_source_versions.append(pipeline_metadata.build_version)
 
-    graph_version = hashlib.md5("".join(graph_source_versions).encode()).hexdigest()[:12]
-    logger.info(f"Graph version determined: {graph_version}")
+    # Validate that all sources have the same biolink and babel versions
+    if len(biolink_versions) > 1:
+        logger.error(f"Biolink versions are not consistent across sources: {biolink_versions}")
+        raise ValueError(f"All sources must have the same biolink version. Found: {biolink_versions}")
+
+    if len(babel_versions) > 1:
+        logger.error(f"Node normalization versions are not consistent across sources: {babel_versions}")
+        raise ValueError(f"All sources must have the same node normalization version. Found: {babel_versions}")
+
+    biolink_version = list(biolink_versions)[0]
+    babel_version = list(babel_versions)[0]
+
+    # Generate a build version based on the build versions of all source graphs
+    build_version = hashlib.md5("".join(sorted(graph_source_versions)).encode()).hexdigest()[:12]
+    release_version = datetime.datetime.now().strftime("%Y_%m_%d")
+
+    # Create PipelineMetadata for the merged graph
+    merged_graph_metadata = PipelineMetadata(
+        source=graph_id,
+        source_version=None,  # Merged graphs don't have a single source version
+        transform_version=None,  # or transform version
+        node_norm_version=babel_version,
+        biolink_version=biolink_version,
+        build_version=build_version,
+        release_version=release_version
+    )
+
+    # Check if the latest release already has this build version
+    if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
+        logger.info(f"Graph {graph_id} latest release is already current (build: {build_version}). Skipping merge.")
+        return merged_graph_metadata, kgx_sources
+
+    logger.info(f"Graph {graph_id} versioned, release version: {release_version}, build version: {build_version}")
     graph_spec = GraphSpec(
         graph_id=graph_id,
         graph_name=graph_id,
         graph_description="",
         graph_url="",
-        graph_version=graph_version,
+        graph_version=release_version,
         graph_output_format="jsonl",
         sources=graph_spec_sources,
         subgraphs=[],
     )
-    output_dir = Path(INGESTS_DATA_PATH) / graph_id / graph_version
+    output_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version
     nodes_output_file = output_dir / "nodes.jsonl"
     edges_output_file = output_dir / "edges.jsonl"
-    if nodes_output_file.exists() and edges_output_file.exists():
-        if not overwrite:
-            logger.info(f"Graph {graph_id} ({graph_version}) already exists! Exiting...")
-            return graph_version
-        else:
-            logger.info(f"Graph {graph_id} ({graph_version}) already exists! OVERWRITE mode enabled, overwriting...")
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    file_merger = KGXFileMerger(
-        graph_spec=graph_spec,
-        output_directory=str(output_dir),
-        nodes_output_filename="nodes.jsonl",
-        edges_output_filename="edges.jsonl",
-    )
-    # TODO: memory vs disk merging should be specified with an argument for the KGXFileMerger but currently ORION tries
-    #  to determine whether it needs to run on disk. In the short term monkey patch it so it always uses Disk.
-    file_merger.node_graph_merger = DiskGraphMerger(temp_directory=str(output_dir))
-    file_merger.edge_graph_merger = DiskGraphMerger(temp_directory=str(output_dir))
-    file_merger.merge()
-
-    merge_metadata = file_merger.get_merge_metadata()
-    if "merge_error" in merge_metadata:
-        logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
+    if not overwrite and (nodes_output_file.exists() and edges_output_file.exists()):
+        logger.info(f"Graph {graph_id} ({build_version}) already exists..")
     else:
-        metadata_output = output_dir / "merge-metadata.json"
-        with open(metadata_output, "w") as metadata_file:
-            metadata_file.write(json.dumps(merge_metadata, indent=4))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        file_merger = KGXFileMerger(
+            graph_spec=graph_spec,
+            output_directory=str(output_dir),
+            nodes_output_filename="nodes.jsonl",
+            edges_output_filename="edges.jsonl",
+            save_memory=True
+        )
+        file_merger.merge()
 
-    return graph_version
+        merge_metadata = file_merger.get_merge_metadata()
+        if "merge_error" in merge_metadata:
+            logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
+        else:
+            metadata_output = output_dir / "merge-metadata.json"
+            with open(metadata_output, "w") as metadata_file:
+                metadata_file.write(json.dumps(merge_metadata, indent=4))
 
-def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = False):
-    merged_graph_dir = Path(INGESTS_DATA_PATH) / graph_id / graph_version
+    # Generate graph metadata after successful merge
+    merge_graph_metadata(pipeline_metadata=merged_graph_metadata, kgx_sources=kgx_sources, overwrite=overwrite)
+
+    return merged_graph_metadata, kgx_sources
+
+def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[KGXSource], overwrite: bool = False):
+    """Generate graph metadata for a merged graph.
+
+    Args:
+        pipeline_metadata: PipelineMetadata instance for the merged graph
+        kgx_sources: List of KGXSource metadata instances for each source in the merge
+        overwrite: Whether to overwrite existing metadata
+    """
+    graph_id = pipeline_metadata.source
+    release_version = pipeline_metadata.release_version
+    biolink_version = pipeline_metadata.biolink_version
+    babel_version = pipeline_metadata.node_norm_version
+
+    logger.info(f"Generating graph metadata for {graph_id} ({release_version})...")
+    merged_graph_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version
     merged_graph_nodes = merged_graph_dir / "nodes.jsonl"
     merged_graph_edges = merged_graph_dir / "edges.jsonl"
     graph_metadata_file_path = merged_graph_dir / "graph-metadata.json"
     if graph_metadata_file_path.exists():
         if not overwrite:
-            logger.error(f"Graph metadata file already exists: {graph_metadata_file_path}. Exiting...")
+            logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. Exiting...")
             return
         else:
-            merged_graph_nodes.unlink()
-            merged_graph_edges.unlink()
             logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. "
                         f"OVERWRITE mode enabled, overwriting...")
 
-    # TODO need to get the equivalent of the RIG source_info for this graph
-    graph_metadata = generate_graph_summary(
+    release_url = f"{INGESTS_STORAGE_URL}/{graph_id}/{release_version}"
+    source_metadata = KGXGraphMetadata(
+        id=release_url,
+        name=graph_id,
+        description="A merged knowledge graph built for the NCATS Biomedical Data Translator project using "
+                    "Translator-Ingests, Biolink Model, and Node Normalizer.",
+        license="MIT",
+        url=release_url,
+        version=release_version,
+        date_created=datetime.datetime.now().strftime("%Y_%m_%d"),
+        biolink_version=biolink_version,
+        babel_version=babel_version,
+        kgx_sources=kgx_sources
+    )
+
+    graph_metadata = analyze_graph(
         nodes_file_path=str(merged_graph_nodes),
         edges_file_path=str(merged_graph_edges),
-        graph_id=graph_id,
-        graph_version=graph_version,
-        logger=logger,
+        graph_metadata=source_metadata
     )
     with graph_metadata_file_path.open("w") as output_file:
         output_file.write(json.dumps(graph_metadata, indent=2))
+    logger.info(f"Graph metadata complete for {graph_id} ({release_version}).")
 
 
 
@@ -116,8 +307,18 @@ def merge_graph_metadata(graph_id: str, graph_version: str, overwrite: bool = Fa
 @click.argument("sources", nargs=-1, required=True)
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(graph_id, sources, overwrite):
-    graph_version = merge(graph_id, sources=list(sources), overwrite=overwrite)
-    merge_graph_metadata(graph_id, graph_version, overwrite=overwrite)
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+    # Merge the sources into one KGX and generate metadata
+    merged_graph_metadata, kgx_sources = merge(
+        graph_id, sources=list(sources), overwrite=overwrite
+    )
+
+    # Generate latest release metadata for the merged graph
+    if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
+        logger.info(f"Latest release already up to date for {graph_id}, build: {merged_graph_metadata.build_version}")
+    else:
+        generate_merged_graph_release(merged_graph_metadata)
 
 
 if __name__ == "__main__":
