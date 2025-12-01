@@ -18,6 +18,7 @@ INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
 INFORES_TTD = "infores:ttd"
+INFORES_INTACT = "infores:intact"
 INFORES_DGIDB = "infores:dgidb"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
