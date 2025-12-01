@@ -60,39 +60,37 @@
       - file_name: CTD_chem_gene_ixns_structured.xml
         location: http://ctdbase.org/downloads/
         description: Descriptions of curated, detailed causal associations describing how chemicals affect genes/gene products.
-      - file_name: CTD_chem_go_enriched.tsv
+      - file_name: CTD_chem_go_enriched.tsv.gz
         location: http://ctdbase.org/downloads/
         description: CTD calculates which GO terms are statistically enriched among the genes/proteins that interact with each chemical or its descendants.
-      - file_name: CTD_chem_pathways_enriched.tsv
+      - file_name: CTD_chem_pathways_enriched.tsv.gz
         location: http://ctdbase.org/downloads/
         description: Inferred associations between chemicals and biological pathways - computationally derived enrichments based on curated chemical–gene and gene–pathway data in CTD.
-      - file_name: CTD_chem_pathways_enriched.tsv
+      - file_name: CTD_pheno_term_ixns.tsv.gz
         location: http://ctdbase.org/downloads/
         description: Curated, literature-based associations between chemicals and phenotypes (often disease-like or physiological outcomes).
-      - file_name: CTD_genes_diseases.tsv
+      - file_name: CTD_genes_diseases.tsv.gz and CTD_curated_genes_diseases.tsv.gz
         location: http://ctdbase.org/downloads/
         description: Manually curated and computationally inferred associations between genes and diseases (to be ingested in future iteration)
 
     included_content:
-      - file_name:  CTD_chemicals_diseases.tsv.gz
+      - file_name: CTD_chemicals_diseases.tsv.gz
         included_records:  All records, including curated therapeutic and marker/mechanism associations, as well as inferred associtionas (records lacking a value in the DirectEvidence column).
         fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs
       - file_name: CTD_exposure_events.tsv.gz
         included_records: All records (none filtered)
       - file_name: CTD_chem_gene_ixns_structured.xml
         included_records: All records (none filtered)
-      - file_name: CTD_chem_go_enriched.tsv
+      - file_name: CTD_chem_go_enriched.tsv.gz
         included_records: All records (none filtered)
-      - file_name: CTD_chem_pathways_enriched.tsv
+      - file_name: CTD_chem_pathways_enriched.tsv.gz
         included_records: All records (none filtered)
-      - file_name: CTD_chem_pathways_enriched.tsv
+      - file_name: CTD_pheno_term_ixns.tsv.gz
         included_records: All records (none filtered)
-
-# TO DO: EVAN AND VLADO - review included content description above and descriptions of any filtered content below, for accuracy.
 
     future_considerations:
       - category:  edge_content
-        consideration: We should ingest gene-disease association edges from the CTD_genes_diseases.tsv file. Lots of content here. Assess quality and compare to other gene-disease association sources when we do a comprehensive review of content/modeling in this area.
+        consideration: We should ingest gene-disease association edges from the CTD_genes_diseases.tsv file and/or the curated CTD_curated_genes_diseases.tsv.gz file. Lots of content here. Assess quality and compare to other gene-disease association sources when we do a comprehensive review of content/modeling in this area.
       - category:  edge_content
         consideration: For inferred Chemical-Disease associations, consider adding a cutoff to remove lower quality/confidence inferences (e.g. based on shared gene count, publication count, or inference score). At present we include even inferences based on a single shared gene/pub - which is not really meaningful.
         relevant_files: CTD_chemicals_diseases.tsv.gz
@@ -495,7 +493,7 @@
   provenance_info:
     contributions:
       - "Kevin Schaper: code author"
-      - "Evan Morris: code support"
+      - "Evan Morris: code author"
       - "Sierra Moxon: code support"
       - "Vlado Dancik: code support, domain expertise"
       - "Matthew Brush: data modeling, domain expertise"

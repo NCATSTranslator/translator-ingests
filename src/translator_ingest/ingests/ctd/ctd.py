@@ -6,7 +6,10 @@ import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalToPathwayAssociation,
     Disease,
+    Pathway,
+    PhenotypicFeature,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
@@ -16,16 +19,25 @@ from translator_ingest.util.biolink import INFORES_CTD
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
 
+BIOLINK_AFFECTS = "biolink:affects"
+BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
+BIOLINK_POSITIVELY_CORRELATED = "biolink:positively_correlated_with"
+BIOLINK_NEGATIVELY_CORRELATED = "biolink:negatively_correlated_with"
+
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 
-CTD_PREDICATES_BY_EVIDENCE_TYPE = {
+CHEM_TO_DISEASE_PREDICATES = {
     "therapeutic": BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
     "marker/mechanism": BIOLINK_CORRELATED_WITH,
     "inference": BIOLINK_ASSOCIATED_WITH,  # the files don't have "inference" but we use it in the transform
 }
 
+EXPOSURE_EVENTS_PREDICATES = {
+    "positive correlation": BIOLINK_POSITIVELY_CORRELATED,
+    "negative correlation": BIOLINK_NEGATIVELY_CORRELATED
+}
 
 def get_latest_version():
     # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
@@ -40,74 +52,207 @@ def get_latest_version():
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 
-@koza.on_data_begin(tag="chemical_to_disease")
-def on_begin_chemical_to_disease(koza: koza.KozaTransform) -> None:
-    koza.state["rows_missing_publications"] = {}
-    for evidence_type in CTD_PREDICATES_BY_EVIDENCE_TYPE:
-        koza.state["rows_missing_publications"][evidence_type] = 0
-
-
-@koza.on_data_end(tag="chemical_to_disease")
-def on_end_chemical_to_disease(koza: koza.KozaTransform) -> None:
-    for row_type, count in koza.state["rows_missing_publications"].items():
-        if count > 0:
-            koza.log(f"CTD chemical_to_disease: {count} {row_type} rows with 0 publications", level="WARNING")
-
-
-@koza.transform_record(tag="chemical_to_disease")
+@koza.transform_record(tag="chemicals_diseases")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     chemical = ChemicalEntity(id=f"MESH:{record["ChemicalID"]}", name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
 
-    # check the evidence type and assign a predicate based on that
+    # Check the evidence type and assign a predicate based on that
+    # DirectEvidence should be "therapeutic", "marker/mechanism", or blank (in which case we assign "inference")
     evidence_type = record["DirectEvidence"] if record["DirectEvidence"] else "inference"
-    predicate = CTD_PREDICATES_BY_EVIDENCE_TYPE[evidence_type]
+    predicate = CHEM_TO_DISEASE_PREDICATE_LOOKUP[evidence_type]
 
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-    if not publications:
-        koza.state["rows_missing_publications"][evidence_type] += 1
 
     association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate=predicate,
         object=disease.id,
-        publications=publications,
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
+        agent_type=AgentTypeEnum.manual_agent
     )
+    if publications:
+        association.publications = publications
     if evidence_type == "inference":
         association.has_confidence_score = float(record["InferenceScore"])
     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
 
+@koza.transform_record(tag="exposure_events")
+def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    return None
+    # get the exposurestressorid and outcomerelationship first, bail if we can't use both
+    exposure_chemical_id = f'MESH:{record['exposurestressorid']}'
+    outcome_relationship = record['outcomerelationship']
+    # map the outcomerelationship to a predicate
+    predicate = EXPOSURE_EVENTS_PREDICATES.get(outcome_relationship)
+    if not (predicate and exposure_chemical_id):
+        return None
 
-# @koza.on_data_begin(tag="exposure_events")
-# def on_begin_exposure_events(koza: koza.KozaTransform) -> None:
-#     koza.log('On Data Begin... exposure_events', level="INFO")
-#     koza.state['missing_predicate'] = 0
-#     koza.state['missing_disease'] = 0
-#     koza.state['all_predicates_labels'] = set()
-#
-#
-# Functions decorated with @koza.on_data_end() run after transform or transform_record
-# @koza.on_data_end(tag="exposure_events")
-# def on_end_exposure_events(koza: koza.KozaTransform) -> None:
-#     koza.log('On Data End.. exposure_events', level="INFO")
-#     koza.log(f'all CTD predicate values: {koza.state['all_predicates_labels']}', level="INFO")
-#
-#
-# @koza.transform_record(tag="exposure_events")
-# def transform_record_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-#     disease_id = f'MESH:{record['diseaseid']}'
-#     if not disease_id:
-#         koza.state['missing_disease'] += 1
-#
-#     predicate_label = record['outcomerelationship']
-#     if not predicate_label:
-#         koza.state['missing_predicate'] += 1
-#
-#     koza.state['all_predicates_labels'].add(predicate_label)
-#
-#     exposure_id = f'MESH:{record['exposurestressorid']}'
-#     publications = f'PMID:{record['reference']}'
+    nodes = [ChemicalEntity(id=exposure_chemical_id)]
+    edges = []
+    publications = [f'PMID:{record['reference']}']
+
+    # diseaseid is a "(MeSH or OMIM identifier)" but doesn't include curie prefixes
+    disease_id = record['diseaseid']
+    if disease_id:
+        # MeSH ids should start with D
+        if disease_id.startswith("D") or disease_id.startswith("C"):
+            disease_id = f'MESH:{record['diseaseid']}'
+        # OMIM ids should just be numbers
+        elif disease_id.isdigit():
+            disease_id = f'OMIM:{record['diseaseid']}'
+        else:
+            koza.log(f'Could not determine what kind of diseaseid this is: {disease_id}', level="WARNING")
+            disease_id = None
+    if disease_id:
+        nodes.append(Disease(id=disease_id))
+        c_to_d_association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+                id=entity_id(),
+                subject=exposure_chemical_id,
+                predicate=predicate,
+                object=disease_id,
+                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                knowledge_level=KnowledgeLevelEnum.statistical_association,
+                agent_type=AgentTypeEnum.manual_agent
+        )
+        if publications:
+            c_to_d_association.publications = publications
+        edges.append(c_to_d_association)
+
+    # phenotype ids have the "GO:" curie prefix here unlike diseases
+    phenotype_id = f'{record['phenotypeid']}' if record['phenotypeid'] else None
+    if phenotype_id:
+        nodes.append(PhenotypicFeature(id=phenotype_id))
+        c_to_p_association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+                id=entity_id(),
+                subject=exposure_chemical_id,
+                predicate=predicate,
+                object=phenotype_id,
+                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                knowledge_level=KnowledgeLevelEnum.statistical_association,
+                agent_type=AgentTypeEnum.manual_agent
+        )
+        if publications:
+            c_to_p_association.publications = publications
+        edges.append(c_to_p_association)
+
+    return KnowledgeGraph(nodes=nodes, edges=edges)
+
+
+@koza.transform_record(tag="chem_gene_ixns")
+def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    pass
+
+
+@koza.transform_record(tag="chem_go_enriched")
+def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    # chemical ids are mesh ids without the curie prefix
+    chemical_id = f'MESH:{record['ChemicalID']}'
+    # GO curies
+    go_term = record['GOTermID']
+    p_value = record['PValue']
+    corrected_p_value = record['CorrectedPValue']
+    # TODO not all go terms are pathways but ChemicalToPathwayAssociation is the closest Association I could find
+    edge = ChemicalToPathwayAssociation(
+        id=entity_id(),
+        subject=chemical_id,
+        predicate=BIOLINK_ASSOCIATED_WITH,
+        object=go_term,
+        knowledge_level=KnowledgeLevelEnum.statistical_association,
+        agent_type=AgentTypeEnum.data_analysis_pipeline,
+        p_value=p_value,
+        adjusted_p_value=corrected_p_value
+    )
+    return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
+                                 Pathway(id=go_term)],
+                          edges=[edge])
+
+
+@koza.transform_record(tag="chem_pathways_enriched")
+def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    # chemical ids are mesh ids without the curie prefix
+    chemical_id = f'MESH:{record['ChemicalID']}'
+    # these are curies, either REACT: or KEGG:
+    # replace KEGG with KEGG.PATHWAY as it is in the biolink model
+    pathway_id = record['PathwayID'].replace('KEGG', 'KEGG.PATHWAY')
+    p_value = record['PValue']
+    corrected_p_value = record['CorrectedPValue']
+    # TODO not all go terms are pathways but ChemicalToPathwayAssociation is the closest Association I could find
+    edge = ChemicalToPathwayAssociation(
+        id=entity_id(),
+        subject=chemical_id,
+        predicate=BIOLINK_ASSOCIATED_WITH,
+        object=go_term,
+        knowledge_level=KnowledgeLevelEnum.statistical_association,
+        agent_type=AgentTypeEnum.data_analysis_pipeline,
+        p_value=p_value,
+        adjusted_p_value=corrected_p_value
+    )
+
+
+@koza.on_data_begin(tag="pheno_term_ixns")
+def on_pheno_ixns_begin(koza: koza.KozaTransform):
+    koza.transform_metadata['unmapped_interaction_types'] = set()
+
+
+@koza.on_data_end(tag="pheno_term_ixns")
+def on_pheno_ixns_end(koza: koza.KozaTransform):
+    koza.transform_metadata['unmapped_interaction_types'] = list(koza.transform_metadata['unmapped_interaction_types'])
+
+
+@koza.transform_record(tag="pheno_term_ixns")
+def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+
+    # chemical ids are mesh ids without the curie prefix
+    chemical_id = f'MESH:{record['chemicalid']}'
+    # phenotypes are GO curies
+    phenotype_id = record['phenotypeid']
+    # organismid is an ncbitaxon id
+    species = f"NCBITaxon:{record['organismid']}"
+    publications = [f'PMID:{pmid}' for pmid in record['pubmedids'].split('|')]
+    # anatomyterms values look like: 1^Lung^D008168|2^Cell Line, Tumor^D045744
+    # AnatomyTerms (MeSH term; '|'-delimited list) entries formatted as SequenceOrder^Name^Id
+    # extract the mesh ids and make them a list of curies
+    anatomies = [f'MESH:{anatomy_entry.split('^')[-1]}' for anatomy_entry in record['anatomyterms'].split("|")]
+    interactions = record['interactionactions'].split('|')
+    if len(interactions) > 1:
+        # TODO these interactions involve multiple chemicals or terms,
+        #  most of them are hard/impossible to parse into self-contained edges, but we may be able to do some of them
+        return
+    interaction = interactions[0]
+    object_direction_qualifier = None
+    match interaction:
+        case 'increases^phenotype':
+            object_direction_qualifier = "increased"
+        case 'decreases^phenotype':
+            object_direction_qualifier = "decreased"
+        case 'affects^phenotype':
+            pass
+        case _:
+            koza.transform_metadata['unmapped_interaction_types'].add(interaction)
+
+    edge = ChemicalToPathwayAssociation(
+        id=entity_id(),
+        subject=chemical_id,
+        predicate=BIOLINK_AFFECTS,
+        object=phenotype_id,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        # TODO these aren't valid for ChemicalToPathwayAssociation, which isn't exactly the right association anyway
+        # species_context_qualifier=species,
+        # anatomical_context_qualifier=anatomies
+    )
+    # if object_direction_qualifier:
+        # edge.qualified_predicate=BIOLINK_CAUSES
+        # edge.object_direction_qualifier=object_direction_qualifier
+    return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
+                                 PhenotypicFeature(id=phenotype_id)],
+                          edges=[edge])
+
+
+
+
+
+
