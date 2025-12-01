@@ -1,7 +1,7 @@
 name: signor
 
 reader:
-  format: tsv
+  format: csv
   delimiter: \t
   comment_char: "!" # Header line starts with !
   header_mode: none
@@ -10,22 +10,22 @@ reader:
   columns: # 17 columns from the file
     - ENTITYA # subject name
     - TYPEA # subject type
-    -	IDA # subject ID
+    - IDA # subject ID
     - DATABASEA # subject database
-    -	ENTITYB # object name
+    - ENTITYB # object name
     - TYPEB # object type
-    -	IDB # object ID
+    - IDB # object ID
     - DATABASEB # object database
-    -	EFFECT # relationship/effect
-    -	MECHANISM # mechanism of relationship
+    - EFFECT # relationship/effect
+    - MECHANISM # mechanism of relationship
     - TAX_ID # tax ID
     - CELL_DATA # cell data id
     - TISSUE_DATA # tissue data
     - PMID # publication ID
     - DIRECT # whether the relationship is direct, used to identify physically_interacts_with
     - SENTENCE # detailed description
-    -	SCORE # confidence score of the relationship
-    -	SIGNOR_ID # signor ID
+    - SCORE # confidence score of the relationship
+    - SIGNOR_ID # signor ID
   filters:
     - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
       column: ENTITYA
