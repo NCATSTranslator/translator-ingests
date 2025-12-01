@@ -93,14 +93,11 @@
           - manual_agent
         edge_properties:
           - biolink:publications
-          - direct_interaction
           - mechanism_of_action_description
           - mechanism_of_action_comment
           - mutation
           - mutation_accession
           - selectivity_comment
-          - source_description
-          - source_comment
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
         additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that "A causes increased stability of B"; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that "A increases the activity of B" and that "A directly physically interacts with B". A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: "https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json".
         
@@ -216,15 +213,16 @@
             value_id_prefixes:
               - "NCBITaxon"
             value_description: "species tax id"
+          - property: "biolink:context_qualifier"
+            value_id_prefixes:
+              - "UniProtKB"
+            value_description: "enzyme identifier"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
         edge_properties:
           - biolink:publications
-          - enzyme_type
-          - enzyme_chembl_id
-          - enzyme_name
           - metabolic conversion
           - metabolic conversion comment
         ui_explanation: "Metabolism information from ChEMBL"
@@ -346,27 +344,13 @@
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - biolink:highest_FDA_approval_status
           - biolink:routes_of_delivery
           - biolink:synonym
           - biolink:xref
-          - atc_classifications
-          - availability_type
-          - black_box_warning
-          - dosed_ingredient
-          - first_approval
-          - first_in_class
-          - indication_class
-          - molecule_type
-          - natural_product
-          - polymer_flag
-          - prodrug
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
-          - withdrawn_flag
+          - chembl_availability_type
+          - chembl_black_box_warning
+          - chembl_natural_product
+          - chembl_prodrug
 
       - node_category: Gene
         source_identifier_types: 
@@ -420,27 +404,14 @@
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - biolink:highest_FDA_approval_status
           - biolink:routes_of_delivery
           - biolink:synonym
           - biolink:xref
-          - atc_classifications
-          - availability_type
-          - black_box_warning
-          - dosed_ingredient
-          - first_approval
-          - first_in_class
-          - indication_class
-          - molecule_type
-          - natural_product
-          - polymer_flag
-          - prodrug
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
-          - withdrawn_flag
+          - chembl_availability_type
+          - chembl_black_box_warning
+          - chembl_natural_product
+          - chembl_prodrug
+
 
       - node_category: NucleicAcidEntity
         source_identifier_types:
@@ -510,27 +481,14 @@
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - biolink:highest_FDA_approval_status
           - biolink:routes_of_delivery
           - biolink:synonym
           - biolink:xref
-          - atc_classifications
-          - availability_type
-          - black_box_warning
-          - dosed_ingredient
-          - first_approval
-          - first_in_class
-          - indication_class
-          - molecule_type
-          - natural_product
-          - polymer_flag
-          - prodrug
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
-          - withdrawn_flag
+          - chembl_availability_type
+          - chembl_black_box_warning
+          - chembl_natural_product
+          - chembl_prodrug
+
 
 
   provenance_info:
