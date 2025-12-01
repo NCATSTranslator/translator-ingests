@@ -4,7 +4,7 @@ reader:
   format: "csv"
   delimiter: "\t"
   comment_char: "#"  ## first two lines are comments with version/date
-  ## ?? see if this works. If it doesn't, put 2 (int: column-names row is 3rd line, idx 2) 
+  ## infer seems to work! correct number of rows ingested at beginning
   header_mode: "infer"
   files:
     - "interactions.tsv"
@@ -16,3 +16,4 @@ reader:
     - "interaction_source_db_name"
     - "interaction_types"
     - "interaction_score"
+    - "evidence_score"
