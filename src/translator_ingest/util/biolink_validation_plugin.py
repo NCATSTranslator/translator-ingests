@@ -88,13 +88,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
             
             # For each descendant, get the proper biolink CURIE format
             for desc in descendants:
-                try:
-                    element = self._bmt.get_element(desc)
-                    if element and hasattr(element, 'slot_uri') and element.slot_uri:
-                        valid_predicates.add(element.slot_uri)
-                except Exception:
-                    # If we can't get the element, skip it
-                    pass
+                element = self._bmt.get_element(desc)
+                if element and hasattr(element, 'slot_uri') and element.slot_uri:
+                    valid_predicates.add(element.slot_uri)
                     
         except Exception as e:
             # Having a working schema with predicate descendants is required
