@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import koza
+import requests
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -21,11 +22,26 @@ from koza.model.graphs import KnowledgeGraph
 INFORES_GO_CAM = "infores:go-cam"
 INFORES_REACTOME = "infores:reactome"
 
+# Constants
+GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
+
 logger = logging.getLogger(__name__)
 
 
 def get_latest_version() -> str:
-    return "v1"
+    """Fetch the current GO release version from the public metadata endpoint."""
+    try:
+        response = requests.get(GOA_RELEASE_METADATA_URL, timeout=10)
+        response.raise_for_status()
+        metadata = response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Unable to retrieve GO release metadata from {GOA_RELEASE_METADATA_URL}") from exc
+
+    version = metadata.get("date")
+    if not version:
+        raise RuntimeError(f"GO metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field")
+
+    return version
 
 
 def extract_value(value):
