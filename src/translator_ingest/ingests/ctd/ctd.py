@@ -5,6 +5,7 @@ import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
+    ChemicalEntityToGene,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalToPathwayAssociation,
     Disease,
@@ -279,6 +280,24 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
 
     publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
 
+    association = ChemicalEntityToGene(
+        subject=chemical_id,
+        predicate=predicate,
+        object=gene_id,
+        qualified_predicate=qualified_predicate,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        publications=publications
+    )
+    if object_aspect_qualifier:
+        association.object_aspect_qualifier = object_aspect_qualifier
+    if object_direction_qualifier:
+        association.object_direction_qualifier = object_direction_qualifier
+
+    return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
+                                 Gene(id=gene_id)],
+                          edges=[edges])
 
 @koza.transform_record(tag="chem_go_enriched")
 def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
@@ -294,6 +313,7 @@ def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any])
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=go_term,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -313,17 +333,20 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
     pathway_id = record['PathwayID'].replace('KEGG', 'KEGG.PATHWAY')
     p_value = record['PValue']
     corrected_p_value = record['CorrectedPValue']
-    # TODO not all go terms are pathways but ChemicalToPathwayAssociation is the closest Association I could find
     edge = ChemicalToPathwayAssociation(
         id=entity_id(),
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=pathway_id,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
         adjusted_p_value=corrected_p_value
     )
+    return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
+                                 Pathway(id=pathway_id)],
+                          egdes=[edge])
 
 
 @koza.on_data_begin(tag="pheno_term_ixns")
@@ -344,12 +367,12 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
     # phenotypes are GO curies
     phenotype_id = record['phenotypeid']
     # organismid is an ncbitaxon id
-    species = f"NCBITaxon:{record['organismid']}"
+    # species = f"NCBITaxon:{record['organismid']}"
     publications = [f'PMID:{pmid}' for pmid in record['pubmedids'].split('|')]
     # anatomyterms values look like: 1^Lung^D008168|2^Cell Line, Tumor^D045744
     # AnatomyTerms (MeSH term; '|'-delimited list) entries formatted as SequenceOrder^Name^Id
     # extract the mesh ids and make them a list of curies
-    anatomies = [f'MESH:{anatomy_entry.split('^')[-1]}' for anatomy_entry in record['anatomyterms'].split("|")]
+    # anatomies = [f'MESH:{anatomy_entry.split('^')[-1]}' for anatomy_entry in record['anatomyterms'].split("|")]
     interactions = record['interactionactions'].split('|')
     if len(interactions) > 1:
         # TODO these interactions involve multiple chemicals or terms,
@@ -367,13 +390,17 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         case _:
             koza.transform_metadata['unmapped_pheno_ixn_types'].add(interaction)
 
+    # TODO use something like ChemicalEntityToBiologicalProcessAssociation instead
+    # but it's complicated by GO terms potentially being a few different things
     edge = ChemicalToPathwayAssociation(
         id=entity_id(),
         subject=chemical_id,
         predicate=BIOLINK_AFFECTS,
         object=phenotype_id,
+        sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
+        publications=publications,
         # TODO these aren't valid for ChemicalToPathwayAssociation, which isn't exactly the right association anyway
         # species_context_qualifier=species,
         # anatomical_context_qualifier=anatomies
