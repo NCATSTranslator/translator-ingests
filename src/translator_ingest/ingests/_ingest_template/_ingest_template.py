@@ -12,9 +12,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association,
 )
-from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
-
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_CTD
 
 # !!! README First !!!
 #
@@ -43,12 +43,17 @@ def on_begin_ingest_by_record(koza: koza.KozaTransform) -> None:
     # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.
     koza.state["example_counter"] = 0
 
+    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
+    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
+    koza.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
+
 
 @koza.on_data_end(tag="ingest_by_record")
 def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
     # for example koza.state could be used for logging
     if koza.state["example_counter"] > 0:
         koza.log(f"{koza.state['example_counter']} rows were discarded for having no publications.", level="INFO")
+        koza.transform_metadata["ingest_by_record"]["rows_missing_publications"] = koza.state["example_counter"]
 
 
 # Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
@@ -92,8 +97,11 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
     # here is an example of skipping a record based off of some condition
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     if not publications:
+        koza.log(f"No pubmed IDs found for {record['PubMedIDs']}")
         koza.state["example_counter"] += 1
         return None
+    else:
+        koza.log(f" pubmed IDs found for {record['PubMedIDs']}")
 
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])

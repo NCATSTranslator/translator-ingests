@@ -1,0 +1,24 @@
+name: semmeddb
+metadata: !include './metadata.yaml'
+
+readers:
+  filter_edges:
+    format: jsonl
+    files:
+      - kg2.10.3-semmeddb-edges.jsonl
+    filters:
+      - inclusion: include
+        column: predicate
+        filter_code: in_exact
+        value:
+          - "biolink:treats_or_applied_or_studied_to_treat"
+          - "biolink:affects"
+          - "biolink:preventative_for_condition"
+          - "biolink:coexists_with"
+          - "biolink:causes"
+          - "biolink:related_to"
+          - "biolink:interacts_with"
+          - "biolink:located_in"
+          - "biolink:predisposes_to_condition"
+          - "biolink:physically_interacts_with"
+          - "biolink:disrupts"

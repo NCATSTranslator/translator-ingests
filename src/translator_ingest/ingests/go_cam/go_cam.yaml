@@ -3,11 +3,11 @@ name: go_cam_gene_to_gene
 reader:
   format: json
   files:
-    - ../../../../data/go_cam/go-cam-networkx.tar.gz
+    - go-cam-networkx.tar.gz
   filters:
     - inclusion: include
       column: taxon
-      filter_code: in
+      filter_code: in_exact
       value:
         - NCBITaxon:9606  # Human
         - NCBITaxon:10090 # Mouse

@@ -1,98 +1,149 @@
-from __future__ import annotations
+from typing import Any
+import koza
+from koza.model.graphs import KnowledgeGraph
 
-import json
-import os
-from pathlib import Path
-from typing import Callable, Iterable, Iterator, Optional, Set, Tuple, Dict, Any, TextIO, cast
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AnatomicalEntity,
+    ChemicalEntity,
+    Disease,
+    Gene,
+    NamedThing,
+    PhenotypicFeature,
+    Protein,
+    Association,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+)
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_SEMMEDDB
 
-
-PREDICATES_TO_KEEP: Set[str] = {
-    # list provided by user; keep exact biolink curies
-    "biolink:treats_or_applied_or_studied_to_treat",
-    "biolink:affects",
-    "biolink:preventative_for_condition",
-    "biolink:coexists_with",
-    "biolink:causes",
-    "biolink:related_to",
-    "biolink:interacts_with",
-    "biolink:located_in",
-    "biolink:predisposes_to_condition",
-    "biolink:physically_interacts_with",
-    "biolink:disrupts",
+# map prefixes to node types for proper classification
+PREFIX_TO_CLASS = {
+    "NCBIGene": Gene,
+    "HGNC": Gene,
+    "ENSEMBL": Gene,
+    "PR": Protein,
+    "UniProtKB": Protein,
+    "CHEBI": ChemicalEntity,
+    "DRUGBANK": ChemicalEntity,
+    "MONDO": Disease,
+    "DOID": Disease,
+    "HP": PhenotypicFeature,
+    "UBERON": AnatomicalEntity,
 }
 
+def get_latest_version() -> str:
+    return "semmeddb-2023-kg2.10.3"
 
-def _iter_jsonl(path: Path) -> Iterator[Dict[str, Any]]:
-    """stream json objects line by line using a generator to limit memory usage"""
-    with path.open("r") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError:
-                # skip malformed lines rather than failing the entire run
-                continue
+def _make_node(curie: str, koza: koza.KozaTransform = None) -> NamedThing | None:
+    # create a node from an identifier
+    if ":" not in curie:
+        # bad id format, count it for later reporting
+        if koza and "bad_id_format" in koza.state:
+            koza.state["bad_id_format"] += 1
+        return None
 
+    prefix = curie.split(":", 1)[0]
+    cls = PREFIX_TO_CLASS.get(prefix, NamedThing)
+    return cls(id=curie, category=cls.model_fields["category"].default)
 
-def _open_output(path: Path) -> TextIO:
-    """open output file ensuring parent directory exists"""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path.open("w")
+@koza.on_data_begin(tag="filter_edges")
+def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
+    # initialize counters for processing statistics
+    koza.state["seen_node_ids"] = set()
+    koza.state["total_edges_processed"] = 0
+    koza.state["edges_with_publications"] = 0
+    koza.state["edges_without_publications"] = 0
+    koza.state["bad_id_format"] = 0
+    koza.state["invalid_edges"] = 0
+    koza.state["invalid_nodes"] = 0
 
+@koza.on_data_end(tag="filter_edges")
+def on_end_filter_edges(koza: koza.KozaTransform) -> None:
+    # print processing summary with key metrics
+    koza.log("semmeddb processing complete:", level="INFO")
+    koza.log(f"  Total edges processed: {koza.state['total_edges_processed']}", level="INFO")
+    koza.log(f"  Edges with publications: {koza.state['edges_with_publications']}", level="INFO")
+    koza.log(f"  Edges without publications: {koza.state['edges_without_publications']}", level="INFO")
+    koza.log(f"  Unique nodes extracted: {len(koza.state['seen_node_ids'])}", level="INFO")
+    
+    # only log warnings if there were issues
+    if koza.state["bad_id_format"] > 0:
+        koza.log(f"  Bad ID format skipped: {koza.state['bad_id_format']}", level="WARNING")
+    if koza.state["invalid_edges"] > 0:
+        koza.log(f"  Invalid edges skipped: {koza.state['invalid_edges']}", level="WARNING")
+    if koza.state["invalid_nodes"] > 0:
+        koza.log(f"  Invalid nodes skipped: {koza.state['invalid_nodes']}", level="WARNING")
 
-def _get_progress() -> Callable[[Iterable[Any], Optional[int]], Iterable[Any]]:
-    """optional progress bar with graceful fallback if tqdm is missing"""
-    try:
-        from tqdm import tqdm  # type: ignore
-
-        def bar(iterable: Iterable[Any], total: Optional[int] = None) -> Iterable[Any]:
-            # cast because tqdm returns an untyped iterable which mypy treats as Any
-            return cast(Iterable[Any], tqdm(iterable, total=total, unit="lines"))
-
-        return bar
-    except Exception:
-
-        def identity(iterable: Iterable[Any], total: Optional[int] = None) -> Iterable[Any]:  # noqa: ARG001
-            return iterable
-
-        return identity
-
-
-def filter_semmed_edges(
-    input_path: Path = Path("data/semmeddb_kg2_kgx/kg2.10.3-semmeddb-edges.jsonl"),
-    output_path: Path = Path("data/semmeddb/semmeddb_edges.jsonl"),
-    predicates_to_keep: Set[str] = PREDICATES_TO_KEEP,
-) -> Tuple[int, int]:
-    """
-    stream filter a large semmeddb edges jsonl by predicate.
-
-    returns (total_read, total_written)
-    """
-    progress = _get_progress()
-
-    total_read = 0
-    total_written = 0
-
-    with _open_output(output_path) as out:
-        for obj in progress(_iter_jsonl(input_path), None):
-            total_read += 1
-            # predicate field name in kgx is typically 'predicate'
-            predicate = obj.get("predicate") or obj.get("edge_label")
-            if predicate in predicates_to_keep:
-                out.write(json.dumps(obj, ensure_ascii=False) + "\n")
-                total_written += 1
-
-    return total_read, total_written
-
-
-def main() -> None:
-    input_env = os.environ.get("SEM_MED_IN", "data/semmeddb_kg2_kgx/kg2.10.3-semmeddb-edges.jsonl")
-    output_env = os.environ.get("SEM_MED_OUT", "data/semmeddb/semmeddb_edges.jsonl")
-    total_read, total_written = filter_semmed_edges(Path(input_env), Path(output_env))
-    # simple terminal summary for quick sanity check
-    print(f"read={total_read} written={total_written} kept={total_written}")
-
-
-if __name__ == "__main__":
-    main()
+@koza.transform_record(tag="filter_edges")
+def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    # convert one edge record into nodes and connections
+    # initialize state if not already done (needed for tests)
+    if "total_edges_processed" not in koza.state:
+        koza.state["seen_node_ids"] = set()
+        koza.state["total_edges_processed"] = 0
+        koza.state["edges_with_publications"] = 0
+        koza.state["edges_without_publications"] = 0
+        koza.state["bad_id_format"] = 0
+        koza.state["invalid_edges"] = 0
+        koza.state["invalid_nodes"] = 0
+    
+    koza.state["total_edges_processed"] += 1
+    
+    # extract required fields
+    subject_id = record.get("subject")
+    object_id = record.get("object")
+    predicate = record.get("predicate")
+    
+    if not all([subject_id, object_id, predicate]):
+        koza.state["invalid_edges"] += 1
+        return None
+    
+    # create nodes for subject and object, deduplicating as we go
+    seen_node_ids = koza.state["seen_node_ids"]
+    nodes = []
+    
+    # process subject node
+    if subject_id not in seen_node_ids:
+        subject_node = _make_node(subject_id, koza)
+        if subject_node is not None:
+            nodes.append(subject_node)
+            seen_node_ids.add(subject_id)
+        else:
+            koza.state["invalid_nodes"] += 1
+            return None
+    
+    # process object node
+    if object_id not in seen_node_ids:
+        object_node = _make_node(object_id, koza)
+        if object_node is not None:
+            nodes.append(object_node)
+            seen_node_ids.add(object_id)
+        else:
+            koza.state["invalid_nodes"] += 1
+            return None
+    
+    # track publication statistics
+    publications = record.get("publications", [])
+    if publications:
+        koza.state["edges_with_publications"] += 1
+    else:
+        koza.state["edges_without_publications"] += 1
+    
+    # create association between nodes
+    association = Association(
+        id=entity_id(),
+        subject=subject_id,
+        predicate=predicate,
+        object=object_id,
+        publications=publications,
+        sources=build_association_knowledge_sources(primary=INFORES_SEMMEDDB),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.automated_agent,
+    )
+    
+    # add negation information if present
+    if record.get("negated"):
+        association.negated = record["negated"]
+    
+    return KnowledgeGraph(nodes=nodes, edges=[association])
