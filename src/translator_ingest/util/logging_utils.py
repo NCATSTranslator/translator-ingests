@@ -14,7 +14,7 @@ Usage:
 """
 
 import logging
-# import warnings
+import warnings
 
 
 def get_logger(name: str) -> logging.Logger:
