@@ -25,7 +25,7 @@ def post_query(url: str, query: dict, params=None, server: str = "") -> dict:
         else:
             response = requests.post(url, json=query, params=params)
     except Exception as ce:
-        logging.error(f"URL {url} could not be accessed: {str(ce)}?")
+        logger.error(f"URL {url} could not be accessed: {str(ce)}?")
         return dict()
 
     result: dict = dict()
@@ -36,7 +36,7 @@ def post_query(url: str, query: dict, params=None, server: str = "") -> dict:
         try:
             result = response.json()
         except (JSONDecodeError, UnicodeDecodeError) as je:
-            logging.error(f"{err_msg_prefix} response JSON could not be decoded: {str(je)}?")
+            logger.error(f"{err_msg_prefix} response JSON could not be decoded: {str(je)}?")
     else:
         logger.error(f"{err_msg_prefix} returned HTTP error code: '{response.status_code}'")
 
