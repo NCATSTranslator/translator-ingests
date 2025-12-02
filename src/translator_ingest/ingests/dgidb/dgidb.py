@@ -53,14 +53,15 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     df = pd.DataFrame.from_records(data)
     ## data was loaded with empty values = "". Just in case, replace these empty strings with None so na methods will work
     df.replace(to_replace="", value=None, inplace=True)
-    # ## for debugging
-    # print(df["interaction_source_db_name"].unique())
+    ## for debugging
+    # print(df[df["gene_concept_id"].notna()].shape)
+    # print(df[df["drug_concept_id"].notna()].shape)
     # print(df[df["interaction_source_db_name"].isna()].shape)
 
-    ## log, drop rows with NA (no value) in gene ID OR drug ID OR source column (default dropna behavior)
-    n_have_values = df.dropna(subset=["gene_concept_id", "drug_concept_id", "interaction_source_db_name"]).shape[0]
-    koza.log(f"{n_have_values} rows ({n_have_values / df.shape[0]:.1%}) kept (have both entity IDs and an underlying source)")
-    df.dropna(subset=["gene_concept_id", "drug_concept_id","interaction_source_db_name"], ignore_index=True, inplace=True)
+    ## log, drop rows with NA (no value) in gene ID OR drug ID (default dropna behavior)
+    n_have_values = df.dropna(subset=["gene_concept_id", "drug_concept_id"]).shape[0]
+    koza.log(f"{n_have_values} rows ({n_have_values / df.shape[0]:.1%}) kept (have both entity IDs)")
+    df.dropna(subset=["gene_concept_id", "drug_concept_id"], ignore_index=True, inplace=True)
 
     ## remove rows with drug IDs from namespaces that NodeNorm currently doesn't recognize
     n_before = df.shape[0]    ## save for log: calculating change
@@ -86,14 +87,15 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     df = df.explode("interaction_types", ignore_index=True)
     koza.log(f"{df.shape[0]} rows after expanding rows with multiple interaction_type values")
     ## make new relationship-type column: mod_type
-    ## set interaction_types values with the same data-modeling to the same value
+    ## where interaction_types values with the same data-modeling are set to the same value
     ##   currently, multiple values map to plain "interacts_with" edge modeling
     df["mod_type"] = ["~PLAIN_INTERACTS" if i in plain_interact_types else i for i in df["interaction_types"]]
+    ## (keeping original column interaction_types for trouble-shooting, maybe future use (original predicates?))
     ## take int_type_mapping and add this value
     int_type_mapping.update({
         "~PLAIN_INTERACTS": {
             "predicate": BIOLINK_INTERACTS,
-            ## create empty qualifier dict, so assigning to association later is easier
+            ## create empty qualifier dict, so assigning to association later is easier. Will error if the ** is set to None
             "qualifiers": {},
         }
     })
