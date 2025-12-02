@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import koza
+import requests
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -19,14 +20,29 @@ from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.logging_utils import get_logger
 
+
+# Constants
 INFORES_GO_CAM = "infores:go-cam"
 INFORES_REACTOME = "infores:reactome"
+GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
 
 logger = get_logger(__name__)
 
 
 def get_latest_version() -> str:
-    return "v1"
+    """Fetch the current GO release version from the public metadata endpoint."""
+    try:
+        response = requests.get(GOA_RELEASE_METADATA_URL, timeout=10)
+        response.raise_for_status()
+        metadata = response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Unable to retrieve GO release metadata from {GOA_RELEASE_METADATA_URL}") from exc
+
+    version = metadata.get("date")
+    if not version:
+        raise RuntimeError(f"GO metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field")
+
+    return version
 
 
 def extract_value(value):
@@ -37,36 +53,102 @@ def extract_value(value):
 
 
 def normalize_id(node_id: str) -> str:
-    """Remove duplicate prefixes from node IDs (e.g., MGI:MGI:1921700 -> MGI:1921700)."""
-    if not node_id or ":" not in node_id:
+    """Remove duplicate prefixes from node IDs (e.g., MGI:MGI:1921700 -> MGI:1921700) and convert URIs to CURIEs."""
+    if not node_id:
         return node_id
 
-    # Split on the first colon to get prefix and remainder
-    parts = node_id.split(":", 1)
-    if len(parts) != 2:
-        return node_id
+    # Handle REACTO URIs - convert to Biolink-compliant reactome: CURIEs
+    if node_id.startswith("obo:go/extensions/reacto.owl#REACTO_"):
+        # Convert obo:go/extensions/reacto.owl#REACTO_R-HSA-12345 to reactome:R-HSA-12345
+        reacto_id = node_id.split("#REACTO_")[-1]
+        return f"reactome:{reacto_id}"
 
-    prefix, remainder = parts
+    # Handle other OBO URIs if present
+    if node_id.startswith("obo:"):
+        # Handle OBO URIs with '#' delimiter
+        if "#" in node_id:
+            parts = node_id.split("#")
+            if len(parts) == 2:
+                # Extract the ID part after #
+                return parts[1]
+        else:
+            # Handle OBO URIs without '#' delimiter, e.g., obo:GO:12345
+            parts = node_id.split(":")
+            if len(parts) == 3:
+                # Extract the CURIE part after 'obo:'
+                return f"{parts[1]}:{parts[2]}"
 
-    # Check if remainder starts with the same prefix followed by colon
-    duplicate_prefix = f"{prefix}:"
-    if remainder.startswith(duplicate_prefix):
-        # Remove the duplicate prefix
-        return f"{prefix}:{remainder[len(duplicate_prefix):]}"
+    # Handle http URIs
+    if node_id.startswith("http://identifiers.org/"):
+        # Convert http://identifiers.org/PomBase:SPCC1183.03c to PomBase:SPCC1183.03c
+        return node_id.replace("http://identifiers.org/", "")
+
+    if node_id.startswith("http://www.ebi.ac.uk/"):
+        # Extract ID from EBI URIs
+        # e.g., http://www.ebi.ac.uk/intact/complex/details/EBI-767671 to ComplexPortal:EBI-767671
+        if "/intact/complex/details/" in node_id:
+            complex_id = node_id.split("/")[-1]
+            return f"ComplexPortal:{complex_id}"
+
+    # Handle duplicate prefixes (original functionality)
+    if ":" in node_id:
+        # Split on the first colon to get prefix and remainder
+        parts = node_id.split(":", 1)
+        if len(parts) == 2:
+            prefix, remainder = parts
+
+            # Check if remainder starts with the same prefix followed by colon
+            duplicate_prefix = f"{prefix}:"
+            if remainder.startswith(duplicate_prefix):
+                # Remove the duplicate prefix
+                return f"{prefix}:{remainder[len(duplicate_prefix):]}"
 
     return node_id
 
 
 def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
     """Map RO causal predicates to Biolink predicates."""
+    # Handle OBO URIs - convert to CURIEs
+    if causal_predicate.startswith("obo:") and "#" in causal_predicate:
+        # Extract RO ID from URI like obo:RO#RO_0002629
+        parts = causal_predicate.split("#")
+        if len(parts) == 2:
+            ro_id = parts[1]
+            # Convert RO_0002629 to RO:0002629
+            if ro_id.startswith("RO_"):
+                causal_predicate = ro_id.replace("RO_", "RO:")
+
+    # Handle HTTP URIs
+    if causal_predicate.startswith("http://purl.obolibrary.org/obo/RO_"):
+        # Extract RO ID from URI like http://purl.obolibrary.org/obo/RO_0002629
+        ro_id = causal_predicate.split("/")[-1]
+        if ro_id.startswith("RO_"):
+            causal_predicate = ro_id.replace("RO_", "RO:")
+
     predicate_mapping = {
-        "RO:0002629": "biolink:directly_positively_regulates",  # directly positively regulates
-        "RO:0002630": "biolink:directly_negatively_regulates",  # directly negatively regulates
-        "RO:0002213": "biolink:positively_regulates",  # positively regulates
-        "RO:0002212": "biolink:negatively_regulates",  # negatively regulates
+        "RO:0002629": "biolink:regulates",
+        "RO:0002630": "biolink:causes",
+        "RO:0002213": "biolink:regulates",
+        "RO:0002212": "biolink:regulates",
         "RO:0002211": "biolink:regulates",  # regulates
         "RO:0002233": "biolink:has_input",  # has input
-        "RO:0002234": "biolink:has_output",  # has output
+        "RO:0002234": "biolink:has_output",
+        "RO:0002413": "biolink:input_of",
+        "RO:0002411": "biolink:precedes",
+        "RO:0002412": "biolink:precedes",
+        "RO:0002407": "biolink:regulates",
+        "RO:0002304": "biolink:acts_upstream_of",
+        "RO:0002215": "biolink:capable_of",
+        "RO:0002332": "biolink:regulates",
+        "RO:0002333": "biolink:enabled_by",
+        "RO:0002409": "biolink:regulates",
+        "RO:0002418": "biolink:acts_upstream_of_or_within",
+        "RO:0002578": "biolink:directly_physically_interacts_with",
+        "RO:0004046": "biolink:acts_upstream_of_or_within_negative_effect",
+        "RO:0012009": "biolink:acts_upstream_of",
+        "RO:0002305": "biolink:acts_upstream_of_negative_effect",
+        "BFO:0000051": "biolink:has_part",
+        "BFO:0000050": "biolink:part_of",
     }
     return predicate_mapping.get(causal_predicate, "biolink:related_to")
 
@@ -106,10 +188,11 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     for filter_config in filters:
         if (
             filter_config.get("column") == "taxon"
-            and filter_config.get("filter_code") == "in"
+            and filter_config.get("filter_code") == "in_exact"
             and filter_config.get("inclusion") == "include"
         ):
             target_taxa = set(filter_config.get("value", []))
+            logger.info(f"Configured to include taxa: {target_taxa}")
             break
 
     logger.info(f"Filtering for taxa: {target_taxa}")
@@ -134,12 +217,6 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
                 model_data["_file_path"] = str(json_file)
                 yield model_data
                 models_filtered += 1
-            elif not target_taxa:
-                # No filter configured, include all
-                model_data["taxon"] = taxon
-                model_data["_file_path"] = str(json_file)
-                yield model_data
-                models_filtered += 1
             else:
                 # Skip models that don't match filter
                 logger.debug(f"Skipping model {Path(json_file).name} with taxon: {taxon}")
@@ -149,15 +226,16 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
     logger.info(f"Filtered {models_filtered} models out of {models_processed} total models")
 
+    if models_filtered == 0:
+        logger.warning(f"No models matched the filter criteria. Target taxa: {target_taxa}")
+
 
 @koza.transform()
 def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     """Process all GO-CAM model data with linked node/edge validation."""
-    for model_data in data:
-        file_path = model_data.get("_file_path", "unknown")
-        model_name = Path(file_path).name
+    unmapped_predicates = set()  # Track unique unmapped predicates
 
-        logger.info(f"Processing model: {model_name}")
+    for model_data in data:
 
         # Get model info (filtering is now handled by Koza filters in YAML)
         model_id = model_data.get("graph", {}).get("model_info", {}).get("id", "")
@@ -165,10 +243,12 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
         # Build lookup of nodes for label/name resolution
         node_lookup = {}
+
         for node in model_data.get("nodes", []):
             node_id = node.get("id")
             if node_id:
                 normalized_id = normalize_id(node_id)
+
                 # Store both original and normalized for edge lookup
                 node_lookup[node_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
                 if normalized_id != node_id:
@@ -243,6 +323,10 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
 
+            # Track unmapped predicates
+            if biolink_predicate == "biolink:related_to":
+                unmapped_predicates.add(causal_predicate)
+
             # Extract publications from references
             publications = edge.get("causal_predicate_has_reference", [])
             if isinstance(publications, str):
@@ -274,3 +358,10 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         # Yield a KnowledgeGraph for this model if there are any edges
         if edges:
             yield KnowledgeGraph(nodes=nodes, edges=edges)
+
+    # Report all unique unmapped predicates at the end
+    if unmapped_predicates:
+        logger.warning(
+            f"Found {len(unmapped_predicates)} unique unmapped causal predicates: "
+            f"{sorted(unmapped_predicates)}"
+        )
