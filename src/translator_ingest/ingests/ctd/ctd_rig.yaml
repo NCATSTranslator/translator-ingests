@@ -29,7 +29,6 @@
       - tsv
       - csv
       - obo
-      - xml
     data_versioning_and_releases: >-
       No consistent cadence for releases, but on average there are 1-2 releases each month.
       Versioning is based on the month and year of the release
@@ -57,7 +56,7 @@
       - file_name: CTD_exposure_events.tsv.gz
         location: http://ctdbase.org/downloads/
         description: Descriptions of statistical studies of how exposure to chemicals affects a particular population, with some records providing outcomes
-      - file_name: CTD_chem_gene_ixns_structured.xml
+      - file_name: CTD_chem_gene_ixns.tsv.gz
         location: http://ctdbase.org/downloads/
         description: Descriptions of curated, detailed causal associations describing how chemicals affect genes/gene products.
       - file_name: CTD_chem_go_enriched.tsv.gz
@@ -79,7 +78,7 @@
         fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs
       - file_name: CTD_exposure_events.tsv.gz
         included_records: All records (none filtered)
-      - file_name: CTD_chem_gene_ixns_structured.xml
+      - file_name: CTD_chem_gene_ixns.tsv.gz
         included_records: All records (none filtered)
       - file_name: CTD_chem_go_enriched.tsv.gz
         included_records: All records (none filtered)
@@ -231,7 +230,7 @@
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about how chemical entities affect genes/gene products in the body, often reporting a particular aspect or form of the gene that is effected, and the direction of the effect. Translator represents details of these causal associations using specific combinations of predicates (biolink:affects / biolink:causes) and qualifier properties (e.g. object_aspect, object_direction).
         additional_notes:
-          source file(s): CTD_chem_gene_ixns_structured.xml
+          source file(s): CTD_chem_gene_ixns.tsv.gz
 
       - subject_categories:
           - biolink:Gene
@@ -274,7 +273,7 @@
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about how genes affect chemical entities in the body, often reporting a particular form or aspect of the chemical that is effected, and the direction of the effect. Translator represents details of these causal associations using specific combinations of predicates (biolink:affects / biolink:causes) and qualifier properties (e.g. object_aspect, object_direction).
         additional_notes:
-          source file(s): CTD_chem_gene_ixns_structured.xml
+          source file(s): CTD_chem_gene_ixns.tsv.gz
 
       - subject_categories:
           - biolink:Gene
@@ -298,7 +297,7 @@
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications reporting that a gene or gene product (usually a mutant form) may affect susceptibility/sensitivity to the effects of a particular chemical exposure. Translator represents this relationship using the biolink:affects_sensitivity_to predicate, or biolink:increases/decreases_sensitivity_to predicates if a direction is provided.
         additional_notes:
-          source file(s): CTD_chem_gene_ixns_structured.xml
+          source file(s): CTD_chem_gene_ixns.tsv.gz
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -322,7 +321,7 @@
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications reporting that exposure to a chemical entity may affect susceptibility/sensitivity to the effects of particular gene or gene product (e.g. a signaling molecule like TNF). Translator represents this relationship using the biolink:affects_sensitivity_to predicate, or biolink:increases/decreases_sensitivity_to predicates if a direction is provided.
         additional_notes:
-          source file(s): CTD_chem_gene_ixns_structured.xml
+          source file(s): CTD_chem_gene_ixns.tsv.gz
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -390,7 +389,7 @@
           - biolink:publications
         ui_explanation: CTD curators manually extract statements from publications about chemicals 'binding' to gene products. Translator represents this using the biolink:directly_physically_interacts_with predicate, and qualifiers to indicate when a certain form, part, or derivative of the chemical or gene product are relevant to this interaction.
         additional_notes:
-          source file(s): CTD_chem_gene_ixns_structured.xml
+          source file(s): CTD_chem_gene_ixns.tsv
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -481,6 +480,8 @@
         consideration: Revisit 'correlated_with' and 'treats_or_studied_or_applied_to_treat' predicates if/when we refactor modeling or conventions here.
       - category: other
         consideration: May want to improve ui_explanations for the chemical-gene interactions edge types, once we understand how the UI will stitch together / display predicates and qualifier values for these edges.
+      - category: edges
+        consideration: CTD_pheno_term_ixns and CTD_chem_gene_ixns both have lots of interactions involve three entities, like A causes B which results in B causing C. These are hard to model on a single edge, but we may be able to extract single edges from them.
 
     additional_notes: >-
       CTD_chemicals_diseases.tsv. data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores.
