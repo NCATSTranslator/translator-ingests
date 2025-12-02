@@ -60,7 +60,7 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
     # Check the evidence type and assign a predicate based on that
     # DirectEvidence should be "therapeutic", "marker/mechanism", or blank (in which case we assign "inference")
     evidence_type = record["DirectEvidence"] if record["DirectEvidence"] else "inference"
-    predicate = CHEM_TO_DISEASE_PREDICATE_LOOKUP[evidence_type]
+    predicate = CHEM_TO_DISEASE_PREDICATES[evidence_type]
 
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
 
@@ -140,10 +140,144 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
 
     return KnowledgeGraph(nodes=nodes, edges=edges)
 
+@koza.on_data_begin(tag="chem_gene_ixns")
+def on_chem_gene_ixns_begin(koza: koza.KozaTransform):
+    koza.transform_metadata['unmapped_chem_gene_ixns'] = set()
+
+@koza.on_data_end(tag="chem_gene_ixns")
+def on_chem_gene_ixns_end(koza: koza.KozaTransform):
+    koza.transform_metadata['unmapped_chem_gene_ixns'] = (
+        list(koza.transform_metadata['unmapped_chem_gene_ixns']))
 
 @koza.transform_record(tag="chem_gene_ixns")
 def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-    pass
+    # chemical ids are mesh ids without the curie prefix
+    chemical_id = f'MESH:{record['ChemicalID']}'
+    # gene ids are NCBIGene ids without the curie prefix
+    gene_id = f'NCBIGene:{record['GeneID']}'
+    # organism ids are NCBITaxon ids without the curie prefix
+    taxon_id = f'NCBITaxon:{record['OrganismID']}'
+
+    interactions = record['InteractionActions'].split('|')
+    if len(interactions) > 1:
+        # TODO these interactions involve multiple chemicals or terms,
+        #  most of them are hard/impossible to parse into self-contained edges, but we may be able to do some of them.
+        return None
+    interaction = interactions[0]
+    interaction_direction, interaction_aspect = interaction.split("^")
+
+    predicate = BIOLINK_AFFECTS
+    qualified_predicate = BIOLINK_CAUSES
+    object_direction_qualifier = None
+
+    match interaction_direction:
+        case 'increases':
+            object_direction_qualifier = 'increased'
+        case 'decreases':
+            object_direction_qualifier = 'decreased'
+        case 'affects':
+            pass
+        case _:
+            koza.transform_metadata['unmapped_chem_gene_ixns'].add(interaction)
+
+    match interaction_aspect:
+        case 'activity':
+            object_aspect_qualifier = 'activity'
+        case 'expression':
+            object_aspect_qualifier = 'expression'
+        case 'phosphorylation':
+            object_aspect_qualifier = 'phosphorylation'
+        case 'lipidation':
+            object_aspect_qualifier = 'lipidation'
+        case 'sumoylation':
+            object_aspect_qualifier = 'sumoylation'
+        case 'N-linked glycosylation':
+            object_aspect_qualifier = 'n_linked_glycosylation'
+        case 'glycosylation':
+            object_aspect_qualifier = 'glycosylation'
+        case 'uptake':
+            object_aspect_qualifier = 'uptake'
+        case 'methylation':
+            object_aspect_qualifier = 'methylation'
+        case 'carbamoylation':
+            object_aspect_qualifier = 'carbamoylation'
+        case 'secretion':
+            object_aspect_qualifier = 'secretion'
+        case 'abundance':
+            object_aspect_qualifier = 'abundance'
+        case 'amination':
+            object_aspect_qualifier = 'amination'
+        case 'carboxylation':
+            object_aspect_qualifier = 'carboxylation'
+        case 'farnesylation':
+            object_aspect_qualifier = 'farnesylation'
+        case 'localization':
+            object_aspect_qualifier = 'localization'
+        case 'acylation':
+            object_aspect_qualifier = 'acylation'
+        case 'ethylation':
+            object_aspect_qualifier = 'ethylation'
+        case 'glucuronidation':
+            object_aspect_qualifier = 'glucuronidation'
+        case 'splicing':
+            object_aspect_qualifier = 'splicing'
+        case 'stability':
+            object_aspect_qualifier = 'stability'
+        case 'folding':
+            object_aspect_qualifier = 'folding'
+        case 'acetylation':
+            object_aspect_qualifier = 'acetylation'
+        case 'ADP-ribosylation':
+            object_aspect_qualifier = 'ADP-ribosylation'
+        case 'ubiquitination':
+            object_aspect_qualifier = 'ubiquitination'
+        case 'reduction':
+            object_aspect_qualifier = 'reduction'
+        case 'cleavage':
+            object_aspect_qualifier = 'cleavage'
+        case 'nitrosation':
+            object_aspect_qualifier = 'nitrosation'
+        case 'glycation':
+            object_aspect_qualifier = 'glycation'
+        case 'hydroxylation':
+            object_aspect_qualifier = 'hydroxylation'
+        case 'oxidation':
+            object_aspect_qualifier = 'oxidation'
+        case 'hydrolysis':
+            object_aspect_qualifier = 'hydrolysis'
+        case 'metabolic processing':
+            object_aspect_qualifier = 'metabolic_processing'
+        case 'glutathionylation':
+            object_aspect_qualifier = 'glutathionylation'
+        case 'prenylation':
+            object_aspect_qualifier = 'prenylation'
+        case 'degradation':
+            object_aspect_qualifier = 'degradation'
+        case 'ribosylation':
+            object_aspect_qualifier = 'ribosylation'
+        case 'geranoylation':
+            object_aspect_qualifier = 'geranoylation'
+        case 'sulfation':
+            object_aspect_qualifier = 'sulfation'
+        case 'O-linked glycosylation':
+            object_aspect_qualifier = 'o_linked_glycosylation'
+        case 'palmitoylation':
+            object_aspect_qualifier = 'palmitoylation'
+        case 'transport':
+            object_aspect_qualifier = 'transport'
+        case 'alkylation':
+            object_aspect_qualifier = 'alkylation'
+        case 'myristoylation':
+            object_aspect_qualifier = 'myristoylation'
+        # these next two were not exact matches to biolink aspects
+        case 'chemical synthesis':
+            object_aspect_qualifier = 'synthesis'
+        case 'mutagenesis':
+            object_aspect_qualifier = 'mutation_rate'
+        case _:
+            koza.transform_metadata['unmapped_chem_gene_ixns'].add(interaction)
+
+    publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
 
 
 @koza.transform_record(tag="chem_go_enriched")
@@ -184,7 +318,7 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
         id=entity_id(),
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
-        object=go_term,
+        object=pathway_id,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -194,12 +328,12 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
 
 @koza.on_data_begin(tag="pheno_term_ixns")
 def on_pheno_ixns_begin(koza: koza.KozaTransform):
-    koza.transform_metadata['unmapped_interaction_types'] = set()
+    koza.transform_metadata['unmapped_pheno_ixn_types'] = set()
 
 
 @koza.on_data_end(tag="pheno_term_ixns")
 def on_pheno_ixns_end(koza: koza.KozaTransform):
-    koza.transform_metadata['unmapped_interaction_types'] = list(koza.transform_metadata['unmapped_interaction_types'])
+    koza.transform_metadata['unmapped_pheno_ixn_types'] = list(koza.transform_metadata['unmapped_pheno_ixn_types'])
 
 
 @koza.transform_record(tag="pheno_term_ixns")
@@ -219,7 +353,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
     interactions = record['interactionactions'].split('|')
     if len(interactions) > 1:
         # TODO these interactions involve multiple chemicals or terms,
-        #  most of them are hard/impossible to parse into self-contained edges, but we may be able to do some of them
+        #  most of them are hard/impossible to parse into self-contained edges, but we may be able to do some of them.
         return
     interaction = interactions[0]
     object_direction_qualifier = None
@@ -231,7 +365,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         case 'affects^phenotype':
             pass
         case _:
-            koza.transform_metadata['unmapped_interaction_types'].add(interaction)
+            koza.transform_metadata['unmapped_pheno_ixn_types'].add(interaction)
 
     edge = ChemicalToPathwayAssociation(
         id=entity_id(),
