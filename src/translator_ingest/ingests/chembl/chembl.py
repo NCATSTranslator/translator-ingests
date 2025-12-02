@@ -1,4 +1,3 @@
-import uuid
 import koza
 import os
 from typing import Any, Iterable
@@ -19,8 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from koza.model.graphs import KnowledgeGraph
 
-from translator_ingest.util.biolink import build_association_knowledge_sources
-
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 QUALIFIER_CONFIG_PATH = "src/translator_ingest/ingests/chembl/chembl_qualifiers.json"
 
@@ -466,7 +464,7 @@ def get_association(koza, record, action_type_map):
             return [], []
             # Create association
         association = association_class(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=chemical.id,
                 predicate=predicate,
                 object=target.id,
@@ -496,7 +494,7 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
     connection = koza.state['chembl_db_connection']
     references = get_references(connection, "metabolism_refs", "met_id", record["met_id"])
     association = ChemicalToChemicalAssociation(
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=substrate.id,
         predicate="biolink:has_metabolite",
         object=metabolite.id,
@@ -515,7 +513,7 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
 def get_has_part_association(koza: koza.KozaTransform, component, target, record: dict[str, Any]) -> AnatomicalEntityToAnatomicalEntityPartOfAssociation:
     species_context_qualifier = get_species_context_qualifier(record)
     association = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=target.id,
         predicate="biolink:has_part",
         object=component.id,
