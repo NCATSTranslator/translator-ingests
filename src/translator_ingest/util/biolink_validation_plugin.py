@@ -13,8 +13,11 @@ def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = No
     if path is None:
         path = []
     if isinstance(data, dict):
-        # Check if this is a node or edge object
-        if "id" in data and ("category" in data or "subject" in data):
+        # Check if this is a node object (has id and category)
+        if "id" in data and "category" in data:
+            yield path, data
+        # Check if this is an edge object (has subject, predicate, and object)
+        elif "subject" in data and "predicate" in data and "object" in data:
             yield path, data
         else:
             # Recursively search nested dictionaries
