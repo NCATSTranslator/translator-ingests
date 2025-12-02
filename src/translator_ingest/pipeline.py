@@ -1,7 +1,5 @@
-import logging
 import click
 import json
-import warnings
 
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
@@ -9,6 +7,7 @@ from importlib import import_module
 from pathlib import Path
 
 from translator_ingest.util.biolink import get_current_biolink_version
+from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 from kghub_downloader.main import main as kghub_download
 
@@ -34,8 +33,7 @@ from translator_ingest.util.storage.local import (
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
 from translator_ingest.util.download_utils import substitute_version_in_download_yaml
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
@@ -181,13 +179,13 @@ def transform(pipeline_metadata: PipelineMetadata):
     write_ingest_file(file_type=IngestFileType.TRANSFORM_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=transform_metadata)
-    
+
     # For CTKP, rename the directory from "pending" to the actual version
     if source == "ctkp" and pipeline_metadata.source_version == "pending":
         actual_version = runner.transform_metadata.get("actual_version")
         if actual_version and actual_version != "pending":
             logger.info(f"Renaming CTKP directory from 'pending' to '{actual_version}'")
-            
+
             # Get the current (pending) and new directory paths
             pending_dir = get_output_directory(pipeline_metadata)
             new_pipeline_metadata = PipelineMetadata(
@@ -199,10 +197,10 @@ def transform(pipeline_metadata: PipelineMetadata):
                 release_version=pipeline_metadata.release_version
             )
             new_dir = get_output_directory(new_pipeline_metadata)
-            
+
             # Rename the directory
             pending_dir.rename(new_dir)
-            
+
             # Update the pipeline metadata with the actual version
             pipeline_metadata.source_version = actual_version
             logger.info(f"Successfully renamed CTKP directory to version {actual_version}")
@@ -355,14 +353,9 @@ def test_data(pipeline_metadata: PipelineMetadata):
                          data=[])
     else:
         # Generate the test data and example data
-        # Suppress linkml warnings when creating MetaKnowledgeGraphBuilder
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
-            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
-            
-            mkgb = MetaKnowledgeGraphBuilder(
-                nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
-            )
+        mkgb = MetaKnowledgeGraphBuilder(
+            nodes_file_path=graph_nodes_file_path, edges_file_path=graph_edges_file_path, logger=logger
+        )
         # write test data to file
         write_ingest_file(file_type=IngestFileType.TEST_DATA_FILE,
                           pipeline_metadata=pipeline_metadata,
@@ -425,16 +418,11 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         graph_metadata = source_metadata
     else:
         # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
-        # Suppress linkml warnings when analyzing the graph
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
-            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
-            
-            graph_metadata = analyze_graph(
-                nodes_file_path=graph_nodes_file_path,
-                edges_file_path=graph_edges_file_path,
-                graph_metadata=source_metadata,
-            )
+        graph_metadata = analyze_graph(
+            nodes_file_path=graph_nodes_file_path,
+            edges_file_path=graph_edges_file_path,
+            graph_metadata=source_metadata,
+        )
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
@@ -563,12 +551,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 @click.option("--transform-only", is_flag=True, help="Only perform the transformation.")
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(source, transform_only, overwrite):
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    
-    # Suppress linkml namespace override warnings at the logging level
-    logging.getLogger('linkml_runtime').setLevel(logging.ERROR)
-    logging.getLogger('linkml').setLevel(logging.ERROR)
-    
+    setup_logging()
     run_pipeline(source, transform_only=transform_only, overwrite=overwrite)
 
 

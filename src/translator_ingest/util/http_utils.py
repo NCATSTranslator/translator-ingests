@@ -1,11 +1,12 @@
 # HTTP query wrappers
 
 import requests
-import logging
 from json import JSONDecodeError
 from email.utils import parsedate_to_datetime
 
-logger = logging.getLogger(__name__)
+from translator_ingest.util.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def post_query(url: str, query: dict, params=None, server: str = "") -> dict:

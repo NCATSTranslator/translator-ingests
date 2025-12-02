@@ -1,11 +1,12 @@
 """Biolink Model support for Translator Ingests"""
 from functools import lru_cache
 from importlib.resources import files
-import logging
-import warnings
+
 from linkml_runtime.utils.schemaview import SchemaView
 
-logger = logging.getLogger(__name__)
+from translator_ingest.util.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -29,21 +30,13 @@ def get_biolink_schema() -> SchemaView:
     # from the locally installed distribution
     try:
         schema_path = files("biolink_model.schema").joinpath("biolink_model.yaml")
-        # Suppress linkml warnings about namespace overrides
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
-            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
-            schema_view = SchemaView(str(schema_path))
+        schema_view = SchemaView(str(schema_path))
         logger.debug("Successfully loaded Biolink schema from local file")
         return schema_view
     except Exception as e:
         logger.warning(f"Failed to load local Biolink schema: {e}")
         # Fallback to loading from official URL
-        # Suppress linkml warnings about namespace overrides
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=".*namespace is already mapped.*")
-            warnings.filterwarnings("ignore", message=".*Importing.*from source.*")
-            schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
+        schema_view = SchemaView("https://w3id.org/biolink/biolink-model.yaml")
         logger.debug("Successfully loaded Biolink schema from URL")
         return schema_view
 
