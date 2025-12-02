@@ -30,11 +30,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneOrGeneProductOrChemicalEntityAspectEnum,
 )
 
-from translator_ingest.util.biolink import (
-    INFORES_PATHBANK,
-    entity_id,
-    build_association_knowledge_sources,
-)
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_PATHBANK
 from translator_ingest.util.http_utils import get_modify_date
 
 
@@ -102,6 +99,9 @@ def _create_compound_node_and_edges(
 ) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
     """Create SmallMolecule node and same_as edges for a compound.
 
+    Prioritizes external IDs (CHEBI > DRUGBANK > KEGG.COMPOUND) as primary node ID
+    to ensure proper normalization. Uses PathBank ID only as fallback.
+
     Returns:
         Tuple of (nodes, edges, translator_dict) where translator_dict maps compound_id to {equiv_id: prefix}
     """
@@ -130,10 +130,28 @@ def _create_compound_node_and_edges(
     drugbank_id = _normalize_external_id(drugbank_id_raw, "DRUGBANK")
     kegg_id = _normalize_external_id(kegg_id_raw, "KEGG.COMPOUND")
 
-    # Create PathBank compound node
-    pwc_curie = f"PathBank:Compound:{pwc_id}"
+    # Determine primary ID: prioritize CHEBI > DRUGBANK > KEGG.COMPOUND > PathBank
+    # Use PathBank ID only if no external IDs are available
+    primary_curie = None
+    primary_prefix = None
+    
+    if chebi_id:
+        primary_curie = f"CHEBI:{chebi_id}"
+        primary_prefix = "CHEBI"
+    elif drugbank_id:
+        primary_curie = f"DRUGBANK:{drugbank_id}"
+        primary_prefix = "DRUGBANK"
+    elif kegg_id:
+        primary_curie = f"KEGG.COMPOUND:{kegg_id}"
+        primary_prefix = "KEGG.COMPOUND"
+    else:
+        # Fallback to PathBank ID (use valid CURIE format without multiple colons)
+        primary_curie = f"PathBank:Compound_{pwc_id}"
+        primary_prefix = "PathBank"
+
+    # Create primary compound node
     compound_node = SmallMolecule(
-        id=pwc_curie,
+        id=primary_curie,
         name=name,
         description=description,
         synonym=(
@@ -143,29 +161,45 @@ def _create_compound_node_and_edges(
     nodes.append(compound_node)
 
     # Build translator dictionary: {equiv_id: prefix}
-    # equiv_id is just the ID part (not full CURIE), prefix is used to construct full CURIE
-    compound_translator = {pwc_curie: "PathBank"}  # Store full CURIE for PathBank compound
-    if chebi_id:
-        compound_translator[chebi_id] = "CHEBI"  # Store just ID part for external IDs
-    if drugbank_id:
-        compound_translator[drugbank_id] = "DRUGBANK"
-    if kegg_id:
-        compound_translator[kegg_id] = "KEGG.COMPOUND"
-
-    # Create same_as edges FROM PathBank node TO external IDs (unidirectional)
-    # Also create minimal nodes for external IDs to satisfy normalization requirements
-    if chebi_id:
-        chebi_curie = f"CHEBI:{chebi_id}"
-        # Create minimal node for external CHEBI ID (required for edge normalization)
-        chebi_node = SmallMolecule(
-            id=chebi_curie,
-            name=name,  # Use same name as PathBank compound
+    # Store all equivalent IDs for this compound
+    compound_translator = {primary_curie: primary_prefix}
+    
+    # Add PathBank ID to translator if not already primary
+    if primary_prefix != "PathBank":
+        pwc_curie = f"PathBank:Compound_{pwc_id}"
+        compound_translator[pwc_curie] = "PathBank"
+        # Create PathBank node for same_as edge
+        pathbank_node = SmallMolecule(
+            id=pwc_curie,
+            name=name,
         )
-        nodes.append(chebi_node)
-        # Create edge FROM PathBank TO CHEBI
+        nodes.append(pathbank_node)
+        # Create same_as edge FROM primary TO PathBank
         same_as_edge = Association(
             id=entity_id(),
-            subject=pwc_curie,
+            subject=primary_curie,
+            predicate="biolink:same_as",
+            object=pwc_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
+
+    # Add other external IDs to translator and create same_as edges
+    if chebi_id and primary_prefix != "CHEBI":
+        chebi_curie = f"CHEBI:{chebi_id}"
+        compound_translator[chebi_curie] = "CHEBI"
+        chebi_node = SmallMolecule(
+            id=chebi_curie,
+            name=name,
+        )
+        nodes.append(chebi_node)
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=primary_curie,
             predicate="biolink:same_as",
             object=chebi_curie,
             sources=build_association_knowledge_sources(
@@ -175,18 +209,18 @@ def _create_compound_node_and_edges(
             agent_type=AgentTypeEnum.manual_agent,
         )
         edges.append(same_as_edge)
-    if drugbank_id:
+    
+    if drugbank_id and primary_prefix != "DRUGBANK":
         drugbank_curie = f"DRUGBANK:{drugbank_id}"
-        # Create minimal node for external DrugBank ID (required for edge normalization)
+        compound_translator[drugbank_curie] = "DRUGBANK"
         drugbank_node = SmallMolecule(
             id=drugbank_curie,
-            name=name,  # Use same name as PathBank compound
+            name=name,
         )
         nodes.append(drugbank_node)
-        # Create edge FROM PathBank TO DrugBank
         same_as_edge = Association(
             id=entity_id(),
-            subject=pwc_curie,
+            subject=primary_curie,
             predicate="biolink:same_as",
             object=drugbank_curie,
             sources=build_association_knowledge_sources(
@@ -196,18 +230,18 @@ def _create_compound_node_and_edges(
             agent_type=AgentTypeEnum.manual_agent,
         )
         edges.append(same_as_edge)
-    if kegg_id:
+    
+    if kegg_id and primary_prefix != "KEGG.COMPOUND":
         kegg_curie = f"KEGG.COMPOUND:{kegg_id}"
-        # Create minimal node for external KEGG ID (required for edge normalization)
+        compound_translator[kegg_curie] = "KEGG.COMPOUND"
         kegg_node = SmallMolecule(
             id=kegg_curie,
-            name=name,  # Use same name as PathBank compound
+            name=name,
         )
         nodes.append(kegg_node)
-        # Create edge FROM PathBank TO KEGG
         same_as_edge = Association(
             id=entity_id(),
-            subject=pwc_curie,
+            subject=primary_curie,
             predicate="biolink:same_as",
             object=kegg_curie,
             sources=build_association_knowledge_sources(
@@ -218,13 +252,13 @@ def _create_compound_node_and_edges(
         )
         edges.append(same_as_edge)
 
-    # Create has_participant edge from pathway to compound
+    # Create has_participant edge from pathway to compound (use primary ID)
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
-        object=pwc_curie,
+        object=primary_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
         ),
@@ -265,35 +299,67 @@ def _create_protein_node_and_edges(
     uniprot_id = _normalize_external_id(uniprot_id_raw, "UniProtKB")
     drugbank_id = _normalize_external_id(drugbank_id_raw, "DRUGBANK")
 
-    # Create PathBank protein node
-    pwp_curie = f"PathBank:Protein:{pwp_id}"
+    # Determine primary ID: prioritize UniProtKB > DRUGBANK > PathBank
+    primary_curie = None
+    primary_prefix = None
+    
+    if uniprot_id:
+        primary_curie = f"UniProtKB:{uniprot_id}"
+        primary_prefix = "UniProtKB"
+    elif drugbank_id:
+        primary_curie = f"DRUGBANK:{drugbank_id}"
+        primary_prefix = "DRUGBANK"
+    else:
+        # Fallback to PathBank ID (use valid CURIE format without multiple colons)
+        primary_curie = f"PathBank:Protein_{pwp_id}"
+        primary_prefix = "PathBank"
+
+    # Create primary protein node
     protein_node = Protein(
-        id=pwp_curie,
+        id=primary_curie,
         name=name,
     )
     nodes.append(protein_node)
 
     # Build translator dictionary: {equiv_id: prefix}
-    protein_translator = {pwp_curie: "PathBank"}
-    if uniprot_id:
-        protein_translator[uniprot_id] = "UniProtKB"
-    if drugbank_id:
-        protein_translator[drugbank_id] = "DRUGBANK"
-
-    # Create same_as edges FROM PathBank node TO external IDs (unidirectional)
-    # Also create minimal nodes for external IDs to satisfy normalization requirements
-    if uniprot_id:
-        uniprot_curie = f"UniProtKB:{uniprot_id}"
-        # Create minimal node for external UniProtKB ID (required for edge normalization)
-        uniprot_node = Protein(
-            id=uniprot_curie,
-            name=name,  # Use same name as PathBank protein
+    protein_translator = {primary_curie: primary_prefix}
+    
+    # Add PathBank ID to translator if not already primary
+    if primary_prefix != "PathBank":
+        pwp_curie = f"PathBank:Protein_{pwp_id}"
+        protein_translator[pwp_curie] = "PathBank"
+        # Create PathBank node for same_as edge
+        pathbank_node = Protein(
+            id=pwp_curie,
+            name=name,
         )
-        nodes.append(uniprot_node)
-        # Create edge FROM PathBank TO UniProtKB
+        nodes.append(pathbank_node)
+        # Create same_as edge FROM primary TO PathBank
         same_as_edge = Association(
             id=entity_id(),
-            subject=pwp_curie,
+            subject=primary_curie,
+            predicate="biolink:same_as",
+            object=pwp_curie,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(same_as_edge)
+
+    # Add other external IDs to translator and create same_as edges
+    if uniprot_id and primary_prefix != "UniProtKB":
+        uniprot_curie = f"UniProtKB:{uniprot_id}"
+        protein_translator[uniprot_curie] = "UniProtKB"
+        uniprot_node = Protein(
+            id=uniprot_curie,
+            name=name,
+        )
+        nodes.append(uniprot_node)
+        same_as_edge = Association(
+            id=entity_id(),
+            subject=primary_curie,
             predicate="biolink:same_as",
             object=uniprot_curie,
             sources=build_association_knowledge_sources(
@@ -303,19 +369,18 @@ def _create_protein_node_and_edges(
             agent_type=AgentTypeEnum.manual_agent,
         )
         edges.append(same_as_edge)
-    if drugbank_id:
+    
+    if drugbank_id and primary_prefix != "DRUGBANK":
         drugbank_curie = f"DRUGBANK:{drugbank_id}"
-        # Create minimal node for external DrugBank ID (required for edge normalization)
-        # DrugBank can be protein or small molecule, defaulting to Protein
+        protein_translator[drugbank_curie] = "DRUGBANK"
         drugbank_node = Protein(
             id=drugbank_curie,
-            name=name,  # Use same name as PathBank protein
+            name=name,
         )
         nodes.append(drugbank_node)
-        # Create edge FROM PathBank TO DrugBank
         same_as_edge = Association(
             id=entity_id(),
-            subject=pwp_curie,
+            subject=primary_curie,
             predicate="biolink:same_as",
             object=drugbank_curie,
             sources=build_association_knowledge_sources(
@@ -326,13 +391,13 @@ def _create_protein_node_and_edges(
         )
         edges.append(same_as_edge)
 
-    # Create has_participant edge from pathway to protein
+    # Create has_participant edge from pathway to protein (use primary ID)
     pathway_curie = f"PathBank:{pathway_id}"
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
-        object=pwp_curie,
+        object=primary_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
         ),
@@ -369,8 +434,8 @@ def _create_protein_complex_node_and_edges(
 
     name = _normalize_xml_value(protein_complex.get("name"))
 
-    # Create PathBank protein complex node
-    pwp_curie = f"PathBank:ProteinComplex:{pwp_id}"
+    # Create PathBank protein complex node (use valid CURIE format without multiple colons)
+    pwp_curie = f"PathBank:ProteinComplex_{pwp_id}"
     complex_node = MacromolecularComplex(
         id=pwp_curie,
         name=name,
@@ -461,7 +526,7 @@ def _create_nucleic_acid_node_and_edges(
     chebi_id = _normalize_external_id(chebi_id_raw, "CHEBI")
 
     # Create PathBank nucleic acid node
-    pwna_curie = f"PathBank:NucleicAcid:{pwna_id}"
+    pwna_curie = f"PathBank:NucleicAcid_{pwna_id}"
     na_node = NucleicAcidEntity(
         id=pwna_curie,
         name=name,
@@ -540,7 +605,7 @@ def _create_reaction_node_and_edges(
         return [], []
 
     # Create PathBank reaction node
-    pwr_curie = f"PathBank:Reaction:{pwr_id}"
+    pwr_curie = f"PathBank:Reaction_{pwr_id}"
     reaction_node = MolecularActivity(
         id=pwr_curie,
     )
@@ -696,7 +761,7 @@ def _create_bound_node_and_edges(
         return [], [], {}
 
     # Create PathBank bound node
-    pwb_curie = f"PathBank:Bound:{pwb_id}"
+    pwb_curie = f"PathBank:Bound_{pwb_id}"
     bound_node = ChemicalEntity(
         id=pwb_curie,
     )
@@ -796,7 +861,7 @@ def _create_element_collection_node_and_edges(
         external_id = _normalize_external_id(external_id_raw, prefix)
 
     # Create PathBank element collection node
-    pwec_curie = f"PathBank:ElementCollection:{pwec_id}"
+    pwec_curie = f"PathBank:ElementCollection_{pwec_id}"
     ec_node = ChemicalEntity(
         id=pwec_curie,
         name=name,

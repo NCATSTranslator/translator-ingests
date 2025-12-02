@@ -311,6 +311,7 @@ requires-dist = [
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "robokop-orion", specifier = "==0.1.10" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
+    { name = "xmltodict", specifier = ">=1.0.2" },
 ]
 
 [package.metadata.requires-dev]
