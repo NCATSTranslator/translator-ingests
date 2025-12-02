@@ -53,6 +53,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._node_ids_cache = set()
         self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
         self._bmt = Toolkit()  # BMT toolkit for domain/range validation
+        self._ancestors_cache = {}  # Maps category name to its ancestors for performance
 
     def _get_valid_categories(self, schema_view: SchemaView) -> Set[str]:
         """Get valid Biolink Model categories."""
@@ -130,8 +131,10 @@ class BiolinkValidationPlugin(ValidationPlugin):
             # Remove biolink: prefix for BMT lookup
             cat_name = category.replace('biolink:', '') if category.startswith('biolink:') else category
             
-            # Get all ancestors including mixins
-            ancestors = self._bmt.get_ancestors(cat_name, reflexive=True, mixin=True)
+            # Get all ancestors including mixins (with caching)
+            if cat_name not in self._ancestors_cache:
+                self._ancestors_cache[cat_name] = self._bmt.get_ancestors(cat_name, reflexive=True, mixin=True)
+            ancestors = self._ancestors_cache[cat_name]
             
             # Check if the constraint is in the ancestors
             if constraint in ancestors:
@@ -344,6 +347,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         # Reset caches for each instance
         self._node_ids_cache = set()
         self._node_categories_cache = {}
+        self._ancestors_cache = {}  # Clear ancestors cache for new instance
 
         # First pass: collect all node IDs and validate nodes
         for data_path, obj in _yield_biolink_objects(instance):

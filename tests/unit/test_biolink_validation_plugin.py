@@ -94,38 +94,20 @@ def test_category_matches_constraint(schema_plugin, categories, constraint, expe
     assert schema_plugin._category_matches_constraint(categories, constraint) == expected
 
 
-@pytest.mark.parametrize("subject_node,object_node,expected_violations,violation_type", [
+@pytest.mark.parametrize("subject_node,object_node", [
     # Valid: Drug treats Disease
     (
         {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
-        {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'},
-        0,
-        None
+        {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'}
     ),
-    # Invalid domain: Gene treats Disease
-    (
-        {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
-        {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'},
-        1,
-        'domain'
-    ),
-    # Invalid range: Drug treats Gene
+    # Valid: Drug treats PhenotypicFeature
     (
         {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
-        {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
-        1,
-        'range'
-    ),
-    # Valid: Drug treats PhenotypicFeature (valid range alternative)
-    (
-        {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
-        {'id': 'HP:9999', 'category': ['biolink:PhenotypicFeature'], 'name': 'Test Phenotype'},
-        0,
-        None
+        {'id': 'HP:9999', 'category': ['biolink:PhenotypicFeature'], 'name': 'Test Phenotype'}
     ),
 ])
-def test_domain_range_validation(subject_node, object_node, expected_violations, violation_type):
-    """Test domain and range validation for treats predicate"""
+def test_domain_range_validation_no_violations(subject_node, object_node):
+    """Test that valid treats edges pass domain/range validation without violations"""
     test_data = {
         'nodes': [subject_node, object_node],
         'edges': [
@@ -144,17 +126,80 @@ def test_domain_range_validation(subject_node, object_node, expected_violations,
     
     results = list(plugin.process(test_data, context))
     
-    if violation_type:
-        violations = [r for r in results if f'{violation_type} constraint' in r.message]
-        assert len(violations) == expected_violations
-        if expected_violations > 0:
-            if violation_type == 'domain':
-                assert 'expects domain \'chemical or drug or treatment\'' in violations[0].message
-                assert f"subject has categories {subject_node['category']}" in violations[0].message
-            elif violation_type == 'range':
-                assert 'expects range \'disease or phenotypic feature\'' in violations[0].message
-                assert f"object has categories {object_node['category']}" in violations[0].message
-    else:
-        # Check no domain/range violations
-        violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
-        assert len(violations) == expected_violations
+    # Check no domain/range violations
+    violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+    assert len(violations) == 0
+
+
+@pytest.mark.parametrize("subject_node,object_node,violation_type,expected_message_parts", [
+    # Invalid domain: Gene treats Disease
+    (
+        {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
+        {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'},
+        'domain',
+        ["expects domain 'chemical or drug or treatment'", "subject has categories ['biolink:Gene']"]
+    ),
+    # Invalid range: Drug treats Gene
+    (
+        {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
+        {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
+        'range',
+        ["expects range 'disease or phenotypic feature'", "object has categories ['biolink:Gene']"]
+    ),
+])
+def test_domain_range_validation_with_violations(subject_node, object_node, violation_type, expected_message_parts):
+    """Test that invalid treats edges fail domain/range validation with expected messages"""
+    test_data = {
+        'nodes': [subject_node, object_node],
+        'edges': [
+            {
+                'subject': subject_node['id'], 
+                'predicate': 'biolink:treats', 
+                'object': object_node['id'],
+                'sources': [{'resource_id': 'infores:test'}]
+            }
+        ]
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    violations = [r for r in results if f'{violation_type} constraint' in r.message]
+    assert len(violations) == 1
+    
+    # Check that all expected message parts are present
+    for expected_part in expected_message_parts:
+        assert expected_part in violations[0].message
+
+
+def test_domain_range_validation_missing_nodes_in_cache():
+    """Test that domain/range validation is skipped when nodes are not in cache"""
+    # Create edges without corresponding nodes
+    test_data = {
+        'nodes': [],  # Empty nodes list
+        'edges': [
+            {
+                'subject': 'MISSING:1234', 
+                'predicate': 'biolink:treats', 
+                'object': 'MISSING:5678',
+                'sources': [{'resource_id': 'infores:test'}]
+            }
+        ]
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Should have errors about missing nodes, but no domain/range constraint violations
+    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+    assert len(domain_range_violations) == 0
+    
+    # Should have errors about missing node references
+    missing_node_errors = [r for r in results if 'non-existent' in r.message]
+    assert len(missing_node_errors) == 2  # One for subject, one for object
