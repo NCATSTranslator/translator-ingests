@@ -116,7 +116,7 @@ def test_category_matches_constraint(schema_plugin, categories, constraint, expe
         1,
         'range'
     ),
-    # Valid: Drug treats PhenotypicFeature
+    # Valid: Drug treats PhenotypicFeature (valid range alternative)
     (
         {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
         {'id': 'HP:9999', 'category': ['biolink:PhenotypicFeature'], 'name': 'Test Phenotype'},
