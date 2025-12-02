@@ -1,3 +1,3 @@
 ---
-- url: https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl
-  local_name: kg2.10.3-semmeddb-edges.jsonl
+- url: https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
+  local_name: kg2.10.3-semmeddb-edges.jsonl.gz
