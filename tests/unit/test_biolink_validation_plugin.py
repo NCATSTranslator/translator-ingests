@@ -76,63 +76,65 @@ def schema_plugin():
     return BiolinkValidationPlugin(schema_view=schema)
 
 
-def test_category_matches_constraint_drug_domain(schema_plugin):
-    """Test that Drug category matches chemical or drug or treatment domain constraint"""
-    categories = ['biolink:Drug']
-    constraint = 'chemical or drug or treatment'
-    
-    assert schema_plugin._category_matches_constraint(categories, constraint)
+@pytest.mark.parametrize("categories,constraint,expected", [
+    # Domain constraint tests
+    (['biolink:Drug'], 'chemical or drug or treatment', True),
+    (['biolink:ChemicalEntity'], 'chemical or drug or treatment', True),
+    (['biolink:Gene'], 'chemical or drug or treatment', False),
+    # Range constraint tests
+    (['biolink:Disease'], 'disease or phenotypic feature', True),
+    (['biolink:PhenotypicFeature'], 'disease or phenotypic feature', True),
+    # Empty input tests (permissive)
+    ([], 'some constraint', True),
+    (['biolink:Drug'], '', True),
+    ([], '', True),
+])
+def test_category_matches_constraint(schema_plugin, categories, constraint, expected):
+    """Test that categories match or don't match their respective constraints"""
+    assert schema_plugin._category_matches_constraint(categories, constraint) == expected
 
 
-def test_category_matches_constraint_chemical_entity_domain(schema_plugin):
-    """Test that ChemicalEntity category matches chemical or drug or treatment domain constraint"""
-    categories = ['biolink:ChemicalEntity']
-    constraint = 'chemical or drug or treatment'
-    
-    assert schema_plugin._category_matches_constraint(categories, constraint)
-
-
-def test_category_matches_constraint_gene_does_not_match_drug_domain(schema_plugin):
-    """Test that Gene category does not match chemical or drug or treatment domain constraint"""
-    categories = ['biolink:Gene']
-    constraint = 'chemical or drug or treatment'
-    
-    assert not schema_plugin._category_matches_constraint(categories, constraint)
-
-
-def test_category_matches_constraint_disease_range(schema_plugin):
-    """Test that Disease category matches disease or phenotypic feature range constraint"""
-    categories = ['biolink:Disease']
-    constraint = 'disease or phenotypic feature'
-    
-    assert schema_plugin._category_matches_constraint(categories, constraint)
-
-
-def test_category_matches_constraint_phenotypic_feature_range(schema_plugin):
-    """Test that PhenotypicFeature category matches disease or phenotypic feature range constraint"""
-    categories = ['biolink:PhenotypicFeature']
-    constraint = 'disease or phenotypic feature'
-    
-    assert schema_plugin._category_matches_constraint(categories, constraint)
-
-
-def test_category_matches_constraint_empty_inputs(schema_plugin):
-    """Test that empty inputs return True (permissive)"""
-    assert schema_plugin._category_matches_constraint([], 'some constraint')
-    assert schema_plugin._category_matches_constraint(['biolink:Drug'], '')
-    assert schema_plugin._category_matches_constraint([], '')
-
-
-def test_domain_range_validation_valid_treats_edge():
-    """Test that valid treats edge (Drug treats Disease) passes domain/range validation"""
+@pytest.mark.parametrize("subject_node,object_node,expected_violations,violation_type", [
+    # Valid: Drug treats Disease
+    (
+        {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
+        {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'},
+        0,
+        None
+    ),
+    # Invalid domain: Gene treats Disease
+    (
+        {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
+        {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'},
+        1,
+        'domain'
+    ),
+    # Invalid range: Drug treats Gene
+    (
+        {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
+        {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
+        1,
+        'range'
+    ),
+    # Valid: Drug treats PhenotypicFeature
+    (
+        {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
+        {'id': 'HP:9999', 'category': ['biolink:PhenotypicFeature'], 'name': 'Test Phenotype'},
+        0,
+        None
+    ),
+])
+def test_domain_range_validation(subject_node, object_node, expected_violations, violation_type):
+    """Test domain and range validation for treats predicate"""
     test_data = {
-        'nodes': [
-            {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
-            {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'}
-        ],
+        'nodes': [subject_node, object_node],
         'edges': [
-            {'subject': 'CHEBI:1234', 'predicate': 'biolink:treats', 'object': 'MONDO:5678', 
-             'sources': [{'resource_id': 'infores:test'}]}
+            {
+                'subject': subject_node['id'], 
+                'predicate': 'biolink:treats', 
+                'object': object_node['id'],
+                'sources': [{'resource_id': 'infores:test'}]
+            }
         ]
     }
     
@@ -141,77 +143,18 @@ def test_domain_range_validation_valid_treats_edge():
     context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
     
     results = list(plugin.process(test_data, context))
-    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
     
-    assert len(domain_range_violations) == 0
-
-
-def test_domain_range_validation_invalid_treats_domain():
-    """Test that invalid treats edge (Gene treats Disease) fails domain validation"""
-    test_data = {
-        'nodes': [
-            {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'},
-            {'id': 'MONDO:5678', 'category': ['biolink:Disease'], 'name': 'Test Disease'}
-        ],
-        'edges': [
-            {'subject': 'HGNC:1111', 'predicate': 'biolink:treats', 'object': 'MONDO:5678',
-             'sources': [{'resource_id': 'infores:test'}]}
-        ]
-    }
-    
-    schema = get_biolink_schema()
-    plugin = BiolinkValidationPlugin(schema_view=schema)
-    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
-    
-    results = list(plugin.process(test_data, context))
-    domain_violations = [r for r in results if 'domain constraint' in r.message]
-    
-    assert len(domain_violations) == 1
-    assert 'expects domain \'chemical or drug or treatment\' but subject has categories [\'biolink:Gene\']' in domain_violations[0].message
-
-
-def test_domain_range_validation_invalid_treats_range():
-    """Test that invalid treats edge (Drug treats Gene) fails range validation"""
-    test_data = {
-        'nodes': [
-            {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
-            {'id': 'HGNC:1111', 'category': ['biolink:Gene'], 'name': 'Test Gene'}
-        ],
-        'edges': [
-            {'subject': 'CHEBI:1234', 'predicate': 'biolink:treats', 'object': 'HGNC:1111',
-             'sources': [{'resource_id': 'infores:test'}]}
-        ]
-    }
-    
-    schema = get_biolink_schema()
-    plugin = BiolinkValidationPlugin(schema_view=schema)
-    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
-    
-    results = list(plugin.process(test_data, context))
-    range_violations = [r for r in results if 'range constraint' in r.message]
-    
-    assert len(range_violations) == 1
-    assert 'expects range \'disease or phenotypic feature\' but object has categories [\'biolink:Gene\']' in range_violations[0].message
-
-
-def test_domain_range_validation_treats_phenotypic_feature():
-    """Test that Drug treats PhenotypicFeature is valid (satisfies range constraint)"""
-    test_data = {
-        'nodes': [
-            {'id': 'CHEBI:1234', 'category': ['biolink:Drug'], 'name': 'Test Drug'},
-            {'id': 'HP:9999', 'category': ['biolink:PhenotypicFeature'], 'name': 'Test Phenotype'}
-        ],
-        'edges': [
-            {'subject': 'CHEBI:1234', 'predicate': 'biolink:treats', 'object': 'HP:9999',
-             'sources': [{'resource_id': 'infores:test'}]}
-        ]
-    }
-    
-    schema = get_biolink_schema()
-    plugin = BiolinkValidationPlugin(schema_view=schema)
-    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
-    
-    results = list(plugin.process(test_data, context))
-    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
-    
-    assert len(domain_range_violations) == 0
+    if violation_type:
+        violations = [r for r in results if f'{violation_type} constraint' in r.message]
+        assert len(violations) == expected_violations
+        if expected_violations > 0:
+            if violation_type == 'domain':
+                assert 'expects domain \'chemical or drug or treatment\'' in violations[0].message
+                assert f"subject has categories {subject_node['category']}" in violations[0].message
+            elif violation_type == 'range':
+                assert 'expects range \'disease or phenotypic feature\'' in violations[0].message
+                assert f"object has categories {object_node['category']}" in violations[0].message
+    else:
+        # Check no domain/range violations
+        violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+        assert len(violations) == expected_violations
