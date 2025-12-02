@@ -1,0 +1,102 @@
+name: "Multiomics Drug Approvals Knowledge Provider (DAKP) Reference Ingest Guide"
+
+supporting_data_source_info:
+  - infores_id: "infores:dailymed"
+    name: "DailyMed"
+    description: "DailyMed provides trustworthy information about marketed drugs in the United States"
+    terms_of_use_info:
+      terms_of_use_description: >-
+         DailyMed data is freely available. The data is in the public domain.
+    relevant_files:
+      - file_name: "DailyMed Data"
+        location: "https://dailymed.nlm.nih.gov/dailymed/"
+        description: "Structured product labeling documents"
+  
+  - infores_id: "infores:faers"
+    name: "FDA Adverse Event Reporting System (FAERS)"
+    description: "FAERS contains adverse event reports, medication error reports and product quality complaints"
+    terms_of_use_info:
+      terms_of_use_description: >-
+         FAERS data files are in the public domain and available for download.
+    relevant_files:
+      - file_name: "FAERS Quarterly Data Files"
+        location: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
+        description: "Quarterly data files containing adverse event reports"
+
+source_info: 
+  infores_id: "infores:multiomics-drugapprovals"
+  name: "Multiomics Drug Approvals Knowledge Provider (Multiomics-DAKP)"
+  description: "The Drug Approvals KP provides information on FDA-approved drugs and their approved indications, derived from DailyMed and FAERS data. Information includes drug-disease treatment relationships with FDA approval status, approval numbers, and supporting evidence from adverse event reports."
+  citations:  
+    - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
+  terms_of_use_info:
+    terms_of_use_description: "Freely available"
+  data_access_locations:
+    - "Direct download links for the latest version are given in the manifest file: https://github.com/multiomicsKP/drug_approvals_kp/blob/main/manifest.json"
+  data_provision_mechanisms:  
+    - file_download
+  data_formats:
+    - kgx
+  data_versioning_and_releases: "New versions are released periodically"
+
+ingest_info:
+  ingest_categories:
+    - translator_knowledge_creator
+  utility: "DAKP provides curated drug-disease treatment relationships with FDA approval status and supporting evidence. This knowledge is essential for understanding approved therapeutic uses and clinical evidence."
+  scope: "FDA-approved drugs and their treatment relationships with diseases, including approval status, FDA approval numbers, and case counts from adverse event reporting."
+  relevant_files:
+    - file_name: "DAKP processed data"
+      location: "https://db.systemsbiology.net/gestalt/KG/"
+      description: "Drug approval data processed from DailyMed and FAERS"
+  included_content:
+    - file_name: "DAKP processed data"
+      included_records: "Drug-disease treatment relationships with FDA approval information"
+      fields_used: "drug identifiers, disease identifiers, FDA approval numbers, approval status, case counts, evidence IDs"
+
+target_info:
+  infores_id: "infores:translator-dakp-kgx"
+  edge_type_info:
+    - subject_categories:
+        - "biolink:ChemicalEntity"
+        - "biolink:SmallMolecule"
+        - "biolink:MolecularMixture"
+        - "biolink:ComplexMolecularMixture"
+      predicates: 
+        - "biolink:treats"
+      object_categories:
+        - "biolink:Disease"
+        - "biolink:PhenotypicFeature"
+        - "biolink:DiseaseOrPhenotypicFeature"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - text_mining_agent
+      ui_explanation: "The 'treats' predicate indicates an FDA-approved therapeutic relationship between a drug and a disease, with supporting regulatory approval information."
+  
+  node_type_info:
+    - node_category: "biolink:ChemicalEntity"
+      source_identifier_types:
+        - "CHEBI"
+        - "UNII"
+    - node_category: "biolink:SmallMolecule"
+      source_identifier_types:
+        - "CHEBI"
+        - "UNII"
+    - node_category: "biolink:MolecularMixture"
+      source_identifier_types:
+        - "CHEBI"
+    - node_category: "biolink:ComplexMolecularMixture"
+      source_identifier_types:
+        - "CHEBI"
+    - node_category: "biolink:Disease"
+      source_identifier_types:
+        - "MONDO"
+    - node_category: "biolink:PhenotypicFeature"
+      source_identifier_types:
+        - "HP"
+
+provenance_info:
+  contributions:
+    - "Gwenlyn Glusman - code author, domain expertise"
+    - "Matthew Brush - data modeling"
+    - "Sierra Moxon - data modeling"

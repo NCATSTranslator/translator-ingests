@@ -1,12 +1,13 @@
 """
 Tests for biolink schema loading functionality in validate_biolink_kgx.py
+TODO: does this code belong in bmt.pydantic?
 """
 
 import pytest
-import importlib.resources
+from importlib.resources import files
 from linkml_runtime.utils.schemaview import SchemaView
 
-from src.translator_ingest.util.validate_biolink_kgx import get_biolink_schema
+from translator_ingest.util.biolink import get_biolink_schema
 
 
 @pytest.fixture(autouse=True)
@@ -18,13 +19,14 @@ def clear_lru_cache():
 
 def test_can_import_biolink_model():
     """Test that we can access biolink_model resources with importlib."""
-    with importlib.resources.path("biolink_model.schema", "biolink_model.yaml") as schema_path:
-        assert schema_path.exists()
+    with files("biolink_model.schema").joinpath("biolink_model.yaml") as schema_file:
+        assert schema_file.exists()
+
 
 def test_can_load_schema_from_local_biolink_model():
-    """Test that we can load biolink schema from local biolink_model import."""
-    with importlib.resources.path("biolink_model.schema", "biolink_model.yaml") as schema_path:
-        schema_view = SchemaView(str(schema_path))
+    """Test that we can load biolink schema from a local biolink_model import."""
+    with files("biolink_model.schema").joinpath("biolink_model.yaml") as schema_file:
+        schema_view = SchemaView(str(schema_file))
         assert schema_view is not None
         assert hasattr(schema_view, 'schema')
         assert schema_view.schema is not None

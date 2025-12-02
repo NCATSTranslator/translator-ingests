@@ -9,7 +9,7 @@ readers:
     filters:
       - inclusion: include
         column: predicate
-        filter_code: in
+        filter_code: in_exact
         value:
           - "biolink:treats_or_applied_or_studied_to_treat"
           - "biolink:affects"
