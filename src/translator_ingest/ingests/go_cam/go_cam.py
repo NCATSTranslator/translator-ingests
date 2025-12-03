@@ -1,5 +1,4 @@
 import json
-import logging
 import tarfile
 import tempfile
 import uuid
@@ -19,13 +18,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from koza.model.graphs import KnowledgeGraph
 
-INFORES_GO_CAM = "infores:go-cam"
-INFORES_REACTOME = "infores:reactome"
+from translator_ingest.util.logging_utils import get_logger
+
 
 # Constants
+INFORES_GO_CAM = "infores:go-cam"
+INFORES_REACTOME = "infores:reactome"
 GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def get_latest_version() -> str:
