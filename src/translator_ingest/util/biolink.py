@@ -1,10 +1,12 @@
 """Biolink Model support for Translator Ingests"""
 from functools import lru_cache
 from importlib.resources import files
-import logging
+
 from linkml_runtime.utils.schemaview import SchemaView
 
-logger = logging.getLogger(__name__)
+from translator_ingest.util.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -33,10 +35,10 @@ def get_biolink_schema() -> SchemaView:
     # Try to load from the local Biolink Model package
     # from the locally installed distribution
     try:
-        with files("biolink_model.schema").joinpath("biolink_model.yaml") as schema_path:
-            schema_view = SchemaView(str(schema_path))
-            logger.debug("Successfully loaded Biolink schema from local file")
-            return schema_view
+        schema_path = files("biolink_model.schema").joinpath("biolink_model.yaml")
+        schema_view = SchemaView(str(schema_path))
+        logger.debug("Successfully loaded Biolink schema from local file")
+        return schema_view
     except Exception as e:
         logger.warning(f"Failed to load local Biolink schema: {e}")
         # Fallback to loading from official URL
