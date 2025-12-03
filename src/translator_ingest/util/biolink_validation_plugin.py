@@ -5,6 +5,7 @@ from linkml.validator.plugins import ValidationPlugin
 from linkml.validator.report import ValidationResult, Severity
 from linkml.validator.validation_context import ValidationContext
 from linkml_runtime.utils.schemaview import SchemaView
+from bmt import Toolkit
 
 
 def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = None):
@@ -46,42 +47,62 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._valid_categories_cache = None
         self._valid_predicates_cache = None
         self._node_ids_cache = set()
+        self._bmt = None
 
-    def _get_valid_categories(self, schema_view: SchemaView) -> Set[str]:
+    def _get_valid_categories(self) -> Set[str]:
         """Get valid Biolink Model categories."""
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
-        # Get all classes that are subclasses of NamedThing
+        # Use BMT to get all classes with proper formatting
         valid_categories = set()
         try:
-            named_thing_class = schema_view.get_class("NamedThing")
-            if named_thing_class:
-                # Get all descendants of NamedThing
-                descendants = schema_view.class_descendants("NamedThing")
-                valid_categories.update(f"biolink:{cls}" for cls in descendants)
-                valid_categories.add("biolink:NamedThing")
+            # Initialize BMT toolkit if not already done
+            if self._bmt is None:
+                self._bmt = Toolkit()
+            
+            # Get all classes using BMT
+            all_classes = self._bmt.get_all_classes()
+            
+            # For each class, get the proper biolink URI format
+            for cls_name in all_classes:
+                element = self._bmt.get_element(cls_name)
+                if element and hasattr(element, 'class_uri'):
+                    # class_uri is already in the format "biolink:ClassName"
+                    valid_categories.add(element.class_uri)
+                    
         except Exception as e:
-            # Having a working schema with NamedThing descendants is required
+            # Having a working schema is required
             raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
 
         self._valid_categories_cache = valid_categories
         return valid_categories
 
-    def _get_valid_predicates(self, schema_view: SchemaView) -> Set[str]:
+    def _get_valid_predicates(self) -> Set[str]:
         """Get valid Biolink Model predicates."""
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
-        # Get all predicates (slots that are subclasses of related_to)
+        # Use BMT to get all predicates with proper formatting
         valid_predicates = set()
         try:
-            # Get all slots that are descendants of related_to
-            descendants = schema_view.slot_descendants("related_to")
-            valid_predicates.update(f"biolink:{slot}" for slot in descendants)
-            valid_predicates.add("biolink:related_to")
+            # Initialize BMT toolkit if not already done
+            if self._bmt is None:
+                self._bmt = Toolkit()
+            
+            # Get all slots and filter for predicates
+            all_slots = self._bmt.get_all_slots()
+            
+            # For each slot, check if it's a predicate and get the proper biolink URI format
+            for slot_name in all_slots:
+                if self._bmt.is_predicate(slot_name):
+                    element = self._bmt.get_element(slot_name)
+                    if element and hasattr(element, 'slot_uri'):
+                        # slot_uri is already in the format "biolink:predicate_name"
+                        valid_predicates.add(element.slot_uri)
+                    
         except Exception as e:
-            # Having a working schema with predicate descendants is required
+            # Having a working schema with predicates is required
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
 
         self._valid_predicates_cache = valid_predicates
@@ -137,18 +158,16 @@ class BiolinkValidationPlugin(ValidationPlugin):
             if isinstance(categories, str):
                 categories = [categories]
 
-            schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if schema_view:
-                valid_categories = self._get_valid_categories(schema_view)
-                for category in categories:
-                    if category not in valid_categories:
-                        yield ValidationResult(
-                            type="biolink-model validation",
-                            severity=Severity.WARN,
-                            instance=node_obj,
-                            instantiates=context.target_class,
-                            message=f"Node at /{path} has potentially invalid category '{category}'",
-                        )
+            valid_categories = self._get_valid_categories()
+            for category in categories:
+                if category not in valid_categories:
+                    yield ValidationResult(
+                        type="biolink-model validation",
+                        severity=Severity.WARN,
+                        instance=node_obj,
+                        instantiates=context.target_class,
+                        message=f"Node at /{path} has potentially invalid category '{category}'",
+                    )
 
         # Check for name field (recommended)
         if "name" not in node_obj:
@@ -194,17 +213,15 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         if "predicate" in edge_obj:
             predicate = edge_obj["predicate"]
-            schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if schema_view:
-                valid_predicates = self._get_valid_predicates(schema_view)
-                if predicate not in valid_predicates:
-                    yield ValidationResult(
-                        type="biolink-model validation",
-                        severity=Severity.WARN,
-                        instance=edge_obj,
-                        instantiates=context.target_class,
-                        message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
-                    )
+            valid_predicates = self._get_valid_predicates()
+            if predicate not in valid_predicates:
+                yield ValidationResult(
+                    type="biolink-model validation",
+                    severity=Severity.WARN,
+                    instance=edge_obj,
+                    instantiates=context.target_class,
+                    message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
+                )
 
         # Validate subject and object CURIEs
         for field in ["subject", "object"]:
