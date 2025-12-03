@@ -11,7 +11,7 @@ supporting_data_source_info:
       - file_name: "DailyMed Data"
         location: "https://dailymed.nlm.nih.gov/dailymed/"
         description: "Structured product labeling documents"
-  
+
   - infores_id: "infores:faers"
     name: "FDA Adverse Event Reporting System (FAERS)"
     description: "FAERS contains adverse event reports, medication error reports and product quality complaints"
@@ -23,17 +23,17 @@ supporting_data_source_info:
         location: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
         description: "Quarterly data files containing adverse event reports"
 
-source_info: 
+source_info:
   infores_id: "infores:multiomics-drugapprovals"
   name: "Multiomics Drug Approvals Knowledge Provider (Multiomics-DAKP)"
   description: "The Drug Approvals KP provides information on FDA-approved drugs and their approved indications, derived from DailyMed and FAERS data. Information includes drug-disease treatment relationships with FDA approval status, approval numbers, and supporting evidence from adverse event reports."
-  citations:  
+  citations:
     - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
   terms_of_use_info:
     terms_of_use_description: "Freely available"
   data_access_locations:
     - "Direct download links for the latest version are given in the manifest file: https://github.com/multiomicsKP/drug_approvals_kp/blob/main/manifest.json"
-  data_provision_mechanisms:  
+  data_provision_mechanisms:
     - file_download
   data_formats:
     - kgx
@@ -61,7 +61,7 @@ target_info:
         - "biolink:SmallMolecule"
         - "biolink:MolecularMixture"
         - "biolink:ComplexMolecularMixture"
-      predicates: 
+      predicates:
         - "biolink:treats"
       object_categories:
         - "biolink:Disease"
@@ -72,7 +72,7 @@ target_info:
       agent_type:
         - text_mining_agent
       ui_explanation: "The 'treats' predicate indicates an FDA-approved therapeutic relationship between a drug and a disease, with supporting regulatory approval information."
-  
+
   node_type_info:
     - node_category: "biolink:ChemicalEntity"
       source_identifier_types:
@@ -97,6 +97,6 @@ target_info:
 
 provenance_info:
   contributions:
-    - "Gwenlyn Glusman - code author, domain expertise"
+    - "Gwenlyn Glusman - code author, domain expertise, data modeling"
     - "Matthew Brush - data modeling"
-    - "Sierra Moxon - data modeling"
+    - "Sierra Moxon - code, data modeling"
