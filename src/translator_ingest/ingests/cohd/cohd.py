@@ -1,3 +1,7 @@
+"""
+Columbia Open Health Data ("COHD") ingest parser
+"""
+
 from loguru import logger
 import koza
 
@@ -10,11 +14,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association,
 )
-from translator_ingest.util.biolink import (
-    entity_id,
-    get_node_class,
-    knowledge_sources_from_trapi
-)
+from bmt.pydantic import (entity_id, get_node_class)
+
+# TODO: Does this method perhaps belong in bmt.pydantic?
+from translator_ingest.util.biolink import knowledge_sources_from_trapi
+
 from koza.model.graphs import KnowledgeGraph
 
 def get_latest_version() -> str:
