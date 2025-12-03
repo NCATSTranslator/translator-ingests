@@ -1,16 +1,15 @@
 import json
 import shutil
 import tarfile
-import logging
 import click
 from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType
+from translator_ingest.util.logging_utils import get_logger, setup_logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 def copy_file_to_release(file_type: IngestFileType,
                          pipeline_metadata: PipelineMetadata,
@@ -84,6 +83,7 @@ def create_release(source: str):
 @click.command()
 @click.argument("source", type=str)
 def main(source):
+    setup_logging()
     create_release(source)
 
 
