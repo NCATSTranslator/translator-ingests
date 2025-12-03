@@ -4,8 +4,6 @@ import koza
 import csv
 import urllib.request
 
-import csv
-
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Cell,
     AnatomicalEntity,
