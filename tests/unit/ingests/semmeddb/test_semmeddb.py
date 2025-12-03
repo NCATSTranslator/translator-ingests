@@ -38,8 +38,11 @@ def therapeutic_edge_output():
         "subject": "CHEBI:15365",
         "object": "MONDO:0005148",
         "predicate": "biolink:treats_or_applied_or_studied_to_treat",
-        "publications": ["PMID:12345678", "PMID:87654321"],
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
         "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
     }
     return _create_test_runner(record)
 
@@ -54,7 +57,7 @@ def test_therapeutic_edge_entities(therapeutic_edge_output):
     assert association.predicate == "biolink:treats_or_applied_or_studied_to_treat"
     assert association.subject == "CHEBI:15365"
     assert association.object == "MONDO:0005148"
-    assert association.publications == ["PMID:12345678", "PMID:87654321"]
+    assert association.publications == ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"]
     assert association.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
     assert association.agent_type == AgentTypeEnum.automated_agent
     
@@ -97,36 +100,90 @@ def negated_edge_output():
         "subject": "HGNC:1234",
         "object": "HP:0001234",
         "predicate": "biolink:causes",
-        "publications": ["PMID:11111111"],
+        "publications": ["PMID:11111111", "PMID:22222222", "PMID:33333333", "PMID:44444444"],
         "negated": True,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
     }
     return _create_test_runner(record)
 
 
 def test_negated_edge(negated_edge_output):
-    """Test that negated edges are properly handled."""
+    """Test that negated edges are properly filtered out."""
     entities = negated_edge_output
-    association = [e for e in entities if isinstance(e, Association)][0]
-    assert association.negated is True
-    assert association.predicate == "biolink:causes"
+    # Negated edges should be filtered out, so no associations should be created
+    associations = [e for e in entities if isinstance(e, Association)]
+    assert len(associations) == 0, "Negated edges should be filtered out"
 
 
 @pytest.fixture
 def edge_without_publications():
-    """Test edge without publications."""
+    """Test edge with insufficient publications."""
     record = {
         "subject": "DOID:1234",
         "object": "UBERON:0001234",
         "predicate": "biolink:located_in",
         "publications": [],
         "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
     }
     return _create_test_runner(record)
 
 
 def test_edge_without_publications(edge_without_publications):
-    """Test edge without publications is still processed."""
+    """Test edge with insufficient publications is filtered out."""
     entities = edge_without_publications
-    assert len(entities) == 3  # 2 nodes + 1 edge
-    association = [e for e in entities if isinstance(e, Association)][0]
-    assert association.publications == []
+    # Edges with <=3 publications should be filtered out
+    associations = [e for e in entities if isinstance(e, Association)]
+    assert len(associations) == 0, "Edges with <=3 publications should be filtered out"
+
+
+@pytest.fixture
+def edge_with_zero_novelty():
+    """Test edge with zero novelty score."""
+    record = {
+        "subject": "NCBIGene:100",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:affects",
+        "publications": ["PMID:11111111", "PMID:22222222", "PMID:33333333", "PMID:44444444"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 0,
+        "object_novelty": 1,
+    }
+    return _create_test_runner(record)
+
+
+def test_edge_with_zero_novelty(edge_with_zero_novelty):
+    """Test edge with zero novelty score is filtered out."""
+    entities = edge_with_zero_novelty
+    # Edges with subject_novelty == 0 or object_novelty == 0 should be filtered out
+    associations = [e for e in entities if isinstance(e, Association)]
+    assert len(associations) == 0, "Edges with zero novelty score should be filtered out"
+
+
+@pytest.fixture
+def edge_with_domain_range_exclusion():
+    """Test edge with domain_range_exclusion."""
+    record = {
+        "subject": "NCBIGene:100",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:affects",
+        "publications": ["PMID:11111111", "PMID:22222222", "PMID:33333333", "PMID:44444444"],
+        "negated": False,
+        "domain_range_exclusion": True,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    return _create_test_runner(record)
+
+
+def test_edge_with_domain_range_exclusion(edge_with_domain_range_exclusion):
+    """Test edge with domain_range_exclusion is filtered out."""
+    entities = edge_with_domain_range_exclusion
+    # Edges with domain_range_exclusion == True should be filtered out
+    associations = [e for e in entities if isinstance(e, Association)]
+    assert len(associations) == 0, "Edges with domain_range_exclusion should be filtered out"

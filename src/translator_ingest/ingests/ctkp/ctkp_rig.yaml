@@ -13,17 +13,17 @@ supporting_data_source_info:
         location: "https://aact.ctti-clinicaltrials.org/downloads"
         description: "Use these pipe-delimited text files to import AACT data into any database or analysis tool. Each file corresponds to a table in the AACT database schema."
 
-source_info: 
+source_info:
   infores_id: "infores:multiomics-clinicaltrials"
   name: "Multiomics Clinical Trials Knowledge Provider (Multiomics-CTKP)"
   description:  "The Clinical Trials KP provides information on Clinical Trials, ultimately derived from researcher submissions to clinicaltrials.gov, via the Aggregate Analysis of Clinical Trials (AACT) database. Information on select trials includes the NCT Identifier of the trial, interventions used, diseases/conditions relevant to the trial, adverse events, etc.  "
-  citations:  
+  citations:
     - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
   terms_of_use_info:
     terms_of_use_description: "Freely available"
   data_access_locations:
     - "Direct download links for the latest version are given in the manifest file: https://github.com/multiomicsKP/clinical_trials_kp/blob/main/manifest.json"
-  data_provision_mechanisms:  
+  data_provision_mechanisms:
     - file_download
   data_formats:
     - kgx
@@ -49,7 +49,7 @@ target_info:
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:MolecularMixture"
-      predicates: 
+      predicates:
         - "biolink:in_clinical_trials_for"
       object_categories:
         - "biolink:DiseaseOrPhenotypicFeature"
@@ -61,7 +61,7 @@ target_info:
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:MolecularMixture"
-      predicates: 
+      predicates:
         - "biolink:treats"
       object_categories:
         - "biolink:DiseaseOrPhenotypicFeature"
@@ -70,7 +70,7 @@ target_info:
       agent_type:
         - manual_agent
       ui_explanation: "The `treats` predicate is used for interventions in Phase 4 trials that are performed for after successful demonstration of efficacy in treating a particular disease."
-  
+
   node_type_info:
     - node_category: "biolink:ChemicalEntity"
       source_identifier_types:
@@ -87,6 +87,6 @@ target_info:
 
 provenance_info:
   contributions:
-    - "Gwenlyn Glusman - code author, domain expertise"
+    - "Gwenlyn Glusman - code author, domain expertise, data modeling"
     - "Matthew Brush - data modeling"
-    - "Sierra Moxon - data modeling"    
+    - "Sierra Moxon - code, data modeling"

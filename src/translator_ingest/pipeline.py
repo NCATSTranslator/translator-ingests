@@ -1,6 +1,6 @@
-import logging
 import click
 import json
+import tarfile
 
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
@@ -8,6 +8,7 @@ from importlib import import_module
 from pathlib import Path
 
 from translator_ingest.util.biolink import get_current_biolink_version
+from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 from kghub_downloader.main import main as kghub_download
 
@@ -33,8 +34,7 @@ from translator_ingest.util.storage.local import (
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
 from translator_ingest.util.download_utils import substitute_version_in_download_yaml
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
@@ -101,6 +101,25 @@ def download(pipeline_metadata: PipelineMetadata):
         if download_yaml_with_version and \
                 download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
+
+
+def extract_tmkp_archive(pipeline_metadata: PipelineMetadata):
+    """Extract TMKP tar.gz archive after download."""
+    logger.info("Extracting TMKP archive...")
+    source_data_dir = get_source_data_directory(pipeline_metadata)
+    
+    # Find the tar.gz file
+    tar_files = list(source_data_dir.glob("*.tar.gz"))
+    if not tar_files:
+        raise FileNotFoundError(f"No tar.gz file found in {source_data_dir}")
+    
+    tar_path = tar_files[0]
+    
+    # Extract to the same directory
+    with tarfile.open(tar_path, "r:gz") as tar:
+        tar.extractall(source_data_dir, filter='data')
+    
+    logger.info(f"Extracted {tar_path.name} to {source_data_dir}")
 
 
 # Check if the transform stage was already completed
@@ -180,13 +199,13 @@ def transform(pipeline_metadata: PipelineMetadata):
     write_ingest_file(file_type=IngestFileType.TRANSFORM_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=transform_metadata)
-    
+
     # For CTKP, rename the directory from "pending" to the actual version
     if source == "ctkp" and pipeline_metadata.source_version == "pending":
         actual_version = runner.transform_metadata.get("actual_version")
         if actual_version and actual_version != "pending":
             logger.info(f"Renaming CTKP directory from 'pending' to '{actual_version}'")
-            
+
             # Get the current (pending) and new directory paths
             pending_dir = get_output_directory(pipeline_metadata)
             new_pipeline_metadata = PipelineMetadata(
@@ -198,10 +217,10 @@ def transform(pipeline_metadata: PipelineMetadata):
                 release_version=pipeline_metadata.release_version
             )
             new_dir = get_output_directory(new_pipeline_metadata)
-            
+
             # Rename the directory
             pending_dir.rename(new_dir)
-            
+
             # Update the pipeline metadata with the actual version
             pipeline_metadata.source_version = actual_version
             logger.info(f"Successfully renamed CTKP directory to version {actual_version}")
@@ -486,6 +505,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
+    
+    # Special handling for tmkp: extract tar.gz after download
+    if source == "tmkp":
+        extract_tmkp_archive(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # TODO we need a way to version the transform (see issue #97)
@@ -552,7 +575,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 @click.option("--transform-only", is_flag=True, help="Only perform the transformation.")
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(source, transform_only, overwrite):
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    setup_logging()
     run_pipeline(source, transform_only=transform_only, overwrite=overwrite)
 
 

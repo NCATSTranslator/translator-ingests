@@ -1,7 +1,6 @@
 import click
 import json
 import hashlib
-import logging
 import datetime
 import tarfile
 import shutil
@@ -16,9 +15,9 @@ from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName
+from translator_ingest.util.logging_utils import get_logger, setup_logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 
 def is_merged_graph_release_current(merged_graph_metadata: PipelineMetadata) -> bool:
@@ -307,7 +306,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[
 @click.argument("sources", nargs=-1, required=True)
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(graph_id, sources, overwrite):
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    setup_logging()
 
     # Merge the sources into one KGX and generate metadata
     merged_graph_metadata, kgx_sources = merge(
