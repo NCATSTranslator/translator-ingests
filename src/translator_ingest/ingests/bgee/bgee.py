@@ -1,6 +1,10 @@
 from typing import Any
 
 import koza
+import csv
+import urllib.request
+
+import csv
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Cell,
@@ -19,7 +23,16 @@ from bmt.pydantic import entity_id, build_association_knowledge_sources
 BIOLINK_EXPRESSED_IN = "biolink:expressed_in"
 
 def get_latest_version() -> str:
-    return "bgee_v15_0"
+    """Get version from the manifest file"""
+    latest_release_url = "https://www.bgee.org/ftp/release_v2.tsv"
+    try:
+        with urllib.request.urlopen(latest_release_url) as response:
+            response_text = response.read().decode('utf8')
+            reader = list(csv.DictReader(response_text.splitlines(),delimiter='\t'))
+            version = reader[0]['release']
+    except KeyError:
+        raise RuntimeError('Version field could not be found in manifest file.')
+    return version
 
 @koza.on_data_begin(tag="bgee_expressed_in")
 def on_data_begin_bgee(koza_transform: koza.KozaTransform) -> None:

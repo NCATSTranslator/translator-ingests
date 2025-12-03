@@ -5,13 +5,13 @@
 ---
 # For bgee
 
-- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Homo_sapiens_expr_simple.tsv.gz
+- url: https://bgee.org/ftp/current/download/calls/expr_calls/Homo_sapiens_expr_simple.tsv.gz
   local_name: Homo_sapiens_expr_simple.tsv.gz
 
-- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Rattus_norvegicus_expr_simple.tsv.gz
+- url: https://bgee.org/ftp/current/download/calls/expr_calls/Rattus_norvegicus_expr_simple.tsv.gz
   local_name: Rattus_norvegicus_expr_simple.tsv.gz
 
-- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Mus_musculus_expr_simple.tsv.gz
+- url: https://bgee.org/ftp/current/download/calls/expr_calls/Mus_musculus_expr_simple.tsv.gz
   local_name: Mus_musculus_expr_simple.tsv.gz
 
 #- url: https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/Sus_scrofa_expr_simple.tsv.gz

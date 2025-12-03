@@ -42,30 +42,6 @@
       - file_name:  Mus_musculus_expr_simple.tsv.gz
         location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
         description:  Mus musculus (house mouse) gene expression information.
-      - file_name:  Danio_rerio_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Danio rerio (zebra fish) gene expression information.
-      - file_name:  Xenopus_laevis_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Xenopus laevis (African clawed frog) gene expression information.
-      - file_name:  Drosophila_melanogaster_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Drosophila melanogaster (fruit fly) gene expression information.
-      - file_name:  Caenorhabditis_elegans_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Caenorhabditis elegans (roundworm) gene expression information.
-      - file_name:  Canis_lupus_familiaris_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Canis lupus familiaris (dog) gene expression information.
-      - file_name:  Bos_taurus_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Bos taurus (cattle) gene expression information.
-      - file_name:  Sus_scrofa_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Sus scrofa (wild boar) gene expression information.
-      - file_name:  Gallus_gallus_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Gallus gallus (red junglefowl) gene expression information.
     included_content:  # (required, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
       - file_name:  Homo_sapiens_expr_simple.tsv.gz
         included_records:  
@@ -76,70 +52,27 @@
       - file_name:  Mus_musculus_expr_simple.tsv.gz
         included_records:  
         fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Danio_rerio_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Xenopus_laevis_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Drosophila_melanogaster_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Caenorhabditis_elegans_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Canis_lupus_familiaris_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Bos_taurus_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Sus_scrofa_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Gallus_gallus_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank
 
     filtered_content:  # (optional, multivalued, range = FilteredContent) Records from relevant files that are not included in the ingest, and why.
       - file_name:  Homo_sapiens_expr_simple.tsv.gz
         filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
+        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious are filtered. 
       - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
         filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
+        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious are filtered.
       - file_name:  Mus_musculus_expr_simple.tsv.gz
         filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Danio_rerio_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Xenopus_laevis_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Drosophila_melanogaster_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Caenorhabditis_elegans_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Canis_lupus_familiaris_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Bos_taurus_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Sus_scrofa_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale:  
-      - file_name:  Gallus_gallus_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\"" 
-        rationale:  
+        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious are filtered.  
+
 
     future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
       - category:  edge_content
         consideration:  Filter some organisms which are already filtered by Monarch.# (required, range = string)
         relevant_files:  Caenorhabditis_elegans_expr_simple.tsv.gz, Danio_rerio_expr_simple.tsv.gz, Drosophila_melanogaster_expr_simple.tsv.gz, Mus_musculus_expr_simple.tsv.gz, Rattus_norvegicus_expr_simple.tsv.gz, Xenopus_laevis_expr_simple.tsv.gz# (optional, range = string)
+      - category: edges
+        consideration: Add in more model organisms. [Danio_rerio_expr_simple.tsv.gz Danio rerio (zebra fish), Xenopus_laevis_expr_simple.tsv.gz Xenopus laevis (African clawed frog), Drosophila_melanogaster_expr_simple.tsv.gz Drosophila melanogaster (fruit fly), Caenorhabditis_elegans_expr_simple.tsv.gz Caenorhabditis elegans (roundworm), Canis_lupus_familiaris_expr_simple.tsv.gz Canis lupus familiaris (dog), Bos_taurus_expr_simple.tsv.gz Bos taurus (cattle), Sus_scrofa_expr_simple.tsv.gz Sus scrofa (wild boar), Gallus_gallus_expr_simple.tsv.gz Gallus gallus (red junglefowl)].
+        relevant_files: Danio_rerio_expr_simple.tsv.gz, Xenopus_laevis_expr_simple.tsv.gz, Drosophila_melanogaster_expr_simple.tsv.gz, Caenorhabditis_elegans_expr_simple.tsv.gz, Canis_lupus_familiaris_expr_simple.tsv.gz, Bos_taurus_expr_simple.tsv.gz, Sus_scrofa_expr_simple.tsv.gz, Gallus_gallus_expr_simple.tsv.gz
+
  
 # Information about the Graph Output by the ingest
   target_info:  # (required, range = TargetInformation)
