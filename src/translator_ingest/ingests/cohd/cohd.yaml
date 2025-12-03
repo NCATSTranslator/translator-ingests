@@ -5,7 +5,7 @@ readers:
     files:
       - 'cohd_nodes.jsonl'
     format: 'jsonl'
-    columns:
+    required_properties:
       - 'id'
       - 'name'
       - 'categories'  # Rename this KGX field to 'category' for compliance to the latest Biolink Model
@@ -14,7 +14,7 @@ readers:
     files:
       - 'cohd_edges.jsonl'
     format: 'jsonl'
-    columns:
+    required_properties:
       - 'subject'
       - 'predicate'
       - 'object'
