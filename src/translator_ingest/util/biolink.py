@@ -20,6 +20,7 @@ INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
 INFORES_TTD = "infores:ttd"
+INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
 INFORES_INTACT = "infores:intact"
 
 @lru_cache(maxsize=1)
