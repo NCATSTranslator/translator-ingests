@@ -1,0 +1,183 @@
+name: Drug-Gene Interaction Database (DGIdb) Reference Ingest Guide
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:dgidb
+  name: Drug-Gene Interaction Database (DGIdb)
+  ## copied from https://dgidb.org/about/overview/introduction
+  description: "The Drug-Gene Interaction Database (DGIdb) streamlines the search for druggable therapeutic targets through the aggregation, categorization, and curation of drug and gene data from publications and expert resources."
+  citations:
+    - "https://doi.org/10.1093/nar/gkad1040"
+  terms_of_use_info:
+    terms_of_use_url: "https://dgidb.org/about/overview/data-accessibility"
+    terms_of_use_description: "According to the webpage on 'Data Accessibility', '[t]he data used in DGIdb is all open access and where possible made available as raw data dumps in the downloads section.' However, according to the 2024 paper, DGIdb 'aggregate[s] content from...sources with varying content licenses'; and the DGIdb downloads page says 'some of the data sources we import may have restrictions that prevent us from redistributing them'."
+  data_access_locations:
+  - "Downloads page: https://dgidb.org/downloads"
+  data_provision_mechanisms:
+    - file_download    
+    - api_endpoint    ## https://dgidb.org/api
+    - other    ## the Github code for recreating the database locally
+  data_formats:
+    - tsv
+  data_versioning_and_releases: "DGIdb updates 1-2 times a year since 2021 (based on the raw data dump table in https://dgidb.org/downloads). Versioning is by date (year-month abbrev.) but 2024-Dec also has a semantic version number in its header."
+  # additional_notes:  # (optional, range = string)
+
+# Information about Ingested Content
+ingest_info:
+  ingest_categories:
+    - aggregation_interpreter
+    ## but we are setting dgidb as primary for edges, underlying resources as supporting_data_provider
+  utility: "DGIdb provides associations between drugs/chemicals and genes/proteins. These associations could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
+  # scope:  # (optional, range = string)
+
+  relevant_files:
+    - file_name: "interactions.tsv"
+      location: "https://dgidb.org/downloads"
+      description: "TSV download of drug-gene interaction claims"
+
+  included_content:  # (required, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
+    - file_name: "interactions.tsv"
+      included_records: "(1) Have a value in gene_concept_id and drug_concept_id columns. (2) Drug ID is from a namespace that NodeNorm uses for ChemicalEntities (currently: rxcui, chembl (compound), drugbank)."
+      # fields_used:  # (optional, range = string)
+
+  # filtered_content:  # (optional, multivalued, range = FilteredContent) Records from relevant files that are not included in the ingest, and why.
+  #   - file_name:  # (required, range = string)
+  #     filtered_records:  # (required, range = string)
+  #     rationale:  # (required, range = string)
+
+  future_considerations:
+  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+    - category: node_property_content
+      consideration: "interactions.tsv has some columns that could be ingested as node properties: drug_is_approved, drug_is_immunotherapy, drug_is_antineoplastic, drug_specificity_score, gene_specificity_score. However, we may want to use a different resource that's updated more frequently or has more coverage."
+      relevant_files: "interactions.tsv"
+    - category: node_property_content
+      consideration: "DGIdb raw files for gene and drug claims could be sources of node properties. However, we may want to use a different resource that's updated more frequently or has more coverage."
+      relevant_files: "genes.tsv, drugs.tsv"
+    - category: other
+      consideration: "According to others that worked with DGIdb in the past, there's a way to load a local database that has more information. However, I looked at the Github instructions for recreating the database locally, and I don't think this can be easily/automatically done by the Translator ingest pipeline."
+  # additional_notes:  # (optional, range = string)
+
+# Information about the Graph Output by the ingest
+target_info:
+  # infores_id:  # (optional, range = URIorCURIE)
+  edge_type_info:
+    ## PLAIN INTERACTS_WITH EDGES
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:interacts_with
+      object_categories:
+      ## Gene IDs, but conceptually should be conflated with Protein
+        - biolink:Gene
+      ## KL/AT for dgidb
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - automated_agent
+      edge_properties:
+        - publications    ## for specific underlying sources
+        - dgidb_interaction_score    ## temp attribute!
+        - dgidb_evidence_score       ## temp attribute!
+        - original_subject
+        - original_object
+      ui_explanation: "The DGIdb drug-gene interaction(s) had no interaction_type specified and/or the interaction_type was 'other/unknown'."
+      # additional_notes:  # (optional, range = string)
+    ## BINDER OR INFERRED physical interaction edges
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:directly_physically_interacts_with
+      object_categories:
+      ## Gene IDs, but conceptually should be conflated with Protein
+        - biolink:Gene
+      qualifiers:
+        ## only occurs when interaction_types is "binder"
+        - property: "biolink:causal_mechanism_qualifier"
+          value_enumeration:
+            - "binding"
+      ## KL/AT for dgidb
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - automated_agent
+      edge_properties:
+        - publications    ## for specific underlying sources
+        - dgidb_interaction_score    ## temp attribute! currently not on inferred edges
+        - dgidb_evidence_score       ## temp attribute! currently not on inferred edges
+        - original_subject
+        - original_object
+      ui_explanation: "The DGIdb drug-gene interaction(s) had the interaction_type 'binder' OR a value that implied a physical-interaction (so Translator generated another edge to represent this)."
+      additional_notes: "The 'implied physical-interaction' values are currently 'agonist', 'antibody', 'blocker', 'inhibitor', and 'inverse agonist'."
+    ## AFFECTS: ALL OTHER INTERACTION_TYPES
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:affects
+      object_categories:
+      ## Gene IDs, but conceptually should be conflated with Protein
+        - biolink:Gene
+      qualifiers:
+      ## some interaction_types will lack >=1 of these
+        - property: "biolink:qualified_predicate"
+          value_enumeration:
+            - "biolink:causes"
+        - property: "biolink:object_direction_qualifier"
+          value_enumeration:
+            - "increased"
+            - "decreased"
+        - property: "biolink:object_aspect_qualifier"
+          value_enumeration:
+            - "abundance"
+            - "activity"
+            - "expression"
+        - property: "biolink:causal_mechanism_qualifier"
+          ## not listing since it's >10 unique values
+          value_range:
+            - CausalMechanismQualifierEnum
+      ## KL/AT for dgidb
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - automated_agent
+      edge_properties:
+        - publications    ## for specific underlying sources
+        - dgidb_interaction_score    ## temp attribute! currently not on some edges
+        - dgidb_evidence_score       ## temp attribute! currently not on some edges
+        - original_subject
+        - original_object
+      ui_explanation: "The DGIdb drug-gene interaction(s) had an interaction_type that wasn't 'binder' OR 'other/unknown'. These interaction_types imply that the drug affects the gene or its product in some manner."
+      # additional_notes:  # (optional, range = string)
+
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - "RXCUI"
+        - "CHEMBL.COMPOUND"
+        - "DRUGBANK"
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - "HGNC"
+        - "NCBIGene"
+        - "ENSEMBL"    ## ENSG
+      # node_properties:  # (optional, multivalued, range = URIorCURIE)
+      #   -
+      # additional_notes:  # (optional, range = string)
+
+  future_considerations:  # Notes on possible changes/additions to modeling in future iteration of the ingest
+    - category: spoq_pattern
+      consideration: "'immunotherapy' interaction_type: its full meaning isn't captured in the current qualifier-pattern because there were some concerns with using causal_mechanism_qualifier. In the future, we could try representing this using existing or new qualifiers (therapeutic context?)."
+    - category: other
+      consideration: "It's unclear what the 'NCI' value in the interaction_source_db_name column stands for (not mentioned in the current DGIdb website and the 2024 paper is unclear). We think it refers to NCIt, so we mapped it to NCIt's infores. Notes: (1) NCI is an organization, not an information resource; (2) Matt suggested that we could instead map it to 'NCI enterprise vocabulary services' to cover 'the more expansive suite of terminologies / knowledgebases / services NCI provides'."
+    - category: other
+      consideration: "Matt said underlying-source licensing and data overlap with 'directly-ingested' resources are not concerns because DGIdb is an 'interpreter' and can be set as the primary source (with the underlying sources set to supporting data providers or publications). HOWEVER, if we are directly ingesting all underlying sources for an edge, the DGIdb edge then seems like extraneous duplication."
+
+  additional_notes: "(1) Edge provenance: primary source is DGIdb, and the underlying sources are supporting data providers or publications. (2) We couldn't generate links to DGIdb interaction webpages because they use an ID that looks random or like a hash (and links to the drug or gene can currently be generated but wouldn't be specific to the edge)."
+
+# Information about how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Colleen Xu - code author, data modeling"
+    - "Matthew Brush - data modeling, domain expertise"
+  artifacts:  # (optional, multivalued, range = string)
+    - "Recording special logic info: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/55"
+    ## can add notebook once PR is merged so there's a stable link for it

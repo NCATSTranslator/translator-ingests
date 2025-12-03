@@ -1,0 +1,19 @@
+name: dgidb
+
+reader:
+  format: "csv"
+  delimiter: "\t"
+  comment_char: "#"  ## first two lines are comments with version/date
+  ## infer seems to work! correct number of rows ingested at beginning
+  header_mode: "infer"
+  files:
+    - "interactions.tsv"
+  ## including all the ones I want to use
+  ## Not sure if I'm supposed to include all column names in the file instead
+  columns:
+    - "gene_concept_id"
+    - "drug_concept_id"
+    - "interaction_source_db_name"
+    - "interaction_types"
+    - "interaction_score"
+    - "evidence_score"

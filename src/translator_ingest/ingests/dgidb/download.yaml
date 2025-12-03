@@ -1,0 +1,6 @@
+# Files are saved as `local_name` which must match the file name used in the main ingest yaml
+## updates 1-2 times a year since 2021
+## this url will change with new versions! Will need to update based on manual review of https://dgidb.org/downloads
+---
+- url: https://dgidb.org/data/2024-Dec/interactions.tsv
+  local_name: interactions.tsv
