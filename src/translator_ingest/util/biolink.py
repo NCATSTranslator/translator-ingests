@@ -1,25 +1,12 @@
 """Biolink Model support for Translator Ingests"""
+from typing import Optional
 from functools import lru_cache
 from importlib.resources import files
-import logging
 from linkml_runtime.utils.schemaview import SchemaView
 
-from typing import Optional
-from uuid import uuid4
 from loguru import logger
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,
-    DiseaseOrPhenotypicFeature,
-    Disease,
-    SmallMolecule,
-    Drug,
-    MolecularMixture,
-    ChemicalEntity,
-    RetrievalSource,
-    ResourceRoleEnum
-)
-logger = logging.getLogger(__name__)
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
