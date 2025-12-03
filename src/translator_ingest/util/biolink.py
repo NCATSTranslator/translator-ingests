@@ -24,9 +24,6 @@ INFORES_BGEE = "infores:bgee"
 INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
 INFORES_INTACT = "infores:intact"
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
