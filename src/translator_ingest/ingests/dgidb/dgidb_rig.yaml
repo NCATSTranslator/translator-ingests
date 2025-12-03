@@ -179,6 +179,5 @@ provenance_info:
     - "Colleen Xu - code author, data modeling"
     - "Matthew Brush - data modeling, domain expertise"
   artifacts:  # (optional, multivalued, range = string)
-    ## recording special logic
-    - https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/55
+    - "Recording special logic info: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/55"
     ## can add notebook once PR is merged so there's a stable link for it

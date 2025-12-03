@@ -117,7 +117,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     koza.log(f"{df.shape[0]} rows after merging by unique drug ID, gene ID, mod_type combo")
     koza.log(f"{df[df["mod_type"] == "~PLAIN_INTERACTS"].shape[0]} rows that map to plain 'interacts_with' edges")
 
-    ## SPECIAL sources logic from Matt Brush: for plain "interacts_with" edges, include ALL sources for drug-gene pair
+    ## SPECIAL sources logic: for plain "interacts_with" edges, include ALL sources for drug-gene pair
     ## first create a mapping df: group-by drug-gene pair -> get set of all sources
     drug_gene_sources = df.copy()
     ## need to merge sets!
@@ -132,7 +132,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         for x in df[["drug_concept_id", "gene_concept_id", "mod_type", "interaction_source_db_name"]].itertuples()
     ]
 
-    ## SPECIAL scores logic from Matt Brush: remove scores from rows that aren't plain "interacts_with" IF there's > 1 row (mod_type) for a drug-gene pair
+    ## SPECIAL scores logic: remove scores from rows that aren't plain "interacts_with" IF there's > 1 row (mod_type) for a drug-gene pair
     grp = df.groupby(by=DRUG_GENE_COLS)
     for name, group in grp:
         if group.shape[0] > 1:
@@ -209,7 +209,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
         )
         ## if there's an extra edge field
         if data_modeling.get("extra_edge_pred"):
-            ## SPECIAL logic from Matt Brush: create extra "physical interaction" edge for some "affects" edges
+            ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
             ## should be identical to original edge, except predicate/no qualifiers. And CX decided not to include dgidb scores
             extra_assoc = ChemicalGeneInteractionAssociation(
                 id=entity_id(),
