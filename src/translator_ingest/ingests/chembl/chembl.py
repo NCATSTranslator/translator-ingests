@@ -588,6 +588,7 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
 def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite, record: dict[str, Any]) -> ChemicalToChemicalAssociation:
     species_context_qualifier = get_species_context_qualifier(record)
     context_qualifier = get_enzyme_context_qualifier(koza, record)
+    context_qualifier = context_qualifier
     connection = koza.state['chembl_db_connection']
     references = get_references(connection, "metabolism_refs", "met_id", record["met_id"])
     association = ChemicalToChemicalAssociation(
@@ -609,6 +610,7 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
 
 def get_has_part_association(koza: koza.KozaTransform, component, target, record: dict[str, Any]) -> AnatomicalEntityToAnatomicalEntityPartOfAssociation:
     species_context_qualifier = get_species_context_qualifier(record)
+    species_context_qualifier = species_context_qualifier
     association = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
         id=entity_id(),
         subject=target.id,
@@ -742,12 +744,13 @@ def transform_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
 
 @koza.prepare_data(tag="chembl_activities")
-def prepare_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+def prepare_activities(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
     koza.log("ChEMBL activities data ...", level="INFO")
     con = get_connection(koza)
     koza.state['chembl_db_connection'] = con
     proteins = get_all_proteins(koza)
     koza.state['chembl_proteins'] = proteins
+    koza.state['counter'] = 0
     cur = con.cursor()
     cur.execute(ACTIVITY_QUERY)
     records = cur.fetchall()
@@ -760,6 +763,9 @@ def prepare_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
 def transform_activities(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     processed_activities = set()
     for record in data:
+        koza.state['counter'] += 1
+        if koza.state['counter'] % 10000 == 0:
+            koza.log(f" Processed {koza.state['counter']} activity records...", level="INFO")
         nodes = []
         edges = []
         chemical = create_chemical_entity(koza, record['molregno'])
