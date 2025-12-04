@@ -1,6 +1,5 @@
 import json
 import gzip
-import logging
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -26,10 +25,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import build_association_knowledge_sources
 
+from translator_ingest.util.logging_utils import get_logger
 
 INFORES_DAKP = "infores:multiomics-drugapprovals"
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # Helper function to create node from data
