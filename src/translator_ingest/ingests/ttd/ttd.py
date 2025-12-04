@@ -346,7 +346,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     df["object_nameres_id"] = [koza.transform_metadata["indication_mapping"].get(i) for i in df["object_indication_name"]]
     ## log how much data was successfully mapped
     n_mapped = df["object_nameres_id"].notna().sum()
-    koza.log(f"{n_mapped} rows with mapped drug IDs: {n_mapped / df.shape[0]:.1%}")
+    koza.log(f"{n_mapped} rows with mapped indication names: {n_mapped / df.shape[0]:.1%}")
     ## drop rows without indication mapping
     df.dropna(subset="object_nameres_id", inplace=True, ignore_index=True)
 
