@@ -7,7 +7,6 @@ Validates KGX files against Biolink Model requirements using LinkML validation p
 """
 
 import json
-import logging
 import random
 import sys
 from datetime import datetime
@@ -18,6 +17,7 @@ from typing import Optional, Dict, Any, List
 import click
 from translator_ingest.util.biolink import get_biolink_schema, get_current_biolink_version
 from translator_ingest.util.storage.local import IngestFileName
+from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 
 try:
@@ -26,8 +26,7 @@ except ImportError:
     # Handle direct script execution
     sys.path.append(str(Path(__file__).parent))
     from biolink_validation_plugin import BiolinkValidationPlugin
-logger = logging.getLogger("koza")
-logger.setLevel(logging.INFO)
+logger = get_logger("koza")
 
 
 class ValidationStatus(StrEnum):
@@ -659,7 +658,7 @@ def main(data_dir, files, output_dir, no_save, nodes_only):
     """Validate KGX files using Biolink Model compliance checks."""
 
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    setup_logging()
 
     # Validate that exactly one of data_dir or files is provided
     if not data_dir and not files:
