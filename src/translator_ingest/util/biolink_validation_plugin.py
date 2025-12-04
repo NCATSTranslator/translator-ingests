@@ -292,6 +292,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
                     instantiates=context.target_class,
                     message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
                 )
+            elif schema_view:
+                # Validate domain and range constraints if we have a schema view
+                yield from self._validate_domain_range(edge_obj, path, predicate, schema_view)
 
 
         # Validate subject and object CURIEs
