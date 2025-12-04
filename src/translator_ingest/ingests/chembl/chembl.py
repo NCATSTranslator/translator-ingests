@@ -169,6 +169,72 @@ WHERE_TARGET_TYPE_IS_COMPLEX = """
     )
 """
 
+ACTIVITY_QUERY = """
+    SELECT  
+        activities.molregno,
+        activities.activity_id,
+        activities.standard_type,
+        activities.standard_relation,
+        activities.standard_value,
+        activities.standard_units,
+        activities.pchembl_value,
+        activities.activity_comment,
+        activities.data_validity_comment,
+        activities.standard_text_value,
+        activities.standard_upper_value,
+        activities.uo_units,
+        activities.potential_duplicate,
+        activities.action_type,
+        assays.chembl_id AS assay_chembl_id,
+        assays.description AS assay_description,
+        assays.assay_organism,
+        assays.assay_cell_type,
+        assays.assay_subcellular_fraction,
+        assays.bao_format,
+        assays.assay_category,
+        assays.assay_tax_id AS organism_tax_id,
+        assays.assay_tissue,
+        assays.assay_cell_type,
+        assays.relationship_type,
+        assays.confidence_score,
+        assays.curated_by,
+        assays.src_id AS assay_source_id,
+        assay_type.assay_desc AS assay_type,
+        bioassay_ontology.label AS BAO_label,
+        target_dictionary.chembl_id AS target_chembl_id,
+        target_dictionary.pref_name AS target_name,
+        target_dictionary.organism AS target_organism,
+        target_dictionary.tax_id,
+        target_dictionary.target_type,
+        component_sequences.component_type,
+        component_sequences.accession,
+        tissue_dictionary.chembl_id AS assay_tissue_chembl_id,
+        tissue_dictionary.uberon_id,
+        tissue_dictionary.pref_name AS assay_tissue_name,
+        docs.chembl_id AS document_chembl_id,
+        docs.pubmed_id,
+        docs.doi,
+        relationship_type.relationship_desc AS relationship_description,
+        confidence_score_lookup.description AS confidence_score_description,
+        confidence_score_lookup.target_mapping,
+        curation_lookup.description AS curation_description,
+        drug_mechanism.mec_id
+    FROM activities
+    JOIN target_dictionary ON target_dictionary.tid = assays.tid
+    JOIN assays ON activities.assay_id=assays.assay_id
+    LEFT JOIN assay_type ON assay_type.assay_type=assays.assay_type
+    LEFT JOIN bioassay_ontology on bioassay_ontology.bao_id = assays.bao_format
+    LEFT JOIN relationship_type ON relationship_type.relationship_type = assays.relationship_type
+    LEFT JOIN confidence_score_lookup ON confidence_score_lookup.confidence_score = assays.confidence_score
+    LEFT JOIN curation_lookup ON curation_lookup.curated_by = assays.curated_by
+    JOIN target_components ON (target_components.tid = target_dictionary.tid AND target_dictionary.target_type IN ('SINGLE PROTEIN'))
+    JOIN component_sequences ON component_sequences.component_id = target_components.component_id
+    LEFT JOIN drug_mechanism ON (drug_mechanism.molregno = activities.molregno AND drug_mechanism.tid = assays.tid AND activities.action_type = drug_mechanism.action_type)
+    JOIN docs ON (activities.doc_id=docs.doc_id AND title != 'PubChem BioAssay data set')
+    LEFT JOIN tissue_dictionary ON tissue_dictionary.tissue_id=assays.tissue_id
+    WHERE (activity_comment = 'Active' OR activities.action_type IS NOT NULL) AND mec_id IS NULL
+"""
+
 
 TARGET_CLASS_MAP = {
     "ADMET": "Cell",
@@ -239,6 +305,12 @@ def load_config():
                 "predicate": predicate,
                 "qualifiers": qualifiers
             }
+    # add default entry for action type ACTIVITY
+    QUALIFIER_CONFIG["ACTIVITY"] = {
+        "association": "ChemicalAffectsGeneAssociation",
+        "predicate": "biolink:affects",
+        "qualifiers": {}
+    }
 
 load_config()
 
@@ -402,9 +474,10 @@ def get_publications(koza: koza.KozaTransform, record: dict[str, Any]):
     publications = []
     if publication:
         publications.append(publication)
-    for ref in get_references(koza.state['chembl_db_connection'], 'mechanism_refs', 'mec_id', record['mec_id']):
-        if ref != publication:
-            publications.append(ref)
+    if record['mec_id'] is not None:
+        for ref in get_references(koza.state['chembl_db_connection'], 'mechanism_refs', 'mec_id', record['mec_id']):
+            if ref != publication:
+                publications.append(ref)
     if len(publications) == 0:
         publications = None
     return publications
@@ -486,6 +559,30 @@ def get_association(koza, record, action_type_map):
             )
         edges=[association]
     return nodes,edges
+
+
+def get_activity_association(koza: koza.KozaTransform, chemical, target, action_type_map, record: dict[str, Any]) -> ChemicalAffectsGeneAssociation | GeneAffectsChemicalAssociation | None:
+    species_context_qualifier = get_species_context_qualifier(record)
+    anatomical_context_qualifier = record["uberon_id"]
+    publications = get_publications(koza, record)
+    predicate = action_type_map["predicate"]
+    qualifiers = action_type_map["qualifiers"]
+    association = ChemicalAffectsGeneAssociation(
+        id=entity_id(),
+        subject=chemical.id,
+        predicate=predicate,
+        object=target.id,
+        species_context_qualifier = species_context_qualifier,
+        anatomical_context_qualifier = anatomical_context_qualifier,
+        sources=build_association_knowledge_sources(INFORES_CHEMBL),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.automated_agent if record["curated_by"] == "Autocuration" else AgentTypeEnum.manual_agent,
+        publications=publications,
+        has_confidence_score = record["confidence_score"],
+        # TODO: assay_description = record["assay_description"],
+        **qualifiers
+    )
+    return association
 
 
 def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite, record: dict[str, Any]) -> ChemicalToChemicalAssociation:
@@ -640,5 +737,45 @@ def transform_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
                 nodes.append(component)
                 nodes.append(target)    
                 association = get_has_part_association(koza, component, target, record)
+                edges.append(association)
+        yield KnowledgeGraph(nodes=nodes, edges=edges)
+
+
+@koza.prepare_data(tag="chembl_activities")
+def prepare_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    koza.log("ChEMBL activities data ...", level="INFO")
+    con = get_connection(koza)
+    koza.state['chembl_db_connection'] = con
+    proteins = get_all_proteins(koza)
+    koza.state['chembl_proteins'] = proteins
+    cur = con.cursor()
+    cur.execute(ACTIVITY_QUERY)
+    records = cur.fetchall()
+    for record in records:
+         yield record
+    con.close()
+
+
+@koza.transform(tag="chembl_activities")
+def transform_activities(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    processed_activities = set()
+    for record in data:
+        nodes = []
+        edges = []
+        chemical = create_chemical_entity(koza, record['molregno'])
+        target = build_target_node(koza, record)
+        action_type = record['action_type'] if record['action_type'] is not None else "ACTIVITY"
+        if target is not None:
+            activity_key = (chemical.id, target.id, action_type)
+            if activity_key in processed_activities:
+                continue
+            action_type_map = QUALIFIER_CONFIG.get(action_type)
+            if action_type_map is None:
+                koza.log(f" Unknown action type '{action_type}' in activities", level="WARNING")
+                action_type_map = QUALIFIER_CONFIG.get("ACTIVITY")
+            association = get_activity_association(koza, chemical, target, action_type_map, record)
+            if association is not None:
+                nodes.append(chemical)
+                nodes.append(target)
                 edges.append(association)
         yield KnowledgeGraph(nodes=nodes, edges=edges)

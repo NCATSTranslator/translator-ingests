@@ -93,13 +93,14 @@
           - manual_agent
         edge_properties:
           - biolink:publications
+          - biolink:has_confidence_score
           - mechanism_of_action_description
           - mechanism_of_action_comment
           - mutation
           - mutation_accession
           - selectivity_comment
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
-        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that "A causes increased stability of B"; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that "A increases the activity of B" and that "A directly physically interacts with B". A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: "https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json".
+        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
         
       - subject_categories:
           - SmallMolecule
@@ -140,44 +141,7 @@
           - mutation_accession
           - selectivity_comment
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
-        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that "A causes increased stability of B"; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that "A increases the activity of B" and that "A directly physically interacts with B". A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: "https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json".
-
-      - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
-          - Protein
-        predicates: 
-          - biolink:was_tested_for_effect_on
-        object_categories:
-          - AnatomicalEntity
-          - Cell
-          - CellLine
-          - OrganismTaxon
-          - PhenotypicFeature
-        qualifiers:
-          - property: "biolink:object_aspect_qualifier"
-            value_range:
-              - "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum"
-          - property: "biolink:species_context_qualifier"
-            value_id_prefixes:
-              - "NCBITaxon"
-            value_description: "species tax id"
-        knowledge_level:
-          - observation
-        agent_type:
-          - experimental_agent
-        edge_properties:
-          - Binding_Efficiency_Index
-          - action_type
-          - assay_chembl_id
-          - assay_tax_id
-          - assay_tissue_chembl_id
-          - biolink:publications
-          - data_validity_comment
-          - potential_duplicate
-          - standard_value
-        ui_explanation: "Drug activities from ChEMBL"
+        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
 
       - subject_categories:
           - MacromolecularComplex
@@ -237,16 +201,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: BiologicalProcess
         source_identifier_types:
@@ -256,16 +210,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: Cell
         source_identifier_types: 
@@ -275,16 +219,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: CellLine
         source_identifier_types: 
@@ -294,16 +228,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: CellularComponent
         source_identifier_types: 
@@ -313,16 +237,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: CellularOrganism
         source_identifier_types:
@@ -332,13 +246,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: ChemicalEntity
         source_identifier_types: 
@@ -360,13 +267,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: MacromolecularComplex
         source_identifier_types: 
@@ -376,13 +276,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: MolecularActivity
         source_identifier_types: 
@@ -392,13 +285,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
           - node_category: MolecularMixture
         source_identifier_types: 
@@ -421,13 +307,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: PhenotypicFeature
         source_identifier_types:
@@ -437,13 +316,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: Protein
         source_identifier_types:
@@ -453,13 +325,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: ProteinFamily
         source_identifier_types: 
@@ -469,13 +334,6 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-          - assay_category
-          - assay_cell_type
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - component_type
-          - target_mapping
-          - target_type
 
       - node_category: SmallMolecule
         source_identifier_types: 
@@ -488,7 +346,6 @@
           - chembl_black_box_warning
           - chembl_natural_product
           - chembl_prodrug
-
 
 
   provenance_info:

@@ -1,11 +1,13 @@
 name: chembl_ingest
 
 readers:
-  chembl_complexes:
-    format: csv
-  chembl_metabolites:
-    format: csv
   chembl_drug_mechanism:
     format: csv
   chembl_drug_mechanism_binding:
+    format: csv
+  chembl_metabolites:
+    format: csv
+  chembl_complexes:
+    format: csv
+  chembl_activities:
     format: csv
