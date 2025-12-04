@@ -1,0 +1,29 @@
+name: pathbank
+
+metadata:
+  ingest_title: 'PathBank'
+  ingest_url: 'https://pathbank.org/downloads'
+  description: 'PathBank pathways (CSV metadata + PWML details)'
+
+readers:
+  pathways:
+    format: csv
+    delimiter: ","
+    header_mode: 0
+    files:
+      - pathbank_pathways.csv
+    columns:
+      - SMPDB ID
+      - PW ID
+      - Name
+      - Subject
+      - Description
+  
+  pwml:
+    format: csv
+    delimiter: ","
+    header_mode: none
+    files:
+      - pathbank_all_pwml/PW000001.pwml
+    columns:
+      - _file_path

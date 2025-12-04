@@ -1,0 +1,8 @@
+---
+# PathBank master pathways CSV (zipped)
+- url: https://pathbank.org/downloads/pathbank_all_pathways.csv.zip
+  local_name: pathbank_all_pathways.csv.zip
+
+# PathBank PWML archive (zipped)
+- url: https://pathbank.org/downloads/pathbank_all_pwml.zip
+  local_name: pathbank_all_pwml.zip
