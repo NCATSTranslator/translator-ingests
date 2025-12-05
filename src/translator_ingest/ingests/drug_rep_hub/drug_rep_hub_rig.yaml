@@ -20,7 +20,7 @@ ReferenceIngestGuide:
       - file_download
     data_formats: 
       - tsv
-    data_versioning_and_releases: irregular, Latest version: 8/19/2025, Archived versions: 3/24/2020 | 9/7/2018 | 5/16/2018 | 3/27/2017
+    data_versioning_and_releases: "irregular, Latest version: 8/19/2025, Archived versions: 3/24/2020 | 9/7/2018 | 5/16/2018 | 3/27/2017"
 
 
   ingest_info:
@@ -75,7 +75,7 @@ ReferenceIngestGuide:
           - knowledge_assertion
         agent_type:
           - manual_agent
-        edge_properties:                                 # MHB: I expected to see approval status / reserach phase properties on these edges (or maybe on the chemical nodes)? 
+        edge_properties:                                 # MHB: I expected to see approval status / research phase properties on these edges (or maybe on the chemical nodes)? 
           - mechanism_of_action_description
         ui_explanation: drug indication
 
@@ -83,7 +83,7 @@ ReferenceIngestGuide:
 
       - node_category: ChemicalEntity
         source_identifier_types: 
-          - PubChem                      # MHB: Does the source provide these identifeirs - i don't see them in the tsv file?
+          - PubChem                      # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
         node_properties:
           - biolink:name
           - biolink:synonym
@@ -91,13 +91,13 @@ ReferenceIngestGuide:
 
       - node_category: DiseaseOrPhenotypicFeature
         source_identifier_types: 
-          - MONDO                        # MHB: Does the source provide these identifeirs - i don't see them in the tsv file?
+          - MONDO                        # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
         node_properties:
           - biolink:name
 
       - node_category: Gene
         source_identifier_types: 
-          - HGNC                         # MHB: Does the source provide these identifeirs - i don't see them in the tsv file?
+          - HGNC                         # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
         node_properties:
           - biolink:symbol
 
@@ -119,7 +119,7 @@ ReferenceIngestGuide:
 
     future_considerations:
       - category: qualifiers
-        consideration: map mechanism description text to qualifiers (e.g. "serine protease inhibitor" => "causal_mechanism_qualifier: inhibition"
+        consideration: "map mechanism description text to qualifiers (e.g. 'serine protease inhibitor' => 'causal_mechanism_qualifier: inhibition'"
 
 
   provenance_info:

@@ -1,57 +1,23 @@
 name: ingest_template
 
 readers:
-  ingest_by_record:
+  ingest_drug_rep_hub_samples:
     format: "csv"
     delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
+    header_mode: none
+    header_prefix: "!"
     files:
-      - "example_data.tsv.gz"
+      - "repo-sample-annotation.txt"
     columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
-  ingest_all:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
-    files:
-      - "example_data_2.tsv.gz"
-    columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
-  ingest_all_streaming:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
-    files:
-      - "example_data_3.tsv.gz"
-    columns:
-      - ChemicalName
-      - ChemicalID
-      - CasRN
-      - DiseaseName
-      - DiseaseID
-      - DirectEvidence
-      - InferenceGeneSymbol
-      - InferenceScore
-      - OmimIDs
-      - PubMedIDs
+      - broad_id
+      - pert_iname
+      - qc_incompatible
+      - purity
+      - vendor
+      - catalog_no
+      - vendor_name
+      - expected_mass
+      - smiles
+      - InChIKey
+      - pubchem_cid
+      - deprecated_broad_id

@@ -4,9 +4,7 @@
 #
 # Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
 ---
-- url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data.tsv.gz
-  local_name: example_data.tsv.gz
-- url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data_2.tsv.gz
-  local_name: example_data_2.tsv.gz
-- url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data_3.tsv.gz
-  local_name: example_data_3.tsv.gz
+- url: http://repo-hub.broadinstitute.org/public/data/repo-sample-annotation-20240610.txt
+  local_name: repo-sample-annotation.txt
+- url: http://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20200324.txt
+  local_name: repo-drug-annotation.txt
