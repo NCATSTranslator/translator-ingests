@@ -1,0 +1,154 @@
+  name: Drug Central Resource Ingest Guide
+
+# Information about the Source of the ingest data
+  source_info:  
+    infores_id:  infores:drugcentral 
+    description: >-
+      DrugCentral is an open-access, manually curated drug information resource developed/maintained by the Translational Informatics Division at the University of New Mexico. 
+      It provides  information about drug active pharmaceutical ingredients (for human and increasingly veterinary use), including chemical structure, regulatory status,
+      pharmacology, target biology, indications, adverse events, and more. The majority of knowledge in DrugCentral is manually curated - either by the DrugCentral team, or 
+      by external sources from which DrugCentral imports (and vets) data. 
+    citations:
+      - Avram SD, Ursu O, Holmes J et al. DrugCentral 2023: updated content, data sources, and functionality. Nucleic Acids Research. 2023 Jan;51(D1):D1276–D1283. PMID: 36484092
+    terms_of_use_info:  
+      terms_of_use_url: https://drugcentral.org/privacy
+      terms_of_use_description: From 2021 publication: "DrugCentral data are freely available for download and re-use without restriction."
+      license name:  CC-BY-SA
+    data_access_locations:  https://drugcentral.org/download
+    data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
+    data_formats:  
+      - tsv
+      - csv
+      - postgres
+    data_versioning_and_releases: Dated releases
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+  ingest_info:
+    ingest_categories: 
+      - primary_knowledge_provider
+    scope: Curated drug bioactivities (interaction/affect on biological targets) and therapeutic relationships to diseases 
+    utility: Drug bioactivities (interaction/affect on biological targets) and therapeutic relationships to diseases are core Translator knowledge types key to its query use cases.
+      
+    relevant_files:
+      - file_name:  drug.target.interaction.tsv
+        location:   https://drugcentral.org/download
+        description:  Drug-target interaction data extracted from literature, drug labels, and external data sources in TSV format
+      - file_name:  # COLLEEN TO ADD WHAT FILE WAS USED FOR DRUG-DISEASE THERAPEUTIC RECORDS
+        location:   # COLLEEN TO DO
+        description:  # COLLEEN TO DO
+        
+    included_content:
+      - file_name: drug.target.interaction.tsv
+        included_records:   Only ingested records where there is a MoA, and the source is not Chembl or GtoPdb (b/c we get these directly).  This is because these without MoA are primarily based on curation or import of experimental data and Vlado does not think the Kd/Ki/IC50 values reported are always indicative of a meaningful interaction.  If we want to take these we need to establish some rules / thresholds for what qualifies as a meaningful interaction. 
+        fields_used:  
+      - file_name:     # COLLEEN TO ADD WHAT FILE(S) USED FOR DRUG-DISEASE THERAPEUTIC RECORDS
+        included_records:  # COLLEEN TO DO (do we take all records, or do we apply a filter?)
+        fields_used:  
+
+    future_considerations:  # TO DO - COlleen to note any content additions/changes to consider for future iterations.
+      - category:  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+        consideration:  # (required, range = string)
+        relevant_files:  # (optional, range = string)
+
+    additional_notes:  # (optional, range = string)
+
+# Information about the Graph Output by the ingest
+  target_info:
+    infores_id: infores:translator-drugcentral
+
+    edge_type_info:
+      - subject_categories: 
+          - ChemicalEntity
+        predicates:  
+          - biolink:affects
+        object_categories: 
+          - Protein
+        qualifiers:
+          - property: "biolink:qualified_predicate"
+            value_enumeration:
+              - "biolink:causes"        
+          - property: "biolink:object_direction_qualifier"
+            value_range:
+              - "biolink:DirectionQualifierEnum"
+          - property: "biolink:object_aspect_qualifier"
+            value_range:
+              - "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum"
+          - property: "biolink:causal_mechanism_qualifier"
+            value_range:
+              - "biolink:CausalMechanismQualifierEnum"
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:  
+          -    # COLLEEN TO DO, IF ANY
+        ui_explanation:  # TO DO
+        additional_notes: >-
+          The 'mechanism of action' reported by DrugCentral determines that type of edge is created: (1) an 'affects' edge when the mechanism implies an effect of the subject on the object - e.g. 'positive modulator' implies that 'A causes increased activity of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'binding agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'antagonist' implies that 'A decreases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these Drug Central mechanisms to Biolink predicate and qualifier combinations can be found here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=392679103#gid=392679103.
+           Primary knowledge source set to DrugCentral, and sources reported in 'bioactivity source' or 'moa source' columns by DrugCentral are reported as supporting data sources. This is because they often do things like combine bioactivity info with MoA info from different sources into a new record - which would make it impossible to reporting a single upstream source as primary.
+      - subject_categories: 
+          - ChemicalEntity
+        predicates:  
+          - biolink:directly_physically_interacts_with
+        object_categories: 
+          - Protein
+        qualifiers:
+          - property: "biolink:causal_mechanism_qualifier"
+            value_range:
+              - "biolink:CausalMechanismQualifierEnum"
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:  
+          -    # COLLEEN TO DO, IF ANY
+        ui_explanation:  # TO DO
+        additional_notes: >-
+          The 'mechanism of action' reported by DrugCentral determines that type of edge is created: (1) an 'affects' edge when the mechanism implies an effect of the subject on the object - e.g. 'positive modulator' implies that 'A causes increased activity of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'binding agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'antagonist' implies that 'A decreases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these Drug Central mechanisms to Biolink predicate and qualifier combinations can be found here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=392679103#gid=392679103.
+
+      - subject_categories: 
+          - ChemicalEntity
+        predicates:  
+          - biolink:treats
+          - biolink:applied_to_treat
+          - biolink:preventative_for
+          - biolink:contraindicated_in          
+        object_categories: 
+          - DiseaseOrPhenotypicFeature
+        knowledge_level:
+          - knowledge_assertion          
+        agent_type:
+          - manual_agent
+        edge_properties:  
+          -  biolink:clinical_approval_status
+        ui_explanation:  # TO DO
+        additional_notes: >-
+          DrugCentral.indication, symptomatic_treatment, and off_label-use -> biolink:treats (some reading of DrugCentral papers suggested that off-label use reports are based on widely established clinical use, not just anecdotal reports, warranting a 'treats' mapping to set these apart from 'applied to treat' edges based on anecdotal/patient self-report data from sources like faers)
+          DrugCentral.reduce_risk -> biolink.preventative_for
+          DrugcCentral.contraindication -> biolink:contraindicated_in
+          DrugCentral.diagnosis -> biolink.diagnoses (or just drop these, only a couple records, and not very useful?)
+        
+    node_type_info:  # (required, multivalued, range = NodeType)
+      - node_category: ChemicalEntity
+        source_identifier_types: 
+          - internal DrugCentral structure id 
+        additional_notes:  e.g. "1423" for imatinib.  Not sure if/where we have mappings form these to caononical chemical / drug identifiers?
+      - node_category: Protein
+        source_identifier_types: 
+          - UNIPROT
+      - node_category: DiseaeOrPhenotypicFeature
+        source_identifier_types: 
+          - ????  # COLLEEN TO DO          
+    future_considerations:  # Colleen to note any possible changes/additions to modeling in future iteration of the ingest
+      - category:  # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
+        consideration:  # (required, range = string)
+
+    additional_notes:  # (optional, range = string)
+
+
+# Information about how the ingest was specified and performed
+  provenance_info:  # (optional, range = ProvenanceInformation)
+    contributions:
+    - "Colleen Xu - code author"
+    - "Sierra Moxon - code support"
+    - "Matthew Brush - data modeling, domain expertise"
