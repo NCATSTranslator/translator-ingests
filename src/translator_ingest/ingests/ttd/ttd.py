@@ -203,7 +203,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.transform_metadata["ttd_drug_mappings"] = parse_p1_03(p1_03_path, p1_03_header_info["len_header"])
     koza.log(f"Retrieved {len(koza.transform_metadata["ttd_drug_mappings"])} mappings from P1-03")
 
-    ## Parse P1-05: maps TTD drug IDs to PUBCHEM.COMPOUND IDs (can NodeNorm)
+    ## Parse P1-05
     koza.log("Parsing P1-05 to retrieve TTD drug indications data")
     p1_05_path = f"{koza.input_files_dir}/P1_05_indications.txt"  ## path to downloaded file
     p1_05_header_info = parse_header(p1_05_path)  ## get number of lines in header
