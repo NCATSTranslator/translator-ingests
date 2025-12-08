@@ -8,7 +8,7 @@ from translator_ingest.util.biolink import INFORES_TTD
 from translator_ingest.util.http_utils import get_modify_date
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     DiseaseOrPhenotypicFeature,
     Protein,    ## because ttd gives uniprot names
     ChemicalAffectsGeneAssociation,    ## ONLY for affects
@@ -381,7 +381,7 @@ def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
 
     chemical = ChemicalEntity(id=record["subject_pubchem"])
     indication = DiseaseOrPhenotypicFeature(id=record["object_nameres_id"])
-    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate=record["biolink_predicate"],
