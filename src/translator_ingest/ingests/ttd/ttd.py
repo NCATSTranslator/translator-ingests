@@ -309,7 +309,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     n_mapped = df["biolink_predicate"].notna().sum()
     koza.log(f"{n_mapped} rows with mapped clinical status: {n_mapped / df.shape[0]:.1%}")
     ## save for debugging
-    koza.state["clinical_statuses_unmapped"] = sorted(df[df["biolink_predicate"].isna()].clinical_status.unique())
+    koza.transform_metadata["clinical_statuses_unmapped"] = sorted(df[df["biolink_predicate"].isna()].clinical_status.unique())
     ## drop rows without predicate mapping
     df.dropna(subset="biolink_predicate", inplace=True, ignore_index=True)
 
@@ -342,7 +342,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     indication_exclude_prefixes = "UMLS|MESH"
     indication_score_threshold = 300
     ## use NAMERES_URL initialized earlier, default batch_size
-    koza.transform_metadata["indication_mapping"], koza.state["stats_indication_mapping_failures"] = run_nameres(
+    koza.transform_metadata["indication_mapping"], koza.transform_metadata["stats_indication_mapping_failures"] = run_nameres(
         names=indication_names,
         url=NAMERES_URL,
         types=indication_types,
@@ -422,7 +422,7 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     target_types = ["GeneOrGeneProduct"]
     target_exclude_prefixes = "UMLS"
     ## use NAMERES_URL initialized earlier, default batch_size
-    koza.transform_metadata["uniprot_name_to_id"], koza.state["stats_target_mapping_failures"] = run_nameres(
+    koza.transform_metadata["uniprot_name_to_id"], koza.transform_metadata["stats_target_mapping_failures"] = run_nameres(
         names=all_uniprot_names,
         url=NAMERES_URL, 
         types=target_types,
