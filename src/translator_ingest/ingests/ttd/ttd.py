@@ -408,6 +408,14 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     """
     Access files directly and parse. Take P1-07 drug-target data (edge-like) and map it into Translator standards
     """
+    ## ?? koza.transform_metadata["ttd_drug_mappings"] from P1-05 parsing didn't seem accessible, so need to remake
+    ## Parse P1-03: maps TTD drug IDs to PUBCHEM.COMPOUND IDs (can NodeNorm)
+    koza.log("Parsing P1-03 to retrieve TTD drug ID - PUBCHEM.COMPOUND mappings")
+    p1_03_path = f"{koza.input_files_dir}/P1_03_drug_mapping.txt"  ## path to downloaded file
+    p1_03_header_info = parse_header(p1_03_path)  ## get number of lines in header
+    koza.transform_metadata["ttd_drug_mappings"] = parse_p1_03(p1_03_path, p1_03_header_info["len_header"])
+    koza.log(f"Retrieved {len(koza.transform_metadata["ttd_drug_mappings"])} mappings from P1-03")
+
     ## Parse P2-01: maps TTD target IDs to uniprot names, then use names to get NodeNorm-able IDs
     koza.log("Parsing P2-01 to retrieve TTD target ID - gene/protein ID mappings")
 
@@ -456,7 +464,6 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
 
     ## Parse P1-07
-    ## assume P1-03 has already been parsed, so koza.transform_metadata["ttd_drug_mappings"] already exists
     koza.log("Parsing P1-07 to retrieve drug-target data")
     p1_07_path = f"{koza.input_files_dir}/P1-07-Drug-TargetMapping.xlsx"  ## path to downloaded file
     ## only import columns needed
