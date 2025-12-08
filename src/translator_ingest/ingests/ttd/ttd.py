@@ -22,78 +22,11 @@ import re
 ## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
 import requests
+from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_TO_FILTER, moa_mapping
 
 
 ## hard-coded values and mappings
 NAMERES_URL = "https://name-resolution-sri.renci.org/bulk-lookup"  ## DEV instance
-## biolink predicates
-BIOLINK_TREATS = "biolink:treats"
-BIOLINK_STUDIED_TREAT = "biolink:studied_to_treat"
-BIOLINK_PRECLINICAL = "biolink:in_preclinical_trials_for"
-BIOLINK_CLINICAL_TRIALS = "biolink:in_clinical_trials_for"
-## hard-coded mapping of "clinical status" values to biolink "treats" predicates
-## purposely doesn't include all values - rest are filtered out
-CLINICAL_STATUS_MAP = {
-    ## treats
-    "Approved": BIOLINK_TREATS,
-    "Approved (orphan drug)": BIOLINK_TREATS,
-    "Approved in China": BIOLINK_TREATS,
-    "Approved in EU": BIOLINK_TREATS,
-    "Phase 4": BIOLINK_TREATS,
-    ## studied to treat
-    "Investigative": BIOLINK_STUDIED_TREAT,
-    "Patented": BIOLINK_STUDIED_TREAT,
-    ## in preclinical trials for
-    "Preclinical": BIOLINK_PRECLINICAL,
-    "IND submitted": BIOLINK_PRECLINICAL,
-    ## in clinical trials for
-    "Clinical Trial": BIOLINK_CLINICAL_TRIALS,
-    "Clinical trial": BIOLINK_CLINICAL_TRIALS,
-    "Preregistration": BIOLINK_CLINICAL_TRIALS,
-    "Registered": BIOLINK_CLINICAL_TRIALS,
-    "Phase 0": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1b": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1/2": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1/2a": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1b/2a": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2a": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2b": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2/3": BIOLINK_CLINICAL_TRIALS,
-    "Phase 3": BIOLINK_CLINICAL_TRIALS,
-    "phase 3": BIOLINK_CLINICAL_TRIALS,
-    "NDA filed": BIOLINK_CLINICAL_TRIALS,
-    "BLA submitted": BIOLINK_CLINICAL_TRIALS,
-    "Approval submitted": BIOLINK_CLINICAL_TRIALS,
-}
-## indication names that are known to be problematic - not "conditions that are treated" or I'm worried how the statement will look
-STRINGS_TO_FILTER = [
-    "imaging",
-    "radio",  ## related to imaging
-    "esthesia",  ## for multiple spellings of an(a)esthesia
-    "abortion",  ## problematic? but "spontaneous abortion" aka miscarriage can be treated...
-    "sedation",
-    "Discover",
-    "icide",  ## catches Herbicide, Insecticide, etc. But catches "poisoning" due to these things too
-    "procedure",
-    "barrier",  ## catches Blood brain barrier
-    "astringent",
-    "stimul",  ## catches "Caerulein stimulated..." and ovarian stimulation
-    "suppress",  ## catches Appetite suppressant
-    "contrast",  ## related to imaging
-    "Diagnostic",  ## diagnostic
-    "vasodilator",
-    "Dutch elm disease",  ## this is a plant disease
-    "Exam",
-    "lubricant",
-    "Localisation",
-    "Measur",  ## catches Measure kidney function
-    "Pest attack",  ## plant disease?
-    "Plant grey",  ## catches Plant grey mould disease
-    "Stabil",  ## catches Stabilize muscle contraction
-    "canine",  ## Canine and feline spontaneous neoplasm
-]
 
 
 ## custom functions
@@ -241,14 +174,19 @@ def get_latest_version() -> str:
 
     strformat = "%Y_%m_%d"
     # get last-modified for each source data file
-    p1_03_modify_date = get_modify_date("https://ttd.idrblab.cn/files/download/P1-03-TTD_crossmatching.txt", strformat)
-    p1_05_modify_date = get_modify_date("https://ttd.idrblab.cn/files/download/P1-05-Drug_disease.txt", strformat)
-    # compare them and return the most recent date in the form m_d_Y
-    ## will need diff way to sort, get latest once there's more than 2 files
-    if datetime.strptime(p1_05_modify_date, strformat) > datetime.strptime(p1_03_modify_date, strformat):
-        return p1_05_modify_date
-    else:
-        return p1_03_modify_date
+    file_links = [
+        "https://ttd.idrblab.cn/files/download/P1-03-TTD_crossmatching.txt",
+        "https://ttd.idrblab.cn/files/download/P1-05-Drug_disease.txt",
+        "https://ttd.idrblab.cn/files/download/P2-01-TTD_uniprot_all.txt",
+        "https://ttd.idrblab.cn/files/download/P1-07-Drug-TargetMapping.xlsx",
+    ]
+    last_modified = [get_modify_date(i) for i in file_links]
+    last_modified.sort(reverse=True)  ## does inplace
+
+    ## because of reverse, first element should be the latest
+    ## for debugging 
+    # print(last_modified[0])
+    return last_modified[0]
 
 
 ## P1-05 parsing
