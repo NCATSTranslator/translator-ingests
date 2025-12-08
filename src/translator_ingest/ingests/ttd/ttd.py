@@ -152,6 +152,8 @@ def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
                 ## grab pubchem-compound lines
                 if data[1] == "PUBCHCID":
                     ## "value" can be "; "-delimited.
+                    ## there can be empty values after splitting (ex: splitting "91865905; ")
+                    ##   using if to remove these cases
                     ## And its ids don't have prefixes, so add desired prefix
                     ## Only saves if j isn't an empty string ""
                     pubchem_ids = ["PUBCHEM.COMPOUND:" + j.strip() for j in data[2].split(";") if j.strip()]
@@ -161,15 +163,22 @@ def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
     return ttd_drug_mappings
 
 
-def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, score_threshold: int, exclude_namespace: str):
+def run_nameres(
+    names: Iterable[str],
+    url: str,
+    batch_size: int = 500,
+    types: list | None = None,
+    exclude_namespaces: str | None = None,
+    score_threshold: int = 0,
+):
     """
     Parameters:
-    - names: iterable of string names to NameRes
-    - batch_size: number of strings to include in 1 query to NameRes
-    - types: list of biolink categories that NameRes hits should have
+    - names: string names to NameRes (iterable - can be a set)
     - url: NameRes url/endpoint to use
-    - score_threshold: only accept hit if its score is greater than this, for quality
-    - exclude_namespaces: |-delimited string of ID namespaces to exclude, for quality
+    - batch_size: number of strings to include in 1 query to NameRes
+    - types (default None): list of biolink categories that NameRes hits should have (hierarchy expansion is supported)
+    - exclude_namespaces (default None): |-delimited string of ID namespaces to exclude, for quality
+    - score_threshold (default 0): only accept hit if its score is greater than this, for quality
 
     Returns: tuple of mapping dict and failure stats dict
     """
@@ -180,20 +189,22 @@ def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, sc
         "returned_empty": [],
         "score_under_threshold": [],
     }
+#     ## for debug: stopping early
+#     counter = 0
 
     for batch in batched(names, batch_size):
         req_body = {
             "strings": list(batch),  ## returns tuples -> cast to list
-            "autocomplete": False,  ## names are complete search term
-            "limit": 1,  ## only want to review top hit
+            "autocomplete": False,   ## names are complete search term
+            "limit": 1,              ## only want to review top hit
             "biolink_types": types,
-            "exclude_prefixes": exclude_namespace,  ## try to increase quality of hits
-        }
+            "exclude_prefixes": exclude_namespaces,    ## try to increase quality of hits
+        }    
         r = requests.post(url, json=req_body)
         response = r.json()
 
         ## not doing dict comprehension. allows easier review, logic writing
-        for k, v in response.items():
+        for k,v in response.items():
             ## catch unexpected errors
             try:
                 ## will catch if v is an empty list (aka NameRes didn't have info)
@@ -202,13 +213,19 @@ def run_nameres(names: Iterable[str], batch_size: int, types: list, url: str, sc
                     temp = v[0]
                     ## also throw out mapping if score < score_threshold: want better-matching hits
                     if temp["score"] > score_threshold:
-                        mapping.update({k: temp["curie"]})
+                        mapping.update({
+                            k: temp["curie"]
+                        })
                     else:
                         stats_failures["score_under_threshold"].append(k)
                 else:
                     stats_failures["returned_empty"].append(k)
             except Exception as e:
                 stats_failures["unexpected_error"].update({k: e})
+
+#         counter += batch_size
+#         if counter >= 500:
+#             break
 
     return mapping, stats_failures
 
@@ -326,18 +343,16 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## GET indication name -> ID mappings
     ## set constants for run_nameres
-    indication_batch_size = 100
-    indication_score_threshold = 300
     indication_types = ["DiseaseOrPhenotypicFeature"]
     indication_exclude_prefixes = "UMLS|MESH"
-    ## use NAMERES_URL initialized earlier
+    indication_score_threshold = 300
+    ## use NAMERES_URL initialized earlier, default batch_size
     koza.transform_metadata["indication_mapping"], koza.state["stats_indication_mapping_failures"] = run_nameres(
-        url=NAMERES_URL,
         names=indication_names,
+        url=NAMERES_URL,
         types=indication_types,
+        exclude_namespaces=indication_exclude_prefixes,
         score_threshold=indication_score_threshold,
-        batch_size=indication_batch_size,
-        exclude_namespace=indication_exclude_prefixes
     )
     koza.log(f"Retrieved {len(koza.transform_metadata["indication_mapping"])} indication name -> ID mappings from NameRes")
 
