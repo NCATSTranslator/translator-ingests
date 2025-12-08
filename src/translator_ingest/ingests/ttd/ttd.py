@@ -10,6 +10,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
     DiseaseOrPhenotypicFeature,
+    Protein,    ## because ttd gives uniprot names
+    ChemicalAffectsGeneAssociation,    ## ONLY for affects
+    ChemicalGeneInteractionAssociation,    ## ONLY for interacts_with
     RetrievalSource,
     ResourceRoleEnum,
     KnowledgeLevelEnum,
@@ -17,16 +20,18 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 ## ADDED packages for this ingest
-from datetime import datetime
 import re
 ## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
 import requests
-from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_TO_FILTER, moa_mapping
+## needed for pd.read_excel
+import openpyxl
+from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_TO_FILTER, MOA_MAPPING
 
 
 ## hard-coded values and mappings
 NAMERES_URL = "https://name-resolution-sri.renci.org/bulk-lookup"  ## DEV instance
+BIOLINK_INTERACTS = "biolink:interacts_with"
 
 
 ## custom functions
@@ -161,6 +166,58 @@ def run_nameres(
 #             break
 
     return mapping, stats_failures
+
+
+def parse_p2_01(file_path, header_len: int):
+    """
+    Parse P2-01 target mapping file: maps TTD target IDs to uniprot names (not IDs!)
+
+    Returns: tuple
+    - dict {TTD: {"uniprot_names": [list of uniprot names]}}
+    - set of all unique uniprot names
+    """
+    ## format {TTD: {"uniprot_names": [list]}}
+    ttd_target_mappings = dict()
+    ## get set of all unique names for mapping step
+    all_uniprot_names = set()
+    ## saved for this function
+    DELIMITER_PAT = "-|/|;"
+    INVALID_CHAR = [" ", "(", ")"]
+
+    with open(file_path, "r") as file:
+        ## iterate from beginning of data (after 2nd dash divider line) to end of file
+        for line in islice(file, header_len, None):
+            ## skip "blank" lines that only contain whitespace (seem to be "\n")
+            if line.isspace():
+                continue
+            else:
+                ## tab-delimited, may have extra whitespace at end of line
+                data = [i for i in line.strip().split("\t")]
+                ## [0] == column name, [1] == value
+
+                ## TTD target ID line
+                if data[0] == "TARGETID":
+                    ## save in temp variable, always seems to be single value
+                    ttd_target = data[1]
+                elif data[0] == "UNIPROID":
+                    ## don't save name if it seems fake
+                    ## NOUNIPROTAC seems to be "NO UNIPROT AC"
+                    if data[1] != "NOUNIPROTAC":
+                        ## split on delimiter chars
+                        ## only save element j if it is non-empty string and doesn't have any invalid char in it
+                        ## strip surrounding whitespace off j and save
+                        temp_name = [j.strip() \
+                                        for j in re.split(DELIMITER_PAT, data[1]) \
+                                        if j.strip() and not any(letter in INVALID_CHAR for letter in j.strip())]
+                        
+                        ## only add if has values
+                        if temp_name:
+                            ## add to unique set
+                            all_uniprot_names.update(temp_name)
+                            ## add to mappings
+                            ttd_target_mappings[ttd_target] = {"uniprot_names": temp_name}
+
+    return ttd_target_mappings,all_uniprot_names 
 
 
 ## PIPELINE MAIN FUNCTIONS
@@ -343,3 +400,219 @@ def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
     )
 
     return KnowledgeGraph(nodes=[chemical, indication], edges=[association])
+
+
+## P1-07 parsing
+@koza.prepare_data(tag="P1_07_parsing")
+def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    """
+    Access files directly and parse. Take P1-07 drug-target data (edge-like) and map it into Translator standards
+    """
+    ## Parse P2-01: maps TTD target IDs to uniprot names, then use names to get NodeNorm-able IDs
+    koza.log("Parsing P2-01 to retrieve TTD target ID - gene/protein ID mappings")
+
+    p2_01_path = f"{koza.input_files_dir}/P2-01-TTD_uniprot_all.txt"  ## path to downloaded file
+    p2_01_header_info = parse_header(p2_01_path)  ## get number of lines in header
+
+    ## don't save to koza until done (mapped to IDs)
+    ttd_target_mappings, all_uniprot_names = parse_p2_01(p2_01_path, p2_01_header_info["len_header"])
+    koza.log(f"Retrieved {len(ttd_target_mappings)} initial mappings from P2-01")
+
+    ## run NameRes on the uniprot names
+    target_types = ["GeneOrGeneProduct"]
+    target_exclude_prefixes = "UMLS"
+    ## use NAMERES_URL initialized earlier, default batch_size
+    koza.transform_metadata["uniprot_name_to_id"], koza.state["stats_target_mapping_failures"] = run_nameres(
+        names=all_uniprot_names,
+        url=NAMERES_URL, 
+        types=target_types,
+        exclude_namespaces=target_exclude_prefixes,
+    )
+    koza.log(f"Retrieved {len(koza.transform_metadata["uniprot_name_to_id"])} mappings from uniprot names to entity IDs in NameRes")
+
+    ## add mapped IDs to ttd_target_mappings, collect target names that failed nameres process
+    ## format {TTD: {"uniprot_names": [list], "mapped_ids": [list]}}
+    failed_TTD_targets = set()
+    for k,v in ttd_target_mappings.items():
+        ## use set so no duplicate IDs
+        temp_ids = set()
+        for i in v["uniprot_names"]:
+            temp =  koza.transform_metadata["uniprot_name_to_id"].get(i)
+            ## found mapping
+            if temp:
+                temp_ids.add(temp)
+        ## temp_ids isn't empty
+        if temp_ids:
+            ttd_target_mappings[k]["mapped_ids"] = list(temp_ids)
+        else:
+            failed_TTD_targets.add(k)
+    ## delete TTD target mappings that don't have any mapped IDs
+    for i in failed_TTD_targets:
+        del ttd_target_mappings[i]
+    koza.log(f"Retrieved {len(ttd_target_mappings)} final mappings from P2-01")
+    ## save final versions of this info
+    koza.transform_metadata["ttd_target_mappings"] = ttd_target_mappings
+    koza.transform_metadata["target_name_failures"] = failed_TTD_targets
+
+
+    ## Parse P1-07
+    ## assume P1-03 has already been parsed, so koza.transform_metadata["ttd_drug_mappings"] already exists
+    koza.log("Parsing P1-07 to retrieve drug-target data")
+    p1_07_path = f"{koza.input_files_dir}/P1-07-Drug-TargetMapping.xlsx"  ## path to downloaded file
+    ## only import columns needed
+    df_07 = pd.read_excel(io=p1_07_path, usecols=["TargetID", "DrugID", "MOA"])
+    koza.log(f"{df_07.shape[0]} rows loaded.")
+
+    ## clean up MOA column
+    df_07["MOA"] = df_07["MOA"].str.split(";")    ## ";"-delimited, split
+    ## expand to multiple rows when MOA list length > 1
+    ## also pops every MOA value out into a string
+    df_07 = df_07.explode("MOA", ignore_index=True)
+    koza.log(f"{df_07.shape[0]} rows after expanding MOAs with multiple values")
+    ## clean up things that aren't actually unique values
+    df_07["MOA"] = df_07["MOA"].str.strip()    ## remove whitespace 
+    df_07["MOA"] = df_07["MOA"].str.lower()    ## make case consistent - have stuff like "Inhibitor" vs "inhibitor"
+    ## typos
+    ## replacements are trickier because there's NA values in column
+    ## replaces np.nan with None
+    df_07["MOA"] = [re.sub("agonis$", "agonist", i) if pd.notna(i) else None for i in df_07["MOA"]]
+    df_07["MOA"] = [re.sub("stablizer", "stabilizer", i) if pd.notna(i) else None for i in df_07["MOA"]]
+    ## analyze not-None MOA values vs what I have mappings for
+    cleaned_moa = set(df_07["MOA"].dropna().unique().tolist())
+    koza.transform_metadata["moa_not_mapped"] = cleaned_moa - set(MOA_MAPPING.keys())
+    koza.log(f"{df_07["MOA"].nunique(dropna=False)} MOA values (including None) after cleaning up.")
+
+    ## MAP TTD drug IDs to PUBCHEM.COMPOUND (can NodeNorm)
+    ## get method returns None if key (TTD ID) not found in mapping
+    df_07["subject_pubchem"] = [koza.transform_metadata["ttd_drug_mappings"].get(i) for i in df_07["DrugID"]]
+    ## log how much data was successfully mapped
+    n_mapped = df_07["subject_pubchem"].notna().sum()
+    koza.log(f"{n_mapped} rows with mapped TTD drug IDs: {n_mapped / df_07.shape[0]:.1%}")
+    ## drop rows without drug mapping
+    df_07.dropna(subset="subject_pubchem", inplace=True, ignore_index=True)
+    ## expand to multiple rows when subject_pubchem list length > 1
+    ## also pops every subject_pubchem value out into a string
+    df_07 = df_07.explode("subject_pubchem", ignore_index=True)
+    koza.log(f"{df_07.shape[0]} rows after expanding mappings with multiple ID values")
+
+    ## MAP TTD target IDs to gene/protein IDs
+    ## using the variables directly, not stuff saved in koza.transform_metadata
+    ## if mapping exists (key found by get), then mapping should have "mapped_ids"
+    df_07["object_id"] = [ttd_target_mappings[i]["mapped_ids"] if ttd_target_mappings.get(i) else None for i in df_07["TargetID"]]
+    ## log how much data was successfully mapped
+    n_mapped = df_07["object_id"].notna().sum()
+    koza.log(f"{n_mapped} rows with mapped TTD target IDs: {n_mapped / df_07.shape[0]:.1%}")
+    ## drop rows without target mapping
+    df_07.dropna(subset="object_id", inplace=True, ignore_index=True)
+    ## expand to multiple rows when object_id list length > 1
+    df_07 = df_07.explode("object_id", ignore_index=True)
+    koza.log(f"{df_07.shape[0]} rows after expanding mappings with multiple ID values")
+
+    ## Merge rows that look like "duplicates" from Translator output POV
+    ##   With the current pipeline and data-modeling, only the mapped columns uniquely define an edge
+    ## create column with 1 "moa" value per each unique data-modeling 
+    ##   current MOA values with the same data-modeling
+    BINDING_TYPES = {"binder", "ligand"}
+    BLOCKING_TYPES = {"blocker", "blocker (channel blocker)"}
+    df_07["mod_moa"] = [
+        "BINDING" if i in BINDING_TYPES \
+        else "BLOCKING" if i in BLOCKING_TYPES \
+        else i
+        for i in df_07["MOA"]
+    ]
+    cols_define_edge = ["subject_pubchem", "object_id", "mod_moa"]
+    df_07 = df_07.groupby(by=cols_define_edge).agg(set).reset_index().copy()
+
+    ## log what data looks like at end!
+    koza.log(f"{df_07.shape[0]} rows at end of parsing, after handling 'edge-level' duplicates")
+    koza.log(f"{df_07["subject_pubchem"].nunique()} unique mapped drug IDs")
+    koza.log(f"{df_07["object_id"].nunique()} unique mapped target IDs")
+
+    ## DONE - output to transform step
+    return df_07.to_dict(orient="records")
+
+
+@koza.transform_record(tag="P1_07_parsing")
+def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    ## generate TTD urls to drug - based on manual review, target page sometimes doesn't have this info
+    ## details: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209944640
+    ttd_urls = ["https://ttd.idrblab.cn/data/drug/details/" + i.lower() for i in record["TargetID"]]
+    ttd_source=[
+        RetrievalSource(
+            ## making the ID the same as infores for now, which is what go_cam did
+            id=INFORES_TTD,
+            resource_id=INFORES_TTD,
+            resource_role=ResourceRoleEnum.primary_knowledge_source,
+            source_record_urls=ttd_urls,
+        )
+    ]            
+    
+    ## Nodes
+    chemical = ChemicalEntity(id=record["subject_pubchem"])
+    protein = Protein(id=record["object_id"])
+
+    ## diff Association type depending on predicate
+    if not record["mod_moa"]:    ## mod_moa is None
+        ## make a plain interacts_with edge
+        association = ChemicalGeneInteractionAssociation(
+            id=entity_id(),
+            subject=chemical.id,
+            predicate=BIOLINK_INTERACTS,
+            object=protein.id,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            sources=ttd_source,
+        )
+        return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+    else:    ## there is an mod_moa value
+        ## assuming record's mod_moa value is in MOA_MAPPING keys. If not, should stop/error, then MOA_MAPPING or p1_07_prepare needs adjustment.  
+        data_modeling = MOA_MAPPING[record["mod_moa"]]
+
+        ## diff Association type depending on predicate
+        if "interacts_with" in data_modeling["predicate"]:
+        ## covers "interacts_with" and descendants with substring
+        ## ASSUMING no special logic, so only 1 edge made
+            association = ChemicalGeneInteractionAssociation(
+                id=entity_id(),
+                subject=chemical.id,
+                object=protein.id,
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                sources=ttd_source,
+                predicate=data_modeling["predicate"],
+                ## return empty dict in unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
+                **data_modeling.get("qualifiers", dict())
+            )
+            return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+        elif "affects" in data_modeling["predicate"]:
+        ## currently covers all other cases
+            ## MAIN EDGE
+            association = ChemicalAffectsGeneAssociation(
+                id=entity_id(),
+                subject=chemical.id,
+                object=protein.id,
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                sources=ttd_source,
+                predicate=data_modeling["predicate"],
+                ## return empty dict in unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
+                 **data_modeling.get("qualifiers", dict())
+            )
+            ## if there's an extra edge field
+            if data_modeling.get("extra_edge_pred"):
+                ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
+                ## should be identical to original edge, except predicate/no qualifiers
+                extra_assoc = ChemicalGeneInteractionAssociation(
+                    id=entity_id(),
+                    subject=chemical.id,
+                    object=protein.id,
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    sources=ttd_source,
+                    predicate=data_modeling["extra_edge_pred"],
+                )
+                ## return both edges
+                return KnowledgeGraph(nodes=[chemical, protein], edges=[association, extra_assoc])
+            else:
+                ## return only 1 edge
+                return KnowledgeGraph(nodes=[chemical, protein], edges=[association])

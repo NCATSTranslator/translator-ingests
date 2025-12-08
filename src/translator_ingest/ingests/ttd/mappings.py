@@ -85,7 +85,7 @@ STRINGS_TO_FILTER = [
 ## moa -> predicate, qualifier-set, extra edge's predicate
 ## imported enum from pydantic (vs hard-coded values)
 ## there's also no value (None), which maps to plain "interacts_with" edge and is handled in main code
-moa_mapping = {
+MOA_MAPPING = {
     "activator": {
         "predicate": BIOLINK_AFFECTS,
         "qualifiers": {
