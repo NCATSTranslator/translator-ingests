@@ -604,8 +604,7 @@ def test_pheno_term_ixns_increases(pheno_term_ixns_increases_output):
     assert len(entities) == 3  # chemical, phenotype, association
     association = [e for e in entities if isinstance(e, ChemicalEntityToBiologicalProcessAssociation)][0]
     assert association.predicate == BIOLINK_AFFECTS
-    # Note: ChemicalEntityToBiologicalProcessAssociation doesn't have object_direction_qualifier
-    # assert association.object_direction_qualifier = "increased"
+    assert association.object_direction_qualifier == "increased"
     # The ctd.py code sets qualified_predicate when direction is specified
     assert association.qualified_predicate == BIOLINK_CAUSES
     assert association.subject == "MESH:D000082"
@@ -661,8 +660,7 @@ def test_pheno_term_ixns_decreases(pheno_term_ixns_decreases_output):
     entities = pheno_term_ixns_decreases_output
     assert len(entities) == 3
     association = [e for e in entities if isinstance(e, ChemicalEntityToBiologicalProcessAssociation)][0]
-    # Note: ChemicalEntityToBiologicalProcessAssociation doesn't have object_direction_qualifier
-    # assert association.object_direction_qualifier == "decreased"
+    assert association.object_direction_qualifier == "decreased"
     # qualified_predicate is set when direction is specified
     assert association.qualified_predicate == BIOLINK_CAUSES
     assert "MESH:D001769" in association.anatomical_context_qualifier
@@ -705,4 +703,4 @@ def test_pheno_term_ixns_affects(pheno_term_ixns_affects_output):
     assert association.predicate == BIOLINK_AFFECTS
     # 'affects' doesn't set qualified_predicate
     assert association.qualified_predicate is None
-    # assert association.object_direction_qualifier is None
+    assert association.object_direction_qualifier is None

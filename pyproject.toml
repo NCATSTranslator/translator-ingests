@@ -19,7 +19,7 @@ dependencies = [
     "kghub-downloader>=0.4.2",
     "koza",
     "mkdocs-minify-plugin>=0.8.0",
-    "robokop-orion==0.1.10",
+    "robokop-orion==0.1.12",
     "uv-dynamic-versioning>=0.11.2",
 ]
 

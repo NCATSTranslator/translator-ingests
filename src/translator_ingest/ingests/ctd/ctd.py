@@ -407,8 +407,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         anatomical_context_qualifier=anatomies
     )
     if object_direction_qualifier:
-        # TODO
-        # edge.object_direction_qualifier=object_direction_qualifier
+        edge.object_direction_qualifier=object_direction_qualifier
         edge.qualified_predicate = BIOLINK_CAUSES
     return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
                                  PhenotypicFeature(id=phenotype_id)],
