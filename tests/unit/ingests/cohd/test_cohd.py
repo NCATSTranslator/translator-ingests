@@ -60,114 +60,165 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             None,
             None,
         ),
-        (  # Query 1 - A complete node record
+        (   # Query 1 - A complete node record
             {
-                "id": "PUBCHEM.COMPOUND:2083",
-                "name": "Salbutamol",
-                "category": [
-                    "biolink:ChemicalEntityOrGeneOrGeneProduct",
-                    "biolink:PhysicalEssence",
-                    "biolink:ChemicalEntityOrProteinOrPolypeptide",
-                    "biolink:PhysicalEssenceOrOccurrent",
-                    "biolink:ChemicalExposure",
-                    "biolink:ChemicalEntity",
-                    "biolink:SmallMolecule",
-                    "biolink:ChemicalOrDrugOrTreatment",
-                    "biolink:MolecularEntity",
-                    "biolink:Drug",
-                    "biolink:NamedThing"
-                ],
-                "equivalent_identifiers": [
-                    "PUBCHEM.COMPOUND:2083",
-                    "CHEMBL.COMPOUND:CHEMBL714",
-                    "CHEBI:2549",
-                    "DRUGBANK:DB01001",
-                    "DrugCentral:105"
+                "id": "SNOMEDCT:60108003",
+                "name": "Congenital dislocation of one hip with subluxation of other",
+                "categories": ["biolink:DiseaseOrPhenotypicFeature"],
+                "attributes": [
+                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
+                    "{"+
+                        "\"attribute_source\": \"infores:cohd\","
+                        " \"attribute_type_id\": \"EDAM:data_0954\","
+                        " \"attributes\": ["
+                            "{"
+                               "\"attribute_source\": \"infores:omop-ohdsi\", "
+                               "\"attribute_type_id\": \"EDAM:data_1087\", "
+                               "\"original_attribute_name\": \"concept_id\", "
+                               "\"value\": \"OMOP:77661\", "
+                               "\"value_type_id\": \"EDAM:data_1087\", "
+                               "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\""
+                            "}, "
+                               "{\"attribute_source\": \"infores:omop-ohdsi\", "
+                                "\"attribute_type_id\": \"EDAM:data_2339\", "
+                                "\"original_attribute_name\": \"concept_name\", "
+                                "\"value\": \"Congenital dislocation of one hip with subluxation of other\", "
+                                "\"value_type_id\": \"EDAM:data_2339\""
+                            "}, "
+                                "{\"attribute_source\": \"infores:omop-ohdsi\", "
+                                "\"attribute_type_id\": \"EDAM:data_0967\", "
+                                "\"original_attribute_name\": \"domain\", "
+                                "\"value\": \"Condition\", "
+                                "\"value_type_id\": \"EDAM:data_0967\""
+                            "}"
+                        "], "
+                        "\"original_attribute_name\": \"Database cross-mapping\", "
+                        "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
+                        "\"value_type_id\": \"EDAM:data_0954\""
+                    "}"
                 ]
             },
             # Captured node contents
             [
                 {
-                    "id": "PUBCHEM.COMPOUND:2083",
-                    "name": "Salbutamol",
-                    "category": ["biolink:Drug"],
-                    "equivalent_identifiers": [
-                        "PUBCHEM.COMPOUND:2083",
-                        "CHEMBL.COMPOUND:CHEMBL714",
-                        "CHEBI:2549",
-                        "DRUGBANK:DB01001",
-                        "DrugCentral:105"
-                    ]
+                    "id": "SNOMEDCT:60108003",
+                    "name": "Congenital dislocation of one hip with subluxation of other",
+                    "category": ["biolink:DiseaseOrPhenotypicFeature"],
                 }
             ],
             # Captured edge contents - n/a
             None
         ),
-        (  # Query 2- Another complete node record
+        (   # Query 2- Another complete node record
             {
-                "id": "MONDO:0004979",
-                "name": "asthma",
-                "category": [
+                "id": "CPT:73540",
+                "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
+                "categories": ["biolink:Procedure"],
+                "attributes": [
+                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
+                    "{"
+                        "\"attribute_source\": \"infores:cohd\", "
+                        "\"attribute_type_id\": \"EDAM:data_0954\", "
+                        "\"attributes\": ["
+                            "{"
+                            "\"attribute_source\": \"infores:omop-ohdsi\", "
+                            "\"attribute_type_id\": \"EDAM:data_1087\", "
+                            "\"original_attribute_name\": \"concept_id\", "
+                            "\"value\": \"OMOP:2211477\", "
+                            "\"value_type_id\": \"EDAM:data_1087\", "
+                            "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/2211477\""
+                            "}, "
+                            "{"
+                            "\"attribute_source\": \"infores:omop-ohdsi\", "
+                            "\"attribute_type_id\": \"EDAM:data_2339\", "
+                            "\"original_attribute_name\": \"concept_name\", "
+                            "\"value\": \"Radiologic examination, pelvis and hips, infant or child, minimum of 2 views\", "
+                            "\"value_type_id\": \"EDAM:data_2339\""
+                            "}, "
+                            "{"
+                            "\"attribute_source\": \"infores:omop-ohdsi\", "
+                            "\"attribute_type_id\": \"EDAM:data_0967\", "
+                            "\"original_attribute_name\": \"domain\", "
+                            "\"value\": \"Procedure\", "
+                            "\"value_type_id\": \"EDAM:data_0967\""
+                            "}"
+                        "], "
+                        "\"original_attribute_name\": \"Database cross-mapping\", "
+                        "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
+                        "\"value_type_id\": \"EDAM:data_0954\""
+                    "}"
+                ]
+            },
+            #
+            # Captured node contents
+            [
+                {
+                    "id": "CPT:73540",
+                    "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
+                    "category": ["biolink:Procedure"],
+                }
+            ],
+            # Captured edge contents - n/a
+            None
+        ),
+        (   # Query 4- Another complete node record
+            {
+                "id": "UMLS:C0160047",
+                "name": "Sprain, coracoclavicular ligament",
+                "categories": [
                     "biolink:Disease",
-                    "biolink:ThingWithTaxon",
+                    "biolink:DiseaseOrPhenotypicFeature",
                     "biolink:BiologicalEntity",
-                    "biolink:NamedThing",
-                    "biolink:DiseaseOrPhenotypicFeature"
+                    "biolink:ThingWithTaxon",
+                    "biolink:NamedThing"
                 ],
-                "equivalent_identifiers": [
-                    "MONDO:0004979",
-                    "DOID:2841",
-                    "EFO:0000270"
+                "attributes": [
+                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
+                    "{"
+                    "\"attribute_source\": \"infores:cohd\", "
+                    "\"attribute_type_id\": \"EDAM:data_0954\", "
+                    "\"attributes\": "
+                    "["
+                    "{"
+                    "\"attribute_source\": \"infores:omop-ohdsi\", "
+                    "\"attribute_type_id\": \"EDAM:data_1087\", "
+                    "\"original_attribute_name\": \"concept_id\", "
+                    "\"value\": \"OMOP:77698\", "
+                    "\"value_type_id\": \"EDAM:data_1087\", "
+                    "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77698\""
+                    "}, "
+                    "{"
+                    "\"attribute_source\": \"infores:omop-ohdsi\", "
+                    "\"attribute_type_id\": \"EDAM:data_2339\", "
+                    "\"original_attribute_name\": \"concept_name\", "
+                    "\"value\": \"Sprain, coracoclavicular ligament\", "
+                    "\"value_type_id\": \"EDAM:data_2339\"}, "
+                    "{"
+                    "\"attribute_source\": \"infores:omop-ohdsi\", "
+                    "\"attribute_type_id\": \"EDAM:data_0967\", "
+                    "\"original_attribute_name\": \"domain\", "
+                    "\"value\": \"Condition\", "
+                    "\"value_type_id\": \"EDAM:data_0967\""
+                    "}"
+                    "], "
+                    "\"original_attribute_name\": \"Database cross-mapping\", "
+                    "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
+                    "\"value_type_id\": \"EDAM:data_0954\""
+                    "}"
                 ]
-            },
+             },
             #
             # Captured node contents
             [
                 {
-                    "id": "MONDO:0004979",
-                    "name": "asthma",
+                    "id": "UMLS:C0160047",
+                    "name": "Sprain, coracoclavicular ligament",
                     "category": ["biolink:Disease"],
-                    "equivalent_identifiers": [
-                        "MONDO:0004979",
-                        "DOID:2841",
-                        "EFO:0000270"
-                    ]
                 }
             ],
             # Captured edge contents - n/a
             None
         ),
-        (  # Query 3- One strange actual ICEES record (triggers a validation error?)
-            {
-                "id": "UMLS:C3836535",
-                "name": "patient education about activity/exercise prescribed",
-                "category": [
-                    "biolink:Occurrent",
-                    "biolink:PhysicalEssenceOrOccurrent",
-                    "biolink:Activity",
-                    "biolink:EnvironmentalExposure",
-                    "biolink:ActivityAndBehavior",
-                    "biolink:NamedThing"
-                ],
-                "equivalent_identifiers": [
-                    "UMLS:C3836535"
-                ]
-            },
-            #
-            # Captured node contents
-            [
-                {
-                    "id": "UMLS:C3836535",
-                    "name": "patient education about activity/exercise prescribed",
-                    "category": ["biolink:EnvironmentalExposure"],
-                    "equivalent_identifiers": [
-                        "UMLS:C3836535"
-                    ],
-                }
-            ],
-            # Captured edge contents - n/a
-            None
-        )
     ],
     #
 )
@@ -183,6 +234,7 @@ def test_transform_icees_nodes(
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS
     )
+
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge,qualifiers",
