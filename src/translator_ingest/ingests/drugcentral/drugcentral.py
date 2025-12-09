@@ -331,10 +331,6 @@ def transform_adverse_event(koza_transform: koza.KozaTransform, row: dict) -> Kn
         aggregator_knowledge_source=[DRUGCENTRAL_INFORES],
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        has_attribute=[{
-            "attribute_type_id": "FAERS_llr",
-            "value": float(row['llr'])
-        }]
     )
     associations.append(association)
     
@@ -411,19 +407,7 @@ def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> Know
         agent_type=AgentTypeEnum.manual_agent,
     )
     
-    # Add affinity information if available
-    if row.get('act_value') and row.get('act_type'):
-        association.has_attribute = association.has_attribute or []
-        association.has_attribute.extend([
-            {
-                "attribute_type_id": "biolink:affinity",
-                "value": float(row['act_value'])
-            },
-            {
-                "attribute_type_id": "biolink:affinity_parameter",
-                "value": f"p{row['act_type']}"
-            }
-        ])
+    # TODO: Add affinity information as attributes when attribute format is clarified
     
     # Add publication if from scientific literature
     if act_source == 'SCIENTIFIC LITERATURE' and row.get('act_source_url'):
