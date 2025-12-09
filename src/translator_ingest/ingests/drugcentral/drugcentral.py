@@ -89,8 +89,8 @@ def get_latest_version() -> str:
     return "2023_11_01"
 
 
-@koza.prepare_data()
-def prepare_drugcentral_data(koza_transform: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+@koza.on_data_begin()
+def prepare_drugcentral_data(koza_transform: koza.KozaTransform):
     """Prepare DrugCentral data by running preprocessing script to generate TSV files."""
     logger.info("Preparing DrugCentral data: running preprocessing to generate TSV files...")
     
@@ -127,9 +127,6 @@ def prepare_drugcentral_data(koza_transform: koza.KozaTransform, data: Iterable[
         except subprocess.CalledProcessError as e:
             logger.error(f"Preprocessing failed: {e.stderr}")
             raise RuntimeError(f"Failed to run preprocessing script: {e}")
-    
-    # Return empty iterator as we're just preparing files
-    return iter([])
 
 
 @koza.transform_record(tag="structures")

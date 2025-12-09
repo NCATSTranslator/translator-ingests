@@ -1,29 +1,4 @@
 name: drugcentral
 
-readers:
-  structures:
-    format: tsv
-    delimiter: "\t"
-    files:
-      - "structures.tsv"
-    
-  chemical_phenotype:
-    format: tsv
-    delimiter: "\t" 
-    files:
-      - "chemical_phenotype.tsv"
-  
-  adverse_events:
-    format: tsv
-    delimiter: "\t"
-    files:
-      - "adverse_events.tsv"
-      
-  bioactivity:
-    format: tsv
-    delimiter: "\t"
-    files:
-      - "bioactivity.tsv"
-
 transform:
   code: "drugcentral.py"
