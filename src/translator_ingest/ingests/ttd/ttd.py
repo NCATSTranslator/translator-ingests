@@ -24,14 +24,13 @@ import re
 ## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
 import requests
-## needed for pd.read_excel
-import openpyxl
+# ## needed for pd.read_excel
+# import openpyxl
 from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_TO_FILTER, MOA_MAPPING
 
 
 ## hard-coded values and mappings
 NAMERES_URL = "https://name-lookup.ci.transltr.io/bulk-lookup"  ## CI instance
-BIOLINK_INTERACTS = "biolink:interacts_with"
 
 
 ## custom functions
@@ -239,7 +238,7 @@ def get_latest_version() -> str:
         "https://ttd.idrblab.cn/files/download/P2-01-TTD_uniprot_all.txt",
         "https://ttd.idrblab.cn/files/download/P1-07-Drug-TargetMapping.xlsx",
     ]
-    last_modified = [get_modify_date(i) for i in file_links]
+    last_modified = [get_modify_date(i, strformat) for i in file_links]
     last_modified.sort(reverse=True)  ## does inplace
 
     ## because of reverse, first element should be the latest
@@ -497,6 +496,10 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## replaces np.nan with None
     df_07["MOA"] = [re.sub("agonis$", "agonist", i) if pd.notna(i) else None for i in df_07["MOA"]]
     df_07["MOA"] = [re.sub("stablizer", "stabilizer", i) if pd.notna(i) else None for i in df_07["MOA"]]
+    ## replace None with "NO_VALUE"
+    ## otherwise will have buggy behavior with groupby having None in key column and dropping these rows
+    df_07["MOA"] = df_07["MOA"].fillna("NO_VALUE")
+    ## save info, log
     koza.transform_metadata["moa_cleaned"] = df_07["MOA"].unique().tolist()
     koza.log(f"Cleaned up MOA column: {len(koza.transform_metadata["moa_cleaned"])} unique values")
 
@@ -538,10 +541,9 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
         for i in df_07["MOA"]
     ]
     
-    ## FILTER out rows with mod_moa values that aren't None and aren't in MOA_MAPPING
-    ##   None isn't in mapping file but we're keeping: corresponds to plain "interacts_with" edge 
-    ## getting the unmapped values (excluding None)
-    before_mod_moa = set(df_07["mod_moa"].dropna().unique())
+    ## FILTER out rows with mod_moa values that aren't in MOA_MAPPING
+    ## getting the unmapped values
+    before_mod_moa = set(df_07["mod_moa"].unique())
     current_unmapped_moa = before_mod_moa - set(MOA_MAPPING.keys())
     ## make regex version to correctly select rows with these unmapped values
     regex_unmapped_moa = set()
@@ -555,13 +557,14 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
         regex_unmapped_moa.add(temp)
     ## remove rows with these unmapped values
     n_before = df_07.shape[0]
-    df_07 = df_07[~ df_07.MOA.str.contains('|'.join(regex_unmapped_moa), na=False)]
+    ## use mod_moa to be consistent, mostly working with this col going forward
+    df_07 = df_07[~ df_07.mod_moa.str.contains('|'.join(regex_unmapped_moa))]
     n_after = df_07.shape[0]
     koza.log(f"{n_after} rows with mapped MOA: {n_after / n_before:.1%}")
     ## save set of unused moa (based on original MOA column values, not mod_moa)
     ## koza uses json dump, which doesn't accept sets
     koza.transform_metadata["moa_unused"] = list(set(koza.transform_metadata["moa_cleaned"]) - set(df_07["MOA"].unique()))
-    koza.log(f"{len(koza.transform_metadata["moa_unused"])} MOA values didn't have mappings")
+    koza.log(f"{len(koza.transform_metadata["moa_unused"])} MOA values either didn't have mappings OR didn't exist in the data after the filtering steps.")
 
     ## Merge rows that look like "duplicates" from Translator output POV
     ##   With the current pipeline and data-modeling, only the mapped columns uniquely define an edge
@@ -597,67 +600,54 @@ def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
     protein = Protein(id=record["object_id"])
 
     ## diff Association type depending on predicate
-    if not record["mod_moa"]:    ## mod_moa is None
-        ## make a plain interacts_with edge
+    ## assuming record's mod_moa value is in MOA_MAPPING keys. If not, should stop/error, then MOA_MAPPING or p1_07_prepare needs adjustment.  
+    data_modeling = MOA_MAPPING[record["mod_moa"]]
+
+    ## diff Association type depending on predicate
+    if "interacts_with" in data_modeling["predicate"]:
+    ## covers "interacts_with" and descendants with substring
+    ## ASSUMING no special logic, so only 1 edge made
         association = ChemicalGeneInteractionAssociation(
             id=entity_id(),
             subject=chemical.id,
-            predicate=BIOLINK_INTERACTS,
             object=protein.id,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
             sources=ttd_source,
+            predicate=data_modeling["predicate"],
+            ## return empty dict in scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
+            **data_modeling.get("qualifiers", dict())
         )
         return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
-    else:    ## there is an mod_moa value
-        ## assuming record's mod_moa value is in MOA_MAPPING keys. If not, should stop/error, then MOA_MAPPING or p1_07_prepare needs adjustment.  
-        data_modeling = MOA_MAPPING[record["mod_moa"]]
-
-        ## diff Association type depending on predicate
-        if "interacts_with" in data_modeling["predicate"]:
-        ## covers "interacts_with" and descendants with substring
-        ## ASSUMING no special logic, so only 1 edge made
-            association = ChemicalGeneInteractionAssociation(
-                id=entity_id(),
-                subject=chemical.id,
-                object=protein.id,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                sources=ttd_source,
-                predicate=data_modeling["predicate"],
-                ## return empty dict in unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
+    elif "affects" in data_modeling["predicate"]:
+    ## currently covers all other cases
+        ## MAIN EDGE
+        association = ChemicalAffectsGeneAssociation(
+            id=entity_id(),
+            subject=chemical.id,
+            object=protein.id,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            sources=ttd_source,
+            predicate=data_modeling["predicate"],
+            ## return empty dict in unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
                 **data_modeling.get("qualifiers", dict())
-            )
-            return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
-        elif "affects" in data_modeling["predicate"]:
-        ## currently covers all other cases
-            ## MAIN EDGE
-            association = ChemicalAffectsGeneAssociation(
+        )
+        ## if there's an extra edge field
+        if data_modeling.get("extra_edge_pred"):
+            ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
+            ## should be identical to original edge, except predicate/no qualifiers
+            extra_assoc = ChemicalGeneInteractionAssociation(
                 id=entity_id(),
                 subject=chemical.id,
                 object=protein.id,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 sources=ttd_source,
-                predicate=data_modeling["predicate"],
-                ## return empty dict in unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
-                 **data_modeling.get("qualifiers", dict())
+                predicate=data_modeling["extra_edge_pred"],
             )
-            ## if there's an extra edge field
-            if data_modeling.get("extra_edge_pred"):
-                ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
-                ## should be identical to original edge, except predicate/no qualifiers
-                extra_assoc = ChemicalGeneInteractionAssociation(
-                    id=entity_id(),
-                    subject=chemical.id,
-                    object=protein.id,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    sources=ttd_source,
-                    predicate=data_modeling["extra_edge_pred"],
-                )
-                ## return both edges
-                return KnowledgeGraph(nodes=[chemical, protein], edges=[association, extra_assoc])
-            else:
-                ## return only 1 edge
-                return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+            ## return both edges
+            return KnowledgeGraph(nodes=[chemical, protein], edges=[association, extra_assoc])
+        else:
+            ## return only 1 edge
+            return KnowledgeGraph(nodes=[chemical, protein], edges=[association])

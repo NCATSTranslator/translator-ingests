@@ -1,4 +1,3 @@
-import translator_ingest.util.biolink as util
 from biolink_model.datamodel.pydanticmodel_v2 import (
     DirectionQualifierEnum,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
@@ -11,6 +10,7 @@ BIOLINK_TREATS = "biolink:treats"
 BIOLINK_STUDIED_TREAT = "biolink:studied_to_treat"
 BIOLINK_PRECLINICAL = "biolink:in_preclinical_trials_for"
 BIOLINK_CLINICAL_TRIALS = "biolink:in_clinical_trials_for"
+BIOLINK_INTERACTS = "biolink:interacts_with"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_DP_INTERACTS = "biolink:directly_physically_interacts_with"
 BIOLINK_CAUSES = "biolink:causes"
@@ -86,6 +86,12 @@ STRINGS_TO_FILTER = [
 ## imported enum from pydantic (vs hard-coded values)
 ## there's also no value (None), which maps to plain "interacts_with" edge and is handled in main code
 MOA_MAPPING = {
+    ## original value ".". 
+    ## appears to means no known mechanism of action, so treating as a plain "interacts_with" edge
+    "NO_VALUE": {
+        "predicate": BIOLINK_INTERACTS,
+        ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
+    },
     "activator": {
         "predicate": BIOLINK_AFFECTS,
         "qualifiers": {
