@@ -30,7 +30,7 @@ from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_
 
 
 ## hard-coded values and mappings
-NAMERES_URL = "https://name-resolution-sri.renci.org/bulk-lookup"  ## DEV instance
+NAMERES_URL = "https://name-lookup.ci.transltr.io/bulk-lookup"  ## CI instance
 BIOLINK_INTERACTS = "biolink:interacts_with"
 
 
@@ -338,6 +338,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## GET indication name -> ID mappings
     ## set constants for run_nameres
+    koza.log("Running NameRes on indication names.")
     indication_types = ["DiseaseOrPhenotypicFeature"]
     indication_exclude_prefixes = "UMLS|MESH"
     indication_score_threshold = 300
@@ -418,7 +419,6 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## Parse P2-01: maps TTD target IDs to uniprot names, then use names to get NodeNorm-able IDs
     koza.log("Parsing P2-01 to retrieve TTD target ID - gene/protein ID mappings")
-
     p2_01_path = f"{koza.input_files_dir}/P2-01-TTD_uniprot_all.txt"  ## path to downloaded file
     p2_01_header_info = parse_header(p2_01_path)  ## get number of lines in header
 
@@ -427,15 +427,26 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"Retrieved {len(ttd_target_mappings)} initial mappings from P2-01")
 
     ## run NameRes on the uniprot names
+    koza.log("Running NameRes on uniprot names.")
     target_types = ["GeneOrGeneProduct"]
-    target_exclude_prefixes = "UMLS"
+    # target_exclude_prefixes = "UMLS"    ## not using to speed up responses
     ## use NAMERES_URL initialized earlier, default batch_size
     koza.transform_metadata["uniprot_name_to_id"], koza.transform_metadata["stats_target_mapping_failures"] = run_nameres(
         names=all_uniprot_names,
         url=NAMERES_URL, 
         types=target_types,
-        exclude_namespaces=target_exclude_prefixes,
+        # exclude_namespaces=target_exclude_prefixes,     ## not using to speed up responses 
     )
+    ## catch mappings to IDs that aren't UniProtKB (name to ID direct) or NCBIGene (conflated to Gene)
+    invalid_mappings = dict()
+    for k,v in koza.transform_metadata["uniprot_name_to_id"].items():
+        if not (v.startswith("NCBIGene") or v.startswith("UniProtKB")):
+            ## for debugging
+            # print(k,v)
+            invalid_mappings.update({k: v})
+    ## remove these mappings
+    for k in invalid_mappings.keys():
+        del koza.transform_metadata["uniprot_name_to_id"][k]
     koza.log(f"Retrieved {len(koza.transform_metadata["uniprot_name_to_id"])} mappings from uniprot names to entity IDs in NameRes")
 
     ## add mapped IDs to ttd_target_mappings, collect target names that failed nameres process
