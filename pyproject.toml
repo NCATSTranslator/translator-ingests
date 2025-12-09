@@ -15,10 +15,12 @@ dependencies = [
     "click>=8.0.0",
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
+    "duckdb>=1.0.0",
     "hatchling",
     "kghub-downloader>=0.4.2",
     "koza",
     "mkdocs-minify-plugin>=0.8.0",
+    "psycopg2-binary>=2.9.0",
     "robokop-orion==0.1.10",
     "uv-dynamic-versioning>=0.11.2",
 ]

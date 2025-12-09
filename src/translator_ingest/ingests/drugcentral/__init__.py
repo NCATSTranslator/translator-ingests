@@ -1,0 +1,1 @@
+# DrugCentral ingest module initialization
