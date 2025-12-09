@@ -2,10 +2,13 @@
 Preprocessing script for DrugCentral ingest.
 
 This script:
-1. Downloads the PostgreSQL dump file
-2. Sets up a temporary PostgreSQL database
+1. Downloads the PostgreSQL dump file (if needed)
+2. Connects to an existing DrugCentral PostgreSQL database
 3. Queries the database to extract relevant data
 4. Outputs TSV files for Koza to transform
+
+Note: This script is not currently used by the main ingest pipeline.
+The main drugcentral.py ingest connects directly to the database.
 """
 
 import os
@@ -13,10 +16,8 @@ import psycopg2
 import psycopg2.extras
 import csv
 from pathlib import Path
-import logging
+from loguru import logger
 import requests
-
-logger = logging.getLogger(__name__)
 
 # Constants
 DRUGCENTRAL_DUMP_URL = 'https://unmtid-shinyapps.net/download/drugcentral.dump.11012023.sql.gz'
@@ -268,9 +269,6 @@ def main():
     parser = argparse.ArgumentParser(description='Preprocess DrugCentral data for Koza ingest')
     parser.add_argument('--output-dir', required=True, help='Output directory for TSV files')
     args = parser.parse_args()
-    
-    # Set up logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
     # Run preprocessing
     preprocessor = DrugCentralPreprocessor(args.output_dir)
