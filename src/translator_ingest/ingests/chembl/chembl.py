@@ -271,7 +271,7 @@ CHEMBL_TARGET_PREFIX = "CHEMBL.TARGET:"
 TAX_ID_PREFIX = "NCBITaxon:"
 PUBMED_PREFIX = "PMID:"
 DOI_PREFIX = "DOI:"
-CHEMBL_DODCUMENT_PREFIX = "CHEMBL.DOCUMENT:"
+CHEMBL_DOCUMENT_PREFIX = "CHEMBL.DOCUMENT:"
 UNIPROT_PREFIX = "UniProtKB:"
 
 REFERENCE_PREFIX_MAP = {'PMID':'PMID:', 'DOI':'doi:', 'ISBN': 'ISBN:', 'PubMed':'PMID:'}
@@ -332,6 +332,9 @@ def get_connection(koza: koza.KozaTransform) -> sqlite3.Connection:
         if log:
             log(f"Extracting {download_file} to {database_path} ...", level="INFO")
         with tarfile.open(download_file, "r:gz") as tar:
+            for member in tar.getmembers():
+                if not member.name.startswith("chembl_"):
+                    raise Exception("Unexpected file in ChEMBL tar archive: "+member.name)
             tar.extractall(path=koza.input_files_dir)
         if log:
             log("Extraction complete.", level="INFO")
@@ -469,7 +472,7 @@ def get_publications(koza: koza.KozaTransform, record: dict[str, Any]):
     elif record["doi"] is not None:
         publication = DOI_PREFIX+str(record["doi"])
     elif record["document_chembl_id"] is not None:
-        publication = CHEMBL_DODCUMENT_PREFIX+str(record["document_chembl_id"])
+        publication = CHEMBL_DOCUMENT_PREFIX+str(record["document_chembl_id"])
 
     publications = []
     if publication:
@@ -518,7 +521,7 @@ def get_association(koza, record, action_type_map):
     target = build_target_node(koza, record)
     if target is not None and action_type_map is not None:
         predicate = action_type_map["predicate"]
-        accociation_type = action_type_map["association"]
+        association_type = action_type_map["association"]
         qualifiers = action_type_map["qualifiers"]
 
         nodes.append(chemical)
@@ -531,7 +534,7 @@ def get_association(koza, record, action_type_map):
             # add publications if available
         publications = get_publications(koza, record)
 
-        association_class = get_association_class(accociation_type)
+        association_class = get_association_class(association_type)
         if association_class is None:
             koza.log(f" Unknown association class for action type {record['action_type']}", level="WARNING")
             return [], []
@@ -709,6 +712,7 @@ def transform_metabolites(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                 chemical = create_chemical_entity(koza, record['drug_molregno'])
                 nodes.append(chemical)
                 association = create_chemical_association(koza, chemical, metabolite, record)
+                edges.append(association)
         yield KnowledgeGraph(nodes=nodes, edges=edges)
 
 
@@ -775,6 +779,7 @@ def transform_activities(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             activity_key = (chemical.id, target.id, action_type)
             if activity_key in processed_activities:
                 continue
+            processed_activities.add(activity_key)
             action_type_map = QUALIFIER_CONFIG.get(action_type)
             if action_type_map is None:
                 koza.log(f" Unknown action type '{action_type}' in activities", level="WARNING")

@@ -286,7 +286,7 @@
           - biolink:synonym
           - biolink:xref
 
-          - node_category: MolecularMixture
+      - node_category: MolecularMixture
         source_identifier_types: 
           - ChEMBL
         node_properties:
