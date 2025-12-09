@@ -472,7 +472,7 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## save final versions of this info
     koza.transform_metadata["ttd_target_mappings"] = ttd_target_mappings
     ## koza uses json dump, which doesn't accept sets
-    koza.transform_metadata["target_name_failures"] = list(failed_TTD_targets)
+    koza.transform_metadata["targets_unmapped"] = list(failed_TTD_targets)
 
 
     ## Parse P1-07
