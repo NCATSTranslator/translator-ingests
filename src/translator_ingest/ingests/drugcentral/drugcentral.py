@@ -3,12 +3,13 @@
 Transforms DrugCentral data into Biolink-compliant KGX format.
 """
 
+import os
 import uuid
 import koza
-from typing import List, Iterable, Any
+from typing import List, Iterable, Any, Dict
 from loguru import logger
-import subprocess
-from pathlib import Path
+import psycopg2
+import psycopg2.extras
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -21,6 +22,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
+from koza.model.graphs import KnowledgeGraph
 
 # Constants
 DRUGCENTRAL_INFORES = "infores:drugcentral"
@@ -79,108 +81,173 @@ ACT_TYPE_MAP = {
     'EC50': 'biolink:increases_activity_of'
 }
 
+# Filter out semantic types that don't represent diseases/conditions
+EXCLUDED_STYS = [
+    'T002', 'T007', 'T034', 'T040', 'T042', 'T058', 'T059', 'T060', 'T061',
+    'T109', 'T121', 'T130', 'T131', 'T167'
+]
+
 
 def get_latest_version() -> str:
     """Get the latest DrugCentral version.
-
+    
     Currently returns a hardcoded version as DrugCentral doesn't have
     a versioning API.
     """
     return "2023_11_01"
 
 
-@koza.on_data_begin()
-def prepare_drugcentral_data(koza_transform: koza.KozaTransform):
-    """Prepare DrugCentral data by running preprocessing script to generate TSV files."""
-    logger.info("Preparing DrugCentral data: running preprocessing to generate TSV files...")
+def connect_to_db() -> psycopg2.extensions.connection:
+    """Connect to DrugCentral database."""
+    # Try environment variables first
+    db_host = os.environ.get('DRUGCENTRAL_DB_HOST', 'unmtid-dbs.net')
+    db_user = os.environ.get('DRUGCENTRAL_DB_USER', 'drugman')
+    db_password = os.environ.get('DRUGCENTRAL_DB_PASSWORD', 'dosage')
+    db_name = os.environ.get('DRUGCENTRAL_DB_NAME', 'drugcentral')
+    db_port = os.environ.get('DRUGCENTRAL_DB_PORT', '5433')
     
-    # Get the data directory where TSV files should be written
-    data_dir = Path(koza_transform.input_files_dir)
+    logger.info(f"Connecting to DrugCentral database at {db_host}:{db_port}")
     
-    # Check if TSV files already exist
-    required_files = ['structures.tsv', 'chemical_phenotype.tsv', 'adverse_events.tsv', 'bioactivity.tsv']
-    files_exist = all((data_dir / f).exists() for f in required_files)
-    
-    if files_exist:
-        logger.info("TSV files already exist, skipping preprocessing")
-    else:
-        logger.info(f"Running preprocessing script to generate TSV files in {data_dir}")
-        
-        # Run the preprocessing script
-        preprocess_script = Path(__file__).parent / 'preprocess.py'
-        
-        try:
-            result = subprocess.run(
-                ['python', str(preprocess_script), '--output-dir', str(data_dir)],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            logger.info("Preprocessing completed successfully")
-            logger.debug(f"Preprocessing output: {result.stdout}")
-            
-            # Verify files were created
-            missing_files = [f for f in required_files if not (data_dir / f).exists()]
-            if missing_files:
-                raise RuntimeError(f"Preprocessing failed to create files: {missing_files}")
-                
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Preprocessing failed: {e.stderr}")
-            raise RuntimeError(f"Failed to run preprocessing script: {e}")
-
-
-@koza.transform_record(tag="structures")
-def transform_structure_node(koza_transform: koza.KozaTransform, row: dict) -> List:
-    """Transform chemical structure data to ChemicalEntity nodes."""
-    struct_id = f"DRUGCENTRAL:{row['struct_id']}"
-
-    # Create chemical entity node
-    chemical = ChemicalEntity(
-        id=struct_id,
-        category=["biolink:ChemicalEntity"],
-        name=None,  # Could be added from structures table if available
+    connection = psycopg2.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database=db_name,
+        port=db_port
     )
-
-    # Add properties if available
-    if row.get('inchikey'):
-        chemical.has_attribute = chemical.has_attribute or []
-        chemical.has_attribute.append({
-            "attribute_type_id": "biolink:inchikey",
-            "value": row['inchikey']
-        })
-
-    if row.get('smiles'):
-        chemical.has_attribute = chemical.has_attribute or []
-        chemical.has_attribute.append({
-            "attribute_type_id": "biolink:smiles",
-            "value": row['smiles']
-        })
-
-    if row.get('formula'):
-        chemical.has_attribute = chemical.has_attribute or []
-        chemical.has_attribute.append({
-            "attribute_type_id": "biolink:chemical_formula",
-            "value": row['formula']
-        })
-
-    if row.get('molecular_weight'):
-        chemical.has_attribute = chemical.has_attribute or []
-        chemical.has_attribute.append({
-            "attribute_type_id": "biolink:molecular_weight",
-            "value": float(row['molecular_weight'])
-        })
-
-    return [chemical]
+    
+    logger.info("Successfully connected to DrugCentral database")
+    return connection
 
 
-@koza.transform_record(tag="chemical_phenotype")
-def transform_chemical_phenotype(koza_transform: koza.KozaTransform, row: dict) -> List:
+@koza.prepare_data(tag="drugcentral")
+def prepare_drugcentral_data(koza_transform: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    """Prepare DrugCentral data by querying database and yielding records."""
+    logger.info("Preparing DrugCentral data from database...")
+    
+    try:
+        # Connect to database
+        connection = connect_to_db()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # First, get structure data for node properties
+        structures = {}
+        logger.info("Fetching structure data...")
+        query = '''
+            SELECT id, inchikey, smiles, cd_formula, cd_molweight
+            FROM public.structures
+        '''
+        cursor.execute(query)
+        for row in cursor:
+            structures[row['id']] = {
+                'struct_id': row['id'],
+                'inchikey': row['inchikey'],
+                'smiles': row['smiles'],
+                'formula': row['cd_formula'],
+                'molecular_weight': row['cd_molweight']
+            }
+        logger.info(f"Loaded {len(structures)} structures")
+        
+        # Store structures in transform metadata for later use
+        koza_transform.transform_metadata['structures'] = structures
+        
+        # Query chemical-phenotype relationships
+        logger.info("Fetching chemical-phenotype relationships...")
+        excluded_stys_sql = ', '.join(f"'{sty}'" for sty in EXCLUDED_STYS)
+        query = f'''
+            SELECT struct_id, relationship_name, umls_cui, cui_semantic_type, 
+                   snomed_conceptid, snomed_full_name
+            FROM public.omop_relationship
+            WHERE umls_cui IS NOT NULL
+            AND (cui_semantic_type IS NULL OR cui_semantic_type NOT IN ({excluded_stys_sql}))
+        '''
+        cursor.execute(query)
+        for row in cursor:
+            yield {
+                'record_type': 'chemical_phenotype',
+                'struct_id': row['struct_id'],
+                'relationship_name': row['relationship_name'],
+                'umls_cui': row['umls_cui'],
+                'cui_semantic_type': row['cui_semantic_type'],
+                'snomed_conceptid': row['snomed_conceptid'],
+                'snomed_full_name': row['snomed_full_name']
+            }
+        
+        # Query adverse events
+        logger.info("Fetching adverse events...")
+        query = '''
+            SELECT struct_id, meddra_code, llr 
+            FROM public.faers 
+            WHERE llr > llr_threshold 
+            AND drug_ae > 25
+        '''
+        cursor.execute(query)
+        for row in cursor:
+            yield {
+                'record_type': 'adverse_event',
+                'struct_id': row['struct_id'],
+                'meddra_code': row['meddra_code'],
+                'llr': row['llr']
+            }
+        
+        # Query bioactivity data
+        logger.info("Fetching bioactivity data...")
+        query = '''
+            SELECT a.struct_id, a.act_value, a.act_unit, 
+                   a.act_type, a.act_source, a.act_source_url, 
+                   a.action_type, dc.component_id, c.accession
+            FROM public.act_table_full a
+            JOIN public.td2tc dc ON a.target_id = dc.target_id
+            JOIN public.target_component c ON dc.component_id = c.id
+        '''
+        cursor.execute(query)
+        for row in cursor:
+            yield {
+                'record_type': 'bioactivity',
+                'struct_id': row['struct_id'],
+                'act_value': row['act_value'],
+                'act_unit': row['act_unit'],
+                'act_type': row['act_type'],
+                'act_source': row['act_source'],
+                'act_source_url': row['act_source_url'],
+                'action_type': row['action_type'],
+                'component_id': row['component_id'],
+                'accession': row['accession']
+            }
+        
+        # Close database connection
+        cursor.close()
+        connection.close()
+        logger.info("Database connection closed")
+        
+    except Exception as e:
+        logger.error(f"Error querying DrugCentral database: {e}")
+        raise
+
+
+@koza.transform_record(tag="drugcentral")
+def transform(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    """Transform DrugCentral records to KnowledgeGraph."""
+    record_type = record.get('record_type')
+    
+    if record_type == 'chemical_phenotype':
+        return transform_chemical_phenotype(koza_transform, record)
+    elif record_type == 'adverse_event':
+        return transform_adverse_event(koza_transform, record)
+    elif record_type == 'bioactivity':
+        return transform_bioactivity(koza_transform, record)
+    else:
+        logger.warning(f"Unknown record type: {record_type}")
+        return None
+
+
+def transform_chemical_phenotype(koza_transform: koza.KozaTransform, row: dict) -> KnowledgeGraph | None:
     """Transform chemical-phenotype relationships."""
     entities = []
     associations = []
-
+    
     struct_id = f"DRUGCENTRAL:{row['struct_id']}"
-
+    
     # Determine phenotype ID - prefer UMLS, fallback to SNOMED
     if row.get('umls_cui'):
         phenotype_id = f"UMLS:{row['umls_cui']}"
@@ -188,30 +255,32 @@ def transform_chemical_phenotype(koza_transform: koza.KozaTransform, row: dict) 
         phenotype_id = f"SNOMEDCT:{row['snomed_conceptid']}"
     else:
         logger.warning(f"No phenotype ID for struct_id {struct_id}")
-        return []
-
+        return None
+    
     # Get predicate from relationship name
     relationship = row.get('relationship_name', '')
     predicate = OMOP_RELATION_MAP.get(relationship, 'biolink:related_to')
-
+    
     if predicate == 'biolink:related_to':
         logger.warning(f"Unknown relationship type: {relationship}")
-        return []
-
-    # Create minimal nodes
+        return None
+    
+    # Create chemical node
     chemical = ChemicalEntity(
         id=struct_id,
         category=["biolink:ChemicalEntity"]
     )
+    
     entities.append(chemical)
-
+    
+    # Create phenotype node
     phenotype = DiseaseOrPhenotypicFeature(
         id=phenotype_id,
         category=["biolink:DiseaseOrPhenotypicFeature"],
         name=row.get('snomed_full_name')
     )
     entities.append(phenotype)
-
+    
     # Create association
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id="uuid:" + str(uuid.uuid4()),
@@ -224,32 +293,33 @@ def transform_chemical_phenotype(koza_transform: koza.KozaTransform, row: dict) 
         agent_type=AgentTypeEnum.manual_agent,
     )
     associations.append(association)
+    
+    return KnowledgeGraph(nodes=entities, edges=associations)
 
-    return entities + associations
 
-
-@koza.transform_record(tag="adverse_events")
-def transform_adverse_events(koza_transform: koza.KozaTransform, row: dict) -> List:
+def transform_adverse_event(koza_transform: koza.KozaTransform, row: dict) -> KnowledgeGraph | None:
     """Transform adverse event data from FAERS."""
     entities = []
     associations = []
-
+    
     struct_id = f"DRUGCENTRAL:{row['struct_id']}"
     meddra_id = f"MEDDRA:{row['meddra_code']}"
-
-    # Create minimal nodes
+    
+    # Create chemical node
     chemical = ChemicalEntity(
         id=struct_id,
         category=["biolink:ChemicalEntity"]
     )
+    
     entities.append(chemical)
-
+    
+    # Create phenotype node
     phenotype = DiseaseOrPhenotypicFeature(
         id=meddra_id,
         category=["biolink:DiseaseOrPhenotypicFeature"]
     )
     entities.append(phenotype)
-
+    
     # Create association
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id="uuid:" + str(uuid.uuid4()),
@@ -267,23 +337,22 @@ def transform_adverse_events(koza_transform: koza.KozaTransform, row: dict) -> L
         }]
     )
     associations.append(association)
+    
+    return KnowledgeGraph(nodes=entities, edges=associations)
 
-    return entities + associations
 
-
-@koza.transform_record(tag="bioactivity")
-def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> List:
+def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> KnowledgeGraph | None:
     """Transform bioactivity data."""
     entities = []
     associations = []
-
+    
     struct_id = f"DRUGCENTRAL:{row['struct_id']}"
     protein_id = f"UniProtKB:{row['accession']}"
-
+    
     # Determine predicate from action type or act type
     action_type = row.get('action_type', '')
     act_type = row.get('act_type', '')
-
+    
     # Try action type first, then act type
     if action_type and action_type.upper() in ACTION_TYPE_MAP:
         predicate = ACTION_TYPE_MAP[action_type.upper()]
@@ -291,24 +360,26 @@ def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> List
         predicate = ACT_TYPE_MAP[act_type]
     else:
         predicate = 'biolink:directly_physically_interacts_with'
-
-    # Create minimal nodes
+    
+    # Create chemical node
     chemical = ChemicalEntity(
         id=struct_id,
         category=["biolink:ChemicalEntity"]
     )
+    
     entities.append(chemical)
-
+    
+    # Create protein node
     protein = Protein(
         id=protein_id,
         category=["biolink:Protein"]
     )
     entities.append(protein)
-
+    
     # Determine knowledge sources
     act_source = row.get('act_source', '')
     primary_source = ACT_SOURCE_MAP.get(act_source, DRUGCENTRAL_INFORES)
-
+    
     sources = []
     if primary_source == DRUGCENTRAL_INFORES:
         sources.append(RetrievalSource(
@@ -327,7 +398,7 @@ def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> List
             resource_id=DRUGCENTRAL_INFORES,
             resource_role=ResourceRoleEnum.aggregator_knowledge_source
         ))
-
+    
     # Create association
     association = ChemicalAffectsGeneAssociation(
         id="uuid:" + str(uuid.uuid4()),
@@ -339,7 +410,7 @@ def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> List
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
-
+    
     # Add affinity information if available
     if row.get('act_value') and row.get('act_type'):
         association.has_attribute = association.has_attribute or []
@@ -353,14 +424,14 @@ def transform_bioactivity(koza_transform: koza.KozaTransform, row: dict) -> List
                 "value": f"p{row['act_type']}"
             }
         ])
-
+    
     # Add publication if from scientific literature
     if act_source == 'SCIENTIFIC LITERATURE' and row.get('act_source_url'):
         url = row['act_source_url']
         if url.startswith('http://www.ncbi.nlm.nih.gov/pubmed'):
             pmid = f"PMID:{url.split('/')[-1]}"
             association.publications = [pmid]
-
+    
     associations.append(association)
-
-    return entities + associations
+    
+    return KnowledgeGraph(nodes=entities, edges=associations)

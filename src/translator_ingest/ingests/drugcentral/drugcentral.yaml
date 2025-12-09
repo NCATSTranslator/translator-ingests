@@ -1,4 +1,10 @@
 name: drugcentral
 
+readers:
+  drugcentral:
+    format: json
+    files:
+      - drugcentral.dump.sql.gz
+
 transform:
   code: "drugcentral.py"
