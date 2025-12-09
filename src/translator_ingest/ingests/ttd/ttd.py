@@ -467,7 +467,7 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log("Parsing P1-07 to retrieve drug-target data")
     p1_07_path = f"{koza.input_files_dir}/P1-07-Drug-TargetMapping.xlsx"  ## path to downloaded file
     ## only import columns needed
-    df_07 = pd.read_excel(io=p1_07_path, usecols=["TargetID", "DrugID", "MOA"])
+    df_07 = pd.read_excel(io=p1_07_path, usecols=["TargetID", "DrugID", "MOA"], na_values=".")
     koza.log(f"{df_07.shape[0]} rows loaded.")
 
     ## clean up MOA column
