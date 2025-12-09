@@ -1,12 +1,13 @@
 """Utilities for handling download.yaml files and version substitution."""
 
-import logging
 import tempfile
 import yaml
 from pathlib import Path
 from typing import Union
 
-logger = logging.getLogger(__name__)
+from translator_ingest.util.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def substitute_version_in_download_yaml(
