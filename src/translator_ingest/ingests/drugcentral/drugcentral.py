@@ -6,7 +6,7 @@ Transforms DrugCentral data into Biolink-compliant KGX format.
 import os
 import uuid
 import koza
-from typing import List, Iterable, Any, Dict
+from typing import Iterable, Any
 from loguru import logger
 import psycopg2
 import psycopg2.extras

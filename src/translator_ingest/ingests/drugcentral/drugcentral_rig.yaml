@@ -14,7 +14,7 @@
     terms_of_use_info:
       terms_of_use_url: https://drugcentral.org/privacy
       terms_of_use_description: >-
-        From 2021 publication: "DrugCentral data are freely available for download and re-use without restriction."
+        From 2021 publication: "DrugCentral data are freely available for download and reuse without restriction."
       license name:  CC-BY-SA
     data_access_locations:  https://drugcentral.org/download
     data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)

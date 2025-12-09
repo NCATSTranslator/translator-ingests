@@ -9,17 +9,12 @@ This script:
 """
 
 import os
-import gzip
 import psycopg2
 import psycopg2.extras
 import csv
 from pathlib import Path
-from typing import Dict, List, Tuple
-import tempfile
-import subprocess
 import logging
 import requests
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +238,7 @@ class DrugCentralPreprocessor:
         """Run the complete preprocessing pipeline."""
         try:
             # Download dump if needed
-            dump_path = self.download_dump()
+            self.download_dump()
             
             # Connect to database
             connection = self.connect_to_db()
