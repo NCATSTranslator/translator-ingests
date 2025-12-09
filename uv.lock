@@ -309,7 +309,7 @@ requires-dist = [
     { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "hatchling" },
     { name = "kghub-downloader", specifier = ">=0.4.2" },
-    { name = "koza", git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests" },
+    { name = "koza", specifier = ">=2.1.0" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "robokop-orion", specifier = "==0.1.12" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
@@ -1692,8 +1692,8 @@ wheels = [
 
 [[package]]
 name = "koza"
-version = "0.0.0"
-source = { git = "https://github.com/monarch-initiative/koza.git?rev=translator-ingests#f45fd218a3798ee47a9bbc9a5d8e5c09d495a89b" }
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "coverage" },
     { name = "duckdb" },
@@ -1706,6 +1706,10 @@ dependencies = [
     { name = "sssom" },
     { name = "tqdm" },
     { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/55/681c8c4866eca185e5383e8cc37826b5d93071f560562ef9b8fde4d1c28d/koza-2.1.0.tar.gz", hash = "sha256:95f8d11a904922b0c8a6129185326632f95bc015553e41e480e6e247b34b4b90", size = 30472, upload-time = "2025-12-09T00:12:21.295Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/c6/441956e29cb613fe4d1b7c4fd7c9c1a26ce57939e470cb3c6e727c3c6a8e/koza-2.1.0-py3-none-any.whl", hash = "sha256:8937f6d9f3d8e188d8e574560e8d68842e5262cd000ff219a50ac2ad90716cac", size = 41332, upload-time = "2025-12-09T00:12:20.464Z" },
 ]
 
 [[package]]
