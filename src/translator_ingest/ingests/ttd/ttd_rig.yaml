@@ -66,11 +66,17 @@ ingest_info:
     - file_name: "P1-07-Drug-TargetMapping.xlsx"
       filtered_records: "TTD target ID doesn't have a mapping to a UniProt name, or that UniProt name doesn't successfully map to a UniProt ID."
       rationale: "Need node IDs that are in NodeNorm's scope."
+    - file_name: "P1-07-Drug-TargetMapping.xlsx"
+      filtered_records: "MOA value was not included in MOA_MAPPING (hard-coded variable with map from (modified) MOA value to modeling (predicate, qualifier set, extra edge predicate))."
+      rationale: "These MOA values need review. Colleen Xu was (1) unsure what the term meant or (2) unsure how to model this term."
 
   future_considerations:
     - category: edge_content
       consideration: "Review clinical status values that weren't included in clinical_status_map (see jupyter notebook's 'Map clinical_status' section for the generated list). Reach consensus on how to handle these values (whether to ingest, what predicates to use)."
       relevant_files: "P1-05-Drug_disease.txt"
+    - category: edge_content
+      consideration: "Review MOA values that weren't included in MOA_MAPPING (see jupyter notebook's 'More MOA parsing' section for the generated lists - actually in data at that point vs overall). Reach consensus on how to handle these values (whether to ingest, what modeling to use)."
+      relevant_files: "P1-07-Drug-TargetMapping.xlsx"
     - category: edge_property_content
       consideration: "Add >=1 edge properties that capture the original clinical status more precisely than just the predicate. Colleen Xu did not include this in the first pass at ingestion because (1) this ingest already took more time/effort than expected, (2) there are multiple properties to choose from and Colleen was unsure what to use, and (3) in many cases, there wasn't a property enum value that matched the TTD clinical status."
       relevant_files: "P1-05-Drug_disease.txt"
@@ -144,6 +150,7 @@ target_info:
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registration/preregistration, or submissions for approval)."
       additional_notes: "This currently includes 19 unique values. Some values have the same meaning (perhaps curators aren't consistent with what terminology they use), and perhaps the possible values will change between releases."
+    ## AFFECTS EDGES
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -151,13 +158,13 @@ target_info:
       object_categories:
         - biolink:Gene
         - biolink:Protein
-      ## qualifiers depends on mode of action (some don't have any, ~45 possible values)
+      ## qualifiers depends on mode of action
       qualifiers:
-        - property: biolink:qualified_predicate    ## if other qualifiers exist, will always assign this
+        - property: biolink:qualified_predicate
           value_enumeration:
             - "biolink:causes"
         - property: biolink:object_aspect_qualifier
-          value_range:        ## will likely always be 'activity' or 'activity_or_abundance'
+          value_range:
             - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
         - property: biolink:object_direction_qualifier
           value_range:
@@ -172,8 +179,47 @@ target_info:
       edge_properties:
         - original_subject
         - original_object
-      ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature) and sometimes included the mode of action."
+      ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The qualifier-set is based on the TTD reported mechanism-of-action."
       additional_notes: "Curators are maybe not consistent with what terminology they use, and perhaps the possible values will change between releases."
+    ## PLAIN INTERACTS_WITH EDGES
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:interacts_with
+      object_categories:
+        - biolink:Gene
+        - biolink:Protein
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). TTD did not include a mechanism-of-action."
+      # additional_notes:  # (optional, range = string)
+    ## "BINDING", "modulator (allosteric modulator)", OR INFERRED physical interaction edges
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:directly_physically_interacts_with
+      object_categories:
+        - biolink:Gene
+        - biolink:Protein
+      qualifiers:
+        ## only on non-INFERRED edges
+        - property: "biolink:causal_mechanism_qualifier"
+          value_enumeration:
+            - "binding"
+            - "allosteric_modulation"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - original_subject
+        - original_object
+      ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The TTD-reported mechanism-of-action either (1) corresponds to the predicate and causal_mechanism_qualifier OR (2) implied a physical-interaction (so Translator generated another edge to represent this)."
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
