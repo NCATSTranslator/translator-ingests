@@ -5,9 +5,9 @@ import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalEntityToGene,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-    ChemicalToPathwayAssociation,
+    ChemicalGeneInteractionAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToPathwayAssociation,
     Disease,
     Pathway,
     PhenotypicFeature,
@@ -65,7 +65,7 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
 
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
 
-    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate=predicate,
