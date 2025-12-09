@@ -81,7 +81,7 @@ ASSOCIATION_TEST_SLOTS = (
             ],
             # Captured edge contents
             {
-                "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
+                "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
                 "subject": "MESH:C534883",
                 "predicate": "biolink:related_to",
                 "object": "MESH:D013734",

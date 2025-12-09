@@ -1,6 +1,6 @@
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntity,
     Disease,
     RetrievalSource,
@@ -40,7 +40,7 @@ def therapeutic_output():
 def test_therapeutic_entities(therapeutic_output):
     entities = therapeutic_output
     assert len(entities) == 3
-    association = [e for e in entities if isinstance(e, ChemicalToDiseaseOrPhenotypicFeatureAssociation)][0]
+    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
     assert association.predicate == BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT
     assert "PMID:17516704" in association.publications
     assert "PMID:123" in association.publications
@@ -83,7 +83,7 @@ def marker_mechanism_output():
 def test_marker_mechanism(marker_mechanism_output):
     entities = marker_mechanism_output
     assert len(entities) == 3
-    association = [e for e in entities if isinstance(e, ChemicalToDiseaseOrPhenotypicFeatureAssociation)][0]
+    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
     assert association.predicate == BIOLINK_CORRELATED_WITH
     assert "PMID:19098162" in association.publications
 
@@ -125,7 +125,7 @@ def genetic_inference_output():
 def test_genetic_inference(genetic_inference_output):
     entities = genetic_inference_output
     assert len(entities) == 3
-    association = [e for e in entities if isinstance(e, ChemicalToDiseaseOrPhenotypicFeatureAssociation)][0]
+    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
     assert association.predicate == BIOLINK_ASSOCIATED_WITH
     assert "PMID:21983787" in association.publications
 
