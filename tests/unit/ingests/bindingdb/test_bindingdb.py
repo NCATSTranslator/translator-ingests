@@ -60,7 +60,7 @@ ASSOCIATION_TEST_SLOTS = (
 #
 # We need to test the prepare_bindingdb_data() method separately?
 #
-# def test_ingest_transform(
+# def test_prepare_bindingdb_data(
 #     mock_koza_transform: koza.KozaTransform,
 #     test_records: list[dict],
 #     result_nodes: Optional[list],

@@ -1,8 +1,8 @@
 """
 BindingDB Polars Integration Example
 
-This demonstrates how to use polars to efficiently extract only the 8 needed columns
-from BindingDB's ~640 column TSV file, resulting in massive performance improvements.
+This demonstrates how to use polars to efficiently extract only the 8 required columns
+from BindingDB's ~640 columns-wide TSV file, resulting in massive performance improvements.
 
 Key advantages:
 - Only reads 8 columns instead of 640 (~80x less data to parse)
@@ -14,7 +14,6 @@ Key advantages:
 import polars as pl
 from typing import Any, Iterable, Optional
 import koza
-from pathlib import Path
 
 # Columns specified in bindingdb.yaml
 BINDINGDB_COLUMNS = [
@@ -49,7 +48,7 @@ def extract_bindingdb_columns_polars(
     columns: list[str] = BINDINGDB_COLUMNS
 ) -> pl.DataFrame:
     """
-    Extract only specified columns from BindingDB TSV file using polars.
+    Extract only specified columns from the BindingDB TSV file using polars.
 
     This is the FASTEST approach:
     - Only parses 8 columns instead of 640 (~80x less data)
@@ -67,7 +66,7 @@ def extract_bindingdb_columns_polars(
             separator="\t",
             has_header=True,  # header_mode: 0 means first row is header
         )
-        # CRITICAL: Only select needed columns - massive performance gain
+        # CRITICAL: Only select the needed columns - massive performance gain
         .select(columns)
         # Execute the optimized query
         .collect()

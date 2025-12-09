@@ -123,7 +123,7 @@ def extract_columns(
         df = df.filter(
             pl.col("Target Source Organism According to Curator or DataSource") == filter_organism
         )
-        # Drop organism column if it wasn't in original selection
+        # Drop the organism column if it wasn't in the original selection
         if "Target Source Organism According to Curator or DataSource" not in columns:
             df = df.drop("Target Source Organism According to Curator or DataSource")
 
@@ -144,7 +144,7 @@ def extract_columns(
         reduction = original_cols / len(df.columns)
         print(f"\n  Data reduction: {original_cols} → {len(df.columns)} columns (~{reduction:.0f}x smaller!)")
 
-    # Save to file if output path specified
+    # Save to file if the output path is specified
     if output_file:
         output_path = Path(output_file)
         if verbose:
@@ -233,7 +233,9 @@ Examples:
 
     # Extract columns
     try:
-        df = extract_columns(
+        # Although 'extract_columns' returns a DataFrame,
+        # it's not used anywhere else in this script
+        extract_columns(
             input_file=args.input_file,
             output_file=output_file,
             columns=columns,
