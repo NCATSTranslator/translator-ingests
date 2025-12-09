@@ -133,7 +133,7 @@ def extract_columns(
     elapsed = time.time() - start_time
 
     if verbose:
-        print(f"\n✓ Extraction complete!")
+        print("\n✓ Extraction complete!")
         print(f"  Rows: {len(df):,}")
         print(f"  Columns: {len(df.columns)}")
         print(f"  Time: {elapsed:.2f}s")
@@ -243,8 +243,8 @@ Examples:
 
         if not args.quiet:
             print("\n✓ Done!")
-            print(f"\nTo use this file with Koza, update bindingdb.yaml:")
-            print(f'  files:')
+            print("\nTo use this file with Koza, update bindingdb.yaml:")
+            print('  files:')
             print(f'    - "{Path(output_file).name}"')
 
     except Exception as e:

@@ -36,7 +36,7 @@ NUM_ROWS = 500_000
 NUM_TOTAL_COLS = 100  # Simplified from 640 for quick test
 NUM_NEEDED_COLS = 8
 
-print(f"\nScenario (simulating BindingDB):")
+print("\nScenario (simulating BindingDB):")
 print(f"  Total rows: {NUM_ROWS:,}")
 print(f"  Total columns in file: {NUM_TOTAL_COLS}")
 print(f"  Columns we need: {NUM_NEEDED_COLS}")
@@ -162,8 +162,8 @@ if pandas_available:
 print("\nFor BindingDB specifically:")
 print(f"  - Current: Reads {NUM_TOTAL_COLS} columns from ~640 total")
 print(f"  - Polars: Can read only {NUM_NEEDED_COLS} needed columns")
-print(f"  - Expected speedup: 20-45x faster")
-print(f"  - Expected memory savings: 5-10x less RAM")
+print("  - Expected speedup: 20-45x faster")
+print("  - Expected memory savings: 5-10x less RAM")
 
 print("\n" + "="*60)
 print("NEXT STEPS")

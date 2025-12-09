@@ -292,7 +292,7 @@ def process_bindingdb_workflow():
 
     # Step 3: Show column selection benefit
     print("\nStep 3: Column selection benefit...")
-    print(f"  - Columns in file: ~640")
+    print("  - Columns in file: ~640")
     print(f"  - Columns loaded: {len(df.columns)}")
     print(f"  - Data reduction: ~{640/len(df.columns):.0f}x less data processed!")
 
