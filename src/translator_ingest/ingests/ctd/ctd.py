@@ -285,6 +285,7 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
 
     association = ChemicalAffectsGeneAssociation(
+        id=entity_id(),
         subject=chemical_id,
         predicate=predicate,
         object=gene_id,
@@ -406,8 +407,9 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         anatomical_context_qualifier=anatomies
     )
     if object_direction_qualifier:
-        edge.qualified_predicate=BIOLINK_CAUSES
-        edge.object_direction_qualifier=object_direction_qualifier
+        # TODO
+        # edge.object_direction_qualifier=object_direction_qualifier
+        edge.qualified_predicate = BIOLINK_CAUSES
     return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
                                  PhenotypicFeature(id=phenotype_id)],
                           edges=[edge])
