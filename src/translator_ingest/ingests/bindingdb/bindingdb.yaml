@@ -1,5 +1,4 @@
 name: bindingdb
-
 #
 # BindingDb data is in a huge tab-delimited file with 640 columns and truncated data rows
 # therefore, we don't ask Koza to directly ingest it following a reader specification
