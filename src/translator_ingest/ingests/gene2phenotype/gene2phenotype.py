@@ -156,12 +156,8 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     gene = Gene(id="HGNC:" + record["hgnc id"])
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
     if record["disease mim"]:
-        ## assuming the value will always be a string
-        ## check if value is numeric (OMIM ID) or not
-        if record["disease mim"].isnumeric():
-            disease = Disease(id="OMIM:" + record["disease mim"])
-        else:  ## these have been orphanet IDs in format Orphanet:######, Translator prefix is all-lowercase
-            disease = Disease(id=record["disease mim"].lower())
+        ## assuming value is a string OMIM ID without a prefix
+        disease = Disease(id="OMIM:" + record["disease mim"])
     else:  ## use "disease MONDO" column, which already has the correct prefix/format for Translator
         disease = Disease(id=record["disease MONDO"])
 
