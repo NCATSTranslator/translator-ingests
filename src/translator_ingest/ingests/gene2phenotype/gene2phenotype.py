@@ -1,14 +1,8 @@
+## FROM template, modified for this ingest
 import uuid
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-
-## ADDED packages for this ingest
-from datetime import datetime
-import pandas as pd
-import requests
-
-## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     Disease,
@@ -19,13 +13,16 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+## ADDED packages for this ingest
+from datetime import datetime
+import pandas as pd
+import requests
 
 
+## HARD-CODED VALUES
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
 INFORES_EBI_G2P = "infores:gene2phenotype"
-
-
 ## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
 ## Dynamically mapping all possible values (not just those in the data) using OLS API with HP's synonym info
 ALLELIC_REQ_TO_MAP = [
@@ -49,13 +46,7 @@ FORM_OR_VARIANT_QUALIFIER_MAPPINGS = {
     "undetermined non-loss-of-function": ChemicalOrGeneOrGeneProductFormOrVariantEnum.non_loss_of_function_variant_form,
 }
 
-
-def get_latest_version() -> str:
-    ## gets the current time with no spaces "%Y_%m_%d"
-    ## assuming this function is run at almost the same time that the resource file is downloaded
-    return datetime.now().strftime("%Y_%m_%d")
-
-
+## CUSTOM FUNCTIONS
 ## used in `on_data_begin` to build mapping of EBI G2P's allelic requirement values -> HP terms
 def build_allelic_req_mappings(allelic_req_val):
     ## queries OLS to find what HP term has the allelic requirement value as an exact synonym (OLS uses the latest HPO release)
@@ -72,6 +63,12 @@ def build_allelic_req_mappings(allelic_req_val):
     except requests.RequestException as e:
         print(f"Request exemption encountered on '{allelic_req_val}': {e}")
 
+
+## PIPELINE MAIN FUNCTIONS
+def get_latest_version() -> str:
+    ## gets the current time with no spaces "%Y_%m_%d"
+    ## assuming this function is run at almost the same time that the resource file is downloaded
+    return datetime.now().strftime("%Y_%m_%d")
 
 @koza.on_data_begin()
 def on_begin(koza: koza.KozaTransform) -> None:
