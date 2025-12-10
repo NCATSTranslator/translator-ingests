@@ -74,7 +74,7 @@ def get_latest_version() -> str:
 def on_begin(koza: koza.KozaTransform) -> None:
     ## save in state for later use
     ## dynamically create allelic req mappings - dictionary comprehension
-    koza.state["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
+    koza.transform_metadata["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
 
 
 @koza.prepare_data()
@@ -162,7 +162,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         update_date=date,
-        allelic_requirement=koza.state["allelicreq_mappings"][record["allelic requirement"]],
+        allelic_requirement=koza.transform_metadata["allelicreq_mappings"][record["allelic requirement"]],
         ## include publications!!!
         publications=publications,
     )
@@ -175,15 +175,15 @@ def on_end(koza: koza.KozaTransform) -> None:
     ## add logs based on counts
     if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
         koza.log(
-            f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.",
+            f"{koza.state["no_diseaseID_stats"]["n_rows"]} rows (with {koza.state["no_diseaseID_stats"]["n_names"]} unique disease names) were discarded for having no disease ID.",
             level="INFO",
         )
     if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
         koza.log(
-            f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO"
+            f"{koza.state["other_row_counts"]["no_gene_IDs"]} rows were discarded for having no gene ID.", level="INFO"
         )
     if koza.state["other_row_counts"]["duplicate_rows"] > 0:
         koza.log(
-            f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.",
+            f"{koza.state["other_row_counts"]["duplicate_rows"]} rows were discarded for being duplicates.",
             level="INFO",
         )
