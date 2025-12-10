@@ -17,11 +17,12 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     get_bindingdb_input_file,
     extract_bindingdb_columns_polars,
-    DATASOURCE_TO_IDENTIFIER_MAPPING,
+    process_publications,
+    CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR,
     MONOMER_ID, LIGAND_NAME, TARGET_NAME,
-    CURATION_DATASOURCE, ARTICLE_DOI, PMID, PATENT_ID,
-    PUBMED_CID, UNIPROT_ID, PUBLICATION, SUPPORTING_DATA_ID
+    CURATION_DATASOURCE, ARTICLE_DOI, PMID, PATENT_NUMBER,
+    PUBCHEM_CID, UNIPROT_ID, PUBLICATION, SUPPORTING_DATA_ID
 )
 
 # This is the local filename of the BindingDb data file
@@ -37,38 +38,6 @@ def get_latest_version() -> str:
     # this candidate 'latest release' value.
     return datetime.today().strftime("%Y%m")
 
-#
-# Code now embedded in the prepare_bindingdb_data method below.
-#
-# @koza.on_data_begin()
-# def on_bindingdb_data_begin(koza_transform: koza.KozaTransform) -> None:
-#     koza_transform.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
-#
-#
-# Utility function used in the original prepare_bindingdb_data method below.
-# 
-# def _get_publication(koza_transform: koza.KozaTransform, data: dict[str, Any]) -> Optional[str]:
-#     """
-#     Export the best record publication here, based on PMID > Patent ID > Article DOI
-# 
-#     :param koza_transform: The koza.KozaTransform context of the data processing.
-#     :param data: Iterable[dict[str, Any]], Original BindingDb records
-#     :return: Best publication CURIE or None if not available
-#     """
-#     publication: Optional[str] = None
-#     if data:
-#         # Precedence is PMID > Patent ID > Article DOI
-#         if data[PMID]:
-#             publication = f"PMID:{data[PMID]}"
-#         elif data[PATENT_ID]:
-#             publication = f"uspto-patent:{data[PATENT_ID].replace('US', "")}"
-#         elif data[ARTICLE_DOI]:
-#             publication = f"doi:{data[ARTICLE_DOI]}"
-#         else:
-#             koza_transform.log(f"No publication found for {data[BINDING_ENTRY_ID]}")
-#             koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"] += 1
-# 
-#     return publication
 
 @koza.prepare_data()
 def prepare_bindingdb_data(
@@ -76,6 +45,10 @@ def prepare_bindingdb_data(
         data: Iterable[dict[str, Any]]
 ) -> Iterable[dict[str, Any]] | None:
     """
+    Given the large size and complex structure of the BindingDB data file,
+    this method bypasses the Koza input reader mechanism to directly preprocess
+    the original data file downloaded by the download.yaml specification.
+
     BindingDb records typically come in groups of identical ligand-target interactions
     characterized across more than one assay. We are therefore going to leverage the
     @koza.prepare_data decorated method to perform a simple consolidation of such
@@ -90,67 +63,12 @@ def prepare_bindingdb_data(
     - Better memory efficiency
 
     :param koza_transform: The koza.KozaTransform context of the data processing.
-    :param data: Iterable[dict[str, Any]], Original BindingDb records
+    :param data: Iterable[dict[str, Any]], @koza.prepare_data() specified input data parameter is not set hence ignored.
 
     :return: Iterable[dict[str, Any]], Consolidation of related assay records
              for each unique ligand-target pair, with possible aggregation
              of distinct annotation encountered across the original set of assays.
     """
-    #
-    # Original
-    # output_for_publication: Optional[dict[str, Any]] = None
-    # current_output: Optional[dict[str, Any]] = None
-    #
-    # it = iter(data)
-    #
-    # while True:
-    #     current_record = next(it, None)
-    #     if current_record is not None:
-    #         # We have a new record to process...
-    #         current_record[PUBLICATION] = _get_publication(koza_transform, current_record)
-    #         if not current_record[PUBLICATION]:
-    #             # We can't publish this record without
-    #             # a publication CURIE, so we skip it
-    #             continue
-    #
-    #         current_record[SUPPORTING_DATA_ID] = \
-    #             DATASOURCE_TO_IDENTIFIER_MAPPING.get(current_record[DATASOURCE], None)
-    #
-    #         if (    # we check our boundary conditions for publishing the
-    #                 # last aggregated record, then starting a new collection
-    #                 not current_output
-    #                 or current_record[PUBLICATION] != current_output[PUBLICATION]
-    #                 or current_record[PUBMED_CID] != current_output[PUBMED_CID]
-    #                 or current_record[UNIPROT_ID] != current_output[UNIPROT_ID]
-    #         ):
-    #             # The "current_output" could still be None if we are just starting out.
-    #             output_for_publication = current_output
-    #             current_output = current_record.copy()
-    #         else:
-    #             # This is a bit of a dodgy shortcut
-    #             # to collect 'new' edge annotations, simply because
-    #             # some of the data collected from earlier matching
-    #             # SPO+publications records is likely being overwritten.
-    #             # Note: probably need to devise a more robust approach to aggregate multiple records
-    #             current_output.update(current_record)
-    #
-    #     else:
-    #         # No more records. If there were no data in the first place,
-    #         # then the "current_output" could still be None here, but just in case
-    #         # we did collect something already, then we should publish it.
-    #         output_for_publication = current_output
-    #
-    #     # Publish the latest content seen...
-    #     if output_for_publication is not None:
-    #         yield output_for_publication
-    #         output_for_publication = None
-    #
-    #     if not current_record:
-    #         # we've reached the end of the data stream
-    #         # with all data published, so we can stop processing
-    #         return
-    #
-
     koza_transform.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
 
     # Directly read and extract useful columns from the original
@@ -158,40 +76,24 @@ def prepare_bindingdb_data(
     bindingdb_data_path: Path = koza_transform.input_files_dir / get_bindingdb_input_file()
     df = extract_bindingdb_columns_polars(file_path=str(bindingdb_data_path))
 
-    # Add the publication column (same logic as the current implementation)
-    df = df.with_columns([
-        pl.when(pl.col(PMID).is_not_null())
-        .then(pl.concat_str([pl.lit("PMID:"), pl.col(PMID)]))
-        .when(pl.col(PATENT_ID).is_not_null())
-        .then(
-            pl.concat_str([
-                pl.lit("uspto-patent:"),
-                pl.col(PATENT_ID).str.replace("US", "")
-            ])
-        )
-        .when(pl.col(ARTICLE_DOI).is_not_null())
-        .then(pl.concat_str([pl.lit("doi:"), pl.col(ARTICLE_DOI)]))
-        .otherwise(None)
-        .alias(PUBLICATION)
-    ])
+    # Process publications
+    df = process_publications(koza_transform, df)
 
-    # Count rows without publications
-    rows_missing_pubs = df.filter(pl.col(PUBLICATION).is_null()).height
-    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"] = rows_missing_pubs
-
-    # Filter out rows without publications
-    df = df.filter(pl.col(PUBLICATION).is_not_null())
-
-    df = df.with_columns([
-        pl.col(CURATION_DATASOURCE)
-        .replace(DATASOURCE_TO_IDENTIFIER_MAPPING, default=None)
-        .alias(SUPPORTING_DATA_ID)
-    ])
+    # Map curation knowledge sources to supporting_data_ids
+    lookup = pl.DataFrame(
+        {
+            CURATION_DATASOURCE: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.keys(),
+            SUPPORTING_DATA_ID: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.values()
+        }
+    )
+    df = df.join(lookup, on=CURATION_DATASOURCE, how="left")
 
     # Group by unique ligand-target-publication combinations
     # This consolidates duplicate assay records
+    # TODO: this operation does yet not aggregate disparate annotation across assays;
+    #       Such annotation might need to be so aggregated in future ingest iterations?
     df = df.unique(
-        subset=[PUBLICATION, PUBMED_CID, UNIPROT_ID],
+        subset=[PUBLICATION, PUBCHEM_CID, UNIPROT_ID],
         keep="last"  # Keep the last occurrence (matches current behavior)
     )
 
@@ -219,9 +121,10 @@ def transform_bindingdb_by_record(
     #       as a first approximation but we may want to consider
     #       using more specialized classes if suitable discrimination
     #       can eventually be made in between chemical types
-    chemical = ChemicalEntity(id="CID:" + record[PUBMED_CID], name=record[LIGAND_NAME])
+    chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID], name=record[LIGAND_NAME])
 
-    # Unless otherwise advised, all BindingDb targets are assumed to be (UniProt registered) proteins.
+    # Unless otherwise advised, all BindingDb targets
+    # are assumed to be (UniProt registered) proteins.
     target_name = record[TARGET_NAME]
     protein = Protein(id="UniProtKB:" + record[UNIPROT_ID], name=target_name)
 

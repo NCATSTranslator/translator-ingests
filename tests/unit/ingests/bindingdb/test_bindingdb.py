@@ -9,14 +9,22 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.bindingdb.bindingdb import (
-    # prepare_bindingdb_data,
-    transform_bindingdb_by_record
-)
 from tests.unit.ingests import (
     validate_transform_result,
     MockKozaWriter,
     MockKozaTransform
+)
+
+from translator_ingest.ingests.bindingdb.bindingdb import (
+    prepare_bindingdb_data,
+    transform_bindingdb_by_record
+)
+from translator_ingest.ingests.bindingdb.bindingdb_util import (
+    REACTANT_SET_ID,
+    LIGAND_SMILES,
+    PUBLICATION,
+    SUPPORTING_DATA_ID,
+    set_bindingdb_input_file
 )
 from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
@@ -25,7 +33,6 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE1_RECORD_WITH_DOI,
     BINDINGDB_RECORD_WITH_A_US_PATENT
 )
-# from translator_ingest.ingests.bindingdb.bindingdb_util import set_bindingdb_input_file
 
 
 @pytest.fixture(scope="package")
@@ -57,45 +64,40 @@ ASSOCIATION_TEST_SLOTS = (
     "agent_type",
 )
 
-#
-# We need to test the prepare_bindingdb_data() method separately?
-#
-# def test_prepare_bindingdb_data(
-#     mock_koza_transform: koza.KozaTransform,
-#     test_records: list[dict],
-#     result_nodes: Optional[list],
-#     result_edge: Optional[dict],
-# ):
-#     # Special utility function to allow soft resetting
-#     # of the input file name for testing purposes
-#     set_bindingdb_input_file("test_data_homo_sapiens.tsv")
-#
-#     # The prepare_bindingdb_data() method returns an iterable of records,
-#     # where duplication in the original assay records is removed, merging into a single edge...
-#     merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, test_records)
-#
-#     # ... the resulting record stream is processed
-#     # by the transform_bindingdb_by_record() method.
-#     # First, we simulate the pipeline streaming of the records...
-#     merged_records_iterator = iter(merged_records_iterable)
-#     test_record = next(merged_records_iterator, None)
-#
-#     if result_nodes is None and result_edge is None:
-#         assert test_record is None
-#     else:
-#         # ... one record at a time...
-#         validate_transform_result(
-#             result=transform_bindingdb_by_record(mock_koza_transform, test_record),
-#             expected_nodes=result_nodes,
-#             expected_edges=result_edge,
-#             node_test_slots=NODE_TEST_SLOTS,
-#             edge_test_slots=ASSOCIATION_TEST_SLOTS,
-#         )
-#
-#         # ... but we should only see at most one record per unit test
-#         with pytest.raises(StopIteration):
-#             next(merged_records_iterator)
+def test_prepare_bindingdb_data(
+    mock_koza_transform: koza.KozaTransform,
+    # test_records: list[dict],
+    # result_nodes: Optional[list],
+    # result_edge: Optional[dict],
+):
+    # Special utility function to allow soft resetting
+    # of the input file name for testing purposes.
+    # The rest of the test only successfully completes if this file is read in.
+    set_bindingdb_input_file("test_data_homo_sapiens.tsv")
 
+    # The BindingDB implementation of prepare_bindingdb_data() method
+    # bypasses Koza to directly read in the input data file to return an iterable sequence of records,
+    # where duplication in the original assay records is removed, merging into a single edge...
+    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform,data=[])
+
+    for test_record in merged_records_iterable:
+        # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
+        # Record "5" excluded because the source organism is not "Homo sapiens"
+        assert test_record[REACTANT_SET_ID] not in ["3", "5"]
+
+        # Didn't extract this field (among others...) - not needed
+        assert LIGAND_SMILES not in test_record
+
+        # Check that the publication and supporting data fields are set correctly
+        if test_record[REACTANT_SET_ID] == "1":
+            assert test_record[PUBLICATION] == "PMID:12408711"
+            assert test_record[SUPPORTING_DATA_ID] is None
+        elif test_record[REACTANT_SET_ID] == "2":
+            assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
+            assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
+        elif test_record[REACTANT_SET_ID] == "4":
+            assert test_record[PUBLICATION] == "uspto-patent:9447092"
+            assert test_record[SUPPORTING_DATA_ID] == "infores:uspto-patent"
 
 
 @pytest.mark.parametrize(

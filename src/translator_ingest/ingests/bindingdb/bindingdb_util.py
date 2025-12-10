@@ -3,14 +3,17 @@ Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
 import polars as pl
+import koza
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
 #
+REACTANT_SET_ID = "BindingDB Reactant_set_id"
+LIGAND_SMILES = "Ligand SMILES"
 MONOMER_ID = "BindingDB MonomerID"
 LIGAND_NAME = "BindingDB Ligand Name"
 TARGET_NAME = "Target Name"
-# "Target Source Organism According to Curator or DataSource" = "Homo sapiens",
+SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
 # KI = "Ki (nM)"
 # IC50 = "IC50 (nM)"
 # KD = "Kd (nM)"
@@ -22,25 +25,27 @@ TARGET_NAME = "Target Name"
 CURATION_DATASOURCE = "Curation/DataSource"
 ARTICLE_DOI = "Article DOI"
 PMID = "PMID"
-PATENT_ID = "Patent Number"
-PUBMED_CID = "PubChem CID"
+PATENT_NUMBER = "Patent Number"
+PUBCHEM_CID = "PubChem CID"
 UNIPROT_ID = "UniProt (SwissProt) Primary ID of Target Chain 1"
 
 PUBLICATION = "publication"
 SUPPORTING_DATA_ID = "supporting_data_id"
 
 BINDINGDB_COLUMNS = (
+    REACTANT_SET_ID,
     MONOMER_ID,
-    PUBMED_CID,
+    PUBCHEM_CID,
     TARGET_NAME,
+    SOURCE_ORGANISM,
     UNIPROT_ID,
     CURATION_DATASOURCE,
     ARTICLE_DOI,
     PMID,
-    PATENT_ID
+    PATENT_NUMBER
 )
 
-DATASOURCE_TO_IDENTIFIER_MAPPING = {
+CURATION_DATA_SOURCE_TO_INFORES_MAPPING = {
     "CSAR": "infores:community-sar",
     "ChEMBL": "infores:chembl",
     "D3R": "infores:drug-design",
@@ -104,11 +109,57 @@ def extract_bindingdb_columns_polars(
             file_path,
             separator="\t",
             has_header=True,  # header_mode: 0 means that the first row is the header
+            dtypes={
+                "BindingDB MonomerID": pl.Utf8,
+                "PubChem CID": pl.Utf8,
+                "Target Name": pl.Utf8,
+                "UniProt (SwissProt) Primary ID of Target Chain 1": pl.Utf8,
+                "Curation/DataSource": pl.Utf8,
+                "Article DOI": pl.Utf8,
+                "PMID": pl.Utf8,
+                "Patent Number": pl.Utf8,
+            }
         )
         # CRITICAL: Only select the required columns - massive performance gain
         .select(columns)
         # Execute the optimized query
         .collect()
     )
+
+    # Filtering to only human targets
+    if SOURCE_ORGANISM in columns:
+        df = df.filter(
+            pl.col(SOURCE_ORGANISM) == "Homo sapiens"
+        )
+
+    return df
+
+def process_publications(
+        koza_transform: koza.KozaTransform,
+        df: pl.DataFrame
+)-> pl.DataFrame:
+    # Add the publication column (same logic as the current implementation)
+    df = df.with_columns([
+        pl.when(pl.col(PMID).is_not_null())
+        .then(pl.concat_str([pl.lit("PMID:"), pl.col(PMID)]))
+        .when(pl.col(PATENT_NUMBER).is_not_null())
+        .then(
+            pl.concat_str([
+                pl.lit("uspto-patent:"),
+                pl.col(PATENT_NUMBER).str.replace("US", "")
+            ])
+        )
+        .when(pl.col(ARTICLE_DOI).is_not_null())
+        .then(pl.concat_str([pl.lit("doi:"), pl.col(ARTICLE_DOI)]))
+        .otherwise(None)
+        .alias(PUBLICATION)
+    ])
+
+    # Count rows without publications
+    rows_missing_pubs = df.filter(pl.col(PUBLICATION).is_null()).height
+    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"] = rows_missing_pubs
+
+    # Filter out rows without publications
+    df = df.filter(pl.col(PUBLICATION).is_not_null())
 
     return df
