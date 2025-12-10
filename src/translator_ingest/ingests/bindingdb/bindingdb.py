@@ -115,7 +115,7 @@ def transform_bindingdb_by_record(
     :param record: Individual BindingDb records to be processed.
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
-    publications = [record[PUBLICATION]]
+    # Nodes
 
     # TODO: All ligands will be treated as ChemicalEntity, for now,
     #       as a first approximation but we may want to consider
@@ -128,6 +128,10 @@ def transform_bindingdb_by_record(
     target_name = record[TARGET_NAME]
     protein = Protein(id="UniProtKB:" + record[UNIPROT_ID], name=target_name)
 
+    # Publications
+    publications = [record[PUBLICATION]]
+
+    # Sources
     supporting_data_id = record[SUPPORTING_DATA_ID]
     supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
     sources = build_association_knowledge_sources(
@@ -137,6 +141,8 @@ def transform_bindingdb_by_record(
         ),
         supporting=supporting_data
     )
+
+    # Edge
     association = ChemicalGeneInteractionAssociation(
         id=entity_id(),
         subject=chemical.id,
