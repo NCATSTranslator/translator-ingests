@@ -20,7 +20,7 @@ dependencies = [
     "koza>=2.1.0",
     "mkdocs-minify-plugin>=0.8.0",
     "polars>=1.35.2",
-    "robokop-orion==0.1.10",
+    "robokop-orion==0.1.12",
     "uv-dynamic-versioning>=0.11.2",
 ]
 
