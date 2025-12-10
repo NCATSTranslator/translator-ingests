@@ -12,7 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
-    ChemicalToChemicalAssociation,
+    ChemicalEntityToChemicalEntityAssociation,
     AnatomicalEntityToAnatomicalEntityPartOfAssociation
 )
 
@@ -576,7 +576,7 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
         predicate=predicate,
         object=target.id,
         species_context_qualifier = species_context_qualifier,
-        anatomical_context_qualifier = anatomical_context_qualifier,
+        anatomical_context_qualifier = [anatomical_context_qualifier] if anatomical_context_qualifier else None,
         sources=build_association_knowledge_sources(INFORES_CHEMBL),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent if record["curated_by"] == "Autocuration" else AgentTypeEnum.manual_agent,
@@ -588,13 +588,13 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
     return association
 
 
-def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite, record: dict[str, Any]) -> ChemicalToChemicalAssociation:
+def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite, record: dict[str, Any]) -> ChemicalEntityToChemicalEntityAssociation:
     species_context_qualifier = get_species_context_qualifier(record)
     context_qualifier = get_enzyme_context_qualifier(koza, record)
     context_qualifier = context_qualifier
     connection = koza.state['chembl_db_connection']
     references = get_references(connection, "metabolism_refs", "met_id", record["met_id"])
-    association = ChemicalToChemicalAssociation(
+    association = ChemicalEntityToChemicalEntityAssociation(
         id=entity_id(),
         subject=substrate.id,
         predicate="biolink:has_metabolite",
