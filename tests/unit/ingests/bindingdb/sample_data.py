@@ -65,6 +65,8 @@ CASPASE3_KI_RECORD = {
     "ChEMBL ID of Ligand": "CHEMBL3885650",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P42574",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-3",
+    "publication": "PMID:12408711",
+    "supporting_data_id": None
 }
 
 # Test record 2: Caspase-1 inhibitor with Ki = 160 nM
@@ -96,6 +98,8 @@ CASPASE1_KI_RECORD = {
     "ChEMBL ID of Ligand": "",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P29466",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-1",
+    "publication": "PMID:12408711",
+    "supporting_data_id": None
 }
 
 # Test record 3: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
@@ -127,6 +131,8 @@ CASPASE1_WEAK_KI_RECORD = {
     "ChEMBL ID of Ligand": "",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P29466",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-1",
+    "publication": "PMID:12408711",
+    "supporting_data_id": None
 }
 
 # Test record 4: Caspase-1 record with only a DOI publication citation
@@ -147,7 +153,7 @@ CASPASE1_RECORD_WITH_DOI = {
     "koff (s-1)": "",
     "pH": "7.4",
     "Temp (C)": "25.00",
-    "Curation/DataSource": "Curated from the literature by BindingDB",
+    "Curation/DataSource": "PDSP Ki",
     "Article DOI": "10.1021/jm020230j",
     "BindingDB Entry DOI": "10.7270/Q2B56GW5",
     "PMID": "",
@@ -158,6 +164,8 @@ CASPASE1_RECORD_WITH_DOI = {
     "ChEMBL ID of Ligand": "",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P29466",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-1",
+    "publication": "doi:10.1021/jm020230j",
+    "supporting_data_id": "infores:ki-database"
 }
 
 # Test record 5: BindingDb record with a US Patent citation
@@ -189,6 +197,8 @@ BINDINGDB_RECORD_WITH_A_US_PATENT = {
     "ChEMBL ID of Ligand": "",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P08684",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Cytochrome P450 3A4",
+    "publication": "uspto-patent:9447092",
+    "supporting_data_id": "infores:uspto-patent"
 }
 
 # Test record 6: Duplication of Caspase-3 inhibitor, to test merging of records.
@@ -221,4 +231,6 @@ CASPASE3_KI_RECORD_DUPLICATION = {
     "ChEMBL ID of Ligand": "CHEMBL3885650",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "P42574",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-3",
+    "publication": "PMID:12408711",
+    "supporting_data_id": None
 }

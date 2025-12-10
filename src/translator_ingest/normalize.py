@@ -1,5 +1,4 @@
 import json
-import logging
 import tempfile
 
 from pathlib import Path
@@ -8,8 +7,9 @@ from orion.kgx_file_normalizer import KGXFileNormalizer
 from orion.normalization import NodeNormalizer, NormalizationScheme
 
 from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 CURRENT_NODE_NORM_VERSION = None
 

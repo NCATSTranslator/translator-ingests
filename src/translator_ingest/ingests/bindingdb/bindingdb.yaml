@@ -1,29 +1,8 @@
 name: bindingdb
 
-reader:
-  format: "csv"
-  delimiter: "\t"
-  header_mode: 0
-  files:
-    - "BindingDB_All_current_tsv.zip"
-  columns:
-    - BindingDB MonomerID
-    - PubChem CID
-    - Target Name
-    - UniProt (SwissProt) Primary ID of Target Chain 1
-    - Curation/DataSource
-    - Article DOI
-    - PMID
-    - Patent Number
 #
-#     The above is a sparse harvesting of the ~640 columns of BindingDb data.
-#     We assume that the remaining columns may be ignored for now?
+# BindingDb data is in a huge tab-delimited file with 640 columns and truncated data rows
+# therefore, we don't ask Koza to directly ingest it following a reader specification
+# but instead directly access and pre-process the downloaded file in the
+# @koza.prepare_data() decorated method of the parser, which uses polars to read the file.
 #
-# Unsure if we need a filter here to just get human data?
-#
-#  filters:
-#    - inclusion: 'include'
-#      column: 'Target Source Organism According to Curator or DataSource'
-#      filter_code: 'in'
-#      value:
-#        - 'Homo sapiens'
