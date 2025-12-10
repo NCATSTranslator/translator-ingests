@@ -77,25 +77,6 @@ def on_begin(koza: koza.KozaTransform) -> None:
     koza.state["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
 
 
-@koza.on_data_end()
-def on_end(koza: koza.KozaTransform) -> None:
-    ## add logs based on counts
-    if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
-        koza.log(
-            f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.",
-            level="INFO",
-        )
-    if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
-        koza.log(
-            f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO"
-        )
-    if koza.state["other_row_counts"]["duplicate_rows"] > 0:
-        koza.log(
-            f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.",
-            level="INFO",
-        )
-
-
 @koza.prepare_data()
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
     ## remove rows we don't want to process, using pandas
@@ -187,3 +168,22 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
+
+
+@koza.on_data_end()
+def on_end(koza: koza.KozaTransform) -> None:
+    ## add logs based on counts
+    if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
+        koza.log(
+            f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.",
+            level="INFO",
+        )
+    if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
+        koza.log(
+            f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO"
+        )
+    if koza.state["other_row_counts"]["duplicate_rows"] > 0:
+        koza.log(
+            f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.",
+            level="INFO",
+        )
