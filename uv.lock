@@ -163,8 +163,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.6"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#5d8e249d7546ec1e03e617a1b67c7946dd98f535" }
+version = "4.3.6.post3.dev0+832d46d8b"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#832d46d8bbbb53838b1a5395b8c301dbb5f012cb" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -311,7 +311,7 @@ requires-dist = [
     { name = "kghub-downloader", specifier = ">=0.4.2" },
     { name = "koza", specifier = ">=2.1.0" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
-    { name = "robokop-orion", specifier = "==0.1.10" },
+    { name = "robokop-orion", specifier = "==0.1.12" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
 ]
 
@@ -3212,7 +3212,7 @@ wheels = [
 
 [[package]]
 name = "robokop-orion"
-version = "0.1.10"
+version = "0.1.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bmt" },
@@ -3225,9 +3225,9 @@ dependencies = [
     { name = "robokop-genetics" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/93/d2a5de5c097e351a5961f994cb4e0b7b81f703e50175e190f6a409a94882/robokop_orion-0.1.10.tar.gz", hash = "sha256:9eb83aa8b5abfde5e46d28a5d14646032dfbcdaf967c042428d1453d434e3820", size = 83103, upload-time = "2025-11-19T05:12:57.235Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/82/b46dead2f25223bd26e18db0d1c9e57602230cc87963ded1b1ea7517aaa2/robokop_orion-0.1.12.tar.gz", hash = "sha256:d544b956cf659a5e0f0226bab11872f4e82a9955ed0466825dc61e397e1dcf0d", size = 83293, upload-time = "2025-12-09T22:54:04.115Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/30/c35455068a65c8599b1043d07f574676477247b34ab2f0d32c1992ba8a68/robokop_orion-0.1.10-py3-none-any.whl", hash = "sha256:c51b37343c31064e2997547dd7b017d64bbf1ccb4c2d5d012e9fe84ac3b9276d", size = 96220, upload-time = "2025-11-19T05:12:55.909Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/0b/3ce947a9147d0abce61f3a1bbab8fec54b2529c2e8680d623fac6e5129c9/robokop_orion-0.1.12-py3-none-any.whl", hash = "sha256:85797d59f56e9eb6df9b86acad5218f76d39591039eb046461b4582f60e96c62", size = 96400, upload-time = "2025-12-09T22:54:02.934Z" },
 ]
 
 [[package]]
