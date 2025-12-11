@@ -6,7 +6,7 @@ from linkml_runtime.utils.schemaview import SchemaView
 
 from loguru import logger
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
-
+from bmt.toolkit import Toolkit
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -79,3 +79,7 @@ def get_biolink_schema() -> SchemaView:
 
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version
+
+@lru_cache(maxsize=1)
+def get_biolink_model_toolkit() -> Toolkit:
+    return Toolkit(schema=get_biolink_schema().schema)

@@ -20,14 +20,12 @@ from bmt.pydantic import (
 )
 
 # TODO: Does this method perhaps belong in bmt.pydantic?
-from translator_ingest.util.biolink import knowledge_sources_from_trapi
+from translator_ingest.util.biolink import knowledge_sources_from_trapi, get_biolink_model_toolkit
 
 from koza.model.graphs import KnowledgeGraph
 
-# Use the default Biolink Model release
-# for now, unless otherwise indicated
 from bmt import Toolkit
-bmt: Toolkit = Toolkit()
+bmt: Toolkit = get_biolink_model_toolkit()
 
 def get_latest_version() -> str:
     return "2024-11-25"  # last Phase 2 release of COHD
@@ -43,7 +41,7 @@ def transform_cohd_node(
         # COHD uses the value of a "categories" field to indicate the type of node
         # We use it here to specify the correct Pydantic node class model
         node_id = record["id"]
-        node_class = get_node_class(node_id, record.get("categories", ["biolink:NamedThing"]))
+        node_class = get_node_class(node_id, record.get("categories", ["biolink:NamedThing"]), bmt=bmt)
 
         # TODO: need to figure out how to handle (certain?) attributes
         # attributes = record["attributes"]
@@ -87,7 +85,7 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
                     formatted=True
             )
 
-        edge_class = get_edge_class(edge_id, associations=association_list)
+        edge_class = get_edge_class(edge_id, associations=association_list, bmt=bmt)
 
         association = edge_class(
             id=edge_id,
