@@ -81,14 +81,17 @@ ingest_info:
       consideration: "Add >=1 edge properties that capture the original clinical status more precisely than just the predicate. Colleen Xu did not include this in the first pass at ingestion because (1) this ingest already took more time/effort than expected, (2) there are multiple properties to choose from and Colleen was unsure what to use, and (3) in many cases, there wasn't a property enum value that matched the TTD clinical status."
       relevant_files: "P1-05-Drug_disease.txt"
     - category: other
-      consideration: "Parse P1-02 file for TTD drug ID to INCHIKEY mappings. See if it fills gaps in the TTD drug ID mappings and allows more edges to be ingested."
-      relevant_files: "P1-02-TTD_drug_download.txt, P1-05-Drug_disease.txt"
-    - category: other
       consideration: "If NameResolver's scoring changes, the threshold used to remove low-quality hits will need to be adjusted."
+      relevant_files: "P1-05-Drug_disease.txt"
+    - category: edge_content
+      consideration: "Consider adding a predicate for 'indications', which would better fit P1-05's data. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3515893236 for details."
       relevant_files: "P1-05-Drug_disease.txt"
     - category: edge_content
       consideration: "Could ingest another file 'Target to compound mapping with activity data', which contains chemical/drug 'affects' protein associations. Involves more parsing and filtering work. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209860820 for details."
       relevant_files: "P1-09-Target_compound_activity.txt"
+  
+  additional_notes: "Parsing P1-02 didn't increase the number of TTD drug ID mappings or number of successfully node-normalized entities (see notebook for details)."
+
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -256,4 +259,4 @@ provenance_info:
     - "Matthew Brush - data modeling, domain expertise"
   artifacts:
     - "https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30"
-    ## can add notebook once PR is merged, there's a stable link for it
+    - "notebooks for development work currently in parser code directory"
