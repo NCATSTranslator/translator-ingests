@@ -96,8 +96,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     int_type_mapping.update({
         "~PLAIN_INTERACTS": {
             "predicate": BIOLINK_INTERACTS,
-            ## create empty qualifier dict, so assigning to association later is easier. Will error if the ** is set to None
-            "qualifiers": {},
+            ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
         }
     })
 
@@ -185,7 +184,8 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             ## currently, becomes int without issues
             dgidb_evidence_score=record["evidence_score"],
             predicate=data_modeling["predicate"],
-            **data_modeling.get("qualifiers")
+            ## return empty dict if mapping doesn't have "qualifiers" (ex: plain "interacts_with" edge)
+            **data_modeling.get("qualifiers", dict())
         )
         return KnowledgeGraph(nodes=[chemical, gene], edges=[association])
     elif "affects" in data_modeling["predicate"]:
@@ -206,7 +206,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             dgidb_evidence_score=record["evidence_score"],
             predicate=data_modeling["predicate"],
             ## currently, there are always qualifiers
-            **data_modeling.get("qualifiers")
+            **data_modeling.get("qualifiers", dict())
         )
         ## if there's an extra edge field
         if data_modeling.get("extra_edge_pred"):
