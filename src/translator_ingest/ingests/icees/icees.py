@@ -17,12 +17,12 @@ from bmt.pydantic import (
 )
 from koza.model.graphs import KnowledgeGraph
 
+from bmt import Toolkit
+from translator_ingest.util.biolink import get_biolink_model_toolkit
+bmt: Toolkit = get_biolink_model_toolkit()
+
 from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study
 
-# Use the default Biolink Model release
-# for now, unless otherwise indicated
-from bmt import Toolkit
-bmt: Toolkit = Toolkit()
 
 def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
@@ -54,7 +54,7 @@ def transform_icees_node(
         # along with the most specific type, but the Pydantic
         # class returned is only of the most specific type.
         category = record.get("category", [])
-        node_class = get_node_class(node_id, category)
+        node_class = get_node_class(node_id, category, bmt=bmt)
         if node_class is None:
             logger.warning(f"Pydantic class for node '{node_id}' could not be created for category '{category}'")
             return None
@@ -97,7 +97,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
                     formatted=True
             )
 
-        edge_class = get_edge_class(edge_id, associations=association_list)
+        edge_class = get_edge_class(edge_id, associations=association_list, bmt=bmt)
 
         # Convert many of the ICEES edge attributes into specific edge properties
         supporting_studies: dict[str, Study] = {}
