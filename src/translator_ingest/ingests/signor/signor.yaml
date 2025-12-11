@@ -1,49 +1,61 @@
 name: signor
 
 readers:
-  format: csv
-  delimiter: \t
-  comment_char: "!" # Header line starts with !
-  header_mode: none
-  files:
-    - all_data_24_09_25.tsv # Signor association file, note: all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv
-  columns: # 17 columns from the file
-    - ENTITYA # subject name
-    - TYPEA # subject type
-    - IDA # subject ID
-    - DATABASEA # subject database
-    - ENTITYB # object name
-    - TYPEB # object type
-    - IDB # object ID
-    - DATABASEB # object database
-    - EFFECT # relationship/effect
-    - MECHANISM # mechanism of relationship
-    - TAX_ID # tax ID
-    - CELL_DATA # cell data id
-    - TISSUE_DATA # tissue data
-    - PMID # publication ID
-    - DIRECT # whether the relationship is direct, used to identify physically_interacts_with
-    - SENTENCE # detailed description
-    - SCORE # confidence score of the relationship
-    - SIGNOR_ID # signor ID
-  filters:
-    - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
-      column: ENTITYA
-      filter_code: in
-      value:
-        - stimulus # stimulus
-        - fusion protein # fusion protein
-        - mirna # mirna
-        - antibody # antibody
-        - phenotype # phenotype
-        - ncrna # ncrna
-    - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
-      column: ENTITYB
-      filter_code: in
-      value:
-        - stimulus # stimulus
-        - fusion protein # fusion protein
-        - mirna # mirna
-        - antibody # antibody
-        - phenotype # phenotype
-        - ncrna # ncrna
+  signor_parsing:
+    format: csv
+    delimiter: \t
+    comment_char: "!" # Header line starts with !
+    header_mode: infer
+    files:
+      - all_data_11_12_25.tsv # Signor association file, note: all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv
+    columns: # 27 columns from the file, only 17 are needed but koza is complaining the input columns number are different
+      - ENTITYA # subject name
+      - TYPEA # subject type
+      - IDA # subject ID
+      - DATABASEA # subject database
+      - ENTITYB # object name
+      - TYPEB # object type
+      - IDB # object ID
+      - DATABASEB # object database
+      - EFFECT # relationship/effect
+      - MECHANISM # mechanism of relationship
+      - RESIDUE
+      - SEQUENCE
+      - TAX_ID # tax ID
+      - CELL_DATA # cell data id
+      - TISSUE_DATA # tissue data
+      - MODULATOR_COMPLEX
+      - TARGET_COMPLEX
+      - MODIFICATIONA
+      - MODASEQ
+      - MODIFICATIONB
+      - MODBSEQ
+      - PMID # publication ID
+      - DIRECT # whether the relationship is direct, used to identify physically_interacts_with
+      - NOTES
+      - ANNOTATOR
+      - SENTENCE # detailed description
+      - SCORE # confidence score of the relationship
+      - SIGNOR_ID # signor ID
+## filters now causing issues, those excludes are handled in prepare_data anyway. I dont get it how koza use this part
+# filters:
+#   - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
+#     column: ENTITYA
+#     filter_code: in
+#     value:
+#       - stimulus # stimulus
+#       - fusion protein # fusion protein
+#       - mirna # mirna
+#       - antibody # antibody
+#       - phenotype # phenotype
+#       - ncrna # ncrna
+#   - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
+#     column: ENTITYB
+#     filter_code: in
+#     value:
+#       - stimulus # stimulus
+#       - fusion protein # fusion protein
+#       - mirna # mirna
+#       - antibody # antibody
+#       - phenotype # phenotype
+#       - ncrna # ncrna

@@ -7,5 +7,5 @@
 ## Note: Need to select "complete dataset" -> select "Homo sapiens" as organisms -> select "file tsv" as format
 ## the downloaded file's name will be all_data_<current date when downloaded>.tsv directly
 ---
-- url: https://signor.uniroma2.it/downloads.php
-  local_name: all_data_24_09_25.tsv
+- url: https://signor.uniroma2.it/download_entity.php
+  local_name: all_data_11_12_25.tsv
