@@ -42,13 +42,13 @@ def get_kgx_source_from_rig(source: str) -> KGXSource:
 
     with rig_yaml_file.open("r") as rig_file:
         rig_data = yaml.safe_load(rig_file)
-        rig_name = rig_data.get("name")
+        rig_name = rig_data.get("name", source)
         rig_source_info = rig_data["source_info"]
 
     return KGXSource(
         id=source,
         name=rig_name if rig_name else source,
-        description=rig_source_info["description"],
+        description=rig_source_info.get("description", ""),
         license=rig_source_info.get("terms_of_use_info", ""),
         url=rig_source_info.get("data_access_locations", "")
     )
