@@ -4,21 +4,23 @@ import re
 
 from typing import Any, Iterable
 from collections import defaultdict
+from translator_ingest import INGESTS_PARSER_PATH
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-    Disease,
-    NamedThing,
+    ChemicalToChemicalAssociation,
+    ChemicalAffectsGeneAssociation,
+    DiseaseOrPhenotypicFeature,
+    Gene,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    Association,
 )
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 
-inchikey_regex = re.compile('[A-Z]{14}-[A-Z]{10}-[A-Z]')
+inchikey_regex = re.compile('^A-Z]{14}-[A-Z]{10}-[A-Z]$')
 
 INFORES_DRUG_REP_HUB = "infores:drug-repurposing-hub"
 PUBCHEM_PREFIX = "PUBCHEM.COMPOUND:"
@@ -27,15 +29,43 @@ SMILES_PREFIX = "SMILES:"
 
 SAMPLES = defaultdict(dict)
 
-feature_map = {
-    'agent for': ('biolink:has_chemical_role', 'biolink:chemical_role_of'),
-    'aid for': ('biolink:ameliorates_condition', 'biolink:condition_ameliorated_by'),
-    'control for': ('biolink:treats', 'biolink:treated_by'),
-    'diagnostic for': ('biolink:diagnoses', 'biolink:is_diagnosed_by'),
-    'indication for': ('biolink:treats', 'biolink:treated_by'),
-    'reversal for': ('biolink:ameliorates_condition', 'biolink:condition_ameliorated_by'),
-    'support for': ('biolink:ameliorates_condition', 'biolink:condition_ameliorated_by')
+def load_json_config(filename: str) -> dict:
+    path = INGESTS_PARSER_PATH / 'drug_rep_hub' / filename
+    """Load a JSON config file and return its contents."""
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+INDICATIONS = load_json_config('indications_config.json')
+TARGETS = load_json_config('target_config.json')
+
+
+predicate_map = {
+    'Launched':'biolink:treats',
+    'Phase 1':'biolink:in_clinical_trial_for',
+    'Phase 1/Phase 2':'biolink:in_clinical_trial_for',
+    'Phase 2':'biolink:in_clinical_trial_for',
+    'Phase 2/Phase 3':'biolink:in_clinical_trial_for',
+    'Phase 3':'biolink:in_clinical_trial_for',
+    'Preclinical':'biolink:in_preclinical_trials_for',
+    'Withdrawn':'biolink:treats_or_applied_or_studied_to_treat',
+    '':'biolink:treats_or_applied_or_studied_to_treat'
 }
+
+clinical_approval_map = {
+    'Launched':'approved_for_condition',
+    'Withdrawn':'post_approval_withdrawal',
+}
+
+research_phase_map = {
+    'Phase 1':'clinical_trial_phase_1',
+    'Phase 1/Phase 2':'clinical_trial_phase_1_to_2',
+    'Phase 2':'clinical_trial_phase_2',
+    'Phase 2/Phase 3':'clinical_trial_phase_2_to_3',
+    'Phase 3':'clinical_trial_phase_3',
+    'Preclinical':'pre_clinical_research_phase',
+}
+
 
 # Always implement a function that returns a string representing the latest version of the source data.
 # Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
@@ -83,6 +113,87 @@ def transform_drug_rep_hub_samples(
         yield KnowledgeGraph(nodes=nodes, edges=[])
 
 
+def create_disease_association(chemical, indication, indication_info, predicate, clinical_phase, disease_area):
+    """
+    Create a disease association between a chemical and a disease/phenotypic feature.
+    """
+    disease = DiseaseOrPhenotypicFeature(
+        id=indication_info['xref'],
+        name=indication_info['primary_name'] if indication_info['primary_name'] else indication,
+    )
+    if predicate is None:
+        return disease, None
+    clinical_approval_status = clinical_approval_map.get(clinical_phase, None)
+    max_research_phase = research_phase_map.get(clinical_phase, None)
+    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+        id = entity_id(),
+        subject=chemical.id,
+        object=disease.id,
+        predicate=predicate,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
+        original_object = indication,
+        #TODO: clinical_approval_status=clinical_approval_status,
+        #TODO: max_research_phase=max_research_phase,
+        #TODO: disease_area=disease_area,
+    )
+    return disease, association
+
+
+def create_chemical_role_association(chemical, indication, indication_info, predicate):
+    chemical = ChemicalEntity(
+        id=indication_info['xref'],
+        name=indication_info['primary_name'] if indication_info['primary_name'] else indication,
+    )
+    association = ChemicalToChemicalAssociation(
+        id = entity_id(),
+        subject=chemical.id,
+        predicate=predicate,
+        object=chemical.id,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
+        original_object = indication
+    )
+    return chemical, association
+
+
+def create_target_association(chemical, target_gene_symbol, moa):
+    if target_gene_symbol not in TARGETS:
+        return None, None
+    target_id = TARGETS[target_gene_symbol]
+    target = Gene(
+        id=target_id,
+        name=target_gene_symbol,
+        symbol = target_gene_symbol
+    )
+    association = ChemicalAffectsGeneAssociation(
+        id = entity_id(),
+        subject=chemical.id,
+        predicate='biolink:affects',
+        object=target.id,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
+        description = moa
+    )
+    return target, association
+
+
+def build_indication_association(chemical: ChemicalEntity, clinical_phase: str, indication: str, disease_area: str):
+    if indication not in INDICATIONS:
+        return None, None
+    indication_info = INDICATIONS[indication]
+    predicate = indication_info['predicate']
+    if predicate == 'biolink:treats':
+        predicate = predicate_map[clinical_phase]
+    if predicate == 'biolink:has_chemical_role':
+        return create_chemical_role_association(chemical, indication, indication_info, predicate)
+    else:
+        return create_disease_association(chemical, indication, indication_info, predicate, clinical_phase, disease_area)
+
+
 @koza.transform(tag="ingest_drug_rep_hub_annotations")
 def transform_drug_rep_hub_annotations(
     koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
@@ -94,31 +205,26 @@ def transform_drug_rep_hub_annotations(
         pert_iname = record["pert_iname"]
         clinical_phase = record["clinical_phase"]
         moa = record["moa"]
-        target = record["target"]
+        targets = record["target"].strip()
         disease_area = record["disease_area"]
-        indication = record["indication"]
+        indications = record["indication"].strip()
         if pert_iname in SAMPLES:
             for chem_id, chemical in SAMPLES[pert_iname].items():
                 nodes.append(chemical)
+                for indication in [ind.strip() for ind in indications.split('|')]:
+                    disease, indication_association = build_indication_association(chemical, clinical_phase, indication, disease_area)
+                    if indication_association:
+                        nodes.append(disease)
+                        edges.append(indication_association)
+                if targets:
+                    target_gene_symbols = [gene.strip() for gene in targets.split('|')]
+                    for target_gene_symbol in target_gene_symbols:
+                        target, target_association = create_target_association(chemical, target_gene_symbol, moa)
+                        if target_association:
+                            nodes.append(target)
+                            edges.append(target_association)
 
+        if len(edges) == 0:
+            nodes = []  # no associations, skip
         yield KnowledgeGraph(nodes=nodes, edges=edges)
 
-
-if __name__ == "__main__":
-    file = '/chembio/datasets/csdev/VD/data/translator/rephub/2020-03-24/repurposing_indications.txt'
-    indications = {}
-    feature_actions = set()
-    with open(file, 'r') as f:
-        f.readline()  # skip header
-        for line in f:
-            row = line.strip().split('\t')
-            indications[row[0]] = {
-                'xref': row[1],
-                'primary_name': row[2].strip(),
-                'feature_action': row[3],
-                'predicate': feature_map[row[3]][0],
-            }
-            feature_actions.add(row[3])
-    print(f"Found {len(indications)} indications with {len(feature_actions)} feature actions: {feature_actions}")
-    print(feature_actions)
-    json.dump(indications, open('src/translator_ingest/ingests/drug_rep_hub/indications_config.json', 'w'), indent=2, sort_keys=True)
