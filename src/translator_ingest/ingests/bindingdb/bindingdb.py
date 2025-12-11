@@ -61,6 +61,11 @@ SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
     "Saccharomyces cerevisiae": "4932"
 }
 
+from translator_ingest.util.logging_utils import get_logger
+from logging import DEBUG #, INFO, WARNING, ERROR, CRITICAL
+logger = get_logger(__name__)
+logger.setLevel(DEBUG)
+
 
 def get_latest_version() -> str:
     # According to the BindingDb team,
