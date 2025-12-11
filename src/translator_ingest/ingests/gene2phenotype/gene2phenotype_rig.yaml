@@ -118,4 +118,4 @@ provenance_info:
   artifacts:
     - "Github Ticket on confidence 'limited' value: https://github.com/biolink/biolink-model/issues/1581"
     - "PR on biolink allelic_requirement: https://github.com/biolink/biolink-model/pull/1576"
-    - "notebooks for development work currently in ingest folder with pipeline parser code"
+    - "notebooks for development work currently in parser code directory"
