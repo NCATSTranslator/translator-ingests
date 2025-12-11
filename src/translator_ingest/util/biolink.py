@@ -3,6 +3,7 @@ from functools import lru_cache
 from importlib.resources import files
 
 from linkml_runtime.utils.schemaview import SchemaView
+from bmt import Toolkit
 
 from translator_ingest.util.logging_utils import get_logger
 
@@ -25,6 +26,10 @@ INFORES_BGEE = "infores:bgee"
 INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
 INFORES_INTACT = "infores:intact"
 INFORES_DGIDB = "infores:dgidb"
+INFORES_DISEASES = "infores:diseases"
+INFORES_MEDLINEPLUS = "infores:medlineplus"
+INFORES_AMYCO = "infores:amyco"
+INFORES_EBI_G2P = "infores:gene2phenotype"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
 INFORES_CIVIC = "infores:civic"
@@ -65,3 +70,8 @@ def get_biolink_schema() -> SchemaView:
 
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version
+
+@lru_cache(maxsize=1)
+def get_biolink_model_toolkit() -> Toolkit:
+    """Get a Biolink Model Toolkit configured with the expected project Biolink Model schema."""
+    return Toolkit(schema=get_biolink_schema().schema)

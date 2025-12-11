@@ -20,7 +20,6 @@
       - sqlite
     data_versioning_and_releases: semiannual
 
-
   ingest_info:
     ingest_categories:
       - primary_knowledge_provider
@@ -54,6 +53,7 @@
   target_info: 
     infores_id: "infores:translator-chembl-kgx"
     edge_type_info:
+
       - subject_categories:
           - SmallMolecule
           - MolecularMixture
@@ -64,17 +64,20 @@
           - biolink:disrupts
           - biolink:regulates
         object_categories:
-          - Gene
-          - MacromolecularComplexMixin
+          - CellLine
+          - CellularComponent
+          - CellularOrganism
+          - MacromolecularComplex
+          - MolecularActivity
+          - MolecularEntity
           - NucleicAcidEntity
-          - Organism
-          - BiologicalProcess
           - Protein
-          - ProteinComplex
+          - ProteinFamily
+          - SmallMolecule
         qualifiers:
           - property: "biolink:qualified_predicate"
             value_enumeration:
-              - "biolink:causes"        
+              - "biolink:causes"
           - property: "biolink:object_direction_qualifier"
             value_range:
               - "biolink:DirectionQualifierEnum"
@@ -89,14 +92,16 @@
         agent_type:
           - manual_agent
         edge_properties:
-          - action_type
-          - biolink:mechanism_of_action
           - biolink:publications
-          - direct_interaction
-          - document_chembl_id
+          - biolink:has_confidence_score
+          - mechanism_of_action_description
+          - mechanism_of_action_comment
+          - mutation
+          - mutation_accession
           - selectivity_comment
-          - site_name
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
+        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
+        
       - subject_categories:
           - SmallMolecule
           - MolecularMixture
@@ -105,66 +110,58 @@
         predicates: 
           - biolink:directly_physically_interacts_with
         object_categories:
-          - Gene
-          - MacromolecularComplexMixin
+          - CellLine
+          - CellularComponent
+          - CellularOrganism
+          - MacromolecularComplex
+          - MolecularActivity
+          - MolecularEntity
           - NucleicAcidEntity
-          - Organism
-          - BiologicalProcess
           - Protein
-          - ProteinComplex
+          - ProteinFamily
+          - SmallMolecule
         qualifiers:
-          - property: "biolink:causal_mechanism_qualifier"
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+          - property: "biolink:object_form_or_variant_qualifier"
             value_range:
-              - "biolink:CausalMechanismQualifierEnum"        
+              - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
         edge_properties:
-          - action_type
-          - biolink:mechanism_of_action
           - biolink:publications
-          - direct_interaction
-          - document_chembl_id
+          - binding_site_name
+          - binding_site_comment
+          - mechanism_of_action_description
+          - mechanism_of_action_comment
+          - mutation
+          - mutation_accession
           - selectivity_comment
-          - site_name
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
+        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
+
       - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
-          - Protein
+          - MacromolecularComplex
         predicates: 
-          - biolink:assesses
+          - biolink:has_part
         object_categories:
-          - AnatomicalEntity
-          - Cell
-          - CellLine
-          - OrganismTaxon
-          - PhenotypicFeature
+          - NucleicAcidEntity
+          - Protein
         qualifiers:
-          - property: "biolink:object_aspect_qualifier"
-            value_range:
-              - "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum"
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
               - "NCBITaxon"
-            value_description: "A term from the 'cellular organisms' (NCBITaxon:131567) or 'viruses' (NCBITaxon:10239) branch of the NCBITaxon Ontology"
+            value_description: "species tax id"
         knowledge_level:
-          - observation
+          - knowledge_assertion
         agent_type:
           - manual_agent
         edge_properties:
-          - Binding_Efficiency_Index
-          - action_type
-          - assay_chembl_id
-          - assay_tax_id
-          - assay_tissue_chembl_id
-          - biolink:publications
-          - data_validity_comment
-          - potential_duplicate
-          - standard_value
-        ui_explanation: "Drug activities from ChEMBL"
+        ui_explanation: "Component information from ChEMBL"
+
       - subject_categories:
           - SmallMolecule
           - MolecularMixture
@@ -175,223 +172,181 @@
           - SmallMolecule
           - MolecularMixture
           - ChemicalEntity
+        qualifiers:
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+            value_description: "species tax id"
+          - property: "biolink:context_qualifier"
+            value_id_prefixes:
+              - "UniProtKB"
+            value_description: "enzyme identifier"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
         edge_properties:
-          - OBI:0000427
           - biolink:publications
-          - enzyme_chembl_id
-          - enzyme_name
           - metabolic conversion
           - metabolic conversion comment
-          - organism
-          - tax_id
         ui_explanation: "Metabolism information from ChEMBL"
 
     node_type_info:
+
       - node_category: AnatomicalEntity
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - target_mapping
-          - target_organism
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
+      - node_category: BiologicalProcess
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: Cell
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - atc_classification
-          - atc_classifications
-          - biolink:highest_FDA_approval_status
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - chirality
-          - max_phase
-          - molecule_type
-          - query name
-          - target_mapping
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: CellLine
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - target_mapping
-          - target_organism
-          - target_type
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: CellularComponent
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - target_mapping
-          - target_organism
-          - target_type
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
+      - node_category: CellularOrganism
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: ChemicalEntity
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
-          - atc_classification
-          - atc_classifications
-          - availability_type
-          - biolink:highest_FDA_approval_status
           - biolink:routes_of_delivery
-          - black_box_warning
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - chirality
-          - dosed_ingredient
-          - drug_warning
-          - first_approval
-          - first_in_class
-          - indication_class
-          - inorganic_flag
-          - max_phase
-          - molecule_type
-          - polymer_flag
-          - prodrug
-          - target_mapping
-          - target_organism
-          - target_type
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
-          - withdrawn_flag
+          - biolink:synonym
+          - biolink:xref
+          - chembl_availability_type
+          - chembl_black_box_warning
+          - chembl_natural_product
+          - chembl_prodrug
+
       - node_category: Gene
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - atc_classification
-          - atc_classifications
           - biolink:description
-          - biolink:highest_FDA_approval_status
           - biolink:in_taxon
-          - chirality
-          - first_in_class
-          - max_phase
-          - molecule_type
-          - mutation
-          - mutation_accession
-          - organism
-          - target_organism
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
-      - node_category: MacromolecularComplexMixin
+          - biolink:synonym
+          - biolink:xref
+
+      - node_category: MacromolecularComplex
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
           - biolink:description
           - biolink:in_taxon
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - organism
-          - target_mapping
-          - target_organism
-          - target_type
+          - biolink:synonym
+          - biolink:xref
+
+      - node_category: MolecularActivity
+        source_identifier_types: 
+          - ChEMBL
+        node_properties:
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: MolecularMixture
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - atc_classification
-          - usan_year
-          - withdrawn_flag
-      - node_category: ProteinComplex
-        source_identifier_types: 
+          - biolink:routes_of_delivery
+          - biolink:synonym
+          - biolink:xref
+          - chembl_availability_type
+          - chembl_black_box_warning
+          - chembl_natural_product
+          - chembl_prodrug
+
+
+      - node_category: NucleicAcidEntity
+        source_identifier_types:
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
           - biolink:description
           - biolink:in_taxon
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - mutation
-          - mutation_accession
-          - organism
-          - target_mapping
-          - target_organism
-          - target_type
+          - biolink:synonym
+          - biolink:xref
+
+      - node_category: PhenotypicFeature
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
+      - node_category: Protein
+        source_identifier_types:
+          - ChEMBL
+        node_properties:
+          - biolink:description
+          - biolink:in_taxon
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: ProteinFamily
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - assay_subcellular_fraction
-          - assay_tissue_name
           - biolink:description
           - biolink:in_taxon
-          - cell_description
-          - cell_source_tax_id
-          - cell_source_tissue
-          - component_type
-          - organism
-          - target_mapping
-          - target_organism
-          - target_type
+          - biolink:synonym
+          - biolink:xref
+
       - node_category: SmallMolecule
         source_identifier_types: 
           - ChEMBL
         node_properties:
-          - atc_classification
-          - atc_classifications
-          - availability_type
-          - biolink:highest_FDA_approval_status
           - biolink:routes_of_delivery
-          - black_box_warning
-          - chirality
-          - dosed_ingredient
-          - drug_warning
-          - first_approval
-          - first_in_class
-          - indication_class
-          - inorganic_flag
-          - max_phase
-          - molecule_type
-          - natural_product
-          - polymer_flag
-          - prodrug
-          - target_mapping
-          - target_organism
-          - target_type
-          - therapeutic_flag
-          - usan_stem
-          - usan_stem_definition
-          - usan_substem
-          - usan_year
-          - withdrawn_flag
+          - biolink:synonym
+          - biolink:xref
+          - chembl_availability_type
+          - chembl_black_box_warning
+          - chembl_natural_product
+          - chembl_prodrug
+
 
   provenance_info:
     contributions:
@@ -400,5 +355,5 @@
     - "Evan Morris - code support"
     - "Sierra Moxon - data modeling, code support"
     - "Matthew Brush - data modeling, domain expertise"
-    artifacts:  # (optional, multivalued, range = string)
+    artifacts:
       - "Ingest Survey: https://docs.google.com/spreadsheets/d/1CENLoKukPCHW2SimabAm6HfXeldeRYmPTV_--Fs9whg/edit?gid=0#gid=0"
