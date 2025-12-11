@@ -31,9 +31,9 @@ ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: "The International Union of Basic and Clinical Pharmacology (IUPHAR) / British Pharmacological Society (BPS) Guide to PHARMACOLOGY is an expert-curated resource of ligand-activity-target relationships, the majority of which come from high-quality pharmacological and medicinal chemistry literature."
-  scope: "GtoPdb includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies."
+  scope: "GtoPdb includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies."   # MHB: This is meant to describe the scope of the ingest, not the scoe of the source (i.e. what subset of content we include in our ingest)
 
-  relevant_files:
+  relevant_files:              # MHB: Do you really include/use all of these files in the ingest?
     - file_name: "interactions.csv"
       location: "https://www.guidetopharmacology.org/DATA/interactions.csv"
       description: "all interaction data for ligands and targets"
@@ -52,20 +52,24 @@ ingest_info:
 
   included_content:
     - file_name: "interactions.csv"
-      included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: affects. And subject: Gene, object: chemical entity, small molecule; predicate: directly_physically_interacts_with.
-      Rows with target Species as: Human, Pig, Rat, Mouse, Gorilla, Guinea pig, NaN, Bovine, Rabbit, Unknown, Monkey, Dog, Hamster, Ferret, SARS-CoV-2, SARS-CoV, MERS-CoV, HCoV-OC43, Sheep, spiny starfish, Escherichia coli, Honeybee, Hepatitis C virus, Chicken, Turkey, Plasmodium falciparum A2, Plasmodium falciparum Dd2, Plasmodium falciparum HB3, Plasmodium falciparum, Plasmodium falciparum W2, Plasmodium falciparum NF54, Plasmodium falciparum D6, Plasmodium falciparum TM90C2A, Plasmodium falciparum 7G8, Plasmodium falciparum K1, Plasmodium falciparum V1/S, Plasmodium falciparum TM4, Plasmodium vivax, Plasmodium falciparum 3D7, Plasmodium berghei, Plasmodium falciparum FCR3, Plasmodium falciparum TM90C2B, Plasmodium falciparum TM91C235, Plasmodium cynomolgi, Plasmodium knowlesi, Plasmodium yoelii, Mycobacterium tuberculosis, Zika virus, Plasmodium falciparum FC27"
-      fields_used: "Ligand Id, Target Species, Type, Target Ensembl Gene ID"
+# MHB: Content of the included_records field above is not really what we look for here. See suggested text below - confirm its accuracy.  # QW: yes, confirmed this is correct
+      included_records: No filtering. Records for all species included.  Note however that records in the data describe results of a single publiched experiment. In our ingest records with the same ligand, target, and type + action are merged into a single edge, and metadata from each merged record (publications) combiend into a list and attached to the edge.
+      fields_used: "Ligand Id, Target Species, Type, Target Ensembl Gene ID"      # MHB:  'Action' and 'Pubmed ID' and 'Endogenous' fields should also be used, right? See yellow highlighted columns here: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877 and the mechanism/predicate/qualifier mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142
+
+
+# MHB: Qi, can you update included_records and feilds_used in objects below to match conventions / suggestions above. Remember, the ingest_info section of the RIG jsut describes what content we take from the soruce, and what we leave behind.  It doesnt describe how we model it. THat goes in the target_info section that follows.
+
     - file_name: "targets_and_families.csv"
       included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: directly_physically_interacts_with"
       fields_used: "Type,	Family id,	Family name,	Target id,	Target name,	Subunit id,	Subunit name,	Target systematic name,	Target abbreviated name,	synonyms,	HGNC id,	HGNC symbol,	HGNC name,	Human genetic localisation,	Human nucleotide RefSeq,	Human protein RefSeq,	Human SwissProt,	Human Entrez Gene,	Human Ensembl Gene,	RGD id,	RGD symbol,	RGD name,	Rat genetic localisation,	Rat nucleotide RefSeq,	Rat protein RefSeq,	Rat SwissProt,	Rat Entrez Gene,	Rat Ensembl Gene,	MGI id,	MGI symbol	MGI name	Mouse genetic localisation	Mouse nucleotide RefSeq	Mouse protein RefSeq	Mouse SwissProt	Mouse Entrez Gene	Mouse Ensembl Gene"
     - file_name: "ligands.csv"
-      included_records: ""
+      included_records: "No filtering. Records for all species included."
       fields_used: "Ligand ID	Name	Species	Type	Approved	Withdrawn	Labelled	Radioactive	PubChem SID	PubChem CID	UniProt ID	Ensembl ID	ChEMBL ID	Ligand Subunit IDs	Ligand Subunit Name	Ligand Subunit UniProt IDs	Ligand Subunit Ensembl IDs	IUPAC name	INN	Synonyms	SMILES	InChIKey	InChI	GtoImmuPdb	GtoMPdb	Antibacterial"
     - file_name: "peptides.csv"
       included_records: "subject: Small Molecule; object: Small Molecule; predicate: has_part; Only if Human in Species"
       fields_used: "Species, Ligand Id, Subunit Ids"
     - file_name: "GtP_to_HGNC_mapping.csv"
-      included_records: "Use GtP to HGNC mappings to convert Gene symbols to HGNC ids"
+      included_records: "Use GtP to HGNC mappings to convert Gene symbols to HGNC ids"    # I don't think you need to do this - GtoPdb gives ENSEMBL gene IDs, right - which I asusem Node Norm can map to the canonical id for genes of any species?
       fields_used: "HGNC Symbol,	HGNC ID,	IUPHAR Name,	IUPHAR ID"
 
   filtered_content:
@@ -78,11 +82,15 @@ ingest_info:
       consideration: "Consider ingest the file 'approved_drug_primary_target_interactions.csv' which contains approved drugs detailed interactions list"
     - category: edge_content
       consideration: "Consider ingest peptides.csv with species other than Human"
+# MHB: I added this future consideration as well, which is an important one # Qw: Thanks!
+    - category: edge_property_content
+      consideration: "Longer term, consider creating ExperimentalStudyResult objects to capture metadata for each experiment that supports an edge (e.g. affinity data, assay descriptions, and associated publications)"
 
 ## Information about the Graph Output by the ingest
 ## based on https://github.com/biolink/biolink-model/blob/master/predicate_mapping.yaml
+# MHB: The mapping for GtpoP db is here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142  This is what you should be using - not the predicate-mapping file you reference above.
 target_info:
-  infores_id: infores:gtopdb
+  infores_id: infores:translator-gtopdb
 
   edge_type_info:
     - subject_categories:
@@ -108,9 +116,7 @@ target_info:
             - decreased
         - property: biolink:causal_mechanism_qualifier
           value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: N/A
-        - property: biolink:species_context_qualifier
+        - property: biolink:species_context_qualifier                 # MHB: I don't think we need this, if it is based only on the species of the target Gene.
           value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
@@ -118,8 +124,8 @@ target_info:
         - manual_agent
       edge_properties:
         - biolink:publications
-        - biolink:has_confidence_score
-        - biolink:supporting_text
+        - biolink:has_confidence_score                               # MHB: I didn't see anything in the data that would allow us to capture this?
+        - biolink:supporting_text                                    # MHB: I didn't see anything in the data that would allow us to capture this?
       ui_explanation: "decision between up/down regulated or increased/decreased based on combination of type and action columns in gtopdb"
     - subject_categories:
         - biolink:ChemicalEntity
@@ -132,19 +138,17 @@ target_info:
       qualifiers:
         - property: biolink:causal_mechanism_qualifier
           value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: N/A
-        - property: biolink:species_context_qualifier
+        - property: biolink:species_context_qualifier            # MHB: same note as above
           value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
       edge_properties:
-        - biolink:endogenous
-        - biolink:primaryTarget
+        - biolink:endogenous                                     # MHB: no include this - it is just a cue for when to use affects vs regualtes
+        - biolink:primaryTarget                                  # MHB: no include this for now
         - biolink:publications
-      ui_explanation: "this separate directly_physically_interacts edge is created when the endogenous column == True"
+      ui_explanation: "this separate directly_physically_interacts edge is created when the endogenous column == True"    # MHB: No, the value of the Endogenous column indicates if we use 'affectd' vs 'regulates' as the predicate, and 'inc/dec' vs 'upreg/downreg' as the direction.  The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:SmallMolecule
@@ -153,11 +157,9 @@ target_info:
       object_categories:
         - biolink:Gene
       qualifiers:
-        - property: biolink:causal_mechanism_qualifier
+        - property: biolink:causal_mechanism_qualifier         # MHB: no mechanism on this type of edge
           value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: N/A
-        - property: biolink:species_context_qualifier
+        - property: biolink:species_context_qualifier          # MHB: same note as above
           value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
@@ -169,15 +171,13 @@ target_info:
     - subject_categories:
         - biolink:SmallMolecule
       predicates:
-        - biolink:has_part
+        - biolink:has_part                                      # MHB: what data/file/records is this type of edge coming from?
       object_categories:
         - biolink:SmallMolecule
       qualifiers:
-        - property: biolink:causal_mechanism_qualifier
+        - property: biolink:causal_mechanism_qualifier          # MHB: no mechanism on this type of edge
           value_range: CausalMechanismQualifierEnum
-        - property: biolink:anatomical_context_qualifier
-          value_description: N/A
-        - property: biolink:species_context_qualifier
+        - property: biolink:species_context_qualifier           # MHB: same note as above
           value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
@@ -190,7 +190,7 @@ target_info:
         - biolink:SmallMolecule
         - biolink:MolecularMixture
       predicates:
-        - biolink:related_to
+        - biolink:related_to                                       # MHB: what data/file/records is this type of edge coming from?
       object_categories:
         - biolink:Gene
       qualifiers:
@@ -208,10 +208,10 @@ target_info:
         - biolink:publications
       ui_explanation: ""
 
-  node_type_info:
+  node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
-        - "PubChem SID"
+        - "PubChem SID"                               # MHB: value of this field should be just a prefix, and the decription field can report more detail (e.g. that it is an SID)
     - node_category: biolink:MolecularMixture
       source_identifier_types:
         - "PubChem SID"

@@ -1,6 +1,6 @@
 name: signor
 
-reader:
+readers:
   format: csv
   delimiter: \t
   comment_char: "!" # Header line starts with !
