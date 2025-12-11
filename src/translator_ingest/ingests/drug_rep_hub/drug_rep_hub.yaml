@@ -1,4 +1,4 @@
-name: ingest_template
+name: drug_rep_hub_ingest
 
 readers:
   ingest_drug_rep_hub_samples:
