@@ -48,6 +48,9 @@ ingest_info:
     - file_name: "G2P_all_[date].csv"
       filtered_records: "Records with NodeNorm mapping failures for the node IDs"
       rationale: "Failed normalization means that the node would not be connected to other data/nodes in Translator graphs"
+    - file_name: "G2P_all_[date].csv"
+      filtered_records: "Records where 'disease mim' value is '188400'"
+      rationale: "OMIM:188400 is incorrectly mapped by NodeNorm to a Gene when it's actually a Disease. To avoid creating an incorrect edge, we are temporarily removing rows with this ID from the data."
 
   future_considerations:
     - category: edge_content
@@ -73,8 +76,12 @@ target_info:
           value_enumeration: 
             - "biolink:causes"
         - property: biolink:subject_form_or_variant_qualifier
-          value_range:
-            - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
+          value_enumeration:
+            - loss_of_function_variant_form
+            - genetic_variant_form
+            - gain_of_function_variant_form
+            - dominant_negative_variant_form
+            - non_loss_of_function_variant_form
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -92,9 +99,8 @@ target_info:
     - node_category: biolink:Disease
       source_identifier_types:
         - "OMIM"
-        - "orphanet"
         - "MONDO"
-      additional_notes: "'disease mim' column is source of OMIM and orphanet IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column"
+      additional_notes: "'disease mim' column is source of OMIM IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column"
 
   future_considerations:
     - category: qualifiers
@@ -112,3 +118,4 @@ provenance_info:
   artifacts:
     - "Github Ticket on confidence 'limited' value: https://github.com/biolink/biolink-model/issues/1581"
     - "PR on biolink allelic_requirement: https://github.com/biolink/biolink-model/pull/1576"
+    - "notebooks for development work currently in parser code directory"
