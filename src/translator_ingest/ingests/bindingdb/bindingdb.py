@@ -109,7 +109,6 @@ def prepare_bindingdb_data(
 
     # Directly read and extract useful columns from the original
     # downloaded bindingdb data file, using the 'polars' library.
-    # Accesses the koza_transform for the Koza managed data directory.
     df = extract_bindingdb_columns_polars(
         data_archive_path,
         columns=BINDINGDB_COLUMNS,
