@@ -84,6 +84,9 @@ ingest_info:
       consideration: "If NameResolver's scoring changes, the threshold used to remove low-quality hits will need to be adjusted."
       relevant_files: "P1-05-Drug_disease.txt"
     - category: edge_content
+      consideration: "Consider adding a predicate for 'indications', which would better fit P1-05's data. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3515893236 for details."
+      relevant_files: "P1-05-Drug_disease.txt"
+    - category: edge_content
       consideration: "Could ingest another file 'Target to compound mapping with activity data', which contains chemical/drug 'affects' protein associations. Involves more parsing and filtering work. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209860820 for details."
       relevant_files: "P1-09-Target_compound_activity.txt"
   
