@@ -3,6 +3,7 @@ import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id
+from translator_ingest.util.biolink import INFORES_EBI_G2P
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     Disease,
@@ -22,7 +23,6 @@ import requests
 ## HARD-CODED VALUES
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
-INFORES_EBI_G2P = "infores:gene2phenotype"
 ## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
 ## Dynamically mapping all possible values (not just those in the data) using OLS API with HP's synonym info
 ALLELIC_REQ_TO_MAP = [
