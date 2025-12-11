@@ -20,7 +20,9 @@ from koza.model.graphs import KnowledgeGraph
 
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 
-QUALIFIER_CONFIG_PATH = "src/translator_ingest/ingests/chembl/chembl_qualifiers.json"
+from translator_ingest import INGESTS_PARSER_PATH
+
+QUALIFIER_CONFIG_PATH = INGESTS_PARSER_PATH / "chembl" / "chembl_qualifiers.json"
 
 LATEST_VERSION = "36"
 
