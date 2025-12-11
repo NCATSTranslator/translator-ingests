@@ -97,7 +97,10 @@ def extract_bindingdb_columns_polars(
                         ARTICLE_DOI: pl.Utf8,
                         PMID: pl.Utf8,
                         PATENT_NUMBER: pl.Utf8,
-                    }
+                    },
+                    # not ideal to skip problematic BindingDB data rows, but if
+                    # alot of the other data can be read, we still make progress
+                    ignore_errors=True
                 )
                 # CRITICAL: Only select the required columns - massive performance gain
                 .select(columns)
