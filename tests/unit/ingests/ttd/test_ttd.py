@@ -5,7 +5,7 @@ from tests.unit.ingests import MockKozaWriter
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     DiseaseOrPhenotypicFeature,
     RetrievalSource,
 )
@@ -44,7 +44,7 @@ def test_p1_05_output(p1_05_output):
 
     ## check association contents
     ## Doing because entities includes Nodes as well
-    association = [e for e in entities if isinstance(e, ChemicalToDiseaseOrPhenotypicFeatureAssociation)][0]
+    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
     assert association
     ## placeholder: go through contents of association, test stuff that isn't hard-coded or isn't subject/object
 

@@ -6,3 +6,9 @@ readers:
     files:
       - P1_03_drug_mapping.txt
       - P1_05_indications.txt
+  P1_07_parsing:
+    format: json
+    files:
+      - P1_03_drug_mapping.txt
+      - P2-01-TTD_uniprot_all.txt
+      - P1-07-Drug-TargetMapping.xlsx

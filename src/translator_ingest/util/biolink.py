@@ -2,11 +2,12 @@
 from typing import Optional
 from functools import lru_cache
 from importlib.resources import files
+
+
 from linkml_runtime.utils.schemaview import SchemaView
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 from bmt.toolkit import Toolkit
 
-from loguru import logger
 from translator_ingest.util.logging_utils import get_logger
 
 logger = get_logger(__name__)
@@ -65,13 +66,16 @@ def get_biolink_schema() -> SchemaView:
         logger.debug("Successfully loaded Biolink schema from URL")
         return schema_view
 
+
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version
+
 
 @lru_cache(maxsize=1)
 def get_biolink_model_toolkit() -> Toolkit:
     """Get a Biolink Model Toolkit configured with the expected project Biolink Model schema."""
     return Toolkit(schema=get_biolink_schema().schema)
+
 
 #
 # A different version of bmt.pydantic.build_association_knowledge_sources,

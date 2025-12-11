@@ -8,7 +8,7 @@ from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     DiseaseOrPhenotypicFeature,
     KnowledgeLevelEnum,
     AgentTypeEnum,
@@ -79,7 +79,7 @@ def transform_ingest_all_streaming(
         if (chemical.id, predicate, disease.id) in all_triples:
             continue
         all_triples.add((chemical.id, predicate, disease.id))
-        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
             id=entity_id(),
             subject=chemical.id,
             predicate=predicate,

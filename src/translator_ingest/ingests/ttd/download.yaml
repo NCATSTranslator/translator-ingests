@@ -6,5 +6,9 @@
 ---
 - url: https://ttd.idrblab.cn/files/download/P1-03-TTD_crossmatching.txt
   local_name: P1_03_drug_mapping.txt
+- url: https://ttd.idrblab.cn/files/download/P2-01-TTD_uniprot_all.txt
+  local_name: P2-01-TTD_uniprot_all.txt
 - url: https://ttd.idrblab.cn/files/download/P1-05-Drug_disease.txt
   local_name: P1_05_indications.txt
+- url: https://ttd.idrblab.cn/files/download/P1-07-Drug-TargetMapping.xlsx
+  local_name: P1-07-Drug-TargetMapping.xlsx
