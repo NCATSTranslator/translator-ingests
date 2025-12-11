@@ -51,7 +51,13 @@ def mock_koza_transform() -> koza.KozaTransform:
 
 # list of slots whose values are
 # to be checked in a result node
-NODE_TEST_SLOTS = ("id", "name", "category")
+NODE_TEST_SLOTS = (
+    "id",
+    "name",
+    "category",
+    "in_taxon",
+    "in_taxon_label"
+)
 
 # list of slots whose values are
 # to be checked in a result edge
@@ -121,7 +127,9 @@ def test_prepare_bindingdb_data(
                 {
                     "id": "UniProtKB:P42574",
                     "name": "Caspase-3",
-                    "category": ["biolink:Protein"]
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens"
                 },
             ],
             {
@@ -158,7 +166,9 @@ def test_prepare_bindingdb_data(
                 {
                     "id": "UniProtKB:P29466",
                     "name": "Caspase-1",
-                    "category": ["biolink:Protein"]
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens"
                 },
             ],
             {
@@ -195,7 +205,9 @@ def test_prepare_bindingdb_data(
                 {
                     "id": "UniProtKB:P29466",
                     "name": "Caspase-1",
-                    "category": ["biolink:Protein"]
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens"
                 },
             ],
             {
@@ -230,9 +242,11 @@ def test_prepare_bindingdb_data(
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
-                    "id": "UniProtKB:P29466",
+                    "id": "UniProtKB:P29452",
                     "name": "Caspase-1",
-                    "category": ["biolink:Protein"]
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:10090"],
+                    "in_taxon_label": "Mus musculus"
                 },
             ],
             {
@@ -241,7 +255,7 @@ def test_prepare_bindingdb_data(
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
                 "subject": "CID:5327304",
                 "predicate": "biolink:directly_physically_interacts_with",
-                "object": "UniProtKB:P29466",
+                "object": "UniProtKB:P29452",
                 "publications": ["doi:10.1021/jm020230j"],
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
@@ -269,7 +283,9 @@ def test_prepare_bindingdb_data(
                 {
                     "id": "UniProtKB:P08684",
                     "name": "Cytochrome P450 3A4",
-                    "category": ["biolink:Protein"]
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens"
                 },
             ],
             {

@@ -144,7 +144,7 @@ CASPASE1_RECORD_WITH_DOI = {
     "BindingDB MonomerID": "221",
     "BindingDB Ligand Name": "Pyridine Scaffold 4",
     "Target Name": "Caspase-1",
-    "Target Source Organism According to Curator or DataSource": "Homo sapiens",
+    "Target Source Organism According to Curator or DataSource": "Mus musculus",
     "Ki (nM)": "3900",
     "IC50 (nM)": "",
     "Kd (nM)": "",
@@ -162,7 +162,7 @@ CASPASE1_RECORD_WITH_DOI = {
     "PubChem SID": "8030146",
     "ChEBI ID of Ligand": "",
     "ChEMBL ID of Ligand": "",
-    "UniProt (SwissProt) Primary ID of Target Chain 1": "P29466",
+    "UniProt (SwissProt) Primary ID of Target Chain 1": "P29452",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Caspase-1",
     "publication": "doi:10.1021/jm020230j",
     "supporting_data_id": "infores:ki-database"
