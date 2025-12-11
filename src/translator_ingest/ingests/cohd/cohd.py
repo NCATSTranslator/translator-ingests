@@ -41,7 +41,7 @@ def transform_cohd_node(
         # COHD uses the value of a "categories" field to indicate the type of node
         # We use it here to specify the correct Pydantic node class model
         node_id = record["id"]
-        node_class = get_node_class(node_id, record.get("categories", ["biolink:NamedThing"]), bmt=bmt)
+        node_class = get_node_class(node_id, record.get("categories", ["biolink:NamedThing"]))
 
         # TODO: need to figure out how to handle (certain?) attributes
         # attributes = record["attributes"]
@@ -85,7 +85,7 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
                     formatted=True
             )
 
-        edge_class = get_edge_class(edge_id, associations=association_list, bmt=bmt)
+        edge_class = get_edge_class(edge_id, associations=association_list)
 
         association = edge_class(
             id=edge_id,
