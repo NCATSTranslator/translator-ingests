@@ -7,7 +7,7 @@ readers:
     comment_char: "!" # Header line starts with !
     header_mode: infer
     files:
-      - all_data_11_12_25.tsv # Signor association file, note: all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv
+      - all_data.tsv # Signor association file
     columns: # 27 columns from the file, only 17 are needed but koza is complaining the input columns number are different
       - ENTITYA # subject name
       - TYPEA # subject type
