@@ -97,6 +97,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     # print(df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape)
     # print(df[df["gene mim"].isna()].shape)
 
+    ## temp? filter out rows where "disease mim" == 188400
+    ## NodeNorm incorrectly categorizes this ID/entity as a Gene when it's actually a Disease
+    df = df[~ (df["disease mim"] == "188400")]
+
     ## currently, there are rows where both disease ID columns have no value. Check, count, remove
     temp_no_disease = df[df["disease mim"].isna() & df["disease MONDO"].isna()]
     if temp_no_disease.shape[0] > 0:  ## number of rows
