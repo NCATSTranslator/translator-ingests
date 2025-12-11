@@ -1,4 +1,4 @@
-import uuid
+from bmt.pydantic import entity_id
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
@@ -180,7 +180,7 @@ def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kn
 
     association = CorrelatedGeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=protein.id,
         predicate=BIOLINK_OCCURS_IN_LIT_WITH,
         object=disease.id,
@@ -247,7 +247,7 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
 
     association = GeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=protein.id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=disease.id,
