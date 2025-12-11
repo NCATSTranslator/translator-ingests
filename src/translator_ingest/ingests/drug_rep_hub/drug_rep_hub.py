@@ -8,8 +8,8 @@ from translator_ingest import INGESTS_PARSER_PATH
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-    ChemicalToChemicalAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToChemicalEntityAssociation,
     ChemicalAffectsGeneAssociation,
     DiseaseOrPhenotypicFeature,
     Gene,
@@ -125,7 +125,7 @@ def create_disease_association(chemical, indication, indication_info, predicate,
         return disease, None
     clinical_approval_status = clinical_approval_map.get(clinical_phase, None)
     max_research_phase = research_phase_map.get(clinical_phase, None)
-    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id = entity_id(),
         subject=chemical.id,
         object=disease.id,
@@ -146,7 +146,7 @@ def create_chemical_role_association(chemical, indication, indication_info, pred
         id=indication_info['xref'],
         name=indication_info['primary_name'] if indication_info['primary_name'] else indication,
     )
-    association = ChemicalToChemicalAssociation(
+    association = ChemicalEntityToChemicalEntityAssociation(
         id = entity_id(),
         subject=chemical.id,
         predicate=predicate,
