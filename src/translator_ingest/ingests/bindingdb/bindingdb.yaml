@@ -5,3 +5,5 @@ name: bindingdb
 # but instead directly access and pre-process the downloaded file in the
 # @koza.prepare_data() decorated method of the parser, which uses polars to read the file.
 #
+reader:
+  format: csv
