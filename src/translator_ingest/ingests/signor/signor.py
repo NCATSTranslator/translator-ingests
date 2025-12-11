@@ -1,7 +1,6 @@
 import koza
 import pandas as pd
 import csv
-import requests
 
 from typing import Any, Iterable
 
@@ -82,7 +81,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     ## replace phenotype labeling into biologicalProcess
     source_df["subject_category"] = source_df["subject_category"].replace("phenotype", "BiologicalProcess")
-    source_df ["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
+    source_df["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
 
     ## replace all 'miR-34' to 'miR-34a' in two columns subject_category and object_category in the pandas dataframe
     source_df['subject_name'] = source_df['subject_name'].replace('miR-34', 'miR-34a')
@@ -116,33 +115,27 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["subject_category"] == "protein" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+            predicate = "biolink:regulates"
 
             if record["EFFECT"] == 'up-regulates activity':
-                predicate = "biolink:entity_positively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'up-regulates':
-                predicate = "biolink:entity_positively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'up-regulates quantity by expression':
-                predicate = "biolink:entity_positively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'down-regulates activity':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates quantity by expression':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates quantity by destabilization':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             else:
@@ -166,11 +159,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
-            subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
-            object = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
+            subject = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
+            object = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
 
             if record["EFFECT"] == 'form complex':
-                predicate = "biolink:partof"
+                predicate = "biolink:has_part"
                 association_1 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
                     id=entity_id(),
                     subject=subject.id,
@@ -180,7 +173,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
-                predicate = "physically_interacts_with"
+                predicate = "biolink:physically_interacts_with"
                 association_2 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
                     id=entity_id(),
                     subject=subject.id,
@@ -200,33 +193,27 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["subject_category"] == "ChemicalEntity" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id="CHEBI:" + record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+            predicate = "biolink:affects"
 
             if record["EFFECT"] == 'up-regulates activity':
-                predicate = "biolink:entity_positively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'up-regulates':
-                predicate = "biolink:entity_positively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'up-regulates quantity by expression':
-                predicate = "biolink:entity_positively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'down-regulates activity':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates quantity by expression':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates quantity by destabilization':
-                predicate = "biolink:entity_negatively_regulated_by_entity"
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             else:
