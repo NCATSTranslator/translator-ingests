@@ -1,9 +1,9 @@
-import uuid
+from bmt.pydantic import entity_id
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.http_utils import get_modify_date
-
+from translator_ingest.util.biolink import INFORES_DISEASES, INFORES_MEDLINEPLUS, INFORES_AMYCO 
 ## ADDED packages for this ingest
 from datetime import datetime
 import pandas as pd
@@ -23,10 +23,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 BIOLINK_OCCURS_IN_LIT_WITH = "biolink:occurs_together_in_literature_with"
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
-INFORES_DISEASES = "infores:diseases"
-INFORES_MEDLINEPLUS = "infores:medlineplus"
-INFORES_AMYCO = "infores:amyco"
-
 ## used to only keep rows with IDs (protein_id column starts with ENSP, disease_id column starts with DOID)
 ## see @koza.prepare_data, keep_rows_with_IDs for use
 ID_start_strings = {
@@ -180,7 +176,7 @@ def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kn
 
     association = CorrelatedGeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=protein.id,
         predicate=BIOLINK_OCCURS_IN_LIT_WITH,
         object=disease.id,
@@ -247,7 +243,7 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
 
     association = GeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=protein.id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=disease.id,
