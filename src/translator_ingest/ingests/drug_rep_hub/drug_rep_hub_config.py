@@ -13,21 +13,75 @@ feature_map = {
     'support for': ('biolink:ameliorates_condition', 'biolink:condition_ameliorated_by')
 }
 
-def generate_indications_config(filename: str):
+
+def get_molepro_indications(molepro_indications):
+    #tsv file with molepro indications
     indications = {}
-    feature_actions = set()
-    with open(filename, 'r') as f:
+    with open(molepro_indications, 'r') as f:
         f.readline()  # skip header
         for line in f:
             row = line.strip().split('\t')
-            indications[row[0]] = {
-                'xref': row[1],
-                'primary_name': row[2].strip(),
-                'feature_action': row[3],
-                'predicate': feature_map[row[3]][0],
+            indication = row[0]
+            xref = row[1]
+            primary_name = row[2]
+            feature_action = row[3]
+            indications[indication.lower()] = {
+                'indication': indication,
+                'xref': xref,
+                'primary_name': primary_name,
+                'feature_action': feature_action,
+                'predicate': feature_map.get(feature_action, ('biolink:treats', 'biolink:treated_by'))[0]
             }
-            feature_actions.add(row[3])
-    json.dump(indications, open('src/translator_ingest/ingests/drug_rep_hub/indications_config.json', 'w'), indent=2, sort_keys=True)
+    print(f"Loaded {len(indications)} indications from MolePro")
+    return indications
+
+
+def generate_indications_config(filename: str):
+    molepro_indications = get_molepro_indications(filename)
+    config_indications = json.load(open('src/translator_ingest/ingests/drug_rep_hub/indications_config.json'))
+    indications = {}
+    drug_rep_hub_file = 'data/drug_rep_hub/v1/source_data/repo-drug-annotation.txt'
+    with open(drug_rep_hub_file, 'r') as f:
+        for line in f:
+            if line.startswith('!'):
+                continue
+            if line.startswith('pert_iname'):
+                continue
+            row = line.strip().split('\t')
+            if len(row) < 6:
+                # print(f"Skipping malformed line: {line.strip()}")
+                continue
+            pert_iname = row[0] 
+            target = row[5]
+            if '|' in row[5]:
+                indication_list = [ind.strip() for ind in target.strip('"').split('|')]
+            elif ',' in row[5]:
+                indication_list = [ind.strip() for ind in target.strip('"').split(',')]
+            else:
+                indication_list = [row[5].strip('"').strip()]
+            for indication in indication_list:
+                if not indication:
+                    continue
+                if indication in config_indications:
+                    indications[indication] = config_indications[indication]
+                elif indication.lower() in molepro_indications:
+                    indications[indication] = {
+                        'xref': molepro_indications[indication.lower()]['xref'],
+                        'primary_name': molepro_indications[indication.lower()]['primary_name'],
+                        'feature_action': molepro_indications[indication.lower()]['feature_action'],
+                        'predicate': molepro_indications[indication.lower()]['predicate']
+                    }
+                else:
+                    if ',' not in indication:
+                        print(f"ERROR: Indication {indication} not found in existing config or MolePro")
+                        print(f'  "{indication}": {{')
+                        print('    "feature_action": "indication for",')
+                        print('    "predicate": "biolink:treats",')
+                        print('    "primary_name": "UNKNOWN",')
+                        print('    "xref": "UNKNOWN"')
+                        print('  },')
+    print(f"Identified {len(indications)} indications")
+    json.dump(indications, open('src/translator_ingest/ingests/drug_rep_hub/indications_config_new.json', 'w'), indent=2, sort_keys=True)
 
 
 def get_genes():
@@ -103,4 +157,4 @@ def generate_target_config():
 
 
 if __name__ == "__main__":
-    generate_target_config()
+    generate_indications_config(sys.argv[1])
