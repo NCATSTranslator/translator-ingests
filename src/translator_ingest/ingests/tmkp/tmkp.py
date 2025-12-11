@@ -28,7 +28,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
     GeneToDiseaseAssociation,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     GeneRegulatesGeneAssociation,
     Study,
     TextMiningStudyResult,
@@ -55,7 +55,7 @@ BIOLINK_CLASS_MAP = {
 ASSOCIATION_MAP = {
     "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
     "biolink:GeneToDiseaseAssociation": GeneToDiseaseAssociation,
-    "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     "biolink:GeneRegulatoryRelationship": GeneRegulatesGeneAssociation,
 }
 

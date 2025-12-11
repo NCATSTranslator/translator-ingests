@@ -1,7 +1,7 @@
 import pytest
 from koza.runner import KozaRunner, KozaTransformHooks
 from tests.unit.ingests import MockKozaWriter
-
+from translator_ingest.util.biolink import INFORES_DISEASES, INFORES_MEDLINEPLUS, INFORES_AMYCO 
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
@@ -18,12 +18,6 @@ from translator_ingest.ingests.diseases.diseases import (
     knowledge_transform,
 )
 import pandas as pd
-
-
-## ADJUST based on what I am actually using
-INFORES_DISEASES = "infores:diseases"
-INFORES_MEDLINEPLUS = "infores:medlineplus"
-INFORES_AMYCO = "infores:amyco"
 
 
 ## NON-KOZA FUNCTIONS
