@@ -222,7 +222,7 @@ def test_transform_icees_nodes(
             None,
             # Captured edge contents
             {
-                "category": ["biolink:Association"],
+                "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
                 "subject": "PUBCHEM.COMPOUND:2083",
                 "subject_feature_name": "AlbuterolRx",
                 "predicate": "biolink:positively_correlated_with",
