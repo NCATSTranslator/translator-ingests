@@ -19,7 +19,11 @@ from bmt.pydantic import (
     get_edge_class
 )
 
-from translator_ingest.util.biolink import knowledge_sources_from_trapi, get_biolink_model_toolkit
+from translator_ingest.util.biolink import (
+    get_biolink_model_toolkit,
+    parse_attributes,
+    knowledge_sources_from_trapi
+)
 
 from koza.model.graphs import KnowledgeGraph
 

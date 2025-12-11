@@ -77,6 +77,13 @@ def get_biolink_model_toolkit() -> Toolkit:
     return Toolkit(schema=get_biolink_schema().schema)
 
 
+def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:
+    return (
+        attributes
+        if attributes is not None and len(attributes) > 0
+        else None
+    )
+
 #
 # A different version of bmt.pydantic.build_association_knowledge_sources,
 # but which takes in a list of dictionaries which are TRAPI-like 'sources' values,
