@@ -8,7 +8,7 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.sider.sider import transform_ingest_all_streaming
+from translator_ingest.ingests.chembl.chembl import transform_complexes
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
@@ -32,45 +32,33 @@ ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - concept_type = LLT -> returns None
-            [
-                {
-                    "label": "EMA/WC500020092.html",
-                    "STITCH_compound_id_flat": "CID100216416",
-                    "STITCH_compound_id_stereo": "CID000216416",
-                    "UMLS_concept_id_label": "C0000737",
-                    "MedDRA_concept_type": "LLT",
-                    "UMLS_concept_id": "C0000737",
-                    "side_effect_name": "Abdominal pain",
-                }
-            ],
-            None,
-            None,
-        ),
         (  # Query 1 - Another record complete with PubMedIDs
             [
                 {
-                    "label": "safety/2008_-_May_PI_-_Viread_PI.html",
-                    "STITCH_compound_id_flat": "CID100119830",
-                    "STITCH_compound_id_stereo": "CID005481350",
-                    "UMLS_concept_id_label": "C1608945",
-                    "MedDRA_concept_type": "PT",
-                    "UMLS_concept_id": "C1608945",
-                    "side_effect_name": "Exfoliative rash",
+                    "target_type": "PROTEIN COMPLEX",
+                    "target_name": "Anti-estrogen binding site (AEBS)",
+                    "target_chembl_id": "CHEMBL612409",
+                    "organism_tax_id": "9606",
+                    "component_type": "PROTEIN",
+                    "accession": "Q15125",
+                    "description": "3-beta-hydroxysteroid-Delta(8),Delta(7)-isomerase",
+                    "organism":"Homo sapiens",
+                    "component_tax_id":"9606",
+                    "db_source":"SWISS-PROT"
                 }
             ],
             # Captured node contents
             [
-                {"id": "PUBCHEM.COMPOUND:5481350", "category": ["biolink:ChemicalEntity"]},
-                {"id": "UMLS:C1608945", "name": "Exfoliative rash", "category": ["biolink:DiseaseOrPhenotypicFeature"]},
+                {"id": "UniProtKB:Q15125", "category": ["biolink:Protein"]},
+                {"id": "CHEMBL.TARGET:CHEMBL612409", "name": "Anti-estrogen binding site (AEBS)", "category": ["biolink:MacromolecularComplex"]},
             ],
             # Captured edge contents
             {
-                "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
-                "subject": "PUBCHEM.COMPOUND:5481350",
-                "predicate": "biolink:has_side_effect",
-                "object": "UMLS:C1608945",
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:sider"}],
+                "category": ["biolink:AnatomicalEntityToAnatomicalEntityPartOfAssociation"],
+                "subject": "CHEMBL.TARGET:CHEMBL612409",
+                "predicate": "biolink:has_part",
+                "object": "UniProtKB:Q15125",
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:chembl"}],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
@@ -84,7 +72,14 @@ def test_ingest_transform(
     result_edge: Optional[dict],
 ):
 
-    for result in transform_ingest_all_streaming(mock_koza_transform, test_record):
+    mock_koza_transform.state['chembl_proteins'] = {
+        "Q15125": {
+            "id": "Q15125",
+            "name": "3-beta-hydroxysteroid-Delta(8),Delta(7)-isomerase"
+        }
+    }
+    
+    for result in transform_complexes(mock_koza_transform, test_record):
         validate_transform_result(
             result=result,
             expected_nodes=result_nodes,
