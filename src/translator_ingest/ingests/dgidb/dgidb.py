@@ -36,7 +36,6 @@ PREFIXES_TO_DROP = [
 ## interaction_types that map to plain "interacts_with" edge (no qualifiers, extra edge)
 ## "~NULL" is a placeholder for NA, see prepare_data for details
 plain_interact_types = {"other/unknown", "~NULL"}
-BIOLINK_INTERACTS = "biolink:interacts_with"
 ## columns for drug-gene pair
 DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 
@@ -92,13 +91,6 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ##   currently, multiple values map to plain "interacts_with" edge modeling
     df["mod_type"] = ["~PLAIN_INTERACTS" if i in plain_interact_types else i for i in df["interaction_types"]]
     ## (keeping original column interaction_types for trouble-shooting, maybe future use (original predicates?))
-    ## take int_type_mapping and add this value
-    int_type_mapping.update({
-        "~PLAIN_INTERACTS": {
-            "predicate": BIOLINK_INTERACTS,
-            ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
-        }
-    })
 
     ## group-by/merge rows by unique drug ID, gene ID, mod_type combo
     ## then each row == 1 Translator edge
