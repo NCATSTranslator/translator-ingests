@@ -140,7 +140,7 @@ def transform_bindingdb_by_record(
     protein = Protein(
         id="UniProtKB:" + record[UNIPROT_ID],
         name=target_name,
-        in_taxon=taxon_id,
+        in_taxon=[taxon_id],
         in_taxon_label=taxon_label
     )
 
