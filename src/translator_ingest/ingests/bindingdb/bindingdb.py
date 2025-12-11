@@ -15,11 +15,8 @@ from bmt.pydantic import entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
-    get_bindingdb_input_file,
     extract_bindingdb_columns_polars,
     process_publications,
-
-    SOURCE_ORGANISM_TO_TAXON_ID_MAPPING,
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR,
@@ -29,8 +26,40 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     PUBCHEM_CID,
     UNIPROT_ID,
     PUBLICATION,
-    SUPPORTING_DATA_ID
+    SUPPORTING_DATA_ID,
+    REACTANT_SET_ID,
+    ARTICLE_DOI,
+    PMID,
+    PATENT_NUMBER
 )
+
+BINDINGDB_COLUMNS = (
+    REACTANT_SET_ID,
+    MONOMER_ID,
+    PUBCHEM_CID,
+    TARGET_NAME,
+    SOURCE_ORGANISM,
+    UNIPROT_ID,
+    CURATION_DATASOURCE,
+    ARTICLE_DOI,
+    PMID,
+    PATENT_NUMBER
+)
+
+SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
+    "Homo sapiens": "9606",
+    "Mus musculus": "10090",
+    "Rattus norvegicus": "10116",
+    "Bos taurus": "9913",   # cattle
+    "Sus scrofa": "9823",     # swine
+    "Xenopus laevis": "8355",   # Xenopus laevis (African clawed frog)
+    "Xenopus tropicalis": "8364",   # Xenopus tropicalis - tropical clawed frog
+    "Danio rerio": "7955",
+    "Drosophila melanogaster": "7227",
+    "Caenorhabditis elegans": "6239",
+    "Schizosaccharomyces pombe": "4896",
+    "Saccharomyces cerevisiae": "4932"
+}
 
 
 def get_latest_version() -> str:
@@ -74,10 +103,18 @@ def prepare_bindingdb_data(
     """
     koza_transform.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
 
+    # As of December 2025, the BindingDB input file is
+    # assumed to be a Zipfile archive with a single file inside
+    data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
+
     # Directly read and extract useful columns from the original
     # downloaded bindingdb data file, using the 'polars' library.
-    bindingdb_data_path: Path = koza_transform.input_files_dir / get_bindingdb_input_file()
-    df = extract_bindingdb_columns_polars(file_path=str(bindingdb_data_path))
+    # Accesses the koza_transform for the Koza managed data directory.
+    df = extract_bindingdb_columns_polars(
+        data_archive_path,
+        columns=BINDINGDB_COLUMNS,
+        target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
+    )
 
     # Process publications
     df = process_publications(koza_transform, df)

@@ -1,7 +1,6 @@
 import pytest
-
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
@@ -15,6 +14,8 @@ from tests.unit.ingests import (
     MockKozaTransform
 )
 
+# from translator_ingest import INGESTS_DATA_PATH
+
 from translator_ingest.ingests.bindingdb.bindingdb import (
     prepare_bindingdb_data,
     transform_bindingdb_by_record
@@ -25,8 +26,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     TARGET_NAME,
     SOURCE_ORGANISM,
     PUBLICATION,
-    SUPPORTING_DATA_ID,
-    set_bindingdb_input_file
+    SUPPORTING_DATA_ID
 )
 from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
@@ -45,7 +45,9 @@ def mock_koza_transform() -> koza.KozaTransform:
         extra_fields=dict(),
         writer=writer,
         mappings=mappings,
-        input_files_dir=Path(__file__).resolve().parent
+        # Swap in the following code for temporary debugging using the real data file
+        # input_files_dir=INGESTS_DATA_PATH / "bindingdb"  # Path(__file__).resolve().parent
+        input_files_dir = Path(__file__).resolve().parent
     )
 
 
@@ -78,15 +80,11 @@ def test_prepare_bindingdb_data(
     # result_nodes: Optional[list],
     # result_edge: Optional[dict],
 ):
-    # Special utility function to allow soft resetting
-    # of the input file name for testing purposes.
-    # The rest of the test only successfully completes if this file is read in.
-    set_bindingdb_input_file("test_data_homo_sapiens.tsv")
-
     # The BindingDB implementation of prepare_bindingdb_data() method
-    # bypasses Koza to directly read in the input data file to return an iterable sequence of records,
-    # where duplication in the original assay records is removed, merging into a single edge...
-    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform,data=[])
+    # bypasses Koza to directly read in the input data file to return
+    # an iterable sequence of records, where duplication in the
+    # original assay records is removed, merging into a single edge...
+    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
 
     for test_record in merged_records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen

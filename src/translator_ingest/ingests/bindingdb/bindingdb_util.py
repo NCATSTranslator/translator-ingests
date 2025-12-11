@@ -2,8 +2,14 @@
 Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
+from pathlib import Path
+from zipfile import ZipFile
 import polars as pl
 import koza
+
+from translator_ingest.util.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
@@ -32,19 +38,6 @@ UNIPROT_ID = "UniProt (SwissProt) Primary ID of Target Chain 1"
 PUBLICATION = "publication"
 SUPPORTING_DATA_ID = "supporting_data_id"
 
-BINDINGDB_COLUMNS = (
-    REACTANT_SET_ID,
-    MONOMER_ID,
-    PUBCHEM_CID,
-    TARGET_NAME,
-    SOURCE_ORGANISM,
-    UNIPROT_ID,
-    CURATION_DATASOURCE,
-    ARTICLE_DOI,
-    PMID,
-    PATENT_NUMBER
-)
-
 CURATION_DATA_SOURCE_TO_INFORES_MAPPING = {
     "CSAR": "infores:community-sar",
     "ChEMBL": "infores:chembl",
@@ -54,22 +47,6 @@ CURATION_DATA_SOURCE_TO_INFORES_MAPPING = {
     "Taylor Research Group, UCSD": "infores:taylor-research-group-ucsd",
     "US Patent": "infores:uspto-patent"
 }
-
-SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
-    "Homo sapiens": "9606",
-    "Mus musculus": "10090",
-    "Rattus norvegicus": "10116",
-    "Bos taurus": "9913",   # cattle
-    "Sus scrofa": "9823",     # swine
-    "Xenopus laevis": "8355",   # Xenopus laevis (African clawed frog)
-    "Xenopus tropicalis": "8364",   # Xenopus tropicalis - tropical clawed frog
-    "Danio rerio": "7955",
-    "Drosophila melanogaster": "7227",
-    "Caenorhabditis elegans": "6239",
-    "Schizosaccharomyces pombe": "4896",
-    "Saccharomyces cerevisiae": "4932"
-}
-
 
 # We don't need these yet...
 # BASE_LINK_TO_MONOMER: str = "http://www.bindingdb.org/bind/chemsearch/marvin/MolStructure.jsp?monomerid={monomerid}"
@@ -90,63 +67,52 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
 )
 
 
-BINDINGDB_INPUT_FILE = "BindingDB_All_tsv.zip"
-
-
-def get_bindingdb_input_file():
-    return BINDINGDB_INPUT_FILE
-
-
-def set_bindingdb_input_file(filename: str):
-    global BINDINGDB_INPUT_FILE
-    BINDINGDB_INPUT_FILE = filename
-
-
 def extract_bindingdb_columns_polars(
-    file_path: str,
-    columns: list[str] = BINDINGDB_COLUMNS,
-    target_taxa: list[str] = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys(),
+    data_archive_path: Path,
+    columns: tuple[str,...],
+    target_taxa: tuple[str,...],
 ) -> pl.DataFrame:
     """
     Extract only specified columns from the BindingDB TSV file using polars.
 
     This is the FASTEST approach:
-    - Only parses 8 columns instead of 640 (~80x less data)
+    - Only parses the specified subset of columns instead of the full 640 (~80x less data)
+    - Filters data by desired taxa
     - Lazy evaluation optimizes the query
-    - Native zip file support
 
-    >>> df = extract_bindingdb_columns_polars("BindingDB_All_current_tsv.zip")
-    >>> print(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    >>> print(df.columns)
     """
-    # Polars can read from zip files directly
-    df = (
-        pl.scan_csv(
-            file_path,
-            separator="\t",
-            has_header=True,  # header_mode: 0 means that the first row is the header
-            dtypes={
-                "BindingDB MonomerID": pl.Utf8,
-                "PubChem CID": pl.Utf8,
-                "Target Name": pl.Utf8,
-                "UniProt (SwissProt) Primary ID of Target Chain 1": pl.Utf8,
-                "Curation/DataSource": pl.Utf8,
-                "Article DOI": pl.Utf8,
-                "PMID": pl.Utf8,
-                "Patent Number": pl.Utf8,
-            }
-        )
-        # CRITICAL: Only select the required columns - massive performance gain
-        .select(columns)
-        # Execute the optimized query
-        .collect()
-    )
+    with ZipFile(data_archive_path) as z:
+        with z.open("BindingDB_All.tsv") as datafile:
+            df = (
+                pl.scan_csv(
+                    datafile,
+                    separator="\t",
+                    has_header=True,  # header_mode: 0 means that the first row is the header
+                    dtypes={
+                        MONOMER_ID: pl.Utf8,
+                        PUBCHEM_CID: pl.Utf8,
+                        TARGET_NAME: pl.Utf8,
+                        UNIPROT_ID: pl.Utf8,
+                        CURATION_DATASOURCE: pl.Utf8,
+                        ARTICLE_DOI: pl.Utf8,
+                        PMID: pl.Utf8,
+                        PATENT_NUMBER: pl.Utf8,
+                    }
+                )
+                # CRITICAL: Only select the required columns - massive performance gain
+                .select(columns)
+                # Execute the optimized query
+                .collect()
+            )
 
     # Filtering to only human targets
     if SOURCE_ORGANISM in columns:
         df = df.filter(
             pl.col(SOURCE_ORGANISM).is_in(target_taxa)
         )
+
+    logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
+    logger.info(df.columns)
 
     return df
 
