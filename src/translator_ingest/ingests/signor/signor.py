@@ -1,6 +1,5 @@
 import koza
 import pandas as pd
-import csv
 
 from typing import Any, Iterable
 
@@ -23,12 +22,9 @@ from translator_ingest.util.biolink import (
     INFORES_SIGNOR
 )
 
-csv.field_size_limit(10_000_000)   # allow fields up to 10MB
-
-# TODO - should this mapping be applied in some way?
+# TODO - was this mapping intended to be applied in some way?
 #  for example "smallmolecule" is a type in the source data but is not used, is that right?
-
-## the definition of biolink class can be found here: https://github.com/monarch-initiative/biolink-model-pydantic/blob/main/biolink_model_pydantic/model.py
+# the definition of biolink class can be found here: https://github.com/monarch-initiative/biolink-model-pydantic/blob/main/biolink_model_pydantic/model.py
 # * existing biolink category mapping:
 #     * 'Gene': 'biolink:Gene',
 #     * 'Chemical': 'biolink:ChemicalEntity',
@@ -41,12 +37,17 @@ csv.field_size_limit(10_000_000)   # allow fields up to 10MB
 #     * 'Mirna': 'biolink:MicroRNA',
 #     * 'Ncrna': 'biolink:Noncoding_RNAProduct',
 
+# Qi had used this to avoid an issue with long 'description' fields,
+# but I am not seeing any issue without it, so removing it for now.
+# csv.field_size_limit(10_000_000)   # allow fields up to 10MB
+
 
 ## adding additional needed resources
-BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
-BIOLINK_entity_positively_regulated_by_entity = "biolink:entity_positively_regulated_by_entity"
-BIOLINK_entity_negatively_regulated_by_entity = "biolink:entity_negatively_regulated_by_entity"
+BIOLINK_CAUSES = "biolink:causes"
+BIOLINK_HAS_PART = "biolink:has_part"
+BIOLINK_REGULATES = "biolink:regulates"
+BIOLINK_PHYSICALLY_INTERACTS_WITH = "biolink:physically_interacts_with"
 
 
 def get_latest_version() -> str:
@@ -82,10 +83,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## rename those columns into desired format
     source_df.rename(columns={'ENTITYA': 'subject_name', 'TYPEA': 'subject_category', 'ENTITYB': 'object_name', 'TYPEB': 'object_category'}, inplace=True)
 
-    ## replace phenotype labeling into biologicalProcess
     # TODO - it doesn't look like BiologicalProcess is ever used, is this right/necessary?
-    source_df["subject_category"] = source_df["subject_category"].replace("phenotype", "BiologicalProcess")
-    source_df["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
+    # replace phenotype labeling into biologicalProcess
+    # source_df["subject_category"] = source_df["subject_category"].replace("phenotype", "BiologicalProcess")
+    # source_df["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
 
     ## replace all 'miR-34' to 'miR-34a' in two columns subject_category and object_category in the pandas dataframe
     source_df['subject_name'] = source_df['subject_name'].replace('miR-34', 'miR-34a')
@@ -119,7 +120,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["subject_category"] == "protein" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-            predicate = "biolink:regulates"
+            predicate = BIOLINK_REGULATES
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -167,7 +168,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             object = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
 
             if record["EFFECT"] == 'form complex':
-                predicate = "biolink:has_part"
+                predicate = BIOLINK_HAS_PART
                 association_1 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
                     id=entity_id(),
                     subject=subject.id,
@@ -177,7 +178,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
-                predicate = "biolink:physically_interacts_with"
+                predicate = BIOLINK_PHYSICALLY_INTERACTS_WITH
                 association_2 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
                     id=entity_id(),
                     subject=subject.id,
@@ -197,7 +198,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["subject_category"] == "chemical" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-            predicate = "biolink:affects"
+            predicate = BIOLINK_AFFECTS
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
