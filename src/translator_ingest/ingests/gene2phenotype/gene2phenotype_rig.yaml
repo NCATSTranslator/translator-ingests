@@ -76,8 +76,12 @@ target_info:
           value_enumeration: 
             - "biolink:causes"
         - property: biolink:subject_form_or_variant_qualifier
-          value_range:
-            - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
+          value_enumeration:
+            - loss_of_function_variant_form
+            - genetic_variant_form
+            - gain_of_function_variant_form
+            - dominant_negative_variant_form
+            - non_loss_of_function_variant_form
       knowledge_level:
         - knowledge_assertion
       agent_type:
