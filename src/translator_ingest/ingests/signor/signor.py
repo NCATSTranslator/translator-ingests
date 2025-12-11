@@ -79,18 +79,6 @@ def get_latest_version() -> str:
 
     return formatted_date
 
-# Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
-# If implemented they will be called at the beginning and/or end of the transform process.
-@koza.on_data_begin(tag="ingest_by_record")
-def on_begin_ingest_by_record(koza: koza.KozaTransform) -> None:
-    # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.
-    koza.state['example_counter'] = 0
-
-@koza.on_data_end(tag="ingest_by_record")
-def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
-    # for example koza.state could be used for logging
-    if koza.state['example_counter'] > 0:
-        koza.log(f'{koza.state['example_counter']} rows were discarded for having no publications.', level="INFO")
 
 # Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
 # They take an Iterable of dictionaries, typically representing the rows of a source data file, and return an Iterable
