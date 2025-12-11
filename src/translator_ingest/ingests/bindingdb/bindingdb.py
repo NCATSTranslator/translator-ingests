@@ -18,9 +18,13 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     get_bindingdb_input_file,
     extract_bindingdb_columns_polars,
     process_publications,
+
+    SOURCE_ORGANISM_TO_TAXON_ID_MAPPING,
+
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR,
-    MONOMER_ID, LIGAND_NAME, TARGET_NAME,
+    MONOMER_ID, LIGAND_NAME,
+    TARGET_NAME, SOURCE_ORGANISM,
     CURATION_DATASOURCE,
     PUBCHEM_CID,
     UNIPROT_ID,
@@ -126,10 +130,19 @@ def transform_bindingdb_by_record(
     #       can eventually be made in between chemical types
     chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID], name=record[LIGAND_NAME])
 
+    # Taxon of protein target
+    taxon_label = record[SOURCE_ORGANISM]
+    taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None)
+
     # Unless otherwise advised, all BindingDb targets
     # are assumed to be (UniProt registered) proteins.
     target_name = record[TARGET_NAME]
-    protein = Protein(id="UniProtKB:" + record[UNIPROT_ID], name=target_name)
+    protein = Protein(
+        id="UniProtKB:" + record[UNIPROT_ID],
+        name=target_name,
+        in_taxon=taxon_id,
+        in_taxon_label=taxon_label
+    )
 
     # Publications
     publications = [record[PUBLICATION]]
