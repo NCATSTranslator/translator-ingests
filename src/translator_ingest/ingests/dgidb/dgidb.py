@@ -19,6 +19,7 @@ from translator_ingest.ingests.dgidb.mappings import (
     int_type_mapping,
 )
 from translator_ingest.util.biolink import INFORES_DGIDB
+from translator_ingest.util.http_utils import get_modify_date
 
 
 ## HARD-CODED VALUES, see mapping.py for more
@@ -45,7 +46,7 @@ DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 def get_latest_version() -> str:
     ## Needs to be manually updated when we update what file we're using
     ## ...unless we can read the downloaded file during this step. Then we can get the version info from the first few lines (header)
-    return "2024-12"
+    return get_modify_date("https://dgidb.org/data/2024-Dec/interactions.tsv")
 
 
 @koza.prepare_data()
