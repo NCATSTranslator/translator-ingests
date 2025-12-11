@@ -5,7 +5,7 @@ Columbia Open Health Data ("COHD") ingest parser
 from loguru import logger
 import koza
 
-from typing import Any
+from typing import Any, Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     # ChemicalToDiseaseOrPhenotypicFeatureAssociation,
@@ -19,7 +19,6 @@ from bmt.pydantic import (
     get_edge_class
 )
 
-# TODO: Does this method perhaps belong in bmt.pydantic?
 from translator_ingest.util.biolink import knowledge_sources_from_trapi, get_biolink_model_toolkit
 
 from koza.model.graphs import KnowledgeGraph
@@ -78,6 +77,13 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
 
         cohd_object: str = record["object"]
         object_category: list[str] = bmt.get_element_by_prefix(cohd_object)
+
+        attributes = parse_attributes(record.get("attributes", None))
+        sources: Optional[list[dict]] = None
+        if attributes:
+            if "sources" in attributes:
+                sources = knowledge_sources_from_trapi(record["sources"])
+
         association_list = bmt.get_associations(
                     subject_categories=subject_category,
                     predicates= [cohd_predicate],
@@ -93,10 +99,7 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
             predicate=cohd_predicate,
             object=cohd_object,
             has_confidence_score=record.get("score", None),
-
-            # TODO: need to add additional supporting_data_source?
-            sources=knowledge_sources_from_trapi(record["sources"]),
-
+            sources=sources,
             knowledge_level=KnowledgeLevelEnum.statistical_association,
             agent_type=AgentTypeEnum.data_analysis_pipeline,
         )
