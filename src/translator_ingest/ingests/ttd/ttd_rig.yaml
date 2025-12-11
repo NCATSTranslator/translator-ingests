@@ -256,4 +256,4 @@ provenance_info:
     - "Matthew Brush - data modeling, domain expertise"
   artifacts:
     - "https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30"
-    ## can add notebook once PR is merged, there's a stable link for it
+    - "notebooks for development work currently in parser code directory"
