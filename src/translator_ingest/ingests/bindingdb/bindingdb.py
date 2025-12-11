@@ -32,10 +32,6 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     SUPPORTING_DATA_ID
 )
 
-# This is the local filename of the BindingDb data file
-# as specified in the ingest download.yaml
-BINDINGDB_INPUT_FILE = "BindingDB_All_current_tsv.zip"
-
 
 def get_latest_version() -> str:
     # According to the BindingDb team,

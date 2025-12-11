@@ -5,4 +5,4 @@
 # Files are saved as `local_name` which must match the file name used in the main ingest yaml
 ---
 - url: https://www.bindingdb.org/rwd/bind/downloads/BindingDB_All_{version}_tsv.zip
-  local_name: BindingDB_All_latest_tsv.zip
+  local_name: BindingDB_All_tsv.zip

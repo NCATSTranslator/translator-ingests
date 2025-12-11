@@ -90,7 +90,7 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
 )
 
 
-BINDINGDB_INPUT_FILE = "BindingDB_All_current_tsv.zip"
+BINDINGDB_INPUT_FILE = "BindingDB_All_tsv.zip"
 
 
 def get_bindingdb_input_file():
