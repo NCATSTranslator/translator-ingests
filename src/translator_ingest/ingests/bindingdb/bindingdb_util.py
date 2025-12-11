@@ -55,6 +55,21 @@ CURATION_DATA_SOURCE_TO_INFORES_MAPPING = {
     "US Patent": "infores:uspto-patent"
 }
 
+SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
+    "Homo sapiens": "9606",
+    "Mus musculus": "10090",
+    "Rattus norvegicus": "10116",
+    "Bos taurus": "9913",   # cattle
+    "Sus scrofa": "9823",     # swine
+    "Xenopus laevis": "8355",   # Xenopus laevis (African clawed frog)
+    "Xenopus tropicalis": "8364",   # Xenopus tropicalis - tropical clawed frog
+    "Danio rerio": "7955",
+    "Drosophila melanogaster": "7227",
+    "Caenorhabditis elegans": "6239",
+    "Schizosaccharomyces pombe": "4896",
+    "Saccharomyces cerevisiae": "4932"
+}
+
 
 # We don't need these yet...
 # BASE_LINK_TO_MONOMER: str = "http://www.bindingdb.org/bind/chemsearch/marvin/MolStructure.jsp?monomerid={monomerid}"
@@ -89,7 +104,8 @@ def set_bindingdb_input_file(filename: str):
 
 def extract_bindingdb_columns_polars(
     file_path: str,
-    columns: list[str] = BINDINGDB_COLUMNS
+    columns: list[str] = BINDINGDB_COLUMNS,
+    target_taxa: list[str] = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys(),
 ) -> pl.DataFrame:
     """
     Extract only specified columns from the BindingDB TSV file using polars.
@@ -129,7 +145,7 @@ def extract_bindingdb_columns_polars(
     # Filtering to only human targets
     if SOURCE_ORGANISM in columns:
         df = df.filter(
-            pl.col(SOURCE_ORGANISM) == "Homo sapiens"
+            pl.col(SOURCE_ORGANISM).is_in(target_taxa)
         )
 
     return df
