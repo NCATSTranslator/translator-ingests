@@ -1,8 +1,8 @@
 ## FROM template, modified for this ingest
-import uuid
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
+from bmt.pydantic import entity_id
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     Disease,
@@ -148,7 +148,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
 
     association = GeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=gene.id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         qualified_predicate=BIOLINK_CAUSES,
