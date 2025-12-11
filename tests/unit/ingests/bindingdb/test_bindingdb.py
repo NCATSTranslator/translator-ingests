@@ -22,6 +22,8 @@ from translator_ingest.ingests.bindingdb.bindingdb import (
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
     LIGAND_SMILES,
+    TARGET_NAME,
+    SOURCE_ORGANISM,
     PUBLICATION,
     SUPPORTING_DATA_ID,
     set_bindingdb_input_file
@@ -82,10 +84,10 @@ def test_prepare_bindingdb_data(
 
     for test_record in merged_records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
-        # Record "5" excluded because the source organism is not "Homo sapiens"
-        assert test_record[REACTANT_SET_ID] not in ["3", "5"]
+        # Record "6" excluded because the source organism "Pan troglodytes" is not in the target list of taxa
+        assert test_record[REACTANT_SET_ID] not in ["3", "6"]
 
-        # Didn't extract this field (among others...) - not needed
+        # Didn't extract this field (among others...) - column was not needed
         assert LIGAND_SMILES not in test_record
 
         # Check that the publication and supporting data fields are set correctly
@@ -96,8 +98,13 @@ def test_prepare_bindingdb_data(
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
         elif test_record[REACTANT_SET_ID] == "4":
+            assert test_record[TARGET_NAME] == "Caspase-1b"
             assert test_record[PUBLICATION] == "uspto-patent:9447092"
             assert test_record[SUPPORTING_DATA_ID] == "infores:uspto-patent"
+        elif test_record[REACTANT_SET_ID] == "5":
+            assert test_record[SOURCE_ORGANISM] == "Mus musculus"
+            assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
+            assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
 
 @pytest.mark.parametrize(
