@@ -25,6 +25,9 @@ from translator_ingest.util.biolink import (
 
 csv.field_size_limit(10_000_000)   # allow fields up to 10MB
 
+# TODO - should this mapping be applied in some way?
+#  for example "smallmolecule" is a type in the source data but is not used, is that right?
+
 ## the definition of biolink class can be found here: https://github.com/monarch-initiative/biolink-model-pydantic/blob/main/biolink_model_pydantic/model.py
 # * existing biolink category mapping:
 #     * 'Gene': 'biolink:Gene',
@@ -80,6 +83,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_df.rename(columns={'ENTITYA': 'subject_name', 'TYPEA': 'subject_category', 'ENTITYB': 'object_name', 'TYPEB': 'object_category'}, inplace=True)
 
     ## replace phenotype labeling into biologicalProcess
+    # TODO - it doesn't look like BiologicalProcess is ever used, is this right/necessary?
     source_df["subject_category"] = source_df["subject_category"].replace("phenotype", "BiologicalProcess")
     source_df["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
 
@@ -190,8 +194,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     edges.append(association_1)
                     edges.append(association_2)
 
-        elif record["subject_category"] == "ChemicalEntity" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
-            subject = ChemicalEntity(id="CHEBI:" + record["IDA"], name=record["subject_name"])
+        elif record["subject_category"] == "chemical" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
+            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
             predicate = "biolink:affects"
 
