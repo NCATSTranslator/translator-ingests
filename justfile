@@ -19,7 +19,7 @@ shebang := if os() == 'windows' {
 }
 
 rootdir :=`pwd`
-sources := "alliance ctd diseases gene2phenotype go_cam goa hpoa icees panther sider"
+sources := "alliance chembl cohd ctd ctkp dakp dgidb diseases gene2phenotype go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider tmkp ttd ubergraph"
 
 ### Help ###
 
