@@ -72,11 +72,12 @@ def transform_icees_node(
 
     except Exception as e:
         # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = record.get("id", "Unknown")
         if str(e) not in koza_transform.transform_metadata["icees_nodes"]:
-            koza_transform.transform_metadata["icees_nodes"][str(e)] = [rec_id]
+            koza_transform.transform_metadata["icees_nodes"][exception_tag] = [rec_id]
         else:
-            koza_transform.transform_metadata["icees_nodes"][str(e)].append(rec_id)
+            koza_transform.transform_metadata["icees_nodes"][exception_tag].append(rec_id)
 
         return None
 
@@ -152,10 +153,11 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
 
     except Exception as e:
         # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = record.get("id", "Unknown")
         if str(e) not in koza_transform.transform_metadata["icees_edges"]:
-            koza_transform.transform_metadata["icees_edges"][str(e)] = [rec_id]
+            koza_transform.transform_metadata["icees_edges"][exception_tag] = [rec_id]
         else:
-            koza_transform.transform_metadata["icees_edges"][str(e)].append(rec_id)
+            koza_transform.transform_metadata["icees_edges"][exception_tag].append(rec_id)
 
         return None
