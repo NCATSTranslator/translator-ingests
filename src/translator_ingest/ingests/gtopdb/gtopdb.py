@@ -131,7 +131,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
             qualified_predicate = BIOLINK_CAUSES
-
+                causal_mechanism_qualifier = None
             if record["Action"] == "Activation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
