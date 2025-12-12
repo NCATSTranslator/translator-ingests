@@ -2,7 +2,8 @@ ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
 
-SOURCES ?= alliance chembl ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider tmkp ttd ubergraph
+
+SOURCES ?= alliance bindingdb chembl ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider tmkp ttd ubergraph
 
 
 # Set to any non-empty value to overwrite previously generated files
