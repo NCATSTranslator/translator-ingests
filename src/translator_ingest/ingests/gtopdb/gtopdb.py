@@ -104,7 +104,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             if record["Action"] == "Partial agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
             if record["Action"] == "Positive":
-                causal_mechanism_qualifier is None
+                causal_mechanism_qualifier = None
             if record["Action"] == "Potentiation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
 
@@ -131,7 +131,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
             qualified_predicate = BIOLINK_CAUSES
-                causal_mechanism_qualifier = None
             if record["Action"] == "Activation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
@@ -150,10 +149,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             if record["Action"] == "Inverse agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inverse_agonism
                 object_direction_qualifier = DirectionQualifierEnum.decreased
-            ## cannot find in pydanticmodel_v2?
-            # if record["Action"] == "Irreversible agonist":
-            #     causal_mechanism_qualifier = CausalMechanismQualifierEnum.irreversible_agonism
-            #     object_direction_qualifier = DirectionQualifierEnum.increased
             if record["Action"] == "Mixed":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.mixed_agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
@@ -211,10 +206,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.biphasic_allosteric_modulation
                 object_direction_qualifier = None
                 qualified_predicate = None
-            ## cannot find full_agonism?
-            # if record["Action"] == "Full agonist":
-            #     causal_mechanism_qualifier = CausalMechanismQualifierEnum.full_agonism
-            #     object_direction_qualifier = DirectionQualifierEnum.increased
             if record["Action"] == "Inhibition":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
                 object_direction_qualifier = DirectionQualifierEnum.decreased
@@ -231,9 +222,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.mixed_allosteric_modulation
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
-            # if record["Action"] == None or "Neutral":
-            #     causal_mechanism_qualifier = None
-            #     object_direction_qualifier = None
             if record["Action"] == "Partial agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
@@ -280,10 +268,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
             if record["Action"] == "Inverse agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inverse_agonism
-            ## cannot find in pydanticmodel_v2?
-            # if record["Action"] == "Irreversible agonist":
-            #     causal_mechanism_qualifier = CausalMechanismQualifierEnum.irreversible_agonism
-            #     object_direction_qualifier = DirectionQualifierEnum.increased
             if record["Action"] == "Mixed":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.mixed_agonism
             if record["Action"] == "Non-competitive":
@@ -317,7 +301,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
             if record["Action"] == "Antagonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_agonism
+                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_inhibition
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
             if record["Action"] == "Binding":
@@ -442,11 +426,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
-            ## not find voltage_dependent_gating_inhibition
-            # if record["Action"] == "Slows inactivation":
-            #     causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-            #     object_direction_qualifier = DirectionQualifierEnum.decreased
-            #     qualified_predicate = BIOLINK_CAUSES
 
             association = ChemicalAffectsGeneAssociation(
                 id=str(uuid.uuid4()),
