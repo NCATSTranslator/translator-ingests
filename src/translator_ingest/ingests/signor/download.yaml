@@ -1,0 +1,13 @@
+## !!!! Note this data is complicated to download because the website uses php forms. This is currently not compatible
+# with the kghub_downloader. In the short term, to get this to work, I moved a copy to a RENCI server.
+
+- url: https://stars.renci.org/var/data_services/signor/all_data_11_12_25.tsv
+  local_name: all_data.tsv
+
+##  Need to select "complete dataset" -> select "Homo sapiens" as organisms -> select "file tsv" as format
+## the downloaded file's name will be all_data_<current date when downloaded>.tsv directly
+#---
+#- url: https://signor.uniroma2.it/download_entity.php
+#  local_name: all_data_11_12_25.tsv
+
+
