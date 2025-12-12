@@ -12,7 +12,7 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     CASPASE1_WEAK_KI_RECORD,
-    NO_PMID_RECORD
+    RECORD_MISSING_FIELDS
 )
 ```
 
@@ -63,7 +63,7 @@ from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKo
 from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
-    NO_PMID_RECORD
+    RECORD_MISSING_FIELDS
 )
 
 
@@ -97,37 +97,37 @@ ASSOCIATION_TEST_SLOTS = (
     "test_record,expected_nodes,expected_edge",
     [
         (
-            NO_PMID_RECORD,
-            None,  # Should be filtered out
-            None,
+                RECORD_MISSING_FIELDS,
+                None,  # Should be filtered out
+                None
         ),
         (
-            CASPASE3_KI_RECORD,
-            [
-                {
-                    "id": "BindingDB:219",  # or appropriate ID format
-                    "name": "Thiophene Scaffold 47c",
-                    "category": ["biolink:ChemicalEntity"]
-                },
-                {
-                    "id": "UniProtKB:P42574",
-                    "name": "Caspase-3",
-                    "category": ["biolink:Protein"]
-                },
-            ],
-            {
-                "category": ["biolink:ChemicalAffectsGeneAssociation"],
-                "subject": "BindingDB:219",
-                "predicate": "biolink:affects",
-                "object": "UniProtKB:P42574",
-                "publications": ["PMID:12408711"],
-                "qualifiers": [
+                CASPASE3_KI_RECORD,
+                [
                     {
-                        "qualifier_type_id": "biolink:binding_constant_ki",
-                        "qualifier_value": "90"
-                    }
+                        "id": "BindingDB:219",  # or appropriate ID format
+                        "name": "Thiophene Scaffold 47c",
+                        "category": ["biolink:ChemicalEntity"]
+                    },
+                    {
+                        "id": "UniProtKB:P42574",
+                        "name": "Caspase-3",
+                        "category": ["biolink:Protein"]
+                    },
                 ],
-            },
+                {
+                    "category": ["biolink:ChemicalAffectsGeneAssociation"],
+                    "subject": "BindingDB:219",
+                    "predicate": "biolink:affects",
+                    "object": "UniProtKB:P42574",
+                    "publications": ["PMID:12408711"],
+                    "qualifiers": [
+                        {
+                            "qualifier_type_id": "biolink:binding_constant_ki",
+                            "qualifier_value": "90"
+                        }
+                    ],
+                },
         ),
     ],
 )

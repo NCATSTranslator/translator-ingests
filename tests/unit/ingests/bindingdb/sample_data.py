@@ -5,8 +5,8 @@ These records represent real data from BindingDB that can be used
 to test the bindingdb transform function.
 """
 
-# Test record 0: Record with no PMID (should be filtered out)
-NO_PMID_RECORD = {
+# Test record 0: Record with missing mandatory fields (in this case, UNIPROT_ID)
+RECORD_MISSING_FIELDS = {
     "BindingDB Reactant_set_id": "999",
     "Ligand SMILES": "CC(C)C",
     "Ligand InChI": "InChI=1S/C3H8/c1-3-2/h3H,1-2H3",
@@ -23,17 +23,19 @@ NO_PMID_RECORD = {
     "koff (s-1)": "",
     "pH": "7.4",
     "Temp (C)": "25.00",
-    "Curation/DataSource": "Test",
+    "Curation/DataSource": "Curated from the literature by BindingDB",
     "Article DOI": "",
     "BindingDB Entry DOI": "",
-    "PMID": "",  # No PMID, Patent ID nor Article DOI - should cause the record to be skipped
+    "PMID": "12408711",
     "Patent Number": "",
     "PubChem CID": "",
     "PubChem SID": "",
     "ChEBI ID of Ligand": "",
     "ChEMBL ID of Ligand": "",
-    "UniProt (SwissProt) Primary ID of Target Chain 1": "P99999",
-    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Test Protein",
+    "UniProt (SwissProt) Primary ID of Target Chain 1": "",
+    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Unknown",
+    "publication": "PMID:12408711",
+    "supporting_data_id": None
 }
 
 # Test record 1: Caspase-3 inhibitor with Ki = 90 nM

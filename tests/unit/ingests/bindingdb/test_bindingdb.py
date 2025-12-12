@@ -29,6 +29,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     SUPPORTING_DATA_ID
 )
 from tests.unit.ingests.bindingdb.sample_data import (
+    RECORD_MISSING_FIELDS,
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     CASPASE1_WEAK_KI_RECORD,
@@ -114,12 +115,16 @@ def test_prepare_bindingdb_data(
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
+        (
+                RECORD_MISSING_FIELDS,
+                None,  # Should be filtered out
+                None
+        ),
         (   # Test record 0: Caspase-3 inhibitor with Ki = 90 nM
             CASPASE3_KI_RECORD,
             [
                 {
                     "id": "CID:5327301",
-                    "name": "Thiophene Scaffold 47c",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
