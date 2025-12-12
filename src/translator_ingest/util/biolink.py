@@ -20,6 +20,7 @@ INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
+INFORES_SIGNOR = "infores:signor"
 INFORES_TTD = "infores:ttd"
 INFORES_BGEE = "infores:bgee"
 INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
@@ -47,7 +48,6 @@ INFORES_MYCANCERGENOME_TRIALS = "infores:mycancergenome-trials"
 INFORES_NCIT = "infores:ncit"
 INFORES_ONCOKB = "infores:oncokb"
 INFORES_PHARMGKB = "infores:pharmgkb"
-
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
