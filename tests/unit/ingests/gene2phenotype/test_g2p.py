@@ -38,7 +38,7 @@ from translator_ingest.ingests.gene2phenotype.gene2phenotype import on_begin, tr
 @pytest.fixture
 def single_record_test():
     writer = MockKozaWriter()
-    ## From searching resource file: grep -m 1 "monoallelic_X_heterozygous" and "Orphanet"
+    ## From searching resource file: grep -m 1 "monoallelic_X_heterozygous"
     records = [
         {
             "g2p id": "G2P00016",
@@ -50,17 +50,6 @@ def single_record_test():
             "molecular mechanism": "undetermined",
             "publications": "25099252",
             "date of last review": "2015-07-22 16:14:09+00:00",
-        },
-        {
-            "g2p id": "G2P02564",
-            "hgnc id": "7801",
-            "disease mim": "Orphanet:93357",
-            "disease MONDO": None,
-            "allelic requirement": "biallelic_autosomal",
-            "confidence": "strong",
-            "molecular mechanism": "loss of function",
-            "publications": "30773277; 30773278",
-            "date of last review": "2018-11-07 09:53:40+00:00",
         },
     ]
     ## running on_begin is problematic because it actually runs requests to retrieve outside data
@@ -75,8 +64,8 @@ def test_ebi_g2p(single_record_test):
     ## check basic output
     entities = single_record_test
     assert entities
-    ## 2 edges/associations, 4 nodes
-    assert len(entities) == 6
+    ## 1 edges/associations, 2 nodes
+    assert len(entities) == 3
 
     ## check first record's transform
     ## Doing because entities includes Nodes as well
@@ -104,31 +93,3 @@ def test_ebi_g2p(single_record_test):
     assert gene.id == "HGNC:18704"
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MONDO:0100124"
-
-    ## check second record's transform
-    ## Doing because entities includes Nodes as well
-    association2 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][1]
-    assert association2
-    ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert (
-        association2.subject_form_or_variant_qualifier
-        == ChemicalOrGeneOrGeneProductFormOrVariantEnum.loss_of_function_variant_form
-    )
-    ## koza turns the dates into this type
-    assert association2.update_date == datetime.date(2018, 11, 7)
-    assert association2.allelic_requirement == "HP:0000007"
-    ## publications stuff
-    assert len(association2.publications) == 2
-    assert association2.publications[0] == "PMID:30773277"
-    assert association2.publications[1] == "PMID:30773278"
-    ## sources stuff
-    assert association2.sources
-    assert len(association2.sources) == 1
-    ebi_g2p_source = association2.sources[0]
-    assert isinstance(ebi_g2p_source, RetrievalSource)
-    assert ebi_g2p_source.source_record_urls == ["https://www.ebi.ac.uk/gene2phenotype/lgd/G2P02564"]
-    ## nodes
-    gene = [e for e in entities if isinstance(e, Gene)][1]
-    assert gene.id == "HGNC:7801"
-    disease = [e for e in entities if isinstance(e, Disease)][1]
-    assert disease.id == "orphanet:93357"

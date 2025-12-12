@@ -19,6 +19,7 @@ from translator_ingest.ingests.dgidb.mappings import (
     int_type_mapping,
 )
 from translator_ingest.util.biolink import INFORES_DGIDB
+from translator_ingest.util.http_utils import get_modify_date
 
 
 ## HARD-CODED VALUES, see mapping.py for more
@@ -35,7 +36,6 @@ PREFIXES_TO_DROP = [
 ## interaction_types that map to plain "interacts_with" edge (no qualifiers, extra edge)
 ## "~NULL" is a placeholder for NA, see prepare_data for details
 plain_interact_types = {"other/unknown", "~NULL"}
-BIOLINK_INTERACTS = "biolink:interacts_with"
 ## columns for drug-gene pair
 DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 
@@ -45,7 +45,7 @@ DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 def get_latest_version() -> str:
     ## Needs to be manually updated when we update what file we're using
     ## ...unless we can read the downloaded file during this step. Then we can get the version info from the first few lines (header)
-    return "2024-12"
+    return get_modify_date("https://dgidb.org/data/2024-Dec/interactions.tsv")
 
 
 @koza.prepare_data()
@@ -91,14 +91,6 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ##   currently, multiple values map to plain "interacts_with" edge modeling
     df["mod_type"] = ["~PLAIN_INTERACTS" if i in plain_interact_types else i for i in df["interaction_types"]]
     ## (keeping original column interaction_types for trouble-shooting, maybe future use (original predicates?))
-    ## take int_type_mapping and add this value
-    int_type_mapping.update({
-        "~PLAIN_INTERACTS": {
-            "predicate": BIOLINK_INTERACTS,
-            ## create empty qualifier dict, so assigning to association later is easier. Will error if the ** is set to None
-            "qualifiers": {},
-        }
-    })
 
     ## group-by/merge rows by unique drug ID, gene ID, mod_type combo
     ## then each row == 1 Translator edge
@@ -184,7 +176,8 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             ## currently, becomes int without issues
             dgidb_evidence_score=record["evidence_score"],
             predicate=data_modeling["predicate"],
-            **data_modeling.get("qualifiers")
+            ## return empty dict if mapping doesn't have "qualifiers" (ex: plain "interacts_with" edge)
+            **data_modeling.get("qualifiers", dict())
         )
         return KnowledgeGraph(nodes=[chemical, gene], edges=[association])
     elif "affects" in data_modeling["predicate"]:
@@ -205,7 +198,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             dgidb_evidence_score=record["evidence_score"],
             predicate=data_modeling["predicate"],
             ## currently, there are always qualifiers
-            **data_modeling.get("qualifiers")
+            **data_modeling.get("qualifiers", dict())
         )
         ## if there's an extra edge field
         if data_modeling.get("extra_edge_pred"):

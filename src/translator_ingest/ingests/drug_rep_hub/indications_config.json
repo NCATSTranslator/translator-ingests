@@ -1,0 +1,4412 @@
+{
+  "Addison's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009410"
+  },
+  "African trypanosomiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "human African trypanosomiasis",
+    "xref": "MONDO:0005459"
+  },
+  "Alzheimer's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004975"
+  },
+  "Buerger's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "thromboangiitis obliterans",
+    "xref": "MONDO:0008889"
+  },
+  "Burkitt's lymphoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007243"
+  },
+  "Chagas disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001444"
+  },
+  "Cogan's syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015453"
+  },
+  "Crohn's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005011"
+  },
+  "Cushing's syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018912"
+  },
+  "Ehlers-Danlos syndrome (EDS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020066"
+  },
+  "Ewing's sarcoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0012817"
+  },
+  "Friedreich's ataxia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009245"
+  },
+  "Gaucher disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018150"
+  },
+  "Grave's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Graves disease",
+    "xref": "MONDO:0005364"
+  },
+  "Hodgkin's lymphoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Hodgkins lymphoma",
+    "xref": "MONDO:0004952"
+  },
+  "Huntington's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007739"
+  },
+  "Kaposi sarcoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Kaposi's sarcoma (disease)",
+    "xref": "MONDO:0005055"
+  },
+  "Kimura's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018830"
+  },
+  "Lambert-Eaton myasthenic syndrome (LEMS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018556"
+  },
+  "Leber hereditary optic neuropathy (LHON)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010788"
+  },
+  "Lyme disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019632"
+  },
+  "MRI contrast agent": {
+    "feature_action": "agent for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "CHEBI:37335"
+  },
+  "Meniere's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007972"
+  },
+  "Non-24-Hour Sleep-Wake Disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019137"
+  },
+  "Paget's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021165"
+  },
+  "Parkinson's Disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005180"
+  },
+  "Peyronie's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008231"
+  },
+  "Raynaud's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008364"
+  },
+  "Refetoff syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "generalized resistance to thyroid hormone",
+    "xref": "MONDO:0009043"
+  },
+  "Tourette's disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Tourette syndrome",
+    "xref": "MONDO:0007661"
+  },
+  "Waldenstrom's macroglobulinemia (WM)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0100280"
+  },
+  "Wilm's tumor": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Nephroblastoma",
+    "xref": "HP:0002667"
+  },
+  "Wilson's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010200"
+  },
+  "Wolff-Parkinson-White Syndrome (WPW)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008685"
+  },
+  "Zellweger syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019609"
+  },
+  "Zollinger-Ellison syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019610"
+  },
+  "abdominal distension": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "abdominal distention",
+    "xref": "HP:0003270"
+  },
+  "abdominal pain": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002027"
+  },
+  "abrasions": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "GSSO:009124"
+  },
+  "abstinence from alcohol": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Alcohol Abstinence",
+    "xref": "OMIT:0028549"
+  },
+  "acetaminophen overdose": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "paracetamol poisoning",
+    "xref": "MONDO:0018741"
+  },
+  "acne vulgaris (AV)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Acne",
+    "xref": "MONDO:0011438"
+  },
+  "acne vulgaris (av)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Acne",
+    "xref": "MONDO:0011438"
+  },
+  "acquired immunodeficiency syndrome (AIDS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "AIDS",
+    "xref": "MONDO:0012268"
+  },
+  "acromegaly": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019933"
+  },
+  "actinic keratosis (AK)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007855"
+  },
+  "actinic keratosis (ak)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007855"
+  },
+  "actinomycosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005631"
+  },
+  "acute abdominal visceral spasm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "abdominal spasm AE",
+    "xref": "OAE:0002173"
+  },
+  "acute coronary syndrome (ACS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005542"
+  },
+  "acute glomerulonephritis (AGN)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C35213"
+  },
+  "acute hypercapnia (AHC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Hypercapnia",
+    "xref": "HP:0012416"
+  },
+  "acute intermittent porphyria (AIP)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008294"
+  },
+  "acute iron intoxication": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "heavy metal poisoning",
+    "xref": "EFO:1001518"
+  },
+  "acute lung injury": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015796"
+  },
+  "acute lymphoblastic leukemia (ALL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0003541"
+  },
+  "acute lymphoblastic leukemia (all)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0003541"
+  },
+  "acute myeloid leukemia (AML)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018874"
+  },
+  "acute myeloid leukemia (aml)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018874"
+  },
+  "acute pain": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C27003"
+  },
+  "acute promyelocytic leukemia (APL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0012883"
+  },
+  "acute resperatory distress syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "acute respiratory distress syndrome",
+    "xref": "MONDO:0006502"
+  },
+  "acute respiratory distress syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006502"
+  },
+  "adrenal cortical carcinoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "adrenal cortex carcinoma",
+    "xref": "MONDO:0006639"
+  },
+  "adrenal diagnostic agent": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Adrenal Gland",
+    "xref": "NCIT:C12666"
+  },
+  "adrenogenital syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015898"
+  },
+  "aggressive systemic mastocytosis (ASM)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020333"
+  },
+  "airsacculitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:airsacculitis"
+  },
+  "akathisia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0031943"
+  },
+  "allergic conjunctivitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0007879"
+  },
+  "allergic rhinitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011786"
+  },
+  "alzheimer's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004975"
+  },
+  "amblyopia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000646"
+  },
+  "amebiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005644"
+  },
+  "amenorrhea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001836"
+  },
+  "amyotrophic lateral sclerosis (ALS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004976"
+  },
+  "amyotrophic lateral sclerosis (als)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004976"
+  },
+  "anacidity diagnostic": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "achlorhydria",
+    "xref": "MONDO:0043465"
+  },
+  "anaphylactic shock": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100845"
+  },
+  "androgenetic alopecia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005339"
+  },
+  "anemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001903"
+  },
+  "anesthetic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Anesthetic Agent",
+    "xref": "NCIT:C245"
+  },
+  "angina pectoris": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001681"
+  },
+  "angioedema": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010481"
+  },
+  "angiography": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C20080"
+  },
+  "ankylosing spondylitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005306"
+  },
+  "anorexia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002039"
+  },
+  "anterior uveitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0012122"
+  },
+  "anthrax": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "anthrax infection",
+    "xref": "MONDO:0005119"
+  },
+  "anticoagulation reversal": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Anticoagulation Therapy",
+    "xref": "NCIT:C63341"
+  },
+  "anticoagulent": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "anticoagulant",
+    "xref": "CHEBI:50249"
+  },
+  "antiseptic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "antiseptic drug",
+    "xref": "CHEBI:48218"
+  },
+  "antiviral": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "CHEBI:22587"
+  },
+  "anxiety": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011918"
+  },
+  "aphthous ulcers": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0032154"
+  },
+  "arteriosclerosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Monckeberg arteriosclerosis",
+    "xref": "MONDO:0003310"
+  },
+  "ascariasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005654"
+  },
+  "aspergillosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005657"
+  },
+  "asthenia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0025406"
+  },
+  "asthma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004979"
+  },
+  "astrocytoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0009592"
+  },
+  "atherosclerosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005311"
+  },
+  "atrial fibrillation (AF)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004981"
+  },
+  "atrial fibrillation (af)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004981"
+  },
+  "attention-deficit/hyperactivity disorder (ADHD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "attention deficit-hyperactivity disorder",
+    "xref": "MONDO:0007743"
+  },
+  "attention-deficit/hyperactivity disorder (adhd)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "attention deficit-hyperactivity disorder",
+    "xref": "MONDO:0007743"
+  },
+  "backache": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Back pain",
+    "xref": "HP:0003418"
+  },
+  "bacterial gill disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "fish disease",
+    "xref": "MONDO:0024934"
+  },
+  "bacterial septicemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Septicemia",
+    "xref": "NCIT:C3364"
+  },
+  "bacterial vaginosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005316"
+  },
+  "basal cell carcinoma (BCC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "skin basal cell carcinoma",
+    "xref": "MONDO:0005341"
+  },
+  "benign prostatic hyperplasia (BPH)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010811"
+  },
+  "benign prostatic hyperplasia (bph)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010811"
+  },
+  "bile acid synthesis disorders": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "inborn disorder of bile acid synthesis",
+    "xref": "MONDO:0019218"
+  },
+  "bile stimulation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Bile Secretion Induction",
+    "xref": "NCIT:C41489"
+  },
+  "bipolar disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004985"
+  },
+  "blackhead disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Histomonas meleagridis",
+    "xref": "NCBITaxon:135588"
+  },
+  "bladder cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "urinary bladder cancer",
+    "xref": "MONDO:0001187"
+  },
+  "blastomycosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005672"
+  },
+  "blepharitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004785"
+  },
+  "blisters": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "abnormal blistering of the skin",
+    "xref": "HP:0008066"
+  },
+  "bloating": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "abdominal distention",
+    "xref": "HP:0003270"
+  },
+  "bone and joint infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Bone Infection",
+    "xref": "NCIT:C26839"
+  },
+  "bone fracture": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005315"
+  },
+  "bovine respiratory disease (BRD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "bovine respiratory disease complex",
+    "xref": "MONDO:0005678"
+  },
+  "bovine respiratory disease (brd)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "bovine respiratory disease complex",
+    "xref": "MONDO:0005678"
+  },
+  "bradycardia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C37920"
+  },
+  "brain tumors": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "brain neoplasm",
+    "xref": "MONDO:0021211"
+  },
+  "brainstem glioma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0010796"
+  },
+  "breast cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007254"
+  },
+  "brittle bone disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "osteogenesis imperfecta",
+    "xref": "MONDO:0019019"
+  },
+  "bronchial hyperresponsiveness diagnostic": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Airway hyperresponsiveness",
+    "xref": "HP:0032933"
+  },
+  "bronchitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0003781"
+  },
+  "bronchospasm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0025428"
+  },
+  "brucellosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005683"
+  },
+  "buerger's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "thromboangiitis obliterans",
+    "xref": "MONDO:0008889"
+  },
+  "bulimia nervosa": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005452"
+  },
+  "burkitt's lymphoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007243"
+  },
+  "bursitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002471"
+  },
+  "buruli ulcer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Buruli ulcer disease",
+    "xref": "MONDO:0000327"
+  },
+  "cachexia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0004326"
+  },
+  "candidemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0044070"
+  },
+  "carcinoid tumors": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100570"
+  },
+  "cardiac arrest": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000745"
+  },
+  "cardiac arrythmia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "EFO:0004269"
+  },
+  "cardiomyopathy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004994"
+  },
+  "carnitine deficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "carnitine deficiency, myopathic",
+    "xref": "MONDO:0008920"
+  },
+  "cataracts": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000518"
+  },
+  "catheter-related bloodstream infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Catheter-Related Infection",
+    "xref": "NCIT:C78232"
+  },
+  "cattle grubs": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Oestridae",
+    "xref": "NCBITaxon:7387"
+  },
+  "caudal epidural block": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Epidural Block",
+    "xref": "NCIT:C15642"
+  },
+  "cavities": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "\"structure, cavities\"",
+    "xref": "PATO:0002014"
+  },
+  "celiac disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005130"
+  },
+  "celluitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "cellulitis (disease)",
+    "xref": "MONDO:0005230"
+  },
+  "central diabetes insipidus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015790"
+  },
+  "central nervous system depression": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Central Nervous System Depression [PE]",
+    "xref": "N0000175728"
+  },
+  "cerebral artery occlusion": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000944"
+  },
+  "cerebral cholesterosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "cerebrotendinous xanthomatosis",
+    "xref": "MONDO:0008948"
+  },
+  "cerebral vasospasm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "intracranial vasospasm",
+    "xref": "MONDO:0006812"
+  },
+  "cerebrovascular insufficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "cerebrovascular disorder",
+    "xref": "MONDO:0011057"
+  },
+  "cervical cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002974"
+  },
+  "chancroid": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001797"
+  },
+  "chapped lips": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0040181"
+  },
+  "chest congestion": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "congestion",
+    "xref": "SYMP:0000237"
+  },
+  "chicken pox": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "chickenpox",
+    "xref": "MONDO:0005700"
+  },
+  "chlamydia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "DOID:11263"
+  },
+  "cholera": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015766"
+  },
+  "cholesterol": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C369"
+  },
+  "chronic eosinophilic leukemia (CEL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015687"
+  },
+  "chronic immune thrombocytopenia (ITP)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "autoimmune thrombocytopenic purpura",
+    "xref": "MONDO:0008558"
+  },
+  "chronic kidney disease (CKD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005300"
+  },
+  "chronic kidney disease (ckd)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005300"
+  },
+  "chronic lymphocytic leukemia (CLL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "chronic lymphocytic leukemia/small lymphocytic lymphoma",
+    "xref": "MONDO:0003864"
+  },
+  "chronic lymphocytic leukemia (cll)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "chronic lymphocytic leukemia/small lymphocytic lymphoma",
+    "xref": "MONDO:0003864"
+  },
+  "chronic myeloid leukemia (CML)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C91465"
+  },
+  "chronic myelomonocytic leukemia (CMMoL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020311"
+  },
+  "chronic myelomonocytic leukemia (cmmol)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020311"
+  },
+  "chronic obstructive pulmonary disease (COPD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005002"
+  },
+  "chronic obstructive pulmonary disease (copd)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005002"
+  },
+  "chronic pain": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "chronic pain",
+    "xref": "HP:0012532"
+  },
+  "chronic renal failure": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "chronic renal failure syndrome",
+    "xref": "MONDO:0024327"
+  },
+  "chronic respiratory disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Non-Neoplastic Chronic Respiratory System Disorder",
+    "xref": "NCIT:C157816"
+  },
+  "chronic stable angina": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Stable Angina",
+    "xref": "NCIT:C66914"
+  },
+  "chronic venous insufficiency (CVI)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000492"
+  },
+  "claudication": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C50495"
+  },
+  "coccidiosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005707"
+  },
+  "cold sore": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "herpes labialis",
+    "xref": "MONDO:0043653"
+  },
+  "colitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002583"
+  },
+  "colorectal cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005575"
+  },
+  "common cold": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005709"
+  },
+  "congenital adrenal hyperplasia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018479"
+  },
+  "congenital heart defects": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "abnormal heart morphology",
+    "xref": "HP:0001627"
+  },
+  "congestive heart failure": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005009"
+  },
+  "conjunctivitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000509"
+  },
+  "constipation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "constipation disorder",
+    "xref": "MONDO:0002203"
+  },
+  "contact dermatitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005480"
+  },
+  "contraceptive": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Contraceptive Device",
+    "xref": "NCIT:C42734"
+  },
+  "contrast agent": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "NCIT:C390"
+  },
+  "coronary artery disease (CAD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005010"
+  },
+  "coronary artery disease (cad)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005010"
+  },
+  "coronary artery restenosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "coronary restenosis",
+    "xref": "MONDO:0005355"
+  },
+  "coronary heart disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "coronary artery disease",
+    "xref": "MONDO:0005010"
+  },
+  "corticosteroid-responsive dermatoses": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Dermatosis",
+    "xref": "NCIT:C27554"
+  },
+  "cosmetic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "CHEBI:64857"
+  },
+  "cough suppressant": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0012735"
+  },
+  "crohn's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005011"
+  },
+  "cutaneous T-cell lymphoma (CTCL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0012192"
+  },
+  "cutaneous candidiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000879"
+  },
+  "cutaneous mast cell tumors": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Mast Cell Neoplasm",
+    "xref": "NCIT:C9295"
+  },
+  "cyanide poisoning": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018754"
+  },
+  "cyclitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C50519"
+  },
+  "cycloplegia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005555"
+  },
+  "cycloplegia diagnostic": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "cycloplegia",
+    "xref": "MONDO:0005555"
+  },
+  "cystic fibrosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009061"
+  },
+  "cystic hydatid disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "cystic echinococcosis",
+    "xref": "MONDO:0018408"
+  },
+  "cystic ovaries": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "ovarian cyst",
+    "xref": "HP:0000138"
+  },
+  "cystinosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0016239"
+  },
+  "cystinuria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009067"
+  },
+  "cytomegalovirus (CMV)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C14196"
+  },
+  "cytomegalovirus (cmv)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C14196"
+  },
+  "cytomegalovirus retinitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000878"
+  },
+  "dandruff": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "seborrheic dermatitis (disease)",
+    "xref": "MONDO:0006608"
+  },
+  "deep vein thrombosis (DVT)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Deep venous thrombosis",
+    "xref": "HP:0002625"
+  },
+  "depression": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "depressive disorder",
+    "xref": "MONDO:0002050"
+  },
+  "dermatitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002406"
+  },
+  "dermatitis herpetiformis (DH)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015614"
+  },
+  "dermatofibrosarcoma protuberans (DFSP)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011934"
+  },
+  "dermatographism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "dermatographic urticaria",
+    "xref": "HP:0011971"
+  },
+  "dermatomyositis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0016367"
+  },
+  "dermatosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C27554"
+  },
+  "diabetes mellitus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005015"
+  },
+  "diabetic nephropathy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005016"
+  },
+  "diagnostic agent": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "CHEBI:33295"
+  },
+  "diarrhea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002014"
+  },
+  "diphtheria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005504"
+  },
+  "disinfectant": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "NCIT:C95019"
+  },
+  "diverticular disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Diverticulosis",
+    "xref": "NCIT:C4922"
+  },
+  "dizziness": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "vertigo",
+    "xref": "HP:0002321"
+  },
+  "drowsiness": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002329"
+  },
+  "dry eye syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006733"
+  },
+  "duchenne muscular dystrophy (DMD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010679"
+  },
+  "duchenne muscular dystrophy (dmd)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010679"
+  },
+  "duodenal ulcer disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "duodenal ulcer (disease)",
+    "xref": "MONDO:0005412"
+  },
+  "dyschromia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Abnormal Pigmentation",
+    "xref": "NCIT:C34930"
+  },
+  "dysentry": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "DOID:12384"
+  },
+  "dyskinesia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100660"
+  },
+  "dyslipidemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "abnormal circulating lipid concentration",
+    "xref": "HP:0003119"
+  },
+  "dyspareunia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0030016"
+  },
+  "dyspepsia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002268"
+  },
+  "dysthymic disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001442"
+  },
+  "dystonia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001332"
+  },
+  "ear infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021666"
+  },
+  "eczema": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "atopic eczema",
+    "xref": "MONDO:0004980"
+  },
+  "edema": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000969"
+  },
+  "emphysema": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002097"
+  },
+  "encephalomyelitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005156"
+  },
+  "endocarditis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000565"
+  },
+  "endocrine adenoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Endocrine Neoplasm",
+    "xref": "NCIT:C3010"
+  },
+  "endogenous uveitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "uveitis (disease)",
+    "xref": "MONDO:0020283"
+  },
+  "endometriosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002706"
+  },
+  "endotracheal intubation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MAXO:0000502"
+  },
+  "enteritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0043579"
+  },
+  "enterocolitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009172"
+  },
+  "ependymoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0016698"
+  },
+  "epicondylitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001875"
+  },
+  "epilepsy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005027"
+  },
+  "episcleritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100534"
+  },
+  "equine protozoal myeloencephalitis (EPM)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:equine_protozoal_myeloencephalitis"
+  },
+  "erectile dysfunction": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005362"
+  },
+  "erosive esophagitis (EE)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Esophagitis",
+    "xref": "NCIT:C9224"
+  },
+  "erythrasma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002885"
+  },
+  "erythropoietic protoporphyria (epp)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "erythropoietic protoporphyria",
+    "xref": "MONDO:0001676"
+  },
+  "esophageal cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007576"
+  },
+  "esophageal candidiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001648"
+  },
+  "esophageal varices": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001221"
+  },
+  "estrus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "GO:0060209"
+  },
+  "ewing's sarcoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0012817"
+  },
+  "exercise-induced bronchoconstriction (EIB)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "DOID:0080821"
+  },
+  "extrapyramidal symptoms (EPS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "SCDO:0001311"
+  },
+  "extrapyramidal symptoms (eps)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "SCDO:0001311"
+  },
+  "eye infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "eye infectious disease",
+    "xref": "MONDO:0043885"
+  },
+  "eye inflammation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Inflammatory abnormality of the eye",
+    "xref": "HP:0100533"
+  },
+  "eye irritation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "ENM:0000033"
+  },
+  "fabry disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Fabry disease",
+    "xref": "MONDO:0010526"
+  },
+  "facial hair reduction": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Absent facial hair",
+    "xref": "HP:0002550"
+  },
+  "familial amyloid polyneuropathy (FAP)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "familial amyloid neuropathy",
+    "xref": "MONDO:0007100"
+  },
+  "fascioliasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004668"
+  },
+  "fatigue": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0012378"
+  },
+  "fescue toxicosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:fescue_toxicosis"
+  },
+  "fever": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001945"
+  },
+  "fibrinolytic bleeding": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "fibrinolytic defect",
+    "xref": "MONDO:0007605"
+  },
+  "fibromyalgia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005546"
+  },
+  "filariasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0016075"
+  },
+  "first-aid antibiotic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Antibiotic",
+    "xref": "NCIT:C258"
+  },
+  "first-aid antiseptic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "antiseptic drug",
+    "xref": "CHEBI:48218"
+  },
+  "fish tapeworm infestation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "diphyllobothriasis",
+    "xref": "MONDO:0015260"
+  },
+  "flea control": {
+    "feature_action": "control for",
+    "predicate": "biolink:treats",
+    "primary_name": "Flea Infestations",
+    "xref": "OMIT:0027164"
+  },
+  "follicular lymphoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018906"
+  },
+  "fungal infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C3245"
+  },
+  "fungal keratosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "keratosis",
+    "xref": "MONDO:0006566"
+  },
+  "fungicide": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "CHEBI:24127"
+  },
+  "gallbladder disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005281"
+  },
+  "gallstones": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005346"
+  },
+  "gastric adenocarcinoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005036"
+  },
+  "gastric hypersecretion diagnostic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Gastric Acid Secretion Test",
+    "xref": "NCIT:C93290"
+  },
+  "gastritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004966"
+  },
+  "gastroenteritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002269"
+  },
+  "gastroesophageal reflux disease (GERD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007186"
+  },
+  "gastroesophageal reflux disease (gerd)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007186"
+  },
+  "gastrointestinal acidosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Metabolic acidosis",
+    "xref": "HP:0001942"
+  },
+  "gastrointestinal infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "recurrent infection of the gastrointestinal tract",
+    "xref": "HP:0004798"
+  },
+  "gastrointestinal parasites": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "gastrointestinal infection AE",
+    "xref": "NCIT:C28176"
+  },
+  "gastrointestinal roundworms": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Ascaris lumbricoides",
+    "xref": "NCIT:C122177"
+  },
+  "gastrointestinal stromal tumors (GIST)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "gastrointestinal stromal tumor",
+    "xref": "MONDO:0011719"
+  },
+  "gastrointestinal stromal tumors (gist)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "gastrointestinal stromal tumor",
+    "xref": "MONDO:0011719"
+  },
+  "gastroparesis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002578"
+  },
+  "gender dysphoria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001153"
+  },
+  "general anaesthetic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "general anaesthetic",
+    "xref": "CHEBI:38869"
+  },
+  "generalized anxiety disorder (GAD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001942"
+  },
+  "generalized anxiety disorder (gad)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001942"
+  },
+  "generalized demodicosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "demodicidosis",
+    "xref": "MONDO:0017280"
+  },
+  "genital warts": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0032301"
+  },
+  "genitial herpes": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005770"
+  },
+  "genitourinary tract infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Genitourinary System Infection",
+    "xref": "NCIT:C35719"
+  },
+  "gestational choriocarcinoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020550"
+  },
+  "gestational trophoblastic disease (GTD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0016784"
+  },
+  "giardiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001103"
+  },
+  "gingivitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002508"
+  },
+  "glaucoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000501"
+  },
+  "glioblastoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "mesenchymal glioblastoma",
+    "xref": "MONDO:0000459"
+  },
+  "glioma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021042"
+  },
+  "goiter": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000853"
+  },
+  "gonorrhea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004277"
+  },
+  "gout": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005393"
+  },
+  "gram-negative bacterial infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021678"
+  },
+  "gram-positive bacterial infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021679"
+  },
+  "gynecologic infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "female reproductive system disease",
+    "xref": "MONDO:0002263"
+  },
+  "hairy cell leukemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018935"
+  },
+  "head and neck squamous cell carcinoma (HNSCC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010150"
+  },
+  "head injury": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C34660"
+  },
+  "headache": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002315"
+  },
+  "heart attack": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "myocardial infarction",
+    "xref": "HP:0001658"
+  },
+  "heart block": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020755"
+  },
+  "heart failure therapy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "heart failure",
+    "xref": "MONDO:0005252"
+  },
+  "heartburn": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "gastroesophageal reflux",
+    "xref": "HP:0002020"
+  },
+  "heavy leg syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:heavy_leg_syndrome"
+  },
+  "hemophilia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018660"
+  },
+  "hemorrhage": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C26791"
+  },
+  "hemorrhagic cystitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000496"
+  },
+  "hemorrhoids": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0032551"
+  },
+  "heparin-induced thrombocytopenia (HIT)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018048"
+  },
+  "hepatic cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "liver cancer",
+    "xref": "MONDO:0002691"
+  },
+  "hepatic cirrhosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "cirrhosis",
+    "xref": "HP:0001394"
+  },
+  "hepatic encephalopathy (HE)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001711"
+  },
+  "hepatic injury": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Hepatic Complication",
+    "xref": "NCIT:C115224"
+  },
+  "hepatitis B": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hepatitis B virus infection",
+    "xref": "MONDO:0005344"
+  },
+  "hepatitis C": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hepatitis C virus infection",
+    "xref": "MONDO:0005231"
+  },
+  "hepatitis b": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hepatitis B virus infection",
+    "xref": "MONDO:0005344"
+  },
+  "hepatitis c": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hepatitis C virus infection",
+    "xref": "MONDO:0005231"
+  },
+  "hepatocellular carcinoma (HCC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007256"
+  },
+  "hepatocellular carcinoma (hcc)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007256"
+  },
+  "heterotopic ossification": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "ectopic ossification",
+    "xref": "HP:0011986"
+  },
+  "hip dysplasia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001385"
+  },
+  "histomoniasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Histomonas meleagridis",
+    "xref": "NCBITaxon:135588"
+  },
+  "histoplasmosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018312"
+  },
+  "hodgkin's lymphoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Hodgkins lymphoma",
+    "xref": "MONDO:0004952"
+  },
+  "homocystinuria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009352"
+  },
+  "hookworm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hookworm infectious disease",
+    "xref": "MONDO:0005799"
+  },
+  "horn flies": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Haematobia irritans",
+    "xref": "NCBITaxon:7368"
+  },
+  "human immunodeficiency virus (HIV-1)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "HIV Infectious Disease",
+    "xref": "MONDO:0005109"
+  },
+  "human immunodeficiency virus (hiv-1)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "HIV Infectious Disease",
+    "xref": "MONDO:0005109"
+  },
+  "huntington's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007739"
+  },
+  "hydatidiform mole": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006248"
+  },
+  "hyperaldosteronism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0003009"
+  },
+  "hyperammonemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001987"
+  },
+  "hypercalcemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hypercalcemia, infantile",
+    "xref": "MONDO:0000212"
+  },
+  "hypercholesterolemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0003124"
+  },
+  "hypereosinophilic syndrome (HES)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015691"
+  },
+  "hyperglycemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002909"
+  },
+  "hyperlipidemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001336"
+  },
+  "hypermenorrhea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "menorrhagia",
+    "xref": "HP:0000132"
+  },
+  "hyperparathyroidism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001741"
+  },
+  "hyperphenylalaninemia (HPA)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0004923"
+  },
+  "hyperprolactinemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0014250"
+  },
+  "hypertension": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000822"
+  },
+  "hyperthyroidism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004425"
+  },
+  "hypertriglyceridemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002155"
+  },
+  "hypertrophic gastritis (GHG)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Giant hypertrophic gastritis",
+    "xref": "HP:0005246"
+  },
+  "hyperuricemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002149"
+  },
+  "hypoactive sexual desire disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001821"
+  },
+  "hypocalcemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002901"
+  },
+  "hypoestrogenism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "low estrogen level AE",
+    "xref": "OAE:0004285"
+  },
+  "hypoglycemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004946"
+  },
+  "hypokalemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002900"
+  },
+  "hyponatremia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002902"
+  },
+  "hypoparathyroidism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001220"
+  },
+  "hypophosphatemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000313"
+  },
+  "hypotension": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002615"
+  },
+  "hypothyroidism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005420"
+  },
+  "hypovolemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0011106"
+  },
+  "ichthyosis vulgaris": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0024304"
+  },
+  "idiopathic pulmonary fibrosis (IPF)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008345"
+  },
+  "idiopathic pulmonary fibrosis (ipf)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008345"
+  },
+  "immune adjuvant": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Immunoadjuvant",
+    "xref": "CHEBI:50847"
+  },
+  "impetigo": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004592"
+  },
+  "indigestion": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "dyspepsia",
+    "xref": "HP:0410281"
+  },
+  "infertility": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000789"
+  },
+  "inflammatory bowel disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005265"
+  },
+  "influenza A virus infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "swine influenza",
+    "xref": "MONDO:0005460"
+  },
+  "influenza a virus infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "swine influenza",
+    "xref": "MONDO:0005460"
+  },
+  "insomnia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0013600"
+  },
+  "internal deoderant": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:internal_deoderant"
+  },
+  "interstitial cystitis (IC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018301"
+  },
+  "intra-abdominal infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Abdominal and Gastrointestinal Infection",
+    "xref": "NCIT:C36070"
+  },
+  "intracranial pressure": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "intracranial hypertension",
+    "xref": "MONDO:0006810"
+  },
+  "intraocular pressure": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C87143"
+  },
+  "iritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006814"
+  },
+  "iron overload": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C78393"
+  },
+  "irritability": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000737"
+  },
+  "irritable bowel syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005052"
+  },
+  "ischiadynia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Hip pain",
+    "xref": "HP:0030838"
+  },
+  "itching": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "pruritus",
+    "xref": "HP:0000989"
+  },
+  "jaundice": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000952"
+  },
+  "joint inflammation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "arthritis",
+    "xref": "HP:0001369"
+  },
+  "joint pain": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "arthralgia",
+    "xref": "HP:0002829"
+  },
+  "keratosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006566"
+  },
+  "kidney stones": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "nephrolithiasis",
+    "xref": "HP:0000787"
+  },
+  "labor induction": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Induction of Labor",
+    "xref": "NCIT:C92814"
+  },
+  "laryngitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002647"
+  },
+  "left ventricular systolic dysfunction (LVSD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0025169"
+  },
+  "leishmaniasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011989"
+  },
+  "leprosy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005124"
+  },
+  "lice": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "lice infestation",
+    "xref": "MONDO:0003472"
+  },
+  "listeria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C76359"
+  },
+  "liver flukes": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "fascioliasis",
+    "xref": "MONDO:0004668"
+  },
+  "local anesthetic": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Anesthetic Agent",
+    "xref": "NCIT:C245"
+  },
+  "lumbago": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Low back pain",
+    "xref": "HP:0003419"
+  },
+  "lumbar epidural block": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Epidural Block",
+    "xref": "NCIT:C15642"
+  },
+  "lung cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008903"
+  },
+  "lungworms": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Angiostrongylus vasorum",
+    "xref": "NCBITaxon:321387"
+  },
+  "lupus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "lupus erythematosus",
+    "xref": "MONDO:0004670"
+  },
+  "lymphangioleiomyomatosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011705"
+  },
+  "macular degeneration": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0003004"
+  },
+  "malaria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005136"
+  },
+  "malignant hyperthermia (MH)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "malignant hyperthermia of anesthesia",
+    "xref": "MONDO:0018493"
+  },
+  "mantle cell lymphoma (MCL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018876"
+  },
+  "mastitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006849"
+  },
+  "mastocytoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0003079"
+  },
+  "medullary thyroid cancer (MTC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "medullary thyroid gland carcinoma",
+    "xref": "MONDO:0015277"
+  },
+  "medullary thyroid cancer (mtc)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "medullary thyroid gland carcinoma",
+    "xref": "MONDO:0015277"
+  },
+  "medulloblastoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007959"
+  },
+  "megaloblastic anemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001700"
+  },
+  "melanoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002861"
+  },
+  "meningitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004796"
+  },
+  "menopause": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C3231"
+  },
+  "menstrual pain": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Dysmenorrhea",
+    "xref": "HP:0100607"
+  },
+  "mesothelioma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005065"
+  },
+  "metal toxicity": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "heavy metal poisoning",
+    "xref": "MONDO:0023305"
+  },
+  "methemoglobinemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001117"
+  },
+  "microsporidiosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005846"
+  },
+  "migraine headache": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "migraine",
+    "xref": "HP:0002076"
+  },
+  "mites": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "trombiculiasis",
+    "xref": "MONDO:0005998"
+  },
+  "motion sickness": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008015"
+  },
+  "mouth inflammation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Stomatitis",
+    "xref": "HP:0010280"
+  },
+  "mri contrast agent": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "CHEBI:37335"
+  },
+  "mucositis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020579"
+  },
+  "multiple myeloma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0006775"
+  },
+  "multiple sclerosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005301"
+  },
+  "muscle pain": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "myalgia",
+    "xref": "HP:0003326"
+  },
+  "muscle relaxant": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C29696"
+  },
+  "myasthenia gravis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009688"
+  },
+  "mycosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "fungal infectious disease",
+    "xref": "MONDO:0002041"
+  },
+  "mydriasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0011499"
+  },
+  "mydriasis diagnostic": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Mydriasis",
+    "xref": "HP:0011499"
+  },
+  "myelodysplastic diseases (MDS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "myelodysplastic syndrome",
+    "xref": "MONDO:0018881"
+  },
+  "myelofibrosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0044903"
+  },
+  "myeloma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C103130"
+  },
+  "myeloproliferative neoplasms": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020076"
+  },
+  "myocardial infarction": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001658"
+  },
+  "myocardial perfusion imaging (MPI)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "NCIT:C102676"
+  },
+  "myoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "DOID:2691"
+  },
+  "myxedema coma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "myxedema",
+    "xref": "MONDO:0009718"
+  },
+  "narcolepsy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021107"
+  },
+  "nasal congestion": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "nasal obstruction",
+    "xref": "HP:0001742"
+  },
+  "nausea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002018"
+  },
+  "navicular syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "\"navicular bone, accessory\"",
+    "xref": "MONDO:0008068"
+  },
+  "nephrotic syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005377"
+  },
+  "nerve gas poisoning": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "organophosphate poisoning",
+    "xref": "EFO:0010581"
+  },
+  "neurasthenia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "OMIT:0010467"
+  },
+  "neuroblastoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005072"
+  },
+  "neuroendocrine tumors of pancreatic origin (PNET)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "pancreatic neuroendocrine tumor",
+    "xref": "MONDO:0019954"
+  },
+  "neuroendocrine tumors of pancreatic origin (pnet)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "pancreatic neuroendocrine tumor",
+    "xref": "MONDO:0019954"
+  },
+  "neurogenic bladder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000011"
+  },
+  "nicotinism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "nicotine dependence",
+    "xref": "MONDO:0008575"
+  },
+  "nocturnal enuresis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000022"
+  },
+  "non-Hodgkin lymphoma (NHL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018908"
+  },
+  "non-alcoholic steatohepatitis (NASH)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007027"
+  },
+  "non-alcoholic steatohepatitis (nash)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0007027"
+  },
+  "non-hodgkin lymphoma (nhl)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018908"
+  },
+  "non-small cell lung cancer (NSCLC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "non-small cell lung carcinoma (disease)",
+    "xref": "MONDO:0005233"
+  },
+  "non-small cell lung cancer (nsclc)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "non-small cell lung carcinoma (disease)",
+    "xref": "MONDO:0005233"
+  },
+  "nystagmus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000639"
+  },
+  "obesity": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "monogenic obesity",
+    "xref": "MONDO:0019182"
+  },
+  "obsessive compulsive disorder (OCD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "obsessive-compulsive personality disorder",
+    "xref": "MONDO:0001158"
+  },
+  "ocular hypertension": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006875"
+  },
+  "oligomenorrhea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000876"
+  },
+  "onchocerciasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0017137"
+  },
+  "onychomycosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0012203"
+  },
+  "ophthalmology diagnostic": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "ophthalmology",
+    "xref": "NCIT:C16939"
+  },
+  "opioid withdrawal": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Opiate Withdrawal Syndrome",
+    "xref": "NCIT:C98998"
+  },
+  "organ rejection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Graft Rejection",
+    "xref": "NCIT:C75570"
+  },
+  "organophosphate poisoning": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "EFO:0010581"
+  },
+  "oropharyngeal candidiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C4985"
+  },
+  "orotic aciduria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009797"
+  },
+  "osteoarthritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005178"
+  },
+  "osteomalacia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018124"
+  },
+  "osteoporosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005298"
+  },
+  "osteosarcoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "fibrosarcomatous osteosarcoma",
+    "xref": "MONDO:0004301"
+  },
+  "otitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "SYMP:0000873"
+  },
+  "ovarian cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008170"
+  },
+  "pain relief": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C112216"
+  },
+  "pancreas diagnostic agent": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Pancreas",
+    "xref": "NCIT:C12393"
+  },
+  "pancreatic cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "neoplasm of the pancreas",
+    "xref": "HP:0002894"
+  },
+  "pancreatitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004982"
+  },
+  "panic disorders": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "panic disorder",
+    "xref": "MONDO:0005383"
+  },
+  "paralytic ileus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004568"
+  },
+  "parathyroid carcinoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "parathyroid gland carcinoma",
+    "xref": "MONDO:0012004"
+  },
+  "parenchymal neurocysticercosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Neurocysticercosis",
+    "xref": "NCIT:C84932"
+  },
+  "parkinson's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005180"
+  },
+  "parkinsonism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001300"
+  },
+  "patent ductus arteriosus (PDA)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011827"
+  },
+  "pelvic inflammatory disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000922"
+  },
+  "peptic ulcer disease (PUD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004247"
+  },
+  "peptic ulcer disease (pud)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004247"
+  },
+  "percutaneous coronary intervention (PCI)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C99521"
+  },
+  "periarthritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006898"
+  },
+  "periodontitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005076"
+  },
+  "peripheral T-cell lymphoma (PTCL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "DOID:0050749"
+  },
+  "peripheral artery disease (PAD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005386"
+  },
+  "peripheral nerve block": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C157953"
+  },
+  "peripheral neuropathy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005244"
+  },
+  "peritonitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004522"
+  },
+  "peroxisomal disorders": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "peroxisomal disease",
+    "xref": "MONDO:0019053"
+  },
+  "pet imaging": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Imaging Agent",
+    "xref": "NCIT:C1966"
+  },
+  "pharyngitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002258"
+  },
+  "pheochromocytoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002666"
+  },
+  "pinworm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "enterobiasis",
+    "xref": "MONDO:0005746"
+  },
+  "plague": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019095"
+  },
+  "pleural effusion": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002202"
+  },
+  "pneumonia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005249"
+  },
+  "poison antidote": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "antidote",
+    "xref": "CHEBI:50247"
+  },
+  "polycystic ovary syndrom (PCOS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "polycystic ovary syndrome",
+    "xref": "MONDO:0008487"
+  },
+  "polycythemia vera": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C3336"
+  },
+  "polymenorrhea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0400007"
+  },
+  "portal-systemic encephalopathy (PSE)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hepatic encephalopathy",
+    "xref": "MONDO:0001711"
+  },
+  "postherpetic neuralgia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0041052"
+  },
+  "postoperative ileus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "ileus",
+    "xref": "MONDO:0004567"
+  },
+  "postpartum endomyometritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C111914"
+  },
+  "postpartum hemorrhage (PPH)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C92853"
+  },
+  "postpartum hemorrhage (pph)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C92853"
+  },
+  "posttraumatic stress disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "post-traumatic stress disorder",
+    "xref": "MONDO:0005146"
+  },
+  "precocious puberty": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000088"
+  },
+  "premature ejaculation (PE)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001780"
+  },
+  "premature labor": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C50917"
+  },
+  "premature luteinizing hormone surges": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "luteinizing hormone secretion trait",
+    "xref": "VT:0010413"
+  },
+  "premenstrual syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "OMIT:0012250"
+  },
+  "preservative": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Preservative Excipient",
+    "xref": "NCIT:C42659"
+  },
+  "primary biliary cholangitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005388"
+  },
+  "primary dysmenorrhea (PD)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Dysmenorrhea",
+    "xref": "HP:0100607"
+  },
+  "primary peritoneal cancer (PPC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "primary peritoneal carcinoma (disease)",
+    "xref": "MONDO:0015686"
+  },
+  "prostate cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008315"
+  },
+  "prostatitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021161"
+  },
+  "protozoan infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "\"protozoan infections, animal\"",
+    "xref": "MONDO:0025114"
+  },
+  "psittacosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "ornithosis",
+    "xref": "MONDO:0005888"
+  },
+  "psoriasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005083"
+  },
+  "psoriatic arthritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0011849"
+  },
+  "psychosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000709"
+  },
+  "pulmonary arterial hypertension (PAH)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015924"
+  },
+  "pulmonary arterial hypertension (pah)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015924"
+  },
+  "pulmonary embolism (PE)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "pulmonary embolism (disease)",
+    "xref": "MONDO:0005279"
+  },
+  "punctate keratitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0011859"
+  },
+  "pupil dilation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Mydriasis",
+    "xref": "HP:0011499"
+  },
+  "pyelonephritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006939"
+  },
+  "raynaud's disease": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008364"
+  },
+  "refactory angina": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "coronary artery disease",
+    "xref": "MONDO:0005010"
+  },
+  "renal angiomyolipoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0006772"
+  },
+  "renal cell carcinoma (RCC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "renal cell carcinoma (disease)",
+    "xref": "MONDO:0005086"
+  },
+  "renal cell carcinoma (rcc)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "renal cell carcinoma (disease)",
+    "xref": "MONDO:0005086"
+  },
+  "renal diagnostic agent": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Renal",
+    "xref": "NCIT:C25225"
+  },
+  "renal homotransplantation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Kidney Transplantation",
+    "xref": "NCIT:C15265"
+  },
+  "renal toxicity": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C115459"
+  },
+  "reproductive synchrony": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:reproductive_synchrony"
+  },
+  "respiratory depression": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hypoventilation",
+    "xref": "HP:0002791"
+  },
+  "respiratory distress syndrome (RDS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C3353"
+  },
+  "respiratory distress syndrome (rds)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C3353"
+  },
+  "respiratory tract infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "respiratory tract infectious disease",
+    "xref": "MONDO:0024355"
+  },
+  "restless leg syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005391"
+  },
+  "retinitis pigmentosa (RP)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019200"
+  },
+  "retinitis pigmentosa (rp)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019200"
+  },
+  "retinoblastoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008380"
+  },
+  "reverse sedative": {
+    "feature_action": "reversal for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Sedative",
+    "xref": "CHEBI:35717"
+  },
+  "rhabdomyosarcoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002859"
+  },
+  "rheumatoid arthritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008383"
+  },
+  "rhinopharyngitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "common cold",
+    "xref": "MONDO:0005709"
+  },
+  "rickets": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0017323"
+  },
+  "ringworm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "dermatophytosis",
+    "xref": "MONDO:0004678"
+  },
+  "rosacea": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006604"
+  },
+  "scabies": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004525"
+  },
+  "scarlet fever": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005952"
+  },
+  "schistosomiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0015254"
+  },
+  "schizophrenia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005090"
+  },
+  "sciata": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "sciatica",
+    "xref": "MONDO:0024333"
+  },
+  "scleroderma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100324"
+  },
+  "scurvy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0009412"
+  },
+  "seasonal affective disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000694"
+  },
+  "seborrheic dermatitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006609"
+  },
+  "sedative": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "CHEBI:35717"
+  },
+  "seizures": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001250"
+  },
+  "senile dementia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C34524"
+  },
+  "sepsis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100806"
+  },
+  "shingles": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Recurrent shingles",
+    "xref": "HP:0032275"
+  },
+  "sinusitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005961"
+  },
+  "sitosterolemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008863"
+  },
+  "sjogren's syndrome": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0010030"
+  },
+  "skeletal imaging agent": {
+    "feature_action": "agent for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Imaging Agent",
+    "xref": "NCIT:C1966"
+  },
+  "skin depigmentation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Depigmentation",
+    "xref": "NCIT:C112817"
+  },
+  "skin infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0021201"
+  },
+  "skin lacerations": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "skin laceration AE",
+    "xref": "OAE:0001399"
+  },
+  "skin protectant": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Zinc Oxide/Aluminum Starch Octenylsuccinate/Glycyrrhetinic Phytosome/Vitamin E/Botanical Extracts-Based Skin Protectant Paste",
+    "xref": "NCIT:C97919"
+  },
+  "skin ulcer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0200042"
+  },
+  "sleep cycle support": {
+    "feature_action": "support for",
+    "predicate": "biolink:ameliorates_condition",
+    "primary_name": "circadian sleep/wake cycle, sleep",
+    "xref": "GO:0050802"
+  },
+  "sleeplessness": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "insomnia (disease)",
+    "xref": "MONDO:0013600"
+  },
+  "small cell lung cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "small cell lung carcinoma",
+    "xref": "HP:0030357"
+  },
+  "small lymphocytic lymphoma (SLL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C7540"
+  },
+  "small lymphocytic lymphoma (sll)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C7540"
+  },
+  "smallpox": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004651"
+  },
+  "smoking cessation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C17427"
+  },
+  "social anxiety disorder": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C34927"
+  },
+  "soft tissue infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C79745"
+  },
+  "soft tissue sarcoma (STS)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018078"
+  },
+  "soft tissue sarcoma (sts)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018078"
+  },
+  "sore throat": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "sore throat",
+    "xref": "NCIT:C50747"
+  },
+  "spasms": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Muscle Spasm",
+    "xref": "NCIT:C50656"
+  },
+  "spinal injury": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0037747"
+  },
+  "spinocerebellar ataxia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C82341"
+  },
+  "spontaneous preterm birth": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C112864"
+  },
+  "squamous cell carcinoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005096"
+  },
+  "staining agent": {
+    "feature_action": "agent for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Staining",
+    "xref": "NCIT:C50753"
+  },
+  "staphylococcal infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0024313"
+  },
+  "statis dermatitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Stasis dermatitis",
+    "xref": "HP:0033564"
+  },
+  "stroke": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "stroke disorder",
+    "xref": "MONDO:0005098"
+  },
+  "strongyles": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "\"strongyle infections, equine\"",
+    "xref": "MONDO:0025263"
+  },
+  "subependymal giant cell astrocytoma (SEGA)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0016693"
+  },
+  "submental fat": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Abnormality of the chin",
+    "xref": "HP:0000306"
+  },
+  "sunburn": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005326"
+  },
+  "sunscreen lotion": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "sunscreen",
+    "xref": "NCIT:C851"
+  },
+  "superficial cuts": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Cut",
+    "xref": "NCIT:C50518"
+  },
+  "surgical prophylaxis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Antibiotic Prophylaxis",
+    "xref": "NCIT:C51993"
+  },
+  "sweet itch": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "TDRH:sweet_itch"
+  },
+  "syphilis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005976"
+  },
+  "systemic embolism": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Paradoxical embolism",
+    "xref": "HP:0033520"
+  },
+  "tapeworm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "taeniasis",
+    "xref": "MONDO:0000367"
+  },
+  "tendinitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004857"
+  },
+  "testicular carcinoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "testicular cancer",
+    "xref": "MONDO:0005447"
+  },
+  "tetanus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005526"
+  },
+  "thalassemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000984"
+  },
+  "thiamine deficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "beriberi",
+    "xref": "MONDO:0006676"
+  },
+  "throat infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "tonsillitis",
+    "xref": "MONDO:0001039"
+  },
+  "throat inflammation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "pharyngitis",
+    "xref": "MONDO:0002258"
+  },
+  "thrombocythemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "thrombocytosis",
+    "xref": "HP:0001894"
+  },
+  "thrombocytopenia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002049"
+  },
+  "thrombosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C26891"
+  },
+  "thyroid cancer": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002108"
+  },
+  "thyroid function diagnostic": {
+    "feature_action": "diagnostic for",
+    "predicate": "biolink:diagnoses",
+    "primary_name": "Thyroid Gland",
+    "xref": "NCIT:C12400"
+  },
+  "thyroiditis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0100646"
+  },
+  "tinea corporis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001461"
+  },
+  "tinea cruris": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "DOID:11917"
+  },
+  "tinea pedis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005984"
+  },
+  "tinea versicolor": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C112833"
+  },
+  "tissue adhesive": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "",
+    "xref": "CHEBI:53337"
+  },
+  "tonsillitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001039"
+  },
+  "toothache": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C78640"
+  },
+  "toxoplasmosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005989"
+  },
+  "trachoma": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0001249"
+  },
+  "transfusional hemosiderosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "hemosiderosis",
+    "xref": "MONDO:0001436"
+  },
+  "tremors": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001337"
+  },
+  "trichomoniasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0002154"
+  },
+  "true histiocytic lymphoma (THL)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C35382"
+  },
+  "tuberculosis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018076"
+  },
+  "tuberous sclerosis complex (TSC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019341"
+  },
+  "tularemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0018077"
+  },
+  "tyrosinemia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0004741"
+  },
+  "ulcerative colitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005101"
+  },
+  "ulcerative esophagitis (UE)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Barrett esophagus",
+    "xref": "MONDO:0013662"
+  },
+  "urea cycle disorders": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "urea cycle disorder",
+    "xref": "MONDO:0004739"
+  },
+  "uremic pruritus": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "Orphanet:94059"
+  },
+  "urethritis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0020971"
+  },
+  "urinary frequency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C26906"
+  },
+  "urinary incontinence": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000020"
+  },
+  "urinary retention": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000016"
+  },
+  "urinary tract infections": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005247"
+  },
+  "urticaria": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0001025"
+  },
+  "uveal tract inflammation": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Uveitis",
+    "xref": "NCIT:C26909"
+  },
+  "vaginal atrophy": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "postmenopausal atrophic vaginitis",
+    "xref": "MONDO:0001410"
+  },
+  "varicella-zoster virus (VZV)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "varicella zoster infection",
+    "xref": "MONDO:0005608"
+  },
+  "varicella-zoster virus (vzv)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "varicella zoster infection",
+    "xref": "MONDO:0005608"
+  },
+  "varicose veins": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002619"
+  },
+  "vascular imaging agent": {
+    "feature_action": "indication for",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "Imaging Agent",
+    "xref": "NCIT:C1966"
+  },
+  "vascular spasm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "vasospasm",
+    "xref": "HP:0025637"
+  },
+  "vasomotor rhinitis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006004"
+  },
+  "vasospastic angina": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Prinzmetal angina",
+    "xref": "MONDO:0006021"
+  },
+  "ventricular arrhythmias": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0004308"
+  },
+  "ventricular fibrillation (VF)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0000190"
+  },
+  "ventricular tachycardia (VT)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005477"
+  },
+  "ventricular tachycardia (vt)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0005477"
+  },
+  "vernal keratoconjunctivitis (VKC)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0019085"
+  },
+  "vertigo": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002321"
+  },
+  "virus herpes simplex (HSV)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "herpes simplex virus keratitis",
+    "xref": "MONDO:0015288"
+  },
+  "virus herpes simplex (hsv)": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "herpes simplex virus keratitis",
+    "xref": "MONDO:0015288"
+  },
+  "vitamin B6 deficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C85221"
+  },
+  "vitamin D deficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C114830"
+  },
+  "vitamin E deficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Low levels of vitamin E",
+    "xref": "HP:0100513"
+  },
+  "vitamin K deficiency": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "NCIT:C99108"
+  },
+  "vitiligo": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0008661"
+  },
+  "vomiting": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0002013"
+  },
+  "vulvovaginal candidiasis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "MONDO:0006014"
+  },
+  "warts": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "verrucae",
+    "xref": "HP:0200043"
+  },
+  "weight-gain aid": {
+    "feature_action": "aid for",
+    "predicate": "biolink:ameliorates_condition",
+    "primary_name": "weight-gain",
+    "xref": "NCIT:C62754"
+  },
+  "weight-loss aid": {
+    "feature_action": "aid for",
+    "predicate": "biolink:ameliorates_condition",
+    "primary_name": "Weight loss",
+    "xref": "HP:0001824"
+  },
+  "whipworm": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "trichuriasis",
+    "xref": "MONDO:0005996"
+  },
+  "wilm's tumor": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Nephroblastoma",
+    "xref": "HP:0002667"
+  },
+  "wound healing": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "wound repair",
+    "xref": "NCIT:C17260"
+  },
+  "xerosis cutis": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "Xeroderma",
+    "xref": "NCIT:C35134"
+  },
+  "xerostomia": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "",
+    "xref": "HP:0000217"
+  },
+  "yeast infection": {
+    "feature_action": "indication for",
+    "predicate": "biolink:treats",
+    "primary_name": "candidiasis",
+    "xref": "MONDO:0002026"
+  }
+}
