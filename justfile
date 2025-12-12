@@ -20,7 +20,7 @@ shebang := if os() == 'windows' {
 
 rootdir :=`pwd`
 
-sources := "alliance bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub g2pdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider tmkp ttd ubergraph"
+sources := "alliance bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider signor tmkp ttd ubergraph"
 
 ### Help ###
 
