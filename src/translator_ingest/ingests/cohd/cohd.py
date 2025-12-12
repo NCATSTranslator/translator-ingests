@@ -83,12 +83,9 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
 
         # TODO: need to figure out how to handle (certain?) attributes
         # attributes = parse_attributes(record.get("attributes", None))
-
-        sources: Optional[list[dict]] = knowledge_sources_from_trapi(record["sources"])
-
         #
-        # TODO: it would be nice to have dynamic mapping of edge classes for COHD data;
-        #       however, for now, existing observations suggest that the Biolink model
+        # TODO: it would also be nice to have dynamic mapping of edge classes for COHD data;
+        #       However, for now, existing observations suggest that the Biolink model
         #       requires a bit of review and revision to better support such dynamic mapping.
         #
         # association_list = bmt.get_associations(
@@ -107,7 +104,7 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
             predicate=cohd_predicate,
             object=cohd_object,
             has_confidence_score=record.get("score", None),
-            sources=sources,
+            sources=knowledge_sources_from_trapi(record["sources"]),
             knowledge_level=KnowledgeLevelEnum.statistical_association,
             agent_type=AgentTypeEnum.data_analysis_pipeline,
         )
