@@ -14,8 +14,14 @@ from koza.io.writer.writer import KozaWriter
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
 
 from translator_ingest.ingests.hpoa.hpoa import (
+    on_data_begin_disease_to_phenotype,
+    on_data_end_disease_to_phenotype,
     transform_record_disease_to_phenotype,
+    on_data_begin_gene_to_disease,
+    on_data_end_gene_to_disease,
     transform_record_gene_to_disease,
+    on_data_begin_gene_to_phenotype,
+    on_data_end_gene_to_phenotype,
     prepare_data_gene_to_phenotype,
     transform_record_gene_to_phenotype,
 )
@@ -267,6 +273,9 @@ def test_disease_to_phenotype_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
+    # Just to ensure that the Koza context is properly initialized
+    on_data_begin_disease_to_phenotype(mock_koza_transform_1)
+
     validate_transform_result(
         result=transform_record_disease_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
@@ -274,6 +283,8 @@ def test_disease_to_phenotype_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
+
+    on_data_end_disease_to_phenotype(mock_koza_transform_1)
 
 
 @pytest.mark.parametrize(
@@ -330,6 +341,9 @@ def test_gene_to_disease_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
+    # Just to ensure that the Koza context is properly initialized
+    on_data_begin_gene_to_disease(mock_koza_transform_1)
+
     validate_transform_result(
         result=transform_record_gene_to_disease(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
@@ -338,6 +352,7 @@ def test_gene_to_disease_transform(
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
 
+    on_data_end_gene_to_disease(mock_koza_transform_1)
 
 @pytest.fixture(scope="package")
 def mock_koza_transform_2() -> koza.KozaTransform:
@@ -520,6 +535,9 @@ def test_gene_to_phenotype_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
+    # Just to ensure that the Koza context is properly initialized
+    on_data_begin_gene_to_phenotype(mock_koza_transform_1)
+
     validate_transform_result(
         result=transform_record_gene_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
@@ -527,3 +545,5 @@ def test_gene_to_phenotype_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
+
+    on_data_end_gene_to_phenotype(mock_koza_transform_1)

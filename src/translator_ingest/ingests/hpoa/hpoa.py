@@ -204,12 +204,13 @@ def transform_record_disease_to_phenotype(
             return None
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_disease_to_phenotype():  - record: '{str(record)}' "
-            + f"with {type(e)} exception: "
-            + str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = f"Disease:{record.get("database_id", "Unknown")}<->HPO:{record.get('hpo_id', 'Unknown')}"
+        if str(e) not in koza_transform.transform_metadata["disease_to_phenotype"]:
+            koza_transform.transform_metadata["disease_to_phenotype"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["disease_to_phenotype"][exception_tag].append(rec_id)
         return None
 
 
@@ -278,10 +279,13 @@ def transform_record_gene_to_disease(
         return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_gene_to_disease() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = f"Gene:{record.get("Gene", "ncbi_gene_id")}<->Disease:{record.get('disease_id', 'Unknown')}"
+        if str(e) not in koza_transform.transform_metadata["gene_to_disease"]:
+            koza_transform.transform_metadata["gene_to_disease"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["gene_to_disease"][exception_tag].append(rec_id)
         return None
 
 
@@ -428,14 +432,11 @@ def transform_record_gene_to_phenotype(
         return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_gene_to_phenotype() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
-        )
+        # Tally errors here
         exception_tag = f"{str(type(e))}: {str(e)}"
-        rec_id = record.get("id", "Unknown")
-        if str(e) not in koza_transform.transform_metadata["icees_nodes"]:
-            koza_transform.transform_metadata["icees_nodes"][exception_tag] = [rec_id]
+        rec_id = f"Gene:{record.get("Gene", "ncbi_gene_id")}<->HPO:{record.get('hpo_id', 'Unknown')}"
+        if str(e) not in koza_transform.transform_metadata["gene_to_phenotype"]:
+            koza_transform.transform_metadata["gene_to_phenotype"][exception_tag] = [rec_id]
         else:
-            koza_transform.transform_metadata["icees_nodes"][exception_tag].append(rec_id)
+            koza_transform.transform_metadata["gene_to_phenotype"][exception_tag].append(rec_id)
         return None
