@@ -127,7 +127,7 @@ target_info:
         - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein to be 'form complex' another complex - which maps best to the Biolink predicate 'part of' with additional directional qualifier."
     - subject_categories:
-        - biolink:ChemicalEntity
+        - biolink:Chemical
       predicates:
         - biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
@@ -173,7 +173,7 @@ target_info:
       predicates:
         - biolink:affects         # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
-        - biolink:ChemicalEntity
+        - biolink:Chemical
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumerations:
@@ -205,11 +205,11 @@ target_info:
         - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein / complex / proteinfamily / small molecule to be 'affects' another chemical - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
     - subject_categories:
-        - biolink:ChemicalEntity
+        - biolink:Chemical
       predicates:
         - biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
-        - biolink:ChemicalEntity
+        - biolink:Chemical
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumerations:
@@ -245,7 +245,7 @@ target_info:
         - biolink:Proteinfamily
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
-        - biolink:ChemicalEntity
+        - biolink:Chemical
       predicates:
         - biolink:directly_physically_interacts        # MHB: this is now plural ('predicates'), and takes a list/array. Also, change to directly_physically_interacts with (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16)
       object_categories:
@@ -253,7 +253,7 @@ target_info:
         - biolink:Proteinfamily
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
-        - biolink:ChemicalEntity
+        - biolink:Chemical
       qualifiers:
         - property: biolink:causal_mechanism_qualifier
           value_range: CausalMechanismQualifierEnum
@@ -283,7 +283,7 @@ target_info:
     - node_category: biolink:SmallMolecule
       source_identifier_types:
         - "ChEMBL"
-    - node_category: biolink:ChemicalEntity
+    - node_category: biolink:Chemical
       source_identifier_types:
         - "ChEMBL"
     - node_category: biolink:MacromolecularComplex
