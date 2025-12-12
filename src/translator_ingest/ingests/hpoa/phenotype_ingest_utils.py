@@ -273,6 +273,7 @@ hpo_to_mode_of_inheritance: dict = {
     "HP:0010985": "Gonosomal inheritance",
     "HP:0003829": "Typified by incomplete penetrance",
     "HP:0003831": "Typified by age-related disease onset",
+    "HP:0034341": "Pseudoautosomal recessive inheritance",
     "HP:0034344": "Female-limited expression",
     "HP:4000158": "Typified by high penetrance",
 }
