@@ -36,32 +36,51 @@ source_info:
     terms_of_use_description: null
     license name: null
     license url: null
-  data_access_locations: null
-  data_provision_mechanisms: null
-  data_formats: null
-  data_versioning_and_releases: null
+  data_access_locations: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - jsonl
+  data_versioning_and_releases: "2024-11-25"  # last Phase 2 release of COHD
   additional_notes: null
 ingest_info:
   ingest_categories:
-  - null
-  utility: null
-  scope: null
+  - aggregation_interpreter
+  utility: >-
+    Real clinical data from patients diagnosed with a condition, exposed to a drug, or who had a procedure.
+  scope: Clinical correlations of patients to treatments.
   relevant_files:
-  - file_name: null
-    location: null
-    description: null
+  - file_name: cohd_nodes.jsonl
+    location: https://stars.renci.org/var/data_services/cohd_2
+    description: KGX jsonl file of KGX 'nodes' data from Phase 2 COHD clinical knowledge provider activities.
+  - file_name: cohd_edges.jsonl
+    location: https://stars.renci.org/var/data_services/cohd_2
+    description: KGX jsonl file of KGX 'edges' data from Phase 2 COHD clinical knowledge provider activities.
   included_content:
-  - file_name: null
-    included_records: null
-    fields_used: null
-  filtered_content:
-  - file_name: null
-    filtered_records: null
-    rationale: null
+  - file_name: cohd_nodes.jsonl
+    included_records: all
+    fields_used: id, name, category
+  - file_name: cohd_edges.jsonl
+    included_records: all
+    fields_used: id, subject, predicate, object, score, sources
+#  filtered_content:
+#  - file_name: null
+#    filtered_records: null
+#    rationale: null
   future_considerations:
-  - category: null
-    consideration: null
-    relevant_files: null
+  - category: node_property_content
+    consideration:  >-
+      The contents of the COHD 'attributes' field are not yet processed by the ingestion pipeline.
+      For example, these attributes cross-correlate concepts with related resources.
+    relevant_files:
+      - cohd_nodes.jsonl
+  - category: edge_property_content
+    consideration: >-
+      The contents of the COHD 'attributes' field are not yet processed by the ingestion pipeline.
+      For example, these attributes describe supporting studies, thus providing valuable 
+      evidence annotation which should be added to the COHD knowledge graph.
+    relevant_files:
+      - cohd_edges.jsonl
   additional_notes: null
 target_info:
   infores_id: infores:cohd
@@ -75,10 +94,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Disease
     predicates:
@@ -88,10 +104,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Disease
     predicates:
@@ -101,10 +114,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Disease
     predicates:
@@ -114,10 +124,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Disease
     predicates:
@@ -127,10 +134,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Disease
     predicates:
@@ -140,10 +144,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Disease
     predicates:
@@ -153,10 +154,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:SmallMolecule
     predicates:
@@ -166,10 +164,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:SmallMolecule
     predicates:
@@ -179,10 +174,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:SmallMolecule
     predicates:
@@ -192,10 +184,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:SmallMolecule
     predicates:
@@ -205,10 +194,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Drug
     predicates:
@@ -218,10 +204,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Drug
     predicates:
@@ -231,10 +214,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:Drug
     predicates:
@@ -244,10 +224,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:MolecularMixture
     predicates:
@@ -257,10 +234,7 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   - subject:
     - biolink:ChemicalEntity
     predicates:
@@ -270,63 +244,45 @@ target_info:
     knowledge_level: statistical_association
     agent_type: not_provided
     edge_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - score
   node_type_info:
   - node_category: biolink:Disease
     source_identifier_types:
     - DOID
     - UMLS
     node_properties:
-    - biolink:Attribute
-    - dct:description
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - name
   - node_category: biolink:SmallMolecule
     source_identifier_types:
     - UNII
     - CHEBI
     node_properties:
-    - biolink:Attribute
-    - dct:description
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - name
   - node_category: biolink:Drug
     source_identifier_types:
     - RXCUI
     node_properties:
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - name
   - node_category: biolink:MolecularMixture
     source_identifier_types:
     - CHEBI
     node_properties:
-    - biolink:Attribute
-    - dct:description
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
+    - name
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
     - MESH
     - UNII
     - CHEBI
     node_properties:
-    - biolink:Attribute
-    - biolink:same_as
-    - biolink:Attribute
-    - biolink:Attribute
-  future_considerations:
-  - category: null
-    consideration: null
+    - name
+#  future_considerations:
+#  - category: null
+#    consideration: null
   additional_notes: null
 provenance_info:
   contributions:
-  - null
+  - "Richard Bruskiewich - data modeling, code author"
+  - "Kara Fecho: domain expertise"
+  - "Matthew Brush - data modeling, domain expertise"
   artifacts:
   - null
