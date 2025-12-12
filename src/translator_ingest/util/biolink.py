@@ -49,7 +49,6 @@ INFORES_NCIT = "infores:ncit"
 INFORES_ONCOKB = "infores:oncokb"
 INFORES_PHARMGKB = "infores:pharmgkb"
 
-
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
     """Get cached Biolink schema, loading it if not already cached."""
