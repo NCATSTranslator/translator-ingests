@@ -106,12 +106,14 @@ def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:
 # }
 def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional[list[RetrievalSource]]:
     """
-    Mapping a TRAPI-style sources onto the Pydantic data model
+    Mapping TRAPI-style sources onto the Pydantic data model
     is relatively straightforward since the TRAPI model itself
     was mapped onto the Biolink Model RetrievalSources class.
     """
-    sources: Optional[list[RetrievalSource]] = None
-    if source_list:
+    if not source_list:
+        return None
+    else:
+        sources: list[RetrievalSource] = []
         source: dict
         for source in source_list:
             rs = RetrievalSource(
@@ -121,5 +123,4 @@ def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional
                 upstream_resource_ids=source.get("upstream_resource_ids", None)
             )
             sources.append(rs)
-
-    return sources
+        return sources
