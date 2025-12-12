@@ -9,8 +9,6 @@ from bmt.pydantic import build_association_knowledge_sources
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     ChemicalEntity,
-    # SmallMolecule,
-    # MolecularMixture,
     NamedThing,
     Association,
     ChemicalAffectsGeneAssociation,
@@ -24,7 +22,7 @@ from translator_ingest.util.biolink import (
     INFORES_GTOPDB
 )
 
-## adding additional needed resources
+# adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 
@@ -38,17 +36,17 @@ def get_latest_version() -> str:
 @koza.prepare_data(tag="gtopdb_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
-    ## convert the input dataframe into pandas df format
+    # convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
 
-    ## debugging usage
-    print(source_df.columns)
+    # debugging usage
+    koza.log.debug(f"DataFrame columns: {source_df.columns.tolist()}")
 
-    ## include some basic quality control steps here
-    ## Drop nan values
+    # include some basic quality control steps here
+    # Drop nan values
     source_df = source_df.dropna(subset=['Ligand PubChem SID', 'Target UniProt ID'])
 
-    ## rename those columns into desired format
+    # rename those columns into desired format
     source_df.rename(columns={'Ligand': 'subject_name', 'Target': 'object_name', 'Ligand ID': 'subject_id', 'Target UniProt ID': 'object_id'}, inplace=True)
 
     return source_df.dropna().drop_duplicates().to_dict(orient="records")
@@ -66,11 +64,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         association = None
         causal_mechanism_qualifier = None
 
-        ## seems all subjects are chemical entity, and all objects are genes
+        # seems all subjects are chemical entity, and all objects are genes
         subject = ChemicalEntity(id="GTOPDB:" + record["subject_id"], name=record["subject_name"])
         object = Gene(id="UniProtKB:" + record["object_id"], name=record["object_name"])
 
-        ## subject: Activator
+        # subject: Activator
         if record["Type"] == 'Activator':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -111,7 +109,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Agonist
+        # subject: Agonist
         if record["Type"] == 'Agonist':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -162,7 +160,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Allosteric modulator
+        # subject: Allosteric modulator
         if record["Type"] == 'Allosteric modulator':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -238,7 +236,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Antagonist
+        # subject: Antagonist
         if record["Type"] == 'Antagonist':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -276,7 +274,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Antibody
+        # subject: Antibody
         if record["Type"] == 'Antibody':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -320,7 +318,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Channel blocker
+        # subject: Channel blocker
         if record["Type"] == 'Channel blocker':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -360,7 +358,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Fusion protein
+        # subject: Fusion protein
         if record["Type"] == 'Fusion protein' and record["Action"] == "Inhibition":
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -386,7 +384,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Gating inhibitor
+        # subject: Gating inhibitor
         if record["Type"] == 'Gating inhibitor':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -430,7 +428,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Inhibitor
+        # subject: Inhibitor
         if record["Type"] == 'Inhibitor':
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -472,7 +470,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: None
+        # subject: None
         if record["Type"] is None:
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -503,7 +501,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(object)
                 edges.append(association)
 
-        ## subject: Subunit-specific
+        # subject: Subunit-specific
         if record["Type"] == "Subunit-specific":
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -536,7 +534,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
 
-## Functions decorated with @koza.on_data_begin() run before transform or transform_record
+# Functions decorated with @koza.on_data_begin() run before transform or transform_record
 
-## koza.state is a dictionary that can be used to store arbitrary variables
-## Now create specific transform ingest function for each pair of edges in SIGNOR
+# koza.state is a dictionary that can be used to store arbitrary variables
+# Now create specific transform ingest function for each pair of edges in SIGNOR
