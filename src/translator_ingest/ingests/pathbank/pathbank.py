@@ -558,15 +558,12 @@ def _create_reaction_node_and_edges(
         if ec_number and ec_number.replace(".", "").replace("-", "").isdigit():
             # Use EC number as primary ID for normalization
             primary_curie = f"EC:{ec_number}"
-            primary_prefix = "EC"
         else:
             # Invalid EC number format, fall back to PathBank ID
             primary_curie = f"PathBank:Reaction_{pwr_id}"
-            primary_prefix = "PathBank"
     else:
         # No EC number available, use PathBank ID
         primary_curie = f"PathBank:Reaction_{pwr_id}"
-        primary_prefix = "PathBank"
 
     # Create reaction node with primary ID
     reaction_node = MolecularActivity(
