@@ -59,7 +59,7 @@ ingest_info:
       fields_used: "Ligand Id, Target Species, Type, Target Ensembl Gene ID"      # MHB:  'Action' and 'Pubmed ID' and 'Endogenous' fields should also be used, right? See yellow highlighted columns here: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877 and the mechanism/predicate/qualifier mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142
 
 
-# MHB: Qi, can you update included_records and feilds_used in objects below to match conventions / suggestions above. Remember, the ingest_info section of the RIG just describes what content we take from the source, and what we leave behind.  It doesn't describe how we model it. THat goes in the target_info section that follows.
+# MHB: Qi, can you update included_records and fields_used in objects below to match conventions / suggestions above. Remember, the ingest_info section of the RIG just describes what content we take from the source, and what we leave behind.  It doesn't describe how we model it. THat goes in the target_info section that follows.
 
     - file_name: "targets_and_families.csv"
       included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: directly_physically_interacts_with"
