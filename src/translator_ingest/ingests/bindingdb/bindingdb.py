@@ -219,8 +219,7 @@ def transform_bindingdb_by_record(
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_bindingdb_by_record():  - record: '{str(record)}' "
-            + f"with {type(e)} exception: "
-            + str(e)
+            f"transform_bindingdb_by_record():  - record '{str(record[REACTANT_SET_ID])}' "
+            + f"with {type(e)} exception: " + str(e)
         )
         return None

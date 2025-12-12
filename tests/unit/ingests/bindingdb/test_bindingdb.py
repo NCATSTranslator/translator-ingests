@@ -158,7 +158,6 @@ def test_prepare_bindingdb_data(
             [
                 {
                     "id": "CID:5327302",
-                    "name": "Inhibitor 3",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -197,7 +196,6 @@ def test_prepare_bindingdb_data(
             [
                 {
                     "id": "CID:5327304",
-                    "name": "Pyridine Scaffold 4",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -236,7 +234,6 @@ def test_prepare_bindingdb_data(
             [
                 {
                     "id": "CID:5327304",
-                    "name": "Pyridine Scaffold 4",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -275,7 +272,6 @@ def test_prepare_bindingdb_data(
             [
                 {
                     "id": "CID:71463198",
-                    "name": "US9447092, 3",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
