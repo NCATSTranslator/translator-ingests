@@ -1,0 +1,130 @@
+name: Drug-Repurposing Hub Reference Ingest Guide
+
+source_info: 
+  infores_id: infores:drug-repurposing-hub
+  description: >-
+    The Drug Repurposing Hub is a curated and annotated collection of FDA-approved drugs, clinical trial drugs,
+    and selected pre-clinical tool compounds. Because the compounds are annotated and well characterized, the 
+    collection is a novel tool to explore known biological targets and pathways, and a powerful way to discover 
+    new biological insights, better understand disease mechanisms, and discover new activities of existing molecules. 
+    
+  citations:
+    - Corsello SM, Bittker JA, Liu Z, Gould J, McCarren P, Hirschman JE, Johnston SE, Vrcic A, Wong B, Khan M, Asiedu J, Narayan R, Mader CC, Subramanian A, Golub TR. The Drug Repurposing Hub: a next-generation drug library and information resource. Nature Medicine. 23, 405–408 (2017).
+  terms_of_use_info: 
+      license_name: "The Repurposing Hub compound metadata (including compound names, structures, targets, mechanisms, and indications) are made available under the permissive CC-BY 4.0 license. Restrictions: The Drug Repurposing Hub data is provided for non-commercial use only."
+      license_url: https://repo-hub.broadinstitute.org/repurposing#about
+  data_access_locations: 
+    - https://repo-hub.broadinstitute.org/repurposing#download-data
+  data_provision_mechanisms: 
+    - file_download
+  data_formats: 
+    - tsv
+  data_versioning_and_releases: "irregular, Latest version: 8/19/2025, Archived versions: 3/24/2020 | 9/7/2018 | 5/16/2018 | 3/27/2017"
+
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: powerful way to discover new biological insights, better understand disease mechanisms, and discover new activities of existing molecules.
+  scope: FDA-approved drugs, clinical trial drugs, and selected pre-clinical tool compounds
+
+  relevant_files: 
+    - file_name: repo-drug-annotation-20200324.txt
+      location: https://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20200324.txt
+
+  included_content:
+    - file_name: repo-drug-annotation-20200324.txt
+      included_records: all rows
+      fields_used: pert_iname, clinical_phase, moa, target, disease_area, indication
+
+
+target_info:
+  infores_id: infores:translator-drug-repurposing-hub
+
+  edge_type_info:
+    - subject_categories:
+        - biolink:SmallMolecule                         # I added biolink prefixes here - values need to be curies
+        - biolink:MolecularMixture
+        - biolink:ChemicalEntity
+      predicates: 
+        - biolink:affects
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - mechanism_of_action_description             # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation?
+      ui_explanation: mechanism of mechanism and target information
+
+    - subject_categories:
+        - biolink:SmallMolecule
+        - biolink:MolecularMixture
+        - biolink:ChemicalEntity
+      predicates:                                      # MHB: What cues in the data map to these predicates 
+        - biolink:treats
+        - biolink:ameliorates_condition
+        - biolink:in_preclinical_trials_for
+        - biolink:diagnoses
+        - biolink:disrupts
+      object_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:                                 # MHB: I expected to see approval status / research phase properties on these edges (or maybe on the chemical nodes)? 
+        - mechanism_of_action_description
+      ui_explanation: drug indication
+
+  node_type_info:  # (required, multivalued, range = NodeType)
+
+    - node_category: ChemicalEntity
+      source_identifier_types: 
+        - PubChem                      # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
+      node_properties:
+        - biolink:name
+        - biolink:synonym
+        - disease_area                 # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation? 
+
+    - node_category: DiseaseOrPhenotypicFeature
+      source_identifier_types: 
+        - MONDO                        # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
+      node_properties:
+        - biolink:name
+
+    - node_category: Gene
+      source_identifier_types: 
+        - HGNC                         # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
+      node_properties:
+        - biolink:symbol
+
+    - node_category: MolecularMixture
+      source_identifier_types: 
+        - PubChem
+      node_properties:
+        - biolink:name
+        - biolink:synonym
+        - disease_area
+
+    - node_category: SmallMolecule
+      source_identifier_types: 
+        - PubChem
+      node_properties:
+        - biolink:name
+        - biolink:synonym
+        - disease_area
+
+  future_considerations:
+    - category: qualifiers
+      consideration: "map mechanism description text to qualifiers (e.g. 'serine protease inhibitor' => 'causal_mechanism_qualifier: inhibition'"
+
+
+provenance_info:
+  contributions:
+  - "Vlado Dancik - code author, domain expertise"
+  - "Kevin Schaper - code support"
+  - "Evan Morris - code support"
+  - "Sierra Moxon - data modeling, code support"
+  - "Matthew Brush - data modeling, domain expertise"

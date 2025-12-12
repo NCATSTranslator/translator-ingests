@@ -78,3 +78,9 @@ source = "uv-dynamic-versioning"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/translator_ingest"]
+
+[tool.codespell]
+skip = [
+    "./src/translator_ingest/ingests/drug_rep_hub/indications_config.json",
+    "./src/translator_ingest/ingests/drug_rep_hub/target_config.json",
+]

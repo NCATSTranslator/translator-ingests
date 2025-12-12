@@ -1,0 +1,61 @@
+name: signor
+
+readers:
+  signor_parsing:
+    format: csv
+    delimiter: \t
+    comment_char: "!" # Header line starts with !
+    header_mode: infer
+    files:
+      - all_data.tsv # Signor association file
+    columns: # 27 columns from the file, only 17 are needed but koza is complaining the input columns number are different
+      - ENTITYA # subject name
+      - TYPEA # subject type
+      - IDA # subject ID
+      - DATABASEA # subject database
+      - ENTITYB # object name
+      - TYPEB # object type
+      - IDB # object ID
+      - DATABASEB # object database
+      - EFFECT # relationship/effect
+      - MECHANISM # mechanism of relationship
+      - RESIDUE
+      - SEQUENCE
+      - TAX_ID # tax ID
+      - CELL_DATA # cell data id
+      - TISSUE_DATA # tissue data
+      - MODULATOR_COMPLEX
+      - TARGET_COMPLEX
+      - MODIFICATIONA
+      - MODASEQ
+      - MODIFICATIONB
+      - MODBSEQ
+      - PMID # publication ID
+      - DIRECT # whether the relationship is direct, used to identify physically_interacts_with
+      - NOTES
+      - ANNOTATOR
+      - SENTENCE # detailed description
+      - SCORE # confidence score of the relationship
+      - SIGNOR_ID # signor ID
+## filters now causing issues, those excludes are handled in prepare_data anyway. I dont get it how koza use this part
+# filters:
+#   - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
+#     column: ENTITYA
+#     filter_code: in
+#     value:
+#       - stimulus # stimulus
+#       - fusion protein # fusion protein
+#       - mirna # mirna
+#       - antibody # antibody
+#       - phenotype # phenotype
+#       - ncrna # ncrna
+#   - inclusion: exclude # Entity types - removed entity types in [stimulus, fusion protein, mirna, antibody, phenotype, ncrna]
+#     column: ENTITYB
+#     filter_code: in
+#     value:
+#       - stimulus # stimulus
+#       - fusion protein # fusion protein
+#       - mirna # mirna
+#       - antibody # antibody
+#       - phenotype # phenotype
+#       - ncrna # ncrna
