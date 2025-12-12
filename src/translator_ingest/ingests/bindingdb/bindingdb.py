@@ -21,7 +21,6 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR,
     MONOMER_ID,
-    LIGAND_NAME,
     TARGET_NAME,
     SOURCE_ORGANISM,
     CURATION_DATASOURCE,
@@ -34,6 +33,11 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     PMID,
     PATENT_NUMBER
 )
+
+from translator_ingest.util.logging_utils import get_logger
+from logging import DEBUG #, INFO, WARNING, ERROR, CRITICAL
+logger = get_logger(__name__)
+logger.setLevel(DEBUG)
 
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
@@ -62,11 +66,6 @@ SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
     "Schizosaccharomyces pombe": "4896",
     "Saccharomyces cerevisiae": "4932"
 }
-
-from translator_ingest.util.logging_utils import get_logger
-from logging import DEBUG #, INFO, WARNING, ERROR, CRITICAL
-logger = get_logger(__name__)
-logger.setLevel(DEBUG)
 
 
 def get_latest_version() -> str:
@@ -163,9 +162,9 @@ def transform_bindingdb_by_record(
     """
     try:
         # Sanity check for basic data integrity
-        assert record[REACTANT_SET_ID], f"Empty Reactant Set ID"
-        assert record[PUBCHEM_CID], f"Empty subject PubChem identifier"
-        assert record[UNIPROT_ID], f"Empty object UniProt identifier"
+        assert record[REACTANT_SET_ID], "Empty Reactant Set ID"
+        assert record[PUBCHEM_CID], "Empty subject PubChem identifier"
+        assert record[UNIPROT_ID], "Empty object UniProt identifier"
 
         # Nodes
 
@@ -219,7 +218,7 @@ def transform_bindingdb_by_record(
     except Exception as e:
         # Catch and report all errors here with messages
         logger.warning(
-            f"transform_bindingdb_by_record():  - record '{str(record[REACTANT_SET_ID])}' "
+            f"transform_bindingdb_by_record(): record for reactant '{str(record[REACTANT_SET_ID])}' "
             + f"with {type(e)} exception: " + str(e)
         )
         return None
