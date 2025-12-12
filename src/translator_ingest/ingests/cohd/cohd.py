@@ -5,7 +5,7 @@ Columbia Open Health Data ("COHD") ingest parser
 from loguru import logger
 import koza
 
-from typing import Any, Optional
+from typing import Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,

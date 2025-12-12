@@ -4,15 +4,23 @@ from typing import Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
-import koza
-
 from translator_ingest.ingests.cohd.cohd import (
     transform_cohd_node,
     transform_cohd_edge
 )
 
-from tests.unit.ingests import validate_transform_result, mock_koza_transform
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
+import koza
+from koza.transform import Mappings
+from koza.io.writer.writer import KozaWriter
+
+
+@pytest.fixture(scope="module")
+def mock_koza_transform() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = dict()
+    return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
 
 # list of slots whose values are
 # to be checked in a result node
