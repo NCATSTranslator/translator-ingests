@@ -40,7 +40,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_df = pd.DataFrame(data)
 
     # debugging usage
-    koza.log.debug(f"DataFrame columns: {source_df.columns.tolist()}")
+    koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
 
     # include some basic quality control steps here
     # Drop nan values
