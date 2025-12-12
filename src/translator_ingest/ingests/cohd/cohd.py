@@ -75,11 +75,12 @@ def transform_cohd_node(
 
     except Exception as e:
         # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = record.get("id", "Unknown")
         if str(e) not in koza_transform.transform_metadata["cohd_nodes"]:
-            koza_transform.transform_metadata["cohd_nodes"][str(e)] = [rec_id]
+            koza_transform.transform_metadata["cohd_nodes"][exception_tag] = [rec_id]
         else:
-            koza_transform.transform_metadata["cohd_nodes"][str(e)].append(rec_id)
+            koza_transform.transform_metadata["cohd_nodes"][exception_tag].append(rec_id)
 
         return None
 
@@ -144,10 +145,11 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
 
     except Exception as e:
         # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = record.get("id", "Unknown")
         if str(e) not in koza_transform.transform_metadata["cohd_edges"]:
-            koza_transform.transform_metadata["cohd_edges"][str(e)] = [rec_id]
+            koza_transform.transform_metadata["cohd_edges"][exception_tag] = [rec_id]
         else:
-            koza_transform.transform_metadata["cohd_edges"][str(e)].append(rec_id)
+            koza_transform.transform_metadata["cohd_edges"][exception_tag].append(rec_id)
 
         return None

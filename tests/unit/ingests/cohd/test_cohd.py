@@ -6,8 +6,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTy
 
 from translator_ingest.ingests.cohd.cohd import (
     on_begin_node_ingest,
+    on_end_node_ingest,
     transform_cohd_node,
     on_begin_edge_ingest,
+    on_end_edge_ingest,
     transform_cohd_edge
 )
 
@@ -232,6 +234,8 @@ def test_transform_cohd_nodes(
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS
     )
+
+    on_end_node_ingest(mock_koza_transform)
 
 
 @pytest.mark.parametrize(
@@ -492,3 +496,5 @@ def test_transform_cohd_edges(
         expected_edges=result_edge,
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS
     )
+
+    on_end_edge_ingest(mock_koza_transform)
