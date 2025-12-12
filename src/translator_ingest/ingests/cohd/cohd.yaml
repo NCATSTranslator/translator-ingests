@@ -1,4 +1,4 @@
-name: 'columbia_open_health_data'
+name: 'cohd'
 
 readers:
   cohd_nodes:
