@@ -16,6 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, Optional, Iterable
 import uuid
+from datetime import datetime
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -46,28 +47,9 @@ logger = get_logger(__name__)
 def get_latest_version() -> str:
     """Return the latest version of GeneticsKP data.
     
-    Since we're using a static file stored in the repo,
-    we'll use a fixed version string.
+    Uses the current date as the version since we're using a static file.
     """
-    return "genetics_magma"
-
-
-@koza.prepare_data()
-def prepare_geneticskp_data(koza_transform: koza.KozaTransform, data: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
-    """Extract tar.gz before processing KGX files."""
-    logger.info("Preparing GeneticsKP data: extracting tar.gz...")
-    
-    # Path to the downloaded tar.gz file
-    tar_path = Path(koza_transform.input_files_dir) / "genetics_magma.tar.gz"
-    
-    if tar_path.exists():
-        logger.info(f"Extracting {tar_path} to {koza_transform.input_files_dir}")
-        with tarfile.open(tar_path, "r:gz") as tar:
-            tar.extractall(koza_transform.input_files_dir)
-        logger.info("Extraction complete")
-    
-    # Return the data unchanged
-    return data
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def create_node(node_data: dict) -> Any:
@@ -136,7 +118,16 @@ def create_node(node_data: dict) -> Any:
 
 @koza.on_data_begin(tag="edges")
 def on_data_begin_edges(koza: koza.KozaTransform) -> None:
-    """Load all nodes into memory before processing edges."""
+    """Extract tar.gz and load all nodes into memory before processing edges."""
+    
+    # First extract the tar.gz if it exists
+    tar_path = Path(koza.input_files_dir) / "genetics_magma.tar.gz"
+    if tar_path.exists():
+        logger.info(f"Extracting {tar_path} to {koza.input_files_dir}")
+        with tarfile.open(tar_path, "r:gz") as tar:
+            tar.extractall(koza.input_files_dir)
+        logger.info("Extraction complete")
+    
     nodes_file_path = Path(koza.input_files_dir) / "nodes_geneticsKP_magma.jsonl"
     
     # Check if file exists - if not, it might be gzipped
