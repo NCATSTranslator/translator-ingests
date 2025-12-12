@@ -8,20 +8,19 @@ import koza
 from typing import Any, Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    # ChemicalToDiseaseOrPhenotypicFeatureAssociation,
-
+    Association,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
 from bmt.pydantic import (
     entity_id,
     get_node_class,
-    get_edge_class
+    # get_edge_class
 )
 
 from translator_ingest.util.biolink import (
     get_biolink_model_toolkit,
-    parse_attributes,
+    # parse_attributes,
     knowledge_sources_from_trapi
 )
 
@@ -75,29 +74,34 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
         edge_id = entity_id()
 
         cohd_subject: str = record["subject"]
-        subject_category: list[str] = bmt.get_element_by_prefix(cohd_subject)
+        # subject_category: list[str] = bmt.get_element_by_prefix(cohd_subject)
 
         cohd_predicate: str = record["predicate"]
 
         cohd_object: str = record["object"]
-        object_category: list[str] = bmt.get_element_by_prefix(cohd_object)
+        # object_category: list[str] = bmt.get_element_by_prefix(cohd_object)
 
-        attributes = parse_attributes(record.get("attributes", None))
-        sources: Optional[list[dict]] = None
-        if attributes:
-            if "sources" in attributes:
-                sources = knowledge_sources_from_trapi(record["sources"])
+        # TODO: need to figure out how to handle (certain?) attributes
+        # attributes = parse_attributes(record.get("attributes", None))
 
-        association_list = bmt.get_associations(
-                    subject_categories=subject_category,
-                    predicates= [cohd_predicate],
-                    object_categories=object_category,
-                    formatted=True
-            )
+        sources: Optional[list[dict]] = knowledge_sources_from_trapi(record["sources"])
 
-        edge_class = get_edge_class(edge_id, associations=association_list, bmt=bmt)
-
-        association = edge_class(
+        #
+        # TODO: it would be nice to have dynamic mapping of edge classes for COHD data;
+        #       however, for now, existing observations suggest that the Biolink model
+        #       requires a bit of review and revision to better support such dynamic mapping.
+        #
+        # association_list = bmt.get_associations(
+        #             subject_categories=subject_category,
+        #             predicates= [cohd_predicate],
+        #             object_categories=object_category,
+        #             formatted=True
+        #     )
+        #
+        # edge_class = get_edge_class(edge_id, associations=association_list, bmt=bmt)
+        #
+        # association = edge_class(
+        association = Association(
             id=edge_id,
             subject=cohd_subject,
             predicate=cohd_predicate,

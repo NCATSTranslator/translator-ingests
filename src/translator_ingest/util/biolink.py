@@ -7,9 +7,9 @@ from linkml_runtime.utils.schemaview import SchemaView
 
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 from bmt import Toolkit
+from bmt.pydantic import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
-
 logger = get_logger(__name__)
 
 # knowledge source InfoRes curies
@@ -105,12 +105,18 @@ def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:
 #   ]
 # }
 def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional[list[RetrievalSource]]:
+    """
+    Mapping a TRAPI-style sources onto the Pydantic data model
+    is relatively straightforward since the TRAPI model itself
+    was mapped onto the Biolink Model RetrievalSources class.
+    """
     sources: Optional[list[RetrievalSource]] = None
     if source_list:
         source: dict
         for source in source_list:
             rs = RetrievalSource(
-                id=source["resource_id"],
+                id=entity_id(),
+                resource_id=source["resource_id"],
                 resource_role=source["resource_role"],
                 upstream_resource_ids=source.get("upstream_resource_ids", None)
             )
