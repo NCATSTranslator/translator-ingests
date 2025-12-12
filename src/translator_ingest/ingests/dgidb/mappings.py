@@ -45,12 +45,18 @@ publications = {     ## become an element in "publications" list
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_DP_INTERACTS = "biolink:directly_physically_interacts_with"
 BIOLINK_CAUSES = "biolink:causes"
+BIOLINK_INTERACTS = "biolink:interacts_with"
     
 
 ## interaction_type -> predicate, qualifier-set, extra edge's predicate
 ## imported enum from pydantic (vs hard-coded values)
 ## DOESN'T INCLUDE ALL VALUES: the ones that map to plain "interacts_with" edge are saved in hard-coded variable in main py
 int_type_mapping = {
+    ## same modeling. original values: {"other/unknown", "~NULL"} ("~NULL" is a placeholder for no value)
+    "~PLAIN_INTERACTS": {
+        "predicate": BIOLINK_INTERACTS,
+        ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
+    },
     "activator": {
         "predicate": BIOLINK_AFFECTS,
         "qualifiers": {
