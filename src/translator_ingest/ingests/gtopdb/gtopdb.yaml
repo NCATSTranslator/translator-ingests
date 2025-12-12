@@ -4,7 +4,7 @@ readers:
   gtopdb_parsing:
     format: csv
     delimiter: ","
-    comment_char: "!" # Header line starts with !
+    comment_char: "#" # Header line starts with #
     header_mode: infer
     files:
       - interactions.csv
@@ -37,8 +37,7 @@ readers:
       - Selectivity
       - Endogenous
       - Primary Target
-      - concentration
-      - Range
+      - concentration Range
       - Affinity Units
       - Affinity High
       - Affinity Median
