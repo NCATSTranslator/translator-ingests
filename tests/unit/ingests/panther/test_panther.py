@@ -15,6 +15,9 @@ from translator_ingest.ingests.panther.panther import (
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
+# Test normally works 99.9% of the time, except when
+# the Panther website is inaccessible, thus, breaking CI
+@pytest.mark.skip
 def test_get_latest_version():
     assert get_latest_version() != "unknown"
 
