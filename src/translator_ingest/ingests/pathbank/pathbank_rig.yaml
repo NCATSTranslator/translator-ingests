@@ -1,0 +1,238 @@
+# MHB: general note based on the data examples you shared - you reported infores:Biolink as an aggregator on all edges - this is not correct.  No aggregator needed in these KGX ingest files (unless the external source is itself an aggregator)
+# AB: Addressed - Removed all aggregating parameters from build_association_knowledge_sources() calls throughout pathbank.py. PathBank is a primary knowledge source, not an aggregator, so all edges now only specify primary=INFORES_PATHBANK without any aggregating knowledge sources. This ensures correct provenance tracking where PathBank is the direct source of the knowledge, not an aggregation of other sources.
+name: PathBank Reference Ingest Guide (RIG)
+
+source_info:
+  infores_id: infores:pathbank
+  name: PathBank
+  description: "PathBank is a comprehensive, visually rich pathway database (>110k pathways) providing machine-readable exports (PWML, BioPAX, SBML, SBGN) and CSV summaries for pathway metadata and links."
+  citations:
+    - "PathBank NAR article: https://doi.org/10.1093/nar/gkz861"
+    - "Downloads page: https://pathbank.org/downloads"
+  terms_of_use_info:
+    terms_of_use_url: "https://pathbank.org/about"
+    license_name: "See PathBank About/Downloads for reuse and citation guidance"
+  data_access_locations:
+    - "All downloads: https://pathbank.org/downloads"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - csv
+    - pwml
+  data_versioning_and_releases: "Treat each pull as a dated snapshot; downloads list 'Generated On' timestamps and large per-format archives."
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "Comprehensive pathway membership and mechanistic process data (reactions, transports, interactions) for Translator reasoning and pathway-centric analytics."
+  scope: "This ingest uses only two inputs: the master pathways CSV for biolink:Pathway nodes and the PWML archive for entities, processes, and edges. Other formats available from PathBank (BioPAX, SBML, SBGN, RXN, SVG, PNG, FASTA, SDF) are not currently used but may be considered for future enrichment."
+
+  relevant_files:
+    - file_name: "pathbank_all_pathways.csv.zip"
+      location: "https://pathbank.org/downloads"
+      description: "Master CSV with pathway subjects and descriptions; used to build Pathway nodes with IDs, names, descriptions, and species metadata."
+    - file_name: "pathbank_all_pwml.zip"
+      location: "https://pathbank.org/downloads"
+      description: "Per-pathway PWML files for detailed composition and connectivity (entities, processes, participants, localization, complexes)."
+
+  included_content:
+    - file_name: "pathbank_all_pathways.csv.zip"
+      included_records: "All pathway rows extracted to pathbank_pathways.csv"
+      fields_used: "pathway_id, pathway_name, description, species/taxon, external references if present"
+    - file_name: "pathbank_all_pwml.zip"
+      included_records: "All PWML pathway files"
+      fields_used: "entities (compounds, proteins, complexes, nucleic acids), processes (reactions, transports, interactions), participants (inputs/outputs), enzymes/transporters, localization (compartments/tissues)"
+
+  # Note: filtered_content is omitted because all records from the included files (pathbank_pathways.csv and PWML files) are used without filtering.
+
+  future_considerations:
+    - category: edge_property_content
+      consideration: "Edge properties such as stoichiometry and participant_role - may be added in future if needed and if supported by Biolink Model"
+    - category: edge_content
+      consideration: "Additional file formats available from PathBank (BioPAX, SBML, SBGN, RXN, SVG, PNG, FASTA, SDF) may be considered for future enrichment to provide additional pathway representations and visualizations"
+    - category: edge_content
+      consideration: "Additional interaction type mappings may be added as more PathBank interaction types are discovered and validated against Biolink Model predicates"
+    
+target_info:
+  infores_id: infores:translator-pathbank-kgx
+  edge_type_info:
+    - subject_categories:
+        - biolink:Pathway
+      predicate: biolink:has_participant        # MHB: Use has_particpant for consistency with other sources/edges like this. 
+                                                # AB: Addressed - Changed all pathway membership edges from biolink:has_component to biolink:has_participant throughout pathbank.py (8 instances) to maintain consistency with other pathway knowledge sources. This ensures uniform predicate usage across Translator ingests for pathway-entity relationships. 
+      object_categories:
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:NucleicAcidEntity
+        - biolink:MacromolecularComplex
+        - biolink:ChemicalEntity
+        - biolink:MolecularActivity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Pathway has the specified entity as a participant (from PWML membership and context)."
+
+    - subject_categories:
+        - biolink:MolecularActivity
+      predicate: biolink:has_input            # MHB: This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier
+      object_categories:
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Reaction (molecular activity) consumes specified inputs (reactants) extracted from PWML participants."
+
+    - subject_categories:
+        - biolink:MolecularActivity
+      predicate: biolink:has_output
+      object_categories:
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Reaction (molecular activity) produces specified outputs (products) as defined in PWML."
+
+    - subject_categories:
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      predicate: biolink:catalyzes
+      object_categories:
+        - biolink:MolecularActivity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Enzyme or protein complex catalyzes the specified reaction (molecular activity) as identified in PWML."
+
+    - subject_categories:
+        - biolink:MacromolecularComplex
+      predicate: biolink:has_part     # MHB: here we might use the more specific predicate has_component? But i see all that is in Biolink now is 'has_food_component?  Could we geenralize this relation?
+      object_categories:
+        - biolink:Protein
+        - biolink:SmallMolecule
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Complex contains proteins and small-molecule cofactors per PWML composition."
+
+    - subject_categories:
+        - biolink:Pathway
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:ChemicalEntity
+        - biolink:NucleicAcidEntity
+      predicate: biolink:same_as     # MHB: Did we decide all equivalence relationships would be the purview of the ontology group and NN/CoCo?  
+      object_categories:
+        - biolink:Pathway
+        - biolink:SmallMolecule
+        - biolink:Protein
+        - biolink:ChemicalEntity
+        - biolink:NucleicAcidEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Equivalence relationships between PathBank identifiers and external database identifiers (e.g., SMPDB↔PathBank pathways, ChEBI, UniProtKB, DrugBank, KEGG), and between SMPDB and PathBank pathway identifiers."
+
+    - subject_categories:
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:SmallMolecule
+        - biolink:ChemicalEntity
+      predicate: biolink:interacts_with    # MHB: can we dig into the data behind these edges - to see if we can be more precise/detailed w.r.t. our predicate (and possibly qualifiers) - based on interaction types Pathbank provides. 
+                                            # AB: Addressed - Implemented interaction type mapping using Biolink qualifiers: Inhibition/Repression → regulates with qualified_predicate=causes, object_aspect_qualifier=activity_or_abundance, object_direction_qualifier=downregulated; Activation/Induction/Promotion → regulates with qualified_predicate=causes, object_aspect_qualifier=activity_or_abundance, object_direction_qualifier=upregulated; Binding/Physical/Complex → physically_interacts_with; unknown types → interacts_with. This provides semantic precision using proper Biolink qualifier patterns.
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+            - "biolink:causes"
+        - property: biolink:object_aspect_qualifier
+          value_range:
+            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+        - property: biolink:object_direction_qualifier
+          value_range:
+            - biolink:DirectionQualifierEnum
+      object_categories:
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:SmallMolecule
+        - biolink:ChemicalEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Binary interactions between entities (e.g., protein-protein, compound-protein) extracted from PWML interaction data. Interaction types are mapped using Biolink qualifiers: Inhibition/Repression → regulates with downregulates qualifier, Activation/Induction/Promotion → regulates with upregulates qualifier, Binding/Physical/Complex → physically_interacts_with, others → interacts_with."
+
+    - subject_categories:
+        - biolink:Pathway
+      predicate: biolink:occurs_in
+      object_categories:
+        - biolink:CellularComponent
+        - biolink:AnatomicalEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: "Pathway localization to subcellular compartments (GO terms) and tissues (BTO terms) as specified in PWML data."
+
+  node_type_info:
+    - node_category: biolink:Pathway
+      source_identifier_types:
+        - "PathBank pathway identifiers: both SMPDB IDs (e.g., SMP0000055) and PathBank PW IDs (e.g., PW000769) from pathbank_pathways.csv"
+      additional_notes: "Both SMPDB and PathBank pathway identifiers are created as separate nodes and linked via same_as edges. Biolink class reference: https://biolink.github.io/biolink-model/Pathway/"
+    - node_category: biolink:SmallMolecule
+      source_identifier_types:
+        - "PathBank creates its own identifiers (PathBank:Compound:{id}) from PWML compound IDs"
+        - "External database identifiers when available: ChEBI, DrugBank, KEGG.COMPOUND (linked via same_as edges)"
+      additional_notes: "PathBank creates its own compound identifiers and also uses external database identifiers when available in PWML data. All equivalent identifiers are linked via same_as edges. Biolink class reference: https://biolink.github.io/biolink-model/SmallMolecule/"
+    - node_category: biolink:Protein
+      source_identifier_types:
+        - "PathBank creates its own identifiers (PathBank:Protein:{id}) from PWML protein IDs"
+        - "External database identifiers when available: UniProtKB, DrugBank (linked via same_as edges)"
+      additional_notes: "PathBank creates its own protein identifiers and also uses external database identifiers (primarily UniProtKB) when available in PWML data. All equivalent identifiers are linked via same_as edges. Biolink class reference: https://biolink.github.io/biolink-model/Protein/"
+    - node_category: biolink:MacromolecularComplex
+      source_identifier_types:
+        - "PathBank creates its own identifiers (PathBank:ProteinComplex:{id}) from PWML protein complex IDs"
+      additional_notes: "PathBank creates its own protein complex identifiers. Complexes are composed of proteins (linked via has_part edges). Biolink class reference: https://biolink.github.io/biolink-model/MacromolecularComplex/"
+    - node_category: biolink:NucleicAcidEntity
+      source_identifier_types:
+        - "PathBank creates its own identifiers (PathBank:NucleicAcid:{id}) from PWML nucleic acid IDs"
+        - "External database identifiers when available: ChEBI (linked via same_as edges)"
+      additional_notes: "PathBank creates its own nucleic acid identifiers and also uses ChEBI identifiers when available in PWML data. All equivalent identifiers are linked via same_as edges. Biolink class reference: https://biolink.github.io/biolink-model/NucleicAcidEntity/"
+    - node_category: biolink:MolecularActivity
+      source_identifier_types:
+        - "PathBank creates its own identifiers (PathBank:Reaction:{id}) from PWML reaction IDs"
+      additional_notes: "Individual reactions/transports/interactions are represented as MolecularActivity nodes. PathBank creates its own reaction identifiers. Biolink class reference: https://biolink.github.io/biolink-model/MolecularActivity/"
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - "PathBank creates its own identifiers (PathBank:Bound:{id} and PathBank:ElementCollection:{id}) from PWML IDs"
+        - "External database identifiers when available for element collections: ChEBI (linked via same_as edges)"
+      additional_notes: "Used for bounds (chemical entities with multiple components) and element collections. PathBank creates its own identifiers for both. Element collections may have ChEBI cross-references when available. Biolink class reference: https://biolink.github.io/biolink-model/ChemicalEntity/"
+    - node_category: biolink:CellularComponent
+      source_identifier_types:
+        - "GO (Gene Ontology) identifiers for subcellular locations (e.g., GO:0005737 for Cytoplasm)"
+      additional_notes: "Subcellular compartments extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/CellularComponent/"
+    - node_category: biolink:AnatomicalEntity
+      source_identifier_types:
+        - "BTO (BRENDA Tissue Ontology) identifiers for tissues (e.g., BTO:0000759 for Liver)"
+      additional_notes: "Tissues and anatomical entities extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/AnatomicalEntity/"
+
+provenance_info:
+  contributions:
+    - "Adilbek Bazarkulov: code implementation, support"
+    - "Erica Wood: code author (RTX-KG2)"
+    - "Evan Morris: code support"
+    - "Sierra Moxon: data modeling, domain expertise"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "PathBank downloads: https://pathbank.org/downloads"
+    - "Biolink Model repository: https://github.com/biolink/biolink-model"
+    - "Biolink Model docs: https://biolink.github.io/biolink-model/"
+    - "KGX docs: https://biolink.github.io/kgx/"
