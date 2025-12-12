@@ -51,7 +51,6 @@ def generate_indications_config(filename: str):
             if len(row) < 6:
                 # print(f"Skipping malformed line: {line.strip()}")
                 continue
-            pert_iname = row[0] 
             target = row[5]
             if '|' in row[5]:
                 indication_list = [ind.strip() for ind in target.strip('"').split('|')]
@@ -132,10 +131,8 @@ def generate_target_config():
             if len(row) < 4:
                 # print(f"Skipping malformed line: {line.strip()}")
                 continue
-            pert_iname = row[0] 
             target = row[3]
             target_gene_symbols = [gene.strip() for gene in target.split('|')]
-            target_ids = []
             for symbol in target_gene_symbols:
                 if not symbol:
                     continue

@@ -87,7 +87,6 @@ def transform_drug_rep_hub_samples(
         name = record["pert_iname"]
         inchikey = record["InChIKey"] if inchikey_regex.match(record["InChIKey"]) else None
         source_name = record["vendor_name"]
-        smiles = record["smiles"]
         pubchem_id = record["pubchem_cid"]
 
         id = None
@@ -123,8 +122,8 @@ def create_disease_association(chemical, indication, indication_info, predicate,
     )
     if predicate is None:
         return disease, None
-    clinical_approval_status = clinical_approval_map.get(clinical_phase, None)
-    max_research_phase = research_phase_map.get(clinical_phase, None)
+    #TODO: clinical_approval_status = clinical_approval_map.get(clinical_phase, None)
+    #TODO: max_research_phase = research_phase_map.get(clinical_phase, None)
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id = entity_id(),
         subject=chemical.id,
