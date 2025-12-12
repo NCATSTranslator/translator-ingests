@@ -281,7 +281,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             if record["Action"] == "Agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_agonism
-                object_direction_qualifier = DirectionQualifierEnum.decreased
+                object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
             if record["Action"] == "Antagonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_inhibition
