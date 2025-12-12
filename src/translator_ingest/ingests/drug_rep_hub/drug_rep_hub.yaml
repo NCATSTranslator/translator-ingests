@@ -1,0 +1,37 @@
+name: drug_rep_hub_ingest
+
+readers:
+  ingest_drug_rep_hub_samples:
+    format: "csv"
+    delimiter: "\t"
+    header_mode: none
+    header_prefix: "!"
+    files:
+      - "repo-sample-annotation.txt"
+    columns:
+      - broad_id
+      - pert_iname
+      - qc_incompatible
+      - purity
+      - vendor
+      - catalog_no
+      - vendor_name
+      - expected_mass
+      - smiles
+      - InChIKey
+      - pubchem_cid
+      - deprecated_broad_id
+  ingest_drug_rep_hub_annotations:
+    format: "csv"
+    delimiter: "\t"
+    header_mode: none
+    header_prefix: "!"
+    files:
+      - "repo-drug-annotation.txt"
+    columns:
+      - pert_iname
+      - clinical_phase
+      - moa
+      - target
+      - disease_area
+      - indication

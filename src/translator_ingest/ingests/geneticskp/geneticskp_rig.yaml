@@ -1,0 +1,79 @@
+name: "GeneticsKP Reference Ingest Guide"
+
+supporting_data_source_info:
+  - infores_id: "infores:magma"
+    name: "MAGMA (Multi-marker Analysis of GenoMic Annotation)"
+    description: "MAGMA is a tool for gene analysis and generalized gene-set analysis of GWAS data"
+    terms_of_use_info:
+      terms_of_use_description: >-
+        MAGMA is freely available for academic use. For commercial use, please contact the developers.
+    relevant_files:
+      - file_name: "GWAS summary statistics"
+        location: "Various GWAS repositories"
+        description: "GWAS summary statistics used as input to MAGMA analysis"
+
+source_info:
+  infores_id: "infores:geneticskp"
+  name: "GeneticsKP"
+  description: "GeneticsKP provides gene-disease associations derived from GWAS data using MAGMA analysis. It integrates genetic evidence from genome-wide association studies to identify genes associated with various diseases and traits."
+  terms_of_use_info:
+    terms_of_use_description: "Freely available"
+  data_access_locations:
+    - "Data is provided as a checked-in tar.gz file in the translator-ingests repository"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - kgx
+  data_versioning_and_releases: "Static version based on MAGMA analysis"
+
+ingest_info:
+  ingest_categories:
+    - translator_knowledge_creator
+  utility: "GeneticsKP provides gene-disease associations based on GWAS data analyzed with MAGMA, offering genetic evidence for disease associations that can be integrated with other knowledge sources in Translator."
+  scope: "Gene-disease associations derived from GWAS data using MAGMA statistical analysis."
+  relevant_files:
+    - file_name: "genetics_magma.tar.gz"
+      location: "translator-ingests repository"
+      description: "KGX files containing nodes and edges from MAGMA analysis"
+  included_content:
+    - file_name: "edges_geneticsKP_magma.jsonl"
+      included_records: "Gene-disease associations from MAGMA analysis"
+      fields_used: "Gene identifiers, disease identifiers, association scores, p-values"
+    - file_name: "nodes_geneticsKP_magma.jsonl"
+      included_records: "Gene and disease nodes referenced in the edges"
+      fields_used: "Node identifiers, labels, categories"
+
+target_info:
+  infores_id: "infores:translator-geneticskp-kgx"
+  edge_type_info:
+    - subject_categories:
+        - "biolink:Gene"
+      predicates:
+        - "biolink:genetically_associated_with"
+      object_categories:
+        - "biolink:Disease"
+        - "biolink:PhenotypicFeature"
+      knowledge_level:
+        - statistical_association
+      agent_type:
+        - computational_model
+      ui_explanation: "The 'genetically_associated_with' predicate indicates that genetic variation in this gene is statistically associated with the disease or phenotype based on MAGMA analysis of GWAS data."
+
+  node_type_info:
+    - node_category: "biolink:Gene"
+      source_identifier_types:
+        - "NCBI Gene ID"
+        - "HGNC ID"
+    - node_category: "biolink:Disease"
+      source_identifier_types:
+        - "MONDO ID"
+        - "EFO ID"
+    - node_category: "biolink:PhenotypicFeature"
+      source_identifier_types:
+        - "HP ID"
+        - "EFO ID"
+
+provenance_info:
+  contributions:
+    - "GeneticsKP team - MAGMA analysis and KGX generation"
+    - "Translator team - ingest implementation"
