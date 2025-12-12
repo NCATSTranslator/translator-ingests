@@ -75,26 +75,25 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin()
 def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.transform_metadata["ingest_by_record"] = {}
-    koza_transform.transform_metadata["ingest_by_record"]["bindingdb_associations_captured"] = 0
-    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_pubchem_id"] = 0
-    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_uniprot_id"] = 0
+    koza_transform.transform_metadata["bindingdb_associations_captured"] = 0
+    koza_transform.transform_metadata["rows_missing_pubchem_id"] = 0
+    koza_transform.transform_metadata["rows_missing_uniprot_id"] = 0
 
 
 @koza.on_data_end()
 def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
     koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"]} "
+        msg=f"{koza_transform.transform_metadata["rows_missing_publications"]} "
              "rows were discarded for having no publications.",
         level="INFO"
     )
     koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["ingest_by_record"]["rows_missing_pubchem_id"]} "
+        msg=f"{koza_transform.transform_metadata["rows_missing_pubchem_id"]} "
              "rows were discarded for lacking a subject PubChem identifier.",
         level="WARNING"
     )
     koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["ingest_by_record"]["rows_missing_uniprot_id"]} "
+        msg=f"{koza_transform.transform_metadata["rows_missing_uniprot_id"]} "
              "rows were discarded for lacking an object UniProt identifier.",
         level="WARNING"
     )
@@ -236,16 +235,16 @@ def transform_bindingdb_by_record(
         )
 
         # Tally the total number of BindingDb associations successfully captured
-        koza_transform.transform_metadata["ingest_by_record"]["bindingdb_associations_captured"] += 1
+        koza_transform.transform_metadata["bindingdb_associations_captured"] += 1
 
         return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
 
     except Exception as e:
         # Catch and tally or report all errors here
         if str(e) == "Empty subject PubChem identifier":
-            koza_transform.transform_metadata["ingest_by_record"]["rows_missing_pubchem_id"] += 1
+            koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
         elif str(e) == "Empty object UniProt identifier":
-            koza_transform.transform_metadata["ingest_by_record"]["rows_missing_uniprot_id"] += 1
+            koza_transform.transform_metadata["rows_missing_uniprot_id"] += 1
         else:
             koza_transform.log(
                 msg=f"transform_bindingdb_by_record(): record for reactant '{str(record[REACTANT_SET_ID])}' "
