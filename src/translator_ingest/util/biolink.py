@@ -21,13 +21,19 @@ INFORES_DECIFER = "infores:decifer"
 INFORES_HPOA = "infores:hpo-annotations"
 INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
+INFORES_PATHBANK = "infores:pathbank"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
+INFORES_SIGNOR = "infores:signor"
 INFORES_TTD = "infores:ttd"
 INFORES_BGEE = "infores:bgee"
 INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
 INFORES_INTACT = "infores:intact"
 INFORES_DGIDB = "infores:dgidb"
+INFORES_DISEASES = "infores:diseases"
+INFORES_MEDLINEPLUS = "infores:medlineplus"
+INFORES_AMYCO = "infores:amyco"
+INFORES_EBI_G2P = "infores:gene2phenotype"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
 INFORES_CIVIC = "infores:civic"
@@ -46,7 +52,6 @@ INFORES_MYCANCERGENOME_TRIALS = "infores:mycancergenome-trials"
 INFORES_NCIT = "infores:ncit"
 INFORES_ONCOKB = "infores:oncokb"
 INFORES_PHARMGKB = "infores:pharmgkb"
-
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:

@@ -280,6 +280,7 @@ dependencies = [
     { name = "polars" },
     { name = "robokop-orion" },
     { name = "uv-dynamic-versioning" },
+    { name = "xmltodict" },
 ]
 
 [package.dev-dependencies]
@@ -316,6 +317,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.35.2" },
     { name = "robokop-orion", specifier = "==0.1.12" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
+    { name = "xmltodict", specifier = ">=1.0.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -4016,6 +4018,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/27/d3/6a1731a339842afcbb2643bc93628d4ab9c52d1bf26a7b085ca8f35bba6e/xattr-1.3.0-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:937d8c91f6f372788aff8cc0984c4be3f0928584839aaa15ff1c95d64562071c", size = 23474, upload-time = "2025-10-13T22:16:16.33Z" },
     { url = "https://files.pythonhosted.org/packages/1b/25/6741ed3d4371eaa2fae70b259d17a580d858ebff8af0042a59e11bb6385f/xattr-1.3.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:e470b3f15e9c3e263662506ff26e73b3027e1c9beac2cbe9ab89cad9c70c0495", size = 18558, upload-time = "2025-10-13T22:16:17.251Z" },
     { url = "https://files.pythonhosted.org/packages/ba/84/cc450688abeb8647aa93a62c1435bb532db11313abfeb9d43b28b4751503/xattr-1.3.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:f2238b2a973fcbf5fefa1137db97c296d27f4721f7b7243a1fac51514565e9ec", size = 18869, upload-time = "2025-10-13T22:16:18.607Z" },
+]
+
+[[package]]
+name = "xmltodict"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/aa/917ceeed4dbb80d2f04dbd0c784b7ee7bba8ae5a54837ef0e5e062cd3cfb/xmltodict-1.0.2.tar.gz", hash = "sha256:54306780b7c2175a3967cad1db92f218207e5bc1aba697d887807c0fb68b7649", size = 25725, upload-time = "2025-09-17T21:59:26.459Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/20/69a0e6058bc5ea74892d089d64dfc3a62ba78917ec5e2cfa70f7c92ba3a5/xmltodict-1.0.2-py3-none-any.whl", hash = "sha256:62d0fddb0dcbc9f642745d8bbf4d81fd17d6dfaec5a15b5c1876300aad92af0d", size = 13893, upload-time = "2025-09-17T21:59:24.859Z" },
 ]
 
 [[package]]
