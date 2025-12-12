@@ -194,11 +194,17 @@ def build_indication_association(chemical: ChemicalEntity, clinical_phase: str, 
         return create_disease_association(chemical, indication, indication_info, predicate, clinical_phase, disease_area)
 
 
+@koza.prepare_data(tag="ingest_drug_rep_hub_annotations")
+def prepare_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    koza.state['samples'] = SAMPLES
+    for record in data:
+        yield record
+
+
 @koza.transform(tag="ingest_drug_rep_hub_annotations")
 def transform_drug_rep_hub_annotations(
     koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 ) -> Iterable[KnowledgeGraph]:
-    global SAMPLES
     for record in data:
         nodes = []
         edges = []
@@ -208,8 +214,8 @@ def transform_drug_rep_hub_annotations(
         targets = record["target"].strip()
         disease_area = record["disease_area"]
         indications = record["indication"].strip()
-        if pert_iname in SAMPLES:
-            for chem_id, chemical in SAMPLES[pert_iname].items():
+        if pert_iname in koza.state['samples']:
+            for chem_id, chemical in koza.state['samples'][pert_iname].items():
                 nodes.append(chemical)
                 for indication in [ind.strip() for ind in indications.split('|')]:
                     disease, indication_association = build_indication_association(chemical, clinical_phase, indication, disease_area)
