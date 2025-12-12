@@ -55,11 +55,11 @@ ingest_info:
       included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: affects. And subject: Gene, object: chemical entity, small molecule; predicate: directly_physically_interacts_with. Rows with target Species as Human, Pig, Rat, Mouse, Gorilla, Guinea pig, NaN, Bovine, Rabbit, Unknown, Monkey, Dog, Hamster, Ferret, SARS-CoV-2, SARS-CoV, MERS-CoV, HCoV-OC43, Sheep, spiny starfish, Escherichia coli, Honeybee, Hepatitis C virus, Chicken, Turkey, Plasmodium falciparum A2, Plasmodium falciparum Dd2, Plasmodium falciparum HB3, Plasmodium falciparum, Plasmodium falciparum W2, Plasmodium falciparum NF54, Plasmodium falciparum D6, Plasmodium falciparum TM90C2A, Plasmodium falciparum 7G8, Plasmodium falciparum K1, Plasmodium falciparum V1/S, Plasmodium falciparum TM4, Plasmodium vivax, Plasmodium falciparum 3D7, Plasmodium berghei, Plasmodium falciparum FCR3, Plasmodium falciparum TM90C2B, Plasmodium falciparum TM91C235, Plasmodium cynomolgi, Plasmodium knowlesi, Plasmodium yoelii, Mycobacterium tuberculosis, Zika virus, Plasmodium falciparum FC27"
 
 # MHB: Content of the included_records field above is not really what we look for here. See suggested text below - confirm its accuracy.
-      included_records: No filtering. Records for all species included.  Note however that records in the data describe results of a single publiched experiment. In our ingest records with the same ligand, target, and type + action are merged into a single edge, and metadata from each merged record (publications) combiend into a list and attached to the edge.
+      included_records: No filtering. Records for all species included.  Note however that records in the data describe results of a single published experiment. In our ingest records with the same ligand, target, and type + action are merged into a single edge, and metadata from each merged record (publications) combiend into a list and attached to the edge.
       fields_used: "Ligand Id, Target Species, Type, Target Ensembl Gene ID"      # MHB:  'Action' and 'Pubmed ID' and 'Endogenous' fields should also be used, right? See yellow highlighted columns here: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877 and the mechanism/predicate/qualifier mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142
 
 
-# MHB: Qi, can you update included_records and feilds_used in objects below to match conventions / suggestions above. Remember, the ingest_info section of the RIG jsut describes what content we take from the soruce, and what we leave behind.  It doesnt describe how we model it. THat goes in the target_info section that follows.
+# MHB: Qi, can you update included_records and feilds_used in objects below to match conventions / suggestions above. Remember, the ingest_info section of the RIG just describes what content we take from the source, and what we leave behind.  It doesn't describe how we model it. THat goes in the target_info section that follows.
 
     - file_name: "targets_and_families.csv"
       included_records: "subject: ChemicalEntity, MolecularMixture, SmallMolecule; object: Gene; Predicate: directly_physically_interacts_with"
@@ -221,7 +221,7 @@ target_info:
   node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
-        - "PubChem SID"                               # MHB: value of this field should be just a prefix, and the decription field can report more detail (e.g. that it is an SID)
+        - "PubChem SID"                               # MHB: value of this field should be just a prefix, and the description field can report more detail (e.g. that it is an SID)
     - node_category: biolink:MolecularMixture
       source_identifier_types:
         - "PubChem SID"

@@ -2,9 +2,9 @@ import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
-import csv
+# import csv
 
-csv.field_size_limit(10_000_000)   # allow fields up to 10MB
+# csv.field_size_limit(10_000_000)   # allow fields up to 10MB
 
 # * existing biolink category mapping:
 # ChemicalEntity	biolink:ChemicalEntity
@@ -12,40 +12,38 @@ csv.field_size_limit(10_000_000)   # allow fields up to 10MB
 # SmallMolecule	biolink:SmallMolecule
 # Gene	biolink:Gene
 
+from koza.model.graphs import KnowledgeGraph
+from bmt.pydantic import build_association_knowledge_sources
+
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     ChemicalEntity,
-    SmallMolecule,
-    MolecularMixture,
+    # SmallMolecule,
+    # MolecularMixture,
     NamedThing,
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
     Association,
-    PredicateMapping,
-    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    DrugToGeneAssociation,
-    DrugToGeneInteractionExposure,
+    # PredicateMapping,
+    # ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    # DrugToGeneAssociation,
+    # DrugToGeneInteractionExposure,
     ChemicalAffectsGeneAssociation,
-    Association,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
-    RetrievalSource,
-    ResourceRoleEnum,
+    # RetrievalSource,
+    # ResourceRoleEnum,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
 from translator_ingest.util.biolink import (
     INFORES_GTOPDB
 )
-from koza.model.graphs import KnowledgeGraph
 
 ## adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
-BIOLINK_entity_positively_regulated_by_entity = "biolink:entity_positively_regulated_by_entity"
-BIOLINK_entity_negatively_regulated_by_entity = "biolink:entity_negatively_regulated_by_entity"
-
+# BIOLINK_entity_positively_regulated_by_entity = "biolink:entity_positively_regulated_by_entity"
+# BIOLINK_entity_negatively_regulated_by_entity = "biolink:entity_negatively_regulated_by_entity"
 
 # !!! README First !!!
 #
@@ -69,19 +67,6 @@ def get_latest_version() -> str:
     formatted_date = today.strftime("%Y%m%d")
 
     return formatted_date
-
-# Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
-# If implemented they will be called at the beginning and/or end of the transform process.
-@koza.on_data_begin(tag="ingest_by_record")
-def on_begin_ingest_by_record(koza: koza.KozaTransform) -> None:
-    # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.
-    koza.state['example_counter'] = 0
-
-@koza.on_data_end(tag="ingest_by_record")
-def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
-    # for example koza.state could be used for logging
-    if koza.state['example_counter'] > 0:
-        koza.log(f'{koza.state['example_counter']} rows were discarded for having no publications.', level="INFO")
 
 # Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
 # They take an Iterable of dictionaries, typically representing the rows of a source data file, and return an Iterable
@@ -141,12 +126,12 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.binding
             if record["Action"] == "Full agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-            if record["Action"] == None:
+            if record["Action"] is None:
                 causal_mechanism_qualifier = None
             if record["Action"] == "Partial agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
             if record["Action"] == "Positive":
-                causal_mechanism_qualifier = None
+                causal_mechanism_qualifier is None
             if record["Action"] == "Potentiation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
 
@@ -155,7 +140,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -199,7 +184,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             if record["Action"] == "Mixed":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.mixed_agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
-            if record["Action"] == None or "Unknown":
+            if record["Action"] is None or record["Action"] == "Unknown":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
             if record["Action"] == "Partial agonist":
@@ -211,7 +196,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -294,7 +279,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -336,7 +321,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -370,7 +355,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_inhibition
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
-            if record["Action"] == None:
+            if record["Action"] is None:
                 causal_mechanism_qualifier = None
                 object_direction_qualifier = None
                 qualified_predicate = None
@@ -380,7 +365,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -406,7 +391,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
-            if record["Action"] == None:
+            if record["Action"] is None:
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
                 object_direction_qualifier = None
                 qualified_predicate = None
@@ -420,7 +405,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -446,7 +431,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -472,7 +457,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
-            if record["Action"] == None:
+            if record["Action"] is None:
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
                 object_direction_qualifier = None
                 qualified_predicate = None
@@ -495,7 +480,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -529,7 +514,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.irreversible_inhibition
             if record["Action"] == "Non-competitive":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.non_competitive_antagonism
-            if record["Action"] == None or "Unknown":
+            if record["Action"] is None or record["Action"] == "Unknown":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
 
             association = ChemicalAffectsGeneAssociation(
@@ -537,7 +522,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -551,7 +536,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         ## subject: None
-        if record["Type"] == None:
+        if record["Type"] is None:
             predicate = BIOLINK_AFFECTS
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
             qualified_predicate = BIOLINK_CAUSES
@@ -568,7 +553,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
@@ -599,7 +584,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_GTOPDB,
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = qualified_predicate,
