@@ -42,25 +42,7 @@ from translator_ingest.util.biolink import (
 ## adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
-# BIOLINK_entity_positively_regulated_by_entity = "biolink:entity_positively_regulated_by_entity"
-# BIOLINK_entity_negatively_regulated_by_entity = "biolink:entity_negatively_regulated_by_entity"
 
-# !!! README First !!!
-#
-# This module provides a template with example code and instructions for implementing an ingest. Replace the body
-# of function examples below with ingest specific code and delete all template comments or unused functions.
-#
-# Note about ingest tags: for the ingests with multiple different input files and/or different transformation processes,
-# ingests can be divided into multiple sections using tags. Examples from this template are "ingest_by_record",
-# "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
-# yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
-
-
-# Always implement a function that returns a string representing the latest version of the source data.
-# Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
-# If a source does not implement versioning, we need to do it. For static datasets, assign a version string
-# corresponding to the current version. For sources that are updated regularly, use file modification dates if
-# possible, or the current date. Versions should (ideally) be sortable (ie YYYY-MM-DD) and should contain no spaces.
 def get_latest_version() -> str:
     from datetime import date
     today = date.today()
@@ -68,11 +50,6 @@ def get_latest_version() -> str:
 
     return formatted_date
 
-# Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
-# They take an Iterable of dictionaries, typically representing the rows of a source data file, and return an Iterable
-# of dictionaries which will be the data passed to subsequent transform functions. This allows for operations like
-# nontrivial merging or transforming of complex source data on a source wide level, even if the transform will occur
-# with a per record transform function.
 @koza.prepare_data(tag="gtopdb_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
@@ -91,10 +68,6 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     return source_df.dropna().drop_duplicates().to_dict(orient="records")
 
-# As an alternative to transform_record, functions decorated with @koza.transform() take a KozaTransform and an Iterable
-# of dictionaries, typically corresponding to all the rows in a source data file, and return an iterable of
-# KnowledgeGraph, each containing any number of nodes and/or edges. Any number of KnowledgeGraphs can be returned:
-# all at once, in batches, or using a generator for streaming.
 @koza.transform(tag="gtopdb_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     nodes: list[NamedThing] = []
