@@ -5,7 +5,9 @@ from typing import Optional
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 from translator_ingest.ingests.cohd.cohd import (
+    on_begin_node_ingest,
     transform_cohd_node,
+    on_begin_edge_ingest,
     transform_cohd_edge
 )
 
@@ -221,6 +223,9 @@ def test_transform_cohd_nodes(
         result_nodes: Optional[list],
         result_edge: Optional[dict],
 ):
+    # Just to ensure that the Koza context is properly initialized
+    on_begin_node_ingest(mock_koza_transform)
+
     validate_transform_result(
         result=transform_cohd_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -478,6 +483,9 @@ def test_transform_cohd_edges(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
+    # Just to ensure that the Koza context is properly initialized
+    on_begin_edge_ingest(mock_koza_transform)
+
     validate_transform_result(
         result=transform_cohd_edge(mock_koza_transform, test_record),
         expected_nodes=result_nodes,

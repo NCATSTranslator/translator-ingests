@@ -1,8 +1,6 @@
 """
 Columbia Open Health Data ("COHD") ingest parser
 """
-
-from loguru import logger
 import koza
 
 from typing import Any
@@ -29,8 +27,24 @@ from koza.model.graphs import KnowledgeGraph
 from bmt import Toolkit
 bmt: Toolkit = get_biolink_model_toolkit()
 
+
 def get_latest_version() -> str:
     return "2024-11-25"  # last Phase 2 release of COHD
+
+
+@koza.on_data_begin(tag="cohd_nodes")
+def on_begin_node_ingest(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["cohd_nodes"] = {}
+
+
+@koza.on_data_end(tag="cohd_nodes")
+def on_end_node_ingest(koza_transform: koza.KozaTransform) -> None:
+    if koza_transform.transform_metadata["cohd_nodes"]:
+        for tag, value in koza_transform.transform_metadata["cohd_nodes"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
 
 
 @koza.transform_record(tag="cohd_nodes")
@@ -60,11 +74,29 @@ def transform_cohd_node(
         return KnowledgeGraph(nodes=[node])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_cohd_node():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
-        )
+        # Tally errors here
+        rec_id = record.get("id", "Unknown")
+        if str(e) not in koza_transform.transform_metadata["cohd_nodes"]:
+            koza_transform.transform_metadata["cohd_nodes"][str(e)] = [rec_id]
+        else:
+            koza_transform.transform_metadata["cohd_nodes"][str(e)].append(rec_id)
+
         return None
+
+
+@koza.on_data_begin(tag="cohd_edges")
+def on_begin_edge_ingest(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["cohd_edges"] = {}
+
+
+@koza.on_data_end(tag="cohd_edges")
+def on_end_edge_ingest(koza_transform: koza.KozaTransform) -> None:
+    if koza_transform.transform_metadata["cohd_edges"]:
+        for tag, value in koza_transform.transform_metadata["cohd_edges"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
 
 
 @koza.transform_record(tag="cohd_edges")
@@ -111,8 +143,11 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
         return KnowledgeGraph(edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_cohd_edge():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
-        )
+        # Tally errors here
+        rec_id = record.get("id", "Unknown")
+        if str(e) not in koza_transform.transform_metadata["cohd_edges"]:
+            koza_transform.transform_metadata["cohd_edges"][str(e)] = [rec_id]
+        else:
+            koza_transform.transform_metadata["cohd_edges"][str(e)].append(rec_id)
+
         return None
