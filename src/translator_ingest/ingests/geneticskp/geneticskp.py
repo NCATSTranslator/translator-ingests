@@ -12,9 +12,8 @@ This ingest validates and transforms the KGX data through Pydantic classes.
 import json
 import gzip
 import tarfile
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Iterable
+from typing import Any, Dict, Optional
 import uuid
 from datetime import datetime
 import koza
@@ -37,7 +36,6 @@ from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import build_association_knowledge_sources
 
 from translator_ingest.util.logging_utils import get_logger
-from translator_ingest.util.biolink import get_current_biolink_version
 
 INFORES_GENETICSKP = "infores:geneticskp"
 
@@ -136,6 +134,7 @@ def on_data_begin_edges(koza: koza.KozaTransform) -> None:
     
     logger.info("Loading all nodes into memory...")
     nodes_lookup = {}
+    nodes_written = set()  # Track which nodes have been written
     node_count = 0
     
     if nodes_file_path.suffix == '.gz':
@@ -156,6 +155,7 @@ def on_data_begin_edges(koza: koza.KozaTransform) -> None:
     
     logger.info(f"Loaded {node_count} nodes into memory")
     koza.state["nodes_lookup"] = nodes_lookup
+    koza.state["nodes_written"] = nodes_written
 
 
 @koza.transform_record(tag="edges")
@@ -171,8 +171,9 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
         logger.warning(f"Skipping edge missing required fields: {record}")
         return None
     
-    # Get nodes lookup from state
+    # Get nodes lookup and written tracker from state
     nodes_lookup = koza.state.get("nodes_lookup", {})
+    nodes_written = koza.state.get("nodes_written", set())
     
     # Look up subject and object nodes
     subject_node_data = nodes_lookup.get(subject_id)
@@ -182,9 +183,18 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
         logger.warning(f"Skipping edge - missing node data for {subject_id} or {object_id}")
         return None
     
-    # Create subject and object nodes
-    subject_node = create_node(subject_node_data)
-    object_node = create_node(object_node_data)
+    # Only create nodes that haven't been written yet
+    nodes_to_write = []
+    
+    if subject_id not in nodes_written:
+        subject_node = create_node(subject_node_data)
+        nodes_to_write.append(subject_node)
+        nodes_written.add(subject_id)
+    
+    if object_id not in nodes_written:
+        object_node = create_node(object_node_data)
+        nodes_to_write.append(object_node)
+        nodes_written.add(object_id)
     
     # Build edge properties
     edge_props = {
@@ -222,10 +232,14 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
     category = categories[0] if isinstance(categories, list) else categories
     
     # Create appropriate association based on category or predicate
+    # We need to check object node type from the data, not the Pydantic object
+    object_categories = object_node_data.get("category", [])
+    object_category = object_categories[0] if isinstance(object_categories, list) else object_categories
+    
     if "genetically_associated_with" in predicate:
-        if isinstance(object_node, Disease):
+        if "Disease" in str(object_category):
             association = GeneToDiseaseAssociation(**edge_props)
-        elif isinstance(object_node, PhenotypicFeature):
+        elif "PhenotypicFeature" in str(object_category):
             association = GeneToPhenotypicFeatureAssociation(**edge_props)
         else:
             association = Association(**edge_props)
@@ -237,5 +251,5 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
         # Default to generic Association
         association = Association(**edge_props)
     
-    # Return KnowledgeGraph with both nodes and the edge
-    return KnowledgeGraph(nodes=[subject_node, object_node], edges=[association])
+    # Return KnowledgeGraph with only the edge and new nodes
+    return KnowledgeGraph(nodes=nodes_to_write, edges=[association])
