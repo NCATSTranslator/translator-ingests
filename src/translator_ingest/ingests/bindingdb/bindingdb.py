@@ -34,10 +34,6 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     PATENT_NUMBER
 )
 
-from translator_ingest.util.logging_utils import get_logger
-from logging import DEBUG #, INFO, WARNING, ERROR, CRITICAL
-logger = get_logger(__name__)
-logger.setLevel(DEBUG)
 
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
@@ -77,6 +73,32 @@ def get_latest_version() -> str:
     return datetime.today().strftime("%Y%m")
 
 
+@koza.on_data_begin()
+def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["ingest_by_record"] = {}
+    koza_transform.transform_metadata["ingest_by_record"]["bindingdb_associations_captured"] = 0
+    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_pubchem_id"] = 0
+    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_uniprot_id"] = 0
+
+
+@koza.on_data_end()
+def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.log(
+        msg=f"{koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"]} "
+             "rows were discarded for having no publications.",
+        level="INFO"
+    )
+    koza_transform.log(
+        msg=f"{koza_transform.transform_metadata["ingest_by_record"]["rows_missing_pubchem_id"]} "
+             "rows were discarded for lacking a subject PubChem identifier.",
+        level="WARNING"
+    )
+    koza_transform.log(
+        msg=f"{koza_transform.transform_metadata["ingest_by_record"]["rows_missing_uniprot_id"]} "
+             "rows were discarded for lacking an object UniProt identifier.",
+        level="WARNING"
+    )
+
 @koza.prepare_data()
 def prepare_bindingdb_data(
         koza_transform: koza.KozaTransform,
@@ -101,14 +123,13 @@ def prepare_bindingdb_data(
     - Better memory efficiency
 
     :param koza_transform: The koza.KozaTransform context of the data processing.
-    :param data: Iterable[dict[str, Any]], @koza.prepare_data() specified input data parameter is not set hence ignored.
+    :param data: Iterable[dict[str, Any]], @koza.prepare_data() specified input data
+                 parameter is not set by the pipeline, hence ignored.
 
     :return: Iterable[dict[str, Any]], Consolidation of related assay records
              for each unique ligand-target pair, with possible aggregation
              of distinct annotation encountered across the original set of assays.
     """
-    koza_transform.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
-
     # As of December 2025, the BindingDB input file is
     # assumed to be a Zipfile archive with a single file inside
     data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
@@ -213,12 +234,22 @@ def transform_bindingdb_by_record(
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
+
+        # Tally the total number of BindingDb associations successfully captured
+        koza_transform.transform_metadata["ingest_by_record"]["bindingdb_associations_captured"] += 1
+
         return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_bindingdb_by_record(): record for reactant '{str(record[REACTANT_SET_ID])}' "
-            + f"with {type(e)} exception: " + str(e)
-        )
+        # Catch and tally or report all errors here
+        if str(e) == "Empty subject PubChem identifier":
+            koza_transform.transform_metadata["ingest_by_record"]["rows_missing_pubchem_id"] += 1
+        elif str(e) == "Empty object UniProt identifier":
+            koza_transform.transform_metadata["ingest_by_record"]["rows_missing_uniprot_id"] += 1
+        else:
+            koza_transform.log(
+                msg=f"transform_bindingdb_by_record(): record for reactant '{str(record[REACTANT_SET_ID])}' "
+                + f"with {type(e)} exception: " + str(e),
+                level="WARNING"
+            )
         return None

@@ -17,6 +17,7 @@ from tests.unit.ingests import (
 # from translator_ingest import INGESTS_DATA_PATH
 
 from translator_ingest.ingests.bindingdb.bindingdb import (
+    on_begin_ingest_by_record,
     prepare_bindingdb_data,
     transform_bindingdb_by_record
 )
@@ -81,6 +82,10 @@ def test_prepare_bindingdb_data(
     # result_nodes: Optional[list],
     # result_edge: Optional[dict],
 ):
+    # calling this simply to ensure that context
+    # dictionary keys are created; not otherwise used
+    on_begin_ingest_by_record(mock_koza_transform)
+
     # The BindingDB implementation of prepare_bindingdb_data() method
     # bypasses Koza to directly read in the input data file to return
     # an iterable sequence of records, where duplication in the
@@ -319,6 +324,10 @@ def test_ingest_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
+    # calling this simply to ensure that context
+    # dictionary keys are created; not otherwise used
+    on_begin_ingest_by_record(mock_koza_transform)
+
     validate_transform_result(
         result=transform_bindingdb_by_record(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
