@@ -20,8 +20,10 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR,
-    MONOMER_ID, LIGAND_NAME,
-    TARGET_NAME, SOURCE_ORGANISM,
+    MONOMER_ID,
+    LIGAND_NAME,
+    TARGET_NAME,
+    SOURCE_ORGANISM,
     CURATION_DATASOURCE,
     PUBCHEM_CID,
     UNIPROT_ID,
@@ -165,7 +167,7 @@ def transform_bindingdb_by_record(
     #       as a first approximation but we may want to consider
     #       using more specialized classes if suitable discrimination
     #       can eventually be made in between chemical types
-    chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID], name=record[LIGAND_NAME])
+    chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID])
 
     # Taxon of protein target
     taxon_label = record[SOURCE_ORGANISM]
