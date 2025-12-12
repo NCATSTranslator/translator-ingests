@@ -2,15 +2,6 @@ import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
-# import csv
-
-# csv.field_size_limit(10_000_000)   # allow fields up to 10MB
-
-# * existing biolink category mapping:
-# ChemicalEntity	biolink:ChemicalEntity
-# MolecularMixture	biolink:MolecularMixture
-# SmallMolecule	biolink:SmallMolecule
-# Gene	biolink:Gene
 
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import build_association_knowledge_sources
@@ -22,16 +13,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     # MolecularMixture,
     NamedThing,
     Association,
-    # PredicateMapping,
-    # ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    # DrugToGeneAssociation,
-    # DrugToGeneInteractionExposure,
     ChemicalAffectsGeneAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
-    # RetrievalSource,
-    # ResourceRoleEnum,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
