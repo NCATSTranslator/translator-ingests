@@ -142,7 +142,7 @@ def process_publications(
 
     # Count rows without publications
     rows_missing_pubs = df.filter(pl.col(PUBLICATION).is_null()).height
-    koza_transform.transform_metadata["ingest_by_record"]["rows_missing_publications"] = rows_missing_pubs
+    koza_transform.transform_metadata["rows_missing_publications"] = rows_missing_pubs
 
     # Filter out rows without publications
     df = df.filter(pl.col(PUBLICATION).is_not_null())
