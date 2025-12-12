@@ -16,7 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import (
     INFORES_SIGNOR
@@ -151,7 +151,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_SIGNOR,
+                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = BIOLINK_CAUSES,
@@ -174,7 +174,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = predicate,
-                    primary_knowledge_source=INFORES_SIGNOR,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -184,7 +184,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = predicate,
-                    primary_knowledge_source=INFORES_SIGNOR,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -229,7 +229,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
-                primary_knowledge_source=INFORES_SIGNOR,
+                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = BIOLINK_CAUSES,
