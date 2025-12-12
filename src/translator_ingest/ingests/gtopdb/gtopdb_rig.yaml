@@ -136,7 +136,7 @@ target_info:
         - biolink:MolecularMixture
         - biolink:SmallMolecule
       predicates:
-        - - biolink:directly_physically_interacts
+        - biolink:directly_physically_interacts
       object_categories:
         - biolink:Gene
       qualifiers:
