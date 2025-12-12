@@ -161,51 +161,66 @@ def transform_bindingdb_by_record(
     :param record: Individual BindingDb records to be processed.
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
-    # Nodes
+    try:
+        # Sanity check for basic data integrity
+        assert record[REACTANT_SET_ID], f"Empty Reactant Set ID"
+        assert record[PUBCHEM_CID], f"Empty subject PubChem identifier"
+        assert record[UNIPROT_ID], f"Empty object UniProt identifier"
 
-    # TODO: All ligands will be treated as ChemicalEntity, for now,
-    #       as a first approximation but we may want to consider
-    #       using more specialized classes if suitable discrimination
-    #       can eventually be made in between chemical types
-    chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID])
+        # Nodes
 
-    # Taxon of protein target
-    taxon_label = record[SOURCE_ORGANISM]
-    taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None)
+        # TODO: All ligands will be treated as ChemicalEntity, for now,
+        #       as a first approximation but we may want to consider
+        #       using more specialized classes if suitable discrimination
+        #       can eventually be made in between chemical types
+        chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID])
 
-    # Unless otherwise advised, all BindingDb targets
-    # are assumed to be (UniProt registered) proteins.
-    target_name = record[TARGET_NAME]
-    protein = Protein(
-        id="UniProtKB:" + record[UNIPROT_ID],
-        name=target_name,
-        in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
-        in_taxon_label=taxon_label
-    )
+        # Taxon of protein target
+        taxon_label = record[SOURCE_ORGANISM]
+        taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None)
 
-    # Publications
-    publications = [record[PUBLICATION]]
+        # Unless otherwise advised, all BindingDb targets
+        # are assumed to be (UniProt registered) proteins.
+        target_name = record[TARGET_NAME]
+        protein = Protein(
+            id="UniProtKB:" + record[UNIPROT_ID],
+            name=target_name,
+            in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
+            in_taxon_label=taxon_label
+        )
 
-    # Sources
-    supporting_data_id = record[SUPPORTING_DATA_ID]
-    supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
-    sources = build_association_knowledge_sources(
-        primary=(
-            "infores:bindingdb",
-            [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_name)]
-        ),
-        supporting=supporting_data
-    )
+        # Publications
+        publications = [record[PUBLICATION]]
 
-    # Edge
-    association = ChemicalGeneInteractionAssociation(
-        id=entity_id(),
-        subject=chemical.id,
-        predicate="biolink:directly_physically_interacts_with",
-        object=protein.id,
-        publications=publications,
-        sources=sources,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-    )
-    return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+        # Sources
+        supporting_data_id = record[SUPPORTING_DATA_ID]
+        supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
+        sources = build_association_knowledge_sources(
+            primary=(
+                "infores:bindingdb",
+                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_name)]
+            ),
+            supporting=supporting_data
+        )
+
+        # Edge
+        association = ChemicalGeneInteractionAssociation(
+            id=entity_id(),
+            subject=chemical.id,
+            predicate="biolink:directly_physically_interacts_with",
+            object=protein.id,
+            publications=publications,
+            sources=sources,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+
+    except Exception as e:
+        # Catch and report all errors here with messages
+        logger.warning(
+            f"transform_bindingdb_by_record():  - record: '{str(record)}' "
+            + f"with {type(e)} exception: "
+            + str(e)
+        )
+        return None
