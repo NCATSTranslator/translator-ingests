@@ -200,13 +200,13 @@ def transform_bindingdb_by_record(
         publications = [record[PUBLICATION]]
 
         # Sources
-        target_label = target_name.replace(" ", "%20")
+        target_label = web_string(target_name)
         supporting_data_id = record[SUPPORTING_DATA_ID]
         supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
         sources = build_association_knowledge_sources(
             primary=(
                 "infores:bindingdb",
-                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=web_string(target_name))]
+                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)]
             ),
             supporting=supporting_data
         )
