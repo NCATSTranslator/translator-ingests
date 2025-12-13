@@ -159,7 +159,7 @@ def transform_gene_to_gene_orthology(
         # Tally errors here
         exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = f"Gene:{record.get("Gene", "Unknown")}<->Ortholog:{record.get('Ortholog', 'Unknown')}"
-        if str(e) not in koza_transform.transform_metadata:
+        if exception_tag not in koza_transform.transform_metadata:
             koza_transform.transform_metadata[exception_tag] = [rec_id]
         else:
             koza_transform.transform_metadata[exception_tag].append(rec_id)
