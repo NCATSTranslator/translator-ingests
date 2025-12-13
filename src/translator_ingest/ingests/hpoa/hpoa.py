@@ -282,7 +282,7 @@ def transform_record_gene_to_disease(
         # Tally errors here
         exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = f"Gene:{record.get("Gene", "ncbi_gene_id")}<->Disease:{record.get('disease_id', 'Unknown')}"
-        if str(e) not in koza_transform.transform_metadata["gene_to_disease"]:
+        if exception_tag not in koza_transform.transform_metadata["gene_to_disease"]:
             koza_transform.transform_metadata["gene_to_disease"][exception_tag] = [rec_id]
         else:
             koza_transform.transform_metadata["gene_to_disease"][exception_tag].append(rec_id)
@@ -435,7 +435,7 @@ def transform_record_gene_to_phenotype(
         # Tally errors here
         exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = f"Gene:{record.get("Gene", "ncbi_gene_id")}<->HPO:{record.get('hpo_id', 'Unknown')}"
-        if str(e) not in koza_transform.transform_metadata["gene_to_phenotype"]:
+        if exception_tag not in koza_transform.transform_metadata["gene_to_phenotype"]:
             koza_transform.transform_metadata["gene_to_phenotype"][exception_tag] = [rec_id]
         else:
             koza_transform.transform_metadata["gene_to_phenotype"][exception_tag].append(rec_id)
