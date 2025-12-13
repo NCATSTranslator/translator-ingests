@@ -32,7 +32,7 @@ ingest_info:
     description: KGX jsonl file of KGX 'nodes' data from Phase 2 ICEES clinical knowledge provider activities.
   - file_name: edges.jsonl.gz
     location: https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024
-    description: KGX jsonl file of KGX 'nodes' data from Phase 2 ICEES clinical knowledge provider activities.
+    description: KGX jsonl file of KGX 'edges' data from Phase 2 ICEES clinical knowledge provider activities.
   included_content:
   - file_name: nodes.jsonl
     included_records: all
@@ -9068,6 +9068,7 @@ provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, code author"
   - "Evan Morris: code support"
+  - "Sierra Moxon: data modeling, code support"
   - "Matthew Brush - data modeling, domain expertise"
   artifacts:
   - null

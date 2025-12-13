@@ -1,0 +1,288 @@
+name: Columbia Open Health Data
+supporting_data_source_info:
+- infores_id: "infores:automat-ubergraph"
+  name: Automat Ubergraph
+  description: >-
+    A graph representation of Ubergraph, an integration of ontologies
+    including GO, CHEBI, Uberon, and HPO.
+- infores_id: "infores:columbia-cdw-ehr-data"
+  name: "Columbia University Irving Medical Center's clinical data warehouse"
+- infores_id: "omop-ohdsi"
+  name: "Observational Medical Outcomes Partnership Observational Health Data Sciences and
+      Informatics"
+  terms_of_use_info:
+    terms_of_use_url: "https://chime.ucsf.edu/observational-medical-outcomes-partnership-omop"
+source_info:
+  infores_id: infores:cohd
+  name: "Columbia Open Health Data (COHD)"
+  description: >-
+    The COHD provides access to counts and patient prevalence
+    (i.e., prevalence from electronic health records) of conditions, procedures,
+    drug exposures, and patient demographics, and the co-occurrence frequencies
+    between them. Count and frequency data were derived from the
+    Columbia University Irving Medical Center's OHDSI database including inpatient
+    and outpatient data. Counts are the number of patients with the concept, e.g., 
+    diagnosed with a condition, exposed to a drug, or who had a procedure. 
+    Frequencies are the number of patients with the concept divided by the total number
+    of patients in the dataset. Clinical concepts (e.g., conditions, procedures, drugs)
+    are coded by their standard concept ID in the OMOP Common Data Model. 
+    To protect patient privacy, all concepts and pairs of concepts where
+    the count ≤ 10 were excluded, and counts were randomized by the Poisson distribution.
+  citations:
+    - https://www.nature.com/articles/sdata2018273
+    - https://github.com/NCATSTranslator/NCATSTranslator.github.io/raw/master/presentations/Translator_2020_Kick-Off_Presentation-Clinical_Data_Services.pdf
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - jsonl
+  data_versioning_and_releases: "2024-11-25"  # last Phase 2 release of COHD
+  additional_notes: null
+ingest_info:
+  ingest_categories:
+  - aggregation_interpreter
+  utility: >-
+    Real clinical data from patients diagnosed with a condition, exposed to a drug, or who had a procedure.
+  scope: Clinical correlations of patients to treatments.
+  relevant_files:
+  - file_name: cohd_nodes.jsonl
+    location: https://stars.renci.org/var/data_services/cohd_2
+    description: KGX jsonl file of KGX 'nodes' data from Phase 2 COHD clinical knowledge provider activities.
+  - file_name: cohd_edges.jsonl
+    location: https://stars.renci.org/var/data_services/cohd_2
+    description: KGX jsonl file of KGX 'edges' data from Phase 2 COHD clinical knowledge provider activities.
+  included_content:
+  - file_name: cohd_nodes.jsonl
+    included_records: all
+    fields_used: id, name, category
+  - file_name: cohd_edges.jsonl
+    included_records: all
+    fields_used: id, subject, predicate, object, score, sources
+#  filtered_content:
+#  - file_name: null
+#    filtered_records: null
+#    rationale: null
+  future_considerations:
+  - category: node_property_content
+    consideration:  >-
+      The contents of the COHD 'attributes' field are not yet processed by the ingestion pipeline.
+      For example, these attributes cross-correlate concepts with related resources.
+    relevant_files:
+      - cohd_nodes.jsonl
+  - category: edge_property_content
+    consideration: >-
+      The contents of the COHD 'attributes' field are not yet processed by the ingestion pipeline.
+      For example, these attributes describe supporting studies, thus providing valuable 
+      evidence annotation which should be added to the COHD knowledge graph.
+    relevant_files:
+      - cohd_edges.jsonl
+  additional_notes: null
+target_info:
+  infores_id: infores:cohd
+  edge_type_info:
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Drug
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Drug
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:MolecularMixture
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:ChemicalEntity
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Drug
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Drug
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Drug
+    predicates:
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:Drug
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:SmallMolecule
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:positively_correlated_with
+    object:
+    - biolink:Disease
+    knowledge_level: statistical_association
+    agent_type: not_provided
+    edge_properties:
+    - score
+  node_type_info:
+  - node_category: biolink:Disease
+    source_identifier_types:
+    - DOID
+    - UMLS
+    node_properties:
+    - name
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - UNII
+    - CHEBI
+    node_properties:
+    - name
+  - node_category: biolink:Drug
+    source_identifier_types:
+    - RXCUI
+    node_properties:
+    - name
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - CHEBI
+    node_properties:
+    - name
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - MESH
+    - UNII
+    - CHEBI
+    node_properties:
+    - name
+#  future_considerations:
+#  - category: null
+#    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - "Richard Bruskiewich - data modeling, code author"
+  - "Kara Fecho: domain expertise"
+  - "Matthew Brush - data modeling, domain expertise"
+  artifacts:
+  - null

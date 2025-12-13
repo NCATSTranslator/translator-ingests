@@ -1,12 +1,15 @@
 """Biolink Model support for Translator Ingests"""
+from typing import Optional
 from functools import lru_cache
 from importlib.resources import files
 
 from linkml_runtime.utils.schemaview import SchemaView
+
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
 from bmt import Toolkit
+from bmt.pydantic import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
-
 logger = get_logger(__name__)
 
 # knowledge source InfoRes curies
@@ -68,6 +71,7 @@ def get_biolink_schema() -> SchemaView:
         logger.debug("Successfully loaded Biolink schema from URL")
         return schema_view
 
+
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version
 
@@ -75,3 +79,53 @@ def get_current_biolink_version() -> str:
 def get_biolink_model_toolkit() -> Toolkit:
     """Get a Biolink Model Toolkit configured with the expected project Biolink Model schema."""
     return Toolkit(schema=get_biolink_schema().schema)
+
+
+def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:
+    return (
+        attributes
+        if attributes is not None and len(attributes) > 0
+        else None
+    )
+
+#
+# A different version of bmt.pydantic.build_association_knowledge_sources,
+# but which takes in a list of dictionaries which are TRAPI-like 'sources' values,
+# for conversion into a list of Pydantic RetrieveSources
+#
+#
+# {
+#   "sources": [
+#     {
+#       "resource_id": "infores:columbia-cdw-ehr-data",
+#       "resource_role": "supporting_data_source"
+#     },
+#     {
+#       "resource_id": "infores:cohd",
+#       "resource_role": "primary_knowledge_source",
+#       "upstream_resource_ids": [
+#         "infores:columbia-cdw-ehr-data"
+#       ]
+#     }
+#   ]
+# }
+def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional[list[RetrievalSource]]:
+    """
+    Mapping TRAPI-style sources onto the Pydantic data model
+    is relatively straightforward since the TRAPI model itself
+    was mapped onto the Biolink Model RetrievalSources class.
+    """
+    if not source_list:
+        return None
+    else:
+        sources: list[RetrievalSource] = []
+        source: dict
+        for source in source_list:
+            rs = RetrievalSource(
+                id=entity_id(),
+                resource_id=source["resource_id"],
+                resource_role=source["resource_role"],
+                upstream_resource_ids=source.get("upstream_resource_ids", None)
+            )
+            sources.append(rs)
+        return sources
