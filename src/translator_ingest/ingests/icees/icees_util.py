@@ -118,8 +118,9 @@ def get_icees_supporting_study(
 #     if mappings:
 #         return {mappings[tag]: value for tag, value in qualifiers.items() if tag in mappings}
 #     else:
-#         logger.warning(
-#             f"No '*_specialization_qualifier' slots found in class {type(association)}"
-#         )
-#         koza_transform.state["association_classes_missing_qualifiers"].add(association)
+#        association_type = type(association)
+#        if str(e) not in koza_transform.transform_metadata["icees_edges"]:
+#             koza_transform.transform_metadata["icees_edges"]["Association_classes_missing_qualifiers"] = {association_type}
+#         else:
+#             koza_transform.transform_metadata["icees_edges"][Association_classes_missing_qualifiers].add(association_type)
 #         return {}

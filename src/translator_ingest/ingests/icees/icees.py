@@ -28,18 +28,21 @@ def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
 
-@koza.on_data_begin(tag="icees_edges")
-def on_icees_edge_data_begin(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.state["association_classes_missing_qualifiers"] = set()
+@koza.on_data_begin(tag="icees_nodes")
+def on_begin_node_ingest(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.log("Starting ICEES nodes transformation")
+    koza_transform.transform_metadata["icees_nodes"] = {}
 
 
-@koza.on_data_end(tag="icees_edges")
-def on_icees_edge_data_end(koza_transform: koza.KozaTransform) -> None:
-    if len(koza_transform.state["association_classes_missing_qualifiers"])>0:
-        logger.warning("Association classes missing qualifiers: " +
-                    f"{'\n'.join(list(koza_transform.state['association_classes_missing_qualifiers']))}"+"\n")
-    else:
-        logger.info("No association classes missing qualifiers")
+@koza.on_data_end(tag="icees_nodes")
+def on_end_node_ingest(koza_transform: koza.KozaTransform) -> None:
+    if koza_transform.transform_metadata["icees_nodes"]:
+        for tag, value in koza_transform.transform_metadata["icees_nodes"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
+    koza_transform.log("End of ICEES nodes transformation")
 
 @koza.transform_record(tag="icees_nodes")
 def transform_icees_node(
@@ -70,12 +73,33 @@ def transform_icees_node(
         return KnowledgeGraph(nodes=[node])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_icees_node():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = record.get("id", "Unknown")
+        if exception_tag not in koza_transform.transform_metadata["icees_nodes"]:
+            koza_transform.transform_metadata["icees_nodes"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["icees_nodes"][exception_tag].append(rec_id)
+
         return None
 
+
+@koza.on_data_begin(tag="icees_edges")
+def on_begin_edge_ingest(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.log("Starting ICEES edges transformation")
+    koza_transform.log(f"Version: {get_latest_version()}")
+    koza_transform.transform_metadata["icees_edges"] = {}
+
+
+@koza.on_data_end(tag="icees_edges")
+def on_end_edge_ingest(koza_transform: koza.KozaTransform) -> None:
+    if koza_transform.transform_metadata["icees_edges"]:
+        for tag, value in koza_transform.transform_metadata["icees_edges"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
+    koza_transform.log("End of ICEES edges transformation")
 
 @koza.transform_record(tag="icees_edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
@@ -133,8 +157,12 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         return KnowledgeGraph(edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_icees_edge():  - record: '{str(record)}' with {type(e)} exception: "+ str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = record.get("id", "Unknown")
+        if exception_tag not in koza_transform.transform_metadata["icees_edges"]:
+            koza_transform.transform_metadata["icees_edges"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["icees_edges"][exception_tag].append(rec_id)
+
         return None
