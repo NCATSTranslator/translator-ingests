@@ -19,7 +19,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     process_publications,
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
-    LINK_TO_LIGAND_TARGET_PAIR,
+    LINK_TO_LIGAND_TARGET_PAIR, web_string,
     MONOMER_ID,
     TARGET_NAME,
     SOURCE_ORGANISM,
@@ -155,7 +155,7 @@ def prepare_bindingdb_data(
 
     except Exception as e:
         exception_tag = f"{str(type(e))}: {str(e)}"
-        koza_transform.transform_metadata[exception_tag] = "Failed to load BindingDb data."
+        koza_transform.transform_metadata[exception_tag] = ["Failed to load BindingDb data."]
         return None
 
 @koza.transform_record()
@@ -200,12 +200,13 @@ def transform_bindingdb_by_record(
         publications = [record[PUBLICATION]]
 
         # Sources
+        target_label = target_name.replace(" ", "%20")
         supporting_data_id = record[SUPPORTING_DATA_ID]
         supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
         sources = build_association_knowledge_sources(
             primary=(
                 "infores:bindingdb",
-                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_name)]
+                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=web_string(target_name))]
             ),
             supporting=supporting_data
         )
