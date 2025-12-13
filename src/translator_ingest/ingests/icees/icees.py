@@ -30,6 +30,7 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin(tag="icees_nodes")
 def on_begin_node_ingest(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.log("Starting ICEES Node transformation")
     koza_transform.transform_metadata["icees_nodes"] = {}
 
 
@@ -41,6 +42,7 @@ def on_end_node_ingest(koza_transform: koza.KozaTransform) -> None:
                 msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
                 level="WARNING"
             )
+    koza_transform.log("End of ICEES Node transformation")
 
 @koza.transform_record(tag="icees_nodes")
 def transform_icees_node(
@@ -84,6 +86,8 @@ def transform_icees_node(
 
 @koza.on_data_begin(tag="icees_edges")
 def on_begin_edge_ingest(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.log("Starting ICEES Edge transformation")
+    koza_transform.log(f"Version: {get_latest_version()}")
     koza_transform.transform_metadata["icees_edges"] = {}
 
 
@@ -95,6 +99,7 @@ def on_end_edge_ingest(koza_transform: koza.KozaTransform) -> None:
                 msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
                 level="WARNING"
             )
+    koza_transform.log("End of ICEES Edge transformation")
 
 @koza.transform_record(tag="icees_edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
