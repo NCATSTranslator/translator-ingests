@@ -75,26 +75,16 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin()
 def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.transform_metadata["bindingdb_associations_captured"] = 0
+    pass
 
 
 @koza.on_data_end()
 def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["rows_missing_publications"]} "
-             "rows were discarded for having no publications.",
-        level="INFO"
-    )
-    koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["rows_missing_pubchem_id"]} "
-             "rows were discarded for lacking a subject PubChem identifier.",
-        level="WARNING"
-    )
-    koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["rows_missing_uniprot_id"]} "
-             "rows were discarded for lacking an object UniProt identifier.",
-        level="WARNING"
-    )
+    for tag, value in koza_transform.transform_metadata.items():
+        koza_transform.log(
+            msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+            level="WARNING"
+        )
 
 @koza.prepare_data()
 def prepare_bindingdb_data(
@@ -232,17 +222,16 @@ def transform_bindingdb_by_record(
             agent_type=AgentTypeEnum.manual_agent,
         )
 
-        # Tally the total number of BindingDb associations successfully captured
-        koza_transform.transform_metadata["bindingdb_associations_captured"] += 1
-
         return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
 
     except Exception as e:
         # Tally errors here
         exception_tag = f"{str(type(e))}: {str(e)}"
-        rec_id = record.get("id", "Unknown")
-        if exception_tag not in koza_transform.transform_metadata["icees_nodes"]:
-            koza_transform.transform_metadata["icees_nodes"][exception_tag] = [rec_id]
+        rec_id = (f"Ligand:{record.get(PUBCHEM_CID, "Unknown")}->"
+                  f"Target:{record.get(UNIPROT_ID, 'Unknown')}"
+                  f"[NCBITaxon:{record.get(SOURCE_ORGANISM, 'Unknown')}]")
+        if exception_tag not in koza_transform.transform_metadata:
+            koza_transform.transform_metadata[exception_tag] = [rec_id]
         else:
-            koza_transform.transform_metadata["icees_nodes"][exception_tag].append(rec_id)
+            koza_transform.transform_metadata[exception_tag].append(rec_id)
         return None
