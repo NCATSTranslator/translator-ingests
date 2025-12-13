@@ -18,6 +18,7 @@ from tests.unit.ingests import (
 
 from translator_ingest.ingests.bindingdb.bindingdb import (
     on_begin_ingest_by_record,
+    on_end_ingest_by_record,
     prepare_bindingdb_data,
     transform_bindingdb_by_record
 )
@@ -335,3 +336,5 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS
     )
+
+    on_end_ingest_by_record(mock_koza_transform)

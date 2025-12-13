@@ -76,8 +76,6 @@ def get_latest_version() -> str:
 @koza.on_data_begin()
 def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
     koza_transform.transform_metadata["bindingdb_associations_captured"] = 0
-    koza_transform.transform_metadata["rows_missing_pubchem_id"] = 0
-    koza_transform.transform_metadata["rows_missing_uniprot_id"] = 0
 
 
 @koza.on_data_end()
@@ -129,41 +127,46 @@ def prepare_bindingdb_data(
              for each unique ligand-target pair, with possible aggregation
              of distinct annotation encountered across the original set of assays.
     """
-    # As of December 2025, the BindingDB input file is
-    # assumed to be a Zipfile archive with a single file inside
-    data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
+    try:
+        # As of December 2025, the BindingDB input file is
+        # assumed to be a Zipfile archive with a single file inside
+        data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
 
-    # Directly read and extract useful columns from the original
-    # downloaded bindingdb data file, using the 'polars' library.
-    df = extract_bindingdb_columns_polars(
-        data_archive_path,
-        columns=BINDINGDB_COLUMNS,
-        target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
-    )
+        # Directly read and extract useful columns from the original
+        # downloaded bindingdb data file, using the 'polars' library.
+        df = extract_bindingdb_columns_polars(
+            data_archive_path,
+            columns=BINDINGDB_COLUMNS,
+            target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
+        )
 
-    # Process publications
-    df = process_publications(koza_transform, df)
+        # Process publications
+        df = process_publications(koza_transform, df)
 
-    # Map curation knowledge sources to supporting_data_ids
-    lookup = pl.DataFrame(
-        {
-            CURATION_DATASOURCE: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.keys(),
-            SUPPORTING_DATA_ID: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.values()
-        }
-    )
-    df = df.join(lookup, on=CURATION_DATASOURCE, how="left")
+        # Map curation knowledge sources to supporting_data_ids
+        lookup = pl.DataFrame(
+            {
+                CURATION_DATASOURCE: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.keys(),
+                SUPPORTING_DATA_ID: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.values()
+            }
+        )
+        df = df.join(lookup, on=CURATION_DATASOURCE, how="left")
 
-    # Group by unique ligand-target-publication combinations
-    # This consolidates duplicate assay records
-    # TODO: this operation does yet not aggregate disparate annotation across assays;
-    #       Such annotation might need to be so aggregated in future ingest iterations?
-    df = df.unique(
-        subset=[PUBLICATION, PUBCHEM_CID, UNIPROT_ID],
-        keep="last"  # Keep the last occurrence (matches current behavior)
-    )
+        # Group by unique ligand-target-publication combinations
+        # This consolidates duplicate assay records
+        # TODO: this operation does yet not aggregate disparate annotation across assays;
+        #       Such annotation might need to be so aggregated in future ingest iterations?
+        df = df.unique(
+            subset=[PUBLICATION, PUBCHEM_CID, UNIPROT_ID],
+            keep="last"  # Keep the last occurrence (matches current behavior)
+        )
 
-    return df.to_dicts()
+        return df.to_dicts()
 
+    except Exception as e:
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        koza_transform.transform_metadata[exception_tag] = "Failed to load BindingDb data."
+        return None
 
 @koza.transform_record()
 def transform_bindingdb_by_record(
@@ -181,11 +184,6 @@ def transform_bindingdb_by_record(
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
     try:
-        # Sanity check for basic data integrity
-        assert record[REACTANT_SET_ID], "Empty Reactant Set ID"
-        assert record[PUBCHEM_CID], "Empty subject PubChem identifier"
-        assert record[UNIPROT_ID], "Empty object UniProt identifier"
-
         # Nodes
 
         # TODO: All ligands will be treated as ChemicalEntity, for now,
@@ -240,15 +238,11 @@ def transform_bindingdb_by_record(
         return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
 
     except Exception as e:
-        # Catch and tally or report all errors here
-        if str(e) == "Empty subject PubChem identifier":
-            koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
-        elif str(e) == "Empty object UniProt identifier":
-            koza_transform.transform_metadata["rows_missing_uniprot_id"] += 1
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = record.get("id", "Unknown")
+        if exception_tag not in koza_transform.transform_metadata["icees_nodes"]:
+            koza_transform.transform_metadata["icees_nodes"][exception_tag] = [rec_id]
         else:
-            koza_transform.log(
-                msg=f"transform_bindingdb_by_record(): record for reactant '{str(record[REACTANT_SET_ID])}' "
-                + f"with {type(e)} exception: " + str(e),
-                level="WARNING"
-            )
+            koza_transform.transform_metadata["icees_nodes"][exception_tag].append(rec_id)
         return None
