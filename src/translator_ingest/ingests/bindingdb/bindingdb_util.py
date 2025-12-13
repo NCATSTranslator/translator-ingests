@@ -66,6 +66,21 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
     "&column=ki&startPg=0&Increment=50&submit=Search"
 )
 
+_WEB_MAPPINGS: dict[str, str] = {
+    " ": "+",
+    ",": "%2C",
+    "{": "%7B",
+    "}": "%7D",
+    "[": "%5B",
+    "]": "%5D",
+    "|": "%7C"
+}
+def web_string(s: str) -> str:
+    # Web string sanitization
+    for a,b in _WEB_MAPPINGS.items():
+        s = s.replace(a, b)
+    return s
+
 
 def extract_bindingdb_columns_polars(
     data_archive_path: Path,
