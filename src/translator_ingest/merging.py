@@ -2,22 +2,88 @@ import click
 import json
 import hashlib
 import datetime
-import tarfile
-import shutil
-import subprocess
 from dataclasses import asdict
 from pathlib import Path
 
-from orion.kgx_file_merger import KGXFileMerger #, DONT_MERGE
+from orion.kgx_file_merger import KGXFileMerger, DONT_MERGE
 from orion.kgxmodel import GraphSpec, SubGraphSource
 from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
+from translator_ingest.release import create_compressed_tar
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
+
+
+def merge_kgx_files(
+    source_id: str,
+    input_nodes_file: Path,
+    input_edges_file: Path,
+    output_nodes_file: Path,
+    output_edges_file: Path,
+    output_metadata_file: Path,
+    source_version: str = None
+) -> dict:
+    """Merge KGX files using ORION's KGXFileMerger.
+
+    This is the low-level merge function that handles a single set of KGX files.
+    It deduplicates nodes and edges, outputting merged files and merge metadata.
+
+    Args:
+        source_id: Identifier for the source being merged
+        input_nodes_file: Path to input nodes JSONL file
+        input_edges_file: Path to input edges JSONL file
+        output_nodes_file: Path for output merged nodes file
+        output_edges_file: Path for output merged edges file
+        output_metadata_file: Path for output merge metadata JSON file
+        source_version: Optional version string for the source
+        overwrite: Whether to overwrite existing output files
+
+    Returns:
+        dict: Merge metadata from KGXFileMerger
+    """
+    output_dir = output_nodes_file.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    graph_spec = GraphSpec(
+        graph_id=source_id,
+        graph_name=source_id,
+        graph_description="",
+        graph_url="",
+        graph_version=source_version or "",
+        graph_output_format="jsonl",
+        sources=[
+            SubGraphSource(
+                id=source_id,
+                file_paths=[str(input_nodes_file), str(input_edges_file)],
+                graph_version=source_version
+            )
+        ],
+        subgraphs=[],
+    )
+
+    logger.info(f"Running KGXFileMerger for {source_id}...")
+    file_merger = KGXFileMerger(
+        graph_spec=graph_spec,
+        output_directory=str(output_dir),
+        nodes_output_filename=output_nodes_file.name,
+        edges_output_filename=output_edges_file.name,
+        save_memory=True
+    )
+    file_merger.merge()
+
+    merge_metadata = file_merger.get_merge_metadata()
+    if "merge_error" in merge_metadata:
+        logger.error(f"Merging error occurred for {source_id}: {merge_metadata['merge_error']}")
+    else:
+        with open(output_metadata_file, "w") as metadata_file:
+            json.dump(merge_metadata, metadata_file, indent=4)
+        logger.info(f"Merge metadata written to {output_metadata_file}")
+
+    return merge_metadata
 
 
 def is_merged_graph_release_current(merged_graph_metadata: PipelineMetadata) -> bool:
@@ -45,7 +111,7 @@ def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
     release_version = merged_graph_metadata.release_version
     release_version_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version
 
-    tar_filename = f"{graph_id}.tar.xz"
+    tar_filename = f"{graph_id}.tar.zst"
     tar_path = release_version_dir / tar_filename
 
     if tar_path.exists():
@@ -57,38 +123,10 @@ def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
     edges_file = release_version_dir / "edges.jsonl"
     metadata_file = release_version_dir / "graph-metadata.json"
 
-    # Check if tar is available for faster compression
-    has_tar = shutil.which('tar') is not None
-    if has_tar:
-        try:
-            # Build the command with files that exist
-            cmd = ['tar', 'cfJ', str(tar_path)]
-            files_to_add = []
-            if nodes_file.exists():
-                files_to_add.append(nodes_file.name)
-            if edges_file.exists():
-                files_to_add.append(edges_file.name)
-            if metadata_file.exists():
-                files_to_add.append(metadata_file.name)
-            cmd.extend(files_to_add)
-            logger.info(f"Using subprocess for faster compression: {" ".join(cmd)})")
-            subprocess.run(cmd, check=True, cwd=str(release_version_dir))
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            logger.warning(f"Fast compression failed: {e}. Falling back to Python tarfile...")
-            # Remove partial tar file if it was created
-            if tar_path.exists():
-                tar_path.unlink()
-            has_tar = False  # Trigger fallback
-
-    if not has_tar:
-        logger.info("Using Python tarfile for compression...")
-        with tarfile.open(tar_path, 'w:xz') as tar:
-            if nodes_file.exists():
-                tar.add(nodes_file, arcname=nodes_file.name)
-            if edges_file.exists():
-                tar.add(edges_file, arcname=edges_file.name)
-            if metadata_file.exists():
-                tar.add(metadata_file, arcname=metadata_file.name)
+    create_compressed_tar(nodes_file=nodes_file,
+                          edges_file=edges_file,
+                          graph_metadata_path=metadata_file,
+                          output_path=tar_path)
 
     # Clean up the original files
     if nodes_file.exists():
@@ -135,7 +173,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
 
     # Collect metadata from all sources and validate version consistency
     for source in sources:
-        latest_path = Path(INGESTS_DATA_PATH) / source / IngestFileName.LATEST_RELEASE_FILE
+        latest_path = Path(INGESTS_DATA_PATH) / source / IngestFileName.LATEST_BUILD_FILE
         if not latest_path.exists():
             raise IOError(f"Could not find latest release metadata for {source}")
 
@@ -165,16 +203,16 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         data_source_info.version = pipeline_metadata.source_version
         kgx_sources.append(data_source_info)
 
-        norm_node_path, norm_edge_path = get_versioned_file_paths(
-            file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+        node_path, edge_path = get_versioned_file_paths(
+            file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
         )
+        # NOTE: merge_strategy=DONT_MERGE really means don't merge edges, nodes are always merged.
+        # We already merged edges for every ingest and don't have overlapping
+        # primary-knowledge-sources, so we don't need to merge edges here.
         graph_spec_sources.append(SubGraphSource(id=source,
-                                              file_paths=[str(norm_node_path), str(norm_edge_path)],
-                                              graph_version=pipeline_metadata.source_version))
-                                              # This really means don't merge edges, nodes are always merged.
-                                              # Once we're merging individual sources after normalization we don't
-                                              # need to merge edges here.
-                                              # merge_strategy=DONT_MERGE))
+                                                 file_paths=[str(node_path), str(edge_path)],
+                                                 graph_version=pipeline_metadata.source_version,
+                                                 merge_strategy=DONT_MERGE))
         graph_source_versions.append(pipeline_metadata.build_version)
 
     # Validate that all sources have the same biolink and babel versions
