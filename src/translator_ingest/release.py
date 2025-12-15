@@ -18,6 +18,39 @@ FILE_NAME_CHANGES = {
 }
 
 
+def atomic_copy_directory(src: Path, dest: Path):
+    """Copy a directory to a destination using atomic rename to minimize downtime.
+
+    Uses a temp directory and atomic renames to ensure the destination is always
+    valid (either old or new version), with only microseconds of transition time.
+
+    :param src: Source directory to copy
+    :param dest: Destination path (will be overwritten if exists)
+    """
+    dest_tmp = dest.with_name(f"{dest.name}_new")
+    dest_old = dest.with_name(f"{dest.name}_old")
+
+    # Clean up any leftover temp directories from previous failed runs
+    if dest_tmp.exists():
+        shutil.rmtree(dest_tmp)
+    if dest_old.exists():
+        shutil.rmtree(dest_old)
+
+    # Copy to temp location first
+    shutil.copytree(src, dest_tmp)
+
+    # Atomic swap: rename old -> old_backup, then new -> dest
+    if dest.exists():
+        dest.rename(dest_old)
+    dest_tmp.rename(dest)
+
+    # Clean up old version
+    if dest_old.exists():
+        shutil.rmtree(dest_old)
+
+    logger.info(f"Copied {src} to {dest}")
+
+
 def create_compressed_tar(nodes_file: Path,
                           edges_file: Path,
                           graph_metadata_path: Path,
@@ -74,6 +107,10 @@ def release_ingest(source: str):
                    edges_file=edges_file_path,
                    graph_metadata_file=graph_metadata_path,
                    files_to_copy=[graph_metadata_path, test_data_path])
+
+    # Copy release to "latest" directory
+    latest_dir = Path(INGESTS_RELEASES_PATH) / source / "latest"
+    atomic_copy_directory(release_dir, latest_dir)
 
     # Write the new latest-release-metadata
     latest_release_metadata = latest_build_metadata
