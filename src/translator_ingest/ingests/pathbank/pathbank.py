@@ -363,6 +363,13 @@ def _create_protein_complex_node_and_edges(
     nodes = []
     edges = []
 
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # The translator dicts are constructed with the primary CURIE inserted first.
+        # We must use that same CURIE in edges to ensure every edge endpoint exists as a node ID.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
+
     # Extract protein complex data
     complex_id_raw = protein_complex.get("id", {})
     if isinstance(complex_id_raw, dict):
@@ -402,16 +409,12 @@ def _create_protein_complex_node_and_edges(
                 protein_pw_id = str(protein_id_raw) if protein_id_raw else ""
 
             if protein_pw_id and protein_pw_id in protein_translator:
-                # Get all equivalent IDs for this protein
-                for equiv_id, prefix in protein_translator[protein_pw_id].items():
-                    # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                    if ":" in equiv_id:
-                        complex_proteins.append(equiv_id)
-                    else:
-                        complex_proteins.append(f"{prefix}:{equiv_id}")
+                primary_protein_curie = _primary_curie_from_translator(protein_translator[protein_pw_id])
+                if primary_protein_curie:
+                    complex_proteins.append(primary_protein_curie)
 
     # Create has_protein_in_complex edges
-    for protein_id in complex_proteins:
+    for protein_id in sorted(set(complex_proteins)):
         has_protein_edge = Association(
             id=entity_id(),
             subject=pwp_curie,
@@ -716,6 +719,13 @@ def _create_bound_node_and_edges(
     nodes = []
     edges = []
 
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # The translator dicts are constructed with the primary CURIE inserted first.
+        # Use only that CURIE on edges to avoid edge endpoints that have no node record.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
+
     # Extract bound data
     bound_id_raw = bound.get("id", {})
     if isinstance(bound_id_raw, dict):
@@ -753,26 +763,23 @@ def _create_bound_node_and_edges(
         element_type = element.get("element-type", "")
 
         if element_id and element_type in data_translator and element_id in data_translator[element_type]:
-            # Get all equivalent IDs for this element
             equiv_ids = data_translator[element_type][element_id]
-            for equiv_id, prefix in equiv_ids.items():
-                # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                if ":" in equiv_id:
-                    object_curie = equiv_id
-                else:
-                    object_curie = f"{prefix}:{equiv_id}"
-                has_part_edge = Association(
-                    id=entity_id(),
-                    subject=pwb_curie,
-                    predicate="biolink:has_part",
-                    object=object_curie,
-                    sources=build_association_knowledge_sources(
-                        primary=INFORES_PATHBANK,
-                    ),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-                edges.append(has_part_edge)
+            object_curie = _primary_curie_from_translator(equiv_ids)
+            if not object_curie:
+                continue
+
+            has_part_edge = Association(
+                id=entity_id(),
+                subject=pwb_curie,
+                predicate="biolink:has_part",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(has_part_edge)
 
     # Create has_participant edge from pathway to bound
     pathway_curie = _pathway_id_to_curie(pathway_id)
@@ -904,6 +911,13 @@ def _create_interaction_edges(
     """
     edges = []
 
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # Translator dicts are constructed with the primary CURIE inserted first.
+        # Use only that CURIE on edges to ensure every edge endpoint exists as a node ID.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
+
     # Extract interaction type and map to Biolink predicate and qualifiers
     interaction_type_raw = interaction.get("interaction-type", "")
     interaction_type = _normalize_xml_value(interaction_type_raw)
@@ -969,81 +983,75 @@ def _create_interaction_edges(
         ):
             continue
 
-        # Get all equivalent IDs for left element
         left_equiv_ids = data_translator[left_type][left_id]
-        for left_equiv_id, left_prefix in left_equiv_ids.items():
-            if ":" in left_equiv_id:
-                left_curie = left_equiv_id
+        left_curie = _primary_curie_from_translator(left_equiv_ids)
+        if not left_curie:
+            continue
+
+        for right_element in right_elements:
+            right_id_raw = right_element.get("element-id", {})
+            if isinstance(right_id_raw, dict):
+                right_id = right_id_raw.get("#text", "")
             else:
-                left_curie = f"{left_prefix}:{left_equiv_id}"
+                right_id = str(right_id_raw) if right_id_raw else ""
 
-            for right_element in right_elements:
-                right_id_raw = right_element.get("element-id", {})
-                if isinstance(right_id_raw, dict):
-                    right_id = right_id_raw.get("#text", "")
-                else:
-                    right_id = str(right_id_raw) if right_id_raw else ""
+            right_type = right_element.get("element-type", "")
 
-                right_type = right_element.get("element-type", "")
+            if (
+                not right_id
+                or not right_type
+                or right_type not in data_translator
+                or right_id not in data_translator[right_type]
+            ):
+                continue
 
-                if (
-                    not right_id
-                    or not right_type
-                    or right_type not in data_translator
-                    or right_id not in data_translator[right_type]
-                ):
-                    continue
+            right_equiv_ids = data_translator[right_type][right_id]
+            right_curie = _primary_curie_from_translator(right_equiv_ids)
+            if not right_curie:
+                continue
 
-                # Get all equivalent IDs for right element
-                right_equiv_ids = data_translator[right_type][right_id]
-                for right_equiv_id, right_prefix in right_equiv_ids.items():
-                    if ":" in right_equiv_id:
-                        right_curie = right_equiv_id
-                    else:
-                        right_curie = f"{right_prefix}:{right_equiv_id}"
+            # Determine appropriate Association class based on types
+            assoc_class = Association
 
-                    # Determine appropriate Association class based on types
-                    assoc_class = Association
-                    
-                    # Check types against sets
-                    is_left_chem = left_type in CHEMICAL_TYPES
-                    is_left_bio = left_type in BIO_TYPES
-                    is_right_chem = right_type in CHEMICAL_TYPES
-                    is_right_bio = right_type in BIO_TYPES
+            # Check types against sets
+            is_left_chem = left_type in CHEMICAL_TYPES
+            is_left_bio = left_type in BIO_TYPES
+            is_right_chem = right_type in CHEMICAL_TYPES
+            is_right_bio = right_type in BIO_TYPES
 
-                    if is_left_chem and is_right_bio:
-                        assoc_class = ChemicalAffectsBiologicalEntityAssociation
-                    elif is_left_bio and is_right_bio:
-                        assoc_class = GeneRegulatesGeneAssociation
-                    elif is_left_bio and is_right_chem:
-                        assoc_class = GeneAffectsChemicalAssociation
-                    
-                    # Create interaction edge with predicate and qualifiers based on interaction type
-                    interaction_edge_kwargs = {
-                        "id": entity_id(),
-                        "subject": left_curie,
-                        "predicate": predicate,
-                        "object": right_curie,
-                        "sources": build_association_knowledge_sources(
-                            primary=INFORES_PATHBANK,
-                        ),
-                        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                        "agent_type": AgentTypeEnum.manual_agent,
-                    }
-                    
-                    # Add qualifiers if present AND supported by class
-                    # Fallback to generic Association (no qualifiers) if we can't use a specialized class
-                    if qualified_predicate and assoc_class != Association:
-                        interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
-                        interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
-                        interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
-                    else:
-                        # If we don't have qualifiers, we MUST use the base Association class
-                        # because specialized classes (like GeneRegulatesGeneAssociation) REQUIRE them.
-                        assoc_class = Association
-                    
-                    interaction_edge = assoc_class(**interaction_edge_kwargs)
-                    edges.append(interaction_edge)
+            if is_left_chem and is_right_bio:
+                assoc_class = ChemicalAffectsBiologicalEntityAssociation
+            elif is_left_bio and is_right_bio:
+                assoc_class = GeneRegulatesGeneAssociation
+            elif is_left_bio and is_right_chem:
+                assoc_class = GeneAffectsChemicalAssociation
+
+            # Create interaction edge with predicate and qualifiers based on interaction type
+            interaction_edge_kwargs = {
+                "id": entity_id(),
+                "subject": left_curie,
+                "predicate": predicate,
+                "object": right_curie,
+                "sources": build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            }
+
+            # Add qualifiers if present AND supported by class
+            # Fallback to generic Association (no qualifiers) if we can't use a specialized class
+            if qualified_predicate and assoc_class != Association:
+                interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
+                interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
+                interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
+            else:
+                # If we don't have qualifiers, we MUST use the base Association class
+                # because specialized classes (like GeneRegulatesGeneAssociation) REQUIRE them.
+                assoc_class = Association
+
+            interaction_edge = assoc_class(**interaction_edge_kwargs)
+            edges.append(interaction_edge)
 
     return edges
 
