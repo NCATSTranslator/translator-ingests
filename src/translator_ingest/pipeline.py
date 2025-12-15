@@ -1,6 +1,7 @@
 import click
 import json
 import tarfile
+import time
 
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
@@ -107,18 +108,18 @@ def extract_tmkp_archive(pipeline_metadata: PipelineMetadata):
     """Extract TMKP tar.gz archive after download."""
     logger.info("Extracting TMKP archive...")
     source_data_dir = get_source_data_directory(pipeline_metadata)
-    
+
     # Find the tar.gz file
     tar_files = list(source_data_dir.glob("*.tar.gz"))
     if not tar_files:
         raise FileNotFoundError(f"No tar.gz file found in {source_data_dir}")
-    
+
     tar_path = tar_files[0]
-    
+
     # Extract to the same directory
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(source_data_dir, filter='data')
-    
+
     logger.info(f"Extracted {tar_path.name} to {source_data_dir}")
 
 
@@ -168,8 +169,10 @@ def transform(pipeline_metadata: PipelineMetadata):
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
+    start_time = time.perf_counter()
     runner.run()
-    logger.info(f"Finished transform for {source}")
+    elapsed_time = time.perf_counter() - start_time
+    logger.info(f"Finished transform for {source} in {elapsed_time:.1f} seconds.")
 
     # Reload koza config after transform to ensure we have the latest values
     # This is important because the transform might have updated config values
@@ -192,7 +195,8 @@ def transform(pipeline_metadata: PipelineMetadata):
         **{k: v for k, v in source_metadata.items() if v is not None},
         "source_version": pipeline_metadata.source_version,
         "transform_version": pipeline_metadata.transform_version,
-        "transform_metadata": runner.transform_metadata,
+        "transform_duration": f"{elapsed_time:.1f}",
+        "transform_metadata": runner.transform_metadata
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
@@ -505,7 +509,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
-    
+
     # Special handling for tmkp: extract tar.gz after download
     if source == "tmkp":
         extract_tmkp_archive(pipeline_metadata)
