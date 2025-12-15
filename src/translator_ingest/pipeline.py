@@ -55,6 +55,27 @@ def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
     }
 
 
+def get_last_successful_source_version(source: str) -> str | None:
+    """Get the source version from the last successful build.
+
+    Looks for the LATEST_BUILD_FILE for the source and returns its source_version.
+    Used as a fallback when get_latest_version() fails.
+
+    :param source: Source name
+    :return: The source_version from the last build, or None if not found
+    """
+    latest_build_path = get_versioned_file_paths(
+        file_type=IngestFileType.LATEST_BUILD_FILE,
+        pipeline_metadata=PipelineMetadata(source=source)
+    )
+    if not latest_build_path.exists():
+        return None
+
+    with open(latest_build_path, 'r') as f:
+        build_metadata = json.load(f)
+        return build_metadata.get("source_version")
+
+
 # Determine the latest available version for the source using the function from the ingest module
 def get_latest_source_version(source):
     try:
@@ -68,8 +89,6 @@ def get_latest_source_version(source):
     try:
         # Get a reference to the get_latest_source_version function
         latest_version_fn = getattr(ingest_module, "get_latest_version")
-        # Call it and return the latest version
-        return latest_version_fn()
     except AttributeError:
         error_message = (
             f"Function get_latest_version() was not found for {source}. "
@@ -78,6 +97,19 @@ def get_latest_source_version(source):
         )
         logger.error(error_message)
         raise NotImplementedError(error_message)
+
+    try:
+        # Call it and return the latest version
+        return latest_version_fn()
+    except Exception as e:
+        logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
+                     f'Error: {e}.')
+        last_version = get_last_successful_source_version(source)
+        if last_version is not None:
+            logger.info(f'Fallback version identified for {source}: {last_version}.')
+            return last_version
+        logger.error(f'Fallback version could not be identified for {source}.')
+        raise e
 
 
 # Download the source data for a source from the original location
