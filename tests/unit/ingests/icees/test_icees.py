@@ -20,7 +20,7 @@ from translator_ingest.ingests.icees.icees import (
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 
-@pytest.fixture(scope="package")
+@pytest.fixture(scope="module")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = dict()

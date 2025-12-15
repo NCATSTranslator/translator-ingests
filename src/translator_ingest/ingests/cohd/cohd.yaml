@@ -1,0 +1,23 @@
+name: 'cohd'
+
+readers:
+  cohd_nodes:
+    files:
+      - 'cohd_nodes.jsonl'
+    format: 'jsonl'
+    required_properties:
+      - 'id'
+      - 'name'
+      - 'categories'  # Rename this KGX field to 'category' for compliance to the latest Biolink Model
+      - 'attributes'  # how do we unpack this into the Pydantic model?
+  cohd_edges:
+    files:
+      - 'cohd_edges.jsonl'
+    format: 'jsonl'
+    required_properties:
+      - 'subject'
+      - 'predicate'
+      - 'object'
+      - 'score'
+      - 'attributes'
+      - 'sources'  # This is a TRAPI-style 'sources' provenance field
