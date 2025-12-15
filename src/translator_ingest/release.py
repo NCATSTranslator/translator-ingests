@@ -155,11 +155,50 @@ def create_release(source: str,
             shutil.copy2(path, output_path)
 
 
+def generate_release_summary():
+    """Generate a summary of all latest releases in the releases directory.
+
+    Scans INGESTS_RELEASES_PATH for source directories and reads the
+    LATEST_RELEASE_FILE for each, writing a combined release_summary.json.
+    """
+    releases_path = Path(INGESTS_RELEASES_PATH)
+    summary = {}
+
+    for source_dir in sorted(releases_path.iterdir()):
+        if not source_dir.is_dir():
+            continue
+
+        source = source_dir.name
+        latest_release_path = get_versioned_file_paths(
+            file_type=IngestFileType.LATEST_RELEASE_FILE,
+            pipeline_metadata=PipelineMetadata(source=source)
+        )
+
+        if latest_release_path.exists():
+            with open(latest_release_path, 'r') as f:
+                summary[source] = json.load(f)
+        else:
+            summary[source] = None
+            logger.info(f"No latest release metadata found for {source}")
+
+    summary_path = releases_path / "latest-release-summary.json"
+    with open(summary_path, 'w') as f:
+        json.dump(summary, f, indent=2)
+
+    logger.info(f"Release summary written to {summary_path}")
+
+
 @click.command()
-@click.argument("source", type=str)
-def main(source):
+@click.argument("source", type=str, required=False)
+@click.option("--summary", is_flag=True, help="Generate release summary for all sources in releases directory")
+def main(source, summary):
     setup_logging()
-    release_ingest(source)
+    if summary:
+        generate_release_summary()
+    elif source:
+        release_ingest(source)
+    else:
+        raise click.UsageError("Provide a source name or use --summary")
 
 
 if __name__ == "__main__":

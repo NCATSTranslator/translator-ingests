@@ -146,6 +146,7 @@ merge:
 .PHONY: release
 release:
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
+	@$(RUN) python src/translator_ingest/release.py --summary
 
 .PHONY: release-%
 release-%:
