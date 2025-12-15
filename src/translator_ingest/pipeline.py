@@ -39,7 +39,6 @@ from translator_ingest.util.download_utils import substitute_version_in_download
 
 logger = get_logger(__name__)
 
-# TODO generate a file that is a meta-metadata for all sources and releases
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
     """Load koza config to get ingest-specific settings like max_edge_count."""
