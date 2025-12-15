@@ -35,6 +35,53 @@ from translator_ingest.util.biolink import INFORES_PATHBANK
 from translator_ingest.util.http_utils import get_modify_date
 
 
+def _load_pw_to_smpdb_mapping(source_data_dir: Path) -> dict[str, str]:
+    """Map PathBank PW IDs (e.g., PW000001) to SMPDB IDs (e.g., SMP0000001).
+
+    This lets PWML-derived edges attach to pathway nodes using identifiers more likely to normalize
+    under strict NodeNorm (SMPDB), instead of PathBank internal PW IDs.
+    """
+    csv_file = source_data_dir / "pathbank_pathways.csv"
+    pathways_zip = source_data_dir / "pathbank_all_pathways.csv.zip"
+
+    if not csv_file.exists():
+        # Best-effort extraction for PWML processing: if the zip is present, extract it.
+        if pathways_zip.exists():
+            with zipfile.ZipFile(pathways_zip, "r") as zip_ref:
+                zip_ref.extractall(source_data_dir)
+        else:
+            return {}
+
+    pw_to_smpdb: dict[str, str] = {}
+    with open(csv_file, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            pw_id = (row.get("PW ID") or "").strip()
+            smpdb_id = (row.get("SMPDB ID") or "").strip()
+            if pw_id and smpdb_id:
+                pw_to_smpdb[pw_id] = smpdb_id
+    return pw_to_smpdb
+
+
+def _normalize_pathway_curie(pathway_id: str, pw_to_smpdb: dict[str, str]) -> str:
+    """Prefer SMPDB pathway CURIEs when available; otherwise fall back to PathBank."""
+    pathway_id = (pathway_id or "").strip()
+    if not pathway_id:
+        return "PathBank:UNKNOWN"
+    smpdb_id = pw_to_smpdb.get(pathway_id)
+    if smpdb_id:
+        return f"SMPDB:{smpdb_id}"
+    return f"PathBank:{pathway_id}"
+
+
+def _pathway_id_to_curie(pathway_id_or_curie: str) -> str:
+    """Return a pathway CURIE given either a PW/PWML ID or a full CURIE."""
+    value = (pathway_id_or_curie or "").strip()
+    if not value:
+        return "PathBank:UNKNOWN"
+    return value if ":" in value else f"PathBank:{value}"
+
+
 def get_latest_version() -> str:
     """Return the most recent modify date of PathBank source files in YYYY-MM-DD format.
 
@@ -97,7 +144,7 @@ def on_data_begin(koza: koza.KozaTransform) -> None:
 def _create_compound_node_and_edges(
     compound: dict[str, Any], pathway_id: str
 ) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
-    """Create SmallMolecule node and same_as edges for a compound.
+    """Create SmallMolecule node for a compound.
 
     Prioritizes external IDs (CHEBI > DRUGBANK > KEGG.COMPOUND) as primary node ID
     to ensure proper normalization. Uses PathBank ID only as fallback.
@@ -149,7 +196,26 @@ def _create_compound_node_and_edges(
         primary_curie = f"PathBank:Compound_{pwc_id}"
         primary_prefix = "PathBank"
 
-    # Create primary compound node
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    # This allows NodeNorm to potentially try alternative IDs if primary fails
+    xref_ids = []
+    pwc_curie = f"PathBank:Compound_{pwc_id}"
+    if chebi_id:
+        chebi_curie = f"CHEBI:{chebi_id}"
+        if chebi_curie != primary_curie:
+            xref_ids.append(chebi_curie)
+    if drugbank_id:
+        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+        if drugbank_curie != primary_curie:
+            xref_ids.append(drugbank_curie)
+    if kegg_id:
+        kegg_curie = f"KEGG.COMPOUND:{kegg_id}"
+        if kegg_curie != primary_curie:
+            xref_ids.append(kegg_curie)
+    if pwc_curie != primary_curie:
+        xref_ids.append(pwc_curie)
+
+    # Create primary compound node with all equivalent IDs in xref field
     compound_node = SmallMolecule(
         id=primary_curie,
         name=name,
@@ -157,103 +223,24 @@ def _create_compound_node_and_edges(
         synonym=(
             [s.strip() for s in synonyms_str.split(";")] if synonyms_str and isinstance(synonyms_str, str) else None
         ),
+        xref=xref_ids if xref_ids else None,
     )
     nodes.append(compound_node)
 
     # Build translator dictionary: {equiv_id: prefix}
-    # Store all equivalent IDs for this compound
+    # Store all equivalent IDs for this compound (for edge creation)
     compound_translator = {primary_curie: primary_prefix}
-    
-    # Add PathBank ID to translator if not already primary
-    if primary_prefix != "PathBank":
-        pwc_curie = f"PathBank:Compound_{pwc_id}"
+    if pwc_curie != primary_curie:
         compound_translator[pwc_curie] = "PathBank"
-        # Create PathBank node for same_as edge
-        pathbank_node = SmallMolecule(
-            id=pwc_curie,
-            name=name,
-        )
-        nodes.append(pathbank_node)
-        # Create same_as edge FROM primary TO PathBank
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=pwc_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
-
-    # Add other external IDs to translator and create same_as edges
-    if chebi_id and primary_prefix != "CHEBI":
-        chebi_curie = f"CHEBI:{chebi_id}"
+    if chebi_id and chebi_curie != primary_curie:
         compound_translator[chebi_curie] = "CHEBI"
-        chebi_node = SmallMolecule(
-            id=chebi_curie,
-            name=name,
-        )
-        nodes.append(chebi_node)
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=chebi_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
-    
-    if drugbank_id and primary_prefix != "DRUGBANK":
-        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+    if drugbank_id and drugbank_curie != primary_curie:
         compound_translator[drugbank_curie] = "DRUGBANK"
-        drugbank_node = SmallMolecule(
-            id=drugbank_curie,
-            name=name,
-        )
-        nodes.append(drugbank_node)
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=drugbank_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
-    
-    if kegg_id and primary_prefix != "KEGG.COMPOUND":
-        kegg_curie = f"KEGG.COMPOUND:{kegg_id}"
+    if kegg_id and kegg_curie != primary_curie:
         compound_translator[kegg_curie] = "KEGG.COMPOUND"
-        kegg_node = SmallMolecule(
-            id=kegg_curie,
-            name=name,
-        )
-        nodes.append(kegg_node)
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=kegg_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
 
     # Create has_participant edge from pathway to compound (use primary ID)
-    pathway_curie = f"PathBank:{pathway_id}"
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
@@ -273,7 +260,7 @@ def _create_compound_node_and_edges(
 def _create_protein_node_and_edges(
     protein: dict[str, Any], pathway_id: str
 ) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
-    """Create Protein node and same_as edges for a protein.
+    """Create Protein node for a protein.
 
     Returns:
         Tuple of (nodes, edges, translator_dict) where translator_dict maps protein_id to {equiv_id: prefix}
@@ -314,85 +301,39 @@ def _create_protein_node_and_edges(
         primary_curie = f"PathBank:Protein_{pwp_id}"
         primary_prefix = "PathBank"
 
-    # Create primary protein node
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    xref_ids = []
+    pwp_curie = f"PathBank:Protein_{pwp_id}"
+    if uniprot_id:
+        uniprot_curie = f"UniProtKB:{uniprot_id}"
+        if uniprot_curie != primary_curie:
+            xref_ids.append(uniprot_curie)
+    if drugbank_id:
+        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+        if drugbank_curie != primary_curie:
+            xref_ids.append(drugbank_curie)
+    if pwp_curie != primary_curie:
+        xref_ids.append(pwp_curie)
+
+    # Create primary protein node with all equivalent IDs in xref field
     protein_node = Protein(
         id=primary_curie,
         name=name,
+        xref=xref_ids if xref_ids else None,
     )
     nodes.append(protein_node)
 
     # Build translator dictionary: {equiv_id: prefix}
     protein_translator = {primary_curie: primary_prefix}
-    
-    # Add PathBank ID to translator if not already primary
-    if primary_prefix != "PathBank":
-        pwp_curie = f"PathBank:Protein_{pwp_id}"
+    if pwp_curie != primary_curie:
         protein_translator[pwp_curie] = "PathBank"
-        # Create PathBank node for same_as edge
-        pathbank_node = Protein(
-            id=pwp_curie,
-            name=name,
-        )
-        nodes.append(pathbank_node)
-        # Create same_as edge FROM primary TO PathBank
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=pwp_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
-
-    # Add other external IDs to translator and create same_as edges
-    if uniprot_id and primary_prefix != "UniProtKB":
-        uniprot_curie = f"UniProtKB:{uniprot_id}"
+    if uniprot_id and uniprot_curie != primary_curie:
         protein_translator[uniprot_curie] = "UniProtKB"
-        uniprot_node = Protein(
-            id=uniprot_curie,
-            name=name,
-        )
-        nodes.append(uniprot_node)
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=uniprot_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
-    
-    if drugbank_id and primary_prefix != "DRUGBANK":
-        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+    if drugbank_id and drugbank_curie != primary_curie:
         protein_translator[drugbank_curie] = "DRUGBANK"
-        drugbank_node = Protein(
-            id=drugbank_curie,
-            name=name,
-        )
-        nodes.append(drugbank_node)
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=primary_curie,
-            predicate="biolink:same_as",
-            object=drugbank_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
 
     # Create has_participant edge from pathway to protein (use primary ID)
-    pathway_curie = f"PathBank:{pathway_id}"
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
@@ -421,6 +362,13 @@ def _create_protein_complex_node_and_edges(
     """
     nodes = []
     edges = []
+
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # The translator dicts are constructed with the primary CURIE inserted first.
+        # We must use that same CURIE in edges to ensure every edge endpoint exists as a node ID.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
 
     # Extract protein complex data
     complex_id_raw = protein_complex.get("id", {})
@@ -461,16 +409,12 @@ def _create_protein_complex_node_and_edges(
                 protein_pw_id = str(protein_id_raw) if protein_id_raw else ""
 
             if protein_pw_id and protein_pw_id in protein_translator:
-                # Get all equivalent IDs for this protein
-                for equiv_id, prefix in protein_translator[protein_pw_id].items():
-                    # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                    if ":" in equiv_id:
-                        complex_proteins.append(equiv_id)
-                    else:
-                        complex_proteins.append(f"{prefix}:{equiv_id}")
+                primary_protein_curie = _primary_curie_from_translator(protein_translator[protein_pw_id])
+                if primary_protein_curie:
+                    complex_proteins.append(primary_protein_curie)
 
     # Create has_protein_in_complex edges
-    for protein_id in complex_proteins:
+    for protein_id in sorted(set(complex_proteins)):
         has_protein_edge = Association(
             id=entity_id(),
             subject=pwp_curie,
@@ -485,7 +429,7 @@ def _create_protein_complex_node_and_edges(
         edges.append(has_protein_edge)
 
     # Create has_participant edge from pathway to complex
-    pathway_curie = f"PathBank:{pathway_id}"
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
@@ -505,7 +449,7 @@ def _create_protein_complex_node_and_edges(
 def _create_nucleic_acid_node_and_edges(
     nucl_acid: dict[str, Any], pathway_id: str
 ) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
-    """Create NucleicAcidEntity node and same_as edges for a nucleic acid."""
+    """Create NucleicAcidEntity node for a nucleic acid."""
     nodes = []
     edges = []
 
@@ -525,50 +469,51 @@ def _create_nucleic_acid_node_and_edges(
     # Normalize external ID (strip any existing prefix)
     chebi_id = _normalize_external_id(chebi_id_raw, "CHEBI")
 
-    # Create PathBank nucleic acid node
+    # Determine primary ID: prioritize CHEBI > PathBank
+    primary_curie = None
+    primary_prefix = None
+    
+    if chebi_id:
+        primary_curie = f"CHEBI:{chebi_id}"
+        primary_prefix = "CHEBI"
+    else:
+        primary_curie = f"PathBank:NucleicAcid_{pwna_id}"
+        primary_prefix = "PathBank"
+
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    xref_ids = []
     pwna_curie = f"PathBank:NucleicAcid_{pwna_id}"
+    if chebi_id:
+        chebi_curie = f"CHEBI:{chebi_id}"
+        if chebi_curie != primary_curie:
+            xref_ids.append(chebi_curie)
+    if pwna_curie != primary_curie:
+        xref_ids.append(pwna_curie)
+
+    # Create primary nucleic acid node with all equivalent IDs in xref field
     na_node = NucleicAcidEntity(
-        id=pwna_curie,
+        id=primary_curie,
         name=name,
+        xref=xref_ids if xref_ids else None,
     )
     nodes.append(na_node)
 
     # Build translator dictionary: {equiv_id: prefix}
-    na_translator = {pwna_curie: "PathBank"}
-    if chebi_id:
-        na_translator[chebi_id] = "CHEBI"
-
-    # Create same_as edge FROM PathBank node TO external ID (unidirectional)
-    # Also create minimal node for external ID to satisfy normalization requirements
+    na_translator = {primary_curie: primary_prefix}
+    if pwna_curie != primary_curie:
+        na_translator[pwna_curie] = "PathBank"
     if chebi_id:
         chebi_curie = f"CHEBI:{chebi_id}"
-        # Create minimal node for external CHEBI ID (required for edge normalization)
-        chebi_node = NucleicAcidEntity(
-            id=chebi_curie,
-            name=name,  # Use same name as PathBank nucleic acid
-        )
-        nodes.append(chebi_node)
-        # Create edge FROM PathBank TO CHEBI
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=pwna_curie,
-            predicate="biolink:same_as",
-            object=chebi_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
+        if chebi_curie != primary_curie:
+            na_translator[chebi_curie] = "CHEBI"
 
-    # Create has_participant edge from pathway to nucleic acid
-    pathway_curie = f"PathBank:{pathway_id}"
+    # Create has_participant edge from pathway to nucleic acid (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
-        object=pwna_curie,
+        object=primary_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
         ),
@@ -604,10 +549,28 @@ def _create_reaction_node_and_edges(
     if not pwr_id:
         return [], []
 
-    # Create PathBank reaction node
-    pwr_curie = f"PathBank:Reaction_{pwr_id}"
+    # Extract EC number if available (EC numbers normalize)
+    ec_number_raw = _normalize_xml_value(reaction.get("ec-number"))
+    ec_number = None
+    if ec_number_raw:
+        # Normalize EC number format (remove EC: prefix if present, ensure proper format)
+        ec_number = ec_number_raw.strip().upper()
+        if ec_number.startswith("EC:"):
+            ec_number = ec_number[3:].strip()
+        # Validate EC number format (should be like "1.2.3.4")
+        if ec_number and ec_number.replace(".", "").replace("-", "").isdigit():
+            # Use EC number as primary ID for normalization
+            primary_curie = f"EC:{ec_number}"
+        else:
+            # Invalid EC number format, fall back to PathBank ID
+            primary_curie = f"PathBank:Reaction_{pwr_id}"
+    else:
+        # No EC number available, use PathBank ID
+        primary_curie = f"PathBank:Reaction_{pwr_id}"
+
+    # Create reaction node with primary ID
     reaction_node = MolecularActivity(
-        id=pwr_curie,
+        id=primary_curie,
     )
     nodes.append(reaction_node)
 
@@ -642,26 +605,28 @@ def _create_reaction_node_and_edges(
         element_type = left_element.get("element-type", "")
 
         if element_id and element_type in data_translator and element_id in data_translator[element_type]:
-            # Get all equivalent IDs for this element
+            # Get equivalent IDs for this element - use only the primary ID (first in dict)
             equiv_ids = data_translator[element_type][element_id]
-            for equiv_id, prefix in equiv_ids.items():
-                # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                if ":" in equiv_id:
-                    object_curie = equiv_id
-                else:
-                    object_curie = f"{prefix}:{equiv_id}"
-                reactant_edge = Association(
-                    id=entity_id(),
-                    subject=pwr_curie,
-                    predicate="biolink:has_input",
-                    object=object_curie,
-                    sources=build_association_knowledge_sources(
-                        primary=INFORES_PATHBANK,
-                    ),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-                edges.append(reactant_edge)
+            # Primary ID is the first key in the translator dict
+            primary_equiv_id = next(iter(equiv_ids.keys()))
+            prefix = equiv_ids[primary_equiv_id]
+            # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
+            if ":" in primary_equiv_id:
+                object_curie = primary_equiv_id
+            else:
+                object_curie = f"{prefix}:{primary_equiv_id}"
+            reactant_edge = Association(
+                id=entity_id(),
+                subject=primary_curie,
+                predicate="biolink:has_input",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(reactant_edge)
 
     # Create edges for right elements (products)
     for right_element in right_elements:
@@ -674,26 +639,28 @@ def _create_reaction_node_and_edges(
         element_type = right_element.get("element-type", "")
 
         if element_id and element_type in data_translator and element_id in data_translator[element_type]:
-            # Get all equivalent IDs for this element
+            # Get equivalent IDs for this element - use only the primary ID (first in dict)
             equiv_ids = data_translator[element_type][element_id]
-            for equiv_id, prefix in equiv_ids.items():
-                # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                if ":" in equiv_id:
-                    object_curie = equiv_id
-                else:
-                    object_curie = f"{prefix}:{equiv_id}"
-                product_edge = Association(
-                    id=entity_id(),
-                    subject=pwr_curie,
-                    predicate="biolink:has_output",
-                    object=object_curie,
-                    sources=build_association_knowledge_sources(
-                        primary=INFORES_PATHBANK,
-                    ),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-                edges.append(product_edge)
+            # Primary ID is the first key in the translator dict
+            primary_equiv_id = next(iter(equiv_ids.keys()))
+            prefix = equiv_ids[primary_equiv_id]
+            # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
+            if ":" in primary_equiv_id:
+                object_curie = primary_equiv_id
+            else:
+                object_curie = f"{prefix}:{primary_equiv_id}"
+            product_edge = Association(
+                id=entity_id(),
+                subject=primary_curie,
+                predicate="biolink:has_output",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(product_edge)
 
     # Create edges for enzymes (protein complexes)
     for enzyme in enzymes:
@@ -704,34 +671,36 @@ def _create_reaction_node_and_edges(
             enzyme_id = str(enzyme_id_raw) if enzyme_id_raw else ""
 
         if enzyme_id and "ProteinComplex" in data_translator and enzyme_id in data_translator["ProteinComplex"]:
-            # Get all equivalent IDs for this protein complex
+            # Get equivalent IDs for this protein complex - use only the primary ID (first in dict)
             equiv_ids = data_translator["ProteinComplex"][enzyme_id]
-            for equiv_id, prefix in equiv_ids.items():
-                # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                if ":" in equiv_id:
-                    subject_curie = equiv_id
-                else:
-                    subject_curie = f"{prefix}:{equiv_id}"
-                enzyme_edge = Association(
-                    id=entity_id(),
-                    subject=subject_curie,
-                    predicate="biolink:catalyzes",
-                    object=pwr_curie,
-                    sources=build_association_knowledge_sources(
-                        primary=INFORES_PATHBANK,
-                    ),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-                edges.append(enzyme_edge)
+            # Primary ID is the first key in the translator dict
+            primary_equiv_id = next(iter(equiv_ids.keys()))
+            prefix = equiv_ids[primary_equiv_id]
+            # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
+            if ":" in primary_equiv_id:
+                subject_curie = primary_equiv_id
+            else:
+                subject_curie = f"{prefix}:{primary_equiv_id}"
+            enzyme_edge = Association(
+                id=entity_id(),
+                subject=subject_curie,
+                predicate="biolink:catalyzes",
+                object=primary_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(enzyme_edge)
 
-    # Create has_participant edge from pathway to reaction
-    pathway_curie = f"PathBank:{pathway_id}"
+    # Create has_participant edge from pathway to reaction (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
-        object=pwr_curie,
+        object=primary_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
         ),
@@ -749,6 +718,13 @@ def _create_bound_node_and_edges(
     """Create ChemicalEntity node and edges for a bound."""
     nodes = []
     edges = []
+
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # The translator dicts are constructed with the primary CURIE inserted first.
+        # Use only that CURIE on edges to avoid edge endpoints that have no node record.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
 
     # Extract bound data
     bound_id_raw = bound.get("id", {})
@@ -787,29 +763,26 @@ def _create_bound_node_and_edges(
         element_type = element.get("element-type", "")
 
         if element_id and element_type in data_translator and element_id in data_translator[element_type]:
-            # Get all equivalent IDs for this element
             equiv_ids = data_translator[element_type][element_id]
-            for equiv_id, prefix in equiv_ids.items():
-                # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
-                if ":" in equiv_id:
-                    object_curie = equiv_id
-                else:
-                    object_curie = f"{prefix}:{equiv_id}"
-                has_part_edge = Association(
-                    id=entity_id(),
-                    subject=pwb_curie,
-                    predicate="biolink:has_part",
-                    object=object_curie,
-                    sources=build_association_knowledge_sources(
-                        primary=INFORES_PATHBANK,
-                    ),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-                edges.append(has_part_edge)
+            object_curie = _primary_curie_from_translator(equiv_ids)
+            if not object_curie:
+                continue
+
+            has_part_edge = Association(
+                id=entity_id(),
+                subject=pwb_curie,
+                predicate="biolink:has_part",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(has_part_edge)
 
     # Create has_participant edge from pathway to bound
-    pathway_curie = f"PathBank:{pathway_id}"
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
@@ -829,7 +802,7 @@ def _create_bound_node_and_edges(
 def _create_element_collection_node_and_edges(
     ec: dict[str, Any], pathway_id: str
 ) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
-    """Create ChemicalEntity node and same_as edges for an element collection."""
+    """Create ChemicalEntity node for an element collection."""
     nodes = []
     edges = []
 
@@ -856,70 +829,56 @@ def _create_element_collection_node_and_edges(
 
     # Normalize external ID (strip any existing prefix)
     external_id = None
+    external_prefix = None
     if external_id_type in external_id_mapping and external_id_raw:
-        prefix = external_id_mapping[external_id_type]
-        external_id = _normalize_external_id(external_id_raw, prefix)
+        external_prefix = external_id_mapping[external_id_type]
+        external_id = _normalize_external_id(external_id_raw, external_prefix)
 
-    # Create PathBank element collection node
+    # Determine primary ID: prioritize external ID > PathBank
+    primary_curie = None
+    primary_prefix = None
+    
+    if external_id and external_prefix:
+        primary_curie = f"{external_prefix}:{external_id}"
+        primary_prefix = external_prefix
+    else:
+        primary_curie = f"PathBank:ElementCollection_{pwec_id}"
+        primary_prefix = "PathBank"
+
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    xref_ids = []
     pwec_curie = f"PathBank:ElementCollection_{pwec_id}"
+    if external_id and external_prefix:
+        external_curie = f"{external_prefix}:{external_id}"
+        if external_curie != primary_curie:
+            xref_ids.append(external_curie)
+    if pwec_curie != primary_curie:
+        xref_ids.append(pwec_curie)
+
+    # Create primary element collection node with all equivalent IDs in xref field
     ec_node = ChemicalEntity(
-        id=pwec_curie,
+        id=primary_curie,
         name=name,
+        xref=xref_ids if xref_ids else None,
     )
     nodes.append(ec_node)
 
     # Build translator dictionary: {equiv_id: prefix}
-    ec_translator = {pwec_curie: "PathBank"}
+    ec_translator = {primary_curie: primary_prefix}
+    if pwec_curie != primary_curie:
+        ec_translator[pwec_curie] = "PathBank"
+    if external_id and external_prefix:
+        external_curie = f"{external_prefix}:{external_id}"
+        if external_curie != primary_curie:
+            ec_translator[external_curie] = external_prefix
 
-    if external_id_type in external_id_mapping and external_id:
-        prefix = external_id_mapping[external_id_type]
-        ec_translator[external_id] = prefix
-
-    # Create same_as edge FROM PathBank node TO external ID (unidirectional)
-    # Also create minimal node for external ID to satisfy normalization requirements
-    if external_id_type in external_id_mapping and external_id:
-        prefix = external_id_mapping[external_id_type]
-        external_curie = f"{prefix}:{external_id}"
-        # Create minimal node for external ID (required for edge normalization)
-        # Determine category based on prefix
-        if prefix == "CHEBI":
-            external_node = ChemicalEntity(
-                id=external_curie,
-                name=name,  # Use same name as PathBank element collection
-            )
-        elif prefix == "KEGG.COMPOUND":
-            external_node = ChemicalEntity(
-                id=external_curie,
-                name=name,  # Use same name as PathBank element collection
-            )
-        else:
-            # Default to ChemicalEntity for unknown types
-            external_node = ChemicalEntity(
-                id=external_curie,
-                name=name,
-            )
-        nodes.append(external_node)
-        # Create edge FROM PathBank TO external ID
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=pwec_curie,
-            predicate="biolink:same_as",
-            object=external_curie,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
-
-    # Create has_participant edge from pathway to element collection
-    pathway_curie = f"PathBank:{pathway_id}"
+    # Create has_participant edge from pathway to element collection (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
-        object=pwec_curie,
+        object=primary_curie,
         sources=build_association_knowledge_sources(
             primary=INFORES_PATHBANK,
         ),
@@ -951,6 +910,13 @@ def _create_interaction_edges(
         List of Association edges
     """
     edges = []
+
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # Translator dicts are constructed with the primary CURIE inserted first.
+        # Use only that CURIE on edges to ensure every edge endpoint exists as a node ID.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
 
     # Extract interaction type and map to Biolink predicate and qualifiers
     interaction_type_raw = interaction.get("interaction-type", "")
@@ -1017,81 +983,75 @@ def _create_interaction_edges(
         ):
             continue
 
-        # Get all equivalent IDs for left element
         left_equiv_ids = data_translator[left_type][left_id]
-        for left_equiv_id, left_prefix in left_equiv_ids.items():
-            if ":" in left_equiv_id:
-                left_curie = left_equiv_id
+        left_curie = _primary_curie_from_translator(left_equiv_ids)
+        if not left_curie:
+            continue
+
+        for right_element in right_elements:
+            right_id_raw = right_element.get("element-id", {})
+            if isinstance(right_id_raw, dict):
+                right_id = right_id_raw.get("#text", "")
             else:
-                left_curie = f"{left_prefix}:{left_equiv_id}"
+                right_id = str(right_id_raw) if right_id_raw else ""
 
-            for right_element in right_elements:
-                right_id_raw = right_element.get("element-id", {})
-                if isinstance(right_id_raw, dict):
-                    right_id = right_id_raw.get("#text", "")
-                else:
-                    right_id = str(right_id_raw) if right_id_raw else ""
+            right_type = right_element.get("element-type", "")
 
-                right_type = right_element.get("element-type", "")
+            if (
+                not right_id
+                or not right_type
+                or right_type not in data_translator
+                or right_id not in data_translator[right_type]
+            ):
+                continue
 
-                if (
-                    not right_id
-                    or not right_type
-                    or right_type not in data_translator
-                    or right_id not in data_translator[right_type]
-                ):
-                    continue
+            right_equiv_ids = data_translator[right_type][right_id]
+            right_curie = _primary_curie_from_translator(right_equiv_ids)
+            if not right_curie:
+                continue
 
-                # Get all equivalent IDs for right element
-                right_equiv_ids = data_translator[right_type][right_id]
-                for right_equiv_id, right_prefix in right_equiv_ids.items():
-                    if ":" in right_equiv_id:
-                        right_curie = right_equiv_id
-                    else:
-                        right_curie = f"{right_prefix}:{right_equiv_id}"
+            # Determine appropriate Association class based on types
+            assoc_class = Association
 
-                    # Determine appropriate Association class based on types
-                    assoc_class = Association
-                    
-                    # Check types against sets
-                    is_left_chem = left_type in CHEMICAL_TYPES
-                    is_left_bio = left_type in BIO_TYPES
-                    is_right_chem = right_type in CHEMICAL_TYPES
-                    is_right_bio = right_type in BIO_TYPES
+            # Check types against sets
+            is_left_chem = left_type in CHEMICAL_TYPES
+            is_left_bio = left_type in BIO_TYPES
+            is_right_chem = right_type in CHEMICAL_TYPES
+            is_right_bio = right_type in BIO_TYPES
 
-                    if is_left_chem and is_right_bio:
-                        assoc_class = ChemicalAffectsBiologicalEntityAssociation
-                    elif is_left_bio and is_right_bio:
-                        assoc_class = GeneRegulatesGeneAssociation
-                    elif is_left_bio and is_right_chem:
-                        assoc_class = GeneAffectsChemicalAssociation
-                    
-                    # Create interaction edge with predicate and qualifiers based on interaction type
-                    interaction_edge_kwargs = {
-                        "id": entity_id(),
-                        "subject": left_curie,
-                        "predicate": predicate,
-                        "object": right_curie,
-                        "sources": build_association_knowledge_sources(
-                            primary=INFORES_PATHBANK,
-                        ),
-                        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                        "agent_type": AgentTypeEnum.manual_agent,
-                    }
-                    
-                    # Add qualifiers if present AND supported by class
-                    # Fallback to generic Association (no qualifiers) if we can't use a specialized class
-                    if qualified_predicate and assoc_class != Association:
-                        interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
-                        interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
-                        interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
-                    else:
-                        # If we don't have qualifiers, we MUST use the base Association class
-                        # because specialized classes (like GeneRegulatesGeneAssociation) REQUIRE them.
-                        assoc_class = Association
-                    
-                    interaction_edge = assoc_class(**interaction_edge_kwargs)
-                    edges.append(interaction_edge)
+            if is_left_chem and is_right_bio:
+                assoc_class = ChemicalAffectsBiologicalEntityAssociation
+            elif is_left_bio and is_right_bio:
+                assoc_class = GeneRegulatesGeneAssociation
+            elif is_left_bio and is_right_chem:
+                assoc_class = GeneAffectsChemicalAssociation
+
+            # Create interaction edge with predicate and qualifiers based on interaction type
+            interaction_edge_kwargs = {
+                "id": entity_id(),
+                "subject": left_curie,
+                "predicate": predicate,
+                "object": right_curie,
+                "sources": build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            }
+
+            # Add qualifiers if present AND supported by class
+            # Fallback to generic Association (no qualifiers) if we can't use a specialized class
+            if qualified_predicate and assoc_class != Association:
+                interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
+                interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
+                interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
+            else:
+                # If we don't have qualifiers, we MUST use the base Association class
+                # because specialized classes (like GeneRegulatesGeneAssociation) REQUIRE them.
+                assoc_class = Association
+
+            interaction_edge = assoc_class(**interaction_edge_kwargs)
+            edges.append(interaction_edge)
 
     return edges
 
@@ -1127,7 +1087,7 @@ def _create_subcellular_location_nodes_and_edges(
     nodes.append(location_node)
 
     # Create occurs_in edge from pathway to location
-    pathway_curie = f"PathBank:{pathway_id}"
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     occurs_in_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
@@ -1180,7 +1140,7 @@ def _create_tissue_nodes_and_edges(
     nodes.append(tissue_node)
 
     # Create occurs_in edge from pathway to tissue
-    pathway_curie = f"PathBank:{pathway_id}"
+    pathway_curie = _pathway_id_to_curie(pathway_id)
     occurs_in_edge = Association(
         id=entity_id(),
         subject=pathway_curie,
@@ -1211,6 +1171,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         pathway_id = record.get("pathway_id", "")
         if not pathway_id:
             continue
+        pathway_curie = record.get("pathway_curie") or _pathway_id_to_curie(pathway_id)
 
         nodes = []
         edges = []
@@ -1231,7 +1192,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         if isinstance(compounds, list):
             for compound in compounds:
                 compound_nodes, compound_edges, compound_translator = _create_compound_node_and_edges(
-                    compound, pathway_id
+                    compound, pathway_curie
                 )
                 nodes.extend(compound_nodes)
                 edges.extend(compound_edges)
@@ -1245,7 +1206,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         if isinstance(proteins, list):
             for protein in proteins:
                 protein_nodes, protein_edges, protein_translator_item = _create_protein_node_and_edges(
-                    protein, pathway_id
+                    protein, pathway_curie
                 )
                 nodes.extend(protein_nodes)
                 edges.extend(protein_edges)
@@ -1258,7 +1219,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         nucleic_acids = record.get("nucleic-acids", [])
         if isinstance(nucleic_acids, list):
             for nucl_acid in nucleic_acids:
-                na_nodes, na_edges, na_translator = _create_nucleic_acid_node_and_edges(nucl_acid, pathway_id)
+                na_nodes, na_edges, na_translator = _create_nucleic_acid_node_and_edges(nucl_acid, pathway_curie)
                 nodes.extend(na_nodes)
                 edges.extend(na_edges)
                 # Merge translator into data_translator
@@ -1270,7 +1231,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         if isinstance(protein_complexes, list):
             for protein_complex in protein_complexes:
                 complex_nodes, complex_edges, complex_translator = _create_protein_complex_node_and_edges(
-                    protein_complex, pathway_id, protein_translator
+                    protein_complex, pathway_curie, protein_translator
                 )
                 nodes.extend(complex_nodes)
                 edges.extend(complex_edges)
@@ -1282,7 +1243,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         element_collections = record.get("element-collections", [])
         if isinstance(element_collections, list):
             for ec in element_collections:
-                ec_nodes, ec_edges, ec_translator = _create_element_collection_node_and_edges(ec, pathway_id)
+                ec_nodes, ec_edges, ec_translator = _create_element_collection_node_and_edges(ec, pathway_curie)
                 nodes.extend(ec_nodes)
                 edges.extend(ec_edges)
                 # Merge translator into data_translator
@@ -1294,7 +1255,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         if isinstance(bounds, list):
             for bound in bounds:
                 bound_nodes, bound_edges, bound_translator = _create_bound_node_and_edges(
-                    bound, pathway_id, data_translator
+                    bound, pathway_curie, data_translator
                 )
                 nodes.extend(bound_nodes)
                 edges.extend(bound_edges)
@@ -1306,7 +1267,9 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         reactions = record.get("reactions", [])
         if isinstance(reactions, list):
             for reaction in reactions:
-                reaction_nodes, reaction_edges = _create_reaction_node_and_edges(reaction, pathway_id, data_translator)
+                reaction_nodes, reaction_edges = _create_reaction_node_and_edges(
+                    reaction, pathway_curie, data_translator
+                )
                 nodes.extend(reaction_nodes)
                 edges.extend(reaction_edges)
 
@@ -1314,14 +1277,14 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         interactions = record.get("interactions", [])
         if isinstance(interactions, list):
             for interaction in interactions:
-                interaction_edges = _create_interaction_edges(interaction, pathway_id, data_translator)
+                interaction_edges = _create_interaction_edges(interaction, pathway_curie, data_translator)
                 edges.extend(interaction_edges)
 
         # Process subcellular locations
         subcellular_locations = record.get("subcellular-locations", [])
         if isinstance(subcellular_locations, list):
             for location in subcellular_locations:
-                location_nodes, location_edges = _create_subcellular_location_nodes_and_edges(location, pathway_id)
+                location_nodes, location_edges = _create_subcellular_location_nodes_and_edges(location, pathway_curie)
                 nodes.extend(location_nodes)
                 edges.extend(location_edges)
 
@@ -1329,7 +1292,7 @@ def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> 
         tissues = record.get("tissues", [])
         if isinstance(tissues, list):
             for tissue in tissues:
-                tissue_nodes, tissue_edges = _create_tissue_nodes_and_edges(tissue, pathway_id)
+                tissue_nodes, tissue_edges = _create_tissue_nodes_and_edges(tissue, pathway_curie)
                 nodes.extend(tissue_nodes)
                 edges.extend(tissue_edges)
 
@@ -1380,32 +1343,18 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
     nodes = []
     edges = []
 
-    # Create SMPDB pathway node if SMPDB ID exists
+    # Create SMPDB pathway node if SMPDB ID exists (prefer SMPDB prefix for normalization)
     if smpdb_id:
-        smpdb_node_id = f"PathBank:{smpdb_id}"
-        smpdb_pathway = Pathway(id=smpdb_node_id, name=name, description=description)
+        smpdb_node_id = f"SMPDB:{smpdb_id}"
+        xref = [f"PathBank:{pw_id}"] if pw_id else None
+        smpdb_pathway = Pathway(id=smpdb_node_id, name=name, description=description, xref=xref)
         nodes.append(smpdb_pathway)
 
-    # Create PathBank pathway node if PW ID exists
-    if pw_id:
+    # Create PathBank pathway node only if SMPDB ID is missing (PathBank IDs often won't normalize)
+    if pw_id and not smpdb_id:
         pw_node_id = f"PathBank:{pw_id}"
         pw_pathway = Pathway(id=pw_node_id, name=name, description=description)
         nodes.append(pw_pathway)
-
-    # Create same_as edge between SMPDB and PathBank pathway nodes if both exist
-    if smpdb_id and pw_id:
-        same_as_edge = Association(
-            id=entity_id(),
-            subject=f"PathBank:{smpdb_id}",
-            predicate="biolink:same_as",
-            object=f"PathBank:{pw_id}",
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        edges.append(same_as_edge)
 
     return KnowledgeGraph(nodes=nodes, edges=edges)
 
@@ -1503,6 +1452,11 @@ def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
     pwml_zip = source_data_dir / "pathbank_all_pwml.zip"
     pwml_dir = source_data_dir / "pathbank_all_pwml"
 
+    # Build mapping so PWML "PW..." pathway IDs can be translated to SMPDB IDs when available.
+    # This is critical under strict normalization, since SMPDB identifiers are more likely to resolve.
+    if "pw_to_smpdb" not in koza.state:
+        koza.state["pw_to_smpdb"] = _load_pw_to_smpdb_mapping(source_data_dir)
+
     # Extract zip if PWML directory doesn't exist or is empty
     # PathBank PWML files follow the pattern PW*.pwml (e.g., PW000001.pwml)
     pwml_pattern = "PW*.pwml"
@@ -1594,6 +1548,7 @@ def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
                 # Yield structured data for this pathway context
                 yield {
                     "pathway_id": pathway_id,
+                    "pathway_curie": _normalize_pathway_curie(pathway_id, koza.state.get("pw_to_smpdb", {})),
                     "pathway_data": pathway_data,
                     "compounds": _normalize_to_list(
                         compounds_data.get("compound") if isinstance(compounds_data, dict) else None
