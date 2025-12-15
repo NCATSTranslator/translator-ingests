@@ -4,6 +4,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 import uuid
+import math
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -53,10 +54,10 @@ def create_node(node_data: dict) -> Any:
         "MolecularMixture": MolecularMixture,
         "ChemicalEntity": ChemicalEntity,
         "ComplexMolecularMixture": ComplexMolecularMixture,
+        "Drug": Drug,
         "Disease": Disease,
         "PhenotypicFeature": PhenotypicFeature,
         "DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
-        "Drug": Drug
     }
 
     node_class = category_to_class.get(category)
@@ -156,7 +157,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     }
 
     # Add optional edge properties if present
-    if "N_cases" in record and isinstance(record["N_cases"], int):
+    if "N_cases" in record and not math.isnan(record["N_cases"]):
         edge_props["number_of_cases"] = record["N_cases"]
 
     # Add clinical_approval_status directly to edge properties
@@ -168,7 +169,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         else:
             edge_props["clinical_approval_status"] = record["clinical_approval_status"]
 
-            # Add FDA regulatory approvals
+    # Add FDA regulatory approvals
     if "approvals" in record and record["approvals"]:
         edge_props["FDA_regulatory_approvals"] = record["approvals"]
 

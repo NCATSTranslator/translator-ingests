@@ -100,7 +100,8 @@ def parse_gene_info(
         gene = "{}:{}".format(curie_map[gene_split[0]], gene_split[-1])
         # matched = 1
 
-    # Use uniprotkb id as a last resort and format e.g. UniProtKB=Q8TCT9 => "UniProtKB:Q8TCT9"
+    # Use the UniProtKB id as a last resort and
+    # format e.g., UniProtKB=Q8TCT9 => "UniProtKB:Q8TCT9"
     else:
         gene = "{}".format(cols[-1].replace("=", ":"))
         # unikb += 1
