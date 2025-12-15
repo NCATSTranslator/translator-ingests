@@ -1,0 +1,110 @@
+name: BindingDb
+source_info:
+  infores_id: infores:bindingdb
+  name: BindingDb
+  description: The Binding Database ("BindingDb") is a public, web-accessible database
+    of measured binding affinities, focusing chiefly on the interactions of protein
+    considered to be drug-targets with small, drug-like molecules. As of July 31,
+    2021, BindingDB contains thousands of dataset Entries, each with a DOI,
+    containing millions of binding assay results for thousands of protein targets
+    assayed against over a million distinct small molecule ligands.
+  citations:
+    - https://doi.org/10.1093/nar/gkae1075
+  terms_of_use_info:
+    terms_of_use_description: >-
+      All data and download files in bindingDB are freely
+      available under a 'Creative Commons BY 3.0' license.
+  data_access_locations:
+    - BindingDb bulk downloads - https://www.bindingdb.org/rwd/bind/downloads/
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: >-
+    Regular releases at the start of each month date stamped with the
+    year and month of the release (i.e. 202511), incorporated into the data file name.
+ingest_info:
+  ingest_categories:
+  - null
+  utility: null
+  scope: null
+  relevant_files:
+  - file_name: BindingDB_All_{version}_tsv.zip
+    location: https://www.bindingdb.org/rwd/bind/downloads/
+    description: All data in BindingdDB
+  included_content:
+  - file_name: null
+    included_records: Homo sapien-related entries only
+    fields_used:
+      - BindingDB Reactant_set_id
+      - BindingDB MonomerID
+      - PubChem CID
+      - Target Name
+      - Target Source Organism According to Curator or DataSource
+      - UniProt (SwissProt) Primary ID of Target Chain 1
+      - Curation/DataSource
+      - Article DOI
+      - PMID
+      - Patent Number
+      # The value of this data field can be synthesized from the monomerid and the target name
+      # - Link to Ligand-Target Pair in BindingDB
+      #
+      # The next round of data collection may include:
+      #
+      # - Ki (nM)- C9
+      # - IC50 (nM)- C10
+      # - Kd (nM)- C11
+      # - EC50 (nM)- C12
+      # - kon (M-1-s-1)- C13
+      # - koff (s-1)- C14
+      # - pH
+      # - Temp(C)
+  future_considerations:
+  - category: edge_content
+    consideration: >-
+      The records could be filtered out based upon:
+      'Ki','IC50','Kd','EC50','kon','koff'
+      having values below some threshold (e.g., 10,000nm ?)
+      The units of these kinetic parameters are nM. 
+      Lower values imply stronger binding affinity
+      or functional effects. Imposing a threshold
+      focuses on the most relevant interactions.
+      For Ki, IC50, EC50, the value relates to
+      the concentration of ligand (or drug) 
+      needed to inhibit 50% of enzyme activity.
+      Kon and Koff rates are, respectively, the rate
+      which a ligand binds and dissociates from a protein.
+      The ratio of Koff/Kon is Kd, the binding affinity
+      between a ligand and its target.
+    relevant_files:
+    - BindingDB_All_{version}_tsv.zip
+  additional_notes: null
+target_info:
+  infores_id: null
+  edge_type_info:
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:directly_physically_interacts_with
+    object:
+    - biolink:Protein
+    knowledge_level: knowledge_assertion
+    agent_type: manual_agent
+    edge_properties:
+    - biolink:publications
+  node_type_info:
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+  - node_category: biolink:Protein
+    source_identifier_types:
+    - UniProtKB
+  future_considerations:
+  - category: null
+    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - null
+  artifacts:
+  - null
