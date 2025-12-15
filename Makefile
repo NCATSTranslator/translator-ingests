@@ -13,6 +13,9 @@ ifeq ($(OVERWRITE),False)
 OVERWRITE :=
 endif
 
+# Graph ID for merge target (default: translator_kg)
+GRAPH_ID ?= translator_kg
+
 # Include additional makefiles
 include rig.Makefile
 include doc.Makefile
@@ -62,12 +65,29 @@ define HELP
 │ Configuration:                                                               │
 │     SOURCES             Space-separated list of sources                      │
 │                         Default: all available sources                       │
+│     GRAPH_ID            Graph ID for merged graphs                           │
+│                         Default: translator_kg                               │
 │                                                                              │
 │ Examples:                                                                    │
+│     # Run pipeline for all sources                                           │
 │     make run                                                                 │
-│     make validate SOURCES="ctd go_cam"                                       │
+│     # Run pipeline only for specified sources                                │
 │     make run SOURCES="go_cam"                                                │
+│                                                                              │
+│     # Validate all sources                                                   │
+│     make validate                                                            │
+│     # Validate only specified sources                                        │
+│     make validate SOURCES="go_cam"                                           │
+│                                                                              │
+│     # Make releases for all sources                                          │
+│     make release                                                             │
+│     # Make releases only for specified sources                               │
 │     make release SOURCES="ctd go_cam goa"                                    │
+│                                                                              │
+│     # Merge all sources into one graph named translator_kg                   │
+│     make merge                                                               │
+│     # Merge specified sources into a graph named example_custom_graph        │
+│     make merge GRAPH_ID=example_custom_graph SOURCES="ctd go_cam goa"        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -142,8 +162,8 @@ validate-%:
 
 .PHONY: merge
 merge:
-	@echo "Merging sources and building translator_kg...";
-	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
+	@echo "Merging sources and building $(GRAPH_ID)..."
+	$(RUN) python src/translator_ingest/merging.py $(GRAPH_ID) $(SOURCES) $(if $(OVERWRITE),--overwrite)
 
 .PHONY: release
 release:
