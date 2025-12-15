@@ -21,7 +21,7 @@ from orion.meta_kg import MetaKnowledgeGraphBuilder
 from orion.kgx_metadata import KGXGraphMetadata, analyze_graph
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
-from translator_ingest.merging import merge_kgx_files
+from translator_ingest.merging import merge_single
 from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import (
@@ -340,7 +340,7 @@ def merge(pipeline_metadata: PipelineMetadata):
         logger.info(f"Merge complete for {pipeline_metadata.source} (nodes-only, copied without merging).")
         return
 
-    merge_kgx_files(
+    merge_single(
         source_id=pipeline_metadata.source,
         input_nodes_file=normalized_nodes_file,
         input_edges_file=normalized_edges_file,

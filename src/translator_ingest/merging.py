@@ -2,7 +2,6 @@ import click
 import json
 import hashlib
 import datetime
-from dataclasses import asdict
 from pathlib import Path
 
 from orion.kgx_file_merger import KGXFileMerger, DONT_MERGE
@@ -12,13 +11,14 @@ from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
 from translator_ingest.release import create_compressed_tar
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
-from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName
+from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName, \
+    write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
 
-def merge_kgx_files(
+def merge_single(
     source_id: str,
     input_nodes_file: Path,
     input_edges_file: Path,
@@ -92,7 +92,7 @@ def is_merged_graph_release_current(merged_graph_metadata: PipelineMetadata) -> 
     Unlike individual source releases which use get_versioned_file_paths and write to INGESTS_DATA_PATH,
     merged graphs write directly to INGESTS_RELEASES_PATH.
     """
-    release_metadata_path = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / "release-metadata.json"
+    release_metadata_path = get_versioned_file_paths(IngestFileType.LATEST_RELEASE_FILE, merged_graph_metadata)
     if not release_metadata_path.exists():
         return False
     with release_metadata_path.open("r") as latest_release_file:
@@ -144,18 +144,13 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
     # Create compressed tar.xz archive
     create_merged_graph_compressed_tar(merged_graph_metadata)
 
-    # Write release metadata
-    latest_release_metadata = {
-        **asdict(merged_graph_metadata),
-        "data": f"{INGESTS_STORAGE_URL}/{merged_graph_metadata.source}/{merged_graph_metadata.release_version}/",
-    }
-
+    # Write latest release metadata
     release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source
     release_dir.mkdir(parents=True, exist_ok=True)
-    release_metadata_path = release_dir / "release-metadata.json"
-    with release_metadata_path.open("w") as release_file:
-        json.dump(latest_release_metadata, release_file, indent=2)
-    logger.info(f"Release metadata written to {release_metadata_path}")
+    write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,
+                      pipeline_metadata=merged_graph_metadata,
+                      data=merged_graph_metadata.get_release_metadata())
+    logger.info(f"Release generated for merged graph {merged_graph_metadata.source}... ")
 
 
 def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[PipelineMetadata, list[KGXSource]]:
@@ -206,11 +201,16 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         node_path, edge_path = get_versioned_file_paths(
             file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
         )
+        # ORION expects str not Path
+        files_to_merge = [str(node_path)]
+        # handle node-only ingests
+        if edge_path.exists():
+            files_to_merge.append(str(edge_path))
         # NOTE: merge_strategy=DONT_MERGE really means don't merge edges, nodes are always merged.
         # We already merged edges for every ingest and don't have overlapping
         # primary-knowledge-sources, so we don't need to merge edges here.
         graph_spec_sources.append(SubGraphSource(id=source,
-                                                 file_paths=[str(node_path), str(edge_path)],
+                                                 file_paths=files_to_merge,
                                                  graph_version=pipeline_metadata.source_version,
                                                  merge_strategy=DONT_MERGE))
         graph_source_versions.append(pipeline_metadata.build_version)
@@ -230,6 +230,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     # Generate a build version based on the build versions of all source graphs
     build_version = hashlib.md5("".join(sorted(graph_source_versions)).encode()).hexdigest()[:12]
     release_version = datetime.datetime.now().strftime("%Y_%m_%d")
+    data_path = f"{INGESTS_STORAGE_URL}/{graph_id}/{release_version}/"
 
     # Create PipelineMetadata for the merged graph
     merged_graph_metadata = PipelineMetadata(
@@ -239,7 +240,8 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         node_norm_version=babel_version,
         biolink_version=biolink_version,
         build_version=build_version,
-        release_version=release_version
+        release_version=release_version,
+        data=data_path
     )
 
     # Check if the latest release already has this build version
