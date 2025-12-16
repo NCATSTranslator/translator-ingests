@@ -31,7 +31,9 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
     ARTICLE_DOI,
     PMID,
-    PATENT_NUMBER
+    PATENT_NUMBER,
+
+    MISSING_PUBS
 )
 
 
@@ -80,9 +82,18 @@ def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
 
 @koza.on_data_end()
 def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
+    metadata = koza_transform.transform_metadata
+    if MISSING_PUBS in metadata:
+        num_missing_pubs = metadata.pop(MISSING_PUBS)
+        if metadata[MISSING_PUBS] > 0:
+            koza_transform.log(
+                msg=f"Warning: {num_missing_pubs} BindingDb records were missing publications.",
+                level="WARNING"
+            )
     for tag, value in koza_transform.transform_metadata.items():
+        value = ',\n'.join(value) if isinstance(value, Iterable) else value
         koza_transform.log(
-            msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+            msg=f"Exception {str(tag)} encountered for records: {value}.",
             level="WARNING"
         )
 
