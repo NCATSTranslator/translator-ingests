@@ -140,7 +140,7 @@ def release_ingest(source: str):
     # Copy release to "latest" directory
     latest_dir = Path(INGESTS_RELEASES_PATH) / source / "latest"
     atomic_copy_directory(release_dir, latest_dir)
-    logger.info(f"Copied release to latest directory")
+    logger.info("Copied release to latest directory")
 
     # Write the new latest-release-metadata
     latest_release_metadata = latest_build_metadata
@@ -225,7 +225,7 @@ def generate_release_summary():
     with open(summary_path, 'w') as f:
         json.dump(summary, f, indent=2)
 
-    logger.info(f"Release summary updated.")
+    logger.info("Release summary updated.")
 
 
 @click.command()
