@@ -6,7 +6,7 @@ import datetime
 import zstandard as zstd
 from pathlib import Path
 
-from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
+from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -48,9 +48,6 @@ def atomic_copy_directory(src: Path, dest: Path):
     if dest_old.exists():
         shutil.rmtree(dest_old)
 
-    logger.info(f"Copied {src} to {dest}")
-
-
 def create_compressed_tar(nodes_file: Path,
                           edges_file: Path,
                           graph_metadata_path: Path,
@@ -64,6 +61,36 @@ def create_compressed_tar(nodes_file: Path,
                 if edges_file.exists():
                     tar.add(edges_file, arcname="edges.jsonl")
                 tar.add(graph_metadata_path, arcname="graph-metadata.json")
+
+
+def update_graph_metadata_for_release(source_graph_metadata_path: Path,
+                                      release_dir: Path,
+                                      release_url: str) -> Path:
+    """Update graph-metadata.json with release URL for id and url fields.
+
+    Reads the existing graph metadata, updates the id and url fields to use
+    the release versioning, and writes the updated version to the release directory.
+
+    Args:
+        source_graph_metadata_path: Path to the original graph-metadata.json
+        release_dir: Directory where the release files are being created
+        release_url: The release URL to use for id and url fields
+
+    Returns:
+        Path to the updated graph-metadata.json in the release directory
+    """
+    with open(source_graph_metadata_path, 'r') as f:
+        graph_metadata = json.load(f)
+
+    graph_metadata['@id'] = release_url
+    graph_metadata['url'] = release_url
+
+    output_path = release_dir / "graph-metadata.json"
+    with open(output_path, 'w') as f:
+        json.dump(graph_metadata, f, indent=2)
+
+    logger.info(f"Updated graph-metadata.json with release URL: {release_url}")
+    return output_path
 
 
 def release_ingest(source: str):
@@ -101,21 +128,24 @@ def release_ingest(source: str):
     # Create the release
     release_version = datetime.datetime.now().strftime("%Y_%m_%d")
     release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
+    release_url = f"{INGESTS_RELEASES_URL}/{source}/{release_version}/"
     create_release(source,
                    release_dir,
+                   release_url=release_url,
                    nodes_file=nodes_file_path,
                    edges_file=edges_file_path,
                    graph_metadata_file=graph_metadata_path,
-                   files_to_copy=[graph_metadata_path, test_data_path])
+                   files_to_copy=[test_data_path])
 
     # Copy release to "latest" directory
     latest_dir = Path(INGESTS_RELEASES_PATH) / source / "latest"
     atomic_copy_directory(release_dir, latest_dir)
+    logger.info(f"Copied release to latest directory")
 
     # Write the new latest-release-metadata
     latest_release_metadata = latest_build_metadata
     latest_release_metadata.release_version = release_version
-    latest_release_metadata.data = f"{INGESTS_STORAGE_URL}/{source}/{release_version}/"
+    latest_release_metadata.data = release_url
 
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,
                       pipeline_metadata=latest_release_metadata,
@@ -125,6 +155,7 @@ def release_ingest(source: str):
 
 def create_release(source: str,
                    release_dir: Path,
+                   release_url: str,
                    nodes_file: Path,
                    edges_file: Path,
                    graph_metadata_file: Path,
@@ -133,6 +164,15 @@ def create_release(source: str,
     # Create or locate release directory
     release_dir.mkdir(parents=True, exist_ok=True)
 
+    # Update graph-metadata.json with release URL (must be done before creating tar)
+    release_graph_metadata_path = release_dir / "graph-metadata.json"
+    if not release_graph_metadata_path.exists():
+        release_graph_metadata_path = update_graph_metadata_for_release(
+            source_graph_metadata_path=graph_metadata_file,
+            release_dir=release_dir,
+            release_url=release_url
+        )
+
     # Check if release files already exist
     tar_path = release_dir / f"{source}.tar.zst"
     if not tar_path.exists():
@@ -140,12 +180,12 @@ def create_release(source: str,
         logger.info(f"Creating compressed tar for release of {source}...")
         create_compressed_tar(nodes_file=nodes_file,
                               edges_file=edges_file,
-                              graph_metadata_path=graph_metadata_file,
+                              graph_metadata_path=release_graph_metadata_path,
                               output_path=tar_path)
     else:
         logger.info(f"Release already exists for {source} at {release_dir}, skipping...")
 
-    # Copy other release files over (intentionally include the GRAPH_METADATA_FILE in the tar and outside)
+    # Copy other release files over
     logger.info(f"Copying other release files over for {source} if needed...")
     for path in files_to_copy:
         # Some files we might want to change the name of for releases
@@ -185,7 +225,7 @@ def generate_release_summary():
     with open(summary_path, 'w') as f:
         json.dump(summary, f, indent=2)
 
-    logger.info(f"Release summary written to {summary_path}")
+    logger.info(f"Release summary updated.")
 
 
 @click.command()

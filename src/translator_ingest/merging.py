@@ -8,7 +8,7 @@ from orion.kgx_file_merger import KGXFileMerger, DONT_MERGE
 from orion.kgxmodel import GraphSpec, SubGraphSource
 from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
-from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_STORAGE_URL
+from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName, \
@@ -27,7 +27,8 @@ def merge_single(
     output_metadata_file: Path,
     source_version: str = None
 ) -> dict:
-    """Merge KGX files using ORION's KGXFileMerger.
+    """Merge KGX files using ORION's KGXFileMerger. Note that merge_single is used in a different way than most of the
+    rest of the functionality in this file.
 
     This is the low-level merge function that handles a single set of KGX files.
     It deduplicates nodes and edges, outputting merged files and merge metadata.
@@ -40,7 +41,6 @@ def merge_single(
         output_edges_file: Path for output merged edges file
         output_metadata_file: Path for output merge metadata JSON file
         source_version: Optional version string for the source
-        overwrite: Whether to overwrite existing output files
 
     Returns:
         dict: Merge metadata from KGXFileMerger
@@ -85,6 +85,12 @@ def merge_single(
 
     return merge_metadata
 
+
+"""
+!!! Note: The rest of this module contains functions for building a KG from multiple individual ingests. It does not
+!!! follow all of the same patterns as the individual ingest pipeline, for example it generates its own releases and 
+!!! has its own asset dependency management functionality.
+"""
 
 def is_merged_graph_release_current(merged_graph_metadata: PipelineMetadata) -> bool:
     """Check if a merged graph release is already current by comparing build versions.
@@ -155,6 +161,8 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
 
 def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[PipelineMetadata, list[KGXSource]]:
     """Use ORION to merge multiple sources together into a single KGX output.
+    Note that this process skips writing files to the data/storage directory and immediately generates a release,
+    unlike single_merge and single-ingest merges done by the pipeline.
 
     Returns:
         Tuple of (merged_graph_metadata, kgx_sources)
@@ -230,7 +238,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     # Generate a build version based on the build versions of all source graphs
     build_version = hashlib.md5("".join(sorted(graph_source_versions)).encode()).hexdigest()[:12]
     release_version = datetime.datetime.now().strftime("%Y_%m_%d")
-    data_path = f"{INGESTS_STORAGE_URL}/{graph_id}/{release_version}/"
+    data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
 
     # Create PipelineMetadata for the merged graph
     merged_graph_metadata = PipelineMetadata(
@@ -315,7 +323,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[
             logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. "
                         f"OVERWRITE mode enabled, overwriting...")
 
-    release_url = f"{INGESTS_STORAGE_URL}/{graph_id}/{release_version}"
+    release_url = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}"
     source_metadata = KGXGraphMetadata(
         id=release_url,
         name=graph_id,

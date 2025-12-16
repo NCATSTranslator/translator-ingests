@@ -497,15 +497,18 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     data_source_info = get_kgx_source_from_rig(pipeline_metadata.source)
     data_source_info.version = pipeline_metadata.source_version
 
-    release_url = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
+    storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
+                   f"{pipeline_metadata.transform_version}/"
+                   f"normalization_{pipeline_metadata.node_norm_version}/")
+    pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
-        id=release_url,
+        id=storage_url,
         name=pipeline_metadata.source,
         description="A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
                     ", Biolink Model, and Node Normalizer.",
         license="MIT",
-        url=release_url,
-        version=pipeline_metadata.release_version,
+        url=storage_url,
+        version=pipeline_metadata.build_version,
         date_created=datetime.now().strftime("%Y_%m_%d"),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.node_norm_version,
@@ -651,10 +654,6 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     if not passed:
         logger.warning(f"Validation did not pass for {pipeline_metadata.source}! Aborting...")
         return
-
-    # The release version needs to be established before the graph metadata phase because it's used in the outputs
-    release_version = datetime.now().strftime("%Y_%m_%d")
-    pipeline_metadata.release_version = release_version
 
     pipeline_metadata.build_version = pipeline_metadata.generate_build_version()
     if is_graph_metadata_complete(pipeline_metadata) and not overwrite:
