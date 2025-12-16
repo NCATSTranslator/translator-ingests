@@ -134,6 +134,8 @@ def extract_bindingdb_columns_polars(
 
     return df
 
+MISSING_PUBS = "rows_missing_publications"
+
 def process_publications(
         koza_transform: koza.KozaTransform,
         df: pl.DataFrame
@@ -157,7 +159,8 @@ def process_publications(
 
     # Count rows without publications
     rows_missing_pubs = df.filter(pl.col(PUBLICATION).is_null()).height
-    koza_transform.transform_metadata["rows_missing_publications"] = rows_missing_pubs
+    if rows_missing_pubs != 0:
+        koza_transform.transform_metadata[MISSING_PUBS] = rows_missing_pubs
 
     # Filter out rows without publications
     df = df.filter(pl.col(PUBLICATION).is_not_null())
