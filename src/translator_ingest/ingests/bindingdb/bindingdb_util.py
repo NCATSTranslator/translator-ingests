@@ -76,6 +76,10 @@ _WEB_MAPPINGS: dict[str, str] = {
     "|": "%7C"
 }
 def web_string(s: str) -> str:
+    """
+    :param s: The input string to be encoded
+    :return: The input string encoded with web-encoded characters
+    """
     # Web string sanitization
     for a,b in _WEB_MAPPINGS.items():
         s = s.replace(a, b)
@@ -88,13 +92,17 @@ def extract_bindingdb_columns_polars(
     target_taxa: tuple[str,...],
 ) -> pl.DataFrame:
     """
-    Extract only specified columns from the BindingDB TSV file using polars.
+     Extract only specified columns from the BindingDB TSV file using polars.
 
     This is the FASTEST approach:
     - Only parses the specified subset of columns instead of the full 640 (~80x less data)
     - Filters data by desired taxa
     - Lazy evaluation optimizes the query
 
+    :param data_archive_path: Path to BindingDB TSV archive.
+    :param columns: Target BindingDB columns to extract.
+    :param target_taxa: Target species to be included in extracted BindingDB data.
+    :return: A Polars DataFrame containing BindingDB data rows with only specified columns.
     """
     with ZipFile(data_archive_path) as z:
         with z.open("BindingDB_All.tsv") as datafile:
@@ -140,6 +148,12 @@ def process_publications(
         koza_transform: koza.KozaTransform,
         df: pl.DataFrame
 )-> pl.DataFrame:
+    """
+    Capture and process publications for BindingDb records.
+    :param koza_transform: Ingest context
+    :param df: Polars data frame whose entries contain BindingDb records
+    :return: Polars data frame with publications processed into a PUBLICATIONS column
+    """
     # Add the publication column (same logic as the current implementation)
     df = df.with_columns([
         pl.when(pl.col(PMID).is_not_null())
