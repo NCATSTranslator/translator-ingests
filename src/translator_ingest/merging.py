@@ -9,7 +9,7 @@ from orion.kgxmodel import GraphSpec, SubGraphSource
 from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
-from translator_ingest.release import create_compressed_tar
+from translator_ingest.release import create_compressed_tar, atomic_copy_directory
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName, \
     write_ingest_file
@@ -149,6 +149,11 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
 
     # Create compressed tar.xz archive
     create_merged_graph_compressed_tar(merged_graph_metadata)
+
+    # Copy release to "latest" directory
+    release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / merged_graph_metadata.release_version
+    latest_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / "latest"
+    atomic_copy_directory(release_dir, latest_dir)
 
     # Write latest release metadata
     release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source
