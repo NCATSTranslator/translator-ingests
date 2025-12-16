@@ -4,11 +4,13 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 import uuid
+import math
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     MolecularMixture,
+    Drug,
     DiseaseOrPhenotypicFeature,
     Disease,
     PhenotypicFeature,
@@ -51,6 +53,7 @@ def create_node(node_data: dict) -> Any:
         "MolecularMixture": MolecularMixture,
         "ChemicalEntity": ChemicalEntity,
         "ComplexMolecularMixture": ComplexMolecularMixture,
+        "Drug": Drug,
         "Disease": Disease,
         "PhenotypicFeature": PhenotypicFeature,
         "DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
@@ -154,12 +157,19 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
 
     # Add optional edge properties if present
     if "N_cases" in record:
-        edge_props["number_of_cases"] = record["N_cases"]
+        if(math.isnan(record["N_cases"])):
+            edge_props["number_of_cases"] = -1
+#        if(not type(record["N_cases"]) in [int]): print(f'Type: {type(record["N_cases"])} - {record["N_cases"]}, {math.isnan(record["N_cases"])}')
+        else:
+            edge_props["number_of_cases"] = record["N_cases"]
 
     # Add clinical_approval_status directly to edge properties
     # This is available on EntityToDiseaseAssociation and EntityToPhenotypicFeatureAssociation
     if "clinical_approval_status" in record:
-        edge_props["clinical_approval_status"] = record["clinical_approval_status"]
+        if(record["clinical_approval_status"]=="?"):
+            edge_props["clinical_approval_status"] = "not_provided"
+        else:
+            edge_props["clinical_approval_status"] = record["clinical_approval_status"]
     
     # Add FDA regulatory approvals
     if "approvals" in record and record["approvals"]:
