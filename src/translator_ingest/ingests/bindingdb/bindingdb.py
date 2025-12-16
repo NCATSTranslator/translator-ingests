@@ -186,6 +186,8 @@ def transform_bindingdb_by_record(
     """
     try:
         # Nodes
+        assert record[PUBCHEM_CID], "Empty PubChem CID in BindingDb record."
+        assert record[UNIPROT_ID], "Empty UniProt ID in BindingDb record."
 
         # TODO: All ligands will be treated as ChemicalEntity, for now,
         #       as a first approximation but we may want to consider
@@ -195,7 +197,7 @@ def transform_bindingdb_by_record(
 
         # Taxon of protein target
         taxon_label = record[SOURCE_ORGANISM]
-        taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None)
+        taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None) if taxon_label else None
 
         # Unless otherwise advised, all BindingDb targets
         # are assumed to be (UniProt registered) proteins.
@@ -214,11 +216,9 @@ def transform_bindingdb_by_record(
         target_label = web_string(target_name)
         supporting_data_id = record[SUPPORTING_DATA_ID]
         supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
+        source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
         sources = build_association_knowledge_sources(
-            primary=(
-                "infores:bindingdb",
-                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)]
-            ),
+            primary=("infores:bindingdb",[source_record_url]),
             supporting=supporting_data
         )
 
@@ -240,8 +240,7 @@ def transform_bindingdb_by_record(
         # Tally errors here
         exception_tag = f"{str(type(e))}: {str(e)}"
         rec_id = (f"Ligand:{record.get(PUBCHEM_CID, "Unknown")}->"
-                  f"Target:{record.get(UNIPROT_ID, 'Unknown')}"
-                  f"[NCBITaxon:{record.get(SOURCE_ORGANISM, 'Unknown')}]")
+                  f"Target:{record.get(UNIPROT_ID, 'Unknown')}")
         if exception_tag not in koza_transform.transform_metadata:
             koza_transform.transform_metadata[exception_tag] = [rec_id]
         else:
