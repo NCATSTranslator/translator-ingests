@@ -260,3 +260,96 @@ def test_multiple_mixin_categories():
     invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
     assert len(invalid_category_warnings) == 0, \
         f"Both Gene and GenomicEntity should be valid categories, but got warnings: {[r.message for r in invalid_category_warnings]}"
+
+
+def test_is_sequence_variant_of_predicate_domain_validation():
+    """Test that 'is sequence variant of' predicate validates domain constraints correctly.
+    
+    The predicate has:
+    - domain: sequence variant
+    - range: genomic entity
+    
+    biolink:Gene should pass as a valid object since it inherits from genomic entity mixin.
+    biolink:GenomicEntity should pass as a valid object directly.
+    biolink:NamedThing should fail as too general.
+    """
+    # Create test data with different subject/object combinations
+    sequence_variant_node = {
+        'id': 'CLINVAR:12345',
+        'category': ['biolink:SequenceVariant'],
+        'name': 'Test Variant'
+    }
+    
+    gene_node = {
+        'id': 'HGNC:5678',
+        'category': ['biolink:Gene'],
+        'name': 'Test Gene'
+    }
+    
+    genomic_entity_node = {
+        'id': 'TEST:9999',
+        'category': ['biolink:GenomicEntity'],
+        'name': 'Test Genomic Entity'
+    }
+    
+    named_thing_node = {
+        'id': 'TEST:1111',
+        'category': ['biolink:NamedThing'],
+        'name': 'Test Named Thing'
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    
+    # Test 1: SequenceVariant -> Gene (should pass)
+    test_data_1 = {
+        'nodes': [sequence_variant_node, gene_node],
+        'edges': [{
+            'subject': sequence_variant_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': gene_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    results = list(plugin.process(test_data_1, context))
+    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+    assert len(domain_range_violations) == 0, \
+        f"Gene should satisfy 'genomic entity' range constraint, but got violations: {[r.message for r in domain_range_violations]}"
+    
+    # Test 2: SequenceVariant -> GenomicEntity (should pass)
+    test_data_2 = {
+        'nodes': [sequence_variant_node, genomic_entity_node],
+        'edges': [{
+            'subject': sequence_variant_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': genomic_entity_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    results = list(plugin.process(test_data_2, context))
+    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+    assert len(domain_range_violations) == 0, \
+        f"GenomicEntity should satisfy 'genomic entity' range constraint, but got violations: {[r.message for r in domain_range_violations]}"
+    
+    # Test 3: SequenceVariant -> NamedThing (should fail range constraint)
+    test_data_3 = {
+        'nodes': [sequence_variant_node, named_thing_node],
+        'edges': [{
+            'subject': sequence_variant_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': named_thing_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    results = list(plugin.process(test_data_3, context))
+    range_violations = [r for r in results if 'range constraint' in r.message]
+    assert len(range_violations) == 1, \
+        f"NamedThing should violate 'genomic entity' range constraint, but got {len(range_violations)} violations"
+    
+    # Verify the error message contains expected information
+    assert "expects range 'genomic entity'" in range_violations[0].message
+    assert "object has categories ['biolink:NamedThing']" in range_violations[0].message
