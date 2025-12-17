@@ -58,7 +58,6 @@ ingest_info:
     - category: edge_property_content
       consideration: "Lots of additional edge-level information that we could include in future iterations, including: 'confidence' level values when we improve/refactor modeling of confidence in Biolink; variant information ('variant consequence', 'variant types' columns - their values map to SO terms); (Matt's note) rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications)."
 
-  # Note: additional_notes field has been removed from this section according to new schema
 
 # Information about the Graph Output by the ingest
 target_info:
