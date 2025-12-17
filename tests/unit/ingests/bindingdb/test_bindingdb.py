@@ -18,6 +18,7 @@ from tests.unit.ingests import (
 
 from translator_ingest.ingests.bindingdb.bindingdb import (
     on_begin_ingest_by_record,
+    on_end_ingest_by_record,
     prepare_bindingdb_data,
     transform_bindingdb_by_record
 )
@@ -47,6 +48,7 @@ def mock_koza_transform() -> koza.KozaTransform:
         extra_fields=dict(),
         writer=writer,
         mappings=mappings,
+        transform_metadata={},
         # Swap in the following code for temporary debugging using the real data file
         # input_files_dir=INGESTS_DATA_PATH / "bindingdb"  # Path(__file__).resolve().parent
         input_files_dir = Path(__file__).resolve().parent
@@ -324,6 +326,9 @@ def test_ingest_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
+    # sanity check: each test iteration should start without any metadata
+    mock_koza_transform.transform_metadata.clear()
+
     # calling this simply to ensure that context
     # dictionary keys are created; not otherwise used
     on_begin_ingest_by_record(mock_koza_transform)
@@ -335,3 +340,5 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS
     )
+
+    on_end_ingest_by_record(mock_koza_transform)
