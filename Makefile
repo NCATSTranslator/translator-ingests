@@ -1,10 +1,7 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-
-SOURCES ?= alliance bindingdb chembl ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider signor tmkp ttd ubergraph
-
-
+SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider signor tmkp ttd ubergraph
 
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
@@ -16,6 +13,9 @@ ifeq ($(OVERWRITE),False)
 OVERWRITE :=
 endif
 
+# Graph ID for merge target (default: translator_kg)
+GRAPH_ID ?= translator_kg
+
 # Include additional makefiles
 include rig.Makefile
 include doc.Makefile
@@ -24,52 +24,71 @@ include doc.Makefile
 ### Help ###
 
 define HELP
-╭───────────────────────────────────────────────────────────╮
-  Make for ingest
-│ ───────────────────────────────────────────────────────── │
-│ Usage:                                                    │
-│     make <target>                                         │
-│     make <target> SOURCES="ctd go_cam"                    │
-│                                                           │
-│ Targets:                                                  │
-│     help                Print this help message           │
-│                                                           │
-│     all                 Install everything and test       │
-│     fresh               Clean and install everything      │
-│     clean               Clean up build artifacts          │
-│     clean-reports       Clean up validation reports       │
-│     clobber             Clean up generated files          │
-│                                                           │
-│     install             install python requirements       │
-│     run                 Run pipeline (download→transform→normalize→validate) │
-│     transform           Transform the source to KGX       │
-│     validate            Validate all sources in data/     │
-│     validate-single     Validate only specified sources   │
-│     merge               Merge specified sources into one KG │
-│                                                           │
-│     test                Run all tests                     │
-│                                                           │
-│     lint                Lint all code                     │
-│     lint-fix            Fix linting errors automatically │
-│     format              Format all code                   │
-│     spell-fix           Fix spelling errors interactively │
-│     new-rig             Create a new RIG from template (requires INFORES and NAME)" │
-│			validate-rigs       Validate all RIG files against the schema" │
-│                                                           │
-│     docs                Build documentation locally       │
-│     docs-serve          Build and serve docs on port 8000│
-│     docs-clean          Clean documentation build        │
-│                                                           │
-│ Configuration:                                            │
-│     SOURCES             Space-separated list of sources   │
-│                         Default: all available sources    │
-│                                                           │
-│ Examples:                                                 │
-│     make run                                              │
-│     make validate SOURCES="ctd go_cam"                    │
-│     make run SOURCES="go_cam"                             │
-│     make merge SOURCES="ctd go_cam goa"                   │
-╰───────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Make for translator-ingests                                                  │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ Usage:                                                                       │
+│     make <target>                                                            │
+│     make <target> SOURCES="ctd go_cam"                                       │
+│                                                                              │
+│ Targets:                                                                     │
+│     help                Print this help message                              │
+│                                                                              │
+│     all                 Install everything and test                          │
+│     fresh               Clean and install everything                         │
+│     clean               Clean up build artifacts                             │
+│     clean-reports       Clean up validation reports                          │
+│     clobber             Clean up generated files                             │
+│                                                                              │
+│     install             Install python requirements                          │
+│     run                 Run the full ingest pipeline for specified sources   │
+│                         (download → transform → normalize → merge → validate)│
+│     transform           Run only download and transform                      │
+│     validate            Validate all sources in data/                        │
+│     validate-single     Validate only specified sources                      │
+│     release             Generate releases for the specified sources          │
+│     merge               Merge specified sources into one KG                  │
+│                                                                              │
+│     test                Run all tests                                        │
+│                                                                              │
+│     lint                Lint all code                                        │
+│     lint-fix            Fix linting errors automatically                     │
+│     format              Format all code                                      │
+│     spell-fix           Fix spelling errors interactively                    │
+│     new-rig             Create RIG from template (requires INFORES and NAME) │
+│     validate-rigs       Validate all RIG files against the schema            │
+│                                                                              │
+│     docs                Build documentation locally                          │
+│     docs-serve          Build and serve docs on port 8000                    │
+│     docs-clean          Clean documentation build                            │
+│                                                                              │
+│ Configuration:                                                               │
+│     SOURCES             Space-separated list of sources                      │
+│                         Default: all available sources                       │
+│     GRAPH_ID            Graph ID for merged graphs                           │
+│                         Default: translator_kg                               │
+│                                                                              │
+│ Examples:                                                                    │
+│     # Run pipeline for all sources                                           │
+│     make run                                                                 │
+│     # Run pipeline only for specified sources                                │
+│     make run SOURCES="go_cam"                                                │
+│                                                                              │
+│     # Validate all sources                                                   │
+│     make validate                                                            │
+│     # Validate only specified sources                                        │
+│     make validate SOURCES="go_cam"                                           │
+│                                                                              │
+│     # Make releases for all sources                                          │
+│     make release                                                             │
+│     # Make releases only for specified sources                               │
+│     make release SOURCES="ctd go_cam goa"                                    │
+│                                                                              │
+│     # Merge all sources into one graph named translator_kg                   │
+│     make merge                                                               │
+│     # Merge specified sources into a graph named example_custom_graph        │
+│     make merge GRAPH_ID=example_custom_graph SOURCES="ctd go_cam goa"        │
+╰──────────────────────────────────────────────────────────────────────────────╯
 endef
 export HELP
 
@@ -143,12 +162,13 @@ validate-%:
 
 .PHONY: merge
 merge:
-	@echo "Merging sources and building translator_kg...";
-	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
+	@echo "Merging sources and building $(GRAPH_ID)..."
+	$(RUN) python src/translator_ingest/merging.py $(GRAPH_ID) $(SOURCES) $(if $(OVERWRITE),--overwrite)
 
 .PHONY: release
 release:
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
+	@$(RUN) python src/translator_ingest/release.py --summary
 
 .PHONY: release-%
 release-%:

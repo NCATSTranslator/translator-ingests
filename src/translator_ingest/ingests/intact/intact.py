@@ -1,7 +1,5 @@
 from typing import Any
 import re
-import requests
-from datetime import datetime
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -13,6 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from translator_ingest.util.biolink import INFORES_INTACT
+from translator_ingest.util.http_utils import get_ftp_modify_date
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
@@ -52,38 +51,15 @@ DEFAULT_PREDICATE = "biolink:interacts_with"
 
 def get_latest_version() -> str:
     """
-    Retrieve the latest IntAct release version from the FTP README file.
+    Retrieve the latest IntAct release version from the FTP file modify date.
 
-    IntAct provides release information in their FTP directory README.
-    The version format is like "Release 251 - September 2025"
+    TODO - There is an actual release version from Intact, like "Release 251 - September 2025" but currently I only see
+    it on their html page. We could use beautiful soup to get it. Shilpa had implemented a way to get this from a
+    README file but I'm not seeing that file anywhere.
     """
-    try:
-        # Fetch the README from IntAct FTP directory
-        response = requests.get("https://ftp.ebi.ac.uk/pub/databases/intact/current/README")
-        response.raise_for_status()
-
-        # Look for release information in the README
-        # Example: "Release 251 - September 2025"
-        match = re.search(r'Release\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d{4})', response.text)
-        if match:
-            release_num = match.group(1)
-            month = match.group(2)
-            year = match.group(3)
-            return f"Release_{release_num}_{month}_{year}"
-
-        # Fallback: try to get last modified date from the header
-        if 'Last-Modified' in response.headers:
-            last_modified = response.headers['Last-Modified']
-            # Parse and format as YYYY-MM-DD
-            dt = datetime.strptime(last_modified, '%a, %d %b %Y %H:%M:%S %Z')
-            return dt.strftime('%Y-%m-%d')
-
-    except Exception:
-        # If we can't determine version from README, use a timestamp approach
-        pass
-
-    # Final fallback: return a generic version
-    return datetime.now().strftime('%Y-%m-%d')
+    return get_ftp_modify_date(ftp_url="ftp.ebi.ac.uk",
+                               ftp_dir="/pub/databases/IntAct/current/psimitab/",
+                               ftp_file="intact.zip")
 
 
 def parse_psi_mi_field(field_value: str) -> dict[str, str]:
@@ -288,14 +264,14 @@ def extract_name_from_aliases(aliases_field: str) -> str | None:
 def extract_confidence_score(confidence_field: str) -> float | None:
     """
     Extract the IntAct confidence score from the confidenceScores field.
-    
+
     Returns the IntAct confidence value if found, None otherwise.
     """
     if not confidence_field or confidence_field == "-":
         return None
-    
+
     parsed_scores = parse_multi_value_field(confidence_field)
-    
+
     for score in parsed_scores:
         # Look for intact-miscore
         if score['db'] and 'intact' in score['db'].lower() and score['id']:
@@ -303,22 +279,22 @@ def extract_confidence_score(confidence_field: str) -> float | None:
                 return float(score['id'])
             except ValueError:
                 continue
-    
+
     return None
 
 
 def extract_detection_methods(detection_method_field: str) -> list[str] | None:
     """
     Extract detection method identifiers from the interactionDetectionMethod field.
-    
+
     Returns a list of PSI-MI identifiers for detection methods.
     """
     if not detection_method_field or detection_method_field == "-":
         return None
-    
+
     parsed_methods = parse_multi_value_field(detection_method_field)
     methods = []
-    
+
     for method in parsed_methods:
         if method['db'] and method['db'].lower() == 'psi-mi' and method['id']:
             # Check if the ID already starts with "MI:"
@@ -326,7 +302,7 @@ def extract_detection_methods(detection_method_field: str) -> list[str] | None:
                 methods.append(method['id'])
             else:
                 methods.append(f"MI:{method['id']}")
-    
+
     return methods if methods else None
 
 
@@ -362,14 +338,14 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
     if not interaction_types_field or interaction_types_field == '-':
         koza.log("Skipping record with no interaction types", level="WARNING")
         return None
-    
+
     # Parse interaction types and check if any are allowed
     parsed_types = parse_multi_value_field(interaction_types_field)
     interaction_types_found = set()
     for parsed in parsed_types:
         if parsed['desc']:
             interaction_types_found.add(parsed['desc'].lower())
-    
+
     # Check if any of the interaction types are in the allowed list
     if not interaction_types_found.intersection(ALLOWED_INTERACTION_TYPES):
         # Silently skip records with disallowed interaction types (this is expected behavior)
@@ -421,8 +397,8 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
 
     # Extract confidence score - for future use
     # confidence_score = extract_confidence_score(record.get('confidenceScores', ''))
-    
-    # Extract detection methods - for future use  
+
+    # Extract detection methods - for future use
     # detection_methods = extract_detection_methods(record.get('interactionDetectionMethod', ''))
 
     # Create the interaction edge

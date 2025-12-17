@@ -10,15 +10,17 @@ from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.icees.icees import (
     transform_icees_node,
-    on_icees_edge_data_begin,
-    on_icees_edge_data_end,
+    on_begin_node_ingest,
+    on_end_node_ingest,
+    on_begin_edge_ingest,
+    on_end_edge_ingest,
     transform_icees_edge,
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 
-@pytest.fixture(scope="package")
+@pytest.fixture(scope="module")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = dict()
@@ -177,12 +179,17 @@ def test_transform_icees_nodes(
         result_nodes: Optional[list],
         result_edge: Optional[dict],
 ):
+    # Just to ensure that the Koza context is properly initialized
+    on_begin_node_ingest(mock_koza_transform)
+
     validate_transform_result(
         result=transform_icees_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS
     )
+
+    on_end_node_ingest(mock_koza_transform)
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge,qualifiers",
@@ -344,11 +351,13 @@ def test_transform_icees_edges(
         result_edge: Optional[dict],
         qualifiers: tuple,
 ):
-    on_icees_edge_data_begin(mock_koza_transform)
+    # Just to ensure that the Koza context is properly initialized
+    on_begin_edge_ingest(mock_koza_transform)
+
     validate_transform_result(
         result=transform_icees_edge(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS+qualifiers,
     )
-    on_icees_edge_data_end(mock_koza_transform)
+    on_end_edge_ingest(mock_koza_transform)
