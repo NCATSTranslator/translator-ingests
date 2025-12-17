@@ -203,3 +203,60 @@ def test_domain_range_validation_missing_nodes_in_cache():
     # Should have errors about missing node references
     missing_node_errors = [r for r in results if 'non-existent' in r.message]
     assert len(missing_node_errors) == 2  # One for subject, one for object
+
+
+def test_mixin_categories_are_valid():
+    """Test that mixin categories like GenomicEntity are recognized as valid.
+    
+    This test addresses the issue where GenomicEntity (a mixin) was incorrectly
+    flagged as invalid. Mixins can be used as node categories even though they
+    don't appear directly in get_descendants() results.
+    """
+    # Create a node with GenomicEntity as category (a common mixin)
+    test_data = {
+        'nodes': [
+            {
+                'id': 'HGNC:1234',
+                'category': ['biolink:GenomicEntity'],
+                'name': 'Test Genomic Entity'
+            }
+        ],
+        'edges': []
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Check that GenomicEntity is NOT flagged as invalid category
+    invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
+    assert len(invalid_category_warnings) == 0, \
+        f"GenomicEntity should be a valid category, but got warnings: {[r.message for r in invalid_category_warnings]}"
+
+
+def test_multiple_mixin_categories():
+    """Test that nodes can have multiple categories including mixins."""
+    # Gene is a concrete class that uses multiple mixins including GenomicEntity
+    test_data = {
+        'nodes': [
+            {
+                'id': 'HGNC:1234',
+                'category': ['biolink:Gene', 'biolink:GenomicEntity'],
+                'name': 'Test Gene'
+            }
+        ],
+        'edges': []
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Neither category should be flagged as invalid
+    invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
+    assert len(invalid_category_warnings) == 0, \
+        f"Both Gene and GenomicEntity should be valid categories, but got warnings: {[r.message for r in invalid_category_warnings]}"

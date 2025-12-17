@@ -56,14 +56,19 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._ancestors_cache = {}  # Maps category name to its ancestors for performance
 
     def _get_valid_categories(self) -> Set[str]:
-        """Get valid Biolink Model categories."""
+        """Get valid Biolink Model categories.
+        
+        This includes both regular classes and mixin classes that are descendants of 'named thing'.
+        Mixins like 'genomic entity' are valid node categories even though they don't appear
+        in get_descendants() results - they are used as categories for nodes that mix them in.
+        """
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
         # Get all classes that are subclasses of named thing using BMT
         valid_categories = set()
         try:
-            # Get all class descendants using BMT
+            # Get all class descendants using BMT (this gets regular is_a descendants)
             descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
             
             # For each descendant, get the proper biolink CURIE format
@@ -71,6 +76,24 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 element = self._bmt.get_element(desc)
                 if element and hasattr(element, 'class_uri') and element.class_uri:
                     valid_categories.add(element.class_uri)
+            
+            # Additionally, include mixin classes that are used by descendants
+            # get_descendants() doesn't return mixin classes themselves, but they are
+            # valid categories (e.g., 'genomic entity' is a mixin used by 'gene')
+            all_classes = self._bmt.get_all_classes()
+            for cls_name in all_classes:
+                element = self._bmt.get_element(cls_name)
+                if element and hasattr(element, 'mixin') and element.mixin:
+                    # Check if this mixin is used by any of our descendants
+                    # by checking if any descendant uses it as a mixin
+                    for desc in descendants:
+                        desc_element = self._bmt.get_element(desc)
+                        if desc_element and hasattr(desc_element, 'mixins') and desc_element.mixins:
+                            if cls_name in [str(m) for m in desc_element.mixins]:
+                                # This mixin is used, so it's a valid category
+                                if hasattr(element, 'class_uri') and element.class_uri:
+                                    valid_categories.add(element.class_uri)
+                                break
                     
         except Exception as e:
             # Having a working schema is required
@@ -80,14 +103,18 @@ class BiolinkValidationPlugin(ValidationPlugin):
         return valid_categories
 
     def _get_valid_predicates(self) -> Set[str]:
-        """Get valid Biolink Model predicates."""
+        """Get valid Biolink Model predicates.
+        
+        This includes both regular slots and mixin slots that are descendants of 'related to'.
+        Mixins are valid predicates and are already handled by get_descendants with mixin=True.
+        """
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
         # Get all predicates (slots that are subclasses of related to) using BMT
         valid_predicates = set()
         try:
-            # Get all slot descendants using BMT
+            # Get all slot descendants using BMT (mixin=True means traverse mixin relationships)
             descendants = self._bmt.get_descendants("related to", reflexive=True, mixin=True)
             
             # For each descendant, get the proper biolink CURIE format
@@ -95,6 +122,22 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 element = self._bmt.get_element(desc)
                 if element and hasattr(element, 'slot_uri') and element.slot_uri:
                     valid_predicates.add(element.slot_uri)
+            
+            # Additionally, include mixin slots that are used by descendants
+            # Similar to categories, mixin slots should be considered valid predicates
+            all_slots = self._bmt.get_all_slots()
+            for slot_name in all_slots:
+                element = self._bmt.get_element(slot_name)
+                if element and hasattr(element, 'mixin') and element.mixin:
+                    # Check if this mixin is used by any of our descendants
+                    for desc in descendants:
+                        desc_element = self._bmt.get_element(desc)
+                        if desc_element and hasattr(desc_element, 'mixins') and desc_element.mixins:
+                            if slot_name in [str(m) for m in desc_element.mixins]:
+                                # This mixin slot is used, so it's a valid predicate
+                                if hasattr(element, 'slot_uri') and element.slot_uri:
+                                    valid_predicates.add(element.slot_uri)
+                                break
                     
         except Exception as e:
             # Having a working schema with predicates is required
