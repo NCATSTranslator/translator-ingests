@@ -55,6 +55,39 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._bmt = Toolkit()  # BMT toolkit for domain/range validation
         self._ancestors_cache = {}  # Maps category name to its ancestors for performance
 
+    def _collect_valid_uris_with_mixins(self, descendants: list[str], uri_attr: str) -> Set[str]:
+        """Helper to collect valid URIs from descendants and their mixins.
+        
+        Args:
+            descendants: List of descendant names from BMT
+            uri_attr: Attribute name for URI ('class_uri' or 'slot_uri')
+            
+        Returns:
+            Set of valid URIs including both descendants and used mixins
+        """
+        valid_uris = set()
+        used_mixins = set()
+        
+        # Single pass: collect URIs and track used mixins
+        for desc in descendants:
+            element = self._bmt.get_element(desc)
+            if element:
+                # Collect URI if present
+                if hasattr(element, uri_attr) and getattr(element, uri_attr):
+                    valid_uris.add(getattr(element, uri_attr))
+                
+                # Track used mixins
+                if hasattr(element, 'mixins') and element.mixins:
+                    used_mixins.update(str(m) for m in element.mixins)
+        
+        # Add URIs for used mixins
+        for mixin_name in used_mixins:
+            element = self._bmt.get_element(mixin_name)
+            if element and hasattr(element, uri_attr) and getattr(element, uri_attr):
+                valid_uris.add(getattr(element, uri_attr))
+        
+        return valid_uris
+
     def _get_valid_categories(self) -> Set[str]:
         """Get valid Biolink Model categories.
         
@@ -65,40 +98,18 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
-        # Get all classes that are subclasses of named thing using BMT
-        valid_categories = set()
         try:
             # Get all class descendants using BMT (this gets regular is_a descendants)
             descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
             
-            # First, build a set of all mixins used by descendants (for efficient lookup)
-            used_mixins = set()
-            for desc in descendants:
-                desc_element = self._bmt.get_element(desc)
-                if desc_element and hasattr(desc_element, 'mixins') and desc_element.mixins:
-                    # Convert mixins to strings and add to set
-                    used_mixins.update(str(m) for m in desc_element.mixins)
-            
-            # Now collect all valid categories: descendants + their used mixins
-            for desc in descendants:
-                element = self._bmt.get_element(desc)
-                if element and hasattr(element, 'class_uri') and element.class_uri:
-                    valid_categories.add(element.class_uri)
-            
-            # Additionally, include mixin classes that are used by descendants
-            # get_descendants() doesn't return mixin classes themselves, but they are
-            # valid categories (e.g., 'genomic entity' is a mixin used by 'gene')
-            for mixin_name in used_mixins:
-                element = self._bmt.get_element(mixin_name)
-                if element and hasattr(element, 'class_uri') and element.class_uri:
-                    valid_categories.add(element.class_uri)
+            # Collect valid category URIs including used mixins
+            self._valid_categories_cache = self._collect_valid_uris_with_mixins(descendants, 'class_uri')
                     
         except Exception as e:
             # Having a working schema is required
             raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
 
-        self._valid_categories_cache = valid_categories
-        return valid_categories
+        return self._valid_categories_cache
 
     def _get_valid_predicates(self) -> Set[str]:
         """Get valid Biolink Model predicates.
@@ -109,39 +120,18 @@ class BiolinkValidationPlugin(ValidationPlugin):
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
-        # Get all predicates (slots that are subclasses of related to) using BMT
-        valid_predicates = set()
         try:
             # Get all slot descendants using BMT (mixin=True means traverse mixin relationships)
             descendants = self._bmt.get_descendants("related to", reflexive=True, mixin=True)
             
-            # First, build a set of all mixins used by descendants (for efficient lookup)
-            used_mixins = set()
-            for desc in descendants:
-                desc_element = self._bmt.get_element(desc)
-                if desc_element and hasattr(desc_element, 'mixins') and desc_element.mixins:
-                    # Convert mixins to strings and add to set
-                    used_mixins.update(str(m) for m in desc_element.mixins)
-            
-            # Now collect all valid predicates: descendants + their used mixins
-            for desc in descendants:
-                element = self._bmt.get_element(desc)
-                if element and hasattr(element, 'slot_uri') and element.slot_uri:
-                    valid_predicates.add(element.slot_uri)
-            
-            # Additionally, include mixin slots that are used by descendants
-            # Similar to categories, mixin slots should be considered valid predicates
-            for mixin_name in used_mixins:
-                element = self._bmt.get_element(mixin_name)
-                if element and hasattr(element, 'slot_uri') and element.slot_uri:
-                    valid_predicates.add(element.slot_uri)
+            # Collect valid predicate URIs including used mixins
+            self._valid_predicates_cache = self._collect_valid_uris_with_mixins(descendants, 'slot_uri')
                     
         except Exception as e:
             # Having a working schema with predicates is required
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
 
-        self._valid_predicates_cache = valid_predicates
-        return valid_predicates
+        return self._valid_predicates_cache
 
     def _is_valid_curie(self, identifier: str) -> bool:
         """Check if the identifier follows a valid CURIE format."""
