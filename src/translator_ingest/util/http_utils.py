@@ -1,6 +1,8 @@
 # HTTP query wrappers
 
 import requests
+import datetime
+from ftplib import FTP
 from json import JSONDecodeError
 from email.utils import parsedate_to_datetime
 
@@ -51,3 +53,23 @@ def get_modify_date(file_url, str_format: str = "%Y_%m_%d") -> str:
     # this specific format and apparently handles timezones better
     modified_datetime = parsedate_to_datetime(url_time)
     return modified_datetime.strftime(str_format)
+
+def get_ftp_modify_date(ftp_url: str, ftp_dir: str, ftp_file: str, str_format: str = "%Y_%m_%d") -> str:
+    """
+    Get the modification date of a file on an FTP server.
+
+    :param ftp_url: FTP server hostname
+    :param ftp_dir: Directory path on the FTP server
+    :param ftp_file: Filename to check
+    :param str_format: Output date format string
+    :return: Formatted modification date string
+    """
+    with FTP(ftp_url) as ftp:
+        ftp.login()
+        ftp.cwd(ftp_dir)
+        mdtm_response = ftp.voidcmd(f'MDTM {ftp_file}')
+        response_code, modification_timestamp = mdtm_response.split()
+        if response_code != "213":
+            raise RuntimeError(f'Non-213 response from ftp server: {response_code}')
+        modification_datetime = datetime.datetime.strptime(modification_timestamp, '%Y%m%d%H%M%S')
+        return modification_datetime.strftime(str_format)
