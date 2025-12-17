@@ -1,0 +1,134 @@
+name: CURE ID
+source_info:
+  infores_id: infores:cureid
+  description: "CURE ID is a free platform developed by FDA and NIH to share novel uses of existing drugs - also known as drug repurposing/off-label use - and explore what others have tried. The goal is to find potential treatments for challenging diseases that lack good treatment options. Our mission is to use the information collected from users sharing their treatment experiences publicly on CURE ID to help inform what drugs are studied in clinical trials. The findings from these trials will enable the medical community to learn whether a drug is effective or not for it’s new use."
+  citations:
+    - "TODO: ref goes here"
+  terms_of_use_info:
+    license_name: "TODO: license goes here"
+    license_url: "TODO: license url goes here"
+  data_access_locations:
+    - https://opendata.ncats.nih.gov/public/cureid/
+    - https://cure.ncats.io/
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: >-
+    CURE ID is a user documented source of real world evidence on drug repurposing
+    opportunities for rare and difficult to treat diseases. It provides chemical-disease
+    associations, adverse events, and treatment outcomes, among other information. Information is collected from 
+    case reports and series published in the medical literature.
+  scope: >-
+    This initial ingest focuses on case report entities and relationships for RASopathies as documented in CURE ID.
+
+  relevant_files:
+    - file_name: cureid_data.tsv
+      location: https://opendata.ncats.nih.gov/public/cureid/
+      description: Manually and LLM curated associations between chemicals, diseases, phenotypic features, genes, and variants
+        from case reports in Cure ID and series published in the medical literature.
+
+  included_content:
+    - file_name: cureid_data.tsv
+      included_records: All records
+      fields_used: subject_type, final_subject_curie, final_subject_label, object_type, final_object_curie, final_object_label, association_category, biolink_predicate, outcome
+
+target_info:
+  infores_id: infores:cureid
+  edge_type_info:
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:applied_to_treat
+      object_categories:
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties: { }
+      ui_explanation: TODO
+    - subject_categories:
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:has_adverse_event
+      object_categories:
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        FDA_adverse_event_level:
+          - unexpected_adverse_event
+      ui_explanation: TODO
+    - subject_categories:
+        - biolink:Disease
+      predicates:
+        - biolink:has_phenotype
+      object_categories:
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+        - biolink:Procedure
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties: { }
+      ui_explanation: TODO
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:gene_associated_with_condition
+      object_categories:
+        - biolink:Disease
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties: { }
+      ui_explanation: TODO
+  node_type_info:
+    - node_categories:
+        - biolink:SmallMolecule
+      source_identifier_types:
+        - CHEBI
+        - PUBCHEM.COMPOUND
+    - node_categories:
+        - biolink:Disease
+      source_identifier_types:
+        - MONDO
+        - UMLS
+    - node_categories:
+        - biolink:PhenotypicFeature
+      source_identifier_types:
+        - HP
+        - NCIT
+        - UMLS
+    - node_categories:
+        - biolink:Procedure
+      source_identifier_types:
+        - UMLS
+    - node_categories:
+        - biolink:Gene
+      source_identifier_types:
+        - NCBIGene
+    - node_categories:
+        - biolink:ChemicalEntity
+      source_identifier_types:
+        - UNII
+
+
+  provenance_info:
+    contributions:
+      - "Keith Kelleher - ingest code author"
+      - "Jessica Maine - data cleansing, domain expertise"
+      - "Tahsin Farid - domain expertise"
+      - "Keyla Tumas - domain expertise"

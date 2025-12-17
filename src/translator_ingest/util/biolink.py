@@ -49,6 +49,7 @@ INFORES_MYCANCERGENOME_TRIALS = "infores:mycancergenome-trials"
 INFORES_NCIT = "infores:ncit"
 INFORES_ONCOKB = "infores:oncokb"
 INFORES_PHARMGKB = "infores:pharmgkb"
+INFORES_CUREID = "infores:cureid"
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
