@@ -5,8 +5,9 @@ from linkml.validator.plugins import ValidationPlugin
 from linkml.validator.report import ValidationResult, Severity
 from linkml.validator.validation_context import ValidationContext
 from linkml_runtime.utils.schemaview import SchemaView
-from bmt import Toolkit
 from bmt.utils import parse_name
+
+from translator_ingest.util.biolink import get_biolink_model_toolkit
 
 
 def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = None):
@@ -53,7 +54,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._valid_predicates_cache = None
         self._node_ids_cache = set()
         self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
-        self._bmt = Toolkit()  # BMT toolkit for domain/range validation
+        self._bmt = get_biolink_model_toolkit()  # BMT toolkit for domain/range validation
         self._ancestors_cache = {}  # Maps category name to its ancestors for performance
         
     def _normalize_biolink_name(self, name: str) -> str:
