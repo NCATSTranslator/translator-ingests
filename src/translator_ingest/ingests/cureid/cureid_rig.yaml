@@ -35,7 +35,18 @@ ingest_info:
   included_content:
     - file_name: cureid_data.tsv
       included_records: All records
-      fields_used: subject_type, final_subject_curie, final_subject_label, object_type, final_object_curie, final_object_label, association_category, biolink_predicate, outcome
+      fields_used:
+      - subject_type
+      - subject_final_curie
+      - subject_final_label
+      - object_type
+      - object_final_curie
+      - object_final_label
+      - association_category
+      - biolink_predicate
+      - outcome
+      - pmid
+      - link
 
 target_info:
   infores_id: infores:cureid
@@ -52,7 +63,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties: { }
+      edge_properties:
+        - publications
       ui_explanation: TODO
     - subject_categories:
         - biolink:SmallMolecule
@@ -66,8 +78,8 @@ target_info:
       agent_type:
         - manual_agent
       edge_properties:
-        FDA_adverse_event_level:
-          - unexpected_adverse_event
+        - publications
+        - FDA_adverse_event_level
       ui_explanation: TODO
     - subject_categories:
         - biolink:Disease
@@ -76,12 +88,12 @@ target_info:
       object_categories:
         - biolink:Disease
         - biolink:PhenotypicFeature
-        - biolink:Procedure
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties: { }
+      edge_properties:
+        - publications
       ui_explanation: TODO
     - subject_categories:
         - biolink:Gene
@@ -93,14 +105,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties: { }
+      edge_properties:
+        - publications
       ui_explanation: TODO
   node_type_info:
     - node_categories:
         - biolink:SmallMolecule
       source_identifier_types:
         - CHEBI
-        - PUBCHEM.COMPOUND
     - node_categories:
         - biolink:Disease
       source_identifier_types:
@@ -113,10 +125,6 @@ target_info:
         - NCIT
         - UMLS
     - node_categories:
-        - biolink:Procedure
-      source_identifier_types:
-        - UMLS
-    - node_categories:
         - biolink:Gene
       source_identifier_types:
         - NCBIGene
@@ -124,7 +132,6 @@ target_info:
         - biolink:ChemicalEntity
       source_identifier_types:
         - UNII
-
 
   provenance_info:
     contributions:

@@ -12,31 +12,19 @@ readers:
       - subject_label_original
       - subject_label
       - subject_type
-      - subject_resolved_label
-      - subject_confidence
-      - subject_review_reason
-      - subject_curie
-      - subject_alternates_top5
+      - subject_final_label
+      - subject_final_curie
+      - subject_missing_final
       - predicate_raw
       - biolink_predicate
       - association_category
       - object_label_original
       - object_label
       - object_type
-      - object_resolved_label
-      - object_confidence
-      - object_review_reason
-      - object_curie
-      - object_alternates_top5
+      - object_final_label
+      - object_final_curie
+      - object_missing_final
       - report_id
       - pmid
       - link
       - outcome
-      - llm_subject_id
-      - llm_subject_label
-      - final_subject_curie
-      - final_subject_label
-      - llm_object_i
-      - llm_object_label
-      - final_object_curie
-      - final_object_label

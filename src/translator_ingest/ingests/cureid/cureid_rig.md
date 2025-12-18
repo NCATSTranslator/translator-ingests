@@ -35,7 +35,7 @@
 
 | File Name | Included Records | Fields Used |
 | --- | --- | --- |
-| cureid_data.tsv | All records | subject_type, final_subject_curie, final_subject_label, object_type, final_object_curie, final_object_label, association_category, biolink_predicate, outcome |
+| cureid_data.tsv | All records | subject_type, subject_final_curie, subject_final_label, object_type, object_final_curie, object_final_label, association_category, biolink_predicate, outcome, pmid, link |
 
 ## Target Information
 
@@ -47,17 +47,16 @@
 | --- | --- | --- | --- | --- | --- |
 | biolink:ChemicalEntity, biolink:SmallMolecule | biolink:applied_to_treat | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | TODO |
 | biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | TODO |
-| biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature, biolink:Procedure | knowledge_assertion | manual_agent | TODO |
+| biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | TODO |
 | biolink:Gene | biolink:gene_associated_with_condition | biolink:Disease | knowledge_assertion | manual_agent | TODO |
 
 ### Node Types
 
 | Node Category | Source Identifier Types | Additional Notes |
 | --- | --- | --- |
-| biolink:SmallMolecule | CHEBI, PUBCHEM.COMPOUND |  |
+| biolink:SmallMolecule | CHEBI |  |
 | biolink:Disease | MONDO, UMLS |  |
 | biolink:PhenotypicFeature | HP, NCIT, UMLS |  |
-| biolink:Procedure | UMLS |  |
 | biolink:Gene | NCBIGene |  |
 | biolink:ChemicalEntity | UNII |  |
 
