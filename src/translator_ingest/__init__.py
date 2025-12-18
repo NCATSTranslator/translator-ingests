@@ -15,4 +15,5 @@ INGESTS_RELEASES_PATH = TRANSLATOR_INGEST_PATH / ".." / ".." / "releases"
 INGESTS_PARSER_PATH = TRANSLATOR_INGEST_PATH / "ingests"
 INGEST_PARSER_DIR = INGESTS_PARSER_PATH.absolute()
 
-INGESTS_STORAGE_URL = os.environ.get("INGESTS_STORAGE_URL", "https://stars.renci.org/var/translator/releases")
+INGESTS_STORAGE_URL = os.environ.get("INGESTS_STORAGE_URL", "https://stars.renci.org/var/translator/data")
+INGESTS_RELEASES_URL = os.environ.get("INGESTS_RELEASES_URL", "https://stars.renci.org/var/translator/releases")

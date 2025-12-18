@@ -133,7 +133,7 @@ def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
         "RO:0002211": "biolink:regulates",  # regulates
         "RO:0002233": "biolink:has_input",  # has input
         "RO:0002234": "biolink:has_output",
-        "RO:0002413": "biolink:input_of",
+        "RO:0002413": "biolink:is_input_of",
         "RO:0002411": "biolink:precedes",
         "RO:0002412": "biolink:precedes",
         "RO:0002407": "biolink:regulates",

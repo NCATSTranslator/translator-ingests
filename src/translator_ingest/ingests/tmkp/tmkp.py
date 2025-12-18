@@ -153,27 +153,27 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 
         # Build association kwargs with all fields
         assoc_kwargs = {
-            "id": record.get("id", entity_id()),
+            "id": entity_id(),
             "subject": subject_id,
             "predicate": predicate,
             "object": object_id,
             "knowledge_level": KnowledgeLevelEnum.not_provided,
             "agent_type": AgentTypeEnum.text_mining_agent,
         }
-        
+
         # Add all qualifiers to kwargs if present
         if qualified_pred := record.get("qualified_predicate"):
             assoc_kwargs["qualified_predicate"] = qualified_pred
         elif assoc_class == GeneRegulatesGeneAssociation:
             # For GeneRegulatesGeneAssociation, use predicate as qualified_predicate if not provided
             assoc_kwargs["qualified_predicate"] = predicate
-            
+
         # Add all other qualifiers
         for qualifier in ["subject_aspect_qualifier", "subject_direction_qualifier",
                          "object_aspect_qualifier", "object_direction_qualifier"]:
             if value := record.get(qualifier):
                 assoc_kwargs[qualifier] = value
-        
+
         # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
         if assoc_class == GeneRegulatesGeneAssociation:
             # If either qualifier is missing, skip the edge to avoid semantic errors.
