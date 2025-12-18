@@ -6,6 +6,7 @@ from linkml.validator.report import ValidationResult, Severity
 from linkml.validator.validation_context import ValidationContext
 from linkml_runtime.utils.schemaview import SchemaView
 from bmt import Toolkit
+from bmt.utils import parse_name
 
 
 def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = None):
@@ -54,6 +55,23 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
         self._bmt = Toolkit()  # BMT toolkit for domain/range validation
         self._ancestors_cache = {}  # Maps category name to its ancestors for performance
+        
+    def _normalize_biolink_name(self, name: str) -> str:
+        """Normalize biolink element names to sentence case format used by BMT.
+        
+        This handles various formats:
+        - biolink:is_sequence_variant_of -> is sequence variant of
+        - is_sequence_variant_of -> is sequence variant of  
+        - IsSequenceVariantOf -> is sequence variant of
+        - is sequence variant of -> is sequence variant of
+        
+        Args:
+            name: The name in any format
+            
+        Returns:
+            Normalized name in sentence case (space-separated)
+        """
+        return parse_name(name)
 
     def _collect_valid_uris_with_mixins(self, descendants: list[str], uri_attr: str) -> Set[str]:
         """Helper to collect valid URIs from descendants and their mixins.
@@ -158,8 +176,8 @@ class BiolinkValidationPlugin(ValidationPlugin):
             
         # Check each category against the constraint
         for category in categories:
-            # Remove biolink: prefix for BMT lookup
-            cat_name = category.replace('biolink:', '') if category.startswith('biolink:') else category
+            # Normalize category name for BMT lookup
+            cat_name = self._normalize_biolink_name(category)
             
             # Get all ancestors including mixins (with caching)
             if cat_name not in self._ancestors_cache:
@@ -175,8 +193,8 @@ class BiolinkValidationPlugin(ValidationPlugin):
     def _validate_domain_range(self, edge_obj: dict, path: str, predicate: str, 
                               schema_view: SchemaView) -> Iterator[ValidationResult]:
         """Validate domain and range constraints for an edge predicate."""
-        # Remove biolink: prefix from predicate for lookup
-        pred_name = predicate.replace('biolink:', '') if predicate.startswith('biolink:') else predicate
+        # Normalize predicate name for schema lookup
+        pred_name = self._normalize_biolink_name(predicate)
         
         # Get the slot definition
         slot = schema_view.get_slot(pred_name)

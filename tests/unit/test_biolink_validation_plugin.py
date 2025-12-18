@@ -271,7 +271,7 @@ def test_is_sequence_variant_of_predicate_domain_validation():
     
     biolink:Gene should pass as a valid object since it inherits from genomic entity mixin.
     biolink:GenomicEntity should pass as a valid object directly.
-    biolink:NamedThing should fail as too general.
+    biolink:NamedThing should fail as too general for both domain and range.
     """
     # Create test data with different subject/object combinations
     sequence_variant_node = {
@@ -353,3 +353,23 @@ def test_is_sequence_variant_of_predicate_domain_validation():
     # Verify the error message contains expected information
     assert "expects range 'genomic entity'" in range_violations[0].message
     assert "object has categories ['biolink:NamedThing']" in range_violations[0].message
+    
+    # Test 4: NamedThing -> Gene (should fail domain constraint)
+    test_data_4 = {
+        'nodes': [named_thing_node, gene_node],
+        'edges': [{
+            'subject': named_thing_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': gene_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    results = list(plugin.process(test_data_4, context))
+    domain_violations = [r for r in results if 'domain constraint' in r.message]
+    assert len(domain_violations) == 1, \
+        f"NamedThing should violate 'sequence variant' domain constraint, but got {len(domain_violations)} violations"
+    
+    # Verify the error message contains expected information
+    assert "expects domain 'sequence variant'" in domain_violations[0].message
+    assert "subject has categories ['biolink:NamedThing']" in domain_violations[0].message
