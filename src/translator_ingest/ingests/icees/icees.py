@@ -17,12 +17,11 @@ from bmt.pydantic import (
 )
 from koza.model.graphs import KnowledgeGraph
 
-from bmt import Toolkit
 from translator_ingest.util.biolink import get_biolink_model_toolkit
 
 from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study
 
-bmt: Toolkit = get_biolink_model_toolkit()
+bmt = get_biolink_model_toolkit()
 
 def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES

@@ -203,3 +203,203 @@ def test_domain_range_validation_missing_nodes_in_cache():
     # Should have errors about missing node references
     missing_node_errors = [r for r in results if 'non-existent' in r.message]
     assert len(missing_node_errors) == 2  # One for subject, one for object
+
+
+def test_mixin_categories_are_valid():
+    """Test that mixin categories like GenomicEntity are recognized as valid.
+    
+    This test addresses the issue where GenomicEntity (a mixin) was incorrectly
+    flagged as invalid. Mixins can be used as node categories even though they
+    don't appear directly in get_descendants() results.
+    """
+    # Create a node with GenomicEntity as category (a common mixin)
+    test_data = {
+        'nodes': [
+            {
+                'id': 'HGNC:1234',
+                'category': ['biolink:GenomicEntity'],
+                'name': 'Test Genomic Entity'
+            }
+        ],
+        'edges': []
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Check that GenomicEntity is NOT flagged as invalid category
+    invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
+    assert len(invalid_category_warnings) == 0, \
+        f"GenomicEntity should be a valid category, but got warnings: {[r.message for r in invalid_category_warnings]}"
+
+
+def test_multiple_mixin_categories():
+    """Test that nodes can have multiple categories including mixins."""
+    # Gene is a concrete class that uses multiple mixins including GenomicEntity
+    test_data = {
+        'nodes': [
+            {
+                'id': 'HGNC:1234',
+                'category': ['biolink:Gene', 'biolink:GenomicEntity'],
+                'name': 'Test Gene'
+            }
+        ],
+        'edges': []
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Neither category should be flagged as invalid
+    invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
+    assert len(invalid_category_warnings) == 0, \
+        f"Both Gene and GenomicEntity should be valid categories, but got warnings: {[r.message for r in invalid_category_warnings]}"
+
+
+def test_top_level_mixin_categories_are_valid():
+    """Test that top-level mixin categories like PhysicalEssenceOrOccurrent are recognized as valid.
+    
+    This test addresses the issue where PhysicalEssenceOrOccurrent (a top-level mixin)
+    was incorrectly flagged as invalid. Top-level mixins that have a class_uri should
+    be accepted as valid categories even if they're not descendants of named thing.
+    """
+    test_data = {
+        'nodes': [
+            {
+                'id': 'TEST:1234',
+                'category': ['biolink:PhysicalEssenceOrOccurrent'],
+                'name': 'Test Physical Essence'
+            }
+        ],
+        'edges': []
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Check that PhysicalEssenceOrOccurrent is NOT flagged as invalid category
+    invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
+    assert len(invalid_category_warnings) == 0, \
+        f"PhysicalEssenceOrOccurrent should be a valid category, but got warnings: {[r.message for r in invalid_category_warnings]}"
+
+
+def test_is_sequence_variant_of_predicate_domain_validation():
+    """Test that 'is sequence variant of' predicate validates domain constraints correctly.
+    
+    The predicate has:
+    - domain: sequence variant
+    - range: genomic entity
+    
+    biolink:Gene should pass as a valid object since it inherits from genomic entity mixin.
+    biolink:GenomicEntity should pass as a valid object directly.
+    biolink:NamedThing should fail as too general for both domain and range.
+    """
+    # Create test data with different subject/object combinations
+    sequence_variant_node = {
+        'id': 'CLINVAR:12345',
+        'category': ['biolink:SequenceVariant'],
+        'name': 'Test Variant'
+    }
+    
+    gene_node = {
+        'id': 'HGNC:5678',
+        'category': ['biolink:Gene'],
+        'name': 'Test Gene'
+    }
+    
+    genomic_entity_node = {
+        'id': 'TEST:9999',
+        'category': ['biolink:GenomicEntity'],
+        'name': 'Test Genomic Entity'
+    }
+    
+    named_thing_node = {
+        'id': 'TEST:1111',
+        'category': ['biolink:NamedThing'],
+        'name': 'Test Named Thing'
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    
+    # Test 1: SequenceVariant -> Gene (should pass)
+    test_data_1 = {
+        'nodes': [sequence_variant_node, gene_node],
+        'edges': [{
+            'subject': sequence_variant_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': gene_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    results = list(plugin.process(test_data_1, context))
+    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+    assert len(domain_range_violations) == 0, \
+        f"Gene should satisfy 'genomic entity' range constraint, but got violations: {[r.message for r in domain_range_violations]}"
+    
+    # Test 2: SequenceVariant -> GenomicEntity (should pass)
+    test_data_2 = {
+        'nodes': [sequence_variant_node, genomic_entity_node],
+        'edges': [{
+            'subject': sequence_variant_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': genomic_entity_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    results = list(plugin.process(test_data_2, context))
+    domain_range_violations = [r for r in results if 'domain constraint' in r.message or 'range constraint' in r.message]
+    assert len(domain_range_violations) == 0, \
+        f"GenomicEntity should satisfy 'genomic entity' range constraint, but got violations: {[r.message for r in domain_range_violations]}"
+    
+    # Test 3: SequenceVariant -> NamedThing (should fail range constraint)
+    test_data_3 = {
+        'nodes': [sequence_variant_node, named_thing_node],
+        'edges': [{
+            'subject': sequence_variant_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': named_thing_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    results = list(plugin.process(test_data_3, context))
+    range_violations = [r for r in results if 'range constraint' in r.message]
+    assert len(range_violations) == 1, \
+        f"NamedThing should violate 'genomic entity' range constraint, but got {len(range_violations)} violations"
+    
+    # Verify the error message contains expected information
+    assert "expects range 'genomic entity'" in range_violations[0].message
+    assert "object has categories ['biolink:NamedThing']" in range_violations[0].message
+    
+    # Test 4: NamedThing -> Gene (should fail domain constraint)
+    test_data_4 = {
+        'nodes': [named_thing_node, gene_node],
+        'edges': [{
+            'subject': named_thing_node['id'],
+            'predicate': 'biolink:is_sequence_variant_of',
+            'object': gene_node['id'],
+            'sources': [{'resource_id': 'infores:test'}]
+        }]
+    }
+    
+    results = list(plugin.process(test_data_4, context))
+    domain_violations = [r for r in results if 'domain constraint' in r.message]
+    assert len(domain_violations) == 1, \
+        f"NamedThing should violate 'sequence variant' domain constraint, but got {len(domain_violations)} violations"
+    
+    # Verify the error message contains expected information
+    assert "expects domain 'sequence variant'" in domain_violations[0].message
+    assert "subject has categories ['biolink:NamedThing']" in domain_violations[0].message
