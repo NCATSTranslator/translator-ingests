@@ -262,6 +262,36 @@ def test_multiple_mixin_categories():
         f"Both Gene and GenomicEntity should be valid categories, but got warnings: {[r.message for r in invalid_category_warnings]}"
 
 
+def test_top_level_mixin_categories_are_valid():
+    """Test that top-level mixin categories like PhysicalEssenceOrOccurrent are recognized as valid.
+    
+    This test addresses the issue where PhysicalEssenceOrOccurrent (a top-level mixin)
+    was incorrectly flagged as invalid. Top-level mixins that have a class_uri should
+    be accepted as valid categories even if they're not descendants of named thing.
+    """
+    test_data = {
+        'nodes': [
+            {
+                'id': 'TEST:1234',
+                'category': ['biolink:PhysicalEssenceOrOccurrent'],
+                'name': 'Test Physical Essence'
+            }
+        ],
+        'edges': []
+    }
+    
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+    
+    results = list(plugin.process(test_data, context))
+    
+    # Check that PhysicalEssenceOrOccurrent is NOT flagged as invalid category
+    invalid_category_warnings = [r for r in results if 'potentially invalid category' in r.message.lower()]
+    assert len(invalid_category_warnings) == 0, \
+        f"PhysicalEssenceOrOccurrent should be a valid category, but got warnings: {[r.message for r in invalid_category_warnings]}"
+
+
 def test_is_sequence_variant_of_predicate_domain_validation():
     """Test that 'is sequence variant of' predicate validates domain constraints correctly.
     

@@ -110,19 +110,34 @@ class BiolinkValidationPlugin(ValidationPlugin):
     def _get_valid_categories(self) -> Set[str]:
         """Get valid Biolink Model categories.
         
-        This includes both regular classes and mixin classes that are descendants of 'named thing'.
-        Mixins like 'genomic entity' are valid node categories even though they don't appear
-        in get_descendants() results - they are used as categories for nodes that mix them in.
+        This includes both regular classes that are descendants of 'named thing'
+        and ALL mixin classes that have a class_uri defined. Mixins can be used
+        as node categories even if they're not descendants of named thing.
         """
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
         try:
-            # Get all class descendants using BMT (this gets regular is_a descendants)
+            valid_uris = set()
+            
+            # Get all class descendants of named thing
             descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
             
-            # Collect valid category URIs including used mixins
-            self._valid_categories_cache = self._collect_valid_uris_with_mixins(descendants, 'class_uri')
+            # Collect URIs from descendants and their used mixins
+            valid_uris.update(self._collect_valid_uris_with_mixins(descendants, 'class_uri'))
+            
+            # Additionally, get ALL classes (including top-level mixins) that have a class_uri
+            # Important: Only ClassDefinitions can be mixins used as categories, not SlotDefinitions
+            all_classes = self._bmt.get_all_classes()
+            for class_name in all_classes:
+                element = self._bmt.get_element(class_name)
+                # Ensure it has a class_uri and is a mixin
+                if element and hasattr(element, 'class_uri') and element.class_uri:
+                    # Only add mixins that aren't already captured
+                    if getattr(element, 'mixin', False):
+                        valid_uris.add(element.class_uri)
+            
+            self._valid_categories_cache = valid_uris
                     
         except Exception as e:
             # Having a working schema is required
