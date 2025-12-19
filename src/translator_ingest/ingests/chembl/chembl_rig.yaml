@@ -62,7 +62,7 @@
         predicates: 
           - biolink:affects
           - biolink:disrupts
-          - biolink:regulates
+          - biolink:has_substrate
         object_categories:
           - CellLine
           - CellularComponent
