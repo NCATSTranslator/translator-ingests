@@ -120,7 +120,7 @@
         knowledge_level:
           - knowledge_assertion
         agent_type:
-          - manual_agent
+          - manual_validation_of_automated_agent
         edge_properties:
           -  biolink:clinical_approval_status
         ui_explanation:  # TO DO - use additional notes below
@@ -129,6 +129,7 @@
           DrugCentral.reduce_risk -> biolink.preventative_for
           DrugcCentral.contraindication -> biolink:contraindicated_in
           DrugCentral.diagnosis -> biolink.diagnoses (or just drop these, only a couple records, and not very useful?)
+          Agent type set to “manual validation of automated agent” based on use in some cases of some NLP tools to help initially identify drug/disease cocnepts in source text, which is followed by manualy review/curation. 
 
     node_type_info:  # (required, multivalued, range = NodeType)
       - node_category: ChemicalEntity
