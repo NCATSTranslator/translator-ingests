@@ -81,7 +81,7 @@
         knowledge_level:
           - knowledge_assertion
         agent_type:
-          - manual_agent
+          - manual_agent                   # TO DO:  Need to review each primary source DrugCentral pulls from to confirm the records are manually curated assertions (in particular WOMBAT-PK, PDSP, DRUG MATRIX, KEGG DRUG)
         edge_properties:
           -    # COLLEEN TO DO, IF ANY
         ui_explanation:  # TO DO - use additional notes below
