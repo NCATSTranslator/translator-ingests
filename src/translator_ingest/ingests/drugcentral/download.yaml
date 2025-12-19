@@ -1,0 +1,16 @@
+---
+# DrugCentral download configuration
+# Note: DrugCentral requires preprocessing to extract TSV files from PostgreSQL dump
+
+# Download the PostgreSQL dump file
+- url: https://unmtid-shinyapps.net/download/drugcentral.dump.11012023.sql.gz
+  local_name: drugcentral.dump.sql.gz
+
+# After download, run preprocessing script to extract TSV files
+# The preprocessing script will:
+# 1. Connect to DrugCentral database (either local or public instance)
+# 2. Query the database to extract relevant data
+# 3. Output TSV files for Koza transformation
+#
+# To run preprocessing manually:
+# python src/translator_ingest/ingests/drugcentral/preprocess.py --output-dir data/drugcentral/
