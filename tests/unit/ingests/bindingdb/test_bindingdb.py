@@ -131,7 +131,7 @@ def test_prepare_bindingdb_data(
             CASPASE3_KI_RECORD,
             [
                 {
-                    "id": "CID:5327301",
+                    "id": "PUBCHEM.COMPOUND:5327301",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -146,7 +146,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327301",
+                "subject": "PUBCHEM.COMPOUND:5327301",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
                 "publications": ["PMID:12408711"],
@@ -169,7 +169,7 @@ def test_prepare_bindingdb_data(
             CASPASE1_KI_RECORD,
             [
                 {
-                    "id": "CID:5327302",
+                    "id": "PUBCHEM.COMPOUND:5327302",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -184,7 +184,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327302",
+                "subject": "PUBCHEM.COMPOUND:5327302",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
@@ -207,7 +207,7 @@ def test_prepare_bindingdb_data(
             CASPASE1_WEAK_KI_RECORD,
             [
                 {
-                    "id": "CID:5327304",
+                    "id": "PUBCHEM.COMPOUND:5327304",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -222,7 +222,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327304",
+                "subject": "PUBCHEM.COMPOUND:5327304",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
@@ -245,7 +245,7 @@ def test_prepare_bindingdb_data(
             CASPASE1_RECORD_WITH_DOI,
             [
                 {
-                    "id": "CID:5327304",
+                    "id": "PUBCHEM.COMPOUND:5327304",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -260,7 +260,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327304",
+                "subject": "PUBCHEM.COMPOUND:5327304",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29452",
                 "publications": ["doi:10.1021/jm020230j"],
@@ -283,7 +283,7 @@ def test_prepare_bindingdb_data(
             BINDINGDB_RECORD_WITH_A_US_PATENT,
             [
                 {
-                    "id": "CID:71463198",
+                    "id": "PUBCHEM.COMPOUND:71463198",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -298,7 +298,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:71463198",
+                "subject": "PUBCHEM.COMPOUND:71463198",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P08684",
                 "publications": ["uspto-patent:9447092"],
