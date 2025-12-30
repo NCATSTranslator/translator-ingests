@@ -423,6 +423,8 @@ def transform_record_gene_to_phenotype(
             subject=gene_id,
             predicate="biolink:has_phenotype",
             object=hpo_id,
+            qualified_predicate="biolink:causes",
+            subject_form_or_variant_qualifier=ve.genetic_variant_form,
             frequency_qualifier=frequency.frequency_qualifier,
             has_percentage=frequency.has_percentage,
             has_quotient=frequency.has_quotient,
