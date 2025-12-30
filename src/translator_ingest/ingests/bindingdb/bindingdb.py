@@ -193,7 +193,7 @@ def transform_bindingdb_by_record(
         #       as a first approximation but we may want to consider
         #       using more specialized classes if suitable discrimination
         #       can eventually be made in between chemical types
-        chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID])
+        chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record[PUBCHEM_CID])
 
         # Taxon of protein target
         taxon_label = record[SOURCE_ORGANISM]
