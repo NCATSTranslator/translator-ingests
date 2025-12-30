@@ -25,6 +25,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     DiseaseToPhenotypicFeatureAssociation,
     CausalGeneToDiseaseAssociation,
     CorrelatedGeneToDiseaseAssociation,
+    ChemicalOrGeneOrGeneProductFormOrVariantEnum as ve,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
@@ -255,21 +256,27 @@ def transform_record_gene_to_disease(
         gene_id = record["ncbi_gene_id"]
         gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
-        predicate = get_hpoa_genetic_predicate(record["association_type"])
+        qualified_predicate: Optional[str] = get_hpoa_genetic_predicate(record["association_type"])
 
         disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
         disease = Disease(id=disease_id, **{})
 
-        if predicate == "biolink:causes":
+        subject_form_or_variant_qualifier: Optional[ve] = ve.genetic_variant_form
+        if qualified_predicate == "biolink:causes":
             association_class = CausalGeneToDiseaseAssociation
         else:
             association_class = CorrelatedGeneToDiseaseAssociation
+            if qualified_predicate == "biolink:associated_with":
+                qualified_predicate = None
+                subject_form_or_variant_qualifier = None
 
         association = association_class(
             id=entity_id(),
             subject=gene_id,
-            predicate=predicate,
+            predicate="biolink:associated_with",
             object=disease_id,
+            qualified_predicate=qualified_predicate,
+            subject_form_or_variant_qualifier=subject_form_or_variant_qualifier,
             sources=get_hpoa_association_sources(record["source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,

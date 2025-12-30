@@ -29,7 +29,7 @@ from translator_ingest.ingests.hpoa.hpoa import (
 from tests.unit.ingests import MockKozaWriter, MockKozaTransform, validate_transform_result
 
 HPOA_UNIT_TESTS = abspath(dirname(__file__))
-HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "test_data")
+HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "sample_data")
 logger.info("HPOA test data path: {}".format(HPOA_TEST_DATA_PATH))
 
 
@@ -62,6 +62,8 @@ ASSOCIATION_TEST_SLOTS = (
     "predicate",
     "negated",
     "object",
+    "qualified_predicate",
+    "subject_form_or_variant_qualifier",
     "publications",
     "has_evidence",
     "sex_qualifier",
@@ -322,12 +324,73 @@ def test_predicate(association: str, expected_predicate: str):
             {
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:64170",
-                "predicate": "biolink:causes",
+                "predicate": "biolink:associated_with",
                 "object": "OMIM:212050",
+                "qualified_predicate": "biolink:causes",
+                "subject_form_or_variant_qualifier": "genetic_variant_form",
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
+        ),
+        (   # Query 2 - Sample Polygenic disease
+            {
+                "association_type": "POLYGENIC",
+                "disease_id": "OMIM:615232",
+                "gene_symbol": "SLC1A1",
+                "ncbi_gene_id": "NCBIGene:6505",
+                "source": "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen",
+            },
+            # Captured node contents
+            [
+                {"id": "NCBIGene:6505", "name": "SLC1A1", "category": ["biolink:Gene"]},
+                {"id": "OMIM:615232", "category": ["biolink:Disease"]},
+            ],
+            # Captured edge contents
+            {
+                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "subject": "NCBIGene:6505",
+                "predicate": "biolink:associated_with",
+                "object": "OMIM:615232",
+                "qualified_predicate": "biolink:contributes_to",
+                "subject_form_or_variant_qualifier": "genetic_variant_form",
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
+        ),
+        (   # Query 3 - Sample disease of UNKNOWN association type
+            {
+                "association_type": "UNKNOWN",
+                "disease_id": "ORPHA:79414",
+                "gene_symbol": "HRAS",
+                "ncbi_gene_id": "NCBIGene:3265",
+                "source": "http://www.orphadata.org/data/xml/en_product6.xml",
+            },
+            # Captured node contents
+            [
+                {"id": "NCBIGene:3265", "name": "HRAS", "category": ["biolink:Gene"]},
+                {"id": "Orphanet:79414", "category": ["biolink:Disease"]},
+            ],
+            # Captured edge contents
+            {
+                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "subject": "NCBIGene:3265",
+                "predicate": "biolink:associated_with",
+                "object": "Orphanet:79414",
+                "qualified_predicate": None,
+                "subject_form_or_variant_qualifier": None,
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:orphanet"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
