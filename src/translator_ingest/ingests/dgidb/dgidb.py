@@ -151,6 +151,15 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     ## if publications is an empty list, make it None so pipeline will remove from properties (it handles empty supporting list okay) 
     if len(record_pubs) == 0:
         record_pubs = None
+    
+    ## processing scores that are NA, just in case
+    ## use get because it's safer, works with current test
+    interaction_score = record.get("interaction_score")
+    if pd.isna(interaction_score):
+        interaction_score = None
+    evidence_score = record.get("evidence_score")
+    if pd.isna(evidence_score):
+        evidence_score = None
 
     ## Nodes
     chemical = ChemicalEntity(id=record["drug_concept_id"])
@@ -172,9 +181,10 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             agent_type=AgentTypeEnum.automated_agent,
             sources=build_association_knowledge_sources(primary=INFORES_DGIDB, supporting=record_support_infores),
             publications=record_pubs,
-            dgidb_interaction_score=record["interaction_score"],
+            ## currently no issues/validation problems when score is None
+            dgidb_interaction_score=interaction_score,
             ## currently, becomes int without issues
-            dgidb_evidence_score=record["evidence_score"],
+            dgidb_evidence_score=evidence_score,
             predicate=data_modeling["predicate"],
             ## return empty dict if mapping doesn't have "qualifiers" (ex: plain "interacts_with" edge)
             **data_modeling.get("qualifiers", dict())
@@ -193,9 +203,10 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             agent_type=AgentTypeEnum.automated_agent,
             sources=build_association_knowledge_sources(primary=INFORES_DGIDB, supporting=record_support_infores),
             publications=record_pubs,
-            dgidb_interaction_score=record["interaction_score"],
+            ## currently no issues/validation problems when score is None
+            dgidb_interaction_score=interaction_score,
             ## currently, becomes int without issues
-            dgidb_evidence_score=record["evidence_score"],
+            dgidb_evidence_score=evidence_score,
             predicate=data_modeling["predicate"],
             ## currently, there are always qualifiers
             **data_modeling.get("qualifiers", dict())
