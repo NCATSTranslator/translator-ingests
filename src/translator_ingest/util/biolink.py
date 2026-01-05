@@ -1,14 +1,16 @@
 """Biolink Model support for Translator Ingests"""
-
-import importlib.resources
-import logging
-
 from typing import Optional
 from functools import lru_cache
-from uuid import uuid4
+from importlib.resources import files
 
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, ResourceRoleEnum
 from linkml_runtime.utils.schemaview import SchemaView
+
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
+from bmt import Toolkit
+from bmt.pydantic import entity_id
+
+from translator_ingest.util.logging_utils import get_logger
+logger = get_logger(__name__)
 
 # knowledge source InfoRes curies
 INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
@@ -19,24 +21,49 @@ INFORES_DECIFER = "infores:decifer"
 INFORES_HPOA = "infores:hpo-annotations"
 INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
+INFORES_PATHBANK = "infores:pathbank"
 INFORES_SEMMEDDB = "infores:semmeddb"
 INFORES_BIOLINK = "infores:biolink"
+INFORES_SIGNOR = "infores:signor"
 INFORES_TTD = "infores:ttd"
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
+INFORES_BGEE = "infores:bgee"
+INFORES_TEXT_MINING_KP = "infores:text-mining-provider-cooccurrence"
+INFORES_INTACT = "infores:intact"
+INFORES_DGIDB = "infores:dgidb"
+INFORES_DISEASES = "infores:diseases"
+INFORES_MEDLINEPLUS = "infores:medlineplus"
+INFORES_AMYCO = "infores:amyco"
+INFORES_EBI_G2P = "infores:gene2phenotype"
+## from dgidb ingest, can move above if others use it
+INFORES_CGI = "infores:cgi"
+INFORES_CIVIC = "infores:civic"
+INFORES_CKB_CORE = "infores:ckb-core"
+INFORES_COSMIC = "infores:cosmic"
+INFORES_CANCERCOMMONS = "infores:cancercommons"
+INFORES_CHEMBL = "infores:chembl"
+INFORES_CLEARITY_BIOMARKERS = "infores:clearity-biomarkers"
+INFORES_CLEARITY_CLINICAL = "infores:clearity-clinical-trial"
+INFORES_DTC = "infores:dtc"
+INFORES_DOCM = "infores:docm"
+INFORES_FDA_PGX = "infores:fda-pgx"
+INFORES_GTOPDB = "infores:gtopdb"
+INFORES_MYCANCERGENOME = "infores:mycancergenome"
+INFORES_MYCANCERGENOME_TRIALS = "infores:mycancergenome-trials"
+INFORES_NCIT = "infores:ncit"
+INFORES_ONCOKB = "infores:oncokb"
+INFORES_PHARMGKB = "infores:pharmgkb"
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
     """Get cached Biolink schema, loading it if not already cached."""
 
-    # Try to load from local biolink model first (same version as ingests)
+    # Try to load from the local Biolink Model package
+    # from the locally installed distribution
     try:
-        with importlib.resources.path("biolink_model.schema", "biolink_model.yaml") as schema_path:
-            schema_view = SchemaView(str(schema_path))
-            logger.debug("Successfully loaded Biolink schema from local file")
-            return schema_view
+        schema_path = files("biolink_model.schema").joinpath("biolink_model.yaml")
+        schema_view = SchemaView(str(schema_path))
+        logger.debug("Successfully loaded Biolink schema from local file")
+        return schema_view
     except Exception as e:
         logger.warning(f"Failed to load local Biolink schema: {e}")
         # Fallback to loading from official URL
@@ -48,82 +75,57 @@ def get_biolink_schema() -> SchemaView:
 def get_current_biolink_version() -> str:
     return get_biolink_schema().schema.version
 
+@lru_cache(maxsize=1)
+def get_biolink_model_toolkit() -> Toolkit:
+    """Get a Biolink Model Toolkit configured with the expected project Biolink Model schema."""
+    return Toolkit(schema=get_biolink_schema().schema)
 
-def entity_id() -> str:
+
+def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:
+    return (
+        attributes
+        if attributes is not None and len(attributes) > 0
+        else None
+    )
+
+#
+# A different version of bmt.pydantic.build_association_knowledge_sources,
+# but which takes in a list of dictionaries which are TRAPI-like 'sources' values,
+# for conversion into a list of Pydantic RetrieveSources
+#
+#
+# {
+#   "sources": [
+#     {
+#       "resource_id": "infores:columbia-cdw-ehr-data",
+#       "resource_role": "supporting_data_source"
+#     },
+#     {
+#       "resource_id": "infores:cohd",
+#       "resource_role": "primary_knowledge_source",
+#       "upstream_resource_ids": [
+#         "infores:columbia-cdw-ehr-data"
+#       ]
+#     }
+#   ]
+# }
+def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional[list[RetrievalSource]]:
     """
-    Generate a unique identifier for a Biolink Model entity.
-    :return: str, unique identifier
+    Mapping TRAPI-style sources onto the Pydantic data model
+    is relatively straightforward since the TRAPI model itself
+    was mapped onto the Biolink Model RetrievalSources class.
     """
-    return uuid4().urn
-
-
-def _infores(identifier: str) -> str:
-    """
-    Coerce the specified identifier to the Biolink Model infores namespace.
-    :param identifier:
-    :return: identifier properly coerced to infores namespace
-    """
-    # Limitation: no attempt is made to validate
-    # them against the public infores inventory at
-    # https://github.com/biolink/information-resource-registry)
-    return identifier if identifier.startswith("infores:") else f"infores:{identifier}"
-
-
-def build_association_knowledge_sources(
-    primary: str, supporting: Optional[list[str]] = None, aggregating: Optional[dict[str, list[str]]] = None
-) -> list[RetrievalSource]:
-    """
-    This function attempts to build a list of well-formed Biolink Model RetrievalSource
-    of Association 'sources' annotation from the specified knowledge source parameters.
-    This method is lenient in that it allows for strings that are not explicitly infores identifiers:
-    it converts these to infores identifiers by prefixing with the 'infores:' namespace (but doesn't validate
-    them against the public infores inventory at https://github.com/biolink/information-resource-registry).
-
-    :param primary: String infores identifier for the primary knowledge source of an Association
-    :param supporting: Optional[list[str]], Infores identifiers of the supporting data sources (default: None)
-    :param aggregating: Optional[dict[str, list[str]]] With infores identifiers of the aggregating knowledge sources
-                        as keys, and list[str] of upstream knowledge source infores identifiers (default: None)
-    :return: list[RetrievalSource] not guaranteed in any given order, except that
-                                   the first entry may be the primary knowledge source
-    """
-    #
-    # RetrievalSource fields of interest
-    #     resource_id: Union[str, URIorCURIE] = None
-    #     resource_role: Union[str, "ResourceRoleEnum"] = None
-    #     upstream_resource_ids: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
-    #     Limitation: the current use case doesn't use source_record_urls, but...
-    #     source_record_urls: Optional[Union[Union[str, URIorCURIE], list[Union[str, URIorCURIE]]]] = empty_list()
-    #
-    sources: list[RetrievalSource] = list()
-    primary_knowledge_source: Optional[RetrievalSource] = None
-    if primary:
-        primary_knowledge_source = RetrievalSource(
-            id=entity_id(), resource_id=_infores(primary), resource_role=ResourceRoleEnum.primary_knowledge_source, **{}
-        )
-        sources.append(primary_knowledge_source)
-
-    if supporting:
-        for source_id in supporting:
-            supporting_knowledge_source = RetrievalSource(
+    if not source_list:
+        return None
+    else:
+        sources: list[RetrievalSource] = []
+        source: dict
+        for source in source_list:
+            rs = RetrievalSource(
                 id=entity_id(),
-                resource_id=_infores(source_id),
-                resource_role=ResourceRoleEnum.supporting_data_source,
-                **{},
+                resource_id=source["resource_id"],
+                resource_role=source["resource_role"],
+                upstream_resource_ids=source.get("upstream_resource_ids", None)
             )
-            sources.append(supporting_knowledge_source)
-            if primary_knowledge_source:
-                if primary_knowledge_source.upstream_resource_ids is None:
-                    primary_knowledge_source.upstream_resource_ids = list()
-                primary_knowledge_source.upstream_resource_ids.append(_infores(source_id))
-    if aggregating:
-        for source_id, upstream_ids in aggregating.items():
-            aggregating_knowledge_source = RetrievalSource(
-                id=entity_id(),
-                resource_id=_infores(source_id),
-                resource_role=ResourceRoleEnum.aggregator_knowledge_source,
-                **{},
-            )
-            aggregating_knowledge_source.upstream_resource_ids = [_infores(upstream) for upstream in upstream_ids]
-            sources.append(aggregating_knowledge_source)
-
-    return sources
+            sources.append(rs)
+        return sources

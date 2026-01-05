@@ -1,14 +1,9 @@
-import uuid
+## FROM template, modified for this ingest
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-
-## ADDED packages for this ingest
-from datetime import datetime
-import pandas as pd
-import requests
-
-## ADJUST based on what I am actually using
+from bmt.pydantic import entity_id
+from translator_ingest.util.biolink import INFORES_EBI_G2P
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     Disease,
@@ -19,13 +14,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+## ADDED packages for this ingest
+from datetime import datetime
+import pandas as pd
+import requests
 
 
+## HARD-CODED VALUES
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
-INFORES_EBI_G2P = "infores:gene2phenotype"
-
-
 ## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
 ## Dynamically mapping all possible values (not just those in the data) using OLS API with HP's synonym info
 ALLELIC_REQ_TO_MAP = [
@@ -49,13 +46,7 @@ FORM_OR_VARIANT_QUALIFIER_MAPPINGS = {
     "undetermined non-loss-of-function": ChemicalOrGeneOrGeneProductFormOrVariantEnum.non_loss_of_function_variant_form,
 }
 
-
-def get_latest_version() -> str:
-    ## gets the current time with no spaces "%Y_%m_%d"
-    ## assuming this function is run at almost the same time that the resource file is downloaded
-    return datetime.now().strftime("%Y_%m_%d")
-
-
+## CUSTOM FUNCTIONS
 ## used in `on_data_begin` to build mapping of EBI G2P's allelic requirement values -> HP terms
 def build_allelic_req_mappings(allelic_req_val):
     ## queries OLS to find what HP term has the allelic requirement value as an exact synonym (OLS uses the latest HPO release)
@@ -73,30 +64,17 @@ def build_allelic_req_mappings(allelic_req_val):
         print(f"Request exemption encountered on '{allelic_req_val}': {e}")
 
 
+## PIPELINE MAIN FUNCTIONS
+def get_latest_version() -> str:
+    ## gets the current time with no spaces "%Y_%m_%d"
+    ## assuming this function is run at almost the same time that the resource file is downloaded
+    return datetime.now().strftime("%Y_%m_%d")
+
 @koza.on_data_begin()
 def on_begin(koza: koza.KozaTransform) -> None:
     ## save in state for later use
     ## dynamically create allelic req mappings - dictionary comprehension
-    koza.state["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
-
-
-@koza.on_data_end()
-def on_end(koza: koza.KozaTransform) -> None:
-    ## add logs based on counts
-    if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
-        koza.log(
-            f"{koza.state['no_diseaseID_stats']['n_rows']} rows (with {koza.state['no_diseaseID_stats']['n_names']} unique disease names) were discarded for having no disease ID.",
-            level="INFO",
-        )
-    if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
-        koza.log(
-            f"{koza.state['other_row_counts']['no_gene_IDs']} rows were discarded for having no gene ID.", level="INFO"
-        )
-    if koza.state["other_row_counts"]["duplicate_rows"] > 0:
-        koza.log(
-            f"{koza.state['other_row_counts']['duplicate_rows']} rows were discarded for being duplicates.",
-            level="INFO",
-        )
+    koza.transform_metadata["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
 
 
 @koza.prepare_data()
@@ -118,6 +96,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## for debugging
     # print(df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape)
     # print(df[df["gene mim"].isna()].shape)
+
+    ## temp? filter out rows where "disease mim" == 188400
+    ## NodeNorm incorrectly categorizes this ID/entity as a Gene when it's actually a Disease
+    df = df[~ (df["disease mim"] == "188400")]
 
     ## currently, there are rows where both disease ID columns have no value. Check, count, remove
     temp_no_disease = df[df["disease mim"].isna() & df["disease MONDO"].isna()]
@@ -159,18 +141,14 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     gene = Gene(id="HGNC:" + record["hgnc id"])
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
     if record["disease mim"]:
-        ## assuming the value will always be a string
-        ## check if value is numeric (OMIM ID) or not
-        if record["disease mim"].isnumeric():
-            disease = Disease(id="OMIM:" + record["disease mim"])
-        else:  ## these have been orphanet IDs in format Orphanet:######, Translator prefix is all-lowercase
-            disease = Disease(id=record["disease mim"].lower())
+        ## assuming value is a string OMIM ID without a prefix
+        disease = Disease(id="OMIM:" + record["disease mim"])
     else:  ## use "disease MONDO" column, which already has the correct prefix/format for Translator
         disease = Disease(id=record["disease MONDO"])
 
     association = GeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
-        id=str(uuid.uuid4()),
+        id=entity_id(),
         subject=gene.id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         qualified_predicate=BIOLINK_CAUSES,
@@ -188,9 +166,28 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         update_date=date,
-        allelic_requirement=koza.state["allelicreq_mappings"][record["allelic requirement"]],
+        allelic_requirement=koza.transform_metadata["allelicreq_mappings"][record["allelic requirement"]],
         ## include publications!!!
         publications=publications,
     )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
+
+
+@koza.on_data_end()
+def on_end(koza: koza.KozaTransform) -> None:
+    ## add logs based on counts
+    if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
+        koza.log(
+            f"{koza.state["no_diseaseID_stats"]["n_rows"]} rows (with {koza.state["no_diseaseID_stats"]["n_names"]} unique disease names) were discarded for having no disease ID.",
+            level="INFO",
+        )
+    if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
+        koza.log(
+            f"{koza.state["other_row_counts"]["no_gene_IDs"]} rows were discarded for having no gene ID.", level="INFO"
+        )
+    if koza.state["other_row_counts"]["duplicate_rows"] > 0:
+        koza.log(
+            f"{koza.state["other_row_counts"]["duplicate_rows"]} rows were discarded for being duplicates.",
+            level="INFO",
+        )

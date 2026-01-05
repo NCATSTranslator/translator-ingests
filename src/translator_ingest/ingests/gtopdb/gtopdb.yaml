@@ -1,0 +1,53 @@
+name: gtopdb
+
+readers:
+  gtopdb_parsing:
+    format: csv
+    delimiter: ","
+    comment_char: "#" # Header line starts with #
+    header_mode: infer
+    files:
+      - interactions.csv
+    columns:
+      - Target
+      - Target ID
+      - Target Subunit IDs
+      - Target Gene Symbol
+      - Target UniProt ID
+      - Target Ensembl Gene ID
+      - Target Ligand
+      - Target Ligand ID
+      - Target Ligand Subunit IDs
+      - Target Ligand Gene Symbol
+      - Target Ligand UniProt ID
+      - Target Ligand Ensembl Gene ID
+      - Target Ligand PubChem SID
+      - Target Species
+      - Ligand ID
+      - Ligand
+      - Ligand Type
+      - Ligand Subunit IDs
+      - Ligand Gene Symbol
+      - Ligand Species
+      - Ligand PubChem SID
+      - Approved
+      - Type
+      - Action
+      - Action comment
+      - Selectivity
+      - Endogenous
+      - Primary Target
+      - concentration Range
+      - Affinity Units
+      - Affinity High
+      - Affinity Median
+      - Affinity Low
+      - Original Affinity Units
+      - Original Affinity Low nm
+      - Original Affinity Median nm
+      - Original Affinity High nm
+      - Original Affinity Relation
+      - Assay Description
+      - Receptor Site
+      - Ligand Context
+      - PubMed ID

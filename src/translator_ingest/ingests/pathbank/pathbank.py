@@ -1,0 +1,1634 @@
+import csv
+import time
+import zipfile
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Iterable
+import koza
+import xmltodict
+
+from koza.model.graphs import KnowledgeGraph
+
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    Pathway,
+    NamedThing,
+    Association,
+    SmallMolecule,
+    Protein,
+    MacromolecularComplex,
+    MolecularActivity,
+    NucleicAcidEntity,
+    ChemicalEntity,
+    CellularComponent,
+    AnatomicalEntity,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    ChemicalAffectsBiologicalEntityAssociation,
+    GeneRegulatesGeneAssociation,
+    GeneAffectsChemicalAssociation,
+    DirectionQualifierEnum,
+    GeneOrGeneProductOrChemicalEntityAspectEnum,
+)
+
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_PATHBANK
+from translator_ingest.util.http_utils import get_modify_date
+
+
+def _load_pw_to_smpdb_mapping(source_data_dir: Path) -> dict[str, str]:
+    """Map PathBank PW IDs (e.g., PW000001) to SMPDB IDs (e.g., SMP0000001).
+
+    This lets PWML-derived edges attach to pathway nodes using identifiers more likely to normalize
+    under strict NodeNorm (SMPDB), instead of PathBank internal PW IDs.
+    """
+    csv_file = source_data_dir / "pathbank_pathways.csv"
+    pathways_zip = source_data_dir / "pathbank_all_pathways.csv.zip"
+
+    if not csv_file.exists():
+        # Best-effort extraction for PWML processing: if the zip is present, extract it.
+        if pathways_zip.exists():
+            with zipfile.ZipFile(pathways_zip, "r") as zip_ref:
+                zip_ref.extractall(source_data_dir)
+        else:
+            return {}
+
+    pw_to_smpdb: dict[str, str] = {}
+    with open(csv_file, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            pw_id = (row.get("PW ID") or "").strip()
+            smpdb_id = (row.get("SMPDB ID") or "").strip()
+            if pw_id and smpdb_id:
+                pw_to_smpdb[pw_id] = smpdb_id
+    return pw_to_smpdb
+
+
+def _normalize_pathway_curie(pathway_id: str, pw_to_smpdb: dict[str, str]) -> str:
+    """Prefer SMPDB pathway CURIEs when available; otherwise fall back to PathBank."""
+    pathway_id = (pathway_id or "").strip()
+    if not pathway_id:
+        return "PathBank:UNKNOWN"
+    smpdb_id = pw_to_smpdb.get(pathway_id)
+    if smpdb_id:
+        return f"SMPDB:{smpdb_id}"
+    return f"PathBank:{pathway_id}"
+
+
+def _pathway_id_to_curie(pathway_id_or_curie: str) -> str:
+    """Return a pathway CURIE given either a PW/PWML ID or a full CURIE."""
+    value = (pathway_id_or_curie or "").strip()
+    if not value:
+        return "PathBank:UNKNOWN"
+    return value if ":" in value else f"PathBank:{value}"
+
+
+def get_latest_version() -> str:
+    """Return the most recent modify date of PathBank source files in YYYY-MM-DD format.
+
+    Compares modification dates of both pathways CSV and PWML zip files.
+    """
+    date_format = "%Y-%m-%d"
+    pathways_date = get_modify_date(
+        "https://pathbank.org/downloads/pathbank_all_pathways.csv.zip", date_format
+    )
+    pwml_date = get_modify_date("https://pathbank.org/downloads/pathbank_all_pwml.zip", date_format)
+
+    if datetime.strptime(pathways_date, date_format) > datetime.strptime(pwml_date, date_format):
+        return pathways_date
+    return pwml_date
+
+
+@koza.prepare_data(tag="pathways")
+def prepare_pathways_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    """Extract zip file and read CSV data for pathways.
+
+    Files must be in input_files_dir as provided by Koza.
+    Raises FileNotFoundError if required files are missing.
+    """
+    source_data_dir = Path(koza.input_files_dir)
+    pathways_zip = source_data_dir / "pathbank_all_pathways.csv.zip"
+    csv_file = source_data_dir / "pathbank_pathways.csv"
+
+    # Extract zip if CSV doesn't exist
+    if not csv_file.exists():
+        if not pathways_zip.exists():
+            raise FileNotFoundError(
+                f"Required zip file not found: {pathways_zip}. "
+                f"Files must be in input_files_dir: {source_data_dir}"
+            )
+        koza.log(f"Extracting {pathways_zip.name}...")
+        with zipfile.ZipFile(pathways_zip, "r") as zip_ref:
+            zip_ref.extractall(source_data_dir)
+        koza.log(f"Extracted {csv_file.name}")
+
+    with open(csv_file, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f, fieldnames=["SMPDB ID", "PW ID", "Name", "Subject", "Description"])
+        # Skip header row if present
+        first_row = next(reader, None)
+        if first_row and first_row.get("SMPDB ID") != "SMPDB ID":
+            # First row was data, yield it
+            yield first_row
+
+        # Yield remaining rows
+        for row in reader:
+            yield row
+
+
+@koza.on_data_begin(tag="pathways")
+def on_data_begin(koza: koza.KozaTransform) -> None:
+    # Initialize counters for missing fields
+    koza.state["missing_fields"] = {"pathway_id": 0, "name": 0, "description": 0, "subject": 0}
+    koza.state["total_records"] = 0
+
+
+def _create_compound_node_and_edges(
+    compound: dict[str, Any], pathway_id: str
+) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
+    """Create SmallMolecule node for a compound.
+
+    Prioritizes external IDs (CHEBI > DRUGBANK > KEGG.COMPOUND) as primary node ID
+    to ensure proper normalization. Uses PathBank ID only as fallback.
+
+    Returns:
+        Tuple of (nodes, edges, translator_dict) where translator_dict maps compound_id to {equiv_id: prefix}
+    """
+    nodes = []
+    edges = []
+
+    # Extract compound data
+    compound_id_raw = compound.get("id", {})
+    if isinstance(compound_id_raw, dict):
+        pwc_id = compound_id_raw.get("#text", "")
+    else:
+        pwc_id = str(compound_id_raw) if compound_id_raw else ""
+
+    if not pwc_id:
+        return [], [], {}
+
+    name = _normalize_xml_value(compound.get("name"))
+    description = _normalize_xml_value(compound.get("description"))
+    chebi_id_raw = _normalize_xml_value(compound.get("chebi-id"))
+    drugbank_id_raw = _normalize_xml_value(compound.get("drugbank-id"))
+    kegg_id_raw = _normalize_xml_value(compound.get("kegg-id"))
+    synonyms_str = _normalize_xml_value(compound.get("synonyms"))
+
+    # Normalize external IDs (strip any existing prefixes)
+    chebi_id = _normalize_external_id(chebi_id_raw, "CHEBI")
+    drugbank_id = _normalize_external_id(drugbank_id_raw, "DRUGBANK")
+    kegg_id = _normalize_external_id(kegg_id_raw, "KEGG.COMPOUND")
+
+    # Determine primary ID: prioritize CHEBI > DRUGBANK > KEGG.COMPOUND > PathBank
+    # Use PathBank ID only if no external IDs are available
+    primary_curie = None
+    primary_prefix = None
+    
+    if chebi_id:
+        primary_curie = f"CHEBI:{chebi_id}"
+        primary_prefix = "CHEBI"
+    elif drugbank_id:
+        primary_curie = f"DRUGBANK:{drugbank_id}"
+        primary_prefix = "DRUGBANK"
+    elif kegg_id:
+        primary_curie = f"KEGG.COMPOUND:{kegg_id}"
+        primary_prefix = "KEGG.COMPOUND"
+    else:
+        # Fallback to PathBank ID (use valid CURIE format without multiple colons)
+        primary_curie = f"PathBank:Compound_{pwc_id}"
+        primary_prefix = "PathBank"
+
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    # This allows NodeNorm to potentially try alternative IDs if primary fails
+    xref_ids = []
+    pwc_curie = f"PathBank:Compound_{pwc_id}"
+    if chebi_id:
+        chebi_curie = f"CHEBI:{chebi_id}"
+        if chebi_curie != primary_curie:
+            xref_ids.append(chebi_curie)
+    if drugbank_id:
+        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+        if drugbank_curie != primary_curie:
+            xref_ids.append(drugbank_curie)
+    if kegg_id:
+        kegg_curie = f"KEGG.COMPOUND:{kegg_id}"
+        if kegg_curie != primary_curie:
+            xref_ids.append(kegg_curie)
+    if pwc_curie != primary_curie:
+        xref_ids.append(pwc_curie)
+
+    # Create primary compound node with all equivalent IDs in xref field
+    compound_node = SmallMolecule(
+        id=primary_curie,
+        name=name,
+        description=description,
+        synonym=(
+            [s.strip() for s in synonyms_str.split(";")] if synonyms_str and isinstance(synonyms_str, str) else None
+        ),
+        xref=xref_ids if xref_ids else None,
+    )
+    nodes.append(compound_node)
+
+    # Build translator dictionary: {equiv_id: prefix}
+    # Store all equivalent IDs for this compound (for edge creation)
+    compound_translator = {primary_curie: primary_prefix}
+    if pwc_curie != primary_curie:
+        compound_translator[pwc_curie] = "PathBank"
+    if chebi_id and chebi_curie != primary_curie:
+        compound_translator[chebi_curie] = "CHEBI"
+    if drugbank_id and drugbank_curie != primary_curie:
+        compound_translator[drugbank_curie] = "DRUGBANK"
+    if kegg_id and kegg_curie != primary_curie:
+        compound_translator[kegg_curie] = "KEGG.COMPOUND"
+
+    # Create has_participant edge from pathway to compound (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=primary_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges, {pwc_id: compound_translator}
+
+
+def _create_protein_node_and_edges(
+    protein: dict[str, Any], pathway_id: str
+) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
+    """Create Protein node for a protein.
+
+    Returns:
+        Tuple of (nodes, edges, translator_dict) where translator_dict maps protein_id to {equiv_id: prefix}
+    """
+    nodes = []
+    edges = []
+
+    # Extract protein data
+    protein_id_raw = protein.get("id", {})
+    if isinstance(protein_id_raw, dict):
+        pwp_id = protein_id_raw.get("#text", "")
+    else:
+        pwp_id = str(protein_id_raw) if protein_id_raw else ""
+
+    if not pwp_id:
+        return [], [], {}
+
+    name = _normalize_xml_value(protein.get("name"))
+    uniprot_id_raw = _normalize_xml_value(protein.get("uniprot-id"))
+    drugbank_id_raw = _normalize_xml_value(protein.get("drugbank-id"))
+
+    # Normalize external IDs (strip any existing prefixes)
+    uniprot_id = _normalize_external_id(uniprot_id_raw, "UniProtKB")
+    drugbank_id = _normalize_external_id(drugbank_id_raw, "DRUGBANK")
+
+    # Determine primary ID: prioritize UniProtKB > DRUGBANK > PathBank
+    primary_curie = None
+    primary_prefix = None
+    
+    if uniprot_id:
+        primary_curie = f"UniProtKB:{uniprot_id}"
+        primary_prefix = "UniProtKB"
+    elif drugbank_id:
+        primary_curie = f"DRUGBANK:{drugbank_id}"
+        primary_prefix = "DRUGBANK"
+    else:
+        # Fallback to PathBank ID (use valid CURIE format without multiple colons)
+        primary_curie = f"PathBank:Protein_{pwp_id}"
+        primary_prefix = "PathBank"
+
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    xref_ids = []
+    pwp_curie = f"PathBank:Protein_{pwp_id}"
+    if uniprot_id:
+        uniprot_curie = f"UniProtKB:{uniprot_id}"
+        if uniprot_curie != primary_curie:
+            xref_ids.append(uniprot_curie)
+    if drugbank_id:
+        drugbank_curie = f"DRUGBANK:{drugbank_id}"
+        if drugbank_curie != primary_curie:
+            xref_ids.append(drugbank_curie)
+    if pwp_curie != primary_curie:
+        xref_ids.append(pwp_curie)
+
+    # Create primary protein node with all equivalent IDs in xref field
+    protein_node = Protein(
+        id=primary_curie,
+        name=name,
+        xref=xref_ids if xref_ids else None,
+    )
+    nodes.append(protein_node)
+
+    # Build translator dictionary: {equiv_id: prefix}
+    protein_translator = {primary_curie: primary_prefix}
+    if pwp_curie != primary_curie:
+        protein_translator[pwp_curie] = "PathBank"
+    if uniprot_id and uniprot_curie != primary_curie:
+        protein_translator[uniprot_curie] = "UniProtKB"
+    if drugbank_id and drugbank_curie != primary_curie:
+        protein_translator[drugbank_curie] = "DRUGBANK"
+
+    # Create has_participant edge from pathway to protein (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=primary_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges, {pwp_id: protein_translator}
+
+
+def _create_protein_complex_node_and_edges(
+    protein_complex: dict[str, Any], pathway_id: str, protein_translator: dict[str, dict[str, str]]
+) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
+    """Create MacromolecularComplex node and edges for a protein complex.
+
+    Args:
+        protein_complex: The protein complex data from PWML
+        pathway_id: The pathway ID this complex belongs to
+        protein_translator: Dictionary mapping protein PathBank IDs to their equivalent IDs (UniProt, DrugBank)
+    """
+    nodes = []
+    edges = []
+
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # The translator dicts are constructed with the primary CURIE inserted first.
+        # We must use that same CURIE in edges to ensure every edge endpoint exists as a node ID.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
+
+    # Extract protein complex data
+    complex_id_raw = protein_complex.get("id", {})
+    if isinstance(complex_id_raw, dict):
+        pwp_id = complex_id_raw.get("#text", "")
+    else:
+        pwp_id = str(complex_id_raw) if complex_id_raw else ""
+
+    if not pwp_id:
+        return [], [], {}
+
+    name = _normalize_xml_value(protein_complex.get("name"))
+
+    # Create PathBank protein complex node (use valid CURIE format without multiple colons)
+    pwp_curie = f"PathBank:ProteinComplex_{pwp_id}"
+    complex_node = MacromolecularComplex(
+        id=pwp_curie,
+        name=name,
+    )
+    nodes.append(complex_node)
+
+    # Build translator dictionary for the complex (just itself)
+    complex_translator = {pwp_curie: "PathBank"}
+
+    # Extract proteins in the complex
+    complex_proteins = []
+    if "protein_complex-proteins" in protein_complex:
+        proteins_data = protein_complex["protein_complex-proteins"]
+        protein_list = proteins_data.get("protein-complex-protein", [])
+        if not isinstance(protein_list, list):
+            protein_list = [protein_list]
+
+        for protein_ref in protein_list:
+            protein_id_raw = protein_ref.get("protein-id", {})
+            if isinstance(protein_id_raw, dict):
+                protein_pw_id = protein_id_raw.get("#text", "")
+            else:
+                protein_pw_id = str(protein_id_raw) if protein_id_raw else ""
+
+            if protein_pw_id and protein_pw_id in protein_translator:
+                primary_protein_curie = _primary_curie_from_translator(protein_translator[protein_pw_id])
+                if primary_protein_curie:
+                    complex_proteins.append(primary_protein_curie)
+
+    # Create has_protein_in_complex edges
+    for protein_id in sorted(set(complex_proteins)):
+        has_protein_edge = Association(
+            id=entity_id(),
+            subject=pwp_curie,
+            predicate="biolink:has_part",
+            object=protein_id,
+            sources=build_association_knowledge_sources(
+                primary=INFORES_PATHBANK,
+            ),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        edges.append(has_protein_edge)
+
+    # Create has_participant edge from pathway to complex
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=pwp_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges, {pwp_id: complex_translator}
+
+
+def _create_nucleic_acid_node_and_edges(
+    nucl_acid: dict[str, Any], pathway_id: str
+) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
+    """Create NucleicAcidEntity node for a nucleic acid."""
+    nodes = []
+    edges = []
+
+    # Extract nucleic acid data
+    na_id_raw = nucl_acid.get("id", {})
+    if isinstance(na_id_raw, dict):
+        pwna_id = na_id_raw.get("#text", "")
+    else:
+        pwna_id = str(na_id_raw) if na_id_raw else ""
+
+    if not pwna_id:
+        return [], [], {}
+
+    name = _normalize_xml_value(nucl_acid.get("name"))
+    chebi_id_raw = _normalize_xml_value(nucl_acid.get("chebi-id"))
+
+    # Normalize external ID (strip any existing prefix)
+    chebi_id = _normalize_external_id(chebi_id_raw, "CHEBI")
+
+    # Determine primary ID: prioritize CHEBI > PathBank
+    primary_curie = None
+    primary_prefix = None
+    
+    if chebi_id:
+        primary_curie = f"CHEBI:{chebi_id}"
+        primary_prefix = "CHEBI"
+    else:
+        primary_curie = f"PathBank:NucleicAcid_{pwna_id}"
+        primary_prefix = "PathBank"
+
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    xref_ids = []
+    pwna_curie = f"PathBank:NucleicAcid_{pwna_id}"
+    if chebi_id:
+        chebi_curie = f"CHEBI:{chebi_id}"
+        if chebi_curie != primary_curie:
+            xref_ids.append(chebi_curie)
+    if pwna_curie != primary_curie:
+        xref_ids.append(pwna_curie)
+
+    # Create primary nucleic acid node with all equivalent IDs in xref field
+    na_node = NucleicAcidEntity(
+        id=primary_curie,
+        name=name,
+        xref=xref_ids if xref_ids else None,
+    )
+    nodes.append(na_node)
+
+    # Build translator dictionary: {equiv_id: prefix}
+    na_translator = {primary_curie: primary_prefix}
+    if pwna_curie != primary_curie:
+        na_translator[pwna_curie] = "PathBank"
+    if chebi_id:
+        chebi_curie = f"CHEBI:{chebi_id}"
+        if chebi_curie != primary_curie:
+            na_translator[chebi_curie] = "CHEBI"
+
+    # Create has_participant edge from pathway to nucleic acid (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=primary_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges, {pwna_id: na_translator}
+
+
+def _create_reaction_node_and_edges(
+    reaction: dict[str, Any], pathway_id: str, data_translator: dict[str, dict[str, dict[str, str]]]
+) -> tuple[list[NamedThing], list[Association]]:
+    """Create MolecularActivity node and edges for a reaction.
+
+    Args:
+        reaction: The reaction data from PWML
+        pathway_id: The pathway ID this reaction belongs to
+        data_translator: Dictionary mapping element types to their IDs to equivalent IDs
+            Format: {"Compound": {compound_id: {equiv_id: prefix}}, "Protein": {...}, ...}
+    """
+    nodes = []
+    edges = []
+
+    # Extract reaction data
+    reaction_id_raw = reaction.get("id", {})
+    if isinstance(reaction_id_raw, dict):
+        pwr_id = reaction_id_raw.get("#text", "")
+    else:
+        pwr_id = str(reaction_id_raw) if reaction_id_raw else ""
+
+    if not pwr_id:
+        return [], []
+
+    # Extract EC number if available (EC numbers normalize)
+    ec_number_raw = _normalize_xml_value(reaction.get("ec-number"))
+    ec_number = None
+    if ec_number_raw:
+        # Normalize EC number format (remove EC: prefix if present, ensure proper format)
+        ec_number = ec_number_raw.strip().upper()
+        if ec_number.startswith("EC:"):
+            ec_number = ec_number[3:].strip()
+        # Validate EC number format (should be like "1.2.3.4")
+        if ec_number and ec_number.replace(".", "").replace("-", "").isdigit():
+            # Use EC number as primary ID for normalization
+            primary_curie = f"EC:{ec_number}"
+        else:
+            # Invalid EC number format, fall back to PathBank ID
+            primary_curie = f"PathBank:Reaction_{pwr_id}"
+    else:
+        # No EC number available, use PathBank ID
+        primary_curie = f"PathBank:Reaction_{pwr_id}"
+
+    # Create reaction node with primary ID
+    reaction_node = MolecularActivity(
+        id=primary_curie,
+    )
+    nodes.append(reaction_node)
+
+    # Extract left elements (reactants)
+    left_elements_data = reaction.get("reaction-left-elements", {})
+    left_elements = left_elements_data.get("reaction-left-element", []) if isinstance(left_elements_data, dict) else []
+    if not isinstance(left_elements, list):
+        left_elements = [left_elements] if left_elements else []
+
+    # Extract right elements (products)
+    right_elements_data = reaction.get("reaction-right-elements", {})
+    right_elements = (
+        right_elements_data.get("reaction-right-element", []) if isinstance(right_elements_data, dict) else []
+    )
+    if not isinstance(right_elements, list):
+        right_elements = [right_elements] if right_elements else []
+
+    # Extract enzymes (protein complexes)
+    enzymes_data = reaction.get("reaction-enzymes", {})
+    enzymes = enzymes_data.get("reaction-enzyme", []) if isinstance(enzymes_data, dict) else []
+    if not isinstance(enzymes, list):
+        enzymes = [enzymes] if enzymes else []
+
+    # Create edges for left elements (reactants)
+    for left_element in left_elements:
+        element_id_raw = left_element.get("element-id", {})
+        if isinstance(element_id_raw, dict):
+            element_id = element_id_raw.get("#text", "")
+        else:
+            element_id = str(element_id_raw) if element_id_raw else ""
+
+        element_type = left_element.get("element-type", "")
+
+        if element_id and element_type in data_translator and element_id in data_translator[element_type]:
+            # Get equivalent IDs for this element - use only the primary ID (first in dict)
+            equiv_ids = data_translator[element_type][element_id]
+            # Primary ID is the first key in the translator dict
+            primary_equiv_id = next(iter(equiv_ids.keys()))
+            prefix = equiv_ids[primary_equiv_id]
+            # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
+            if ":" in primary_equiv_id:
+                object_curie = primary_equiv_id
+            else:
+                object_curie = f"{prefix}:{primary_equiv_id}"
+            reactant_edge = Association(
+                id=entity_id(),
+                subject=primary_curie,
+                predicate="biolink:has_input",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(reactant_edge)
+
+    # Create edges for right elements (products)
+    for right_element in right_elements:
+        element_id_raw = right_element.get("element-id", {})
+        if isinstance(element_id_raw, dict):
+            element_id = element_id_raw.get("#text", "")
+        else:
+            element_id = str(element_id_raw) if element_id_raw else ""
+
+        element_type = right_element.get("element-type", "")
+
+        if element_id and element_type in data_translator and element_id in data_translator[element_type]:
+            # Get equivalent IDs for this element - use only the primary ID (first in dict)
+            equiv_ids = data_translator[element_type][element_id]
+            # Primary ID is the first key in the translator dict
+            primary_equiv_id = next(iter(equiv_ids.keys()))
+            prefix = equiv_ids[primary_equiv_id]
+            # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
+            if ":" in primary_equiv_id:
+                object_curie = primary_equiv_id
+            else:
+                object_curie = f"{prefix}:{primary_equiv_id}"
+            product_edge = Association(
+                id=entity_id(),
+                subject=primary_curie,
+                predicate="biolink:has_output",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(product_edge)
+
+    # Create edges for enzymes (protein complexes)
+    for enzyme in enzymes:
+        enzyme_id_raw = enzyme.get("protein-complex-id", {})
+        if isinstance(enzyme_id_raw, dict):
+            enzyme_id = enzyme_id_raw.get("#text", "")
+        else:
+            enzyme_id = str(enzyme_id_raw) if enzyme_id_raw else ""
+
+        if enzyme_id and "ProteinComplex" in data_translator and enzyme_id in data_translator["ProteinComplex"]:
+            # Get equivalent IDs for this protein complex - use only the primary ID (first in dict)
+            equiv_ids = data_translator["ProteinComplex"][enzyme_id]
+            # Primary ID is the first key in the translator dict
+            primary_equiv_id = next(iter(equiv_ids.keys()))
+            prefix = equiv_ids[primary_equiv_id]
+            # If equiv_id already contains a colon, it's a full CURIE; otherwise construct it
+            if ":" in primary_equiv_id:
+                subject_curie = primary_equiv_id
+            else:
+                subject_curie = f"{prefix}:{primary_equiv_id}"
+            enzyme_edge = Association(
+                id=entity_id(),
+                subject=subject_curie,
+                predicate="biolink:catalyzes",
+                object=primary_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(enzyme_edge)
+
+    # Create has_participant edge from pathway to reaction (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=primary_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges
+
+
+def _create_bound_node_and_edges(
+    bound: dict[str, Any], pathway_id: str, data_translator: dict[str, dict[str, dict[str, str]]]
+) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
+    """Create ChemicalEntity node and edges for a bound."""
+    nodes = []
+    edges = []
+
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # The translator dicts are constructed with the primary CURIE inserted first.
+        # Use only that CURIE on edges to avoid edge endpoints that have no node record.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
+
+    # Extract bound data
+    bound_id_raw = bound.get("id", {})
+    if isinstance(bound_id_raw, dict):
+        pwb_id = bound_id_raw.get("#text", "")
+    else:
+        pwb_id = str(bound_id_raw) if bound_id_raw else ""
+
+    if not pwb_id:
+        return [], [], {}
+
+    # Create PathBank bound node
+    pwb_curie = f"PathBank:Bound_{pwb_id}"
+    bound_node = ChemicalEntity(
+        id=pwb_curie,
+    )
+    nodes.append(bound_node)
+
+    # Build translator dictionary for the bound (just itself)
+    bound_translator = {pwb_curie: "PathBank"}
+
+    # Extract elements in the bound
+    bound_elements_data = bound.get("bound-elements", {})
+    bound_elements = bound_elements_data.get("bound-element", []) if isinstance(bound_elements_data, dict) else []
+    if not isinstance(bound_elements, list):
+        bound_elements = [bound_elements] if bound_elements else []
+
+    # Create has_part edges from bound to elements
+    for element in bound_elements:
+        element_id_raw = element.get("element-id", {})
+        if isinstance(element_id_raw, dict):
+            element_id = element_id_raw.get("#text", "")
+        else:
+            element_id = str(element_id_raw) if element_id_raw else ""
+
+        element_type = element.get("element-type", "")
+
+        if element_id and element_type in data_translator and element_id in data_translator[element_type]:
+            equiv_ids = data_translator[element_type][element_id]
+            object_curie = _primary_curie_from_translator(equiv_ids)
+            if not object_curie:
+                continue
+
+            has_part_edge = Association(
+                id=entity_id(),
+                subject=pwb_curie,
+                predicate="biolink:has_part",
+                object=object_curie,
+                sources=build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            edges.append(has_part_edge)
+
+    # Create has_participant edge from pathway to bound
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=pwb_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges, {pwb_id: bound_translator}
+
+
+def _create_element_collection_node_and_edges(
+    ec: dict[str, Any], pathway_id: str
+) -> tuple[list[NamedThing], list[Association], dict[str, dict[str, str]]]:
+    """Create ChemicalEntity node for an element collection."""
+    nodes = []
+    edges = []
+
+    # Extract element collection data
+    ec_id_raw = ec.get("id", {})
+    if isinstance(ec_id_raw, dict):
+        pwec_id = ec_id_raw.get("#text", "")
+    else:
+        pwec_id = str(ec_id_raw) if ec_id_raw else ""
+
+    if not pwec_id:
+        return [], [], {}
+
+    name = _normalize_xml_value(ec.get("name"))
+    external_id_type = _normalize_xml_value(ec.get("external-id-type", ""))
+    external_id_raw = _normalize_xml_value(ec.get("external-id"))
+
+    # Map external ID types to prefixes
+    external_id_mapping = {
+        "KEGG Compound": "KEGG.COMPOUND",
+        "ChEBI": "CHEBI",
+        "UniProt": "UniProtKB",
+    }
+
+    # Normalize external ID (strip any existing prefix)
+    external_id = None
+    external_prefix = None
+    if external_id_type in external_id_mapping and external_id_raw:
+        external_prefix = external_id_mapping[external_id_type]
+        external_id = _normalize_external_id(external_id_raw, external_prefix)
+
+    # Determine primary ID: prioritize external ID > PathBank
+    primary_curie = None
+    primary_prefix = None
+    
+    if external_id and external_prefix:
+        primary_curie = f"{external_prefix}:{external_id}"
+        primary_prefix = external_prefix
+    else:
+        primary_curie = f"PathBank:ElementCollection_{pwec_id}"
+        primary_prefix = "PathBank"
+
+    # Collect all equivalent IDs for xref field (excluding primary ID)
+    xref_ids = []
+    pwec_curie = f"PathBank:ElementCollection_{pwec_id}"
+    if external_id and external_prefix:
+        external_curie = f"{external_prefix}:{external_id}"
+        if external_curie != primary_curie:
+            xref_ids.append(external_curie)
+    if pwec_curie != primary_curie:
+        xref_ids.append(pwec_curie)
+
+    # Create primary element collection node with all equivalent IDs in xref field
+    ec_node = ChemicalEntity(
+        id=primary_curie,
+        name=name,
+        xref=xref_ids if xref_ids else None,
+    )
+    nodes.append(ec_node)
+
+    # Build translator dictionary: {equiv_id: prefix}
+    ec_translator = {primary_curie: primary_prefix}
+    if pwec_curie != primary_curie:
+        ec_translator[pwec_curie] = "PathBank"
+    if external_id and external_prefix:
+        external_curie = f"{external_prefix}:{external_id}"
+        if external_curie != primary_curie:
+            ec_translator[external_curie] = external_prefix
+
+    # Create has_participant edge from pathway to element collection (use primary ID)
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    has_component_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:has_participant",
+        object=primary_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(has_component_edge)
+
+    return nodes, edges, {pwec_id: ec_translator}
+
+
+def _create_interaction_edges(
+    interaction: dict[str, Any], pathway_id: str, data_translator: dict[str, dict[str, dict[str, str]]]
+) -> list[Association]:
+    """Create interaction edges for protein-protein or other entity interactions.
+
+    Maps PathBank interaction types to Biolink predicates with qualifiers:
+    - Inhibition/Repression → regulates with downregulates qualifier
+    - Activation/Induction/Promotion → regulates with upregulates qualifier
+    - Binding/Physical/Complex → physically_interacts_with
+    - Default → interacts_with
+
+    Args:
+        interaction: The interaction data from PWML
+        pathway_id: The pathway ID this interaction belongs to
+        data_translator: Dictionary mapping element types to their IDs to equivalent IDs
+
+    Returns:
+        List of Association edges
+    """
+    edges = []
+
+    def _primary_curie_from_translator(equiv_id_to_prefix: dict[str, str]) -> str | None:
+        # Translator dicts are constructed with the primary CURIE inserted first.
+        # Use only that CURIE on edges to ensure every edge endpoint exists as a node ID.
+        if not equiv_id_to_prefix:
+            return None
+        return next(iter(equiv_id_to_prefix.keys()))
+
+    # Extract interaction type and map to Biolink predicate and qualifiers
+    interaction_type_raw = interaction.get("interaction-type", "")
+    interaction_type = _normalize_xml_value(interaction_type_raw)
+
+    # Map PathBank interaction types to Biolink predicates and qualifiers
+    # Using case-insensitive matching for robustness
+    interaction_type_lower = interaction_type.lower() if interaction_type else ""
+
+    # Initialize qualifier variables
+    qualified_predicate = None
+    object_aspect_qualifier = None
+    object_direction_qualifier = None
+
+    if "inhibit" in interaction_type_lower or "repress" in interaction_type_lower:
+        predicate = "biolink:regulates"
+        qualified_predicate = "biolink:causes"
+        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+        object_direction_qualifier = DirectionQualifierEnum.downregulated
+    elif "active" in interaction_type_lower or "induc" in interaction_type_lower or "promot" in interaction_type_lower:
+        predicate = "biolink:regulates"
+        qualified_predicate = "biolink:causes"
+        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+        object_direction_qualifier = DirectionQualifierEnum.upregulated
+    elif (
+        "bind" in interaction_type_lower or "physical" in interaction_type_lower or "complex" in interaction_type_lower
+    ):
+        predicate = "biolink:physically_interacts_with"
+    else:
+        # Default to generic interacts_with for unknown types
+        predicate = "biolink:interacts_with"
+
+    # Extract left elements
+    left_elements_data = interaction.get("interaction-left-elements", {})
+    left_elements = _normalize_to_list(
+        left_elements_data.get("interaction-left-element") if isinstance(left_elements_data, dict) else None
+    )
+
+    # Extract right elements
+    right_elements_data = interaction.get("interaction-right-elements", {})
+    right_elements = _normalize_to_list(
+        right_elements_data.get("interaction-right-element") if isinstance(right_elements_data, dict) else None
+    )
+
+    # Define entity types for association class selection
+    CHEMICAL_TYPES = {"Compound", "Bound", "ElementCollection"}
+    BIO_TYPES = {"Protein", "ProteinComplex", "NucleicAcid", "Reaction"}
+
+    # Create edges between all left and right elements
+    for left_element in left_elements:
+        left_id_raw = left_element.get("element-id", {})
+        if isinstance(left_id_raw, dict):
+            left_id = left_id_raw.get("#text", "")
+        else:
+            left_id = str(left_id_raw) if left_id_raw else ""
+
+        left_type = left_element.get("element-type", "")
+
+        if (
+            not left_id
+            or not left_type
+            or left_type not in data_translator
+            or left_id not in data_translator[left_type]
+        ):
+            continue
+
+        left_equiv_ids = data_translator[left_type][left_id]
+        left_curie = _primary_curie_from_translator(left_equiv_ids)
+        if not left_curie:
+            continue
+
+        for right_element in right_elements:
+            right_id_raw = right_element.get("element-id", {})
+            if isinstance(right_id_raw, dict):
+                right_id = right_id_raw.get("#text", "")
+            else:
+                right_id = str(right_id_raw) if right_id_raw else ""
+
+            right_type = right_element.get("element-type", "")
+
+            if (
+                not right_id
+                or not right_type
+                or right_type not in data_translator
+                or right_id not in data_translator[right_type]
+            ):
+                continue
+
+            right_equiv_ids = data_translator[right_type][right_id]
+            right_curie = _primary_curie_from_translator(right_equiv_ids)
+            if not right_curie:
+                continue
+
+            # Determine appropriate Association class based on types
+            assoc_class = Association
+
+            # Check types against sets
+            is_left_chem = left_type in CHEMICAL_TYPES
+            is_left_bio = left_type in BIO_TYPES
+            is_right_chem = right_type in CHEMICAL_TYPES
+            is_right_bio = right_type in BIO_TYPES
+
+            if is_left_chem and is_right_bio:
+                assoc_class = ChemicalAffectsBiologicalEntityAssociation
+            elif is_left_bio and is_right_bio:
+                assoc_class = GeneRegulatesGeneAssociation
+            elif is_left_bio and is_right_chem:
+                assoc_class = GeneAffectsChemicalAssociation
+
+            # Create interaction edge with predicate and qualifiers based on interaction type
+            interaction_edge_kwargs = {
+                "id": entity_id(),
+                "subject": left_curie,
+                "predicate": predicate,
+                "object": right_curie,
+                "sources": build_association_knowledge_sources(
+                    primary=INFORES_PATHBANK,
+                ),
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            }
+
+            # Add qualifiers if present AND supported by class
+            # Fallback to generic Association (no qualifiers) if we can't use a specialized class
+            if qualified_predicate and assoc_class != Association:
+                interaction_edge_kwargs["qualified_predicate"] = qualified_predicate
+                interaction_edge_kwargs["object_aspect_qualifier"] = object_aspect_qualifier
+                interaction_edge_kwargs["object_direction_qualifier"] = object_direction_qualifier
+            else:
+                # If we don't have qualifiers, we MUST use the base Association class
+                # because specialized classes (like GeneRegulatesGeneAssociation) REQUIRE them.
+                assoc_class = Association
+
+            interaction_edge = assoc_class(**interaction_edge_kwargs)
+            edges.append(interaction_edge)
+
+    return edges
+
+
+def _create_subcellular_location_nodes_and_edges(
+    location: dict[str, Any], pathway_id: str
+) -> tuple[list[NamedThing], list[Association]]:
+    """Create CellularComponent node and occurs_in edge for subcellular location.
+
+    Args:
+        location: The subcellular location data from PWML
+        pathway_id: The pathway ID this location is associated with
+
+    Returns:
+        Tuple of (nodes, edges)
+    """
+    nodes = []
+    edges = []
+
+    # Extract location data
+    name = _normalize_xml_value(location.get("name"))
+    ontology_id = _normalize_xml_value(location.get("ontology-id"))
+
+    if not ontology_id:
+        return [], []
+
+    # Create CellularComponent node using GO CURIE
+    location_curie = ontology_id  # Already in GO:0005737 format
+    location_node = CellularComponent(
+        id=location_curie,
+        name=name,
+    )
+    nodes.append(location_node)
+
+    # Create occurs_in edge from pathway to location
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    occurs_in_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:occurs_in",
+        object=location_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(occurs_in_edge)
+
+    return nodes, edges
+
+
+def _create_tissue_nodes_and_edges(
+    tissue: dict[str, Any], pathway_id: str
+) -> tuple[list[NamedThing], list[Association]]:
+    """Create AnatomicalEntity node and occurs_in edge for tissue.
+
+    Args:
+        tissue: The tissue data from PWML
+        pathway_id: The pathway ID this tissue is associated with
+
+    Returns:
+        Tuple of (nodes, edges)
+    """
+    nodes = []
+    edges = []
+
+    # Extract tissue data
+    name = _normalize_xml_value(tissue.get("name"))
+    ontology_id = _normalize_xml_value(tissue.get("ontology-id"))
+
+    if not ontology_id:
+        return [], []
+
+    # Create AnatomicalEntity node using BTO CURIE
+    # BTO IDs are in format "BTO:0000759", need to convert to proper CURIE format
+    if ontology_id.startswith("BTO:"):
+        tissue_curie = ontology_id
+    else:
+        tissue_curie = f"BTO:{ontology_id}"
+
+    tissue_node = AnatomicalEntity(
+        id=tissue_curie,
+        name=name,
+    )
+    nodes.append(tissue_node)
+
+    # Create occurs_in edge from pathway to tissue
+    pathway_curie = _pathway_id_to_curie(pathway_id)
+    occurs_in_edge = Association(
+        id=entity_id(),
+        subject=pathway_curie,
+        predicate="biolink:occurs_in",
+        object=tissue_curie,
+        sources=build_association_knowledge_sources(
+            primary=INFORES_PATHBANK,
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+    edges.append(occurs_in_edge)
+
+    return nodes, edges
+
+
+@koza.transform(tag="pwml")
+def transform_pwml(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    """Transform PWML data into Biolink nodes and edges."""
+    record_count = 0
+    for record in data:
+        # Handle empty record (when no PWML files found)
+        if not record:
+            # Yield empty KnowledgeGraph to satisfy Koza's requirement for at least one result
+            yield KnowledgeGraph(nodes=[], edges=[])
+            return
+
+        pathway_id = record.get("pathway_id", "")
+        if not pathway_id:
+            continue
+        pathway_curie = record.get("pathway_curie") or _pathway_id_to_curie(pathway_id)
+
+        nodes = []
+        edges = []
+
+        # Build data_translator: maps element types to their IDs to equivalent IDs
+        # Format: {"Compound": {compound_id: {equiv_id: prefix}}, ...}
+        data_translator: dict[str, dict[str, dict[str, str]]] = {
+            "Compound": {},
+            "Protein": {},
+            "NucleicAcid": {},
+            "ProteinComplex": {},
+            "ElementCollection": {},
+            "Bound": {},
+        }
+
+        # Process compounds first (to build compound_translator)
+        compounds = record.get("compounds", [])
+        if isinstance(compounds, list):
+            for compound in compounds:
+                compound_nodes, compound_edges, compound_translator = _create_compound_node_and_edges(
+                    compound, pathway_curie
+                )
+                nodes.extend(compound_nodes)
+                edges.extend(compound_edges)
+                # Merge translator into data_translator
+                for compound_id, equiv_dict in compound_translator.items():
+                    data_translator["Compound"][compound_id] = equiv_dict
+
+        # Process proteins (to build protein_translator)
+        proteins = record.get("proteins", [])
+        protein_translator: dict[str, dict[str, str]] = {}
+        if isinstance(proteins, list):
+            for protein in proteins:
+                protein_nodes, protein_edges, protein_translator_item = _create_protein_node_and_edges(
+                    protein, pathway_curie
+                )
+                nodes.extend(protein_nodes)
+                edges.extend(protein_edges)
+                # Merge translator into data_translator and protein_translator
+                for protein_id, equiv_dict in protein_translator_item.items():
+                    data_translator["Protein"][protein_id] = equiv_dict
+                    protein_translator[protein_id] = equiv_dict
+
+        # Process nucleic acids (to build na_translator)
+        nucleic_acids = record.get("nucleic-acids", [])
+        if isinstance(nucleic_acids, list):
+            for nucl_acid in nucleic_acids:
+                na_nodes, na_edges, na_translator = _create_nucleic_acid_node_and_edges(nucl_acid, pathway_curie)
+                nodes.extend(na_nodes)
+                edges.extend(na_edges)
+                # Merge translator into data_translator
+                for na_id, equiv_dict in na_translator.items():
+                    data_translator["NucleicAcid"][na_id] = equiv_dict
+
+        # Process protein complexes (needs protein_translator, builds complex_translator)
+        protein_complexes = record.get("protein-complexes", [])
+        if isinstance(protein_complexes, list):
+            for protein_complex in protein_complexes:
+                complex_nodes, complex_edges, complex_translator = _create_protein_complex_node_and_edges(
+                    protein_complex, pathway_curie, protein_translator
+                )
+                nodes.extend(complex_nodes)
+                edges.extend(complex_edges)
+                # Merge translator into data_translator
+                for complex_id, equiv_dict in complex_translator.items():
+                    data_translator["ProteinComplex"][complex_id] = equiv_dict
+
+        # Process element collections (to build ec_translator)
+        element_collections = record.get("element-collections", [])
+        if isinstance(element_collections, list):
+            for ec in element_collections:
+                ec_nodes, ec_edges, ec_translator = _create_element_collection_node_and_edges(ec, pathway_curie)
+                nodes.extend(ec_nodes)
+                edges.extend(ec_edges)
+                # Merge translator into data_translator
+                for ec_id, equiv_dict in ec_translator.items():
+                    data_translator["ElementCollection"][ec_id] = equiv_dict
+
+        # Process bounds (needs data_translator, builds bound_translator)
+        bounds = record.get("bounds", [])
+        if isinstance(bounds, list):
+            for bound in bounds:
+                bound_nodes, bound_edges, bound_translator = _create_bound_node_and_edges(
+                    bound, pathway_curie, data_translator
+                )
+                nodes.extend(bound_nodes)
+                edges.extend(bound_edges)
+                # Merge translator into data_translator
+                for bound_id, equiv_dict in bound_translator.items():
+                    data_translator["Bound"][bound_id] = equiv_dict
+
+        # Process reactions (needs data_translator)
+        reactions = record.get("reactions", [])
+        if isinstance(reactions, list):
+            for reaction in reactions:
+                reaction_nodes, reaction_edges = _create_reaction_node_and_edges(
+                    reaction, pathway_curie, data_translator
+                )
+                nodes.extend(reaction_nodes)
+                edges.extend(reaction_edges)
+
+        # Process interactions (needs data_translator)
+        interactions = record.get("interactions", [])
+        if isinstance(interactions, list):
+            for interaction in interactions:
+                interaction_edges = _create_interaction_edges(interaction, pathway_curie, data_translator)
+                edges.extend(interaction_edges)
+
+        # Process subcellular locations
+        subcellular_locations = record.get("subcellular-locations", [])
+        if isinstance(subcellular_locations, list):
+            for location in subcellular_locations:
+                location_nodes, location_edges = _create_subcellular_location_nodes_and_edges(location, pathway_curie)
+                nodes.extend(location_nodes)
+                edges.extend(location_edges)
+
+        # Process tissues
+        tissues = record.get("tissues", [])
+        if isinstance(tissues, list):
+            for tissue in tissues:
+                tissue_nodes, tissue_edges = _create_tissue_nodes_and_edges(tissue, pathway_curie)
+                nodes.extend(tissue_nodes)
+                edges.extend(tissue_edges)
+
+        # Log progress for first few records
+        if record_count < 3:
+            compounds_count = len(compounds) if isinstance(compounds, list) else 0
+            proteins_count = len(proteins) if isinstance(proteins, list) else 0
+            complexes_count = len(protein_complexes) if isinstance(protein_complexes, list) else 0
+            reactions_count = len(reactions) if isinstance(reactions, list) else 0
+            koza.log(
+                f"PWML record {record_count + 1} for pathway {pathway_id}: {compounds_count} compounds, {proteins_count} proteins, {complexes_count} complexes, {reactions_count} reactions"
+            )
+
+        record_count += 1
+
+        # Yield KnowledgeGraph if we have nodes or edges
+        if nodes or edges:
+            yield KnowledgeGraph(nodes=nodes, edges=edges)
+
+    koza.log(f"Processed {record_count} PWML records in transform function")
+
+
+@koza.transform_record(tag="pathways")
+def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    # Extract data from CSV columns
+    smpdb_id = record.get("SMPDB ID")
+    pw_id = record.get("PW ID")
+    name = record.get("Name")
+    description = record.get("Description")
+    subject = record.get("Subject")
+
+    # Track missing fields
+    koza.state["total_records"] += 1
+    pathway_id = smpdb_id or pw_id
+    if not pathway_id:
+        koza.state["missing_fields"]["pathway_id"] += 1
+    if not name:
+        koza.state["missing_fields"]["name"] += 1
+    if not description:
+        koza.state["missing_fields"]["description"] += 1
+    if not subject:
+        koza.state["missing_fields"]["subject"] += 1
+
+    # Need at least one ID to create nodes
+    if not smpdb_id and not pw_id:
+        return None
+
+    nodes = []
+    edges = []
+
+    # Create SMPDB pathway node if SMPDB ID exists (prefer SMPDB prefix for normalization)
+    if smpdb_id:
+        smpdb_node_id = f"SMPDB:{smpdb_id}"
+        xref = [f"PathBank:{pw_id}"] if pw_id else None
+        smpdb_pathway = Pathway(id=smpdb_node_id, name=name, description=description, xref=xref)
+        nodes.append(smpdb_pathway)
+
+    # Create PathBank pathway node only if SMPDB ID is missing (PathBank IDs often won't normalize)
+    if pw_id and not smpdb_id:
+        pw_node_id = f"PathBank:{pw_id}"
+        pw_pathway = Pathway(id=pw_node_id, name=name, description=description)
+        nodes.append(pw_pathway)
+
+    return KnowledgeGraph(nodes=nodes, edges=edges)
+
+
+@koza.on_data_end(tag="pathways")
+def on_data_end(koza: koza.KozaTransform):
+    # Log final statistics
+    koza.log(f"Processed {koza.state['total_records']} total records")
+    koza.log(f"Missing pathway_id: {koza.state['missing_fields']['pathway_id']}")
+    koza.log(f"Missing name: {koza.state['missing_fields']['name']}")
+    koza.log(f"Missing description: {koza.state['missing_fields']['description']}")
+    koza.log(f"Missing subject: {koza.state['missing_fields']['subject']}")
+
+
+def _normalize_to_list(value: Any) -> list:
+    # xmltodict returns a dict for single elements, list for multiple
+    # Normalize to always return a list
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        return [value]
+    return []
+
+
+def _normalize_xml_value(value: Any) -> str | None:
+    """Normalize XML values, handling nil/null values from xmltodict.
+
+    xmltodict can represent nil/null values as {'@nil': 'true'} dictionaries.
+    This function converts those to None, and ensures strings are returned.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        # Check if it's a nil value
+        if value.get("@nil") in ("true", True):
+            return None
+        # If it's a dict with #text, extract the text
+        if "#text" in value:
+            return value["#text"]
+        # Otherwise, return None for unexpected dicts
+        return None
+    if isinstance(value, str):
+        return value if value else None
+    # Convert other types to string
+    return str(value) if value else None
+
+
+def _normalize_external_id(external_id: str | None, prefix: str) -> str | None:
+    """Normalize external database ID by stripping any existing prefix.
+
+    Some XML fields may already contain the prefix (e.g., "CHEBI:62370"),
+    while others may not (e.g., "62370"). This function ensures we always
+    get just the ID part without the prefix.
+
+    Args:
+        external_id: The external ID (may already contain prefix like "CHEBI:123")
+        prefix: The prefix to use (e.g., "CHEBI", "DRUGBANK", "KEGG.COMPOUND")
+
+    Returns:
+        Normalized ID with only the ID part (no prefix), or None if input is None/empty
+    """
+    if not external_id:
+        return None
+
+    external_id = str(external_id).strip()
+
+    # Strip existing prefix if present (case-insensitive)
+    prefix_with_colon = f"{prefix}:"
+    if external_id.upper().startswith(prefix_with_colon.upper()):
+        # Remove the prefix
+        external_id = external_id[len(prefix_with_colon) :]
+
+    return external_id if external_id else None
+
+
+@koza.on_data_begin(tag="pwml")
+def on_data_begin_pwml(koza: koza.KozaTransform) -> None:
+    # Initialize counters for PWML processing
+    koza.state["pwml_files_processed"] = 0
+    koza.state["pwml_files_failed"] = 0
+    koza.state["pwml_start_time"] = time.time()
+    koza.state["pwml_last_log_time"] = time.time()
+
+
+@koza.prepare_data(tag="pwml")
+def prepare_pwml_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
+    """Parse PWML XML files and extract structured data.
+
+    Files must be in input_files_dir as provided by Koza.
+    Raises FileNotFoundError if required files are missing.
+    """
+    source_data_dir = Path(koza.input_files_dir)
+    pwml_zip = source_data_dir / "pathbank_all_pwml.zip"
+    pwml_dir = source_data_dir / "pathbank_all_pwml"
+
+    # Build mapping so PWML "PW..." pathway IDs can be translated to SMPDB IDs when available.
+    # This is critical under strict normalization, since SMPDB identifiers are more likely to resolve.
+    if "pw_to_smpdb" not in koza.state:
+        koza.state["pw_to_smpdb"] = _load_pw_to_smpdb_mapping(source_data_dir)
+
+    # Extract zip if PWML directory doesn't exist or is empty
+    # PathBank PWML files follow the pattern PW*.pwml (e.g., PW000001.pwml)
+    pwml_pattern = "PW*.pwml"
+    if not pwml_dir.exists() or not any(pwml_dir.glob(pwml_pattern)):
+        if not pwml_zip.exists():
+            raise FileNotFoundError(
+                f"Required zip file not found: {pwml_zip}. "
+                f"Files must be in input_files_dir: {source_data_dir}"
+            )
+
+        koza.log(f"Extracting {pwml_zip.name}...")
+        with zipfile.ZipFile(pwml_zip, "r") as zip_ref:
+            zip_ref.extractall(source_data_dir)
+        koza.log(f"Extracted PWML files to {pwml_dir}")
+
+    # Find all PathBank PWML files (PW*.pwml pattern)
+    pwml_files = sorted(pwml_dir.glob(pwml_pattern))
+    total_files = len(pwml_files)
+    koza.log(f"Found {total_files} PWML files to process")
+
+    if total_files == 0:
+        koza.log("No PWML files found, skipping PWML processing", level="WARNING")
+        yield {}  # Yield empty dict so transform function is called
+        return
+
+    # Process each PWML file
+    for file_index, pwml_file in enumerate(pwml_files, start=1):
+        try:
+            with open(pwml_file, "rb") as f:
+                pw = xmltodict.parse(f.read())
+
+            # Extract pathway ID from the file
+            pathway_id = None
+            if "super-pathway-visualization" in pw:
+                pathway_id = pw["super-pathway-visualization"].get("pw-id")
+
+            # If no pathway ID in XML, extract from filename (e.g., PW000001.pwml -> PW000001)
+            if not pathway_id:
+                pathway_id = pwml_file.stem
+
+            # Extract pathway visualization contexts
+            if "super-pathway-visualization" not in pw:
+                koza.log(f"Skipping {pwml_file.name}: missing super-pathway-visualization", level="WARNING")
+                koza.state["pwml_files_failed"] += 1
+                continue
+
+            sv = pw["super-pathway-visualization"]
+
+            # Handle both single context (dict) and multiple contexts (list)
+            contexts = []
+            if "pathway-visualization-contexts" in sv:
+                pvc = sv["pathway-visualization-contexts"]
+                if "pathway-visualization-context" in pvc:
+                    pvc_item = pvc["pathway-visualization-context"]
+                    if isinstance(pvc_item, list):
+                        # Multiple contexts
+                        contexts = [
+                            item["pathway-visualization"] for item in pvc_item if "pathway-visualization" in item
+                        ]
+                    elif isinstance(pvc_item, dict):
+                        # Single context
+                        if "pathway-visualization" in pvc_item:
+                            contexts = [pvc_item["pathway-visualization"]]
+
+            # If no contexts found, skip this file
+            if not contexts:
+                koza.log(f"Skipping {pwml_file.name}: no pathway-visualization-context found", level="WARNING")
+                koza.state["pwml_files_failed"] += 1
+                continue
+
+            # Process each context (most files have one, but some have multiple)
+            for context in contexts:
+                # Extract pathway information from context
+                pathway_data = context.get("pathway", {}) if isinstance(context.get("pathway"), dict) else {}
+
+                # Extract compounds, proteins, etc. - normalize to lists (xmltodict returns dict for single, list for multiple)
+                compounds_data = context.get("compounds", {})
+                proteins_data = context.get("proteins", {})
+                protein_complexes_data = context.get("protein-complexes", {})
+                nucleic_acids_data = context.get("nucleic-acids", {})
+                reactions_data = context.get("reactions", {})
+                bounds_data = context.get("bounds", {})
+                element_collections_data = context.get("element-collections", {})
+                references_data = pathway_data.get("references", {})
+                interactions_data = context.get("interactions", {})
+                subcellular_locations_data = context.get("subcellular-locations", {})
+                tissues_data = context.get("tissues", {})
+
+                # Yield structured data for this pathway context
+                yield {
+                    "pathway_id": pathway_id,
+                    "pathway_curie": _normalize_pathway_curie(pathway_id, koza.state.get("pw_to_smpdb", {})),
+                    "pathway_data": pathway_data,
+                    "compounds": _normalize_to_list(
+                        compounds_data.get("compound") if isinstance(compounds_data, dict) else None
+                    ),
+                    "proteins": _normalize_to_list(
+                        proteins_data.get("protein") if isinstance(proteins_data, dict) else None
+                    ),
+                    "protein-complexes": _normalize_to_list(
+                        protein_complexes_data.get("protein-complex")
+                        if isinstance(protein_complexes_data, dict)
+                        else None
+                    ),
+                    "nucleic-acids": _normalize_to_list(
+                        nucleic_acids_data.get("nucleic-acid") if isinstance(nucleic_acids_data, dict) else None
+                    ),
+                    "reactions": _normalize_to_list(
+                        reactions_data.get("reaction") if isinstance(reactions_data, dict) else None
+                    ),
+                    "bounds": _normalize_to_list(bounds_data.get("bound") if isinstance(bounds_data, dict) else None),
+                    "element-collections": _normalize_to_list(
+                        element_collections_data.get("element-collection")
+                        if isinstance(element_collections_data, dict)
+                        else None
+                    ),
+                    "references": _normalize_to_list(
+                        references_data.get("reference") if isinstance(references_data, dict) else None
+                    ),
+                    "interactions": _normalize_to_list(
+                        interactions_data.get("interaction") if isinstance(interactions_data, dict) else None
+                    ),
+                    "subcellular-locations": _normalize_to_list(
+                        subcellular_locations_data.get("subcellular-location")
+                        if isinstance(subcellular_locations_data, dict)
+                        else None
+                    ),
+                    "tissues": _normalize_to_list(
+                        tissues_data.get("tissue") if isinstance(tissues_data, dict) else None
+                    ),
+                    "_file_path": str(pwml_file),
+                }
+
+            koza.state["pwml_files_processed"] += 1
+
+            # Log progress every 1000 files or every 30 seconds
+            current_time = time.time()
+            should_log = (
+                file_index % 1000 == 0  # Every 1000 files
+                or current_time - koza.state["pwml_last_log_time"] >= 30  # Every 30 seconds
+            )
+
+            if should_log:
+                processed = koza.state["pwml_files_processed"]
+                failed = koza.state["pwml_files_failed"]
+                elapsed = current_time - koza.state["pwml_start_time"]
+                percent = (file_index / total_files) * 100
+
+                if processed > 0:
+                    rate = processed / elapsed  # files per second
+                    remaining = (total_files - file_index) / rate if rate > 0 else 0
+                    koza.log(
+                        f"Progress: {file_index}/{total_files} files ({percent:.1f}%) | "
+                        f"Processed: {processed} | Failed: {failed} | "
+                        f"Rate: {rate:.1f} files/sec | ETA: {remaining:.0f}s"
+                    )
+                else:
+                    koza.log(
+                        f"Progress: {file_index}/{total_files} files ({percent:.1f}%) | "
+                        f"Processed: {processed} | Failed: {failed}"
+                    )
+
+                koza.state["pwml_last_log_time"] = current_time
+
+        except Exception as e:
+            koza.log(f"Error processing PWML file {pwml_file.name}: {e}", level="WARNING")
+            koza.state["pwml_files_failed"] += 1
+            continue
+
+
+@koza.on_data_end(tag="pwml")
+def on_data_end_pwml(koza: koza.KozaTransform):
+    # Log final statistics
+    koza.log(f"Processed {koza.state.get('pwml_files_processed', 0)} PWML files successfully")
+    koza.log(f"Failed to process {koza.state.get('pwml_files_failed', 0)} PWML files")

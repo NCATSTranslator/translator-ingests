@@ -4,7 +4,6 @@ Ingest of Reference Genome Orthologs from Panther
 from typing import Any
 import requests
 import re
-from loguru import logger
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
@@ -13,10 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum, GeneFamily
 )
-from translator_ingest.util.biolink import (
-    entity_id,
-    build_association_knowledge_sources
-)
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 import koza
 from koza.model.graphs import KnowledgeGraph
@@ -48,7 +44,7 @@ def get_latest_version() -> str:
         return "unknown"
 
 @koza.on_data_begin()
-def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
+def on_begin_panther_ingest(koza_transform: koza.KozaTransform) -> None:
     """
     Called before processing begins.
     Can be used for setup or validation of input files.
@@ -57,11 +53,17 @@ def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
     koza_transform.log(f"Version: {get_latest_version()}")
 
 @koza.on_data_end()
-def on_data_end_panther(koza_transform: koza.KozaTransform):
+def on_end_panther_ingest(koza_transform: koza.KozaTransform):
     """
     Called after all data has been processed.
     Used for logging summary statistics.
     """
+    if koza_transform.transform_metadata:
+        for tag, value in koza_transform.transform_metadata.items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
     koza_transform.log("Panther Gene Orthology processing complete")
 
 
@@ -154,9 +156,11 @@ def transform_gene_to_gene_orthology(
         )
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_gene_to_disease() - record: '{str(record)}' " +
-            f"with {type(e)} exception: "+str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = f"Gene:{record.get("Gene", "Unknown")}<->Ortholog:{record.get('Ortholog', 'Unknown')}"
+        if exception_tag not in koza_transform.transform_metadata:
+            koza_transform.transform_metadata[exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata[exception_tag].append(rec_id)
         return None

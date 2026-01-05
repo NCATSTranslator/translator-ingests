@@ -1,0 +1,663 @@
+{
+  "nodes": {
+    "biolink:Disease": {
+      "id_prefixes": [
+        "DOID",
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "categories"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:SmallMolecule": {
+      "id_prefixes": [
+        "UNII",
+        "CHEBI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "categories"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:Drug": {
+      "id_prefixes": [
+        "RXCUI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "categories"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:MolecularMixture": {
+      "id_prefixes": [
+        "CHEBI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "categories"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:ChemicalEntity": {
+      "id_prefixes": [
+        "MESH",
+        "UNII",
+        "CHEBI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "categories"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    }
+  },
+  "edges": [
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:SmallMolecule",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:negatively_correlated_with",
+      "object": "biolink:SmallMolecule",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Drug",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:negatively_correlated_with",
+      "object": "biolink:Drug",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:MolecularMixture",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:negatively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Drug",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:SmallMolecule",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Drug",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Drug",
+      "predicate": "biolink:negatively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Drug",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:SmallMolecule",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:positively_correlated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:supporting_data_source",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "supporting_data_source"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "attributes"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    }
+  ]
+}

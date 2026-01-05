@@ -1,0 +1,81 @@
+{
+  "graph_id": "COHD_Automat",
+  "graph_name": "COHD",
+  "graph_description": "",
+  "graph_url": "",
+  "graph_version": "8ebe848c557cff42",
+  "sources": [
+    {
+      "source_id": "COHD",
+      "source_version": "2024-11-05",
+      "release_version": "26df4950dd1d283a",
+      "parsing_version": "1.0",
+      "supplementation_version": "1.0",
+      "normalization_scheme": {
+        "node_normalization_version": "2.3.17",
+        "edge_normalization_version": "v4.2.1",
+        "normalization_code_version": "1.2",
+        "conflation": false,
+        "strict": true
+      },
+      "merge_strategy": "default",
+      "normalization_version": "2.3.17_v4.2.1_1.2_strict",
+      "provenance": "infores:cohd",
+      "description": "",
+      "source_data_url": "",
+      "license": "",
+      "attribution": "",
+      "normalized_nodes.jsonl": {
+        "nodes": 143
+      },
+      "normalized_edges.jsonl": {
+        "edges": 137
+      }
+    }
+  ],
+  "subgraphs": [],
+  "build_status": "stable",
+  "build_time": "11-08-24 04:31:07",
+  "build_error": null,
+  "final_node_count": 143,
+  "final_edge_count": 137,
+  "merged_nodes": 0,
+  "merged_edges": 0,
+  "qc_results": {
+    "pass": true,
+    "primary_knowledge_sources": [
+      "infores:cohd"
+    ],
+    "aggregator_knowledge_sources": [],
+    "predicate_totals": {
+      "biolink:positively_correlated_with": 135,
+      "biolink:negatively_correlated_with": 2
+    },
+    "predicates_by_knowledge_source": {
+      "infores:cohd": {
+        "biolink:positively_correlated_with": 135,
+        "biolink:negatively_correlated_with": 2
+      }
+    },
+    "node_curie_prefixes": {
+      "UMLS": 2,
+      "DOID": 4,
+      "UNII": 2,
+      "CHEBI": 31,
+      "RXCUI": 103,
+      "MESH": 1
+    },
+    "edges_with_publications": {},
+    "edge_properties": [
+      "supporting_data_source",
+      "subject",
+      "predicate",
+      "score",
+      "primary_knowledge_source",
+      "attributes",
+      "object"
+    ],
+    "warnings": {}
+  },
+  "neo4j_dump": "https://localhost/COHD_Automat/8ebe848c557cff42/graph_8ebe848c557cff42.db.dump"
+}

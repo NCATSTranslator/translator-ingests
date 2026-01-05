@@ -1,0 +1,52 @@
+name: intact
+
+reader:
+  format: csv
+  delimiter: "\t"
+  comment_char: "#"
+  header_mode: none
+  files:
+    - intact.txt
+  columns:
+    - idA
+    - idB
+    - altIdsA
+    - altIdsB
+    - aliasesA
+    - aliasesB
+    - interactionDetectionMethod
+    - firstAuthor
+    - publicationIDs
+    - taxidA
+    - taxidB
+    - interactionTypes
+    - sourceDatabase
+    - interactionIDs
+    - confidenceScores
+    - complexExpansion
+    - biologicalRoleA
+    - biologicalRoleB
+    - experimentalRoleA
+    - experimentalRoleB
+    - interactorTypeA
+    - interactorTypeB
+    - xrefA
+    - xrefB
+    - xrefInteraction
+    - annotationsA
+    - annotationsB
+    - annotationsInteraction
+    - hostOrganism
+    - interactionParameters
+    - creationDate
+    - updateDate
+    - checksumA
+    - checksumB
+    - interactionChecksum
+    - negative
+    - featureA
+    - featureB
+    - stoichiometryA
+    - stoichiometryB
+    - participantIdentificationMethodA
+    - participantIdentificationMethodB

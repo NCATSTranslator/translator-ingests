@@ -5,16 +5,16 @@ from typing import Any, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     Disease,
     NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     Association,
 )
-from translator_ingest.util.biolink import INFORES_CTD, entity_id, build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
-
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import INFORES_CTD
 
 # !!! README First !!!
 #
@@ -105,7 +105,7 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
 
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-    association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate="biolink:related_to",
@@ -129,7 +129,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
     for record in data:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
             id=str(uuid.uuid4()),
             subject=chemical.id,
             predicate="biolink:related_to",
@@ -152,7 +152,7 @@ def transform_ingest_all_streaming(
     for record in data:
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
+        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
             id=str(uuid.uuid4()),
             subject=chemical.id,
             predicate="biolink:related_to",

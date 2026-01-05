@@ -1,0 +1,12 @@
+# Specify the file that needs to be downloaded for this ingest
+# The download.yaml file format is defined and used by the KGHub Downloader to download files.
+# https://monarch-initiative.github.io/kghub-downloader/
+#
+# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+---
+- url: http://repo-hub.broadinstitute.org/public/data/repo-sample-annotation-20240610.txt
+  local_name: repo-sample-annotation.txt
+  verify_ssl: false
+- url: http://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20200324.txt
+  local_name: repo-drug-annotation.txt
+  verify_ssl: false

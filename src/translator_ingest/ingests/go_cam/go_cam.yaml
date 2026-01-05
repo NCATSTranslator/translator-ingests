@@ -4,11 +4,13 @@ reader:
   format: json
   files:
     - go-cam-networkx.tar.gz
+
+transform:
   filters:
     - inclusion: include
       column: taxon
-      filter_code: in
+      filter_code: in_exact
       value:
-        - NCBITaxon:9606  # Human
-        - NCBITaxon:10090 # Mouse
-        - NCBITaxon:10116 # Rat
+        - NCBITaxon:9606
+        - NCBITaxon:10090
+        - NCBITaxon:10116

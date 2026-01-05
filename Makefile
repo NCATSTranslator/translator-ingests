@@ -1,7 +1,8 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= alliance ctd diseases gene2phenotype go_cam goa hpoa panther sider ubergraph
+SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider signor tmkp ttd ubergraph
+
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
 # Clear OVERWRITE if explicitly set to "false" or "False"
@@ -11,6 +12,9 @@ endif
 ifeq ($(OVERWRITE),False)
 OVERWRITE :=
 endif
+
+# Graph ID for merge target (default: translator_kg)
+GRAPH_ID ?= translator_kg
 
 # Include additional makefiles
 include rig.Makefile
@@ -142,7 +146,8 @@ transform:
 .PHONY: transform-%
 transform-%:
 	@echo "Transform only for $*..."
-	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite)
+	@$(RUN) python src/translator_ingest/pipeline.py $* $(if $(OVERWRITE),--overwrite) --transform-only
+
 
 .PHONY: validate
 validate: run
@@ -159,17 +164,17 @@ validate-%:
 	fi; \
 	echo "Using nodes file: $$NODES_FILE"; \
 	echo "Using edges file: $$EDGES_FILE"; \
-	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" "$$EDGES_FILE"
-
+	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" --files "$$EDGES_FILE"
 
 .PHONY: merge
 merge:
-	@echo "Merging sources and building translator_kg...";
-	$(RUN) python src/translator_ingest/merging.py translator_kg $(SOURCES) $(if $(OVERWRITE),--overwrite)
+	@echo "Merging sources and building $(GRAPH_ID)..."
+	$(RUN) python src/translator_ingest/merging.py $(GRAPH_ID) $(SOURCES) $(if $(OVERWRITE),--overwrite)
 
 .PHONY: release
 release:
 	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
+	@$(RUN) python src/translator_ingest/release.py --summary
 
 .PHONY: release-%
 release-%:

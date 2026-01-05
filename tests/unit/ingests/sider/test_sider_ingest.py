@@ -66,7 +66,7 @@ ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources
             ],
             # Captured edge contents
             {
-                "category": ["biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"],
+                "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
                 "subject": "PUBCHEM.COMPOUND:5481350",
                 "predicate": "biolink:has_side_effect",
                 "object": "UMLS:C1608945",

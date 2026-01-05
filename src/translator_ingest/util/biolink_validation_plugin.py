@@ -5,6 +5,7 @@ from linkml.validator.plugins import ValidationPlugin
 from linkml.validator.report import ValidationResult, Severity
 from linkml.validator.validation_context import ValidationContext
 from linkml_runtime.utils.schemaview import SchemaView
+from bmt import Toolkit
 
 
 def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = None):
@@ -12,8 +13,11 @@ def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = No
     if path is None:
         path = []
     if isinstance(data, dict):
-        # Check if this is a node or edge object
-        if "id" in data and ("category" in data or "subject" in data):
+        # Check if this is a node object (has id and category)
+        if "id" in data and "category" in data:
+            yield path, data
+        # Check if this is an edge object (has subject, predicate, and object)
+        elif "subject" in data and "predicate" in data and "object" in data:
             yield path, data
         else:
             # Recursively search nested dictionaries
@@ -36,8 +40,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
       2. Validate that node categories are valid Biolink Model terms
       3. Ensure edge predicates are valid Biolink Model predicates
       4. Check that all edges reference existing nodes
-      5. Validate knowledge source attribution follows Translator standards
-      6. Ensure proper evidence and provenance metadata
+      5. Validate domain and range constraints for edge predicates
+      6. Validate knowledge source attribution follows Translator standards
+      7. Ensure proper evidence and provenance metadata
     """
 
     def __init__(self, schema_view: Optional[SchemaView] = None, *args, **kwargs) -> None:
@@ -46,42 +51,53 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._valid_categories_cache = None
         self._valid_predicates_cache = None
         self._node_ids_cache = set()
+        self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
+        self._bmt = Toolkit()  # BMT toolkit for domain/range validation
+        self._ancestors_cache = {}  # Maps category name to its ancestors for performance
 
-    def _get_valid_categories(self, schema_view: SchemaView) -> Set[str]:
+    def _get_valid_categories(self) -> Set[str]:
         """Get valid Biolink Model categories."""
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
-        # Get all classes that are subclasses of NamedThing
+        # Get all classes that are subclasses of named thing using BMT
         valid_categories = set()
         try:
-            named_thing_class = schema_view.get_class("NamedThing")
-            if named_thing_class:
-                # Get all descendants of NamedThing
-                descendants = schema_view.class_descendants("NamedThing")
-                valid_categories.update(f"biolink:{cls}" for cls in descendants)
-                valid_categories.add("biolink:NamedThing")
+            # Get all class descendants using BMT
+            descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
+            
+            # For each descendant, get the proper biolink CURIE format
+            for desc in descendants:
+                element = self._bmt.get_element(desc)
+                if element and hasattr(element, 'class_uri') and element.class_uri:
+                    valid_categories.add(element.class_uri)
+                    
         except Exception as e:
-            # Having a working schema with NamedThing descendants is required
+            # Having a working schema is required
             raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
 
         self._valid_categories_cache = valid_categories
         return valid_categories
 
-    def _get_valid_predicates(self, schema_view: SchemaView) -> Set[str]:
+    def _get_valid_predicates(self) -> Set[str]:
         """Get valid Biolink Model predicates."""
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
-        # Get all predicates (slots that are subclasses of related_to)
+        # Get all predicates (slots that are subclasses of related to) using BMT
         valid_predicates = set()
         try:
-            # Get all slots that are descendants of related_to
-            descendants = schema_view.slot_descendants("related_to")
-            valid_predicates.update(f"biolink:{slot}" for slot in descendants)
-            valid_predicates.add("biolink:related_to")
+            # Get all slot descendants using BMT
+            descendants = self._bmt.get_descendants("related to", reflexive=True, mixin=True)
+            
+            # For each descendant, get the proper biolink CURIE format
+            for desc in descendants:
+                element = self._bmt.get_element(desc)
+                if element and hasattr(element, 'slot_uri') and element.slot_uri:
+                    valid_predicates.add(element.slot_uri)
+                    
         except Exception as e:
-            # Having a working schema with predicate descendants is required
+            # Having a working schema with predicates is required
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
 
         self._valid_predicates_cache = valid_predicates
@@ -96,6 +112,76 @@ class BiolinkValidationPlugin(ValidationPlugin):
         # Prefix and identifier must start with alphanumeric
         curie_pattern = r"^[A-Za-z0-9][A-Za-z0-9_\-\.]*:[A-Za-z0-9][A-Za-z0-9_\-\.]*$"
         return bool(re.match(curie_pattern, identifier))
+    
+    def _category_matches_constraint(self, categories: list[str], constraint: str) -> bool:
+        """Check if any category matches the domain/range constraint using BMT.
+        
+        Args:
+            categories: List of categories (with biolink: prefix)
+            constraint: Domain or range constraint (without biolink: prefix)
+            
+        Returns:
+            True if any category matches the constraint
+        """
+        if not constraint or not categories:
+            return True
+            
+        # Check each category against the constraint
+        for category in categories:
+            # Remove biolink: prefix for BMT lookup
+            cat_name = category.replace('biolink:', '') if category.startswith('biolink:') else category
+            
+            # Get all ancestors including mixins (with caching)
+            if cat_name not in self._ancestors_cache:
+                self._ancestors_cache[cat_name] = self._bmt.get_ancestors(cat_name, reflexive=True, mixin=True)
+            ancestors = self._ancestors_cache[cat_name]
+            
+            # Check if the constraint is in the ancestors
+            if constraint in ancestors:
+                return True
+                
+        return False
+    
+    def _validate_domain_range(self, edge_obj: dict, path: str, predicate: str, 
+                              schema_view: SchemaView) -> Iterator[ValidationResult]:
+        """Validate domain and range constraints for an edge predicate."""
+        # Remove biolink: prefix from predicate for lookup
+        pred_name = predicate.replace('biolink:', '') if predicate.startswith('biolink:') else predicate
+        
+        # Get the slot definition
+        slot = schema_view.get_slot(pred_name)
+        if not slot:
+            return
+            
+        # Check domain constraint
+        if slot.domain:
+            subject_id = edge_obj.get('subject')
+            if subject_id and subject_id in self._node_categories_cache:
+                subject_categories = self._node_categories_cache[subject_id]
+                if not self._category_matches_constraint(subject_categories, slot.domain):
+                    yield ValidationResult(
+                        type="biolink-model validation",
+                        severity=Severity.WARN,
+                        instance=edge_obj,
+                        instantiates=None,
+                        message=f"Edge at /{path} violates domain constraint: predicate '{predicate}' "
+                               f"expects domain '{slot.domain}' but subject has categories {subject_categories}",
+                    )
+                    
+        # Check range constraint
+        if slot.range:
+            object_id = edge_obj.get('object')
+            if object_id and object_id in self._node_categories_cache:
+                object_categories = self._node_categories_cache[object_id]
+                if not self._category_matches_constraint(object_categories, slot.range):
+                    yield ValidationResult(
+                        type="biolink-model validation",
+                        severity=Severity.WARN,
+                        instance=edge_obj,
+                        instantiates=None,
+                        message=f"Edge at /{path} violates range constraint: predicate '{predicate}' "
+                               f"expects range '{slot.range}' but object has categories {object_categories}",
+                    )
 
     def _validate_node(self, node_obj: dict, path: str, context: ValidationContext) -> Iterator[ValidationResult]:
         """Validate a single node object."""
@@ -136,19 +222,21 @@ class BiolinkValidationPlugin(ValidationPlugin):
             categories = node_obj["category"]
             if isinstance(categories, str):
                 categories = [categories]
+            
+            # Store categories for domain/range validation
+            if node_id:
+                self._node_categories_cache[node_id] = categories
 
-            schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if schema_view:
-                valid_categories = self._get_valid_categories(schema_view)
-                for category in categories:
-                    if category not in valid_categories:
-                        yield ValidationResult(
-                            type="biolink-model validation",
-                            severity=Severity.WARN,
-                            instance=node_obj,
-                            instantiates=context.target_class,
-                            message=f"Node at /{path} has potentially invalid category '{category}'",
-                        )
+            valid_categories = self._get_valid_categories()
+            for category in categories:
+                if category not in valid_categories:
+                    yield ValidationResult(
+                        type="biolink-model validation",
+                        severity=Severity.WARN,
+                        instance=node_obj,
+                        instantiates=context.target_class,
+                        message=f"Node at /{path} has potentially invalid category '{category}'",
+                    )
 
         # Check for name field (recommended)
         if "name" not in node_obj:
@@ -194,17 +282,20 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         if "predicate" in edge_obj:
             predicate = edge_obj["predicate"]
-            schema_view = self._schema_view or getattr(context, "schema_view", None)
-            if schema_view:
-                valid_predicates = self._get_valid_predicates(schema_view)
-                if predicate not in valid_predicates:
-                    yield ValidationResult(
-                        type="biolink-model validation",
-                        severity=Severity.WARN,
-                        instance=edge_obj,
-                        instantiates=context.target_class,
-                        message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
-                    )
+
+            valid_predicates = self._get_valid_predicates()
+            if predicate not in valid_predicates:
+                yield ValidationResult(
+                    type="biolink-model validation",
+                    severity=Severity.WARN,
+                    instance=edge_obj,
+                    instantiates=context.target_class,
+                    message=f"Edge at /{path} has potentially invalid predicate '{predicate}'",
+                )
+            elif schema_view:
+                # Validate domain and range constraints if we have a schema view
+                yield from self._validate_domain_range(edge_obj, path, predicate, schema_view)
+
 
         # Validate subject and object CURIEs
         for field in ["subject", "object"]:
@@ -251,8 +342,10 @@ class BiolinkValidationPlugin(ValidationPlugin):
         :return: Iterator over validation results
         :rtype: Iterator[ValidationResult]
         """
-        # Reset node cache for each instance
+        # Reset caches for each instance
         self._node_ids_cache = set()
+        self._node_categories_cache = {}
+        self._ancestors_cache = {}  # Clear ancestors cache for new instance
 
         # First pass: collect all node IDs and validate nodes
         for data_path, obj in _yield_biolink_objects(instance):

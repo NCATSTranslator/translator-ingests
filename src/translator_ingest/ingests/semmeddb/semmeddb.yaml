@@ -5,11 +5,11 @@ readers:
   filter_edges:
     format: jsonl
     files:
-      - kg2.10.3-semmeddb-edges.jsonl
+      - kg2.10.3-semmeddb-edges.jsonl.gz
     filters:
       - inclusion: include
         column: predicate
-        filter_code: in
+        filter_code: in_exact
         value:
           - "biolink:treats_or_applied_or_studied_to_treat"
           - "biolink:affects"

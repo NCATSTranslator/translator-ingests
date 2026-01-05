@@ -1,23 +1,20 @@
-from os.path import abspath
-import uuid
-import koza
 from typing import Any, Iterable
-
+from os.path import abspath
 import json
 import re
 
+import koza
+from koza.model.graphs import KnowledgeGraph
+
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     DiseaseOrPhenotypicFeature,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 from translator_ingest import INGESTS_PARSER_PATH
-from translator_ingest.util.biolink import build_association_knowledge_sources
-
-from koza.model.graphs import KnowledgeGraph
 
 SIDER_INGEST_PATH = INGESTS_PARSER_PATH / "sider"
 SIDER_INGEST_CONFIG_PATH = SIDER_INGEST_PATH / "sider.config.json"
@@ -43,7 +40,7 @@ def to_object(parsed_json) -> Any:
         return parsed_json
 
 
-def load_config() -> tuple[str, str]:
+def load_config() -> tuple[str,...]:
     config = json.load(open(abspath(SIDER_INGEST_CONFIG_PATH), "r"))
     obj = to_object(config)
     return (obj.infores, obj.latest_version, obj.column, obj.curie_prefix, obj.predicate, obj.transformations)
@@ -82,8 +79,8 @@ def transform_ingest_all_streaming(
         if (chemical.id, predicate, disease.id) in all_triples:
             continue
         all_triples.add((chemical.id, predicate, disease.id))
-        association = ChemicalToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
+            id=entity_id(),
             subject=chemical.id,
             predicate=predicate,
             object=disease.id,
