@@ -661,7 +661,7 @@ def cleanup_s3_bucket(
 
     bytes_deleted_gb = bytes_deleted / (1024 * 1024 * 1024)
 
-    print(f"\nS3 cleanup complete:")
+    print("\nS3 cleanup complete:")
     print(f"  Deleted: {deleted:,} objects ({bytes_deleted_gb:.2f} GB)")
     print(f"  Failed:  {failed:,} objects")
 
