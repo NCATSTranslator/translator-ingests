@@ -5,18 +5,19 @@ This ingest processes gene-to-phenotype and gene-to-expression associations
 from the Alliance of Genome Resources, for mouse (NCBITaxon:10090) and
 rat (NCBITaxon:10116) only.
 
-All nodes are minimal placeholders (id + category only) intended to be merged
+All nodes are minimal placeholders (id only) intended to be merged
 with richer data from other sources.
 """
 
-import uuid
+from typing import Any
+
+import duckdb
 import koza
-from typing import List
+from koza.model.graphs import KnowledgeGraph
 from loguru import logger
 from pathlib import Path
-import duckdb
 
-
+from bmt.pydantic import entity_id, build_association_knowledge_sources
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     GeneToPhenotypicFeatureAssociation,
@@ -27,6 +28,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+# Aggregator infores
+INFORES_AGRKB = "infores:agrkb"
 
 # Source mapping for infores
 SOURCE_MAP = {
@@ -188,32 +191,38 @@ def initialize_entity_lookup_phenotype(koza_transform):
 
 
 @koza.transform_record(tag="phenotype")
-def transform_phenotype(koza_transform, row: dict) -> List:
+def transform_phenotype(
+    koza_transform: koza.KozaTransform, row: dict[str, Any]
+) -> KnowledgeGraph | None:
     """
     Transform gene-to-phenotype associations.
+
     Only processes associations where objectId is a gene (skips genotypes/variants).
     Creates placeholder Gene and PhenotypicFeature nodes.
     """
     # Validate phenotype terms exist
     if len(row.get("phenotypeTermIdentifiers", [])) == 0:
         logger.warning(f"Phenotype record has 0 phenotype terms: {str(row)}")
-        return []
+        return None
 
     gene_id = row["objectId"]
 
     # Look up whether this objectId is a gene
-    category = lookup_entity_category(gene_id)
+    entity_category = lookup_entity_category(gene_id)
 
     # Only process gene-phenotype associations (skip genotypes/variants)
-    if category != 'biolink:Gene':
-        return []
+    if entity_category != 'biolink:Gene':
+        return None
 
-    entities = []
-    associations = []
+    nodes = []
+    edges = []
 
     # Create placeholder gene node
-    gene = Gene(id=gene_id, category=["biolink:Gene"])
-    entities.append(gene)
+    gene = Gene(id=gene_id)
+    nodes.append(gene)
+
+    # Determine primary knowledge source from gene ID prefix
+    primary_source = SOURCE_MAP[gene_id.split(':')[0]]
 
     # Process all phenotype terms
     for pheno_term in row["phenotypeTermIdentifiers"]:
@@ -222,25 +231,26 @@ def transform_phenotype(koza_transform, row: dict) -> List:
         phenotypic_feature_id = phenotypic_feature_id.replace("WB:WBPhenotype:", "WBPhenotype:")
 
         # Create placeholder phenotypic feature node
-        phenotype = PhenotypicFeature(id=phenotypic_feature_id, category=["biolink:PhenotypicFeature"])
-        entities.append(phenotype)
+        phenotype = PhenotypicFeature(id=phenotypic_feature_id)
+        nodes.append(phenotype)
 
         association = GeneToPhenotypicFeatureAssociation(
-            id="uuid:" + str(uuid.uuid1()),
-            category=["biolink:GeneToPhenotypicFeatureAssociation"],
+            id=entity_id(),
             subject=gene_id,
             predicate="biolink:has_phenotype",
             object=phenotypic_feature_id,
             publications=[row["evidence"]["publicationId"]],
-            aggregator_knowledge_source=["infores:monarchinitiative", "infores:agrkb"],
-            primary_knowledge_source=SOURCE_MAP[gene_id.split(':')[0]],
+            sources=build_association_knowledge_sources(
+                primary=primary_source,
+                aggregating=INFORES_AGRKB,
+            ),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
 
         # Add qualifiers if present
         if "conditionRelations" in row.keys() and row["conditionRelations"] is not None:
-            qualifiers: List[str] = []
+            qualifiers: list[str] = []
             for conditionRelation in row["conditionRelations"]:
                 for condition in conditionRelation["conditions"]:
                     if condition.get("conditionClassId"):
@@ -248,15 +258,18 @@ def transform_phenotype(koza_transform, row: dict) -> List:
             if qualifiers:
                 association.qualifiers = qualifiers
 
-        associations.append(association)
+        edges.append(association)
 
-    return entities + associations
+    return KnowledgeGraph(nodes=nodes, edges=edges)
 
 
 @koza.transform_record(tag="expression")
-def transform_expression(koza_transform, row: dict) -> List:
+def transform_expression(
+    koza_transform: koza.KozaTransform, row: dict[str, Any]
+) -> KnowledgeGraph | None:
     """
     Transform gene-to-expression site associations.
+
     Creates placeholder Gene, AnatomicalEntity, and CellularComponent nodes.
     """
     try:
@@ -266,7 +279,7 @@ def transform_expression(koza_transform, row: dict) -> List:
         gene_id = gene_id.replace("DRSC:XB:", "Xenbase:")
 
         db = gene_id.split(":")[0]
-        source = SOURCE_MAP[db]
+        primary_source = SOURCE_MAP[db]
 
         cellular_component_id = get_data(row, "whereExpressed.cellularComponentTermId")
         anatomical_entity_id = get_data(row, "whereExpressed.anatomicalStructureTermId")
@@ -277,52 +290,57 @@ def transform_expression(koza_transform, row: dict) -> List:
         if xref:
             publication_ids.append(xref)
 
-        entities = []
-        associations = []
+        nodes = []
+        edges = []
 
         # Create placeholder gene node
-        gene = Gene(id=gene_id, category=["biolink:Gene"])
-        entities.append(gene)
+        gene = Gene(id=gene_id)
+        nodes.append(gene)
+
+        # Build knowledge sources once for reuse
+        sources = build_association_knowledge_sources(
+            primary=primary_source,
+            aggregating=INFORES_AGRKB,
+        )
+
+        # Get assay qualifier if present
+        assay = get_data(row, "assay")
 
         # Prefer anatomical structure, fall back to cellular component
         if anatomical_entity_id:
             # Create placeholder anatomical entity node
-            anatomy = AnatomicalEntity(id=anatomical_entity_id, category=["biolink:AnatomicalEntity"])
-            entities.append(anatomy)
+            anatomy = AnatomicalEntity(id=anatomical_entity_id)
+            nodes.append(anatomy)
 
-            associations.append(
+            edges.append(
                 GeneToExpressionSiteAssociation(
-                    id="uuid:" + str(uuid.uuid1()),
-                    category=["biolink:GeneToExpressionSiteAssociation"],
+                    id=entity_id(),
                     subject=gene_id,
                     predicate="biolink:expressed_in",
                     object=anatomical_entity_id,
                     stage_qualifier=stage_term_id,
-                    qualifiers=([get_data(row, "assay")] if get_data(row, "assay") else None),
+                    qualifiers=[assay] if assay else None,
                     publications=publication_ids,
-                    aggregator_knowledge_source=["infores:monarchinitiative", "infores:agrkb"],
-                    primary_knowledge_source=source,
+                    sources=sources,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
             )
         elif cellular_component_id:
             # Create placeholder cellular component node
-            cell_component = CellularComponent(id=cellular_component_id, category=["biolink:CellularComponent"])
-            entities.append(cell_component)
+            cell_component = CellularComponent(id=cellular_component_id)
+            nodes.append(cell_component)
 
-            associations.append(
+            edges.append(
                 GeneToExpressionSiteAssociation(
-                    id="uuid:" + str(uuid.uuid1()),
-                    category=["biolink:GeneToExpressionSiteAssociation"],
+                    id=entity_id(),
                     subject=gene_id,
                     predicate="biolink:expressed_in",
                     object=cellular_component_id,
                     stage_qualifier=stage_term_id,
-                    qualifiers=([get_data(row, "assay")] if get_data(row, "assay") else None),
+                    qualifiers=[assay] if assay else None,
                     publications=publication_ids,
-                    aggregator_knowledge_source=["infores:monarchinitiative", "infores:agrkb"],
-                    primary_knowledge_source=source,
+                    sources=sources,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -331,13 +349,13 @@ def transform_expression(koza_transform, row: dict) -> List:
             logger.error(
                 f"Gene expression record has no ontology terms specified for expression site: {str(row)}"
             )
-            return []
+            return None
 
-        return entities + associations
+        return KnowledgeGraph(nodes=nodes, edges=edges)
 
     except Exception as exc:
         logger.error(f"Alliance gene expression ingest parsing exception for data row: {str(row)}\n{str(exc)}")
-        return []
+        return None
 
 
 @koza.on_data_end(tag="phenotype")
