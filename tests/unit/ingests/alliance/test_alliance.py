@@ -213,7 +213,7 @@ def test_mgi_expression_anatomy(mgi_expression_anatomy_row):
     assert assoc.predicate == "biolink:expressed_in"
     assert assoc.object == "EMAPA:17524"
     assert assoc.stage_qualifier == "MmusDv:0000003"
-    assert assoc.qualifiers == ["MMO:0000655"]
+    assert assoc.qualifier == "MMO:0000655"
     assert "PMID:12345678" in assoc.publications
     assert "MGI:5555555" in assoc.publications
 
@@ -249,7 +249,7 @@ def test_mgi_expression_cellular_component(mgi_expression_cellular_component_row
     assert assoc.predicate == "biolink:expressed_in"
     assert assoc.object == "GO:0005737"
     assert assoc.stage_qualifier == "MmusDv:0000003"
-    assert assoc.qualifiers == ["MMO:0000655"]
+    assert assoc.qualifier == "MMO:0000655"
     assert "PMID:12345678" in assoc.publications
     assert "MGI:5555555" in assoc.publications
 

@@ -248,15 +248,16 @@ def transform_phenotype(
             agent_type=AgentTypeEnum.manual_agent,
         )
 
-        # Add qualifiers if present
-        if "conditionRelations" in row.keys() and row["conditionRelations"] is not None:
-            qualifiers: list[str] = []
+        # Check for unexpected conditionRelations (not expected in mouse/rat data)
+        if "conditionRelations" in row and row["conditionRelations"]:
             for conditionRelation in row["conditionRelations"]:
-                for condition in conditionRelation["conditions"]:
+                for condition in conditionRelation.get("conditions", []):
                     if condition.get("conditionClassId"):
-                        qualifiers.append(condition["conditionClassId"])
-            if qualifiers:
-                association.qualifiers = qualifiers
+                        raise ValueError(
+                            f"Unexpected conditionRelations in mouse/rat phenotype data. "
+                            f"Record: {row['objectId']}, Condition: {condition['conditionClassId']}. "
+                            f"This ingest only supports mouse/rat data which should not have experimental conditions."
+                        )
 
         edges.append(association)
 
@@ -319,7 +320,7 @@ def transform_expression(
                     predicate="biolink:expressed_in",
                     object=anatomical_entity_id,
                     stage_qualifier=stage_term_id,
-                    qualifiers=[assay] if assay else None,
+                    qualifier=assay,
                     publications=publication_ids,
                     sources=sources,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
@@ -338,7 +339,7 @@ def transform_expression(
                     predicate="biolink:expressed_in",
                     object=cellular_component_id,
                     stage_qualifier=stage_term_id,
-                    qualifiers=[assay] if assay else None,
+                    qualifier=assay,
                     publications=publication_ids,
                     sources=sources,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
