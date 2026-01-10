@@ -17,10 +17,9 @@ from tests.unit.ingests import (
 # from translator_ingest import INGESTS_DATA_PATH
 
 from translator_ingest.ingests.bindingdb.bindingdb import (
-    on_begin_ingest_by_record,
     on_end_ingest_by_record,
     prepare_bindingdb_data,
-    transform_bindingdb_by_record
+    transform_bindingdb_by_record, on_begin_ingest_by_record
 )
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
@@ -31,7 +30,8 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     SUPPORTING_DATA_ID
 )
 from tests.unit.ingests.bindingdb.sample_data import (
-    RECORD_MISSING_FIELDS,
+    RECORD_MISSING_FIELD_1,
+    RECORD_MISSING_FIELD_2,
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     CASPASE1_WEAK_KI_RECORD,
@@ -84,8 +84,7 @@ def test_prepare_bindingdb_data(
     # result_nodes: Optional[list],
     # result_edge: Optional[dict],
 ):
-    # calling this simply to ensure that context
-    # dictionary keys are created; not otherwise used
+    # Initializes ingest stats keys
     on_begin_ingest_by_record(mock_koza_transform)
 
     # The BindingDB implementation of prepare_bindingdb_data() method
@@ -123,7 +122,12 @@ def test_prepare_bindingdb_data(
     "test_record,result_nodes,result_edge",
     [
         (
-                RECORD_MISSING_FIELDS,
+                RECORD_MISSING_FIELD_1,
+                None,  # Should be filtered out
+                None
+        ),
+        (
+                RECORD_MISSING_FIELD_2,
                 None,  # Should be filtered out
                 None
         ),
@@ -329,8 +333,7 @@ def test_ingest_transform(
     # sanity check: each test iteration should start without any metadata
     mock_koza_transform.transform_metadata.clear()
 
-    # calling this simply to ensure that context
-    # dictionary keys are created; not otherwise used
+    # Initializes ingest stats keys
     on_begin_ingest_by_record(mock_koza_transform)
 
     validate_transform_result(

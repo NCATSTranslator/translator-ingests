@@ -77,7 +77,8 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin()
 def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
-    pass
+    koza_transform.transform_metadata["rows_missing_pubchem_id"] = 0
+    koza_transform.transform_metadata["rows_missing_uniprot_id"] = 0
 
 
 @koza.on_data_end()
@@ -91,9 +92,8 @@ def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
                 level="WARNING"
             )
     for tag, value in koza_transform.transform_metadata.items():
-        value = ',\n'.join(value) if isinstance(value, Iterable) else value
         koza_transform.log(
-            msg=f"Exception {str(tag)} encountered for records: {value}.",
+            msg=f"{str(tag)}: {value}.",
             level="WARNING"
         )
 
@@ -127,47 +127,44 @@ def prepare_bindingdb_data(
     :return: Iterable[dict[str, Any]], Consolidation of related assay records
              for each unique ligand-target pair, with possible aggregation
              of distinct annotation encountered across the original set of assays.
+             If the method raises an exception, the entire ingestion process will be aborted
+             with a descriptive error trace (a desired outcome to avoid opaque silent failures).
     """
-    try:
-        # As of December 2025, the BindingDB input file is
-        # assumed to be a Zipfile archive with a single file inside
-        data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
+    # As of December 2025, the BindingDB input file is
+    # assumed to be a Zipfile archive with a single file inside
+    data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
 
-        # Directly read and extract useful columns from the original
-        # downloaded bindingdb data file, using the 'polars' library.
-        df = extract_bindingdb_columns_polars(
-            data_archive_path,
-            columns=BINDINGDB_COLUMNS,
-            target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
-        )
+    # Directly read and extract useful columns from the original
+    # downloaded bindingdb data file, using the 'polars' library.
+    df = extract_bindingdb_columns_polars(
+        data_archive_path,
+        columns=BINDINGDB_COLUMNS,
+        target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
+    )
 
-        # Process publications
-        df = process_publications(koza_transform, df)
+    # Process publications
+    df = process_publications(koza_transform, df)
 
-        # Map curation knowledge sources to supporting_data_ids
-        lookup = pl.DataFrame(
-            {
-                CURATION_DATASOURCE: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.keys(),
-                SUPPORTING_DATA_ID: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.values()
-            }
-        )
-        df = df.join(lookup, on=CURATION_DATASOURCE, how="left")
+    # Map curation knowledge sources to supporting_data_ids
+    lookup = pl.DataFrame(
+        {
+            CURATION_DATASOURCE: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.keys(),
+            SUPPORTING_DATA_ID: CURATION_DATA_SOURCE_TO_INFORES_MAPPING.values()
+        }
+    )
+    df = df.join(lookup, on=CURATION_DATASOURCE, how="left")
 
-        # Group by unique ligand-target-publication combinations
-        # This consolidates duplicate assay records
-        # TODO: this operation does yet not aggregate disparate annotation across assays;
-        #       Such annotation might need to be so aggregated in future ingest iterations?
-        df = df.unique(
-            subset=[PUBLICATION, PUBCHEM_CID, UNIPROT_ID],
-            keep="last"  # Keep the last occurrence (matches current behavior)
-        )
+    # Group by unique ligand-target-publication combinations
+    # This consolidates duplicate assay records
+    # TODO: this operation does yet not aggregate disparate annotation across assays;
+    #       Such annotation might need to be so aggregated in future ingest iterations?
+    df = df.unique(
+        subset=[PUBLICATION, PUBCHEM_CID, UNIPROT_ID],
+        keep="last"  # Keep the last occurrence (matches current behavior)
+    )
 
-        return df.to_dicts()
+    return df.to_dicts()
 
-    except Exception as e:
-        exception_tag = f"{str(type(e))}: {str(e)}"
-        koza_transform.transform_metadata[exception_tag] = ["Failed to load BindingDb data."]
-        return None
 
 @koza.transform_record()
 def transform_bindingdb_by_record(
@@ -184,65 +181,59 @@ def transform_bindingdb_by_record(
     :param record: Individual BindingDb records to be processed.
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
-    try:
-        # Nodes
-        assert record[PUBCHEM_CID], "Empty PubChem CID in BindingDb record."
-        assert record[UNIPROT_ID], "Empty UniProt ID in BindingDb record."
-
-        # TODO: All ligands will be treated as ChemicalEntity, for now,
-        #       as a first approximation but we may want to consider
-        #       using more specialized classes if suitable discrimination
-        #       can eventually be made in between chemical types
-        chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record[PUBCHEM_CID])
-
-        # Taxon of protein target
-        taxon_label = record[SOURCE_ORGANISM]
-        taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None) if taxon_label else None
-
-        # Unless otherwise advised, all BindingDb targets
-        # are assumed to be (UniProt registered) proteins.
-        target_name = record[TARGET_NAME]
-        protein = Protein(
-            id="UniProtKB:" + record[UNIPROT_ID],
-            name=target_name,
-            in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
-            in_taxon_label=taxon_label
-        )
-
-        # Publications
-        publications = [record[PUBLICATION]]
-
-        # Sources
-        target_label = web_string(target_name)
-        supporting_data_id = record[SUPPORTING_DATA_ID]
-        supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
-        source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
-        sources = build_association_knowledge_sources(
-            primary=("infores:bindingdb",[source_record_url]),
-            supporting=supporting_data
-        )
-
-        # Edge
-        association = ChemicalGeneInteractionAssociation(
-            id=entity_id(),
-            subject=chemical.id,
-            predicate="biolink:directly_physically_interacts_with",
-            object=protein.id,
-            publications=publications,
-            sources=sources,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-
-        return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
-
-    except Exception as e:
-        # Tally errors here
-        exception_tag = f"{str(type(e))}: {str(e)}"
-        rec_id = (f"Ligand:{record.get(PUBCHEM_CID, "Unknown")}->"
-                  f"Target:{record.get(UNIPROT_ID, 'Unknown')}")
-        if exception_tag not in koza_transform.transform_metadata:
-            koza_transform.transform_metadata[exception_tag] = [rec_id]
-        else:
-            koza_transform.transform_metadata[exception_tag].append(rec_id)
+    # Nodes
+    pubchem_id = record.get(PUBCHEM_CID, "")
+    if not pubchem_id:
+        koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
         return None
+    uniprot_id = record.get(UNIPROT_ID, "")
+    if not uniprot_id:
+        koza_transform.transform_metadata["rows_missing_uniprot_id"] += 1
+        return None
+
+    # TODO: All ligands will be treated as ChemicalEntity, for now,
+    #       as a first approximation but we may want to consider
+    #       using more specialized classes if suitable discrimination
+    #       can eventually be made in between chemical types
+    chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:" + pubchem_id)
+
+    # Taxon of protein target
+    taxon_label = record[SOURCE_ORGANISM]
+    taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None) if taxon_label else None
+
+    # Unless otherwise advised, all BindingDb targets
+    # are assumed to be (UniProt registered) proteins.
+    target_name = record[TARGET_NAME]
+    protein = Protein(
+        id="UniProtKB:" + uniprot_id,
+        name=target_name,
+        in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
+        in_taxon_label=taxon_label
+    )
+
+    # Publications
+    publications = [record[PUBLICATION]]
+
+    # Sources
+    target_label = web_string(target_name)
+    supporting_data_id = record[SUPPORTING_DATA_ID]
+    supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
+    source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
+    sources = build_association_knowledge_sources(
+        primary=("infores:bindingdb",[source_record_url]),
+        supporting=supporting_data
+    )
+
+    # Edge
+    association = ChemicalGeneInteractionAssociation(
+        id=entity_id(),
+        subject=chemical.id,
+        predicate="biolink:directly_physically_interacts_with",
+        object=protein.id,
+        publications=publications,
+        sources=sources,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+
+    return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
