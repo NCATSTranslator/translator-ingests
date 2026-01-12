@@ -2,27 +2,29 @@
 CLI entry point for uploading translator-ingests data and releases to S3.
 
 This module provides the command-line interface for the `make upload` target.
+Data sources and release sources are handled as separate, independent lists.
 
 Requirements:
     - Must run on EC2 instance with IAM role permissions
     - Run after `make run` and `make release` have been executed
-    - Uploads both /data and /releases directories to S3 by default
 
 Usage:
-    # Upload specific sources
-    uv run python src/translator_ingest/upload_s3.py go_cam ctd
-
-    # Upload all sources (auto-discover)
+    # auto-discover data and release sources separately (no combining)
     uv run python src/translator_ingest/upload_s3.py
 
-    # Upload without cleanup
-    uv run python src/translator_ingest/upload_s3.py go_cam --no-cleanup
+    # explicit control over different source lists
+    uv run python src/translator_ingest/upload_s3.py \
+        --data-sources "ctd go_cam ncbigene" \
+        --release-sources "translator_kg ctd go_cam"
 
-    # Upload only data directory
-    uv run python src/translator_ingest/upload_s3.py --data-only
+    # upload data only for specific sources
+    uv run python src/translator_ingest/upload_s3.py --data-sources "ncbigene"
 
-    # Upload only releases directory
-    uv run python src/translator_ingest/upload_s3.py --releases-only
+    # upload releases only for specific sources
+    uv run python src/translator_ingest/upload_s3.py --release-sources "translator_kg"
+
+    # skip cleanup after upload
+    uv run python src/translator_ingest/upload_s3.py --no-cleanup
 
 Via Makefile:
     make upload SOURCES="go_cam ctd"
@@ -41,29 +43,38 @@ from translator_ingest.util.storage.s3 import upload_and_cleanup
 logger = get_logger(__name__)
 
 
-def discover_sources() -> list[str]:
-    """Auto-discover sources from /data and /releases directories.
+def discover_data_sources() -> list[str]:
+    """Discover sources from /data directory only.
 
     Returns:
-        List of unique source names found in both directories
+        Sorted list of source names found in /data directory
     """
-    sources = set()
-
-    # Discover from /data
+    sources = []
     data_path = Path(INGESTS_DATA_PATH)
+    
     if data_path.exists():
         for item in data_path.iterdir():
             if item.is_dir():
-                sources.add(item.name)
+                sources.append(item.name)
+    
+    return sorted(sources)
 
-    # Discover from /releases
+
+def discover_release_sources() -> list[str]:
+    """Discover sources from /releases directory only.
+
+    Returns:
+        Sorted list of source names found in /releases directory
+    """
+    sources = []
     releases_path = Path(INGESTS_RELEASES_PATH)
+    
     if releases_path.exists():
         for item in releases_path.iterdir():
             if item.is_dir():
-                sources.add(item.name)
-
-    return sorted(list(sources))
+                sources.append(item.name)
+    
+    return sorted(sources)
 
 
 def print_upload_summary(results: dict):
@@ -119,71 +130,83 @@ def print_upload_summary(results: dict):
 
 
 @click.command()
-@click.argument("sources", nargs=-1, required=False)
+@click.option(
+    "--data-sources",
+    help="Space-separated list of sources to upload from /data (e.g., 'ctd go_cam ncbigene')"
+)
+@click.option(
+    "--release-sources", 
+    help="Space-separated list of sources to upload from /releases (e.g., 'translator_kg ctd go_cam')"
+)
 @click.option("--no-cleanup", is_flag=True, help="Skip EBS cleanup after upload")
-@click.option("--data-only", is_flag=True, help="Upload only /data, skip /releases")
-@click.option("--releases-only", is_flag=True, help="Upload only /releases, skip /data")
-def main(sources, no_cleanup, data_only, releases_only):
+def main(data_sources, release_sources, no_cleanup):
     """Upload translator-ingests data and releases to S3.
 
-    If no SOURCES are specified, automatically discovers and uploads all sources
-    found in /data and /releases directories.
+    If no sources are specified, automatically discovers sources from /data 
+    and /releases directories separately (no combining).
 
     Examples:
         \b
-        # Upload specific sources
-        uv run python src/translator_ingest/upload_s3.py go_cam ctd
-
-        \b
-        # Upload all sources (auto-discover)
+        # auto-discover both data and release sources separately
         uv run python src/translator_ingest/upload_s3.py
 
         \b
-        # Upload without cleanup
-        uv run python src/translator_ingest/upload_s3.py go_cam --no-cleanup
+        # explicit control over different source lists
+        uv run python src/translator_ingest/upload_s3.py \\
+            --data-sources "ctd go_cam ncbigene" \\
+            --release-sources "translator_kg ctd go_cam"
 
         \b
-        # Upload only data directory
-        uv run python src/translator_ingest/upload_s3.py --data-only
+        # upload data only for specific sources
+        uv run python src/translator_ingest/upload_s3.py --data-sources "ncbigene"
 
         \b
-        # Upload only releases directory
-        uv run python src/translator_ingest/upload_s3.py --releases-only
+        # upload releases only for specific sources
+        uv run python src/translator_ingest/upload_s3.py --release-sources "translator_kg"
+
+        \b
+        # skip cleanup after upload
+        uv run python src/translator_ingest/upload_s3.py --no-cleanup
     """
-    # Use first source for logging, or "upload" if multiple/none specified
-    log_source = sources[0] if len(sources) == 1 else "upload"
-    setup_logging(source=log_source)
+    setup_logging(source="upload")
 
-    # Validate conflicting options
-    if data_only and releases_only:
-        logger.error("Cannot specify both --data-only and --releases-only")
-        raise click.UsageError("Cannot specify both --data-only and --releases-only")
+    # Parse source lists from space-separated strings
+    data_source_list = None
+    release_source_list = None
+    
+    if data_sources:
+        data_source_list = data_sources.split()
+        logger.info(f"Data sources specified: {', '.join(data_source_list)}")
+    
+    if release_sources:
+        release_source_list = release_sources.split()
+        logger.info(f"Release sources specified: {', '.join(release_source_list)}")
 
-    # Auto-discover sources if not specified
-    if not sources:
-        logger.info("No sources specified, auto-discovering sources...")
-        sources = discover_sources()
-        if not sources:
+    # Auto-discover if neither specified
+    if data_sources is None and release_sources is None:
+        logger.info("No sources specified, auto-discovering sources separately...")
+        
+        data_source_list = discover_data_sources()
+        release_source_list = discover_release_sources()
+        
+        if not data_source_list and not release_source_list:
             logger.warning("No sources found in /data or /releases directories")
             print("No sources found to upload.")
             return
-        logger.info(f"Discovered {len(sources)} sources: {', '.join(sources)}")
-    else:
-        sources = list(sources)
+            
+        logger.info(f"Discovered {len(data_source_list)} data sources: {', '.join(data_source_list) if data_source_list else 'none'}")
+        logger.info(f"Discovered {len(release_source_list)} release sources: {', '.join(release_source_list) if release_source_list else 'none'}")
 
-    # Determine what to upload
-    upload_data = not releases_only
-    upload_releases = not data_only
-
-    logger.info(f"Starting S3 upload for {len(sources)} sources...")
-    logger.info(f"Upload data: {upload_data}, Upload releases: {upload_releases}, Cleanup: {not no_cleanup}")
+    logger.info(f"Starting S3 upload...")
+    logger.info(f"Data sources: {data_source_list if data_source_list else 'none'}")
+    logger.info(f"Release sources: {release_source_list if release_source_list else 'none'}")
+    logger.info(f"Cleanup: {not no_cleanup}")
 
     # Execute upload and cleanup
     results = upload_and_cleanup(
-        sources=sources,
-        cleanup=not no_cleanup,
-        upload_data=upload_data,
-        upload_releases=upload_releases
+        data_sources=data_source_list,
+        release_sources=release_source_list,
+        cleanup=not no_cleanup
     )
 
     # Print summary

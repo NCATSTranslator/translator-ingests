@@ -3,6 +3,7 @@ S3 storage component for translator-ingests.
 
 This module provides simple, elegant S3 upload functionality for syncing
 local /data and /releases directories to S3 bucket with EBS cleanup.
+Data sources and release sources are handled as separate, independent lists.
 
 Requirements:
     - Must run on EC2 instance with IAM role granting S3 permissions
@@ -12,13 +13,17 @@ Requirements:
 Usage:
     from translator_ingest.util.storage.s3 import S3Uploader, upload_and_cleanup
 
-    # Upload single source
+    # Upload single source (low-level)
     uploader = S3Uploader()
     uploader.upload_source_data("go_cam")
     uploader.upload_source_releases("go_cam")
 
-    # Upload multiple sources with cleanup
-    upload_and_cleanup(sources=["go_cam", "ctd"], cleanup=True)
+    # Upload separate data and release source lists (high-level)
+    upload_and_cleanup(
+        data_sources=["ctd", "go_cam", "ncbigene"],
+        release_sources=["translator_kg", "ctd", "go_cam"],
+        cleanup=True
+    )
 """
 
 import json
@@ -355,18 +360,16 @@ def cleanup_old_releases(source: str, keep_latest: bool = True) -> dict:
 
 
 def upload_and_cleanup(
-    sources: list[str],
+    data_sources: list[str] | None = None,
+    release_sources: list[str] | None = None,
     cleanup: bool = True,
-    upload_data: bool = True,
-    upload_releases: bool = True
 ) -> dict:
-    """Main orchestrator: upload sources to S3, then cleanup EBS.
+    """Upload sources to S3 and cleanup EBS, handling data and releases separately.
 
     Args:
-        sources: List of source names to upload
-        cleanup: If True, cleanup old versions from EBS after upload (default: True)
-        upload_data: If True, upload /data directory (default: True)
-        upload_releases: If True, upload /releases directory (default: True)
+        data_sources: List of source names to upload from /data (None = skip data uploads)
+        release_sources: List of source names to upload from /releases (None = skip release uploads)
+        cleanup: If True, cleanup old versions from EBS after successful upload (default: True)
 
     Returns:
         Aggregate statistics dictionary:
@@ -381,6 +384,13 @@ def upload_and_cleanup(
     """
     uploader = S3Uploader()
 
+    # Normalize inputs
+    data_sources = data_sources or []
+    release_sources = release_sources or []
+    
+    # Collect all unique sources for tracking
+    all_sources = set(data_sources) | set(release_sources)
+    
     sources_processed = 0
     total_uploaded = 0
     total_failed = 0
@@ -388,7 +398,8 @@ def upload_and_cleanup(
     total_bytes_freed = 0
     per_source_stats = {}
 
-    for source in sources:
+    # Process each source
+    for source in sorted(all_sources):
         logger.info(f"Processing source: {source}")
         source_stats = {
             'data_upload': {},
@@ -397,8 +408,8 @@ def upload_and_cleanup(
             'releases_cleanup': {}
         }
 
-        # Upload data directory
-        if upload_data:
+        # Upload data if source is in data_sources list
+        if source in data_sources:
             try:
                 data_stats = uploader.upload_source_data(source)
                 source_stats['data_upload'] = data_stats
@@ -409,8 +420,8 @@ def upload_and_cleanup(
                 logger.error(f"Failed to upload data for {source}: {e}")
                 source_stats['data_upload'] = {'error': str(e)}
 
-        # Upload releases directory
-        if upload_releases:
+        # Upload releases if source is in release_sources list
+        if source in release_sources:
             try:
                 releases_stats = uploader.upload_source_releases(source)
                 source_stats['releases_upload'] = releases_stats
@@ -421,23 +432,23 @@ def upload_and_cleanup(
                 logger.error(f"Failed to upload releases for {source}: {e}")
                 source_stats['releases_upload'] = {'error': str(e)}
 
-        # Cleanup EBS if requested and upload was successful
+        # Cleanup EBS if requested and uploads succeeded
         if cleanup:
-            # Only cleanup if uploads succeeded (no failed uploads)
+            # Only cleanup if all attempted uploads succeeded
             data_failed = source_stats.get('data_upload', {}).get('failed', 0)
             releases_failed = source_stats.get('releases_upload', {}).get('failed', 0)
 
             if data_failed == 0 and releases_failed == 0:
                 logger.info(f"Upload successful for {source}, proceeding with EBS cleanup...")
 
-                # Cleanup old data versions
-                if upload_data:
+                # Cleanup old data versions if we uploaded data
+                if source in data_sources:
                     cleanup_stats = cleanup_old_source_versions(source, keep_latest=True)
                     source_stats['data_cleanup'] = cleanup_stats
                     total_bytes_freed += cleanup_stats['bytes_freed']
 
-                # Cleanup old releases
-                if upload_releases:
+                # Cleanup old releases if we uploaded releases
+                if source in release_sources:
                     cleanup_stats = cleanup_old_releases(source, keep_latest=True)
                     source_stats['releases_cleanup'] = cleanup_stats
                     total_bytes_freed += cleanup_stats['bytes_freed']
@@ -447,8 +458,8 @@ def upload_and_cleanup(
         per_source_stats[source] = source_stats
         sources_processed += 1
 
-    # Upload release summary if uploading releases
-    if upload_releases:
+    # Upload release summary if any releases were uploaded
+    if release_sources:
         logger.info("Uploading release summary...")
         uploader.upload_release_summary()
 

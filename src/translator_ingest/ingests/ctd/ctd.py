@@ -47,15 +47,7 @@ EXPOSURE_EVENTS_PREDICATES = {
 def get_latest_version():
     # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
     # with a version on it. Fetch the html and parse it to determine the current version.
-    html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, "html.parser")
-    version_header: BeautifulSoup.Tag = resp.find(id="pgheading")
-    if version_header is not None:
-        # pgheading looks like "Data Status: July 2025", convert it to "July_2025"
-        return version_header.text.split(":")[1].strip().replace(" ", "_")
-    else:
-        raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
-
+    return "November_2025"  # Temporary hardcoding until we can set up a better system
 
 @koza.transform_record(tag="chemicals_diseases")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The storage component handles uploading translator-ingests data and releases to an S3 bucket, with automatic cleanup of old versions from EBS to save local storage space.
+The storage component handles uploading translator-ingests data and releases to an S3 bucket, with automatic cleanup of old versions from EBS to save local storage space. Data sources and release sources are handled as separate, independent lists to provide explicit control over which sources get data uploads vs releases.
 
 ## EC2 Instance Requirements
 
@@ -42,9 +42,9 @@ After a successful upload, old versions are automatically removed from EBS to fr
 
 ## Makefile Commands
 
-**make upload SOURCES="go_cam ctd"** - Upload specified sources to S3 with EBS cleanup
+**make upload-all** - Auto-discover and upload all sources (data and releases separately, no combining)
 
-**make upload-all** - Upload all sources discovered in the data directory
+**make upload SOURCES="go_cam ctd"** - Upload specified sources to S3 with EBS cleanup (Note: currently uses old interface)
 
 **make upload-go_cam** - Upload a single source (pattern: upload-{source})
 
@@ -53,6 +53,26 @@ After a successful upload, old versions are automatically removed from EBS to fr
 **make cleanup-s3** - Delete all objects from S3 bucket (dangerous, requires confirmation)
 
 **make cleanup-s3-source SOURCES="go_cam"** - Delete specific source from S3 (dangerous, requires confirmation)
+
+## Direct Python Usage (Advanced)
+
+For explicit control over separate data vs release source lists:
+
+```bash
+# auto-discover data and release sources separately (same as make upload-all)
+uv run python src/translator_ingest/upload_s3.py
+
+# specify different lists for data and releases
+uv run python src/translator_ingest/upload_s3.py \
+    --data-sources "ctd go_cam ncbigene" \
+    --release-sources "translator_kg ctd go_cam"
+
+# upload only data for specific sources
+uv run python src/translator_ingest/upload_s3.py --data-sources "ncbigene"
+
+# upload only releases for specific sources
+uv run python src/translator_ingest/upload_s3.py --release-sources "translator_kg"
+```
 
 ## Logging
 
