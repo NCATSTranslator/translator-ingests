@@ -86,7 +86,7 @@ def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
     metadata = koza_transform.transform_metadata
     if MISSING_PUBS in metadata:
         num_missing_pubs = metadata.pop(MISSING_PUBS)
-        if metadata[MISSING_PUBS] > 0:
+        if num_missing_pubs > 0:
             koza_transform.log(
                 msg=f"Warning: {num_missing_pubs} BindingDb records were missing publications.",
                 level="WARNING"
