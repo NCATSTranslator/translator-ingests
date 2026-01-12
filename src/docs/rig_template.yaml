@@ -72,7 +72,7 @@
     edge_type_info:  # (required, multivalued, range = EdgeType)
       - subject_categories:  # (required, multivalued, range = URIorCURIE) Note: multiple sub_cat and obj_cat values for an edge type does not mean that the full cross-product must be instantiated in the data. See schema for more details.
           -
-        predicates:  # (required, multivaluded, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
+        predicates:  # (required, multivalued, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
           - 
         object_categories:  # (required, multivalued, range = URIorCURIE)
           -
