@@ -197,7 +197,7 @@ def main(data_sources, release_sources, no_cleanup):
         logger.info(f"Discovered {len(data_source_list)} data sources: {', '.join(data_source_list) if data_source_list else 'none'}")
         logger.info(f"Discovered {len(release_source_list)} release sources: {', '.join(release_source_list) if release_source_list else 'none'}")
 
-    logger.info(f"Starting S3 upload...")
+    logger.info("Starting S3 upload...")
     logger.info(f"Data sources: {data_source_list if data_source_list else 'none'}")
     logger.info(f"Release sources: {release_source_list if release_source_list else 'none'}")
     logger.info(f"Cleanup: {not no_cleanup}")
