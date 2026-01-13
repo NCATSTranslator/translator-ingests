@@ -90,15 +90,15 @@
           -
         knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
           -
-        klat_rationale:  # (optional, range = string)  Include when the choice of knowledge level / agent type is tricky or nuanced and we want to document our rationale.  
         primary_knowledge_source:  # (required, range = URIorCURIE (an infores)
         supporting_data_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
           -
-        aggregator_knowledge_source:  # (optional, range = URIorCURIE (an infores id))
-        knowledge_source_rationale:  # (optional, range = string)  Include when knowledge source assignments are tricky/nuanced and we want to document our rationale.           
+        aggregator_knowledge_source:  # (optional, range = URIorCURIE (an infores id))      
         edge_properties:  # (optional, multivalued, range = URIorCURIE)
           -
-        ui_explanation:  # (required, range = string)
+        klat_and source_rationale:  # (optional, range = string)  Include when the choice of KL/AT and/or knowledge source annotations are tricky or nuanced, and we want to document our rationale.
+        transform_rationale:  # (optional, range = string)  Notes about the transform logic / rationale for this edge type - esp if tricky or nuanced, and we want to document our rationale.          
+        ui_explanation:  # (required, range = string)  Ideally, can derived this from content of the klat/source and transform rationale fields. 
         additional_notes:  # (optional, range = string)
 
     node_type_info:  # (required, multivalued, range = NodeType)
