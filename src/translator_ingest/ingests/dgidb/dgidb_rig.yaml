@@ -133,8 +133,26 @@ target_info:
         - knowledge_assertion
       agent_type:
         - automated_agent
-      primary_knolwedge_source: infores:dgidb (they are an interpretive aggregator that evaluates and scores reports of the same interaction pulled from one or more external sources)
-      supporting_data_source:  infores ids of the one or more external sources from which dgidb pulled records of the interaction reported in a given edge.         
+      primary_knolwedge_source: infores:dgidb
+      supporting_data_source:
+        - infores:cancercommons
+        - infores:cgi
+        - infores:chembl
+        - infores:civic
+        - infores:ckb-core
+        - infores:clearity-biomarkers
+        - infores:clearity-clinical-trial
+        - infores:cosmic
+        - infores:docm
+        - infores:dtc
+        - infores:fda-pgx
+        - infores:gtopdb
+        - infores:mycancergenome
+        - infores:mycancergenome-trials
+        - infores:ncit
+        - infores:oncokb
+        - infores:pharmgkb
+        - infores:ttd    
       edge_properties:
         - publications    ## for specific underlying sources
         - dgidb_interaction_score    ## temp attribute! currently not on inferred edges
@@ -188,8 +206,26 @@ target_info:
         - knowledge_assertion
       agent_type:
         - automated_agent
-      primary_knolwedge_source: infores:dgidb (they are an interpretive aggregator that evaluates and scores reports of the same interaction pulled from one or more external sources)
-      supporting_data_source:  infores ids of the one or more external sources from which dgidb pulled records of the interaction reported in a given edge.         
+      primary_knolwedge_source: infores:dgidb
+      supporting_data_source:
+        - infores:cancercommons
+        - infores:cgi
+        - infores:chembl
+        - infores:civic
+        - infores:ckb-core
+        - infores:clearity-biomarkers
+        - infores:clearity-clinical-trial
+        - infores:cosmic
+        - infores:docm
+        - infores:dtc
+        - infores:fda-pgx
+        - infores:gtopdb
+        - infores:mycancergenome
+        - infores:mycancergenome-trials
+        - infores:ncit
+        - infores:oncokb
+        - infores:pharmgkb
+        - infores:ttd
       edge_properties:
         - publications    ## for specific underlying sources
         - dgidb_interaction_score    ## temp attribute! currently not on some edges
