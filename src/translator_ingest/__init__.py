@@ -17,6 +17,6 @@ INGESTS_LOGS_PATH = TRANSLATOR_INGEST_PATH / ".." / ".." / "logs"
 INGESTS_PARSER_PATH = TRANSLATOR_INGEST_PATH / "ingests"
 INGEST_PARSER_DIR = INGESTS_PARSER_PATH.absolute()
 
-# Default to S3 storage for now
-INGESTS_STORAGE_URL = os.environ.get("INGESTS_STORAGE_URL", "s3://translator-ingests/data")
-INGESTS_RELEASES_URL = os.environ.get("INGESTS_RELEASES_URL", "s3://translator-ingests/releases")
+# Default public HTTPS endpoints for KGX storage (browser view format)
+INGESTS_STORAGE_URL = os.environ.get("INGESTS_STORAGE_URL", "https://kgx-storage.rtx.ai/?path=data")
+INGESTS_RELEASES_URL = os.environ.get("INGESTS_RELEASES_URL", "https://kgx-storage.rtx.ai/?path=releases")
