@@ -88,6 +88,10 @@
             value_description:  # (optional, range = string)
         knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
           -
+        primary_knowledge_source:  # (required, range = URIorCURIE (an infores)
+        supporting_data_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
+          -
+        aggregator_knowledge_source:  # (optional, range = URIorCURIE (an infores id))
         agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
           -
         edge_properties:  # (optional, multivalued, range = URIorCURIE)
