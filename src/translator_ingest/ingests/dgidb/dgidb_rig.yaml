@@ -74,15 +74,46 @@ target_info:
         - knowledge_assertion
       agent_type:
         - automated_agent
-      primary_knolwedge_source: infores:dgidb (they are an interpretive aggregator that evaluates and scores reports of the same interaction pulled from one or more external sources)
-      supporting_data_source:  infores ids of the one or more external sources from which dgidb pulled records of the interaction reported in a given edge. 
+      primary_knolwedge_source: infores:dgidb
+      supporting_data_source:
+        - infores:cancercommons
+        - infores:cgi
+        - infores:chembl
+        - infores:civic
+        - infores:ckb-core
+        - infores:clearity-biomarkers
+        - infores:clearity-clinical-trial
+        - infores:cosmic
+        - infores:docm
+        - infores:dtc
+        - infores:fda-pgx
+        - infores:gtopdb
+        - infores:mycancergenome
+        - infores:mycancergenome-trials
+        - infores:ncit
+        - infores:oncokb
+        - infores:pharmgkb
+        - infores:ttd
       edge_properties:
         - publications    ## for specific underlying sources
         - dgidb_interaction_score    ## temp attribute!
         - dgidb_evidence_score       ## temp attribute!
         - original_subject
-        - original_object
-      ui_explanation: "The DGIdb drug-gene interaction(s) had no interaction_type specified and/or the interaction_type was 'other/unknown'."
+        - original_object        
+      klat_and_source_rationale: >-
+        DGIdb is an 'interpretive aggregator' that evaluates and scores records of the same interaction it pulls from one or more external sources.
+        While DGIdb source data maintains separate records for each claim it pulls from an external source, its assessment effectively treats
+        each source claim as evidence for an implicit derived claim by DGIdb to which the score applies. 
+        Translator aggregates records that make the same claim in the DGIdb source data into a single edge, representing the implicit claim made by DGIdb,
+        and attaches the dgidb-assigned score to these aggregate edges as appropriate.
+        For this reason, DGIdb is considered the primary knowledge source, and its upstream sources are supporting data sources.
+        Because the DGIdb process that assigns the score to the implicit aggregate claim is largely automated, the agent type is automated_agent. 
+        Because this implicit claim represented in the edge is typically the aggregate of prior curated assertions, the knowledge level is knowlege_assertion.
+      transform_ratioanle: >- 
+        DGIdb interaction records where the interaction_type is not specified, or is reported as 'other/unknown', result in an edge using the broad biolink:interacts_with predicate,
+        which reports an interaction of some type is occurring.
+      ui_explanation:   # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.  
+      
       # additional_notes:  # (optional, range = string)
     ## BINDER OR INFERRED physical interaction edges
     - subject_categories:
@@ -110,8 +141,22 @@ target_info:
         - dgidb_evidence_score       ## temp attribute! currently not on inferred edges
         - original_subject
         - original_object
-      ui_explanation: "The DGIdb drug-gene interaction(s) had the interaction_type 'binder' OR a value that implied a physical-interaction (so Translator generated another edge to represent this)."
+      klat_and_source_rationale: >-
+        DGIdb is an 'interpretive aggregator' that evaluates and scores records of the same interaction it pulls from one or more external sources.
+        While DGIdb source data maintains separate records for each claim it pulls from an external source, its assessment effectively treats
+        each source claim as evidence for an implicit derived claim by DGIdb to which the score applies. 
+        Translator aggregates records that make the same claim in the DGIdb source data into a single edge, representing the implicit claim made by DGIdb,
+        and attaches the dgidb-assigned score to these aggregate edges as appropriate.
+        For this reason, DGIdb is considered the primary knowledge source, and its upstream sources are supporting data sources.
+        Because the DGIdb process that assigns the score to the implicit aggregate claim is largely automated, the agent type is automated_agent. 
+        Because this implicit claim represented in the edge is typically the aggregate of prior curated assertions, the knowledge level is knowlege_assertion.
+      transform_ratioanle: >- 
+        DGIdb interaction records where the interaction_type is 'binder' OR a value that implies a necessary physical-interaction (e.g. 'agonist', 'antibody', 
+        'blocker', 'inhibitor', and 'inverse agonist') result in an edge using the biolink:directly_physically_interacts_with predicate, and a mechanism of 'binding' 
+        if this is the interaction_type reported by DGIdb.
+      ui_explanation:    # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.  
       additional_notes: "The 'implied physical-interaction' values are currently 'agonist', 'antibody', 'blocker', 'inhibitor', and 'inverse agonist'."
+      
     ## AFFECTS: ALL OTHER INTERACTION_TYPES
     - subject_categories:
         - biolink:ChemicalEntity
@@ -151,7 +196,20 @@ target_info:
         - dgidb_evidence_score       ## temp attribute! currently not on some edges
         - original_subject
         - original_object
-      ui_explanation: "The DGIdb drug-gene interaction(s) had an interaction_type that wasn't 'binder' OR 'other/unknown'. These interaction_types imply that the drug affects the gene or its product in some manner."
+      klat_and_source_rationale: >-
+        DGIdb is an 'interpretive aggregator' that evaluates and scores records of the same interaction it pulls from one or more external sources.
+        While DGIdb source data maintains separate records for each claim it pulls from an external source, its assessment effectively treats
+        each source claim as evidence for an implicit derived claim by DGIdb to which the score applies. 
+        Translator aggregates records that make the same claim in the DGIdb source data into a single edge, representing the implicit claim made by DGIdb,
+        and attaches the dgidb-assigned score to these aggregate edges as appropriate.
+        For this reason, DGIdb is considered the primary knowledge source, and its upstream sources are supporting data sources.
+        Because the DGIdb process that assigns the score to the implicit aggregate claim is largely automated, the agent type is automated_agent. 
+        Because this implicit claim represented in the edge is typically the aggregate of prior curated assertions, the knowledge level is knowlege_assertion.
+      transform_ratioanle: >- 
+        DGIdb interaction records where the interaction_type indicates an effect of the chemical on the abundance or activity of the gene/protein results in an edge with
+        a biolink:affects predicate, and qualifiers specifying the details of the effect, and the mechanism. Note that if the interaction_type implies a necessary direct
+        physical interaction (e.g. 'agonist', 'antibody', 'blocker', 'inhibitor', and 'inverse agonist'), a second edge is created to explicitly report this interaction.
+      ui_explanation:    # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.  
       # additional_notes:  # (optional, range = string)
 
   node_type_info:
