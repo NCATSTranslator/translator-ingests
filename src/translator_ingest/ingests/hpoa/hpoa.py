@@ -60,7 +60,6 @@ def on_data_begin_disease_to_phenotype(koza_transform: koza.KozaTransform):
     """
     koza_transform.log("Starting HPOA Disease to Phenotype processing")
     koza_transform.log(f"Version: {get_latest_version()}")
-    koza_transform.transform_metadata["disease_to_phenotype"] = {}
 
 @koza.on_data_end(tag="disease_to_phenotype")
 def on_data_end_disease_to_phenotype(koza_transform: koza.KozaTransform):
@@ -69,12 +68,6 @@ def on_data_end_disease_to_phenotype(koza_transform: koza.KozaTransform):
     Used for logging summary statistics.
     """
     koza_transform.log("HPOA Disease to Phenotype processing complete")
-    if koza_transform.transform_metadata["disease_to_phenotype"]:
-        for tag, value in koza_transform.transform_metadata["disease_to_phenotype"].items():
-            koza_transform.log(
-                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
-                level="WARNING"
-            )
 
 """
 This particular Translator Ingest module targets the "phenotype.hpoa" file for parsing.
@@ -212,7 +205,6 @@ def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform):
     """
     koza_transform.log("Starting HPOA Gene to Disease processing")
     koza_transform.log(f"Version: {get_latest_version()}")
-    koza_transform.transform_metadata["gene_to_disease"] = {}
 
 @koza.on_data_end(tag="gene_to_disease")
 def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
@@ -220,12 +212,6 @@ def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
     Called after all data has been processed.
     Used for logging summary statistics.
     """
-    if koza_transform.transform_metadata["gene_to_disease"]:
-        for tag, value in koza_transform.transform_metadata["gene_to_disease"].items():
-            koza_transform.log(
-                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
-                level="WARNING"
-            )
     koza_transform.log("HPOA Gene to Disease processing complete")
 
 
@@ -288,7 +274,6 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
     """
     koza_transform.log("Starting HPOA Gene to Phenotype processing")
     koza_transform.log(f"Version: {get_latest_version()}")
-    koza_transform.transform_metadata["gene_to_phenotype"] = {}
 
 @koza.on_data_end(tag="gene_to_phenotype")
 def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
@@ -296,12 +281,6 @@ def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
     Called after all data has been processed.
     Used for logging summary statistics.
     """
-    if koza_transform.transform_metadata["gene_to_phenotype"]:
-        for tag, value in koza_transform.transform_metadata["gene_to_phenotype"].items():
-            koza_transform.log(
-                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
-                level="WARNING"
-            )
     koza_transform.log("HPOA Gene to Phenotype processing complete")
 
 
