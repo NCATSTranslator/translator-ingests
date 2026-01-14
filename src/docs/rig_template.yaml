@@ -93,7 +93,8 @@
         primary_knowledge_source:  # (required, range = URIorCURIE (an infores)
         supporting_data_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
           -
-        aggregator_knowledge_source:  # (optional, range = URIorCURIE (an infores id))      
+        aggregator_knowledge_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
+          - 
         edge_properties:  # (optional, multivalued, range = URIorCURIE)
           -
         klat_and source_rationale:  # (optional, range = string)  Include when the choice of KL/AT and/or knowledge source annotations are tricky or nuanced, and we want to document our rationale.
