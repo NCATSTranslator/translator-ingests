@@ -147,7 +147,7 @@ def transform_record_disease_to_phenotype(
         ## Evidence Code
         # Three letter Evidence Code Ontology ("ECO") term translated
         # to ECO class CURIE based on HPO documentation
-        evidence_curie = evidence_to_eco[record["evidence"]]
+        evidence_code_term = evidence_to_eco[record["evidence"]]
 
         ## Publications
         references: str = record["reference"]
@@ -167,7 +167,7 @@ def transform_record_disease_to_phenotype(
             negated=negated,
             object=hpo_id,
             publications=publications,
-            has_evidence=[evidence_curie],
+            has_evidence_type=[evidence_code_term],
             sex_qualifier=sex_qualifier,
             onset_qualifier=onset,
             has_percentage=frequency.has_percentage,

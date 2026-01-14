@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -162,8 +162,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.6.post3.dev0+832d46d8b"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#832d46d8bbbb53838b1a5395b8c301dbb5f012cb" }
+version = "4.3.6.post7.dev0+47acea518"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=patch-resolve-issue-1664#47acea51854d045da45521fb91734e03f5073102" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -306,7 +306,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=patch-resolve-issue-1664" },
     { name = "bmt", git = "https://github.com/biolink/biolink-model-toolkit.git?rev=master" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "codespell", specifier = ">=2.4.1" },
@@ -324,7 +324,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=patch-resolve-issue-1664" },
     { name = "black", specifier = ">=24.1.0" },
     { name = "codespell", specifier = ">=2.2.0" },
     { name = "jsonlines" },
