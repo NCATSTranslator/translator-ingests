@@ -251,25 +251,31 @@ def transform_record_gene_to_disease(
 
     subject_form_or_variant_qualifier: Optional[VE] = VE.genetic_variant_form
     if qualified_predicate == "biolink:causes":
-        association_class = CausalGeneToDiseaseAssociation
+        association = CausalGeneToDiseaseAssociation(
+            id=entity_id(),
+            subject=gene_id,
+            predicate="biolink:affects",  # TODO: or should this be 'biolink:regulates'?
+            object=disease_id,
+            qualified_predicate=qualified_predicate,
+            subject_form_or_variant_qualifier=VE.genetic_variant_form,
+            sources=get_hpoa_association_sources(record["source"]),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            **{},
+        )
     else:
-        association_class = CorrelatedGeneToDiseaseAssociation
-        if qualified_predicate == "biolink:associated_with":
-            qualified_predicate = None
-            subject_form_or_variant_qualifier = None
-
-    association = association_class(
-        id=entity_id(),
-        subject=gene_id,
-        predicate="biolink:associated_with",
-        object=disease_id,
-        qualified_predicate=qualified_predicate,
-        subject_form_or_variant_qualifier=subject_form_or_variant_qualifier,
-        sources=get_hpoa_association_sources(record["source"]),
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        **{},
-    )
+        association = CorrelatedGeneToDiseaseAssociation(
+            id=entity_id(),
+            subject=gene_id,
+            predicate="biolink:correlated_with",
+            object=disease_id,
+            qualified_predicate=qualified_predicate,
+            subject_form_or_variant_qualifier=VE.genetic_variant_form if qualified_predicate else None,
+            sources=get_hpoa_association_sources(record["source"]),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            **{},
+        )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
@@ -401,7 +407,7 @@ def transform_record_gene_to_phenotype(
     association = GeneToPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=gene_id,
-        predicate="biolink:has_phenotype",
+        predicate="biolink:affects",
         object=hpo_id,
         qualified_predicate="biolink:causes",
         subject_form_or_variant_qualifier=VE.genetic_variant_form,
