@@ -386,8 +386,8 @@
   "adrenal diagnostic agent": {
     "feature_action": "diagnostic for",
     "predicate": "biolink:diagnoses",
-    "primary_name": "Adrenal Gland",
-    "xref": "NCIT:C12666"
+    "primary_name": "Abnormality of the adrenal glands",
+    "xref": "HP:0000834"
   },
   "adrenogenital syndrome": {
     "feature_action": "indication for",
@@ -3128,8 +3128,8 @@
   "pancreas diagnostic agent": {
     "feature_action": "diagnostic for",
     "predicate": "biolink:diagnoses",
-    "primary_name": "Pancreas",
-    "xref": "NCIT:C12393"
+    "primary_name": "Abnormality of the pancreas",
+    "xref": "HP:0001732"
   },
   "pancreatic cancer": {
     "feature_action": "indication for",
@@ -3530,8 +3530,8 @@
   "renal diagnostic agent": {
     "feature_action": "diagnostic for",
     "predicate": "biolink:diagnoses",
-    "primary_name": "Renal",
-    "xref": "NCIT:C25225"
+    "primary_name": "Abnormality of the kidney",
+    "xref": "HP:0000077"
   },
   "renal homotransplantation": {
     "feature_action": "indication for",
@@ -4040,8 +4040,8 @@
   "thyroid function diagnostic": {
     "feature_action": "diagnostic for",
     "predicate": "biolink:diagnoses",
-    "primary_name": "Thyroid Gland",
-    "xref": "NCIT:C12400"
+    "primary_name": "Abnormality of the thyroid gland",
+    "xref": "HP:0000820"
   },
   "thyroiditis": {
     "feature_action": "indication for",
