@@ -35,7 +35,7 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
-from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import substitute_version_in_download_yaml, validate_downloaded_files
 
 logger = get_logger(__name__)
 
@@ -129,6 +129,9 @@ def download(pipeline_metadata: PipelineMetadata):
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
         kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        
+        # Validate that downloaded files are not empty (file size > 0)
+        validate_downloaded_files(source_data_output_dir)
     finally:
         # Clean up the specified download_yaml file if it exists and
         # is a temporary file with versioning resolved but is
