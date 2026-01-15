@@ -14,10 +14,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     CellularComponent,
     GeneToPhenotypicFeatureAssociation,
     GeneToExpressionSiteAssociation,
+    ResourceRoleEnum,
 )
 from translator_ingest.ingests.alliance.alliance import (
     transform_phenotype,
     transform_expression,
+    INFORES_AGRKB,
 )
 
 # Test entity lookup dictionary - maps entity IDs to their biolink categories
@@ -66,36 +68,44 @@ def test_mgi_phenotype(mgi_phenotype_row):
 
         result = transform_phenotype(None, mgi_phenotype_row)
 
-        # Should return: Gene node + PhenotypicFeature node + Association
-        assert len(result) == 3
+        # Should return KnowledgeGraph with: Gene node + PhenotypicFeature node, 1 edge
+        assert len(result.nodes) == 2
+        assert len(result.edges) == 1
 
-        # Separate results by type (order-independent)
-        genes = [r for r in result if isinstance(r, Gene)]
-        phenotypes = [r for r in result if isinstance(r, PhenotypicFeature)]
-        assocs = [r for r in result if isinstance(r, GeneToPhenotypicFeatureAssociation)]
+        # Separate nodes by type
+        genes = [n for n in result.nodes if isinstance(n, Gene)]
+        phenotypes = [n for n in result.nodes if isinstance(n, PhenotypicFeature)]
 
         # Check counts
         assert len(genes) == 1
         assert len(phenotypes) == 1
-        assert len(assocs) == 1
 
         # Check gene node
         gene = genes[0]
         assert gene.id == "MGI:98834"
-        assert "biolink:Gene" in gene.category
 
         # Check phenotypic feature node
         phenotype = phenotypes[0]
         assert phenotype.id == "MP:0001262"
-        assert "biolink:PhenotypicFeature" in phenotype.category
 
         # Check association
-        assoc = assocs[0]
+        assoc = result.edges[0]
+        assert isinstance(assoc, GeneToPhenotypicFeatureAssociation)
         assert assoc.subject == "MGI:98834"
         assert assoc.predicate == "biolink:has_phenotype"
         assert assoc.object == "MP:0001262"
         assert assoc.publications == ["PMID:12345678"]
-        assert assoc.primary_knowledge_source == "infores:mgi"
+
+        # Check knowledge sources
+        assert assoc.sources is not None
+        source_ids = [s.resource_id for s in assoc.sources]
+        assert "infores:mgi" in source_ids
+        assert INFORES_AGRKB in source_ids
+
+        # Check source roles
+        primary_sources = [s for s in assoc.sources if s.resource_role == ResourceRoleEnum.primary_knowledge_source]
+        assert len(primary_sources) == 1
+        assert primary_sources[0].resource_id == "infores:mgi"
 
 
 def test_mgi_phenotype_multi_term(mgi_phenotype_multi_term_row):
@@ -106,18 +116,17 @@ def test_mgi_phenotype_multi_term(mgi_phenotype_multi_term_row):
 
         result = transform_phenotype(None, mgi_phenotype_multi_term_row)
 
-        # Should return: Gene node + 2 PhenotypicFeature nodes + 2 Associations
-        assert len(result) == 5
+        # Should return: Gene node + 2 PhenotypicFeature nodes, 2 edges
+        assert len(result.nodes) == 3
+        assert len(result.edges) == 2
 
-        # Separate results by type (order-independent)
-        genes = [r for r in result if isinstance(r, Gene)]
-        phenotypes = [r for r in result if isinstance(r, PhenotypicFeature)]
-        assocs = [r for r in result if isinstance(r, GeneToPhenotypicFeatureAssociation)]
+        # Separate nodes by type
+        genes = [n for n in result.nodes if isinstance(n, Gene)]
+        phenotypes = [n for n in result.nodes if isinstance(n, PhenotypicFeature)]
 
         # Check counts
         assert len(genes) == 1
         assert len(phenotypes) == 2
-        assert len(assocs) == 2
 
         # Check gene node
         assert genes[0].id == "MGI:98834"
@@ -127,11 +136,11 @@ def test_mgi_phenotype_multi_term(mgi_phenotype_multi_term_row):
         assert phenotype_ids == {"MP:0001262", "MP:0002169"}
 
         # Check associations
-        assoc_objects = {a.object for a in assocs}
+        assoc_objects = {a.object for a in result.edges}
         assert assoc_objects == {"MP:0001262", "MP:0002169"}
 
         # Verify all associations point to the same gene
-        for assoc in assocs:
+        for assoc in result.edges:
             assert assoc.subject == "MGI:98834"
 
 
@@ -183,61 +192,69 @@ def test_mgi_expression_anatomy(mgi_expression_anatomy_row):
     """Test mouse expression with anatomical structure creates nodes"""
     result = transform_expression(None, mgi_expression_anatomy_row)
 
-    # Should return: Gene node + AnatomicalEntity node + Association
-    assert len(result) == 3
+    # Should return: Gene node + AnatomicalEntity node, 1 edge
+    assert len(result.nodes) == 2
+    assert len(result.edges) == 1
 
     # Check gene node
-    gene = result[0]
-    assert isinstance(gene, Gene)
-    assert gene.id == "MGI:98834"
-    assert "biolink:Gene" in gene.category
+    genes = [n for n in result.nodes if isinstance(n, Gene)]
+    assert len(genes) == 1
+    assert genes[0].id == "MGI:98834"
 
     # Check anatomical entity node
-    anatomy = result[1]
-    assert isinstance(anatomy, AnatomicalEntity)
-    assert anatomy.id == "EMAPA:17524"
-    assert "biolink:AnatomicalEntity" in anatomy.category
+    anatomies = [n for n in result.nodes if isinstance(n, AnatomicalEntity)]
+    assert len(anatomies) == 1
+    assert anatomies[0].id == "EMAPA:17524"
 
     # Check association
-    assoc = result[2]
+    assoc = result.edges[0]
     assert isinstance(assoc, GeneToExpressionSiteAssociation)
     assert assoc.subject == "MGI:98834"
     assert assoc.predicate == "biolink:expressed_in"
     assert assoc.object == "EMAPA:17524"
     assert assoc.stage_qualifier == "MmusDv:0000003"
-    assert assoc.qualifiers == ["MMO:0000655"]
+    assert assoc.qualifier == "MMO:0000655"
     assert "PMID:12345678" in assoc.publications
     assert "MGI:5555555" in assoc.publications
-    assert assoc.primary_knowledge_source == "infores:mgi"
+
+    # Check knowledge sources
+    assert assoc.sources is not None
+    source_ids = [s.resource_id for s in assoc.sources]
+    assert "infores:mgi" in source_ids
+    assert INFORES_AGRKB in source_ids
 
 
 def test_mgi_expression_cellular_component(mgi_expression_cellular_component_row):
     """Test mouse expression with cellular component creates nodes"""
     result = transform_expression(None, mgi_expression_cellular_component_row)
 
-    # Should return: Gene node + CellularComponent node + Association
-    assert len(result) == 3
+    # Should return: Gene node + CellularComponent node, 1 edge
+    assert len(result.nodes) == 2
+    assert len(result.edges) == 1
 
     # Check gene node
-    gene = result[0]
-    assert isinstance(gene, Gene)
-    assert gene.id == "MGI:98834"
-    assert "biolink:Gene" in gene.category
+    genes = [n for n in result.nodes if isinstance(n, Gene)]
+    assert len(genes) == 1
+    assert genes[0].id == "MGI:98834"
 
     # Check cellular component node
-    cell_component = result[1]
-    assert isinstance(cell_component, CellularComponent)
-    assert cell_component.id == "GO:0005737"
-    assert "biolink:CellularComponent" in cell_component.category
+    cell_components = [n for n in result.nodes if isinstance(n, CellularComponent)]
+    assert len(cell_components) == 1
+    assert cell_components[0].id == "GO:0005737"
 
     # Check association
-    assoc = result[2]
+    assoc = result.edges[0]
     assert isinstance(assoc, GeneToExpressionSiteAssociation)
     assert assoc.subject == "MGI:98834"
     assert assoc.predicate == "biolink:expressed_in"
     assert assoc.object == "GO:0005737"
     assert assoc.stage_qualifier == "MmusDv:0000003"
-    assert assoc.qualifiers == ["MMO:0000655"]
+    assert assoc.qualifier == "MMO:0000655"
     assert "PMID:12345678" in assoc.publications
     assert "MGI:5555555" in assoc.publications
-    assert assoc.primary_knowledge_source == "infores:mgi"
+
+    # Check knowledge sources
+    assert assoc.sources is not None
+    source_ids = [s.resource_id for s in assoc.sources]
+    assert "infores:mgi" in source_ids
+    assert INFORES_AGRKB in source_ids
