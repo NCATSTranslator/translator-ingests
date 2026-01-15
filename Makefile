@@ -11,7 +11,6 @@ OVERWRITE :=
 endif
 ifeq ($(OVERWRITE),False)
 OVERWRITE :=
-
 endif
 
 # Graph ID for merge target (default: translator_kg)
