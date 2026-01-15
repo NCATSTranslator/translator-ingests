@@ -19,7 +19,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     process_publications,
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
-    LINK_TO_LIGAND_TARGET_PAIR,
+    LINK_TO_LIGAND_TARGET_PAIR, web_string,
     MONOMER_ID,
     TARGET_NAME,
     SOURCE_ORGANISM,
@@ -31,7 +31,9 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
     ARTICLE_DOI,
     PMID,
-    PATENT_NUMBER
+    PATENT_NUMBER,
+
+    MISSING_PUBS
 )
 
 
@@ -75,28 +77,25 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin()
 def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.transform_metadata["bindingdb_associations_captured"] = 0
     koza_transform.transform_metadata["rows_missing_pubchem_id"] = 0
     koza_transform.transform_metadata["rows_missing_uniprot_id"] = 0
 
 
 @koza.on_data_end()
 def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["rows_missing_publications"]} "
-             "rows were discarded for having no publications.",
-        level="INFO"
-    )
-    koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["rows_missing_pubchem_id"]} "
-             "rows were discarded for lacking a subject PubChem identifier.",
-        level="WARNING"
-    )
-    koza_transform.log(
-        msg=f"{koza_transform.transform_metadata["rows_missing_uniprot_id"]} "
-             "rows were discarded for lacking an object UniProt identifier.",
-        level="WARNING"
-    )
+    metadata = koza_transform.transform_metadata
+    if MISSING_PUBS in metadata:
+        num_missing_pubs = metadata.pop(MISSING_PUBS)
+        if num_missing_pubs > 0:
+            koza_transform.log(
+                msg=f"Warning: {num_missing_pubs} BindingDb records were missing publications.",
+                level="WARNING"
+            )
+    for tag, value in koza_transform.transform_metadata.items():
+        koza_transform.log(
+            msg=f"{str(tag)}: {value}.",
+            level="WARNING"
+        )
 
 @koza.prepare_data()
 def prepare_bindingdb_data(
@@ -128,6 +127,8 @@ def prepare_bindingdb_data(
     :return: Iterable[dict[str, Any]], Consolidation of related assay records
              for each unique ligand-target pair, with possible aggregation
              of distinct annotation encountered across the original set of assays.
+             If the method raises an exception, the entire ingestion process will be aborted
+             with a descriptive error trace (a desired outcome to avoid opaque silent failures).
     """
     # As of December 2025, the BindingDB input file is
     # assumed to be a Zipfile archive with a single file inside
@@ -180,75 +181,59 @@ def transform_bindingdb_by_record(
     :param record: Individual BindingDb records to be processed.
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
-    try:
-        # Sanity check for basic data integrity
-        assert record[REACTANT_SET_ID], "Empty Reactant Set ID"
-        assert record[PUBCHEM_CID], "Empty subject PubChem identifier"
-        assert record[UNIPROT_ID], "Empty object UniProt identifier"
-
-        # Nodes
-
-        # TODO: All ligands will be treated as ChemicalEntity, for now,
-        #       as a first approximation but we may want to consider
-        #       using more specialized classes if suitable discrimination
-        #       can eventually be made in between chemical types
-        chemical = ChemicalEntity(id="CID:" + record[PUBCHEM_CID])
-
-        # Taxon of protein target
-        taxon_label = record[SOURCE_ORGANISM]
-        taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None)
-
-        # Unless otherwise advised, all BindingDb targets
-        # are assumed to be (UniProt registered) proteins.
-        target_name = record[TARGET_NAME]
-        protein = Protein(
-            id="UniProtKB:" + record[UNIPROT_ID],
-            name=target_name,
-            in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
-            in_taxon_label=taxon_label
-        )
-
-        # Publications
-        publications = [record[PUBLICATION]]
-
-        # Sources
-        supporting_data_id = record[SUPPORTING_DATA_ID]
-        supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
-        sources = build_association_knowledge_sources(
-            primary=(
-                "infores:bindingdb",
-                [LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_name)]
-            ),
-            supporting=supporting_data
-        )
-
-        # Edge
-        association = ChemicalGeneInteractionAssociation(
-            id=entity_id(),
-            subject=chemical.id,
-            predicate="biolink:directly_physically_interacts_with",
-            object=protein.id,
-            publications=publications,
-            sources=sources,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-
-        # Tally the total number of BindingDb associations successfully captured
-        koza_transform.transform_metadata["bindingdb_associations_captured"] += 1
-
-        return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
-
-    except Exception as e:
-        # Catch and tally or report all errors here
-        if str(e) == "Empty subject PubChem identifier":
-            koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
-        elif str(e) == "Empty object UniProt identifier":
-            koza_transform.transform_metadata["rows_missing_uniprot_id"] += 1
-        else:
-            koza_transform.log(
-                msg=f"transform_bindingdb_by_record(): record for reactant '{str(record[REACTANT_SET_ID])}' "
-                + f"with {type(e)} exception: " + str(e),
-                level="WARNING"
-            )
+    # Nodes
+    pubchem_id = record.get(PUBCHEM_CID, "")
+    if not pubchem_id:
+        koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
         return None
+    uniprot_id = record.get(UNIPROT_ID, "")
+    if not uniprot_id:
+        koza_transform.transform_metadata["rows_missing_uniprot_id"] += 1
+        return None
+
+    # TODO: All ligands will be treated as ChemicalEntity, for now,
+    #       as a first approximation but we may want to consider
+    #       using more specialized classes if suitable discrimination
+    #       can eventually be made in between chemical types
+    chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:" + pubchem_id)
+
+    # Taxon of protein target
+    taxon_label = record[SOURCE_ORGANISM]
+    taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None) if taxon_label else None
+
+    # Unless otherwise advised, all BindingDb targets
+    # are assumed to be (UniProt registered) proteins.
+    target_name = record[TARGET_NAME]
+    protein = Protein(
+        id="UniProtKB:" + uniprot_id,
+        name=target_name,
+        in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
+        in_taxon_label=taxon_label
+    )
+
+    # Publications
+    publications = [record[PUBLICATION]]
+
+    # Sources
+    target_label = web_string(target_name)
+    supporting_data_id = record[SUPPORTING_DATA_ID]
+    supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
+    source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
+    sources = build_association_knowledge_sources(
+        primary=("infores:bindingdb",[source_record_url]),
+        supporting=supporting_data
+    )
+
+    # Edge
+    association = ChemicalGeneInteractionAssociation(
+        id=entity_id(),
+        subject=chemical.id,
+        predicate="biolink:directly_physically_interacts_with",
+        object=protein.id,
+        publications=publications,
+        sources=sources,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+    )
+
+    return KnowledgeGraph(nodes=[chemical, protein], edges=[association])

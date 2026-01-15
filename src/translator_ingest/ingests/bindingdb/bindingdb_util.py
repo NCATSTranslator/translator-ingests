@@ -66,6 +66,25 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
     "&column=ki&startPg=0&Increment=50&submit=Search"
 )
 
+_WEB_MAPPINGS: dict[str, str] = {
+    " ": "+",
+    ",": "%2C",
+    "{": "%7B",
+    "}": "%7D",
+    "[": "%5B",
+    "]": "%5D",
+    "|": "%7C"
+}
+def web_string(s: str) -> str:
+    """
+    :param s: The input string to be encoded
+    :return: The input string encoded with web-encoded characters
+    """
+    # Web string sanitization
+    for a,b in _WEB_MAPPINGS.items():
+        s = s.replace(a, b)
+    return s
+
 
 def extract_bindingdb_columns_polars(
     data_archive_path: Path,
@@ -73,13 +92,17 @@ def extract_bindingdb_columns_polars(
     target_taxa: tuple[str,...],
 ) -> pl.DataFrame:
     """
-    Extract only specified columns from the BindingDB TSV file using polars.
+     Extract only specified columns from the BindingDB TSV file using polars.
 
     This is the FASTEST approach:
     - Only parses the specified subset of columns instead of the full 640 (~80x less data)
     - Filters data by desired taxa
     - Lazy evaluation optimizes the query
 
+    :param data_archive_path: Path to BindingDB TSV archive.
+    :param columns: Target BindingDB columns to extract.
+    :param target_taxa: Target species to be included in extracted BindingDB data.
+    :return: A Polars DataFrame containing BindingDB data rows with only specified columns.
     """
     with ZipFile(data_archive_path) as z:
         with z.open("BindingDB_All.tsv") as datafile:
@@ -119,10 +142,18 @@ def extract_bindingdb_columns_polars(
 
     return df
 
+MISSING_PUBS = "rows_missing_publications"
+
 def process_publications(
         koza_transform: koza.KozaTransform,
         df: pl.DataFrame
 )-> pl.DataFrame:
+    """
+    Capture and process publications for BindingDb records.
+    :param koza_transform: Ingest context
+    :param df: Polars data frame whose entries contain BindingDb records
+    :return: Polars data frame with publications processed into a PUBLICATIONS column
+    """
     # Add the publication column (same logic as the current implementation)
     df = df.with_columns([
         pl.when(pl.col(PMID).is_not_null())
@@ -142,7 +173,8 @@ def process_publications(
 
     # Count rows without publications
     rows_missing_pubs = df.filter(pl.col(PUBLICATION).is_null()).height
-    koza_transform.transform_metadata["rows_missing_publications"] = rows_missing_pubs
+    if rows_missing_pubs != 0:
+        koza_transform.transform_metadata[MISSING_PUBS] = rows_missing_pubs
 
     # Filter out rows without publications
     df = df.filter(pl.col(PUBLICATION).is_not_null())
