@@ -160,7 +160,7 @@ def transform_record_disease_to_phenotype(
             negated=negated,
             object=hpo_id,
             publications=publications,
-            has_evidence_type=[evidence_code_term],
+            has_evidence_of_type=[evidence_code_term],
             sex_qualifier=sex_qualifier,
             onset_qualifier=onset,
             has_percentage=frequency.has_percentage,
