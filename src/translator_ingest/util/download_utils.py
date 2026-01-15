@@ -3,7 +3,7 @@
 import tempfile
 import yaml
 from pathlib import Path
-from typing import Union, List
+from typing import Union
 
 from translator_ingest.util.logging_utils import get_logger
 
@@ -129,7 +129,7 @@ def validate_downloaded_files(download_directory: Union[str, Path]) -> None:
         return
 
     # Check each file for empty size
-    empty_files: List[Path] = []
+    empty_files: list[Path] = []
     for file_path in downloaded_files:
         file_size = file_path.stat().st_size
         if file_size == 0:
