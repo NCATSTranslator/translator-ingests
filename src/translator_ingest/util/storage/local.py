@@ -123,7 +123,7 @@ def __find_transform_kgx_files(directory: Path) -> (str, str):
             else:
                 raise IOError(
                     f"Multiple nodes files were found in {directory}. "
-                    f"This should not happen with normal ingest pipeline usage and is likely to cause bugs."
+                    "This should not happen with normal ingest pipeline usage and is likely to cause bugs."
                 )
         elif "edges.jsonl" in child_path.name:
             if edges_file_path is None:
@@ -131,7 +131,7 @@ def __find_transform_kgx_files(directory: Path) -> (str, str):
             else:
                 raise IOError(
                     f"Multiple edges files were found in {directory}. "
-                    f"This should not happen with normal ingest pipeline usage and is likely to cause bugs."
+                    "This should not happen with normal ingest pipeline usage and is likely to cause bugs."
                 )
     return nodes_file_path, edges_file_path
 

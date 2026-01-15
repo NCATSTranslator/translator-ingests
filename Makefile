@@ -52,6 +52,12 @@ define HELP
 │                                                                              │
 │     test                Run all tests                                        │
 │                                                                              │
+│     upload              Upload data and releases to S3                       │
+│     upload-all          Upload all sources to S3                             │
+│     cleanup-ebs         Clean up old EBS versions                            │
+│     cleanup-s3          Delete all objects from S3 bucket (DANGEROUS)        │
+│     cleanup-s3-source   Delete specific source from S3 (DANGEROUS)           │
+│                                                                              │
 │     lint                Lint all code                                        │
 │     lint-fix            Fix linting errors automatically                     │
 │     format              Format all code                                      │
@@ -175,6 +181,45 @@ release:
 release-%:
 	@echo "Creating release for $*..."
 	@$(RUN) python src/translator_ingest/release.py $*
+
+### S3 Upload and Storage Management ###
+
+.PHONY: upload
+upload:
+	@echo "Uploading sources to S3: $(SOURCES)"
+	@$(RUN) python src/translator_ingest/upload_s3.py $(SOURCES)
+
+.PHONY: upload-%
+upload-%:
+	@echo "Uploading $* to S3..."
+	@$(RUN) python src/translator_ingest/upload_s3.py $*
+
+.PHONY: upload-all
+upload-all:
+	@echo "Uploading all sources to S3..."
+	@$(RUN) python src/translator_ingest/upload_s3.py
+
+.PHONY: cleanup-ebs
+cleanup-ebs:
+	@echo "Cleaning up old versions from EBS for sources: $(SOURCES)"
+	@for source in $(SOURCES); do \
+		echo "Cleaning up $$source..."; \
+		$(RUN) python -c "from translator_ingest.util.storage.s3 import cleanup_old_source_versions, cleanup_old_releases; \
+		cleanup_old_source_versions('$$source'); cleanup_old_releases('$$source')"; \
+	done
+
+.PHONY: cleanup-s3
+cleanup-s3:
+	@echo "WARNING: This will delete ALL objects from the S3 bucket!"
+	@$(RUN) python -c "from translator_ingest.util.storage.s3 import cleanup_s3_bucket; cleanup_s3_bucket()"
+
+.PHONY: cleanup-s3-source
+cleanup-s3-source:
+	@echo "WARNING: This will delete source data from S3!"
+	@for source in $(SOURCES); do \
+		echo "Deleting $$source from S3..."; \
+		$(RUN) python -c "from translator_ingest.util.storage.s3 import cleanup_s3_source; cleanup_s3_source('$$source')"; \
+	done
 
 ### Linting, Formatting, and Cleaning ###
 

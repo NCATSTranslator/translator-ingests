@@ -5,8 +5,8 @@ These records represent real data from BindingDB that can be used
 to test the bindingdb transform function.
 """
 
-# Test record 0: Record with missing mandatory fields (in this case, UNIPROT_ID)
-RECORD_MISSING_FIELDS = {
+# Test record 0: Record with missing mandatory fields (in this case, PUBMED_CID)
+RECORD_MISSING_FIELD_1 = {
     "BindingDB Reactant_set_id": "999",
     "Ligand SMILES": "CC(C)C",
     "Ligand InChI": "InChI=1S/C3H8/c1-3-2/h3H,1-2H3",
@@ -29,16 +29,49 @@ RECORD_MISSING_FIELDS = {
     "PMID": "12408711",
     "Patent Number": "",
     "PubChem CID": "",
-    "PubChem SID": "",
+    "PubChem SID": "8030144",
     "ChEBI ID of Ligand": "",
-    "ChEMBL ID of Ligand": "",
+    "ChEMBL ID of Ligand": "CHEMBL3885650",
+    "UniProt (SwissProt) Primary ID of Target Chain 1": "P42574",
+    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Unknown",
+    "publication": "PMID:12408711",
+    "supporting_data_id": None
+}
+
+# Test record 1: Record with missing mandatory fields (in this case, UNIPROT_ID)
+RECORD_MISSING_FIELD_2 = {
+    "BindingDB Reactant_set_id": "999",
+    "Ligand SMILES": "CC(C)C",
+    "Ligand InChI": "InChI=1S/C3H8/c1-3-2/h3H,1-2H3",
+    "Ligand InChI Key": "ATUOYWHBWRKTHZ-UHFFFAOYSA-N",
+    "BindingDB MonomerID": "9999",
+    "BindingDB Ligand Name": "Test Compound",
+    "Target Name": "Test Target",
+    "Target Source Organism According to Curator or DataSource": "Homo sapiens",
+    "Ki (nM)": "100",
+    "IC50 (nM)": "",
+    "Kd (nM)": "",
+    "EC50 (nM)": "",
+    "kon (M-1-s-1)": "",
+    "koff (s-1)": "",
+    "pH": "7.4",
+    "Temp (C)": "25.00",
+    "Curation/DataSource": "Curated from the literature by BindingDB",
+    "Article DOI": "",
+    "BindingDB Entry DOI": "",
+    "PMID": "12408711",
+    "Patent Number": "",
+    "PubChem CID": "5327301",
+    "PubChem SID": "8030144",
+    "ChEBI ID of Ligand": "",
+    "ChEMBL ID of Ligand": "CHEMBL3885650",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Unknown",
     "publication": "PMID:12408711",
     "supporting_data_id": None
 }
 
-# Test record 1: Caspase-3 inhibitor with Ki = 90 nM
+# Test record 2: Caspase-3 inhibitor with Ki = 90 nM
 CASPASE3_KI_RECORD = {
     "BindingDB Reactant_set_id": "199",
     "Ligand SMILES": "CN(Cc1ccc(s1)C(=O)N[C@@H](CC(O)=O)C(=O)CSCc1ccccc1Cl)Cc1ccc(O)c(c1)C(O)=O",
@@ -71,7 +104,7 @@ CASPASE3_KI_RECORD = {
     "supporting_data_id": None
 }
 
-# Test record 2: Caspase-1 inhibitor with Ki = 160 nM
+# Test record 3: Caspase-1 inhibitor with Ki = 160 nM
 CASPASE1_KI_RECORD = {
     "BindingDB Reactant_set_id": "200",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)cc1)C=O",
@@ -104,7 +137,7 @@ CASPASE1_KI_RECORD = {
     "supporting_data_id": None
 }
 
-# Test record 3: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
+# Test record 4: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
 CASPASE1_WEAK_KI_RECORD = {
     "BindingDB Reactant_set_id": "201",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)nc1)C=O",
@@ -137,7 +170,7 @@ CASPASE1_WEAK_KI_RECORD = {
     "supporting_data_id": None
 }
 
-# Test record 4: Caspase-1 record with only a DOI publication citation
+# Test record 5: Caspase-1 record with only a DOI publication citation
 CASPASE1_RECORD_WITH_DOI = {
     "BindingDB Reactant_set_id": "201",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)nc1)C=O",
@@ -170,7 +203,7 @@ CASPASE1_RECORD_WITH_DOI = {
     "supporting_data_id": "infores:ki-database"
 }
 
-# Test record 5: BindingDb record with a US Patent citation
+# Test record 6: BindingDb record with a US Patent citation
 BINDINGDB_RECORD_WITH_A_US_PATENT = {
     "BindingDB Reactant_set_id": "143",
     "Ligand SMILES": "Cc1nc(CN2CCN(CC2)c2c(Cl)cnc3[nH]c(nc23)-c2cn(C)nc2C)no1",
@@ -203,7 +236,7 @@ BINDINGDB_RECORD_WITH_A_US_PATENT = {
     "supporting_data_id": "infores:uspto-patent"
 }
 
-# Test record 6: Duplication of Caspase-3 inhibitor, to test merging of records.
+# Test record 7: Duplication of Caspase-3 inhibitor, to test merging of records.
 #                Caspase-3 inhibitor with IC50 (nM) = 6676.9"
 CASPASE3_KI_RECORD_DUPLICATION = {
     "BindingDB Reactant_set_id": "199",
