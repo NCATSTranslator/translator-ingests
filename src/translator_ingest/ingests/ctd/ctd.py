@@ -24,6 +24,7 @@ from translator_ingest.util.biolink import INFORES_CTD
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
 
+
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
@@ -44,6 +45,14 @@ EXPOSURE_EVENTS_PREDICATES = {
     "negative correlation": BIOLINK_NEGATIVELY_CORRELATED
 }
 
+
+# !!! !!! README !!! !!!
+# CTD implemented a CAPTCHA which unfortunately breaks dependable programmatic access for determining the version
+# and downloading data. If possible, opening a browser and passing the CAPTCHA at ctdbase.org should allow everything
+# to run. If not, when determining the latest version, the translator-ingests pipeline will fall back to a previously
+# successful build, so if running in an environment where passing the CAPTCHA is not possible, copy a previous CTD
+# directory from /data/ including the latest-build.json file and the pipeline will utilize the last successful version.
+
 def get_latest_version():
     # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
     # with a version on it. Fetch the html and parse it to determine the current version.
@@ -55,7 +64,6 @@ def get_latest_version():
         return version_header.text.split(":")[1].strip().replace(" ", "_")
     else:
         raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
-
 
 @koza.transform_record(tag="chemicals_diseases")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
