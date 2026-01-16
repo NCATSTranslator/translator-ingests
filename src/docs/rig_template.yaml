@@ -99,7 +99,9 @@
           -
         klat_and source_rationale:  # (optional, range = string)  Include when the choice of KL/AT and/or knowledge source annotations are tricky or nuanced, and we want to document our rationale.
         transform_rationale:  # (optional, range = string)  Notes about the transform logic / rationale for this edge type - esp if tricky or nuanced, and we want to document our rationale.          
-        ui_explanation:  # (required, range = string)  Ideally, can derived this from content of the klat/source and transform rationale fields. 
+        ui_explanation:  # (required, range = string)  Ideally, can derived this from content of the klat/source and transform rationale fields.
+        source_files:   # (multivalued, range = string)  
+          - 
         additional_notes:  # (optional, range = string)
 
     node_type_info:  # (required, multivalued, range = NodeType)
