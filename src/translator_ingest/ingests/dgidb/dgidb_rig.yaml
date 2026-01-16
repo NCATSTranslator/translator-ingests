@@ -241,7 +241,7 @@ target_info:
         For this reason, DGIdb is considered the primary knowledge source, and its upstream sources are supporting data sources.
         Because the DGIdb process that assigns the score to the implicit aggregate claim is largely automated, the agent type is automated_agent. 
         Because this implicit claim represented in the edge is typically the aggregate of prior curated assertions, the knowledge level is knowlege_assertion.
-      transform_ratioanle: >- 
+transform_rationale: >-
         DGIdb interaction records where the interaction_type indicates an effect of the chemical on the abundance or activity of the gene/protein results in an edge with
         a biolink:affects predicate, and qualifiers specifying the details of the effect, and the mechanism. Note that if the interaction_type implies a necessary direct
         physical interaction (e.g. 'agonist', 'antibody', 'blocker', 'inhibitor', and 'inverse agonist'), a second edge is created to explicitly report this interaction.
