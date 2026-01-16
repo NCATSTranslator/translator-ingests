@@ -112,7 +112,9 @@ target_info:
       transform_ratioanle: >- 
         DGIdb interaction records where the interaction_type is not specified, or is reported as 'other/unknown', result in an edge using the broad biolink:interacts_with predicate,
         which reports an interaction of some type is occurring.
-      ui_explanation:   # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.  
+      ui_explanation:   # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.
+      source_files:
+        - interactions.tsv
       
       # additional_notes:  # (optional, range = string)
     ## BINDER OR INFERRED physical interaction edges
@@ -173,6 +175,8 @@ target_info:
         'blocker', 'inhibitor', and 'inverse agonist') result in an edge using the biolink:directly_physically_interacts_with predicate, and a mechanism of 'binding' 
         if this is the interaction_type reported by DGIdb.
       ui_explanation:    # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.  
+      source_files:
+        - interactions.tsv
       additional_notes: "The 'implied physical-interaction' values are currently 'agonist', 'antibody', 'blocker', 'inhibitor', and 'inverse agonist'."
       
     ## AFFECTS: ALL OTHER INTERACTION_TYPES
@@ -246,7 +250,8 @@ transform_rationale: >-
         a biolink:affects predicate, and qualifiers specifying the details of the effect, and the mechanism. Note that if the interaction_type implies a necessary direct
         physical interaction (e.g. 'agonist', 'antibody', 'blocker', 'inhibitor', and 'inverse agonist'), a second edge is created to explicitly report this interaction.
       ui_explanation:    # TO DO - derive from content of klat/source and transform rationale fields above, once we decide on what should be in UI explanations and how they should be framed.  
-      # additional_notes:  # (optional, range = string)
+      source_files:
+        - interactions.tsv
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
