@@ -76,15 +76,22 @@ target_info:
       object_categories:
         - "biolink:Disease"
       knowledge_level:
-        - statistical_association
+        - text_co_occurrence
       agent_type:
-        - text_mining_agent
+        - data_analysis_pipeline
+      primary_knowledge_source: infores:diseases        
       edge_properties:
+        - "biolink:supporting_study_method_type"
         - "biolink:has_confidence_score"
         - "biolink:z_score"
         - "biolink:original_subject"
         - "biolink:original_object"
-      ui_explanation: "The DISEASES text-mining method generates associations based on statistically significant co-occurrence of gene and disease concepts in the literature - which is consistent with the definition of the Biolink occurs_together_in_literature_with predicate."
+      klat_and_source_rationale: "Text-mined Gene-Disease associations are produced by DISEASES' pipeline that uses NLP to identify concept mentions in the literature, and a data analysis pipeline to compute statistically significant co-occurrences - reporting only those passing a defined cutoff."
+      transform_rationale:  "The DISEASES text-mining method generates associations based on statistically significant co-occurrence of gene and disease concepts in the literature - which is consistent with the definition of the Biolink occurs_together_in_literature_with predicate."
+      ui_explanation: TO DO
+      source_files:
+        - human_disease_textmining_filtered.tsv
+        
     - subject_categories:
         - "biolink:Gene"
         - "biolink:Protein"
@@ -96,11 +103,18 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_source: infores:amyco, infores:medlineplus
+      aggregator_knowledge_sources:
+        - infores:diseases
       edge_properties:
         - "biolink:has_confidence_score"
         - "biolink:original_subject"
         - "biolink:original_object"
-      ui_explanation: "DISEASES does not report the types of gene-disease relationships that it aggregates from curated sources, so the Biolink associated_with predicate is the most precise predicate we are able to use here."
+      klat_and_source_rationale: "Gene-Disease associations included in this ingest report assertions aggregated from external manually curated sources (amyco, medlineplus) by Jensen Lab curators. 
+      transform_rationale: "Gene-Disease associations from DISEASES do not report a specific type of gene-disease relationship, just that an association of some kind exists - so the Biolink associated_with predicate is the most precise predicate we are able to use here."
+      ui_explanation: TO DO
+      source_files:
+        - human_disease_knowledge_filtered.tsv
   
   node_type_info:
     - node_category: "biolink:Gene"
