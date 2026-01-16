@@ -99,7 +99,10 @@ def get_latest_source_version(source):
 
     try:
         # Call it and return the latest version
-        return latest_version_fn()
+        logger.info(f"Determining latest version for {source}...")
+        latest_version = latest_version_fn()
+        logger.info(f"Latest version for {source} established: {latest_version}")
+        return latest_version
     except Exception as e:
         logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
                      f'Error: {e}.')
