@@ -12,7 +12,7 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     CASPASE1_WEAK_KI_RECORD,
-    RECORD_MISSING_FIELDS
+    RECORD_MISSING_FIELD_1
 )
 ```
 
@@ -63,7 +63,7 @@ from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKo
 from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
-    RECORD_MISSING_FIELDS
+    RECORD_MISSING_FIELD_1
 )
 
 
@@ -97,7 +97,7 @@ ASSOCIATION_TEST_SLOTS = (
     "test_record,expected_nodes,expected_edge",
     [
         (
-                RECORD_MISSING_FIELDS,
+                RECORD_MISSING_FIELD_1,
                 None,  # Should be filtered out
                 None
         ),

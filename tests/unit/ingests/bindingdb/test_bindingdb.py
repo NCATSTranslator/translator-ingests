@@ -17,9 +17,9 @@ from tests.unit.ingests import (
 # from translator_ingest import INGESTS_DATA_PATH
 
 from translator_ingest.ingests.bindingdb.bindingdb import (
-    on_begin_ingest_by_record,
+    on_end_ingest_by_record,
     prepare_bindingdb_data,
-    transform_bindingdb_by_record
+    transform_bindingdb_by_record, on_begin_ingest_by_record
 )
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
@@ -30,7 +30,8 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     SUPPORTING_DATA_ID
 )
 from tests.unit.ingests.bindingdb.sample_data import (
-    RECORD_MISSING_FIELDS,
+    RECORD_MISSING_FIELD_1,
+    RECORD_MISSING_FIELD_2,
     CASPASE3_KI_RECORD,
     CASPASE1_KI_RECORD,
     CASPASE1_WEAK_KI_RECORD,
@@ -47,6 +48,7 @@ def mock_koza_transform() -> koza.KozaTransform:
         extra_fields=dict(),
         writer=writer,
         mappings=mappings,
+        transform_metadata={},
         # Swap in the following code for temporary debugging using the real data file
         # input_files_dir=INGESTS_DATA_PATH / "bindingdb"  # Path(__file__).resolve().parent
         input_files_dir = Path(__file__).resolve().parent
@@ -82,8 +84,7 @@ def test_prepare_bindingdb_data(
     # result_nodes: Optional[list],
     # result_edge: Optional[dict],
 ):
-    # calling this simply to ensure that context
-    # dictionary keys are created; not otherwise used
+    # Initializes ingest stats keys
     on_begin_ingest_by_record(mock_koza_transform)
 
     # The BindingDB implementation of prepare_bindingdb_data() method
@@ -121,7 +122,12 @@ def test_prepare_bindingdb_data(
     "test_record,result_nodes,result_edge",
     [
         (
-                RECORD_MISSING_FIELDS,
+                RECORD_MISSING_FIELD_1,
+                None,  # Should be filtered out
+                None
+        ),
+        (
+                RECORD_MISSING_FIELD_2,
                 None,  # Should be filtered out
                 None
         ),
@@ -129,7 +135,7 @@ def test_prepare_bindingdb_data(
             CASPASE3_KI_RECORD,
             [
                 {
-                    "id": "CID:5327301",
+                    "id": "PUBCHEM.COMPOUND:5327301",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -144,7 +150,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327301",
+                "subject": "PUBCHEM.COMPOUND:5327301",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
                 "publications": ["PMID:12408711"],
@@ -167,7 +173,7 @@ def test_prepare_bindingdb_data(
             CASPASE1_KI_RECORD,
             [
                 {
-                    "id": "CID:5327302",
+                    "id": "PUBCHEM.COMPOUND:5327302",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -182,7 +188,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327302",
+                "subject": "PUBCHEM.COMPOUND:5327302",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
@@ -205,7 +211,7 @@ def test_prepare_bindingdb_data(
             CASPASE1_WEAK_KI_RECORD,
             [
                 {
-                    "id": "CID:5327304",
+                    "id": "PUBCHEM.COMPOUND:5327304",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -220,7 +226,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327304",
+                "subject": "PUBCHEM.COMPOUND:5327304",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
@@ -243,7 +249,7 @@ def test_prepare_bindingdb_data(
             CASPASE1_RECORD_WITH_DOI,
             [
                 {
-                    "id": "CID:5327304",
+                    "id": "PUBCHEM.COMPOUND:5327304",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -258,7 +264,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:5327304",
+                "subject": "PUBCHEM.COMPOUND:5327304",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29452",
                 "publications": ["doi:10.1021/jm020230j"],
@@ -281,7 +287,7 @@ def test_prepare_bindingdb_data(
             BINDINGDB_RECORD_WITH_A_US_PATENT,
             [
                 {
-                    "id": "CID:71463198",
+                    "id": "PUBCHEM.COMPOUND:71463198",
                     "category": ["biolink:ChemicalEntity"]
                 },
                 {
@@ -296,7 +302,7 @@ def test_prepare_bindingdb_data(
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
-                "subject": "CID:71463198",
+                "subject": "PUBCHEM.COMPOUND:71463198",
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P08684",
                 "publications": ["uspto-patent:9447092"],
@@ -324,8 +330,10 @@ def test_ingest_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
-    # calling this simply to ensure that context
-    # dictionary keys are created; not otherwise used
+    # sanity check: each test iteration should start without any metadata
+    mock_koza_transform.transform_metadata.clear()
+
+    # Initializes ingest stats keys
     on_begin_ingest_by_record(mock_koza_transform)
 
     validate_transform_result(
@@ -335,3 +343,5 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS
     )
+
+    on_end_ingest_by_record(mock_koza_transform)

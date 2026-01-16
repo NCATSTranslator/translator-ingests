@@ -20,4 +20,7 @@ releases
 # Documentation build artifacts (only used locally and in CI)
 /docs/
 site/
+
+# Logs
+logs/
 /.claude/
