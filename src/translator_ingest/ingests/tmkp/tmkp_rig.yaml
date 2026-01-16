@@ -50,7 +50,15 @@ ingest_info:
   - file_name: content_metadata.json
     included_records: Metadata about available biolink classes and predicates
     fields_used: nodes, edges
-  filtered_content: null
+  filtered_content:
+    - description: |
+        Edges where subject/object ID prefixes violate Biolink Model domain/range constraints
+        are excluded. This filters out reversed edges where diseases/phenotypes (MONDO, HP prefixes)
+        are incorrectly positioned as subjects in ChemicalToDiseaseOrPhenotypicFeatureAssociation
+        edges with chemicals (DRUGBANK, CHEBI prefixes) as objects. For example, edges like
+        "MONDO:xxx biolink:treats DRUGBANK:yyy" are excluded because the association type expects
+        chemicals as subjects and diseases as objects, not the reverse. Validation uses BMT to
+        dynamically determine valid ID prefixes for each association's domain/range constraints.
   future_considerations: null
   additional_notes: |
     Attributes in the data are encoded as JSON objects that may contain nested attributes
