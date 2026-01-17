@@ -208,7 +208,7 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
         return Frequency()
 
 
-def get_hpoa_genetic_predicate(original_predicate: str) -> Optional[str]:
+def get_qualified_predicate(original_predicate: str) -> Optional[str]:
     """
     Convert the association column into a Biolink Model predicate
     """

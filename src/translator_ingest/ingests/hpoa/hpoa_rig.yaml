@@ -85,6 +85,17 @@ ingest_info:
       inferred over a G-D associated type with the value "MENDELIAN"
     fields_used: ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id
   filtered_content:
+  - file_name: genes_to_disease.txt
+    filtered_records:
+      Records where we determine that the reported G-P association was inferred
+      over a G-D associated type with the value "UNKNOWN"
+    rationale:
+      HPO will infer a Gene-Diseaes association G1-D1 in cases where some variant of G1 causes,
+      or contributes_to D1.
+      This logic holds for Mendelian disease where a single gene is causal and thus
+      responsible for all associated phenotypes. Genes with polygenic effect are 
+      still deemed to "contribute to" a disease. However, genes to diseases associations 
+      tagged by HPOA as unknown have inconclusive scientific data hence are currently ignored by the ingest.
   - file_name: genes_to_phenotype.txt
     filtered_records:
       Records where we determine that the reported G-P association was inferred
@@ -99,7 +110,14 @@ ingest_info:
   future_considerations:
   - category: edge_content
     consideration:
-      Consider bringing back G-P associations based on inferences over
+      Consider bringing back G-D associations based on inferences over associations tagged as unknown,
+      if we establish a confidence annotation paradigm that lets us indicate these inferences
+      to be weaker than those inferred over Mendelian or Polygenic diseases where the Gene is
+      individually causal for, or strongly contributing to, the disease and all of its phenotypes.
+    relevant_files: genes_to_disease.txt
+  - category: edge_content
+    consideration:
+      Consider bringing back G-D and G-P associations based on inferences over
       Polygenic or Unknown Diseases if we establish a confidence annotation paradigm 
       that lets us indicate these inferences to be weaker than those inferred over
       Mendelian diseases where the Gene is individually causal for the disease and all of its phenotypes.
@@ -147,7 +165,7 @@ target_info:
     - subject_categories:
       - "biolink:Gene"
       predicates:
-        - "biolink:associated_with"
+        - "biolink:contributes_to"
       object_categories:
       - "biolink:Disease"
       qualifiers:
@@ -171,7 +189,7 @@ target_info:
     - subject_categories:
       - "biolink:Gene"
       predicates:
-        - "biolink:associated_with"
+        - "biolink:correlated_with"
       object_categories:
       - "biolink:Disease"
       qualifiers:
@@ -191,22 +209,6 @@ target_info:
         "HPOA aggregates manually curated Gene-Disease associations from sources like
         Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes,
         we report that a genetic variant form of the gene 'contributes to' the disease."
-      additional_notes: null
-    - subject_categories:
-      - "biolink:Gene"
-      predicates:
-        - "biolink:associated_with"
-      object_categories:
-      - "biolink:Disease"
-      knowledge_level:
-      - knowledge_assertion
-      agent_type:
-      - manual_agent
-      edge_properties: null
-      ui_explanation:
-        "HPOA aggregates manually curated Gene-Disease associations from sources like
-        Orphanet and MIM2Gene. When the genetic etiology of the diseases is not
-        sufficiently specified, the relationship is reported using the 'associated_with' predicate."
       additional_notes: null
     - subject_categories:
       - "biolink:Gene"
@@ -268,7 +270,8 @@ target_info:
   future_considerations:
     - category: spoq_pattern
       consideration:
-        "Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations
+        "Resolve UNKNOWN gene-to-disease associations in an informative fashion.
+        Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations
         where we place more semantics into predicates, per 
         https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22
         Should we consider creating support paths in our data/graphs, 

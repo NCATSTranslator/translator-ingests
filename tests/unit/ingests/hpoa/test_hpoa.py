@@ -11,7 +11,7 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
 
 from translator_ingest.ingests.hpoa.hpoa import (
     on_data_begin_disease_to_phenotype,
@@ -297,7 +297,7 @@ def test_disease_to_phenotype_transform(
     ],
 )
 def test_predicate(association: str, expected_predicate: Optional[str]):
-    predicate = get_hpoa_genetic_predicate(association)
+    predicate = get_qualified_predicate(association)
 
     assert predicate == expected_predicate
 
@@ -322,7 +322,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
             {
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:64170",
-                "predicate": "biolink:affects",
+                "predicate": "biolink:contributes_to",
                 "object": "OMIM:212050",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -373,26 +373,11 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
                 "ncbi_gene_id": "NCBIGene:3265",
                 "source": "http://www.orphadata.org/data/xml/en_product6.xml",
             },
+            # UNKNOWN gene-to-disease associations are actually  in the ingest for now (see the RIG)
             # Captured node contents
-            [
-                {"id": "NCBIGene:3265", "name": "HRAS", "category": ["biolink:Gene"]},
-                {"id": "Orphanet:79414", "category": ["biolink:Disease"]},
-            ],
+            None,
             # Captured edge contents
-            {
-                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
-                "subject": "NCBIGene:3265",
-                "predicate": "biolink:correlated_with",
-                "object": "Orphanet:79414",
-                "qualified_predicate": None,
-                "subject_form_or_variant_qualifier": None,
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:orphanet"}
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+            None
         ),
     ],
 )
@@ -470,7 +455,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8086",
-                "predicate": "biolink:affects",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0000252",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -506,7 +491,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8120",
-                "predicate": "biolink:affects",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0001298",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -542,7 +527,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8192",
-                "predicate": "biolink:affects",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0000013",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -579,7 +564,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8929",
-                "predicate": "biolink:affects",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0003005",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",

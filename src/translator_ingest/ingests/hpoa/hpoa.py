@@ -42,7 +42,7 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     sex_to_pato,
     Frequency,
     phenotype_frequency_to_hpo_term,
-    get_hpoa_genetic_predicate,
+    get_qualified_predicate,
     hpo_to_mode_of_inheritance,
 )
 
@@ -230,7 +230,7 @@ def transform_record_gene_to_disease(
     gene_id = record["ncbi_gene_id"]
     gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
-    qualified_predicate: Optional[str] = get_hpoa_genetic_predicate(record["association_type"])
+    qualified_predicate: Optional[str] = get_qualified_predicate(record["association_type"])
 
     disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     disease = Disease(id=disease_id, **{})
@@ -240,9 +240,22 @@ def transform_record_gene_to_disease(
         association = CausalGeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:affects",  # TODO: or should this be 'biolink:regulates'?
+            predicate="biolink:contributes_to",
             object=disease_id,
-            qualified_predicate=qualified_predicate,
+            qualified_predicate="biolink:causes",
+            subject_form_or_variant_qualifier=VE.genetic_variant_form,
+            sources=get_hpoa_association_sources(record["source"]),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            **{},
+        )
+    elif qualified_predicate == "biolink:contributes_to":
+        association = CorrelatedGeneToDiseaseAssociation(
+            id=entity_id(),
+            subject=gene_id,
+            predicate="biolink:correlated_with",
+            object=disease_id,
+            qualified_predicate="biolink:contributes_to",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
             sources=get_hpoa_association_sources(record["source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
@@ -250,18 +263,8 @@ def transform_record_gene_to_disease(
             **{},
         )
     else:
-        association = CorrelatedGeneToDiseaseAssociation(
-            id=entity_id(),
-            subject=gene_id,
-            predicate="biolink:correlated_with",
-            object=disease_id,
-            qualified_predicate=qualified_predicate,
-            subject_form_or_variant_qualifier=VE.genetic_variant_form if qualified_predicate else None,
-            sources=get_hpoa_association_sources(record["source"]),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-            **{},
-        )
+        # We ignore UNKNOWN associations for now (see the RIG)
+        return None
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
@@ -386,7 +389,7 @@ def transform_record_gene_to_phenotype(
     association = GeneToPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=gene_id,
-        predicate="biolink:affects",
+        predicate="biolink:contributes_to",
         object=hpo_id,
         qualified_predicate="biolink:causes",
         subject_form_or_variant_qualifier=VE.genetic_variant_form,
