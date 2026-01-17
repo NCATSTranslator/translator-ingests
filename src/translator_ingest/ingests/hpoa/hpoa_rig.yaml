@@ -280,7 +280,7 @@ target_info:
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"
-  - "Kevin Schaper - code author"
+  - "Kevin Schaper - original Monarch code co-author"
   - "Sierra Moxon - data modeling, domain expertise, code support"
   - "Matthew Brush - data modeling, domain expertise"
   artifacts:
