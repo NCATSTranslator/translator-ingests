@@ -50,7 +50,7 @@ TMKP_TO_BIOLINK_SLOT_MAP = {
 }
 
 # Track which unmapped attributes we've already warned about (to avoid log spam)
-_warned_unmapped_attrs: set = set()
+_warned_unmapped_attrs: Set[str] = set()
 
 
 # Map biolink classes from content_metadata.json
@@ -152,10 +152,10 @@ def _get_predicate_domain_range_prefixes(predicate: str) -> tuple[frozenset[str]
     Returns:
         Tuple of (domain_prefixes, range_prefixes) or None if predicate has no constraints.
 
-    >>> domain, range = _get_predicate_domain_range_prefixes('biolink:treats')
-    >>> 'DRUGBANK' in domain  # chemicals can treat
+    >>> domain_prefixes, range_prefixes = _get_predicate_domain_range_prefixes('biolink:treats')
+    >>> 'DRUGBANK' in domain_prefixes  # chemicals can treat
     True
-    >>> 'MONDO' in range_  # diseases can be treated
+    >>> 'MONDO' in range_prefixes  # diseases can be treated
     True
     """
     tk = _get_toolkit()
@@ -253,11 +253,6 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         attr_type = attr.get("attribute_type_id", "")
         value = attr.get("value")
 
-        # Map simple attributes to association slots if they exist
-        if hasattr(association, attr_type):
-            setattr(association, attr_type, value)
-            continue
-
         # Handle supporting study results
         if attr_type == "biolink:supporting_study_result":
             # Create TextMiningStudyResult object
@@ -281,8 +276,15 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
             text_mining_results.append(tm_result)
             continue
 
-        # Handle TMKP-specific attribute names that need mapping to Biolink slots
+        # Strip "biolink:" prefix if present to get the actual slot name
         slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
+
+        # Check if this is a direct attribute on the association
+        if hasattr(association, slot_name):
+            setattr(association, slot_name, value)
+            continue
+
+        # Handle TMKP-specific attribute names that need mapping to Biolink slots
         if slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
