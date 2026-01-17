@@ -43,8 +43,15 @@ from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP
 
 # Map TMKP attribute names to Biolink slot names
 # These handle cases where TMKP uses different naming than Biolink
+# Biolink YAML uses space case ("has evidence count")
+# JSON Schema uses snake_case with biolink: prefix ("biolink:has_evidence_count")
+# Pydantic expects snake_case field names
 TMKP_TO_BIOLINK_SLOT_MAP = {
+    # Space case variations (from YAML serialization)
     "has evidence count": "evidence_count",
+    "has confidence score": "has_confidence_score",
+    # Snake_case variations that need mapping
+    "has_evidence_count": "evidence_count",  # Handle underscore variant
     "supporting_publications": "publications",
     "tmkp_confidence_score": "has_confidence_score",
 }

@@ -59,22 +59,41 @@ ingest_info:
         "MONDO:xxx biolink:treats DRUGBANK:yyy" are excluded because the association type expects
         chemicals as subjects and diseases as objects, not the reverse. Validation uses BMT to
         dynamically determine valid ID prefixes for each association's domain/range constraints.
-  future_considerations: null
+    - description: |
+        GeneRegulatesGeneAssociation edges that lack required qualifiers (object_aspect_qualifier
+        or object_direction_qualifier) are excluded to ensure semantic correctness of regulatory
+        relationships.
+  future_considerations:
+    - |
+      Review study results data and modeling (didn't have time to review thoroughly this pass),
+      and it may be that we can simplify modeling depending on what requirements are for this
+      type of metadata this phase.
+    - |
+      Consider whether it is sufficient to have RIG Edge Type objects be the source of truth
+      for UI explanations, given that edges end up being generated in normalized KGs that don't
+      fit into these categories. How to ensure that all edges in a KG will have an explanation,
+      and that the UI team will be able to find and access and use these explanations easily
+      and accurately.
+    - |
+      Approach for one-hop predictions like those described above (whether DINGO creates them
+      at ingest, or re-instate the CQS to create them).
   additional_notes: |
     Attributes in the data are encoded as JSON objects that may contain nested attributes
-    representing supporting studies and evidence.
+    representing supporting studies and evidence. The ingest creates Study objects containing
+    TextMiningStudyResult objects to model the nested study result data structure, with
+    supporting text and document references captured in the TextMiningStudyResult objects.
 
 target_info:
   infores_id: "infores:translator-text-mining-kgx"
   edge_type_info:
     - subject_categories:
-      - "biolink:Protein"
-      predicates:
-        - "biolink:affects"
-      object_categories:
       - "biolink:SmallMolecule"
       - "biolink:ChemicalEntity"
       - "biolink:MolecularMixture"
+      - "biolink:ComplexMolecularMixture"
+      predicates:
+        - "biolink:affects"
+      object_categories:
       - "biolink:Protein"
       qualifiers:
         - property: "biolink:qualified_predicate"
@@ -100,55 +119,138 @@ target_info:
       - text_mining_agent
       edge_properties:
         - "biolink:has_supporting_studies"
-        - "biolink:publications"
-        - "biolink:has_evidence_count"
-        - "biolink:tmkp_confidence_score"
+        - "biolink:evidence_count"
+        - "biolink:has_confidence_score"
       ui_explanation: |
-        Text mining identified that a protein affects a chemical or other protein,
-        with evidence from scientific literature.
-      additional_notes: null
+        Targeted text mining identified that a chemical affects a protein, with causal direction
+        and magnitude qualifiers indicating how the chemical modulates protein activity or abundance.
+        Evidence from scientific literature includes supporting text excerpts and publication references.
+      additional_notes: |
+        Association type: ChemicalAffectsGeneAssociation. The has_supporting_studies property
+        contains Study objects with nested TextMiningStudyResult objects that include supporting
+        text excerpts and publication references.
     - subject_categories:
-      - "biolink:Disease"
+      - "biolink:Protein"
       predicates:
-        - "biolink:contributes_to"
-        - "biolink:treats"
         - "biolink:affects"
       object_categories:
       - "biolink:Protein"
+      qualifiers:
+        - property: "biolink:qualified_predicate"
+          value_enumeration:
+            - "biolink:affects"
+        - property: "biolink:object_aspect_qualifier"
+          value_enumeration:
+            - "activity_or_abundance"
+        - property: "biolink:object_direction_qualifier"
+          value_enumeration:
+            - "increased"
+            - "decreased"
+      knowledge_level:
+      - not_provided
+      agent_type:
+      - text_mining_agent
+      edge_properties:
+        - "biolink:has_supporting_studies"
+        - "biolink:evidence_count"
+        - "biolink:has_confidence_score"
+      ui_explanation: |
+        Targeted text mining identified gene regulatory relationships where one protein affects
+        another protein's activity or abundance. These edges include required qualifiers indicating
+        the direction and magnitude of the regulatory effect.
+      additional_notes: |
+        Association type: GeneRegulatesGeneAssociation. Requires object_aspect_qualifier and
+        object_direction_qualifier for semantic correctness. Edges lacking these qualifiers are
+        filtered out during processing.
+    - subject_categories:
       - "biolink:SmallMolecule"
       - "biolink:ChemicalEntity"
       - "biolink:MolecularMixture"
+      - "biolink:ComplexMolecularMixture"
+      predicates:
+        - "biolink:treats"
+      object_categories:
+      - "biolink:Disease"
+      - "biolink:PhenotypicFeature"
       knowledge_level:
       - not_provided
       agent_type:
       - text_mining_agent
       edge_properties:
         - "biolink:has_supporting_studies"
-        - "biolink:publications"
+        - "biolink:evidence_count"
+        - "biolink:has_confidence_score"
       ui_explanation: |
-        Text mining identified relationships between diseases and chemicals/proteins
-        based on co-occurrence and linguistic patterns in literature.
-      additional_notes: null
+        Targeted text mining identified therapeutic relationships where a chemical treats a disease
+        or phenotypic feature, based on linguistic patterns in scientific literature.
+      additional_notes: |
+        Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source data may
+        contain reversed edges (disease treats chemical) that are filtered out during processing
+        based on Biolink domain/range constraints.
     - subject_categories:
-      - "biolink:PhenotypicFeature"
-      predicates:
-        - "biolink:contributes_to"
-        - "biolink:treats"
-        - "biolink:affects"
-      object_categories:
-      - "biolink:Protein"
       - "biolink:SmallMolecule"
       - "biolink:ChemicalEntity"
+      - "biolink:MolecularMixture"
+      - "biolink:ComplexMolecularMixture"
+      predicates:
+        - "biolink:contributes_to"
+      object_categories:
+      - "biolink:Disease"
+      - "biolink:PhenotypicFeature"
       knowledge_level:
       - not_provided
       agent_type:
       - text_mining_agent
       edge_properties:
         - "biolink:has_supporting_studies"
-        - "biolink:publications"
+        - "biolink:evidence_count"
+        - "biolink:has_confidence_score"
       ui_explanation: |
-        Text mining identified relationships between phenotypes and chemicals/proteins.
-      additional_notes: null
+        Targeted text mining identified that a chemical contributes to a disease or phenotypic
+        feature, indicating a causal or risk relationship based on evidence from literature.
+      additional_notes: |
+        Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Domain/range
+        validation ensures chemicals are subjects and diseases/phenotypes are objects.
+    - subject_categories:
+      - "biolink:Protein"
+      predicates:
+        - "biolink:contributes_to"
+      object_categories:
+      - "biolink:Disease"
+      - "biolink:PhenotypicFeature"
+      knowledge_level:
+      - not_provided
+      agent_type:
+      - text_mining_agent
+      edge_properties:
+        - "biolink:has_supporting_studies"
+        - "biolink:evidence_count"
+        - "biolink:has_confidence_score"
+      ui_explanation: |
+        Targeted text mining identified that a protein/gene contributes to a disease or phenotypic
+        feature, indicating genetic or molecular involvement based on evidence from literature.
+      additional_notes: |
+        Association type: GeneToDiseaseAssociation.
+    - subject_categories:
+      - "biolink:Protein"
+      predicates:
+        - "biolink:affects"
+      object_categories:
+      - "biolink:Disease"
+      - "biolink:PhenotypicFeature"
+      knowledge_level:
+      - not_provided
+      agent_type:
+      - text_mining_agent
+      edge_properties:
+        - "biolink:has_supporting_studies"
+        - "biolink:evidence_count"
+        - "biolink:has_confidence_score"
+      ui_explanation: |
+        Targeted text mining identified that a protein/gene affects a disease or phenotypic
+        feature, based on linguistic patterns in scientific literature.
+      additional_notes: |
+        Association type: GeneToDiseaseAssociation.
   node_type_info:
   - node_category: "biolink:ChemicalEntity"
     source_identifier_types:
@@ -189,7 +291,6 @@ target_info:
       - "DRUGBANK"
     node_properties: null
     additional_notes: null
-  future_considerations: null
 
 provenance_info:
   contributions:
