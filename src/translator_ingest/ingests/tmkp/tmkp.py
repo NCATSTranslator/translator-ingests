@@ -240,14 +240,19 @@ def get_latest_version() -> str:
     return "tmkp-2023-03-05"
 
 
-def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> List[TextMiningStudyResult]:
+def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> Tuple[List[TextMiningStudyResult], Dict[str, Any]]:
     """
-    Parse attribute objects and extract supporting studies.
+    Parse attribute objects and extract supporting studies and knowledge sources.
 
-    Attributes can contain nested attributes representing TextMiningStudyResult objects.
-    This function processes them and returns a list of TextMiningStudyResult objects.
+    Attributes can contain nested attributes representing TextMiningStudyResult objects,
+    as well as knowledge source information that should be used to build the sources collection.
+
+    Returns:
+        Tuple of (text_mining_results, sources_info) where sources_info contains
+        primary_knowledge_source and supporting_data_source if present.
     """
     text_mining_results = []
+    sources_info: Dict[str, Any] = {}
 
     for attr in attributes:
         attr_type = attr.get("attribute_type_id", "")
@@ -279,6 +284,20 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         # Strip "biolink:" prefix if present to get the actual slot name
         slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
 
+        # Handle knowledge source attributes separately - they should be used to build sources
+        if slot_name == "primary_knowledge_source":
+            sources_info["primary"] = value
+            continue
+        elif slot_name == "supporting_data_source":
+            # supporting_data_source could be a list or single value
+            if "supporting" not in sources_info:
+                sources_info["supporting"] = []
+            if isinstance(value, list):
+                sources_info["supporting"].extend(value)
+            else:
+                sources_info["supporting"].append(value)
+            continue
+
         # Check if this is a direct attribute on the association
         if hasattr(association, slot_name):
             setattr(association, slot_name, value)
@@ -299,7 +318,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
             )
             _warned_unmapped_attrs.add(attr_type)
 
-    return text_mining_results
+    return text_mining_results, sources_info
 
 
 @koza.transform_record(tag="nodes")
@@ -388,12 +407,13 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         # Create association with all fields
         association = assoc_class(**assoc_kwargs)
 
-        # Parse attributes JSON
+        # Parse attributes JSON and extract sources info
+        sources_info = {}
         if attributes_json := record.get("_attributes"):
             attributes = json.loads(attributes_json)
 
-            # Extract supporting studies
-            text_mining_results = parse_attributes(attributes, association)
+            # Extract supporting studies and knowledge source info
+            text_mining_results, sources_info = parse_attributes(attributes, association)
 
             # Create a Study object to contain the TextMiningStudyResult objects
             if text_mining_results:
@@ -407,10 +427,13 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
                 studies_dict = {study.id: study}
                 association.has_supporting_studies = studies_dict
 
-        # Add knowledge sources
+        # Add knowledge sources - use from attributes if present, otherwise use defaults
+        primary_source = sources_info.get("primary", INFORES_TEXT_MINING_KP)
+        supporting_sources = sources_info.get("supporting", ["infores:pubmed"])
+
         association.sources = build_association_knowledge_sources(
-            primary=INFORES_TEXT_MINING_KP,
-            supporting=["infores:pubmed"]
+            primary=primary_source,
+            supporting=supporting_sources
         )
 
         # Create nodes for subject and object

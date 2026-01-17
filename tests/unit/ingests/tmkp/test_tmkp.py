@@ -61,9 +61,10 @@ class TestGetValidPrefixesForClass:
         prefixes = _get_valid_prefixes_for_class("ChemicalEntity")
         assert isinstance(prefixes, frozenset)
 
-    def test_unknown_class_returns_empty(self):
-        prefixes = _get_valid_prefixes_for_class("NonExistentClass")
-        assert prefixes == frozenset()
+    def test_unknown_class_raises_value_error(self):
+        # BMT raises ValueError for invalid Biolink classes
+        with pytest.raises(ValueError, match="not a valid biolink component"):
+            _get_valid_prefixes_for_class("NonExistentClass")
 
 
 class TestGetPredicateDomainRangePrefixes:
