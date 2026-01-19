@@ -127,10 +127,10 @@
         edge_properties:
           - publications
         klat_and_source_rationale: "Source Chemical-Disease records in CTD report assertions that were manually curated from literature by CTD curators. They are are assigned an 'agent type' of manual_agent and 'knowledge level' of knowledge_assertion, with CTD as the primary source."
-        transform_rationale:  The source record for this edge in CTD has a "T" (therapeutic) DirectEvidence code, indicating the chemical to be a "potential" treatment in virtue of its clinical use or study. This somewhat vague relationship is best represented using the broadly scoped Biolink predicate 'treats or applied or studied to treat' - which is used when it is not clear whether the chemical showed real efficacy or was merely studied or applied as a treatment. 
+        transform_rationale: "The CTD record supporting this edge has a "T" (therapeutic) DirectEvidence code, indicating the chemical to be a "potential" treatment in virtue of its clinical use or study. This somewhat vague relationship is best represented with the broad Biolink predicate 'treats or applied or studied to treat' - which is used when it is not clear whether the chemical shows established efficacy or was merely studied or attempted as a treatment."
         source_files:
           - CTD_chemicals_diseases.tsv
-        additional_notes: Note that the 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease.
+        additional_notes: "Note that the 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease."
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -146,10 +146,10 @@
         edge_properties:
           - publications    
         klat_and_source_rationale: "Source Chemical-Disease records in CTD report assertions that were manually curated from literature by CTD curators. They are assigned an 'agent type' of manual_agent and 'knowledge level' of knowledge_assertion, with CTD as the primary source."
-        transform_rationale: The source record for this edge in CTD has a DirectEvidence code of "M" (marker/mechanism), indicating that the chemical is either a marker or contributing factor for a condition. This implies that at minimum there is correlation between the presence of the chemical and condition. This somewhat vague relationship is best represented here using the Biolink 'correlated_with' predicate.
+        transform_rationale: "The CTD record supporting this edge has a 'DirectEvidence' code of "M" (marker/mechanism), indicating that the chemical is either a marker or contributing factor for a condition. This implies that at minimum there is correlation between the presence of the chemical and condition. This somewhat vague relationship is best represented here using the Biolink 'correlated_with' predicate."
         source_files: 
           - CTD_chemicals_diseases.tsv
-        additional_notes: CTD_chemicals_diseases.tsv data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores. Separate edges will be created for each type of association reported between a chemical and a given disease, according to the mappings described above. All "shared gene" rows in the source data file for a given C-D pair will be aggregated into a single edge that reports a relationship with the inference score as an edge property (and possibly the list of shared genes). This means that for a given C-D pair in the CTD file, there may be 1, 2, or 3 separate edges created in the Translator graph.
+        additional_notes: "CTD_chemicals_diseases.tsv data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores. Separate edges will be created for each type of association reported between a chemical and a given disease, according to the mappings described above. All "shared gene" rows in the source data file for a given C-D pair will be aggregated into a single edge that reports a relationship with the inference score as an edge property (and possibly the list of shared genes). This means that for a given C-D pair in the CTD file, there may be 1, 2, or 3 separate edges created in the Translator graph."
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -165,8 +165,8 @@
         edge_properties:
           - publications
           - has_confidence_score
-        klat_and_source_rationale: Source Chemical-Disease records in CTD are based on statistical analysis of shared gene associations, as determined by an automated CTD pipeline (not manual curation or review). They are assigned an 'agent type' of data_analysis_pipeline and 'knowledge level' of statistical_association, with CTD as the primary source."
-        transform_rationale: The source record for this edge has an 'inference score' that indicates a statistically significant overrepresentation of shared gene associations between the Chemical and Disease. This hints but does not demonstrate that a real biological relationship may exist. The indirect, statistical basis of this relationship is best represented using the relatively generic 'associated_with' predicate in Biolink.
+        klat_and_source_rationale: Source Chemical-Disease records in CTD are based on statistical analysis of shared gene associations, as determined by an automated CTD pipeline that assigns an 'inference score' to each Chemical Disease pair. They are assigned an 'agent type' of data_analysis_pipeline and 'knowledge level' of statistical_association, with CTD as the primary source."
+        transform_rationale: The CTD record for this edge has an 'inference score' that indicates a statistically significant overrepresentation of shared gene associations between the Chemical and Disease. This hints but does not demonstrate that a real biological relationship may exist. The indirect, statistical basis of this relationship is best represented using the relatively generic 'associated_with' predicate in Biolink.
         source_files: 
           - CTD_chemicals_diseases.tsv
         additional_notes:
