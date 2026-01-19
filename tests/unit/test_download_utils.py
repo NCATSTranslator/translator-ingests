@@ -5,7 +5,11 @@ import yaml
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import (
+    substitute_version_in_download_yaml,
+    validate_downloaded_files,
+    EmptyDownloadedFileError,
+)
 
 
 def test_substitute_version_in_urls():
@@ -116,6 +120,91 @@ def test_file_not_found():
             "nonexistent/download.yaml",
             "2024-01-15"
         )
+
+
+def test_validate_downloaded_files_with_valid_files():
+    """Test that validation passes when all files have content."""
+    with TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Create non-empty files
+        (tmpdir / "file1.tsv").write_text("data content here")
+        (tmpdir / "file2.json").write_text('{"key": "value"}')
+        
+        # Should not raise any exception
+        validate_downloaded_files(tmpdir)
+
+
+def test_validate_downloaded_files_with_empty_file():
+    """Test that validation raises error when a file is empty."""
+    with TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Create one empty file and one non-empty file
+        (tmpdir / "file1.tsv").write_text("data content here")
+        (tmpdir / "empty_file.tsv").write_text("")  # Empty file
+        
+        # Should raise EmptyDownloadedFileError
+        with pytest.raises(EmptyDownloadedFileError) as exc_info:
+            validate_downloaded_files(tmpdir)
+        
+        # Verify error message contains the filename
+        assert "empty_file.tsv" in str(exc_info.value)
+        assert "file size 0" in str(exc_info.value)
+
+
+def test_validate_downloaded_files_with_multiple_empty_files():
+    """Test that validation raises error listing all empty files."""
+    with TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Create multiple empty files
+        (tmpdir / "file1.tsv").write_text("data content here")
+        (tmpdir / "empty1.tsv").write_text("")
+        (tmpdir / "empty2.json").write_text("")
+        
+        # Should raise EmptyDownloadedFileError
+        with pytest.raises(EmptyDownloadedFileError) as exc_info:
+            validate_downloaded_files(tmpdir)
+        
+        # Verify error message contains both filenames
+        error_msg = str(exc_info.value)
+        assert "empty1.tsv" in error_msg
+        assert "empty2.json" in error_msg
+        assert "file size 0" in error_msg
+
+
+def test_validate_downloaded_files_with_no_files():
+    """Test that validation handles directory with no files gracefully."""
+    with TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Directory exists but is empty - should not raise an error
+        # (warning is logged but no exception)
+        validate_downloaded_files(tmpdir)
+
+
+def test_validate_downloaded_files_with_nonexistent_directory():
+    """Test that validation handles non-existent directory gracefully."""
+    # Should not raise an error, just log a warning
+    validate_downloaded_files("/nonexistent/directory/path")
+
+
+def test_validate_downloaded_files_ignores_subdirectories():
+    """Test that validation only checks files, not subdirectories."""
+    with TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Create a valid file
+        (tmpdir / "file1.tsv").write_text("data content here")
+        
+        # Create a subdirectory (should be ignored)
+        subdir = tmpdir / "subdir"
+        subdir.mkdir()
+        (subdir / "file_in_subdir.txt").write_text("")
+        
+        # Should not raise an error since subdirectories are ignored
+        validate_downloaded_files(tmpdir)
 
 
 def _fake_download(download_yaml_file: Path):
