@@ -32,13 +32,13 @@ readers:
       - 'association_type'
       - 'disease_id'
       - 'source'
-  filters:
-    - inclusion: 'include'
-      column: 'gene_to_disease_association_types'
-      filter_code: 'in'
-      value:
-        - 'MENDELIAN'
-        - 'POLYGENIC'
+    filters:
+      - inclusion: 'include'
+        column: 'gene_to_disease_association_types'
+        filter_code: 'in'
+        value:
+          - 'MENDELIAN'
+          - 'POLYGENIC'
   gene_to_phenotype:
     files:
       - 'phenotype.hpoa'
