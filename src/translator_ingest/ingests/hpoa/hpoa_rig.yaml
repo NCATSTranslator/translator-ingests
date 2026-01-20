@@ -105,6 +105,7 @@ ingest_info:
       Mendelian diseases where the Gene is individually causal for the disease and all of its phenotypes.
     relevant_files: genes_to_phenotype.txt
   additional_notes: null
+  
 target_info:
   infores_id: "infores:translator-hpo-annotations"
   edge_type_info:
@@ -140,8 +141,7 @@ target_info:
         - "biolink:has_quotient"
         - "biolink:publications"
         - "biolink:has_evidence"
-      klat_and_source_rationale: "Source HPOA data provide Disease-Phenotype associations that are produced by HPO curators through manual review of clinical data and published evidence."
-      transform_rationale: "The record used to create this edge reports that a Phenotype is observed to manifest in a particular Disease, and may include information about the frequency and/or biological context (e.g. sex, onset) of this manifestation. This relationship is represented using the Biolink 'has phenotype' predicate - with optional qualifiers describing frequency/context information where provided."
+      ui_explanation: "Source HPOA data provide Disease-Phenotype associations that are produced by HPO curators through manual review of clinical data and published evidence. The HPOA record used to create this Translator edge reports that a Phenotype is observed to manifest in a particular Disease, and may include information about the frequency and/or biological context (e.g. sex, onset) of this manifestation. This relationship is represented using the Biolink 'has phenotype' predicate - with optional qualifiers describing frequency/context information where provided."
       source_files:
         - phenotype.hpoa
       additional_notes: null
@@ -167,8 +167,7 @@ target_info:
       - manual_agent
       primary_knowledge_source: infores:hpo-annotations      
       edge_properties: null
-      klat_and_source_rationale: "Source HPOA data provide Gene-Disease associations that are manually curated from sources like Orphanet and MIM2Gene and DECIPHER by HPO."
-      transform_rationale: "The record used to create this edge reports that a Gene is associated with a Disease when there is evidence that variants in the gene may cause or contribute to its manifestation. The Biolink predicate used to represent this relationship depends on the type of Disease: we use the 'causes' predicate for Mendelian disorders (when the HPOA "association_type" field = 'MENDELIAN'), the 'contribute to' predicate for polygenic disease (when the "association_type" field = "POLYGENIC"), and the more general 'associated with' predicate when the Disease type is not given ("association_type" field =  'UNKNOWN') - as here a causal/contributing relationship has not been established. Qualifiers are also used to indicate that it is a 'genetic_variant_form' of the gene that participates in these relationships, not the Gene in general. 
+      ui_explanation: "Source HPOA data provide Gene-Disease associations that are manually curated from sources like Orphanet and MIM2Gene and DECIPHER by HPO. The record used to create this Translator edge reports that a Gene is associated with a Disease when there is evidence that variants in the gene may cause or contribute to its manifestation. The Biolink predicate used to represent this relationship depends on the type of Disease: the 'causes' predicate is used for Mendelian disorders (where the HPOA "association_type" field = 'MENDELIAN'), the 'contributes to' predicate is used for polygenic disease (where the "association_type" field = "POLYGENIC"), and the more general 'associated with' predicate is used when the Disease type is not given ("association_type" field = 'UNKNOWN') - as here a causal/contributing relationship has not been established. Qualifier is used to indicate that it is a 'genetic_variant_form' of the gene that participates in these relationships, not the Gene in general." 
       source_files:
         - genes_to_disease.txt
       additional_notes: null
@@ -201,8 +200,7 @@ target_info:
       - automated_agent
       primary_knowledge_source: infores:hpo-annotations        
       edge_properties: null
-      klat_and_source_rationale: "Source HPOA data provide direct Gene-Phenotype associations that are automatically assigned between a Gene and any Phenotype that manifests in a Mendelian Disease associated with the Gene."
-      transform_rationale: "The record used to create this edge specifically reports a Gene-Phenotype association where the Gene has variants causal for a Mendelian disorder in which the Phenotype is manifest - from which it is logically entailed that variants in the Gene are also causal for the Phenotype (as such disorders have a single causal gene). This relationship is represented using the Biolink 'causes' predicate, with qualifiers indicating that it is a 'genetic_variant_form' of the gene that is causing the Phenotype."
+      ui_explanation: "Source HPOA data provide direct Gene-Phenotype associations that are automatically assigned between a Gene and any Phenotype that manifests in a Mendelian Disease associated with the Gene. The record used to create this edge specifically reports a Gene-Phenotype association where the Gene has variants causal for a Mendelian disorder in which the Phenotype is manifest - from which it is logically entailed that variants in the Gene are also causal for the Phenotype (as such disorders have a single causal gene). This relationship is represented using the Biolink 'causes' predicate, with a qualifier indicating that it is a 'genetic_variant_form' of the gene that is causing the Phenotype (not the Gene in general)."
       source_files:
         - genes_to_phenotype.txt
       additional_notes: null
