@@ -235,7 +235,6 @@ def transform_record_gene_to_disease(
     disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     disease = Disease(id=disease_id, **{})
 
-    subject_form_or_variant_qualifier: Optional[VE] = VE.genetic_variant_form
     if qualified_predicate == "biolink:causes":
         association = CausalGeneToDiseaseAssociation(
             id=entity_id(),
