@@ -288,7 +288,7 @@
           - infores:ctd
         edge_properties:
           - biolink:publications
-        ui_explanation: "Source CTD data provides assertions about Gene-Chemical relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge describes how a gene or gene product affects a particular aspect or form of a chemical entity, and often the direction of the effect (e.g. that it causes increased abundance of a chemical, or decreased stability). These causal relationships are represented using the Biolink 'affects' or 'causes' predicates, with qualifiers capturing additional detail about the aspect and direction of the gene's effect.
+        ui_explanation: "Source CTD data provides assertions about Gene-Chemical relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge describes how a gene or gene product affects a particular aspect or form of a chemical entity, and often the direction of the effect (e.g. that it causes increased abundance of a chemical, or decreased stability). These causal relationships are represented using the Biolink 'affects' or 'causes' predicates, with qualifiers capturing additional detail about the aspect and direction of the gene's effect."
         source_files:
           - CTD_chem_gene_ixns.tsv
         additional_notes:
@@ -439,7 +439,7 @@
         edge_properties:
           - biolink:adjusted_p_value
           - biolink:p_value
-        ui_explanation:  "Source CTD data are based on an enrichment analysis of Gene Ontology (GO) terms annotated to all genes that interact with a particular chemical - to derive Chemical-GO Term associations. This analysis is performed by a CTD automated analysis pipeline. The CTD record used to create this Translator edge reports an overrepresented GO term associated with a particular chemical - as indicated by a sufficiently low p-value from the analysis. This hints but does not directly demonstrate that the chemical may impact the process, activity, or cellular component the GO term represents. The indirect, statistical basis of this relationship is best represented using the 'associated_with' predicate in Biolink."
+        ui_explanation: "Source CTD data are based on an enrichment analysis of Gene Ontology (GO) terms annotated to all genes that interact with a particular chemical - to derive Chemical-GO Term associations. This analysis is performed by a CTD automated analysis pipeline. The CTD record used to create this Translator edge reports an overrepresented GO term associated with a particular chemical - as indicated by a sufficiently low p-value from the analysis. This hints but does not directly demonstrate that the chemical may impact the process, activity, or cellular component the GO term represents. The indirect, statistical basis of this relationship is best represented using the 'associated_with' predicate in Biolink."
         source_files:
           - CTD_chem_go_enriched.tsv
         additional_notes:        
