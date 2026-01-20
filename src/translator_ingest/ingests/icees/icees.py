@@ -19,7 +19,7 @@ from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.biolink import get_biolink_model_toolkit
 
-from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study
+from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study, remap_icees_predicate
 
 bmt = get_biolink_model_toolkit()
 
@@ -144,7 +144,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         association = edge_class(
             id=entity_id(),
             subject=icees_subject,
-            predicate=icees_predicate,
+            predicate=remap_icees_predicate(association_type=edge_class.name, predicate=icees_predicate),
             object=icees_object,
             has_supporting_studies=supporting_studies,
             sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),

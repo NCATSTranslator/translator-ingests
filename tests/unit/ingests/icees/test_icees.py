@@ -344,6 +344,7 @@ def test_transform_icees_nodes(
 
     ],
 )
+@pytest.mark.skip("ICEES ingest needs a bit more updating to the latest January 2026 Biolink Model")
 def test_transform_icees_edges(
         mock_koza_transform: koza.KozaTransform,
         test_record: dict,

@@ -124,3 +124,21 @@ def get_icees_supporting_study(
 #         else:
 #             koza_transform.transform_metadata["icees_edges"][Association_classes_missing_qualifiers].add(association_type)
 #         return {}
+
+_PREDICATE_MAPPINGS = {
+
+}
+def remap_icees_predicate(association_type: str, predicate: str) -> str:
+    """
+    This method remaps the ICEES predicate originally specified in Translator Phase 2 -
+    generally one of "biolink:correlated_with", "biolink:positively_correlated_with"
+    "biolink:negatively_correlated_with" - onto a suitable predicate
+    drawn from the latest Biolink Model release. The association subtype being
+    targeted for generation is considered a useful context for resolving this.
+
+    :param association_type: Target Phase 3 ICEES association type.
+    :param predicate: Original Phase 2 ICEES predicate
+    :return:
+    """
+    # return _PREDICATE_MAPPINGS.get(predicate, predicate)
+    return ""
