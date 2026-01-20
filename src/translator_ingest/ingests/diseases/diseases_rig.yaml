@@ -65,7 +65,7 @@ ingest_info:
       relevant_files: "human_disease_textmining_filtered.tsv"
 
 target_info:
-  infores_id: "infores:translator-jensen-diseases-kgx"
+  infores_id: "infores:translator-diseases"
   
   edge_type_info:
     - subject_categories:
