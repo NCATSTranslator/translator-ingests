@@ -34,7 +34,7 @@ readers:
       - 'source'
     filters:
       - inclusion: 'include'
-        column: 'gene_to_disease_association_types'
+        column: 'association_type'
         filter_code: 'in'
         value:
           - 'MENDELIAN'
