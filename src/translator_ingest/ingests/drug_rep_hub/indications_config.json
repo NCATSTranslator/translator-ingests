@@ -932,8 +932,8 @@
   "central nervous system depression": {
     "feature_action": "indication for",
     "predicate": "biolink:treats",
-    "primary_name": "Central Nervous System Depression [PE]",
-    "xref": "N0000175728"
+    "primary_name": "Central nervous system depression (disorder)",
+    "xref": "SNOMED:418072004"
   },
   "cerebral artery occlusion": {
     "feature_action": "indication for",
