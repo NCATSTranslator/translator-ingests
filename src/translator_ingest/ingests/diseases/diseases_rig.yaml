@@ -79,12 +79,16 @@ target_info:
         - statistical_association
       agent_type:
         - text_mining_agent
+      primary_knowledge_source: infores:diseases        
       edge_properties:
         - "biolink:has_confidence_score"
         - "biolink:z_score"
         - "biolink:original_subject"
         - "biolink:original_object"
-      ui_explanation: "The DISEASES text-mining method generates associations based on statistically significant co-occurrence of gene and disease concepts in the literature - which is consistent with the definition of the Biolink occurs_together_in_literature_with predicate."
+      ui_explanation: "Source DISEASES data are based on their text-mining and analysis pipeline that uses NLP to identify Gene and Disease in the literature, and statistical methods to determine co-occurrence patterns of these concepts. The DISEASES record used to create this Translator edge reports a statistically significant co-occurrence of Gene and Disease concepts in the literature. This relationship is represented using the Biolink 'occurs together in literature with' predicate."
+      source_files:
+        - human_disease_textmining_filtered.tsv
+        
     - subject_categories:
         - "biolink:Gene"
         - "biolink:Protein"
@@ -96,11 +100,18 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:amyco
+        - infores: medlineplus
+      aggregator_knowledge_sources:
+        - infores:diseases       
       edge_properties:
         - "biolink:has_confidence_score"
         - "biolink:original_subject"
         - "biolink:original_object"
-      ui_explanation: "DISEASES does not report the types of gene-disease relationships that it aggregates from curated sources, so the Biolink associated_with predicate is the most precise predicate we are able to use here."
+      ui_explanation: "Source DISEASES data provide Gene-Disease associations that were ingested from external manually curated sources. The DISEASES record used to create this Translator edge does not report a more specific types of gene-disease relationship for these 'associations', and is therefore represented using the relatively generic Biolink 'associated with' predicate."
+      source_files:
+        - human_disease_knowledge_filtered.tsv
   
   node_type_info:
     - node_category: "biolink:Gene"
