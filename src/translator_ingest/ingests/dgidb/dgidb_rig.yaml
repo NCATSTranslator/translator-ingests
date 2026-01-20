@@ -74,7 +74,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - automated_agent
-      primary_knolwedge_source: infores:dgidb
+      primary_knolwedge_sources:
+        - infores:dgidb
       supporting_data_sources:
         - infores:cancercommons
         - infores:cgi
@@ -123,7 +124,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - automated_agent
-      primary_knolwedge_source: infores:dgidb
+      primary_knolwedge_sources:
+        - infores:dgidb
       supporting_data_sources:
         - infores:cancercommons
         - infores:cgi
@@ -185,7 +187,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - automated_agent
-      primary_knolwedge_source: infores:dgidb
+      primary_knolwedge_sources:
+        - infores:dgidb
       supporting_data_sources:
         - infores:cancercommons
         - infores:cgi
