@@ -466,7 +466,7 @@ def test_chem_go_enriched(chem_go_enriched_output):
     entities = chem_go_enriched_output
     assert len(entities) == 3  # chemical, pathway, association
     association = [e for e in entities if isinstance(e, ChemicalEntityToBiologicalProcessAssociation)][0]
-    assert association.predicate == BIOLINK_ASSOCIATED_WITH
+    assert association.predicate == BIOLINK_AFFECTS
     assert association.subject == "MESH:D000082"
     assert association.object == "GO:0042493"
     assert association.p_value == 0.001

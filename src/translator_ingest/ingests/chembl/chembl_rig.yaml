@@ -144,12 +144,12 @@
         additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
 
       - subject_categories:
-          - MacromolecularComplex
-        predicates: 
-          - biolink:has_part
-        object_categories:
           - NucleicAcidEntity
           - Protein
+        predicates: 
+          - biolink:part_of
+        object_categories:
+          - MacromolecularComplex
         qualifiers:
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
