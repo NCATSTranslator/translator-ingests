@@ -90,16 +90,15 @@
           -
         knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
           -
-        primary_knowledge_source:  # (required, range = URIorCURIE (an infores)
+        primary_knowledge_sources:  # (required, multivalued, range = URIorCURIE (an infores))
+          - 
         supporting_data_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
           -
         aggregator_knowledge_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
           - 
         edge_properties:  # (optional, multivalued, range = URIorCURIE)
-          -
-        klat_and source_rationale:  # (optional, range = string)  Include when the choice of KL/AT and/or knowledge source annotations are tricky or nuanced, and we want to document our rationale.
-        transform_rationale:  # (optional, range = string)  Notes about the transform logic / rationale for this edge type - esp if tricky or nuanced, and we want to document our rationale.          
-        ui_explanation:  # (required, range = string)  Ideally, can derived this from content of the klat/source and transform rationale fields.
+          -     
+        ui_explanation:  # (required, range = string)  Follow templates/examples in the spreadsheet here when writing these: https://docs.google.com/spreadsheets/d/1Tl-FQYaxoB2QRdurm1EDBWYUOA0RhEU5S_3Qiw9SdkU/edit?gid=0#gid=0
         source_files:   # (multivalued, range = string)  
           - 
         additional_notes:  # (optional, range = string)
