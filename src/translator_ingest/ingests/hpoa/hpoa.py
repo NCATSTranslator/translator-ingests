@@ -25,6 +25,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     DiseaseToPhenotypicFeatureAssociation,
     CausalGeneToDiseaseAssociation,
     CorrelatedGeneToDiseaseAssociation,
+    ChemicalOrGeneOrGeneProductFormOrVariantEnum as ve,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
@@ -58,8 +59,7 @@ def on_data_begin_disease_to_phenotype(koza_transform: koza.KozaTransform):
     Can be used for setup or validation of input files.
     """
     koza_transform.log("Starting HPOA Disease to Phenotype processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
+    koza_transform.transform_metadata["disease_to_phenotype"] = {}
 
 @koza.on_data_end(tag="disease_to_phenotype")
 def on_data_end_disease_to_phenotype(koza_transform: koza.KozaTransform):
@@ -68,7 +68,12 @@ def on_data_end_disease_to_phenotype(koza_transform: koza.KozaTransform):
     Used for logging summary statistics.
     """
     koza_transform.log("HPOA Disease to Phenotype processing complete")
-
+    if koza_transform.transform_metadata["disease_to_phenotype"]:
+        for tag, value in koza_transform.transform_metadata["disease_to_phenotype"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
 
 """
 This particular Translator Ingest module targets the "phenotype.hpoa" file for parsing.
@@ -77,7 +82,6 @@ This parser only processes out "phenotypic anomaly" (aspect == 'P')
 and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
-
 
 @koza.transform_record(tag="disease_to_phenotype")
 def transform_record_disease_to_phenotype(
@@ -200,12 +204,13 @@ def transform_record_disease_to_phenotype(
             return None
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_disease_to_phenotype():  - record: '{str(record)}' "
-            + f"with {type(e)} exception: "
-            + str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = f"Disease:{record.get("database_id", "Unknown")}<->HPO:{record.get('hpo_id', 'Unknown')}"
+        if exception_tag not in koza_transform.transform_metadata["disease_to_phenotype"]:
+            koza_transform.transform_metadata["disease_to_phenotype"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["disease_to_phenotype"][exception_tag].append(rec_id)
         return None
 
 
@@ -216,8 +221,7 @@ def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform):
     Can be used for setup or validation of input files.
     """
     koza_transform.log("Starting HPOA Gene to Disease processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
+    koza_transform.transform_metadata["gene_to_disease"] = {}
 
 @koza.on_data_end(tag="gene_to_disease")
 def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
@@ -225,6 +229,12 @@ def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
     Called after all data has been processed.
     Used for logging summary statistics.
     """
+    if koza_transform.transform_metadata["gene_to_disease"]:
+        for tag, value in koza_transform.transform_metadata["gene_to_disease"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
     koza_transform.log("HPOA Gene to Disease processing complete")
 
 
@@ -244,21 +254,27 @@ def transform_record_gene_to_disease(
         gene_id = record["ncbi_gene_id"]
         gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
-        predicate = get_hpoa_genetic_predicate(record["association_type"])
+        qualified_predicate: Optional[str] = get_hpoa_genetic_predicate(record["association_type"])
 
         disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
         disease = Disease(id=disease_id, **{})
 
-        if predicate == "biolink:causes":
+        subject_form_or_variant_qualifier: Optional[ve] = ve.genetic_variant_form
+        if qualified_predicate == "biolink:causes":
             association_class = CausalGeneToDiseaseAssociation
         else:
             association_class = CorrelatedGeneToDiseaseAssociation
+            if qualified_predicate == "biolink:associated_with":
+                qualified_predicate = None
+                subject_form_or_variant_qualifier = None
 
         association = association_class(
             id=entity_id(),
             subject=gene_id,
-            predicate=predicate,
+            predicate="biolink:associated_with",
             object=disease_id,
+            qualified_predicate=qualified_predicate,
+            subject_form_or_variant_qualifier=subject_form_or_variant_qualifier,
             sources=get_hpoa_association_sources(record["source"]),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
@@ -268,10 +284,13 @@ def transform_record_gene_to_disease(
         return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_gene_to_disease() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = f"Gene:{record.get("Gene", "ncbi_gene_id")}<->Disease:{record.get('disease_id', 'Unknown')}"
+        if exception_tag not in koza_transform.transform_metadata["gene_to_disease"]:
+            koza_transform.transform_metadata["gene_to_disease"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["gene_to_disease"][exception_tag].append(rec_id)
         return None
 
 
@@ -282,8 +301,7 @@ def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
     Can be used for setup or validation of input files.
     """
     koza_transform.log("Starting HPOA Gene to Phenotype processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
+    koza_transform.transform_metadata["gene_to_phenotype"] = {}
 
 @koza.on_data_end(tag="gene_to_phenotype")
 def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
@@ -291,6 +309,12 @@ def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
     Called after all data has been processed.
     Used for logging summary statistics.
     """
+    if koza_transform.transform_metadata["gene_to_phenotype"]:
+        for tag, value in koza_transform.transform_metadata["gene_to_phenotype"].items():
+            koza_transform.log(
+                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
+                level="WARNING"
+            )
     koza_transform.log("HPOA Gene to Phenotype processing complete")
 
 
@@ -396,6 +420,8 @@ def transform_record_gene_to_phenotype(
             subject=gene_id,
             predicate="biolink:has_phenotype",
             object=hpo_id,
+            qualified_predicate="biolink:causes",
+            subject_form_or_variant_qualifier=ve.genetic_variant_form,
             frequency_qualifier=frequency.frequency_qualifier,
             has_percentage=frequency.has_percentage,
             has_quotient=frequency.has_quotient,
@@ -412,8 +438,11 @@ def transform_record_gene_to_phenotype(
         return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
 
     except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_gene_to_phenotype() - record: '{str(record)}' " + f"with {type(e)} exception: " + str(e)
-        )
+        # Tally errors here
+        exception_tag = f"{str(type(e))}: {str(e)}"
+        rec_id = f"Gene:{record.get("Gene", "ncbi_gene_id")}<->HPO:{record.get('hpo_id', 'Unknown')}"
+        if exception_tag not in koza_transform.transform_metadata["gene_to_phenotype"]:
+            koza_transform.transform_metadata["gene_to_phenotype"][exception_tag] = [rec_id]
+        else:
+            koza_transform.transform_metadata["gene_to_phenotype"][exception_tag].append(rec_id)
         return None

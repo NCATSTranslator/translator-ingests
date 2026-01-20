@@ -20,9 +20,10 @@ dependencies = [
     "koza>=2.1.1",
     "mkdocs-minify-plugin>=0.8.0",
     "polars>=1.35.2",
-    "robokop-orion==0.1.12",
+    "robokop-orion==0.1.14",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
+    "zstandard>=0.25.0"
 ]
 
 [project.scripts]

@@ -5,7 +5,9 @@ from linkml.validator.plugins import ValidationPlugin
 from linkml.validator.report import ValidationResult, Severity
 from linkml.validator.validation_context import ValidationContext
 from linkml_runtime.utils.schemaview import SchemaView
-from bmt import Toolkit
+from bmt.utils import parse_name
+
+from translator_ingest.util.biolink import get_biolink_model_toolkit
 
 
 def _yield_biolink_objects(data: Any, path: Optional[list[Union[str, int]]] = None):
@@ -52,56 +54,118 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._valid_predicates_cache = None
         self._node_ids_cache = set()
         self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
-        self._bmt = Toolkit()  # BMT toolkit for domain/range validation
+        self._bmt = get_biolink_model_toolkit()  # BMT toolkit for domain/range validation
         self._ancestors_cache = {}  # Maps category name to its ancestors for performance
+        
+    def _normalize_biolink_name(self, name: str) -> str:
+        """Normalize biolink element names to sentence case format used by BMT.
+        
+        This handles various formats:
+        - biolink:is_sequence_variant_of -> is sequence variant of
+        - is_sequence_variant_of -> is sequence variant of  
+        - IsSequenceVariantOf -> is sequence variant of
+        - is sequence variant of -> is sequence variant of
+        
+        Args:
+            name: The name in any format
+            
+        Returns:
+            Normalized name in sentence case (space-separated)
+        """
+        return parse_name(name)
+
+    def _collect_valid_uris_with_mixins(self, descendants: list[str], uri_attr: str) -> Set[str]:
+        """Helper to collect valid URIs from descendants and their mixins.
+        
+        Args:
+            descendants: List of descendant names from BMT
+            uri_attr: Attribute name for URI ('class_uri' or 'slot_uri')
+            
+        Returns:
+            Set of valid URIs including both descendants and used mixins
+        """
+        valid_uris = set()
+        used_mixins = set()
+        
+        # Single pass: collect URIs and track used mixins
+        for desc in descendants:
+            element = self._bmt.get_element(desc)
+            if element:
+                # Collect URI if present
+                if hasattr(element, uri_attr) and getattr(element, uri_attr):
+                    valid_uris.add(getattr(element, uri_attr))
+                
+                # Track used mixins
+                if hasattr(element, 'mixins') and element.mixins:
+                    used_mixins.update(str(m) for m in element.mixins)
+        
+        # Add URIs for used mixins
+        for mixin_name in used_mixins:
+            element = self._bmt.get_element(mixin_name)
+            if element and hasattr(element, uri_attr) and getattr(element, uri_attr):
+                valid_uris.add(getattr(element, uri_attr))
+        
+        return valid_uris
 
     def _get_valid_categories(self) -> Set[str]:
-        """Get valid Biolink Model categories."""
+        """Get valid Biolink Model categories.
+        
+        This includes both regular classes that are descendants of 'named thing'
+        and ALL mixin classes that have a class_uri defined. Mixins can be used
+        as node categories even if they're not descendants of named thing.
+        """
         if self._valid_categories_cache is not None:
             return self._valid_categories_cache
 
-        # Get all classes that are subclasses of named thing using BMT
-        valid_categories = set()
         try:
-            # Get all class descendants using BMT
+            valid_uris = set()
+            
+            # Get all class descendants of named thing
             descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
             
-            # For each descendant, get the proper biolink CURIE format
-            for desc in descendants:
-                element = self._bmt.get_element(desc)
+            # Collect URIs from descendants and their used mixins
+            valid_uris.update(self._collect_valid_uris_with_mixins(descendants, 'class_uri'))
+            
+            # Additionally, get ALL classes (including top-level mixins) that have a class_uri
+            # Important: Only ClassDefinitions can be mixins used as categories, not SlotDefinitions
+            all_classes = self._bmt.get_all_classes()
+            for class_name in all_classes:
+                element = self._bmt.get_element(class_name)
+                # Ensure it has a class_uri and is a mixin
                 if element and hasattr(element, 'class_uri') and element.class_uri:
-                    valid_categories.add(element.class_uri)
+                    # Only add mixins that aren't already captured
+                    if getattr(element, 'mixin', False):
+                        valid_uris.add(element.class_uri)
+            
+            self._valid_categories_cache = valid_uris
                     
         except Exception as e:
             # Having a working schema is required
             raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
 
-        self._valid_categories_cache = valid_categories
-        return valid_categories
+        return self._valid_categories_cache
 
     def _get_valid_predicates(self) -> Set[str]:
-        """Get valid Biolink Model predicates."""
+        """Get valid Biolink Model predicates.
+        
+        This includes both regular slots and mixin slots that are descendants of 'related to'.
+        Mixins are valid predicates and are already handled by get_descendants with mixin=True.
+        """
         if self._valid_predicates_cache is not None:
             return self._valid_predicates_cache
 
-        # Get all predicates (slots that are subclasses of related to) using BMT
-        valid_predicates = set()
         try:
-            # Get all slot descendants using BMT
+            # Get all slot descendants using BMT (mixin=True means traverse mixin relationships)
             descendants = self._bmt.get_descendants("related to", reflexive=True, mixin=True)
             
-            # For each descendant, get the proper biolink CURIE format
-            for desc in descendants:
-                element = self._bmt.get_element(desc)
-                if element and hasattr(element, 'slot_uri') and element.slot_uri:
-                    valid_predicates.add(element.slot_uri)
+            # Collect valid predicate URIs including used mixins
+            self._valid_predicates_cache = self._collect_valid_uris_with_mixins(descendants, 'slot_uri')
                     
         except Exception as e:
             # Having a working schema with predicates is required
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
 
-        self._valid_predicates_cache = valid_predicates
-        return valid_predicates
+        return self._valid_predicates_cache
 
     def _is_valid_curie(self, identifier: str) -> bool:
         """Check if the identifier follows a valid CURIE format."""
@@ -128,8 +192,8 @@ class BiolinkValidationPlugin(ValidationPlugin):
             
         # Check each category against the constraint
         for category in categories:
-            # Remove biolink: prefix for BMT lookup
-            cat_name = category.replace('biolink:', '') if category.startswith('biolink:') else category
+            # Normalize category name for BMT lookup
+            cat_name = self._normalize_biolink_name(category)
             
             # Get all ancestors including mixins (with caching)
             if cat_name not in self._ancestors_cache:
@@ -145,8 +209,8 @@ class BiolinkValidationPlugin(ValidationPlugin):
     def _validate_domain_range(self, edge_obj: dict, path: str, predicate: str, 
                               schema_view: SchemaView) -> Iterator[ValidationResult]:
         """Validate domain and range constraints for an edge predicate."""
-        # Remove biolink: prefix from predicate for lookup
-        pred_name = predicate.replace('biolink:', '') if predicate.startswith('biolink:') else predicate
+        # Normalize predicate name for schema lookup
+        pred_name = self._normalize_biolink_name(predicate)
         
         # Get the slot definition
         slot = schema_view.get_slot(pred_name)
