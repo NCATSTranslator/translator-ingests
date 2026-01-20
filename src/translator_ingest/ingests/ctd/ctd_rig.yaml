@@ -123,7 +123,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - publications
         ui_explanation: "Source CTD data provides assertions about Chemical-Disease relationships that were manually curated from literature by CTD curators. The CTD record used to create this Translator edge has a "T" (therapeutic) as a DirectEvidence code, indicating the chemical to be a "potential" treatment in virtue of its clinical use or scientific study. The broad and imprecise nature of this relationship is best represented with the Biolink predicate 'treats or applied or studied to treat' - which is used when it is not clear whether the chemical shows established efficacy or was merely studied or attempted as a treatment."
@@ -159,7 +160,8 @@
           - statistical_association
         agent_type:
           - data_analysis_pipeline
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - publications
           - has_confidence_score
@@ -184,7 +186,8 @@
           - statistical_association
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - biolink:publications
         ui_explanation: "Source CTD data provides correlations between Chemicals and Disease based on a single real-world exposure study, that was curated from the literature by CTD curators. These correlations are separately calculated by authors or curators for each study, not an automated analysis pipeline. The CTD record used to create this Translator edge shows a statistically significant correlation between the studied exposure (usually a chemical) and a measured outcome (usually a disease or phenotype). This relationship is represented using the Biolink 'correlated with' predicate, or one of its directional sub-predicates if this information is provided ('positively/negatively correlated with'). Note that the edge is based on results from a single study - and may hold only in the context of the study's design or population."        
@@ -235,7 +238,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - biolink:publications
         ui_explanation: "Source CTD data provides assertions about Chemical-Gene relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge describes how a chemical affects a particular aspect and/or form of a gene or gene product, and often the direction of the effect (e.g. that it causes increased activity of the gene, or decreased stability of the gene). These causal relationships are represented using the Biolink 'affects' or 'causes' predicate, with qualifiers capturing additional detail about the aspect and direction of the effect."
@@ -280,7 +284,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - biolink:publications
         ui_explanation: "Source CTD data provides assertions about Gene-Chemical relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge describes how a gene or gene product affects a particular aspect or form of a chemical entity, and often the direction of the effect (e.g. that it causes increased abundance of a chemical, or decreased stability). These causal relationships are represented using the Biolink 'affects' or 'causes' predicates, with qualifiers capturing additional detail about the aspect and direction of the gene's effect.
@@ -309,7 +314,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent              
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - biolink:publications
         ui_explanation: "Source CTD data provides assertions about Gene-Chemical relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge describes how a gene or gene product (usually a mutant form) may affect the susceptibility/sensitivity of a cell or organism to a particular chemical exposure. The relationship is represented using the Biolink 'affects sensitivity to' predicate - or one of its directional sub-predicates ('increases/decreases sensitivity to') if a direction is provided - with qualifiers capturing additional detail when a specific form of the gene mediates this sensitivity (e.g. a mutant_form)."  
@@ -331,7 +337,8 @@
           - property: biolink:species_context_qualifier
             value_id_prefixes:
               - NCBITaxon
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - biolink:publications
         ui_explanation: "Source CTD data provides assertions about Chemical-Gene relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge describes how a chemical may affect the susceptibility/sensitivity of a cell or organism to the actions of a particular gene or gene product (e.g. a signaling molecule like TNF). This relationship is represented using the Biolink 'affects sensitivity to' predicate - or one of its directional sub-predicates ('increases/decreases sensitivity to') if a direction is provided."
@@ -367,7 +374,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - biolink:publications
         ui_explanation: "Source CTD data provides assertions about Chemical-Gene relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge reports that a chemical entity binds to a particular genes/gene product, but does not indicate a specific affect/outcome resulting from this interaction on the gene. This relationship is represented using the Biolink 'directly physically interacts with' predicate, with qualifiers capturing additional detail about a specific form, part, or derivative of the gene or chemical that participates in the interaction, when relevant."
@@ -403,7 +411,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd          
+        primary_knowledge_sources:
+          - infores:ctd          
         edge_properties:
           - biolink:publications          
         ui_explanation: "Source CTD data report assertions about chemicals and cellular phenotypes, that were manually curated from literature by CTD. The CTD record used to create this Translator edge reports that a chemical causes a cellular phenotype, which is framed as an affect on a biological process, activity, or pathway. This relationship is represented using the Biolink 'affects'  or 'causes' predicates, with qualifiers capturing additional detail about the direction of the effect, and the anatomical or species context of the effect where provided (e.g. that it causes increased levels of the process or activity in a particular cell type, tissue, or species)."
@@ -425,7 +434,8 @@
           - statistical_association
         agent_type:
           - data_analysis_pipeline
-        primary_knowledge_source: infores:ctd             
+        primary_knowledge_sources:
+          - infores:ctd             
         edge_properties:
           - biolink:adjusted_p_value
           - biolink:p_value
@@ -446,7 +456,8 @@
           - statistical_association
         agent_type:
           - data_analysis_pipeline
-        primary_knowledge_source: infores:ctd             
+        primary_knowledge_sources:
+          - infores:ctd             
         edge_properties:
           - biolink:adjusted_p_value
           - biolink:p_value
