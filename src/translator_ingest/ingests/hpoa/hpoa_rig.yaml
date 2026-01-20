@@ -157,7 +157,8 @@ target_info:
         - property: "biolink:qualified_predicate"
           value_enumeration: 
             - "biolink:causes" 
-            - "biolink:contributes_to"             
+            - "biolink:contributes_to"     
+            - "biolink:associated_with"
         - property: "biolink:subject_form_or_variant_qualifier"
           value_range:
           - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
