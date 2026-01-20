@@ -553,8 +553,8 @@
   },
   "antiviral": {
     "feature_action": "indication for",
-    "predicate": "biolink:treats",
-    "primary_name": "",
+    "predicate": "biolink:has_chemical_role",
+    "primary_name": "antiviral agent",
     "xref": "CHEBI:22587"
   },
   "anxiety": {
