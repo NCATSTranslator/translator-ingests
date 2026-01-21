@@ -1,6 +1,6 @@
 name: Text Mining Knowledge Provider (TMKP)
 source_info:
-  infores_id: infores:text-mining-provider-cooccurrence
+  infores_id: infores:text-mining-provider-targeted
   description: |
     The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts
     biomedical assertions from scientific literature using advanced text mining techniques.
@@ -28,11 +28,11 @@ source_info:
 ingest_info:
   ingest_categories:
   - primary_knowledge_provider
-  utility: |
+  utility: 
     TMKP provides literature-mined assertions that complement manually curated knowledge sources.
     It enables discovery of relationships that may not be captured in structured databases,
     particularly for emerging research areas and novel connections between biological entities.
-  scope: |
+  scope: 
     Covers text-mined relationships between chemicals, genes/proteins, diseases, and phenotypes
     extracted from PubMed literature. Each assertion includes supporting evidence from the
     source text and publication metadata.
@@ -57,28 +57,20 @@ ingest_info:
     representing supporting studies and evidence.
 
 target_info:
-  infores_id: "infores:translator-text-mining-kgx"
+  infores_id: "infores:translator-text-mining-provider-targeted"
   edge_type_info:
     - subject_categories:
+      - "biolink:ChemicalEntity"
       - "biolink:Protein"
       predicates:
         - "biolink:affects"
       object_categories:
-      - "biolink:SmallMolecule"
-      - "biolink:ChemicalEntity"
-      - "biolink:MolecularMixture"
+      - "biolink:ChemicalEntity"    
       - "biolink:Protein"
-      qualifiers:
+      qualifiers:                       # MHB: Note I removed entries for subject aspect and direction qualifiers - as the sumamry report does not show these in the data. Add back if the TMKP code is able to create them. 
         - property: "biolink:qualified_predicate"
           value_enumeration:
             - "biolink:causes"
-        - property: "biolink:subject_aspect_qualifier"
-          value_enumeration:
-            - "activity_or_abundance"
-        - property: "biolink:subject_direction_qualifier"
-          value_enumeration:
-            - "increased"
-            - "decreased"
         - property: "biolink:object_aspect_qualifier"
           value_enumeration:
             - "activity_or_abundance"
@@ -90,15 +82,18 @@ target_info:
       - not_provided
       agent_type:
       - text_mining_agent
-      edge_properties:
+      primary_knowledge_sources:
+        - infores:text-mining-provider-targeted
+      edge_properties:                  # MHB: these don't match what I see in the data - only has_supporting_studies (not sure why we need these) Note that the summary code likely doesn't dig into nested properties.  The json examples to show the full nested study result objects under has_study_result, and the only nested properties here is publications and supporting_text. We should try to fix this up as I think soem of the scores/metadata TMKP captures will be sueful for scoring. 
         - "biolink:has_supporting_studies"
         - "biolink:publications"
         - "biolink:has_evidence_count"
         - "biolink:tmkp_confidence_score"
-      ui_explanation: |
-        Text mining identified that a protein affects a chemical or other protein,
-        with evidence from scientific literature.
+      ui_explanation: "Source TMKP data provide statements of various kinds that have been extracted from the full text of biomedical literature by an automated text-mining algorithm. The TMKP record used to create this Translator edge reports that a span of text appears to state that some chemical or protein is may affect the activity or abundance of some other chemical or protein - however the biological context in which this may occur, and the epistemological sentiment of this statement, are not captured by the text-mining agent. This relationship is represented using the Biolink 'affects' and 'causes' predicates, with qualifiers reporting the aspect and direction of the effect where provided."
+      source_files:
+        -                               # MHB: Sierra to add this info?
       additional_notes: null
+      
     - subject_categories:
       - "biolink:Disease"
       predicates:
@@ -117,7 +112,7 @@ target_info:
       edge_properties:
         - "biolink:has_supporting_studies"
         - "biolink:publications"
-      ui_explanation: |
+      ui_explanation: 
         Text mining identified relationships between diseases and chemicals/proteins
         based on co-occurrence and linguistic patterns in literature.
       additional_notes: null
