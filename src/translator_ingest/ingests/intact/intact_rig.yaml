@@ -134,13 +134,11 @@ target_info:
       - subject_categories:
           - biolink:Protein
           - biolink:Gene
-          - biolink:SmallMolecule
         predicates:
           - biolink:physically_interacts_with
         object_categories:
           - biolink:Protein
           - biolink:Gene
-          - biolink:SmallMolecule
         knowledge_level:
           - knowledge_assertion
         agent_type:
