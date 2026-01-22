@@ -67,7 +67,7 @@ target_info:
     - subject_categories:
         - biolink:Gene
       predicates:
-        - biolink:associated_with
+        - biolink:contributes_to
       object_categories:
         - biolink:Disease
       qualifiers:

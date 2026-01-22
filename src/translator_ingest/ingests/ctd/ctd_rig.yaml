@@ -396,7 +396,7 @@
           - biolink:MolecularMixture
           - biolink:SmallMolecule
         predicates:
-          - biolink:associated_with
+          - biolink:affects
         object_categories:
           - biolink:BiologicalProcessOrActivity
           - biolink:MolecularActivity

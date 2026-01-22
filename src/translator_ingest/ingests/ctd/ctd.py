@@ -182,8 +182,6 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     interaction = interactions[0]
     interaction_direction, interaction_aspect = interaction.split("^")
 
-    predicate = BIOLINK_AFFECTS
-    qualified_predicate = BIOLINK_CAUSES
     object_direction_qualifier = None
     object_aspect_qualifier = None
 
@@ -299,9 +297,9 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     association = ChemicalAffectsGeneAssociation(
         id=entity_id(),
         subject=chemical_id,
-        predicate=predicate,
+        predicate="biolink:affects",
         object=gene_id,
-        qualified_predicate=qualified_predicate,
+        qualified_predicate="causes",
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -353,7 +351,7 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
     edge = ChemicalEntityToPathwayAssociation(
         id=entity_id(),
         subject=chemical_id,
-        predicate=BIOLINK_ASSOCIATED_WITH,
+        predicate="biolink:associated_with",
         object=pathway_id,
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.statistical_association,
@@ -409,7 +407,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
     edge = ChemicalEntityToBiologicalProcessAssociation(
         id=entity_id(),
         subject=chemical_id,
-        predicate=BIOLINK_AFFECTS,
+        predicate="biolink:affects",
         object=phenotype_id,
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,

@@ -161,11 +161,11 @@ target_info:
       object_categories:
         - biolink:Gene
         - biolink:Protein
-      ## qualifiers depends on mode of action
+      ## qualifiers depend on the mode of action
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
-            - "biolink:causes"
+            - "causes"
         - property: biolink:object_aspect_qualifier
           value_range:
             - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum

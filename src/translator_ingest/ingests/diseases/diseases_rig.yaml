@@ -89,7 +89,7 @@ target_info:
         - "biolink:Gene"
         - "biolink:Protein"
       predicates:
-        - "biolink:associated_with"
+        - "biolink:contributes_to"
       object_categories:
         - "biolink:Disease"
       knowledge_level:
@@ -100,7 +100,7 @@ target_info:
         - "biolink:has_confidence_score"
         - "biolink:original_subject"
         - "biolink:original_object"
-      ui_explanation: "DISEASES does not report the types of gene-disease relationships that it aggregates from curated sources, so the Biolink associated_with predicate is the most precise predicate we are able to use here."
+      ui_explanation: "DISEASES does not report the types of gene-disease relationships that it aggregates from curated sources, so the Biolink contributes_to predicate is the most precise predicate we are able to use here."
   
   node_type_info:
     - node_category: "biolink:Gene"
@@ -116,7 +116,7 @@ target_info:
         - "DOID"
   
   future_considerations:
-    - consideration: "Revisit use of associated_with predicate for curated edges after we refactor the associated_with and/or gene-disease-relationship branches of the Biolink predicate hierarchy (if we reserve this predicate for statistically-based relationships, we may need to use related_to)"
+    - consideration: "Revisit use of predicate for curated edges after we refactor the contributes_to and/or gene-disease-relationship branches of the Biolink predicate hierarchy (if we reserve this predicate for statistically-based relationships, we may need to use related_to)"
       category: predicates
     - consideration: "Revisit modeling of confidence score/levels and z-score if/when we refactor these parts of the Biolink Model"
       category: edge_properties
