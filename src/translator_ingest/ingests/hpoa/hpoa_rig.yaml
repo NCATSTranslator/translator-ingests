@@ -116,7 +116,6 @@ ingest_info:
       and all of its phenotypes.
     relevant_files: genes_to_phenotype.txt
   additional_notes: null
-  
 target_info:
   infores_id: "infores:translator-hpo-annotations"
   edge_type_info:
@@ -167,8 +166,8 @@ target_info:
     - subject_categories:
       - "biolink:Gene"
       predicates:
-        - "biolink:correlated_with"
         - "biolink:contributes_to"
+        - "biolink:correlated_with"
       object_categories:
       - "biolink:Disease"
       qualifiers:
@@ -193,11 +192,12 @@ target_info:
         this Translator edge reports that a Gene is associated with a Disease when there
         is evidence that variants in the gene may cause or contribute to its manifestation.
         The Biolink predicate used to represent this relationship depends on the type of 
-        Disease. The 'causes' predicate is used for Mendelian disorders (where the HPOA 
-        "association_type" field = 'MENDELIAN') and the 'contributes to' predicate is used
-        for polygenic disease (where the "association_type" field = "POLYGENIC").
-        Qualifier is used to indicate that it is a 'genetic_variant_form' of the gene
-        that participates in these relationships, not the Gene in general.
+        Disease. For Mendelian disorders (where the HPOA "association_type" field = 'MENDELIAN')
+        'contributes to' is the primary predicate and the 'causes' predicate is used as the
+        'qualified predicate'.  For polygenic disease (where the "association_type" field = "POLYGENIC")
+        'correlated with' is the primary predicate and the 'contributes to' predicate is used as the
+        'qualified predicate'. Qualifier is used to indicate that it is a 'genetic_variant_form'
+        of the gene that participates in these relationships, not the Gene in general.
       source_files:
         - genes_to_disease.txt
       additional_notes: null
@@ -243,7 +243,6 @@ target_info:
       source_files:
         - genes_to_phenotype.txt
       additional_notes: null
-      
   node_type_info:
   - node_category: "biolink:Disease"
     source_identifier_types:
