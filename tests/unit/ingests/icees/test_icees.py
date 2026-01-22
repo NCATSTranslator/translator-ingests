@@ -232,7 +232,7 @@ def test_transform_icees_nodes(
                 "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
                 "subject": "PUBCHEM.COMPOUND:2083",
                 "subject_feature_name": "AlbuterolRx",
-                "predicate": "biolink:positively_correlated_with",
+                "predicate": "biolink:associated_with_sensitivity_to",
                 "object": "MONDO:0007079",
                 "object_feature_name": "AlcoholDependenceDx",
                 #
@@ -289,7 +289,7 @@ def test_transform_icees_nodes(
                 "category": ["biolink:VariantToDiseaseAssociation"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
-                "predicate": "biolink:correlated_with",
+                "predicate": "biolink:related_condition",
                 "object": "NCBITaxon:12092",
                 "object_feature_name": "Anti_HAV",
                 # See Query 1 comments above, regarding "has_supporting_studies"
@@ -324,7 +324,7 @@ def test_transform_icees_nodes(
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
-                "predicate": "biolink:correlated_with",
+                "predicate": "biolink:contributes_to",
                 "object": "UMLS:C4049590",
                 "object_feature_name": "Anti_HBc_IgM",
                 # See Query 1 comments above, regarding "has_supporting_studies"
@@ -344,7 +344,6 @@ def test_transform_icees_nodes(
 
     ],
 )
-@pytest.mark.skip("ICEES ingest needs a bit more updating to the latest January 2026 Biolink Model")
 def test_transform_icees_edges(
         mock_koza_transform: koza.KozaTransform,
         test_record: dict,

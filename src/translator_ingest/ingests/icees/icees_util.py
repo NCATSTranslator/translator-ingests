@@ -1,6 +1,8 @@
 """
 This file contains utility functions for ICEES data processing
 """
+from typing import Optional
+from loguru import logger
 from biolink_model.datamodel.pydanticmodel_v2 import Study, IceesStudyResult
 
 #
@@ -126,7 +128,15 @@ def get_icees_supporting_study(
 #         return {}
 
 _PREDICATE_MAPPINGS = {
-
+    "DiseaseAssociatedWithResponseToChemicalEntityAssociation": {
+        "biolink:positively_correlated_with": "biolink:associated_with_sensitivity_to",
+    },
+    "VariantToDiseaseAssociation": {
+        "biolink:correlated_with": "biolink:related_condition",
+    },
+    "CausalGeneToDiseaseAssociation": {
+        "biolink:correlated_with": "biolink:contributes_to",
+    },
 }
 def remap_icees_predicate(association_type: str, predicate: str) -> str:
     """
@@ -140,5 +150,18 @@ def remap_icees_predicate(association_type: str, predicate: str) -> str:
     :param predicate: Original Phase 2 ICEES predicate
     :return:
     """
-    # return _PREDICATE_MAPPINGS.get(predicate, predicate)
-    return ""
+    association_predicate_map: Optional[dict[str, str]] = _PREDICATE_MAPPINGS.get(association_type, None)
+    if association_predicate_map is None:
+        logger.warning(
+            "REMAP MISS: No ICEES predicate remap map found "
+            f"for association type '{association_type}'"
+        )
+        _PREDICATE_MAPPINGS[association_type] = dict()
+    remapped_predicate = association_predicate_map.get(predicate, None)
+    if remapped_predicate is None:
+        logger.warning(
+            f"REMAP MISS: No specific remapping found for predicate '{predicate}' "
+            f"for association type '{association_type}'"
+        )
+        _PREDICATE_MAPPINGS[association_type][predicate] = remapped_predicate = predicate
+    return remapped_predicate

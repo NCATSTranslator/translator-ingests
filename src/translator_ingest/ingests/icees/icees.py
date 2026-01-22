@@ -144,7 +144,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         association = edge_class(
             id=entity_id(),
             subject=icees_subject,
-            predicate=remap_icees_predicate(association_type=edge_class.name, predicate=icees_predicate),
+            predicate=remap_icees_predicate(association_type=edge_class.__name__, predicate=icees_predicate),
             object=icees_object,
             has_supporting_studies=supporting_studies,
             sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
