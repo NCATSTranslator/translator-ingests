@@ -13,7 +13,10 @@ BIOLINK_CLINICAL_TRIALS = "biolink:in_clinical_trials_for"
 BIOLINK_INTERACTS = "biolink:interacts_with"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_DP_INTERACTS = "biolink:directly_physically_interacts_with"
-BIOLINK_CAUSES = "biolink:causes"
+
+# not sure if this is a Biolink Model Pydantic code generation bug,
+# but a Biolink CURIE is not expected in a 'qualified_predicate' field
+BIOLINK_CAUSES = "causes"
 
 
 ## hard-coded mapping of "clinical status" values to biolink "treats" predicates

@@ -618,9 +618,9 @@ def get_has_part_association(koza: koza.KozaTransform, component, target, record
     species_context_qualifier = species_context_qualifier
     association = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
         id=entity_id(),
-        subject=target.id,
-        predicate="biolink:has_part",
-        object=component.id,
+        subject=component.id,
+        predicate="biolink:part_of",
+        object=target.id,
         # TODO: species_context_qualifier = species_context_qualifier,
         sources=build_association_knowledge_sources(INFORES_CHEMBL),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,

@@ -55,9 +55,9 @@ ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources
             # Captured edge contents
             {
                 "category": ["biolink:AnatomicalEntityToAnatomicalEntityPartOfAssociation"],
-                "subject": "CHEMBL.TARGET:CHEMBL612409",
-                "predicate": "biolink:has_part",
-                "object": "UniProtKB:Q15125",
+                "subject": "UniProtKB:Q15125",
+                "predicate": "biolink:part_of",
+                "object": "CHEMBL.TARGET:CHEMBL612409",
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:chembl"}],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,

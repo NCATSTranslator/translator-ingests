@@ -630,13 +630,13 @@ def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
             agent_type=AgentTypeEnum.manual_agent,
             sources=ttd_source,
             predicate=data_modeling["predicate"],
-            ## return empty dict in unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
-                **data_modeling.get("qualifiers", dict())
+            ## return empty dict in the unlikely scenario that MOA_MAPPING doesn't have "qualifiers". to avoid error
+            **data_modeling.get("qualifiers", dict())
         )
         ## if there's an extra edge field
         if data_modeling.get("extra_edge_pred"):
             ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
-            ## should be identical to original edge, except predicate/no qualifiers
+            ## should be identical to the original edge, except predicate/no qualifiers
             extra_assoc = ChemicalGeneInteractionAssociation(
                 id=entity_id(),
                 subject=chemical.id,

@@ -21,8 +21,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 
-BIOLINK_OCCURS_IN_LIT_WITH = "biolink:occurs_together_in_literature_with"
-BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 ## used to only keep rows with IDs (protein_id column starts with ENSP, disease_id column starts with DOID)
 ## see @koza.prepare_data, keep_rows_with_IDs for use
 ID_start_strings = {
@@ -171,14 +169,14 @@ def knowledge_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
 def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## add prefix (data only has value ENSP##########)
     protein = Protein(id="ENSEMBL:" + record["protein_id"])
-    ## disease column DOIDs are already in correct prefix/format for Translator
+    ## disease column DOIDs are already in the correct prefix/format for Translator
     disease = Disease(id=record["disease_id"])
 
     association = CorrelatedGeneToDiseaseAssociation(
         ## creating arbitrary ID for edge right now
         id=entity_id(),
         subject=protein.id,
-        predicate=BIOLINK_OCCURS_IN_LIT_WITH,
+        predicate="biolink:occurs_together_in_literature_with",
         object=disease.id,
         sources=[
             RetrievalSource(
@@ -245,7 +243,7 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
         ## creating arbitrary ID for edge right now
         id=entity_id(),
         subject=protein.id,
-        predicate=BIOLINK_ASSOCIATED_WITH,
+        predicate="biolink:contributes_to",
         object=disease.id,
         sources=current_sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,

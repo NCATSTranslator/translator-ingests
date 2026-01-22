@@ -44,7 +44,11 @@ publications = {     ## become an element in "publications" list
 ## hard-coded biolink predicates
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_DP_INTERACTS = "biolink:directly_physically_interacts_with"
-BIOLINK_CAUSES = "biolink:causes"
+
+# not sure if this is a Biolink Model Pydantic code generation bug,
+# but a Biolink CURIE is not expected in a 'qualified_predicate' field
+BIOLINK_CAUSES = "causes"
+
 BIOLINK_INTERACTS = "biolink:interacts_with"
     
 

@@ -21,7 +21,6 @@ import requests
 
 
 ## HARD-CODED VALUES
-BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
 ## EBI G2P's "allelic requirement" values. Biolink-model requires these to be mapped to the synonymous HP IDs.
 ## Dynamically mapping all possible values (not just those in the data) using OLS API with HP's synonym info
@@ -150,7 +149,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         ## creating arbitrary ID for edge right now
         id=entity_id(),
         subject=gene.id,
-        predicate=BIOLINK_ASSOCIATED_WITH,
+        predicate="biolink:contributes_to",
         qualified_predicate=BIOLINK_CAUSES,
         subject_form_or_variant_qualifier=FORM_OR_VARIANT_QUALIFIER_MAPPINGS[record["molecular mechanism"]],
         object=disease.id,
