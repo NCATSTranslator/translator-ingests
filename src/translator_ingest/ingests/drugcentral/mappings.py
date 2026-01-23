@@ -12,6 +12,7 @@ OMOP_RELATION_MAPPING = {
         ## no "edge-attributes" key is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
     },
     "indication": {
+    ## approved, on-label use according to https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10
         "predicate": BIOLINK_TREATS,
     },
     "off-label use": {
