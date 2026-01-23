@@ -90,9 +90,9 @@ ingest_info:
         rationale: >-
           For Translator use cases, only human molecular interactions are required. Filtering to human–human interactions
           reduces noise from model organisms and preserves relevant biological context.
-      - file_name: intact.txt                                            # MHB: I added this important filter description
+      - file_name: intact.txt
         filtered_records: >-
-          All records where the Interaction type(s) are not one of [`association`, `physical association`, `putative self interaction`, `self interaction`, `direct interaction`] - which account for >95% of the records. Other interaction types mainly describe specific molecular modifications (e.g. phosphorylation, acetylation), or cleavage interactions - and may  be imported in future iterations.
+          All records where the Interaction type is not one of [`association`, `physical association`, `putative self interaction`, `self interaction`, `direct interaction`] - which account for >95% of the records. Other interaction types mainly describe specific molecular modifications (e.g. phosphorylation, acetylation), or cleavage interactions - and may be imported in future iterations.
         rationale: >-
           Filtered records account for a very small number/proportion of the data, and would require significant effort to go into mapping/modeling/transform logic.
       - file_name: intact_negative.txt
@@ -111,12 +111,11 @@ ingest_info:
         relevant_files: intact.txt
       - category:  edge_content
         consideration: >-
-          Consider importing the long tail of records with additional interaction types
-          not taken in first iteration.
+          Consider importing the long tail of records with additional interaction types not taken in first iteration (see filtered content above).
         relevant_files: intact.txt
-      - category:  edge_property_content
+       - category:  edge_property_content
         consideration: >-
-          Longer term, consider creating ExperimentalStudyResult objects to capture metadata for each experiment that supports an edge  (e.g. interactor roles, host organism, stoichiometries, features, parameters, experiment-associated publications etc).
+          Short term, go back and pull edge properties including the Confidence Value(s) (specifically the intact-miscore - we can create a temp intact_confidence_value_miscore in attributes.yaml until we implement standard modeling for this info) and Interaction detection method(s) (use biolink supporting_method_types). Longer term, we can create ExperimentalStudyResult objects to capture metadata for each experiment that supports an edge  (e.g. interactor roles, host organism, stoichiometries, features, parameters, experiment-associated publications etc).
         relevant_files: intact.txt
     additional_notes: >-
       Exploratory data analysis (EDA) of the IntAct MITAB dataset revealed 59 unique PSI-MI interaction types across
@@ -143,12 +142,23 @@ target_info:
           - knowledge_assertion
         agent_type:
           - manual_agent
+        primary_knowledge_sources:
+          - infores:intact
+        supporting_data_sources:
+          - infores:uniprot
+          - infores:hpidb
+          - infores:mint
+          - infores:ebi
+          - infores:dip     # TO DO: not sure this list is complete - if not, complete it (may need to get some into the infores catalog) 
         edge_properties:
           - biolink:publications                            # a list of pubs used across all merged records
         ui_explanation: >-
-          Each edge in the UI represents a merged set of IntAct experiment records describing the same molecular interaction. The edge displays a list of supporting publications. All data sources contributing to the merged edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to the edge.
+          Source Intact data aggregates protein-protein interaction statements of different types (e.g. 'physical association, 'direct interaction’, ‘glycosylation reaction’) from external manually curated knowledgebases. An automated algorithm assigns a 'Confidence Value' ('intact-miscore') to each unique protein-protein pair across aggregated records. In performing this aggregation and 'meta-assessment', Intact makes its own implicit claims about each interaction, which are captured in Translator edges. The Intact record(s) used to create this particular edge have an 'interaction_type' that asserts or implies a physical interaction between the two proteins (‘association’, ‘physical association’, ‘putative self interaction’, ‘self interaction’, `direct interaction`). This relationship is represented using the Biolink 'physically interacts with' predicate - which covers direct and indirect physical interactions" Each edge in the UI represents a merged set of IntAct experiment records describing the same molecular interaction. The edge displays a list of supporting publications. All data sources contributing to the merged edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to the edge.
         additional_notes: >-
           IntAct records report the results/conclusion of a single study or experiment as curated from  a publication. There may be many records that describe the same set of interactors and interaction type - which we merge to create a single Biolink edge. It is at this level that IntAct appears to assign their confidence score, so this is applied to each such edge. Supporting publications and methods used across the set of merged experiment-level records are collapsed into a list and attached to these edges. Similarly, all sources of records that get merged into this edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to this edge.
+        source_files:
+          - intact.txt
+          
     node_type_info:
       - node_category: biolink:Protein
         source_identifier_types: uniprot
@@ -172,4 +182,4 @@ provenance_info:
       - Ingest Survey: https://docs.google.com/spreadsheets/d/1sgiHZ_d_o7FWDxhfaP72BVg0FPCNJ7Vx9N6IBuEzHbs/edit?gid=0#gid=0
       - Causal Mechanism Mappings: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=1886396936#gid=1886396936
       - IntAct EDA Summary: https://docs.google.com/spreadsheets/d/1-WF7veY_UXXRogq8f7uRMpgYgiv6lJdx/edit?gid=2068335761#gid=2068335761
-      - Ingest Ticket:
+      - Modeling Notes: https://docs.google.com/document/d/1-2sPZEkL6j7JoyX8g2Dk-xSL09qDqaOw1K8tQ_a2oWo/edit?tab=t.0
