@@ -66,7 +66,7 @@ target-version = ["py312"]
 package = true
 
 [tool.uv.sources]
-biolink-model = { git = "https://github.com/biolink/biolink-model.git", rev = "master" }
+biolink-model = { git = "https://github.com/biolink/biolink-model.git", rev = "9dd29ce" }
 bmt = { git = "https://github.com/biolink/biolink-model-toolkit.git", rev = "master" }
 
 [tool.uv-dynamic-versioning]
