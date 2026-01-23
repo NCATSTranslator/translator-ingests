@@ -26,10 +26,7 @@ from koza.model.graphs import KnowledgeGraph
 
 
 BIOLINK_AFFECTS = "biolink:affects"
-
-# not sure if this is a Biolink Model Pydantic code generation bug,
-# but a Biolink CURIE is not expected in a 'qualified_predicate' field
-BIOLINK_CAUSES = "causes"
+BIOLINK_CAUSES = "biolink:causes"
 
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
@@ -299,7 +296,7 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         subject=chemical_id,
         predicate="biolink:affects",
         object=gene_id,
-        qualified_predicate="causes",
+        qualified_predicate="biolink:causes",
         sources=build_association_knowledge_sources(primary=INFORES_CTD),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,

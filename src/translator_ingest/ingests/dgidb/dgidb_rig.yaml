@@ -120,7 +120,7 @@ target_info:
       ## some interaction_types will lack >=1 of these
         - property: "biolink:qualified_predicate"
           value_enumeration:
-            - "causes"
+            - "biolink:causes"
         - property: "biolink:object_direction_qualifier"
           value_enumeration:
             - "increased"

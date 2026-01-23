@@ -165,7 +165,7 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
-            - "causes"
+            - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_range:
             - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
