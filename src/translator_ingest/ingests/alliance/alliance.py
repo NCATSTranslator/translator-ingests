@@ -237,7 +237,7 @@ def transform_phenotype(
         association = GeneToPhenotypicFeatureAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:has_phenotype",
+            predicate="biolink:associated_with",
             object=phenotypic_feature_id,
             publications=[row["evidence"]["publicationId"]],
             sources=build_association_knowledge_sources(

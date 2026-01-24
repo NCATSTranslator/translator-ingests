@@ -92,7 +92,7 @@ def test_mgi_phenotype(mgi_phenotype_row):
         assoc = result.edges[0]
         assert isinstance(assoc, GeneToPhenotypicFeatureAssociation)
         assert assoc.subject == "MGI:98834"
-        assert assoc.predicate == "biolink:has_phenotype"
+        assert assoc.predicate == "biolink:associated_with"
         assert assoc.object == "MP:0001262"
         assert assoc.publications == ["PMID:12345678"]
 

@@ -103,7 +103,7 @@ target_info:
     - subject_categories:
         - biolink:Gene
       predicates:
-        - biolink:has_phenotype
+        - biolink:associated_with
       object_categories:
         - biolink:PhenotypicFeature
       qualifiers:
