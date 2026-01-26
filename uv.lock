@@ -162,8 +162,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.6.post62.dev0+d8edd7245"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=predicate-stopgap#d8edd7245f644d42d48577762e32ef32bd0e28e6" }
+version = "4.3.6.post66.dev0+ae10e99d2"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#ae10e99d2d2374f37f7e6b7cc05c094223e3df0b" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -306,7 +306,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=predicate-stopgap" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
     { name = "bmt", git = "https://github.com/biolink/biolink-model-toolkit.git?rev=master" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "codespell", specifier = ">=2.4.1" },
@@ -324,7 +324,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=predicate-stopgap" },
+    { name = "biolink-model", git = "https://github.com/biolink/biolink-model.git?rev=master" },
     { name = "black", specifier = ">=24.1.0" },
     { name = "codespell", specifier = ">=2.2.0" },
     { name = "jsonlines" },
