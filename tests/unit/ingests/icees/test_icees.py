@@ -321,7 +321,9 @@ def test_transform_icees_nodes(
             None,
             # Captured edge contents
             {
-                "category": ["biolink:CausalGeneToDiseaseAssociation"],
+                # Note: UMLS is a generic prefix that maps to many categories (25+),
+                # exceeding AMBIGUOUS_CATEGORY_THRESHOLD, so we fall back to base Association.
+                "category": ["biolink:Association"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
                 "predicate": "biolink:correlated_with",

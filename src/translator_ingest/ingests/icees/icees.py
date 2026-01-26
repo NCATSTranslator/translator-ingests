@@ -23,6 +23,11 @@ from translator_ingest.ingests.icees.icees_util import get_icees_supporting_stud
 
 bmt = get_biolink_model_toolkit()
 
+# Threshold for category count above which a prefix is considered too ambiguous
+# to reliably determine a specific association type (e.g., UMLS maps to 25+ categories)
+AMBIGUOUS_CATEGORY_THRESHOLD = 20
+
+
 def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
@@ -113,11 +118,18 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
 
         icees_object: str = record["object"]
         object_category: list[str] = bmt.get_element_by_prefix(icees_object)
-        association_list = bmt.get_associations(
-                    subject_categories=subject_category,
-                    predicates= [icees_predicate],
-                    object_categories=object_category,
-                    formatted=True
+
+        # If either subject or object prefix is too ambiguous (maps to many categories),
+        # fall back to base Association class rather than picking an arbitrary specific type
+        if (len(subject_category) > AMBIGUOUS_CATEGORY_THRESHOLD or
+                len(object_category) > AMBIGUOUS_CATEGORY_THRESHOLD):
+            association_list = []
+        else:
+            association_list = bmt.get_associations(
+                subject_categories=subject_category,
+                predicates=[icees_predicate],
+                object_categories=object_category,
+                formatted=True
             )
 
         edge_class = get_edge_class(edge_id, associations=association_list, bmt=bmt)

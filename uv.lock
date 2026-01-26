@@ -162,8 +162,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.6.post60.dev0+7f1f1bb50"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=predicate-stopgap#7f1f1bb50972da0ec3c331478e4bb3c0ee88964e" }
+version = "4.3.6.post62.dev0+d8edd7245"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=predicate-stopgap#d8edd7245f644d42d48577762e32ef32bd0e28e6" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
