@@ -10,7 +10,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
     GeneRegulatesGeneAssociation,
-    AnatomicalEntityToAnatomicalEntityPartOfAssociation,
+    AnatomicalEntityHasPartAnatomicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
@@ -169,7 +169,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             if record["EFFECT"] == 'form complex':
                 predicate = BIOLINK_HAS_PART
-                association_1 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+                association_1 = AnatomicalEntityHasPartAnatomicalEntityAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -179,7 +179,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     agent_type=AgentTypeEnum.manual_agent,
                 )
                 predicate = BIOLINK_PHYSICALLY_INTERACTS_WITH
-                association_2 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+                association_2 = AnatomicalEntityHasPartAnatomicalEntityAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,

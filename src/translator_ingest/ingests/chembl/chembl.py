@@ -13,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
-    AnatomicalEntityToAnatomicalEntityPartOfAssociation
+    AnatomicalEntityHasPartAnatomicalEntityAssociation
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -100,7 +100,7 @@ MOLECULE_QUERY = """
 """
 
 METABOLITES_QUERY = """
-    SELECT 
+    SELECT
         metabolism.met_id,
         metabolism.met_conversion AS metabolic_conversion,
         metabolism.met_comment AS metabolic_comment,
@@ -124,7 +124,7 @@ METABOLITES_QUERY = """
 """
 
 REFERENCE_QUERY = """
-    SELECT 
+    SELECT
         ref_type, ref_id, ref_url
     FROM {}
     WHERE {} = ?
@@ -149,7 +149,7 @@ COMPONENT_QUERY = """
         component_sequences.organism,
         component_sequences.tax_id AS component_tax_id,
         component_sequences.db_source
-    FROM target_dictionary  
+    FROM target_dictionary
     JOIN target_components ON target_components.tid = target_dictionary.tid
     JOIN component_sequences ON component_sequences.component_id = target_components.component_id
     WHERE component_sequences.accession IS NOT NULL
@@ -172,7 +172,7 @@ WHERE_TARGET_TYPE_IS_COMPLEX = """
 """
 
 ACTIVITY_QUERY = """
-    SELECT  
+    SELECT
         activities.molregno,
         activities.activity_id,
         activities.standard_type,
@@ -300,7 +300,7 @@ def load_config():
             qualifiers = {}
             for qualifier_type, qualifier_value in entry.get("qualifiers", {}).items():
               # skip TODO qualifiers until biolink model supports them
-               if not qualifier_type.startswith("TODO:"): 
+               if not qualifier_type.startswith("TODO:"):
                 qualifiers[qualifier_type] = qualifier_value
             QUALIFIER_CONFIG[action_type] = {
                 "association": association,
@@ -353,7 +353,7 @@ def get_protein(chembl_id: str, name: str, record: dict[str, Any]) -> bm.Protein
         return None
     if record["db_source"] not in ("UNIPROT", "SWISS-PROT", "TREMBL"):
         return None
-    
+
     uniprot_id = UNIPROT_PREFIX+record["accession"]
     synonym = record["description"]
     tax_id = TAX_ID_PREFIX+str(record["component_tax_id"]) if record["component_tax_id"] else None
@@ -613,10 +613,10 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
     return association
 
 
-def get_has_part_association(koza: koza.KozaTransform, component, target, record: dict[str, Any]) -> AnatomicalEntityToAnatomicalEntityPartOfAssociation:
+def get_has_part_association(koza: koza.KozaTransform, component, target, record: dict[str, Any]) -> AnatomicalEntityHasPartAnatomicalEntityAssociation:
     species_context_qualifier = get_species_context_qualifier(record)
     species_context_qualifier = species_context_qualifier
-    association = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+    association = AnatomicalEntityHasPartAnatomicalEntityAssociation(
         id=entity_id(),
         subject=target.id,
         predicate="biolink:has_part",
@@ -743,7 +743,7 @@ def transform_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
             component = create_component_node(koza, record)
             if component:
                 nodes.append(component)
-                nodes.append(target)    
+                nodes.append(target)
                 association = get_has_part_association(koza, component, target, record)
                 edges.append(association)
         yield KnowledgeGraph(nodes=nodes, edges=edges)
