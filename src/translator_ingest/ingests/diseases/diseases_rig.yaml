@@ -82,8 +82,7 @@ target_info:
       primary_knowledge_sources:
         - infores:diseases        
       edge_properties:
-        - "biolink:supporting_study_method_type"
-        - "biolink:has_confidence_score"
+        - "biolink:diseases_confidence_score"
         - "biolink:z_score"
         - "biolink:original_subject"
         - "biolink:original_object"
@@ -108,7 +107,7 @@ target_info:
       aggregator_knowledge_sources:
         - infores:diseases
       edge_properties:
-        - "biolink:has_confidence_score"
+        - "biolink:diseases_confidence_score"
         - "biolink:original_subject"
         - "biolink:original_object"
       ui_explanation: "Source DISEASES data provide Gene-Disease associations that were ingested from external manually curated sources. The DISEASES record used to create this Translator edge does not report a more specific types of gene-disease relationship for these 'associations', and is therefore represented using the relatively generic Biolink 'associated with' predicate."
