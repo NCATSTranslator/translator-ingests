@@ -1,7 +1,7 @@
 name: Human Phenotype Ontology Annotations
 source_info:
   infores_id: infores:hpo-annotations
-  description:
+  description: >-
     The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides a 
     standard vocabulary of phenotypic abnormalities encountered in human disease.
     Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. 
@@ -32,15 +32,14 @@ source_info:
   data_formats:
   - tsv
   - other  # phenotype.hpoa is actually a tsv with a multi-line comment header
-  data_versioning_and_releases:
-    "GitHub managed releases at https://github.com/obophenotype/human-phenotype-ontology/releases
-     No consistent cadence for releases.
-     Versioning is based on the month and year of the release"
+  data_versioning_and_releases: >-
+     GitHub managed releases at https://github.com/obophenotype/human-phenotype-ontology/releases
+     No consistent cadence for releases. Versioning is based on the month and year of the release.
   additional_notes: null
 ingest_info:
   ingest_categories:
   - primary_knowledge_provider
-  utility:
+  utility: >-
     The HPO and associated annotations are a flagship product of the Monarch Initiative 
     (https://monarchinitiative.org/), an NIH-supported international consortium dedicated
     to semantic integration of biomedical and model organism data with the ultimate goal
@@ -75,38 +74,50 @@ ingest_info:
   - file_name: genes_to_disease.txt
     included_records: Polygenic Gene to Disease relationships (i.e., rows with 'association_type' == 'POLYGENIC')
     fields_used: ncbi_gene_id, gene_symbol, association_type, disease_id, source
-  - file_name: genes_to_disease.txt
-    included_records:
-      General Gene Contributions to Disease relationships (i.e., rows with 'association_type' == 'UNKNOWN')
-    fields_used: ncbi_gene_id, gene_symbol, association_type, disease_id, source
   - file_name: genes_to_phenotype.txt
-    included_records:
+    included_records: >-
       Records where we determine that the reported G-P association was
       inferred over a G-D associated type with the value "MENDELIAN"
     fields_used: ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id
   filtered_content:
-  - file_name: genes_to_phenotype.txt
-    filtered_records:
-      Records where we determine that the reported G-P association was inferred
-      over a G-D associated type with the value "POLYGENIC" or "UNKNOWN"
-    rationale:
-      HPO will infer a Gene-Phenotype association G1-P1 in cases where G1 causes,
-      contributes_to, or is associated with D1, and D1 is associated with a Phenotype P1.
-      This logic holds for Mendelian disease where a single gene is causal and thus
-      responsible for all associated phenotypes. It does not necessarily hold for 
-      Polygenic or Unknown diseases where the gene may be one of many contributing factors,
-      and thus does not necessarily contribute to or have an association with each phenotype of the disease.
+    - file_name: genes_to_disease.txt
+      filtered_records: >-
+        Records where we determine that the reported G-P association was inferred
+        over a G-D associated type with the value "UNKNOWN"
+      rationale: >-
+        Records of this type are not included in the ingest because they are Gene-Disease
+        relationships for which the supporting evidence is missing, weak or inconclusive.
+    - file_name: genes_to_phenotype.txt
+      filtered_records: >-
+        Records where we determine that the reported G-P association was inferred
+        over a G-D associated type with the value "POLYGENIC" or "UNKNOWN"
+      rationale: >-
+        HPO will infer a Gene-Phenotype association G1-P1 in cases where G1 causes,
+        contributes_to, or is associated with D1, and D1 is associated with a Phenotype P1.
+        This logic holds for Mendelian disease where a single gene is causal and thus
+        responsible for all associated phenotypes. It does not necessarily hold for 
+        Polygenic or Unknown diseases where the gene may be one of many contributing factors,
+        and thus does not necessarily contribute to or have an association with each phenotype of the disease.
   future_considerations:
   - category: edge_content
-    consideration:
+    consideration: >-
+      Consider bringing back G-P associations based on inferences over
+      Unknown Diseases if we establish a confidence annotation paradigm
+      that lets us indicate these inferences to be weaker than those
+      inferred over Mendelian or Polygenic diseases where the Gene is
+      individually causal for, or contributing to, the disease.
+    relevant_files: genes_to_disease.txt
+  - category: edge_content
+    consideration: >-
       Consider bringing back G-P associations based on inferences over
       Polygenic or Unknown Diseases if we establish a confidence annotation paradigm 
       that lets us indicate these inferences to be weaker than those inferred over
-      Mendelian diseases where the Gene is individually causal for the disease and all of its phenotypes.
+      Mendelian diseases where the Gene is individually causal for the disease
+      and all of its phenotypes.
     relevant_files: genes_to_phenotype.txt
   additional_notes: null
 target_info:
-  infores_id: "infores:translator-hpo-annotations-kgx"
+  infores_id: "infores:translator-hpo-annotations"
   edge_type_info:
     - subject_categories:
       - "biolink:Disease"
@@ -131,6 +142,8 @@ target_info:
       - knowledge_assertion
       agent_type:
       - manual_agent
+      primary_knowledge_sources:
+        - infores:hpo-annotations
       edge_properties:
         - "biolink:negated"
         - "biolink:has_count"
@@ -139,21 +152,29 @@ target_info:
         - "biolink:has_quotient"
         - "biolink:publications"
         - "biolink:has_evidence"
-      ui_explanation:
-        "HPO curators manually review clinical data and published evidence
-        to determine phenotypes that manifest in a Disease, which are
-        reported using the has_phenotype predicate."
+      ui_explanation: >-
+        Source HPOA data provide Disease-Phenotype associations that are produced by
+        HPO curators through manual review of clinical data and published evidence.
+        The HPOA record used to create this Translator edge reports that a Phenotype
+        is observed to manifest in a particular Disease, and may include information about
+        the frequency and/or biological context (e.g. sex, onset) of this manifestation.
+        This relationship is represented using the Biolink 'has phenotype' predicate -
+        with optional qualifiers describing frequency/context information where provided.
+      source_files:
+        - phenotype.hpoa
       additional_notes: null
     - subject_categories:
       - "biolink:Gene"
       predicates:
-        - "biolink:associated_with"
+        - "biolink:contributes_to"
+        - "biolink:correlated_with"
       object_categories:
       - "biolink:Disease"
       qualifiers:
         - property: "biolink:qualified_predicate"
           value_enumeration: 
-            - "biolink:causes"        
+            - "biolink:causes" 
+            - "biolink:contributes_to"     
         - property: "biolink:subject_form_or_variant_qualifier"
           value_range:
           - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
@@ -162,51 +183,23 @@ target_info:
       - knowledge_assertion
       agent_type:
       - manual_agent
+      primary_knowledge_sources:
+        - infores:hpo-annotations      
       edge_properties: null
-      ui_explanation:
-        "HPOA aggregates manually curated Gene-Disease associations from sources like
-        Orphanet and MIM2Gene and DECIPHER. For Mendelian diseases with a single causal gene,
-        we report that a genetic variant form of the gene 'causes' the disease."
-      additional_notes: null
-    - subject_categories:
-      - "biolink:Gene"
-      predicates:
-        - "biolink:associated_with"
-      object_categories:
-      - "biolink:Disease"
-      qualifiers:
-        - property: "biolink:qualified_predicate"
-          value_enumeration: 
-            - "biolink:contributes_to"      
-        - property: "biolink:subject_form_or_variant_qualifier"
-          value_range:
-            - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
-          value_description: "Specifically, the 'genetic_variant_form' enum value is used in all cases"
-      knowledge_level:
-      - knowledge_assertion
-      agent_type:
-      - manual_agent
-      edge_properties: null
-      ui_explanation:
-        "HPOA aggregates manually curated Gene-Disease associations from sources like
-        Orphanet and MIM2Gene. For polygenic diseases with multiple contributing genes,
-        we report that a genetic variant form of the gene 'contributes to' the disease."
-      additional_notes: null
-    - subject_categories:
-      - "biolink:Gene"
-      predicates:
-        - "biolink:associated_with"
-      object_categories:
-      - "biolink:Disease"
-      knowledge_level:
-      - knowledge_assertion
-      agent_type:
-      - manual_agent
-      edge_properties: null
-      ui_explanation:
-        "HPOA aggregates manually curated Gene-Disease associations from sources like
-        Orphanet and MIM2Gene. When the genetic etiology of the diseases is not
-        sufficiently specified, the relationship is reported using the 'associated_with' predicate."
+      ui_explanation: >-
+        Source HPOA data provide Gene-Disease associations that are manually curated from
+        sources like Orphanet and MIM2Gene and DECIPHER by HPO. The record used to create
+        this Translator edge reports that a Gene is associated with a Disease when there
+        is evidence that variants in the gene may cause or contribute to its manifestation.
+        The Biolink predicate used to represent this relationship depends on the type of 
+        Disease. For Mendelian disorders (where the HPOA "association_type" field = 'MENDELIAN')
+        'contributes to' is the primary predicate and the 'causes' predicate is used as the
+        'qualified predicate'.  For polygenic disease (where the "association_type" field = "POLYGENIC")
+        'correlated with' is the primary predicate and the 'contributes to' predicate is used as the
+        'qualified predicate'. Qualifier is used to indicate that it is a 'genetic_variant_form'
+        of the gene that participates in these relationships, not the Gene in general.
+      source_files:
+        - genes_to_disease.txt
       additional_notes: null
     - subject_categories:
       - "biolink:Gene"
@@ -234,12 +227,21 @@ target_info:
       - logical_entailment
       agent_type:
       - automated_agent
+      primary_knowledge_sources:
+        - infores:hpo-annotations        
       edge_properties: null
-      ui_explanation:
-        "HPOA provides direct Gene-Phenotype associations between genes with variants
-        causing or contributing to a disease, and each phenotype associated with the disease.
-        For Mendelian diseases with a single causal gene, we report that a 
-        genetic variant form of the gene 'causes' each of the phenotypes associated with the disease."
+      ui_explanation: >-
+        Source HPOA data provide direct Gene-Phenotype associations that are automatically
+        assigned between a Gene and any Phenotype that manifests in a Mendelian Disease
+        associated with the Gene. The record used to create this edge specifically reports a
+        Gene-Phenotype association where the Gene has variants causal for a Mendelian disorder
+        in which the Phenotype is manifest - from which it is logically entailed that
+        variants in the Gene are also causal for the Phenotype (as such disorders have a
+        single causal gene). This relationship is represented using the Biolink 'causes' predicate,
+        with a qualifier indicating that it is a 'genetic_variant_form' of the gene that is
+        causing the Phenotype (not the Gene in general)."
+      source_files:
+        - genes_to_phenotype.txt
       additional_notes: null
   node_type_info:
   - node_category: "biolink:Disease"
@@ -267,13 +269,13 @@ target_info:
     additional_notes: null
   future_considerations:
     - category: spoq_pattern
-      consideration:
-        "Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations
+      consideration: >-
+        Consider alternate patterns for representing G-causes-D and G-contributes_to-D associations
         where we place more semantics into predicates, per 
         https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22
         Should we consider creating support paths in our data/graphs, 
         for the G-D-P hops over which HPO infers G-P associations?
-        (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)"
+        (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"
