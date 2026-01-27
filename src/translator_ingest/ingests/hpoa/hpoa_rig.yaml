@@ -166,8 +166,7 @@ target_info:
     - subject_categories:
       - "biolink:Gene"
       predicates:
-        - "biolink:contributes_to"
-        - "biolink:correlated_with"
+        - "biolink:associated_with"
       object_categories:
       - "biolink:Disease"
       qualifiers:
