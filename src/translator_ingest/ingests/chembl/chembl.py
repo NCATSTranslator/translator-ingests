@@ -13,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
-    AnatomicalEntityToAnatomicalEntityPartOfAssociation
+    AnatomicalEntityHasPartAnatomicalEntityAssociation
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -613,14 +613,16 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
     return association
 
 
-def get_has_part_association(koza: koza.KozaTransform, component, target, record: dict[str, Any]) -> AnatomicalEntityToAnatomicalEntityPartOfAssociation:
+def get_has_part_association(
+        koza: koza.KozaTransform, component, target, record: dict[str, Any]
+) -> AnatomicalEntityHasPartAnatomicalEntityAssociation:
     species_context_qualifier = get_species_context_qualifier(record)
     species_context_qualifier = species_context_qualifier
-    association = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+    association = AnatomicalEntityHasPartAnatomicalEntityAssociation(
         id=entity_id(),
-        subject=component.id,
-        predicate="biolink:part_of",
-        object=target.id,
+        subject=target.id,
+        predicate="biolink:has_part",
+        object=component.id,
         # TODO: species_context_qualifier = species_context_qualifier,
         sources=build_association_knowledge_sources(INFORES_CHEMBL),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
