@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -166,8 +166,9 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.6.post66.dev0+ae10e99d2"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#ae10e99d2d2374f37f7e6b7cc05c094223e3df0b" }
+version = "4.3.6.post74.dev0+364d4ec76"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#364d4ec760360de57999ed6d7d50fa690ae6fa95" }
+
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -176,11 +177,9 @@ dependencies = [
     { name = "linkml-runtime" },
     { name = "path" },
     { name = "prefixmaps" },
-    { name = "pytest" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "stringcase" },
-    { name = "yamllint" },
 ]
 
 [[package]]
@@ -4150,8 +4149,8 @@ sdist = { url = "https://files.pythonhosted.org/packages/28/a0/8fc2d68e132cf918f
 wheels = [
     { url = "https://files.pythonhosted.org/packages/05/92/aed08e68de6e6a3d7c2328ce7388072cd6affc26e2917197430b646aed02/yamllint-1.38.0-py3-none-any.whl", hash = "sha256:fc394a5b3be980a4062607b8fdddc0843f4fa394152b6da21722f5d59013c220", size = 68940, upload-time = "2026-01-13T07:47:51.343Z" },
 ]
-
 [[package]]
+
 name = "zstandard"
 version = "0.25.0"
 source = { registry = "https://pypi.org/simple" }

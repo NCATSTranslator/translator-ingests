@@ -77,7 +77,7 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumerations:
-              - causes
+              - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_enumerations:
               - activity_or_abundance
@@ -138,7 +138,7 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumerations:
-              - causes
+              - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_enumerations:
             - activity_or_abundance
@@ -177,7 +177,7 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumerations:
-            - causes
+            - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_enumerations:
             - activity_or_abundance
@@ -213,7 +213,7 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumerations:
-            - causes
+            - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_enumerations:
             - activity_or_abundance
