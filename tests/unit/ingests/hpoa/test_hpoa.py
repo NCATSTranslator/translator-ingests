@@ -11,7 +11,7 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_hpoa_genetic_predicate
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
 
 from translator_ingest.ingests.hpoa.hpoa import (
     on_data_begin_disease_to_phenotype,
@@ -65,7 +65,7 @@ ASSOCIATION_TEST_SLOTS = (
     "qualified_predicate",
     "subject_form_or_variant_qualifier",
     "publications",
-    "has_evidence",
+    "has_evidence_of_type",
     "sex_qualifier",
     "onset_qualifier",
     "has_percentage",
@@ -81,8 +81,7 @@ ASSOCIATION_TEST_SLOTS = (
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        ({}, None, None),  # Query 0 - missing data (empty record, hence, missing fields)
-        (  # Query 1 - An 'aspect' == 'C' record processed
+        (  # Query 0 - An 'aspect' == 'C' record processed
             {
                 "database_id": "OMIM:614856",
                 "disease_name": "Osteogenesis imperfecta, type XIII",
@@ -101,7 +100,7 @@ ASSOCIATION_TEST_SLOTS = (
             None,
             None,
         ),
-        (  # Query 2 - An 'aspect' == 'P' record processed
+        (  # Query 1 - An 'aspect' == 'P' record processed
             {
                 "database_id": "OMIM:117650",
                 "disease_name": "Cerebrocostomandibular syndrome",
@@ -135,7 +134,7 @@ ASSOCIATION_TEST_SLOTS = (
                 # Although "OMIM:117650" is recorded above as
                 # a reference, it is not used as a publication
                 "publications": [],
-                "has_evidence": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0000304"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": 50.0,
@@ -151,7 +150,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (  # Query 3 - Another 'aspect' == 'P' record processed
+        (  # Query 2 - Another 'aspect' == 'P' record processed
             {
                 "database_id": "OMIM:117650",
                 "disease_name": "Cerebrocostomandibular syndrome",
@@ -183,7 +182,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "negated": True,
                 "object": "HP:0001545",
                 "publications": [],
-                "has_evidence": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0000304"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": None,
@@ -197,7 +196,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (  # Query 4 - Same 'aspect' == 'P' record but lacking any frequency qualifier
+        (  # Query 3 - Same 'aspect' == 'P' record but lacking any frequency qualifier
             {
                 "database_id": "OMIM:117650",
                 "disease_name": "Cerebrocostomandibular syndrome",
@@ -229,7 +228,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "negated": False,
                 "object": "HP:0001545",
                 "publications": [],
-                "has_evidence": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0000304"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": None,
@@ -243,7 +242,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (  # Query 5 - Disease inheritance 'aspect' == 'I' record processed
+        (  # Query 4 - Disease inheritance 'aspect' == 'I' record processed
             {
                 "database_id": "OMIM:300425",
                 "disease_name": "Autism susceptibility, X-linked 1",
@@ -294,11 +293,11 @@ def test_disease_to_phenotype_transform(
     [
         ("MENDELIAN", "biolink:causes"),
         ("POLYGENIC", "biolink:contributes_to"),
-        ("UNKNOWN", "biolink:associated_with"),
+        ("UNKNOWN", None),
     ],
 )
-def test_predicate(association: str, expected_predicate: str):
-    predicate = get_hpoa_genetic_predicate(association)
+def test_predicate(association: str, expected_predicate: Optional[str]):
+    predicate = get_qualified_predicate(association)
 
     assert predicate == expected_predicate
 
@@ -306,8 +305,7 @@ def test_predicate(association: str, expected_predicate: str):
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        ({}, None, None),  # Query 0 - missing data (empty record, hence, missing fields)
-        (  # Query 1 - Sample Mendelian disease
+        (  # Query 0 - Sample Mendelian disease
             {
                 "association_type": "MENDELIAN",
                 "disease_id": "OMIM:212050",
@@ -324,7 +322,7 @@ def test_predicate(association: str, expected_predicate: str):
             {
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:64170",
-                "predicate": "biolink:associated_with",
+                "predicate": "biolink:contributes_to",
                 "object": "OMIM:212050",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -337,7 +335,7 @@ def test_predicate(association: str, expected_predicate: str):
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (   # Query 2 - Sample Polygenic disease
+        (   # Query 1 - Sample Polygenic disease
             {
                 "association_type": "POLYGENIC",
                 "disease_id": "OMIM:615232",
@@ -354,7 +352,7 @@ def test_predicate(association: str, expected_predicate: str):
             {
                 "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:6505",
-                "predicate": "biolink:associated_with",
+                "predicate": "biolink:correlated_with",
                 "object": "OMIM:615232",
                 "qualified_predicate": "biolink:contributes_to",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -367,7 +365,7 @@ def test_predicate(association: str, expected_predicate: str):
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (   # Query 3 - Sample disease of UNKNOWN association type
+        (   # Query 2 - Sample disease of UNKNOWN association type
             {
                 "association_type": "UNKNOWN",
                 "disease_id": "ORPHA:79414",
@@ -375,26 +373,11 @@ def test_predicate(association: str, expected_predicate: str):
                 "ncbi_gene_id": "NCBIGene:3265",
                 "source": "http://www.orphadata.org/data/xml/en_product6.xml",
             },
+            # UNKNOWN gene-to-disease associations are actually  in the ingest for now (see the RIG)
             # Captured node contents
-            [
-                {"id": "NCBIGene:3265", "name": "HRAS", "category": ["biolink:Gene"]},
-                {"id": "Orphanet:79414", "category": ["biolink:Disease"]},
-            ],
+            None,
             # Captured edge contents
-            {
-                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
-                "subject": "NCBIGene:3265",
-                "predicate": "biolink:associated_with",
-                "object": "Orphanet:79414",
-                "qualified_predicate": None,
-                "subject_form_or_variant_qualifier": None,
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:orphanet"}
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+            None
         ),
     ],
 )
@@ -452,8 +435,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        ({}, None, None),  # Query 0 - missing data (empty record (hence, missing fields)
-        (  # Query 1 - Full record, with the empty ("-") frequency field
+        (  # Query 0 - Full record, with the empty ("-") frequency field
             {
                 "ncbi_gene_id": 8086,
                 "gene_symbol": "AAAS",
@@ -473,7 +455,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8086",
-                "predicate": "biolink:has_phenotype",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0000252",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -489,7 +471,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "agent_type": AgentTypeEnum.automated_agent,
             },
         ),
-        (  # Query 2 - Full record, with a HPO term defined frequency field value
+        (  # Query 1 - Full record, with a HPO term defined frequency field value
             {
                 "ncbi_gene_id": 8120,
                 "gene_symbol": "AP3B2",
@@ -509,7 +491,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8120",
-                "predicate": "biolink:has_phenotype",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0001298",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -525,7 +507,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "agent_type": AgentTypeEnum.automated_agent,
             },
         ),
-        (  # Query 3 - Full record, with a ratio ("quotient") frequency field value
+        (  # Query 2 - Full record, with a ratio ("quotient") frequency field value
             {
                 "ncbi_gene_id": 8192,
                 "gene_symbol": "CLPP",
@@ -545,7 +527,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8192",
-                "predicate": "biolink:has_phenotype",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0000013",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -561,7 +543,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "agent_type": AgentTypeEnum.automated_agent,
             },
         ),
-        (  # Query 4 - Full record, with a percentage frequency field value
+        (  # Query 3 - Full record, with a percentage frequency field value
             # 8929	PHOX2B	HP:0003005	Ganglioneuroma	5%	OMIM:613013
             {
                 "ncbi_gene_id": 8929,
@@ -582,7 +564,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8929",
-                "predicate": "biolink:has_phenotype",
+                "predicate": "biolink:contributes_to",
                 "object": "HP:0003005",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
