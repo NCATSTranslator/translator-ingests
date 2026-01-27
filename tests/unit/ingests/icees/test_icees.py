@@ -229,7 +229,9 @@ def test_transform_icees_nodes(
             None,
             # Captured edge contents
             {
-                "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
+                # Note: Falls back to Association because the predicate 'positively_correlated_with'
+                # is not valid for the more specific association types in the current biolink model
+                "category": ["biolink:Association"],
                 "subject": "PUBCHEM.COMPOUND:2083",
                 "subject_feature_name": "AlbuterolRx",
                 "predicate": "biolink:positively_correlated_with",
@@ -286,7 +288,9 @@ def test_transform_icees_nodes(
             None,
             # Captured edge contents
             {
-                "category": ["biolink:VariantToDiseaseAssociation"],
+                # Note: Falls back to Association because the predicate 'correlated_with'
+                # is not valid for the more specific association types in the current biolink model
+                "category": ["biolink:Association"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
                 "predicate": "biolink:correlated_with",

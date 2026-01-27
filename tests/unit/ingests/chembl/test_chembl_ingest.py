@@ -54,7 +54,7 @@ ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources
             ],
             # Captured edge contents
             {
-                "category": ["biolink:AnatomicalEntityToAnatomicalEntityPartOfAssociation"],
+                "category": ["biolink:AnatomicalEntityHasPartAnatomicalEntityAssociation"],
                 "subject": "CHEMBL.TARGET:CHEMBL612409",
                 "predicate": "biolink:has_part",
                 "object": "UniProtKB:Q15125",
@@ -78,7 +78,7 @@ def test_ingest_transform(
             "name": "3-beta-hydroxysteroid-Delta(8),Delta(7)-isomerase"
         }
     }
-    
+
     for result in transform_complexes(mock_koza_transform, test_record):
         validate_transform_result(
             result=result,

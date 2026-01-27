@@ -23,8 +23,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Disease,
     PhenotypicFeature,
     DiseaseToPhenotypicFeatureAssociation,
-    CausalGeneToDiseaseAssociation,
-    CorrelatedGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
     ChemicalOrGeneOrGeneProductFormOrVariantEnum as ve,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
@@ -260,15 +259,11 @@ def transform_record_gene_to_disease(
         disease = Disease(id=disease_id, **{})
 
         subject_form_or_variant_qualifier: Optional[ve] = ve.genetic_variant_form
-        if qualified_predicate == "biolink:causes":
-            association_class = CausalGeneToDiseaseAssociation
-        else:
-            association_class = CorrelatedGeneToDiseaseAssociation
-            if qualified_predicate == "biolink:associated_with":
-                qualified_predicate = None
-                subject_form_or_variant_qualifier = None
+        if qualified_predicate == "biolink:associated_with":
+            qualified_predicate = None
+            subject_form_or_variant_qualifier = None
 
-        association = association_class(
+        association = GeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
             predicate="biolink:associated_with",
@@ -343,18 +338,18 @@ def prepare_data_gene_to_phenotype(
     with
       hpoa as (select * from read_csv('{phenotype_file_path}')),
       g2p as (select * from read_csv('{genes_to_phenotype_file_path}')),
-      g2d as (select 
+      g2d as (select
         replace(ncbi_gene_id, 'NCBIGene:', '') as ncbi_gene_id_clean,
-        disease_id, 
-        association_type 
+        disease_id,
+        association_type
         from read_csv('{genes_to_disease_file_path}')),
-      g2d_grouped as (select 
+      g2d_grouped as (select
         ncbi_gene_id_clean,
         disease_id,
         array_to_string(list(distinct association_type), ';') as association_types
-        from g2d 
+        from g2d
         group by ncbi_gene_id_clean, disease_id)
-    select g2p.*, 
+    select g2p.*,
            array_to_string(list(hpoa.reference),';') as publications,
            coalesce(g2d_grouped.association_types, '') as gene_to_disease_association_types
     from g2p

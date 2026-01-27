@@ -322,7 +322,7 @@ def test_predicate(association: str, expected_predicate: str):
             ],
             # Captured edge contents
             {
-                "category": ["biolink:CausalGeneToDiseaseAssociation"],
+                "category": ["biolink:GeneToDiseaseAssociation"],
                 "subject": "NCBIGene:64170",
                 "predicate": "biolink:associated_with",
                 "object": "OMIM:212050",
@@ -352,7 +352,7 @@ def test_predicate(association: str, expected_predicate: str):
             ],
             # Captured edge contents
             {
-                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "category": ["biolink:GeneToDiseaseAssociation"],
                 "subject": "NCBIGene:6505",
                 "predicate": "biolink:associated_with",
                 "object": "OMIM:615232",
@@ -382,7 +382,7 @@ def test_predicate(association: str, expected_predicate: str):
             ],
             # Captured edge contents
             {
-                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "category": ["biolink:GeneToDiseaseAssociation"],
                 "subject": "NCBIGene:3265",
                 "predicate": "biolink:associated_with",
                 "object": "Orphanet:79414",

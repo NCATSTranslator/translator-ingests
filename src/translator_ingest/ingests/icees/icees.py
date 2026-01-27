@@ -2,9 +2,11 @@ from typing import Optional, Any
 import json
 from loguru import logger
 import koza
+from pydantic import ValidationError
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
+    Association,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -153,17 +155,34 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             else:
                 pass # all other attributes ignored at this time
 
-        association = edge_class(
-            id=entity_id(),
-            subject=icees_subject,
-            predicate=icees_predicate,
-            object=icees_object,
-            has_supporting_studies=supporting_studies,
-            sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.not_provided,
-            **icees_qualifiers
-        )
+        # Try to create the association with the specific class; if predicate validation
+        # fails, fall back to base Association class
+        try:
+            association = edge_class(
+                id=entity_id(),
+                subject=icees_subject,
+                predicate=icees_predicate,
+                object=icees_object,
+                has_supporting_studies=supporting_studies,
+                sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.not_provided,
+                **icees_qualifiers
+            )
+        except ValidationError:
+            # If the specific association class doesn't accept the predicate,
+            # fall back to base Association
+            association = Association(
+                id=entity_id(),
+                subject=icees_subject,
+                predicate=icees_predicate,
+                object=icees_object,
+                has_supporting_studies=supporting_studies,
+                sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.not_provided,
+                **icees_qualifiers
+            )
 
         return KnowledgeGraph(edges=[association])
 
