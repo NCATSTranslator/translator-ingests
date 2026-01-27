@@ -28,7 +28,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalOrGeneOrGeneProductFormOrVariantEnum as VE,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
+    AgentTypeEnum, GeneToPhenotypicFeaturePredicateEnum,
 )
 
 from translator_ingest.util.github import GitHubReleases
@@ -239,7 +239,7 @@ def transform_record_gene_to_disease(
         association = CausalGeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:contributes_to",
+            predicate="biolink:associated_with",
             object=disease_id,
             qualified_predicate="biolink:causes",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
@@ -252,7 +252,7 @@ def transform_record_gene_to_disease(
         association = CorrelatedGeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:correlated_with",
+            predicate="biolink:associated_with",
             object=disease_id,
             qualified_predicate="biolink:contributes_to",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
@@ -388,7 +388,7 @@ def transform_record_gene_to_phenotype(
     association = GeneToPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=gene_id,
-        predicate="biolink:contributes_to",
+        predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
         object=hpo_id,
         qualified_predicate="biolink:causes",
         subject_form_or_variant_qualifier=VE.genetic_variant_form,

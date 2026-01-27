@@ -5,7 +5,8 @@ from os.path import join, abspath, dirname
 from loguru import logger
 from pathlib import Path
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum, \
+    GeneToPhenotypicFeaturePredicateEnum
 
 import koza
 from koza.transform import Mappings
@@ -322,7 +323,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
             {
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:64170",
-                "predicate": "biolink:contributes_to",
+                "predicate": "biolink:associated_with",
                 "object": "OMIM:212050",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -352,7 +353,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
             {
                 "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:6505",
-                "predicate": "biolink:correlated_with",
+                "predicate": "biolink:associated_with",
                 "object": "OMIM:615232",
                 "qualified_predicate": "biolink:contributes_to",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -373,7 +374,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
                 "ncbi_gene_id": "NCBIGene:3265",
                 "source": "http://www.orphadata.org/data/xml/en_product6.xml",
             },
-            # UNKNOWN gene-to-disease associations are actually  in the ingest for now (see the RIG)
+            # UNKNOWN gene-to-disease associations are actually in the ingest for now (see the RIG)
             # Captured node contents
             None,
             # Captured edge contents
@@ -455,7 +456,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8086",
-                "predicate": "biolink:contributes_to",
+                "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
                 "object": "HP:0000252",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -491,7 +492,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8120",
-                "predicate": "biolink:contributes_to",
+                "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
                 "object": "HP:0001298",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -527,7 +528,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8192",
-                "predicate": "biolink:contributes_to",
+                "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
                 "object": "HP:0000013",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
@@ -564,7 +565,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             {
                 "category": ["biolink:GeneToPhenotypicFeatureAssociation"],
                 "subject": "NCBIGene:8929",
-                "predicate": "biolink:contributes_to",
+                "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
                 "object": "HP:0003005",
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
