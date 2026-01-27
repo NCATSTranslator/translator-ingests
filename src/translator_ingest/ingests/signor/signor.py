@@ -113,7 +113,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["subject_category"] == "protein" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-            predicate = "biolink:regulates"
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -143,7 +142,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
-                predicate = predicate,
+                predicate = "biolink:regulates",
                 sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
@@ -189,7 +188,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["subject_category"] == "chemical" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-            predicate = "biolink:affects"
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -219,7 +217,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
-                predicate = predicate,
+                predicate = "biolink:affects",
                 sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
