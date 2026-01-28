@@ -123,7 +123,7 @@ def test_textmining_output(textmining_output):
     assert association
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
     assert association.z_score == 4.774
-    assert association.has_confidence_score == 2.387
+    assert association.diseases_confidence_score == 2.387
 
     ## sources stuff
     assert association.sources
@@ -183,7 +183,7 @@ def test_knowledge_output(knowledge_output):
     association1 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][0]
     assert association1
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association1.has_confidence_score == 5.0
+    assert association1.diseases_confidence_score == 5.0
     ## sources stuff
     assert association1.sources
     assert len(association1.sources) == 2
@@ -208,7 +208,7 @@ def test_knowledge_output(knowledge_output):
     association2 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][1]
     assert association2
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association2.has_confidence_score == 4.0
+    assert association2.diseases_confidence_score == 4.0
     ## sources stuff
     assert association2.sources
     assert len(association2.sources) == 2

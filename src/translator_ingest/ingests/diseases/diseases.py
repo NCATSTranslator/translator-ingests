@@ -192,7 +192,7 @@ def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kn
         knowledge_level=KnowledgeLevelEnum.text_co_occurrence,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         z_score=record["z_score"],
-        has_confidence_score=record["confidence_score"],
+        diseases_confidence_score=record["confidence_score"],
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])
@@ -250,7 +250,7 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
         sources=current_sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        has_confidence_score=record["confidence_score"],
+        diseases_confidence_score=record["confidence_score"],
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])
