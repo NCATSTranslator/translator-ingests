@@ -278,7 +278,7 @@ target_info:
   additional_notes: >-
     The HPOA ingest of the Disease.node_properties.inheritance value is currently thought to be mildly
     unreliable due to the way node property merging is (not) currently implemented in the ingest. This is a
-    known issue (Translator Ingest PR https://github.com/NCATSTranslator/translator-ingests/issues/253)
+    known issue (Translator Ingest PR https://github.com/NCATSTranslator/translator-ingests/issues/259)
     which will be addressed in a future release of the pipeline and/or ingest.
 provenance_info:
   contributions:
