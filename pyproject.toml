@@ -37,6 +37,7 @@ dev = [
     "ruff>=0.12.8",
     "pandas", # also installs numpy
     "openpyxl",    # for pandas read_excel to work
+    "psycopg[binary]",     # for Postgres querying
     "requests",
     # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
