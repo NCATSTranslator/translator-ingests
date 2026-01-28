@@ -294,7 +294,7 @@ target_info:
 
 provenance_info:
   contributions:
-  - "TMKP Team - data generation and text mining pipeline"
+  - "TMKP Team, Matt Brush - modeling, data generation, and text mining pipeline"
   - "Sierra Moxon - ingest, code, data modeling"
   artifacts:
   - "TMKP GitHub: https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap"
