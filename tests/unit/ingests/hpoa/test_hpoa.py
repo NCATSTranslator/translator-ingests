@@ -15,8 +15,6 @@ from koza.io.writer.writer import KozaWriter
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
 
 from translator_ingest.ingests.hpoa.hpoa import (
-    on_data_begin_disease_to_phenotype,
-    on_data_end_disease_to_phenotype,
     transform_record_disease_to_phenotype,
     on_data_begin_gene_to_disease,
     on_data_end_gene_to_disease,
@@ -275,9 +273,6 @@ def test_disease_to_phenotype_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_data_begin_disease_to_phenotype(mock_koza_transform_1)
-
     validate_transform_result(
         result=transform_record_disease_to_phenotype(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
@@ -285,8 +280,6 @@ def test_disease_to_phenotype_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
-
-    on_data_end_disease_to_phenotype(mock_koza_transform_1)
 
 
 @pytest.mark.parametrize(

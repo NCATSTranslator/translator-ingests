@@ -51,24 +51,6 @@ def get_latest_version() -> str:
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
     return ghr.get_latest_version()
 
-
-@koza.on_data_begin(tag="disease_to_phenotype")
-def on_data_begin_disease_to_phenotype(koza_transform: koza.KozaTransform):
-    """
-    Called before processing begins.
-    Can be used for setup or validation of input files.
-    """
-    koza_transform.log("Starting HPOA Disease to Phenotype processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
-@koza.on_data_end(tag="disease_to_phenotype")
-def on_data_end_disease_to_phenotype(koza_transform: koza.KozaTransform):
-    """
-    Called after all data has been processed.
-    Used for logging summary statistics.
-    """
-    koza_transform.log("HPOA Disease to Phenotype processing complete")
-
 """
 This particular Translator Ingest module targets the "phenotype.hpoa" file for parsing.
 
