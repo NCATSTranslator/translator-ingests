@@ -47,7 +47,7 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
-    "biolink-model>=4.3.5.post29.dev0",
+    "biolink-model",
 ]
 
 [tool.pytest.ini_options]

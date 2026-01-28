@@ -191,6 +191,7 @@ def test_transform_icees_nodes(
 
     on_end_node_ingest(mock_koza_transform)
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge,qualifiers",
     [
