@@ -36,6 +36,7 @@ DBNAME = "drugcentral"
 ## actually using this view, which adds doid column to omop_relationship. 
 ##   Just in case we later want to use other ID namespaces for DoP objects
 OMOP_TABLE = "omop_relationship_doid_view"
+OMOP_MAIN_COLUMNS = ["struct_id", "relationship_name", "umls_cui", "cui_semantic_type"]
 ## DoP objects to filter out (umls_cui values)
 DOP_TO_FILTER = [
     "C0085228",   ## Fluvoxamine (drug): doesn't match predicate (contraindicated) or Association range
@@ -94,18 +95,14 @@ def omop_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> It
     )
     engine = create_engine(server_url)
 
-    ## load table into pandas
+    ## load table into pandas: only the columns we're currently using
     koza.log(f"Loading {OMOP_TABLE} into pandas...")
+    koza.log(f"Only working with these columns: {", ".join(OMOP_MAIN_COLUMNS)}")
     with engine.connect() as db_conn: 
-        df2 = pd.read_sql_table(table_name=OMOP_TABLE, con=db_conn)
+        df2 = pd.read_sql_table(table_name=OMOP_TABLE, con=db_conn, columns=OMOP_MAIN_COLUMNS)
     koza.log(f"Successfully loaded {OMOP_TABLE}: {df2.shape[0]} rows")
 
     ## FILTERING
-    ## only keep columns that we'll use in parser
-    OMOP_MAIN_COLUMNS = ["struct_id", "relationship_name", "umls_cui", "cui_semantic_type"]
-    ## using copy to make a new df, otherwise pandas will throw warnings over acting on views
-    df2 = df2[OMOP_MAIN_COLUMNS].copy()
-    koza.log(f"Only working with these columns: {", ".join(OMOP_MAIN_COLUMNS)}")
     ## drop rows with NA values
     ##   for 2023_11_01 data, dropping NA only matters for umls_cui. But this way seems more foolproof
     ##   (no NA in struct_id or relationship_name, filtering done on cui_semantic_type)
