@@ -1,6 +1,6 @@
 name: Text Mining Knowledge Provider (TMKP)
 source_info:
-  infores_id: infores:text-mining-provider-cooccurrence
+  infores_id: infores:text-mining-provider-targeted
   description: |
     The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts
     biomedical assertions from scientific literature using advanced text mining techniques.
@@ -28,11 +28,11 @@ source_info:
 ingest_info:
   ingest_categories:
   - primary_knowledge_provider
-  utility: |
+  utility:
     TMKP provides literature-mined assertions that complement manually curated knowledge sources.
     It enables discovery of relationships that may not be captured in structured databases,
     particularly for emerging research areas and novel connections between biological entities.
-  scope: |
+  scope:
     Covers text-mined relationships between chemicals, genes/proteins, diseases, and phenotypes
     extracted from PubMed literature. Each assertion includes supporting evidence from the
     source text and publication metadata.
@@ -84,7 +84,7 @@ ingest_info:
     supporting text and document references captured in the TextMiningStudyResult objects.
 
 target_info:
-  infores_id: "infores:translator-text-mining-kgx"
+  infores_id: "infores:translator-text-mining-provider-targeted"
   edge_type_info:
     - subject_categories:
       - "biolink:SmallMolecule"
@@ -95,17 +95,11 @@ target_info:
         - "biolink:affects"
       object_categories:
       - "biolink:Protein"
-      qualifiers:
+      - "biolink:ChemicalEntity"
+      qualifiers:                       # MHB: Note I removed entries for subject aspect and direction qualifiers - as the sumamry report does not show these in the data. Add back if the TMKP code is able to create them.
         - property: "biolink:qualified_predicate"
           value_enumeration:
             - "biolink:causes"
-        - property: "biolink:subject_aspect_qualifier"
-          value_enumeration:
-            - "activity_or_abundance"
-        - property: "biolink:subject_direction_qualifier"
-          value_enumeration:
-            - "increased"
-            - "decreased"
         - property: "biolink:object_aspect_qualifier"
           value_enumeration:
             - "activity_or_abundance"
@@ -117,7 +111,9 @@ target_info:
       - not_provided
       agent_type:
       - text_mining_agent
-      edge_properties:
+      primary_knowledge_sources:
+        - infores:text-mining-provider-targeted
+      edge_properties:                  # MHB: these don't match what I see in the data - only has_supporting_studies (not sure why we need these) Note that the summary code likely doesn't dig into nested properties.  The json examples to show the full nested study result objects under has_study_result, and the only nested properties here is publications and supporting_text. We should try to fix this up as I think soem of the scores/metadata TMKP captures will be sueful for scoring.
         - "biolink:has_supporting_studies"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
@@ -129,6 +125,9 @@ target_info:
         Association type: ChemicalAffectsGeneAssociation. The has_supporting_studies property
         contains Study objects with nested TextMiningStudyResult objects that include supporting
         text excerpts and publication references.
+        - "biolink:publications"
+        - "biolink:has_evidence_count"
+        - "biolink:tmkp_confidence_score"
     - subject_categories:
       - "biolink:Protein"
       predicates:
@@ -187,6 +186,7 @@ target_info:
         Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source data may
         contain reversed edges (disease treats chemical) that are filtered out during processing
         based on Biolink domain/range constraints.
+        - "biolink:publications"
     - subject_categories:
       - "biolink:SmallMolecule"
       - "biolink:ChemicalEntity"
