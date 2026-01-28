@@ -189,7 +189,7 @@ def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kn
                 source_record_urls=[record["url"]],
             )
         ],
-        knowledge_level=KnowledgeLevelEnum.statistical_association,
+        knowledge_level=KnowledgeLevelEnum.text_co_occurrence,
         agent_type=AgentTypeEnum.text_mining_agent,
         z_score=record["z_score"],
         has_confidence_score=record["confidence_score"],
