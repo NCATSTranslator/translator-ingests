@@ -99,7 +99,10 @@ def get_latest_source_version(source):
 
     try:
         # Call it and return the latest version
-        return latest_version_fn()
+        logger.info(f"Determining latest version for {source}...")
+        latest_version = latest_version_fn()
+        logger.info(f"Latest version for {source} established: {latest_version}")
+        return latest_version
     except Exception as e:
         logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
                      f'Error: {e}.')
@@ -113,9 +116,12 @@ def get_latest_source_version(source):
 
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Downloading source data for {pipeline_metadata.source}...")
     # Find the path to the source-specific download yaml
     download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
+    # If the download yaml does not exist, assume it isn't needed for this source and back out
+    if not download_yaml_file.exists():
+        logger.info(f"Download yaml not found for {pipeline_metadata.source}. Skipping download...")
+        return
 
     # Substitute version placeholders in download.yaml if they exist
     download_yaml_with_version = substitute_version_in_download_yaml(
@@ -128,6 +134,7 @@ def download(pipeline_metadata: PipelineMetadata):
     try:
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
+        logger.info(f"Downloading source data for {pipeline_metadata.source}...")
         kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
