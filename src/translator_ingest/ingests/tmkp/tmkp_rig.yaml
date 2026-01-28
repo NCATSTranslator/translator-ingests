@@ -96,7 +96,7 @@ target_info:
       object_categories:
       - "biolink:Protein"
       - "biolink:ChemicalEntity"
-      qualifiers:                       # MHB: Note I removed entries for subject aspect and direction qualifiers - as the sumamry report does not show these in the data. Add back if the TMKP code is able to create them.
+      qualifiers:                       # MHB: Note I removed entries for subject aspect and direction qualifiers - as the summary report does not show these in the data. Add back if the TMKP code is able to create them.
         - property: "biolink:qualified_predicate"
           value_enumeration:
             - "biolink:causes"
@@ -113,7 +113,7 @@ target_info:
       - text_mining_agent
       primary_knowledge_sources:
         - infores:text-mining-provider-targeted
-      edge_properties:                  # MHB: these don't match what I see in the data - only has_supporting_studies (not sure why we need these) Note that the summary code likely doesn't dig into nested properties.  The json examples to show the full nested study result objects under has_study_result, and the only nested properties here is publications and supporting_text. We should try to fix this up as I think soem of the scores/metadata TMKP captures will be sueful for scoring.
+      edge_properties:                  # MHB: these don't match what I see in the data - only has_supporting_studies (not sure why we need these) Note that the summary code likely doesn't dig into nested properties.  The json examples to show the full nested study result objects under has_study_result, and the only nested properties here is publications and supporting_text. We should try to fix this up as I think some of the scores/metadata TMKP captures will be useful for scoring.
         - "biolink:has_supporting_studies"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
