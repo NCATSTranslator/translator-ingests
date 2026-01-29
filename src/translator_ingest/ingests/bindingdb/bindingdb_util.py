@@ -111,7 +111,7 @@ def extract_bindingdb_columns_polars(
                     datafile,
                     separator="\t",
                     has_header=True,  # header_mode: 0 means that the first row is the header
-                    dtypes={
+                    schema_overrides={
                         MONOMER_ID: pl.Utf8,
                         PUBCHEM_CID: pl.Utf8,
                         TARGET_NAME: pl.Utf8,

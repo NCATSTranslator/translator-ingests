@@ -1,7 +1,8 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
-SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider signor tmkp ttd ubergraph
+SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub drugcentral gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther pathbank semmeddb sider signor tmkp ttd ubergraph
+NODE_PROPERTIES ?= ncbi_gene
 
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
@@ -173,7 +174,7 @@ merge:
 
 .PHONY: release
 release:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
+	@$(MAKE) -j $(words $(filter-out $(NODE_PROPERTIES),$(SOURCES))) $(addprefix release-,$(filter-out $(NODE_PROPERTIES),$(SOURCES)))
 	@$(RUN) python src/translator_ingest/release.py --summary
 
 .PHONY: release-%

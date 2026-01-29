@@ -1,0 +1,207 @@
+name: DrugCentral Reference Ingest Guide
+
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:drugcentral
+  name: DrugCentral
+  ## from https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/
+  description: "DrugCentral is an open-access online drug information repository. It covers over 4950 drugs, incorporating structural, physicochemical, and pharmacological details to support drug discovery, development, and repositioning."
+  citations:
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC10939799/    ## 2024/5 IDG paper, has summary section on DrugCentral
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/    ## 2023: awesome paper with more info on methods, underlying sources
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC7881657/     ## 2021: accuracy issues
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC9825566/     ## 2023 update
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC7779058/     ## 2021 update
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC6323925/     ## 2018 update
+    - https://pmc.ncbi.nlm.nih.gov/articles/PMC5210665/     ## 2017 original paper
+  terms_of_use_info:
+    terms_of_use_url: "https://drugcentral.org/privacy"
+    terms_of_use_description: "DrugCentral's webpage says DrugCentral is available under the Creative Commons license. In the 2023 papers, DrugCentral is described as available 'free of charge, without registration' (https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#notes3) thru its website, public instance, a full database dump, and a Docker container (https://pmc.ncbi.nlm.nih.gov/articles/PMC9825566/#SEC6)."
+    license name: "CC BY-SA"
+  data_access_locations:
+    - "Download and database access info: https://drugcentral.org/download"
+  data_provision_mechanisms:
+    - other   ## public database instance: this is what we're using
+    - database_dump
+    - file_download  ## this is partial and maybe not the latest version
+  data_versioning_and_releases: "DrugCentral currently (late 2025) isn't being maintained due to lack of funding."
+  # additional_notes:  # (optional, range = string)
+
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+ingest_info:
+  ingest_categories:
+  ## some data comes from other resources, others seem to be curated by drugcentral devs
+    - aggregation_provider
+    - primary_knowledge_provider
+  utility: "DrugCentral provides data on drug uses (indications, contraindications, etc) and effects on genes/proteins. These edges could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
+  # scope:  # (optional, range = string)
+
+  relevant_files:
+  ## these are actually database tables, not files
+    - file_name: omop_relationship_doid_view
+      location: "drugcentral:unmtid-dbs.net:5433"   ## database location
+      description: "This view adds doid mapping to omop_relationship. Using just in case we later want to use other ID namespaces for DoP objects"
+    ## DRAFT: adding this table once code for that is done
+    # - file_name: act_table_full
+    #   location:  "drugcentral:unmtid-dbs.net:5433"   ## database location
+    #   description: "drug bioactivity data (effect on genes/proteins)"
+
+  included_content:
+    - file_name: omop_relationship_doid_view
+      included_records: >-
+        (1) Have values in the columns/fields used (no missing values). (2) cui_semantic_type (UMLS
+        semantic type) maps to DiseaseOrPhenotypicFeature or its descendants. 
+        (3) unique triples (removed duplicate rows).
+      fields_used: "struct_id, relationship_name, umls_cui, cui_semantic_type"
+
+  filtered_content:
+    - file_name: omop_relationship_doid_view
+      filtered_records: "umls_cui is C0085228 (Fluvoxamine)"
+      rationale: >-
+        This object isn't a DiseaseOrPhenotypicFeature and doesn't match the predicate (currently
+        1 contraindication) or Association range constraints. However, contraindications based on other
+        drugs used (due to adverse drug-drug interactions) are valid.
+    - file_name: omop_relationship_doid_view
+      filtered_records: "umls_cui is C0022650 (Kidney Calculi aka kidney stones)"
+      rationale: >-
+        NodeNorm currently maps these to AnatomicalEntity, which doesn't match the Association range constraint. This seems to be a NodeNorm issue.
+
+  future_considerations:
+  # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+    - category: edge_content
+      consideration: >-
+        Stop filtering out umls_cui C0085228 (Fluvoxamine), and instead map its record with relationship_name 'contraindication' to a different predicate/Association for drug-drug contraindications."
+      relevant_files: omop_relationship_doid_view
+    - category: other
+      consideration: >-
+        This resource has a LOT of tables, some of which could be sources of more edges or node attributes.
+        The table vetomop is particularly interesting (drug veterinary indications for non-human animals).
+        RTX-KG2 was ingesting more tables that may be sources of node attributes (see linked issue's
+        comments, RTX-KG2's extract-drugcentral.sh).
+
+  additional_notes: >- # (optional, range = string)
+    omop_relationship_doid_view seems to have some overlap with DAKP. May want to revisit (evaluate
+    DrugCentral underlying sources, methods) and decide if DAKP can replace/be used instead
+
+
+# Information about the Graph Output by the ingest
+target_info:
+  infores_id: "infores:translator-drugcentral"
+
+  edge_type_info:
+    ## omop_relationship_doid_view: including all edge types even though predicates aren't descendants of each other
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:contraindicated_in
+        - biolink:treats
+        - biolink:preventative_for_condition
+        - biolink:diagnoses
+      object_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+      agent_type:
+        - manual_validation_of_automated_agent
+      knowledge_level:
+        - knowledge_assertion
+      primary_knowledge_sources:
+        - infores:drugcentral
+      edge_properties:
+        - "biolink:clinical_approval_status"    ## only for off_label_use records
+      ## DRAFT: for Matt to review, write to his liking
+      ui_explanation: >-
+        Source DrugCentral data provides drug use assertions that were either extracted from the OMOP
+        data model (up to 2012) or manually curated from approved drug labels (after 2012).
+        The predicate of this edge is based on the relationship_name field of the original database row.
+      source_files:
+        - omop_relationship_doid_view
+      additional_notes: >-
+        (1) We're unsure on the agent_type choice and don't have concrete support. Matt thought DrugCentral
+            used automated methods to do some initial NLP / extraction of candidate indications, which
+            were then manually reviewed/validated. 
+        (2) The table has no underlying source, reference, or date info that can be used to tell where a
+            specific record/row came from (out of two possibilities, see next point).
+        (3) The UI explanation origin info is based on https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10. 
+            The paper says 'indications, contraindications, and off-label uses have been extracted from the OMOP data model version 4.4 up to 2012' and 'all information after 2012 has been manually curated from approved drug labels'.
+        (4) See ingest code's mapping.py for the relationship_name value to predicate/edge-attribute mapping. Notes: 'indication' means approved, on-label use according to
+        https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10; for 'off-label use', there was
+        discussion on using the current 'treats' vs previous 'applied_to_treat'.
+    ## DRAFT: saved for act_table_full
+    # - subject_categories:  # (required, multivalued, range = URIorCURIE) Note: multiple sub_cat and obj_cat values for an edge type does not mean that the full cross-product must be instantiated in the data. See schema for more details.
+    #     -
+    #   predicates:  # (required, multivaluded, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
+    #     - 
+    #   object_categories:  # (required, multivalued, range = URIorCURIE)
+    #     -
+    #   qualifiers: # (optional, multivalued, range = Qualifier)
+    #     - property:  # (required, range = URIorCURIE)
+    #     # Choose one (or more) of the 'value' slots to describe the type of value hold by the qualifier
+    #       value_range: # (optional, multivalued, range = URIorCURIE) 
+    #         - 
+    #       value_enumeration: # (optional, multivalued, range = string)
+    #         - 
+    #       value_id_prefixes: # (optional, multivalued, range = string)
+    #         - 
+    #       value_description:  # (optional, range = string)
+    #   agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
+    #     -
+    #   knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
+    #     -
+    #   primary_knowledge_sources:  # (required, multivalued, range = URIorCURIE (an infores))
+    #     - 
+    #   supporting_data_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
+    #     -
+    #   aggregator_knowledge_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
+    #     - 
+    #   edge_properties:  # (optional, multivalued, range = URIorCURIE)
+    #     -     
+    #   ui_explanation:  # (required, range = string)  Follow templates/examples in the spreadsheet here when writing these: https://docs.google.com/spreadsheets/d/1Tl-FQYaxoB2QRdurm1EDBWYUOA0RhEU5S_3Qiw9SdkU/edit?gid=0#gid=0
+    #   source_files:   # (multivalued, range = string)  
+    #     - 
+    #   additional_notes:  # (optional, range = string)
+
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - DRUGCENTRAL
+    ## omop_relationship_doid_view
+    - node_category: biolink:DiseaseOrPhenotypicFeature
+      source_identifier_types:
+        - UMLS
+      additional_notes: >- # (optional, range = string)
+        Using only umls_cui column for object ID because it's the most comprehensive (covers same rows as
+        snomed_conceptid and doid plus a little more). I was worried that some IDs wouldn't actually be
+        DiseaseOrPhenotypicFeatures, and that was addressed with filtering.
+    ## DRAFT: saved for act_table_full
+    # - node_category:  # (required, range = URIorCURIE)
+    #   source_identifier_types:  # (required, multivalued, range = string)
+    #     -
+    #   node_properties:  # (optional, multivalued, range = URIorCURIE)
+    #     -
+    #   additional_notes:  # (optional, range = string)
+
+
+  future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
+    # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
+    - category: spoq_pattern
+      consideration: >-
+        Adjust the predicate domain for 'biolink:diagnoses'. It's currently 'diagnostic aid', and raises
+        a validation warning on the DrugCentral 'diagnosis' record/edge from omop_relationship_doid_view.
+        However, this record represents a legit use of a drug for diagnosis.
+    - category: other
+      consideration: >-
+        NodeNorm should perhaps map UMLS:C0022650 (Kidney Calculi aka kidney stones) to the main clique for kidney stones MONDO:0008171 (primary label nephrolithiasis).
+
+
+  # additional_notes:  # (optional, range = string)
+
+
+# Information about how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Colleen Xu - code author, data modeling"
+    - "Matthew Brush - data modeling, domain expertise"
+  artifacts:  # (optional, multivalued, range = string)
+    - https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/53
+    - "notebooks for development work currently in parser code directory"
