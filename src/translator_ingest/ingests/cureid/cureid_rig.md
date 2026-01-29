@@ -7,7 +7,7 @@
 **Description:** CURE ID is a free platform developed by FDA and NIH to share novel uses of existing drugs - also known as drug repurposing/off-label use - and explore what others have tried. The goal is to find potential treatments for challenging diseases that lack good treatment options. Our mission is to use the information collected from users sharing their treatment experiences publicly on CURE ID to help inform what drugs are studied in clinical trials. The findings from these trials will enable the medical community to learn whether a drug is effective or not for it’s new use.
 
 **Citations:**
-- TODO: ref goes here
+- Farid T, Ruzhnikov MRZ, Duggal M, Tumas KC, Strongin S, Sid E, Fuchs SR, Sacks L, Pichard DC, Pilgrim-Grayson C, Mathé EA, Stone HA. CURE ID: A Platform to Collect Real-World Treatment Data for Drug Repurposing in Rare Genetic Disorders. Am J Med Genet C Semin Med Genet. 2025 Sep;199(3):189-193. doi: 10.1002/ajmg.c.32153. Epub 2026 Jan 7. PMID: [ 41496707 ](https://pubmed.ncbi.nlm.nih.gov/41496707/)
 
 **Data Access Locations:**
 - https://opendata.ncats.nih.gov/public/cureid/

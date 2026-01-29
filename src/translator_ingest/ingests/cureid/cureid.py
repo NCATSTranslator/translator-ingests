@@ -170,7 +170,8 @@ def _create_associations(record: dict[str, Any]):
                 associations.append(GeneToDiseaseAssociation(
                     **params
                 ))
-            elif edge_type == 'biolink:GeneToVariantAssociation':
+            elif edge_type in ['biolink:GeneToVariantAssociation', # handle old misspelling
+                               'biolink:GenotypeToVariantAssociation']:
                 associations.append(GenotypeToVariantAssociation(
                     **params
                 ))
