@@ -261,11 +261,6 @@ target_info:
       - "NCBIGene"
     node_properties: null
     additional_notes: null
-  - node_category: "biolink:GeneticInheritance"
-    source_identifier_types:
-      - "HP"
-    node_properties: null
-    additional_notes: null
   future_considerations:
     - category: spoq_pattern
       consideration: >-
