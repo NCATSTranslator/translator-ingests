@@ -86,8 +86,8 @@ STRINGS_TO_FILTER = [
 ## imported enum from pydantic (vs hard-coded values)
 ## there's also no value (None), which maps to plain "interacts_with" edge and is handled in main code
 MOA_MAPPING = {
-    ## original value ".". 
-    ## appears to means no known mechanism of action, so treating as a plain "interacts_with" edge
+    ## original value ".", loaded as NA, then added placeholder value
+    ## appears to mean "no known mechanism of action", so treating as a plain "interacts_with" edge
     "NO_VALUE": {
         "predicate": BIOLINK_INTERACTS,
         ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
