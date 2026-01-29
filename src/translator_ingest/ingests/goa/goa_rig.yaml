@@ -83,12 +83,12 @@ target_info:
       object_categories:
         - biolink:MolecularActivity
       knowledge_level:
-        - varies
+        - varies            # MHB: Can you list all that are relevant?
       agent_type:
-        - varies
+        - varies            # MHB: Can you list all that are relevant?
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence      # MHB: Biolink may have some updates in this area . . . e.g. a 'has evidence of type' property that we would use here. 
         - publications
       ui_explanation: "A GO Annotation uses 'enables' predicate when a gene product is solely capable of executing the reported function."
       additional_notes: "varies, depending on mappings from GO evidence codes"
@@ -127,6 +127,9 @@ target_info:
         - publications
       ui_explanation: "A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
       additional_notes: "varies, depending on mappings from GO evidence codes"
+
+    # MHB: I made notes on each ege type below as well, but in general, we should try to merge some Edge types where the provenance and S/O categories is the same, and the only differnece is some cue that differentiates between acts_upstream subpredicates. Ultimately, want to define EdgeTypes at a granularity that ensures shared provenance, ease of UI explanation authoring, and the same confidence prior.
+
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -152,7 +155,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:acts_upstream_of_or_within_positive_effect
+        - biolink:acts_upstream_of_or_within_positive_effect        # MHB: can probably merge this with previous EdgeType, and list both predicates - since provenance of these edges, and the S/O categories are the same . . . only differnece is cue that indicates the effect is positive.   IS this right?
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -171,7 +174,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:acts_upstream_of_or_within_negative_effect
+        - biolink:acts_upstream_of_or_within_negative_effect         # MHB: can probably merge this with previous EdgeType, and list both predicates - since provenance of these edges, and the S/O categories are the same . . . only differnece is cue that indicates the effect is negative.   IS this right?
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -190,7 +193,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:acts_upstream_of
+        - biolink:acts_upstream_of             # MHB: can probably merge this with previous EdgeType, and list both predicates - since provenance of these edges, and the S/O categories are the same.  Is this right?
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -266,7 +269,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:located_in
+        - biolink:located_in       # MHB: same issue as above - could probably merge with EdgeType above
       object_categories:
         - biolink:CellularComponent
       knowledge_level:
@@ -279,6 +282,27 @@ target_info:
         - publications
       ui_explanation: "A GO Annotation uses 'located_in' predicate when a gene product enables is detected in the reported cellular component."
       additional_notes: "varies, depending on mappings from GO evidence codes"
+
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:colocalizes_with           # MHB: same issue as above - could probably merge with EdgeType above
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'colocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -296,25 +320,6 @@ target_info:
         - has_evidence
         - publications
       ui_explanation: "A GO Annotation uses 'part_of' predicate when a gene product is a component of the reported macromolecular complex."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
-    - subject_categories:
-        - biolink:Gene
-        - biolink:Protein
-        - biolink:MacromolecularComplex
-        - biolink:RNAProduct
-      predicates:
-        - biolink:colocalizes_with
-      object_categories:
-        - biolink:CellularComponent
-      knowledge_level:
-        - varies
-      agent_type:
-        - varies
-      edge_properties:
-        - negated
-        - has_evidence
-        - publications
-      ui_explanation: "A GO Annotation uses 'colocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component."
       additional_notes: "varies, depending on mappings from GO evidence codes"
 
   node_type_info:
