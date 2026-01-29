@@ -65,7 +65,7 @@ target_info:
         - manual_agent
       edge_properties:
         - publications
-      ui_explanation: TODO
+      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication was applied_to_treat a particular disease or phenotype.
     - subject_categories:
         - biolink:SmallMolecule
       predicates:
@@ -80,7 +80,7 @@ target_info:
       edge_properties:
         - publications
         - FDA_adverse_event_level
-      ui_explanation: TODO
+      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype.
     - subject_categories:
         - biolink:Disease
       predicates:
@@ -94,7 +94,7 @@ target_info:
         - manual_agent
       edge_properties:
         - publications
-      ui_explanation: TODO
+      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype.
     - subject_categories:
         - biolink:Gene
       predicates:
@@ -107,7 +107,7 @@ target_info:
         - manual_agent
       edge_properties:
         - publications
-      ui_explanation: TODO
+      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease.
   node_type_info:
     - node_categories:
         - biolink:SmallMolecule

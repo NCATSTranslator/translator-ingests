@@ -45,10 +45,10 @@
 
 | Subject Categories | Predicates | Object Categories | Knowledge Level | Agent Type | UI Explanation |
 | --- | --- | --- | --- | --- | --- |
-| biolink:ChemicalEntity, biolink:SmallMolecule | biolink:applied_to_treat | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | TODO |
-| biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | TODO |
-| biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | TODO |
-| biolink:Gene | biolink:gene_associated_with_condition | biolink:Disease | knowledge_assertion | manual_agent | TODO |
+| biolink:ChemicalEntity, biolink:SmallMolecule | biolink:applied_to_treat | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication was applied_to_treat a particular disease or phenotype. |
+| biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype. |
+| biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype. |
+| biolink:Gene | biolink:gene_associated_with_condition | biolink:Disease | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease. |
 
 ### Node Types
 
