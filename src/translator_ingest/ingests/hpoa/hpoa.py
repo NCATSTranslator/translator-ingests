@@ -365,7 +365,7 @@ def transform_record_gene_to_phenotype(
         # ...otherwise leave as is
         pass
 
-    publications = [pub.strip() for pub in record["publications"].split(";")] if record["publications"] else []
+    publications = [pub.strip() for pub in str(record["publications"]).split(";")] if record["publications"] else []
 
     association = GeneToPhenotypicFeatureAssociation(
         id=entity_id(),
