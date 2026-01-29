@@ -20,6 +20,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 ## ADDED packages for this ingest
+from translator_ingest.util.logging_utils import get_logger
 import re
 ## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
@@ -119,6 +120,7 @@ def run_nameres(
 
     Returns: tuple of mapping dict and failure stats dict
     """
+    logger = get_logger(__name__)
     ## set up variables to collect output
     mapping = {}
     stats_failures = {
@@ -126,8 +128,8 @@ def run_nameres(
         "returned_empty": [],
         "score_under_threshold": [],
     }
-    # ## for debug: stopping early
-    # counter = 0
+    ## for printing progress
+    counter = 0
 
     for batch in batched(names, batch_size):
         req_body = {
@@ -160,9 +162,12 @@ def run_nameres(
             except Exception as e:
                 stats_failures["unexpected_error"].update({k: e})
 
+        counter += batch_size
+        if counter < len(names):   ## will keep going, log where we're at
+            logger.info(f"{counter} names processed (out of {len(names)})")
+        else:   ## done: use actual length
+            logger.info(f"Finished processing {len(names)} names.")
 #         ## for debug: tracking progress, stopping early
-#         counter += batch_size
-#         print(counter)
 #         if counter >= 500:
 #             break
 
