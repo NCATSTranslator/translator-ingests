@@ -1,0 +1,7 @@
+name: drugcentral
+## resource data comes from querying public Postgres database and loading into pandas df
+## so no files to ingest using koza reader spec. Using placeholder format here 
+readers:
+  ## separate readers/code for each table
+  omop_relationship:
+    format: csv
