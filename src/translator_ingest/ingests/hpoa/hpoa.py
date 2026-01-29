@@ -59,8 +59,8 @@ and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
 
-@koza.transform_record(tag="disease_to_phenotype")
-def transform_record_disease_to_phenotype(
+@koza.transform_record(tag="disease_to_phenotype_nodes")
+def transform_disease_to_phenotype_node_record(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
@@ -80,17 +80,67 @@ def transform_record_disease_to_phenotype(
         **{},
     )
 
-    ## Object: PhenotypicFeature defined by an HPO term
+    ## Object: PhenotypicFeature or Inheritance mode defined by an HPO term
     hpo_id = record["hpo_id"]
-    assert hpo_id, "HPOA phenotype annotation record has missing HP ontology ('HPO_ID') field identifier?"
+    if not hpo_id:
+        # Fail silently... Just skip the record?
+        # "HPOA phenotype annotation record has a missing HP ontology ('HPO_ID') field identifier?"
+        return None
 
     if record["aspect"] == "P":
 
         # Disease to Phenotypic anomaly relationship
 
-        ## Object: PhenotypicFeature
+        ## Object node is a PhenotypicFeature
         phenotype: PhenotypicFeature = PhenotypicFeature(id=hpo_id, **{})
 
+        return KnowledgeGraph(nodes=[disease, phenotype])
+
+    elif record["aspect"] == "I":
+
+        # We ignore records that don't map to a known HPO term for Genetic Inheritance
+        # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
+        if hpo_id and hpo_id in hpo_to_mode_of_inheritance:
+
+            # Rather than an association, we simply record a
+            # genetic inheritance node property directly on the disease node...
+            disease.inheritance = hpo_to_mode_of_inheritance[hpo_id]
+            return KnowledgeGraph(nodes=[disease])
+        else:
+            koza_transform.log(
+                f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?",
+                level="WARNING"
+            )
+
+    # This record has an 'aspect' that is not of interest to us at this time
+    return None
+
+
+@koza.transform_record(tag="disease_to_phenotype_edges")
+def transform__disease_to_phenotype_edge_record(
+    koza_transform: koza.KozaTransform, record: dict[str, Any]
+) -> KnowledgeGraph | None:
+    """
+    Transform a 'phenotype.hpoa' data entry into a
+    (Pydantic encapsulated) Biolink knowledge graph statement.
+
+    :param koza_transform: KozaTransform object (unused in this implementation)
+    :param record: Dict contents of a single input data record
+    :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
+    """
+    ## Subject: Disease
+    disease_id = record["database_id"].replace("ORPHA:", "Orphanet:")  # match `Orphanet` as used in Mondo SSSOM
+
+    ## Object: PhenotypicFeature defined by an HPO term
+    hpo_id = record["hpo_id"]
+    if not hpo_id:
+        # Fail silently... Just skip the record?
+        # "HPOA phenotype annotation record has a missing HP ontology ('HPO_ID') field identifier?"
+        return None
+
+    if record["aspect"] == "P":
+
+        # Disease to Phenotypic anomaly relationship
         ## Annotations
 
         ### Predicate negation
@@ -155,50 +205,14 @@ def transform_record_disease_to_phenotype(
             agent_type=AgentTypeEnum.manual_agent,
             **{},
         )
-        return KnowledgeGraph(nodes=[disease, phenotype], edges=[association])
+        return KnowledgeGraph(edges=[association])
 
-    elif record["aspect"] == "I":
-
-        # We ignore records that don't map to a known HPO term for Genetic Inheritance
-        # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
-        if hpo_id and hpo_id in hpo_to_mode_of_inheritance:
-
-            # Rather than an association, we simply record a
-            # genetic inheritance node property directly on the disease node...
-            disease.inheritance = hpo_to_mode_of_inheritance[hpo_id]
-
-        else:
-            raise RuntimeWarning(
-                f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?"
-            )
-
-        # ...only the disease node - annotated with its inheritance - is returned
-        return KnowledgeGraph(nodes=[disease])
-    else:
-        # Specified record 'aspect' is not of interest to us at this time
-        return None
-
-
-@koza.on_data_begin(tag="gene_to_disease")
-def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform):
-    """
-    Called before processing begins.
-    Can be used for setup or validation of input files.
-    """
-    koza_transform.log("Starting HPOA Gene to Disease processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
-@koza.on_data_end(tag="gene_to_disease")
-def on_data_end_gene_to_disease(koza_transform: koza.KozaTransform):
-    """
-    Called after all data has been processed.
-    Used for logging summary statistics.
-    """
-    koza_transform.log("HPOA Gene to Disease processing complete")
+    # else...
+    return None
 
 
 @koza.transform_record(tag="gene_to_disease")
-def transform_record_gene_to_disease(
+def transform_gene_to_disease_record(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
@@ -250,26 +264,8 @@ def transform_record_gene_to_disease(
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
 
-@koza.on_data_begin(tag="gene_to_phenotype")
-def on_data_begin_gene_to_phenotype(koza_transform: koza.KozaTransform):
-    """
-    Called before processing begins.
-    Can be used for setup or validation of input files.
-    """
-    koza_transform.log("Starting HPOA Gene to Phenotype processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
-@koza.on_data_end(tag="gene_to_phenotype")
-def on_data_end_gene_to_phenotype(koza_transform: koza.KozaTransform):
-    """
-    Called after all data has been processed.
-    Used for logging summary statistics.
-    """
-    koza_transform.log("HPOA Gene to Phenotype processing complete")
-
-
 @koza.prepare_data(tag="gene_to_phenotype")
-def prepare_data_gene_to_phenotype(
+def prepare_gene_to_phenotype_data(
     koza_transform: koza.KozaTransform, data: Iterable[dict[str, Any]]
 ) -> Iterable[dict[str, Any]] | None:
     """
@@ -322,7 +318,7 @@ def prepare_data_gene_to_phenotype(
 
 
 @koza.transform_record(tag="gene_to_phenotype")
-def transform_record_gene_to_phenotype(
+def transform_gene_to_phenotype_record(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
