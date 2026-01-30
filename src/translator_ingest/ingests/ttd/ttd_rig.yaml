@@ -7,15 +7,15 @@ source_info:
   name: Therapeutic Target Database (TTD)
   description: "TTD is a database providing information about the known and explored therapeutic protein and nucleic acid targets, the targeted disease, pathway information and the corresponding drugs directed at each of these targets."
   citations:
-    - "2024: https://doi.org/10.1093/nar/gkad751"
-    - "2022: https://doi.org/10.1093/nar/gkab953"
-    - "2020: https://doi.org/10.1093/nar/gkz981"
-    - "2018: https://doi.org/10.1093/nar/gkx1076"
-    - "2016: https://doi.org/10.1093/nar/gkv1230"
-    - "2014: https://doi.org/10.1093/nar/gkt1129"
-    - "2012: https://doi.org/10.1093/nar/gkr797"
-    - "2010: https://doi.org/10.1093/nar/gkp1014"
-    - "2002 first paper: https://doi.org/10.1093/nar/30.1.412"
+    - "https://doi.org/10.1093/nar/gkad751"    ## 2024
+    - "https://doi.org/10.1093/nar/gkab953"    ## 2022
+    - "https://doi.org/10.1093/nar/gkz981"     ## 2020
+    - "https://doi.org/10.1093/nar/gkx1076"    ## 2018
+    - "https://doi.org/10.1093/nar/gkv1230"    ## 2016
+    - "https://doi.org/10.1093/nar/gkt1129"    ## 2014
+    - "https://doi.org/10.1093/nar/gkr797"     ## 2012
+    - "https://doi.org/10.1093/nar/gkp1014"    ## 2010
+    - "https://doi.org/10.1093/nar/30.1.412"   ## 2002 first paper
   terms_of_use_info:
     terms_of_use_description: "No formal license. Andrew Su has emailed developers and gotten a positive response for use with 'proper attribution'. Papers describe resource as 'freely accessible to all users'."
   data_access_locations:
@@ -25,6 +25,7 @@ source_info:
   data_formats:
     - other
   data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't."
+  # additional_notes:  # (optional, range = string)
 
 # Information about Ingested Content
 ingest_info:
