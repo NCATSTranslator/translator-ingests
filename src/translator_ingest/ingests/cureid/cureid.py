@@ -3,6 +3,7 @@ import koza
 import requests
 from typing import Any, Iterable
 from enum import Enum
+
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
@@ -12,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association, PhenotypicFeature, ChemicalOrDrugOrTreatmentSideEffectDiseaseOrPhenotypicFeatureAssociation,
     FDAIDAAdverseEventEnum, DiseaseToPhenotypicFeatureAssociation, Gene, GeneToDiseaseAssociation, SequenceVariant,
-    GenotypeToVariantAssociation, VariantToDiseaseAssociation,
+    GenotypeToVariantAssociation, VariantToDiseaseAssociation, ResourceRoleEnum, RetrievalSource
 )
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import INFORES_CUREID
@@ -135,6 +136,10 @@ def _create_associations(record: dict[str, Any]):
 
     for subject in subjects:
         for object in objects:
+            links = []
+            if 'link' in record and record['link']:
+                links.append(record['link'])
+
             params = {
                 'id': str(uuid.uuid4()),
                 'subject': subject,
@@ -142,13 +147,19 @@ def _create_associations(record: dict[str, Any]):
                 'object': object,
                 'primary_knowledge_source': INFORES_CUREID,
                 'knowledge_level': KnowledgeLevelEnum.knowledge_assertion,
-                'agent_type': AgentTypeEnum.manual_agent
+                'agent_type': AgentTypeEnum.manual_agent,
+                'sources': [
+                    RetrievalSource(
+                        id=INFORES_CUREID,
+                        resource_id=INFORES_CUREID,
+                        resource_role=ResourceRoleEnum.primary_knowledge_source,
+                        source_record_urls=links,
+                    )
+                ],
             }
             publications = []
             if record['pmid']:
                 publications.append(f"PMID:{record['pmid']}")
-            if record['link']:
-                publications.append(record['link'])
             if len(publications) > 0:
                 params['publications'] = publications
 
