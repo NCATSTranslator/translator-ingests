@@ -27,6 +27,13 @@ from translator_ingest.util.biolink import INFORES_CTD
 # yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
 
 
+# A hardcoded TRANSFORM_VERSION is optional but can be used to indicate the version of the ingest transform code.
+# Whenever the code changes in a way that should trigger a new build when the pipeline is run, this should be updated.
+# For example, if a predicate is changed, filters are altered, or anything that would make us want to rebuild the source
+# even with the same source data, the TRANSFORM_VERSION can be updated to reflect that. There is currently no enforced
+# standard for the format but 1.0, 1.1, 2.0 etc would work well.
+TRANSFORM_VERSION = "1.0"
+
 # Always implement a function that returns a string representing the latest version of the source data.
 # Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
 # If a source does not implement versioning, we need to do it. For static datasets, assign a version string
