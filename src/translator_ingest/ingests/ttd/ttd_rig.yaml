@@ -107,6 +107,8 @@ target_info:
       agent_type:
         - manual_agent
       edge_properties:
+        - clinical_approval_status    ## values: approved_for_condition
+        - max_research_phase    ## values: clinical_trial_phase_4
         - original_subject
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Approved', 'Approved (orphan drug)', 'Approved in China)', 'Approved in EU', or 'Phase 4'."
@@ -135,6 +137,8 @@ target_info:
       agent_type:
         - manual_agent
       edge_properties:
+        ## redundant w/ pred, for standards
+        - max_research_phase    ## values: pre_clinical_research_phase
         - original_subject
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Preclinical' or 'IND submitted'."
@@ -149,6 +153,7 @@ target_info:
       agent_type:
         - manual_agent
       edge_properties:
+        - max_research_phase    ## values: not_provided, phase values
         - original_subject
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registration/preregistration, or submissions for approval)."
