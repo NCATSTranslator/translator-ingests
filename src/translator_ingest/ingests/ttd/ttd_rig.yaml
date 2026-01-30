@@ -31,7 +31,7 @@ ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: "TTD provides associations for drugs/chemicals, therapeutic targets (mostly proteins), and diseases that appear to be manually curated from literature review. This literature review includes information that may not be covered by other resources, including: drug industry reports, drug pipeline reports of hundreds of companies, patents from multiple countries, and manual review of Pubmed literature searches. This associations could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
-  scope: "This ingest covers the drug-disease associations and the protein-drug associations from one file. For more details on the data content and decision-making on what files to ingest, see Colleen Xu's internal document and https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30."
+  scope: "This ingest covers the drug-disease file and 1 file with drug-protein associations. For more details on the data content and deciding what files to ingest, see https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30 or Colleen Xu's internal document."
 
   relevant_files:
     - file_name: "P1-05-Drug_disease.txt"
@@ -52,30 +52,30 @@ ingest_info:
       filtered_records: "Clinical status value was not included in clinical_status_map (hard-coded variable mapping clinical status values to biolink predicates)."
       rationale: "These clinical status values need review. Colleen Xu was either (1) unsure what the term meant ('Application submitted') or (2) unsure what the consensus is for including this kind of data (discontinued, terminated, withdrawn); and if we want to keep these terms, what predicates to map to."
     - file_name: "P1-05-Drug_disease.txt"
-      filtered_records: "TTD drug ID doesn't have a mapping to NodeNorm-covered namespaces (mapping comes from specific TTD file(s))."
+      filtered_records: "TTD drug ID doesn't have a PUBCHEM.COMPOUND mapping (from the TTD mapping file)."
       rationale: "Need node IDs that are in NodeNorm's scope."
     - file_name: "P1-05-Drug_disease.txt"
       filtered_records: "Indication name is '#N/A' or contains specific substrings."
-      rationale: "This means there either isn't a name for the indication or the indication name is problematic (not 'conditions that are treated' or Colleen Xu was worried how the statement would look). We use the indication name to find a Translator entity ID for the node, using NameResolver."
+      rationale: "This means there either isn't a name for the indication or the indication name is problematic (not 'conditions that are treated' or Colleen Xu was worried how the statement would look). We need a valid indication name to put into NameResolver to find a Translator entity ID for the node."
     - file_name: "P1-05-Drug_disease.txt"
       filtered_records: "Indication name wasn't successfully mapped to a Translator entity ID using NameResolver."
-      rationale: "Those nodes don't have IDs. A non-successful mapping means NameResolver (with the query fields Colleen Xu set) either (1) didn't find a Translator entity that matched the indication name, or (2) the NameResolver hit had a score lower than the threshold (this was set to increase the quality of mappings)."
+      rationale: "Nodes need IDs. A non-successful mapping means NameResolver (with the query fields Colleen Xu set) either (1) didn't find a Translator entity that matched the indication name, or (2) the NameResolver hit had a score lower than the threshold (this was set to increase the quality of mappings)."
     - file_name: "P1-07-Drug-TargetMapping.xlsx"
-      filtered_records: "TTD drug ID doesn't have a mapping to NodeNorm-covered namespaces (mapping comes from specific TTD file(s))."
+      filtered_records: "TTD drug ID doesn't have a PUBCHEM.COMPOUND mapping (from the TTD mapping file)."
       rationale: "Need node IDs that are in NodeNorm's scope."
     - file_name: "P1-07-Drug-TargetMapping.xlsx"
       filtered_records: "TTD target ID doesn't have a mapping to a UniProt name, or that UniProt name doesn't successfully map to a UniProt ID."
       rationale: "Need node IDs that are in NodeNorm's scope."
     - file_name: "P1-07-Drug-TargetMapping.xlsx"
-      filtered_records: "MOA value was not included in MOA_MAPPING (hard-coded variable with map from (modified) MOA value to modeling (predicate, qualifier set, extra edge predicate))."
+      filtered_records: "MOA value doesn't have a mapping (code and MOA_MAPPING variable are used to map modified MOA values to unique patterns of modeling - predicate, qualifier set, extra edge predicate)."
       rationale: "These MOA values need review. Colleen Xu was (1) unsure what the term meant or (2) unsure how to model this term."
 
   future_considerations:
     - category: edge_content
-      consideration: "Review clinical status values that weren't included in clinical_status_map (see jupyter notebook's 'Map clinical_status' section for the generated list). Reach consensus on how to handle these values (whether to ingest, what predicates to use)."
+      consideration: "Review clinical status values that weren't mapped (see transform-metadata output file or jupyter notebook 'Map clinical_status' section). Reach consensus on how to handle these values (whether to ingest, how to model)."
       relevant_files: "P1-05-Drug_disease.txt"
     - category: edge_content
-      consideration: "Review MOA values that weren't included in MOA_MAPPING (see jupyter notebook's 'More MOA parsing' section for the generated lists - actually in data at that point vs overall). Reach consensus on how to handle these values (whether to ingest, what modeling to use)."
+      consideration: "Review MOA values that weren't mapped (see transform-metadata output file or jupyter notebook's 'More MOA parsing' section). Reach consensus on how to handle these values (whether to ingest, how to model)."
       relevant_files: "P1-07-Drug-TargetMapping.xlsx"
     - category: edge_property_content
       consideration: "Add >=1 edge properties that capture the original clinical status more precisely than just the predicate. Colleen Xu did not include this in the first pass at ingestion because (1) this ingest already took more time/effort than expected, (2) there are multiple properties to choose from and Colleen was unsure what to use, and (3) in many cases, there wasn't a property enum value that matched the TTD clinical status."
@@ -90,7 +90,7 @@ ingest_info:
       consideration: "Could ingest another file 'Target to compound mapping with activity data', which contains chemical/drug 'affects' protein associations. Involves more parsing and filtering work. See https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209860820 for details."
       relevant_files: "P1-09-Target_compound_activity.txt"
   
-  additional_notes: "Parsing P1-02 didn't increase the number of TTD drug ID mappings or number of successfully node-normalized entities (see notebook for details)."
+  additional_notes: "Parsing P1-02 didn't increase the number of TTD drug ID mappings or number of successfully node-normalized entities (see jupyter notebook's P1-02 section for details)."
 
 
 # Information about the Graph Output by the ingest
@@ -167,11 +167,16 @@ target_info:
           value_enumeration:
             - "biolink:causes"
         - property: biolink:object_aspect_qualifier
-          value_range:
-            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+          value_enumeration:
+            - abundance
+            - activity
+            - expression
+            - stability
         - property: biolink:object_direction_qualifier
-          value_range:
-            - biolink:DirectionQualifierEnum
+          value_enumeration:
+            - increased
+            - decreased
+        ## not listing since it's >10 unique values
         - property: biolink:causal_mechanism_qualifier
           value_range:
             - biolink:CausalMechanismQualifierEnum
@@ -228,7 +233,7 @@ target_info:
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
         - "PUBCHEM.COMPOUND"
-      additional_notes: "Original ID is TTD drug ID, but we are using TTD mapping files to get IDs in NodeNorm-covered namespaces."
+      additional_notes: "Original IDs are TTD drug, but we are using a TTD mapping file (P1-03) to map to PUBCHEM.COMPUND IDs."
     - node_category: biolink:DiseaseOrPhenotypicFeature
       source_identifier_types:
         - "DOID"
@@ -241,11 +246,11 @@ target_info:
     - node_category: biolink:Gene
       source_identifier_types:
         - "UNIPROTKB"
-      additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human. NodeNorm with gene/protein conflation will set some of these to Gene entities."
+      additional_notes: "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human. NodeNorm with gene/protein conflation will set some of these to Gene entities."
     - node_category: biolink:Protein
       source_identifier_types:
         - "UNIPROTKB"
-      additional_notes: "Original ID is TTD target ID, but we are using TTD mapping files and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
+      additional_notes: "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
 
   future_considerations:
     - category: node_properties
