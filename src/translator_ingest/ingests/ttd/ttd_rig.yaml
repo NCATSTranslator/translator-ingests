@@ -276,7 +276,7 @@ target_info:
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
         - "PUBCHEM.COMPOUND"
-      additional_notes: "Original IDs are TTD drug, but we are using a TTD mapping file (P1-03) to map to PUBCHEM.COMPUND IDs."
+      additional_notes: "Original IDs are TTD drug, but we are using a TTD mapping file (P1-03) to map to PUBCHEM.COMPOUND IDs."
     - node_category: biolink:DiseaseOrPhenotypicFeature
       source_identifier_types:
         - "DOID"
