@@ -22,18 +22,25 @@ CLINICAL_STATUS_MAP = {
     ## treats
     "approved": {
         "predicate": BIOLINK_TREATS,
+        ## not using fda term because not absolutely certain this is FDA
+        "clinical_approval_status": "approved_for_condition",
     },
     "approved (orphan drug)": {
         "predicate": BIOLINK_TREATS,
+        ## not using fda term because not absolutely certain this is FDA
+        "clinical_approval_status": "approved_for_condition",
     },
     "approved in china": {
         "predicate": BIOLINK_TREATS,
+        "clinical_approval_status": "approved_for_condition",
     },
     "approved in eu": {
         "predicate": BIOLINK_TREATS,
+        "clinical_approval_status": "approved_for_condition",
     },
     "phase 4": {
         "predicate": BIOLINK_TREATS,
+        "max_research_phase": "clinical_trial_phase_4",
     },
     ## studied to treat
     "investigative": {
@@ -45,13 +52,17 @@ CLINICAL_STATUS_MAP = {
     ## in preclinical trials for
     "preclinical": {
         "predicate": BIOLINK_PRECLINICAL,
+        ## redundant w/ pred, for standards
+        "max_research_phase": "pre_clinical_research_phase",
     },
     "ind submitted": {
         "predicate": BIOLINK_PRECLINICAL,
+        "max_research_phase": "pre_clinical_research_phase",
     },
     ## in clinical trials for
     "clinical trial": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "not_provided",
     },
     "preregistration": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
@@ -64,33 +75,43 @@ CLINICAL_STATUS_MAP = {
     },
     "phase 1": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1",
     },
     "phase 1b": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1",
     },
     "phase 1/2": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1_to_2",
     },
     "phase 1/2a": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1_to_2",
     },
     "phase 1b/2a": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1_to_2",
     },
     "phase 2": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2",
     },
     "phase 2a": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2",
     },
     "phase 2b": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2",
     },
     "phase 2/3": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2_to_3",
     },
     "phase 3": {
         "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_3",
     },
     "nda filed": {
         "predicate": BIOLINK_CLINICAL_TRIALS,

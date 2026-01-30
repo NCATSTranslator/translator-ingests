@@ -307,18 +307,31 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"{df["object_indication_name"].nunique()} unique indication names")
     koza.log(f"{df["clinical_status"].nunique()} unique clinical status values")
 
-    ## MAP "clinical status" to biolink predicate
+    ## MAP "clinical status" to biolink predicate, edge-attributes
     ## make case consistent - have stuff like "Phase 3" vs "phase 3"
     df["clinical_status"] = df["clinical_status"].str.lower()
     koza.log(f"Update: {df["clinical_status"].nunique()} unique clinical status values after making case consistent")
-    ## get method returns None if key (clinical status) not found in mapping
+    ## MAPPING
+    ## get method returns default None if key (clinical status) not found in mapping
     df["biolink_predicate"] = [CLINICAL_STATUS_MAP[i]["predicate"] if CLINICAL_STATUS_MAP.get(i) else None for i in df["clinical_status"]]
+    df["clinical_approval_status"] = [
+        CLINICAL_STATUS_MAP[i].get("clinical_approval_status") if CLINICAL_STATUS_MAP.get(i) else None
+        for i in df["clinical_status"]
+    ]
+    df["max_research_phase"] = [
+        CLINICAL_STATUS_MAP[i].get("max_research_phase") if CLINICAL_STATUS_MAP.get(i) else None
+        for i in df["clinical_status"]
+    ]
     ## log how much data was successfully mapped
     n_mapped = df["biolink_predicate"].notna().sum()
     koza.log(f"{n_mapped} rows with mapped clinical status: {n_mapped / df.shape[0]:.1%}")
+    n_clinical_approval = df["clinical_approval_status"].notna().sum()
+    koza.log(f"{n_clinical_approval} rows with clinical_approval_status")
+    n_max_res = df["max_research_phase"].notna().sum()
+    koza.log(f"{n_max_res} rows with max_research_phase")
     ## save for debugging
     koza.transform_metadata["clinical_statuses_unmapped"] = sorted(df[df["biolink_predicate"].isna()].clinical_status.unique())
-    ## drop rows without predicate mapping
+    ## drop rows without predicate mapping - shortcut for having a mapping at all
     df.dropna(subset="biolink_predicate", inplace=True, ignore_index=True)
 
     ## MAP TTD drug IDs to PUBCHEM.COMPOUND (can NodeNorm)
@@ -329,7 +342,6 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"{n_mapped} rows with mapped TTD drug IDs: {n_mapped / df.shape[0]:.1%}")
     ## drop rows without drug mapping
     df.dropna(subset="subject_pubchem", inplace=True, ignore_index=True)
-
     ## expand to multiple rows when subject_pubchem list length > 1
     ## also pops every subject_pubchem value out into a string
     df = df.explode("subject_pubchem", ignore_index=True)
@@ -361,7 +373,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"Retrieved {len(koza.transform_metadata["indication_mapping"])} indication name -> ID mappings from NameRes")
 
     ## MAP
-    ## get method returns None if key (indication name) not found in mapping 
+    ## get method returns None if key (indication name) not found in mapping
     df["object_nameres_id"] = [koza.transform_metadata["indication_mapping"].get(i) for i in df["object_indication_name"]]
     ## log how much data was successfully mapped
     n_mapped = df["object_nameres_id"].notna().sum()
@@ -371,9 +383,10 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## Merge rows that look like "duplicates" from Translator output POV
     ## With the current pipeline and data-modeling, only the mapped columns uniquely define an edge
-    cols_define_edge = ["subject_pubchem", "biolink_predicate", "object_nameres_id"]
-    df = df.groupby(by=cols_define_edge).agg(set).reset_index().copy()
-    
+    cols_define_edge = ["subject_pubchem", "biolink_predicate", "object_nameres_id", "clinical_approval_status", "max_research_phase"]
+    ## dropna is so it handles None values in edge-attribute columns
+    df = df.groupby(by=cols_define_edge, dropna=False).agg(set).reset_index().copy()
+
     ## log what data looks like at end!
     koza.log(f"{df.shape[0]} rows at end of parsing, after handling 'edge-level' duplicates")
     koza.log(f"{df["subject_pubchem"].nunique()} unique mapped drug IDs")
@@ -387,6 +400,16 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## generate TTD urls
     ttd_urls = ["https://ttd.idrblab.cn/data/drug/details/" + i.lower() for i in record["subject_ttd_drug"]]
+
+    ## process edge-attributes values - if NA, convert to None
+    if pd.isna(record["clinical_approval_status"]):
+        app_status = None
+    else:
+        app_status = record["clinical_approval_status"]
+    if pd.isna(record["max_research_phase"]):
+        max_res = None
+    else:
+        max_res = record["max_research_phase"]
 
     chemical = ChemicalEntity(id=record["subject_pubchem"])
     indication = DiseaseOrPhenotypicFeature(id=record["object_nameres_id"])
@@ -406,6 +429,8 @@ def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         ],
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
+        clinical_approval_status=app_status,
+        max_research_phase=max_res,
     )
 
     return KnowledgeGraph(nodes=[chemical, indication], edges=[association])
