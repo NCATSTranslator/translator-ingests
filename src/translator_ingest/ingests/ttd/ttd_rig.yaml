@@ -101,7 +101,7 @@ target_info:
       predicates:
         - biolink:treats
       object_categories:
-        - biolink:Disease
+        - biolink:DiseaseOrPhenotypicFeature
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -117,7 +117,7 @@ target_info:
       predicates:
         - biolink:studied_to_treat
       object_categories:
-        - biolink:Disease
+        - biolink:DiseaseOrPhenotypicFeature
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -131,7 +131,7 @@ target_info:
       predicates:
         - biolink:in_preclinical_trials_for
       object_categories:
-        - biolink:Disease
+        - biolink:DiseaseOrPhenotypicFeature
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -147,7 +147,7 @@ target_info:
       predicates:
         - biolink:in_clinical_trials_for
       object_categories:
-        - biolink:Disease
+        - biolink:DiseaseOrPhenotypicFeature
       knowledge_level:
         - knowledge_assertion
       agent_type:
