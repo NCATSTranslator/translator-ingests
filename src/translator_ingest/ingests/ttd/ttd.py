@@ -479,7 +479,6 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## koza uses json dump, which doesn't accept sets
     koza.transform_metadata["targets_unmapped"] = list(failed_TTD_targets)
 
-
     ## Parse P1-07
     koza.log("Parsing P1-07 to retrieve drug-target data")
     p1_07_path = f"{koza.input_files_dir}/P1-07-Drug-TargetMapping.xlsx"  ## path to downloaded file
@@ -505,8 +504,8 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## otherwise will have buggy behavior with groupby having None in key column and dropping these rows
     df_07["MOA"] = df_07["MOA"].fillna("NO_VALUE")
     ## save info, log
-    koza.transform_metadata["moa_cleaned"] = df_07["MOA"].unique().tolist()
-    koza.log(f"Cleaned up MOA column: {len(koza.transform_metadata["moa_cleaned"])} unique values")
+    koza.transform_metadata["all_moa"] = sorted(df_07["MOA"].unique())
+    koza.log(f"Cleaned up MOA column: {len(koza.transform_metadata["all_moa"])} unique values")
 
     ## MAP TTD drug IDs to PUBCHEM.COMPOUND (can NodeNorm)
     ## get method returns None if key (TTD ID) not found in mapping
@@ -534,7 +533,7 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     df_07 = df_07.explode("object_id", ignore_index=True)
     koza.log(f"{df_07.shape[0]} rows after expanding mappings with multiple ID values")
 
-    ## create new column mod_moa with 1 "moa" value per each unique data-modeling 
+    ## create new column mod_moa with 1 "moa" value per each unique data-modeling
     ##   this is helpful for merging rows into "edges" later
     ## current MOA values with the same data-modeling
     BINDING_TYPES = {"binder", "ligand"}
@@ -545,14 +544,14 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
         else i
         for i in df_07["MOA"]
     ]
-    
+
     ## FILTER out rows with mod_moa values that aren't in MOA_MAPPING
     ## getting the unmapped values
-    before_mod_moa = set(df_07["mod_moa"].unique())
-    current_unmapped_moa = before_mod_moa - set(MOA_MAPPING.keys())
+    mod_moa = set(df_07["mod_moa"])
+    notmapped_indata = mod_moa - set(MOA_MAPPING.keys())
     ## make regex version to correctly select rows with these unmapped values
     regex_unmapped_moa = set()
-    for i in current_unmapped_moa:
+    for i in notmapped_indata:
         temp = i
         ## add escape characters
         temp = temp.replace("(", "\\(")
@@ -565,11 +564,25 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## use mod_moa to be consistent, mostly working with this col going forward
     df_07 = df_07[~ df_07.mod_moa.str.contains('|'.join(regex_unmapped_moa))]
     n_after = df_07.shape[0]
+    final_moa = set(df_07["MOA"])
+    final_mod_moa = set(df_07["mod_moa"])
     koza.log(f"{n_after} rows with mapped MOA: {n_after / n_before:.1%}")
-    ## save set of unused moa (based on original MOA column values, not mod_moa)
+    koza.log(f"{len(final_moa)} unique MOA values kept (corresponds to {len(final_mod_moa)} mapping keys)")
+    ## save lists of unused moa (based on original MOA column values, not mod_moa)
     ## koza uses json dump, which doesn't accept sets
-    koza.transform_metadata["moa_unused"] = list(set(koza.transform_metadata["moa_cleaned"]) - set(df_07["MOA"].unique()))
-    koza.log(f"{len(koza.transform_metadata["moa_unused"])} MOA values either didn't have mappings OR didn't exist in the data after the filtering steps.")
+    ## no mapping but is in the data
+    koza.transform_metadata["moa_notmapped_indata"] = sorted(notmapped_indata)
+    ## has mapping but wasn't in the data after mapping/filtering TTD IDs
+    koza.transform_metadata["moa_mapped_nodata"] = sorted(set(MOA_MAPPING.keys()) - mod_moa)
+    ## no mapping and wasn't in the data after mapping/filtering TTD IDs
+    ## starting MOA column values - mapped,indata - mapped,not_in_data - not_mapped,in_data
+    ## using MOA column because all_moa is based on it
+    koza.transform_metadata["moa_notmapped_nodata"] = sorted(
+        set(koza.transform_metadata["all_moa"])
+        - final_moa
+        - set(koza.transform_metadata["moa_mapped_nodata"])
+        - set(koza.transform_metadata["moa_notmapped_indata"])
+    )
 
     ## Merge rows that look like "duplicates" from Translator output POV
     ##   With the current pipeline and data-modeling, only the mapped columns uniquely define an edge
