@@ -289,8 +289,8 @@
         }
     },
     "SUBSTRATE": {
-        "association": "ChemicalAffectsGeneAssociation",
-        "predicate": "biolink:is_substrate_of",
+        "association": "GeneAffectsChemicalAssociation",
+        "predicate": "biolink:has_substrate",
         "qualifiers": {}
     },
     "VACCINE ANTIGEN": {
