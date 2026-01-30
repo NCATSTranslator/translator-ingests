@@ -206,7 +206,7 @@ target_info:
         - original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). TTD did not include a mechanism-of-action."
       # additional_notes:  # (optional, range = string)
-    ## "BINDING", "modulator (allosteric modulator)", OR INFERRED physical interaction edges
+    ## "BINDING" OR INFERRED physical interaction edges
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -219,7 +219,6 @@ target_info:
         - property: "biolink:causal_mechanism_qualifier"
           value_enumeration:
             - "binding"
-            - "allosteric_modulation"
       knowledge_level:
         - knowledge_assertion
       agent_type:
