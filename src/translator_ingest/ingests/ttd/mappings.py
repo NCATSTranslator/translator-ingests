@@ -20,35 +20,87 @@ BIOLINK_CAUSES = "biolink:causes"
 ## purposely doesn't include all values - rest are filtered out
 CLINICAL_STATUS_MAP = {
     ## treats
-    "approved": BIOLINK_TREATS,
-    "approved (orphan drug)": BIOLINK_TREATS,
-    "approved in china": BIOLINK_TREATS,
-    "approved in eu": BIOLINK_TREATS,
-    "phase 4": BIOLINK_TREATS,
+    "approved": {
+        "predicate": BIOLINK_TREATS,
+    },
+    "approved (orphan drug)": {
+        "predicate": BIOLINK_TREATS,
+    },
+    "approved in china": {
+        "predicate": BIOLINK_TREATS,
+    },
+    "approved in eu": {
+        "predicate": BIOLINK_TREATS,
+    },
+    "phase 4": {
+        "predicate": BIOLINK_TREATS,
+    },
     ## studied to treat
-    "investigative": BIOLINK_STUDIED_TREAT,
-    "patented": BIOLINK_STUDIED_TREAT,
+    "investigative": {
+        "predicate": BIOLINK_STUDIED_TREAT,
+    },
+    "patented": {
+        "predicate": BIOLINK_STUDIED_TREAT,
+    },
     ## in preclinical trials for
-    "preclinical": BIOLINK_PRECLINICAL,
-    "ind submitted": BIOLINK_PRECLINICAL,
+    "preclinical": {
+        "predicate": BIOLINK_PRECLINICAL,
+    },
+    "ind submitted": {
+        "predicate": BIOLINK_PRECLINICAL,
+    },
     ## in clinical trials for
-    "clinical trial": BIOLINK_CLINICAL_TRIALS,
-    "preregistration": BIOLINK_CLINICAL_TRIALS,
-    "registered": BIOLINK_CLINICAL_TRIALS,
-    "phase 0": BIOLINK_CLINICAL_TRIALS,
-    "phase 1": BIOLINK_CLINICAL_TRIALS,
-    "phase 1b": BIOLINK_CLINICAL_TRIALS,
-    "phase 1/2": BIOLINK_CLINICAL_TRIALS,
-    "phase 1/2a": BIOLINK_CLINICAL_TRIALS,
-    "phase 1b/2a": BIOLINK_CLINICAL_TRIALS,
-    "phase 2": BIOLINK_CLINICAL_TRIALS,
-    "phase 2a": BIOLINK_CLINICAL_TRIALS,
-    "phase 2b": BIOLINK_CLINICAL_TRIALS,
-    "phase 2/3": BIOLINK_CLINICAL_TRIALS,
-    "phase 3": BIOLINK_CLINICAL_TRIALS,
-    "nda filed": BIOLINK_CLINICAL_TRIALS,
-    "bla submitted": BIOLINK_CLINICAL_TRIALS,
-    "approval submitted": BIOLINK_CLINICAL_TRIALS,
+    "clinical trial": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "preregistration": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "registered": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 0": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 1": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 1b": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 1/2": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 1/2a": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 1b/2a": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 2": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 2a": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 2b": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 2/3": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 3": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "nda filed": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "bla submitted": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "approval submitted": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
 }
 
 ## indication names that are known to be problematic - not "conditions that are treated" or I'm worried how the statement will look
