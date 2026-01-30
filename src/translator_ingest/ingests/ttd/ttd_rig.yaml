@@ -48,6 +48,12 @@ ingest_info:
       location: "https://db.idrblab.net/ttd/full-data-download"
       description: "Description on Downloads page is 'Download Uniprot IDs for all targets'. Using for ID mapping only. Has TTD target ID mappings to UNIPROT NAME (not ID). This file does not actually include all TTD Target IDs. It also has special values ('NOUNIPROTAC' appears to mean no name/mapping)."
 
+  included_content:
+    - file_name: "P1-05-Drug_disease.txt"
+      included_records: "MOA has mapping, and TTD drug and target IDs are successfully mapped to IDs that NodeNorm recognizes."
+    - file_name: "P1-07-Drug-TargetMapping.xlsx"
+      included_records: "Clinical status has mapping, and TTD drug ID and indication name are successfully mapped to IDs that NodeNorm recognizes."
+
   filtered_content:
     - file_name: "P1-05-Drug_disease.txt"
       filtered_records: "Clinical status value was not included in clinical_status_map (hard-coded variable mapping clinical status values to biolink predicates)."
@@ -96,7 +102,9 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
+  infores_id: infores:translator-ttd
   edge_type_info:
+  ## P1-05
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -107,12 +115,17 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         - clinical_approval_status    ## values: approved_for_condition
         - max_research_phase    ## values: clinical_trial_phase_4
         - original_subject
         - original_object
+      ## GENERAL NOTE: we are assuming manual agent because edges generally come from "literature search" that we assume was done manually. However, papers only sometimes use the words "manual review".
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Approved', 'Approved (orphan drug)', 'Approved in China)', 'Approved in EU', or 'Phase 4'."
+      source_files:
+        - P1-05-Drug_disease.txt
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -123,10 +136,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         - original_subject
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Investigative' or 'Patented'."
+      source_files:
+        - P1-05-Drug_disease.txt
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -137,12 +154,16 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         ## redundant w/ pred, for standards
         - max_research_phase    ## values: pre_clinical_research_phase
         - original_subject
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Preclinical' or 'IND submitted'."
+      source_files:
+        - P1-05-Drug_disease.txt
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -153,12 +174,17 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         - max_research_phase    ## values: not_provided, phase values
         - original_subject
         - original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registration/preregistration, or submissions for approval)."
+      source_files:
+        - P1-05-Drug_disease.txt
       additional_notes: "This currently includes 19 unique values. Some values have the same meaning (perhaps curators aren't consistent with what terminology they use), and perhaps the possible values will change between releases."
+  ## P1-07
     ## AFFECTS EDGES
     - subject_categories:
         - biolink:ChemicalEntity
@@ -190,10 +216,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         - original_subject
         - original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The qualifier-set is based on the TTD reported mechanism-of-action."
+      source_files:
+        - P1-07-Drug-TargetMapping.xlsx
       additional_notes: "Curators are maybe not consistent with what terminology they use, and perhaps the possible values will change between releases."
     ## PLAIN INTERACTS_WITH EDGES
     - subject_categories:
@@ -207,10 +237,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         - original_subject
         - original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). TTD did not include a mechanism-of-action."
+      source_files:
+        - P1-07-Drug-TargetMapping.xlsx
       # additional_notes:  # (optional, range = string)
     ## "BINDING" OR INFERRED physical interaction edges
     - subject_categories:
@@ -229,10 +263,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources: 
+        - infores:ttd
       edge_properties:
         - original_subject
         - original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The TTD-reported mechanism-of-action either (1) corresponds to the predicate and causal_mechanism_qualifier OR (2) implied a physical-interaction (so Translator generated another edge to represent this)."
+      source_files:
+        - P1-07-Drug-TargetMapping.xlsx
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
@@ -260,6 +298,9 @@ target_info:
   future_considerations:
     - category: node_properties
       consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
+
+  # additional_notes:  # (optional, range = string)
+
 
 # Information about the how the ingest was specified and performed
 provenance_info:
