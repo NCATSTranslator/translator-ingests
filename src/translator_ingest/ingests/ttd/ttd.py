@@ -308,6 +308,9 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"{df["clinical_status"].nunique()} unique clinical status values")
 
     ## MAP "clinical status" to biolink predicate
+    ## make case consistent - have stuff like "Phase 3" vs "phase 3"
+    df["clinical_status"] = df["clinical_status"].str.lower()
+    koza.log(f"Update: {df["clinical_status"].nunique()} unique clinical status values after making case consistent")
     ## get method returns None if key (clinical status) not found in mapping
     df["biolink_predicate"] = [CLINICAL_STATUS_MAP.get(i) for i in df["clinical_status"]]
     ## log how much data was successfully mapped
