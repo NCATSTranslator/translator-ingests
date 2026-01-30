@@ -40,11 +40,9 @@ def parse_header(file_path) -> Dict[str, Union[str, int]]:
     Parse the headers of txt files with custom format.
     Returns: dict
     - len_header (int): number of lines in header
-    - version (str): semantic version from header
-    - date (str): date from header
     """
     ## use \\ to escape special characters like ".", "()"
-    version_pattern = "^Version ([0-9\\.]+) \\(([0-9\\.]+)\\)"
+    # version_pattern = "^Version ([0-9\\.]+) \\(([0-9\\.]+)\\)"
 
     line_counter = 0  ## count lines read so far
     dash_counter = 0  ## count dash "divider" lines - header ends after 2nd one
@@ -59,13 +57,14 @@ def parse_header(file_path) -> Dict[str, Union[str, int]]:
                 if line.startswith("---") or line.startswith("___"):
                     dash_counter += 1
                 ## assuming there's only 1 line in the header that matches this condition
-                elif line.startswith("Version"):
-                    capture = re.search(version_pattern, line)
-                    version = capture.group(1)
-                    date = capture.group(2)
-                    date = date.replace(".", "-")
+                # elif line.startswith("Version"):
+                #     capture = re.search(version_pattern, line)
+                #     version = capture.group(1)
+                #     date = capture.group(2)
+                #     date = date.replace(".", "-")
 
-    return {"len_header": line_counter, "version": version, "date": date}
+    return {"len_header": line_counter}
+    # return {"len_header": line_counter, "version": version, "date": date}
 
 
 def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
