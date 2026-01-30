@@ -19,6 +19,7 @@ from koza.utils.exceptions import MapItemException
 from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,
     Gene,
     Disease,
     PhenotypicFeature,
@@ -59,6 +60,10 @@ and "inheritance" (aspect == 'I') annotation records.
 Association to "remarkable normality" may be added later.
 """
 
+# We need to track phenotype.hpoa Disease nodes to avoid
+# duplication but ensure proper inheritance mode annotation
+_disease_nodes: dict[str, Disease] = {}
+
 @koza.transform_record(tag="disease_to_phenotype_nodes")
 def transform_disease_to_phenotype_node_record(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
@@ -71,14 +76,34 @@ def transform_disease_to_phenotype_node_record(
     :param record: Dict contents of a single input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
+    global _disease_nodes
+
+    if record["aspect"] not in ["P", "I"]:
+        # We are only interested in phenotypic anomalies
+        # and mode of inheritance annotations at this time
+        return None
+
+    nodes: list[NamedThing] = []
+
     ## Subject: Disease
-    disease_id = record["database_id"].replace("ORPHA:", "Orphanet:")  # match `Orphanet` as used in Mondo SSSOM
-    disease_name = record["disease_name"]
-    disease: Disease = Disease(
-        id=disease_id,
-        name=disease_name,
-        **{},
-    )
+
+    disease_id = record["database_id"].replace("ORPHA:", "Orphanet:") # match `Orphanet` as used in Mondo SSSOM
+
+    if disease_id not in _disease_nodes:
+
+        disease_name = record["disease_name"]
+        disease: Disease = Disease(
+            id=disease_id,
+            name=disease_name,
+            **{},
+        )
+        _disease_nodes[disease_id] = disease
+
+        # newly encountered disease node, so we'll return it right away
+        nodes.append(disease)
+    else:
+        # Retrieve and reuse previously encountered Disease Node
+        disease = _disease_nodes[disease_id]
 
     ## Object: PhenotypicFeature or Inheritance mode defined by an HPO term
     hpo_id = record["hpo_id"]
@@ -94,30 +119,35 @@ def transform_disease_to_phenotype_node_record(
         ## Object node is a PhenotypicFeature
         phenotype: PhenotypicFeature = PhenotypicFeature(id=hpo_id, **{})
 
-        return KnowledgeGraph(nodes=[disease, phenotype])
+        # Return the phenotypic feature node
+        nodes.append(phenotype)
 
-    elif record["aspect"] == "I":
+    else: # record["aspect"] == "I":
 
         # We ignore records that don't map to a known HPO term for Genetic Inheritance
         # (as recorded in the locally bound 'hpoa-modes-of-inheritance' table)
         if hpo_id and hpo_id in hpo_to_mode_of_inheritance:
 
-            # Rather than an association, we simply record a
-            # genetic inheritance node property directly on the disease node...
+            # Rather than an association, we simply record a genetic
+            # inheritance node property directly on the disease node...
             disease.inheritance = hpo_to_mode_of_inheritance[hpo_id]
-            return KnowledgeGraph(nodes=[disease])
+
+            # Disease node needs to be updated with its discovered inheritance mode?
+            # Note: this design will fail if a given 'disease_id' somehow ends up
+            #       associated with more than one mode of inheritance in phenotype.hpoa
+            nodes.append(disease)
+
         else:
             koza_transform.log(
-                f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?",
+                msg=f"HPOA ID field value '{str(hpo_id)}' is missing or is an unknown disease mode of inheritance?",
                 level="WARNING"
             )
 
-    # This record has an 'aspect' that is not of interest to us at this time
-    return None
+    return KnowledgeGraph(nodes=nodes)
 
 
 @koza.transform_record(tag="disease_to_phenotype_edges")
-def transform__disease_to_phenotype_edge_record(
+def transform_disease_to_phenotype_edge_record(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """

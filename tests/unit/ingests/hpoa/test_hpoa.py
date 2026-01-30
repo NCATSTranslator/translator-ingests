@@ -15,14 +15,11 @@ from koza.io.writer.writer import KozaWriter
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
 
 from translator_ingest.ingests.hpoa.hpoa import (
-    transform_record_disease_to_phenotype,
-    on_data_begin_gene_to_disease,
-    on_data_end_gene_to_disease,
-    transform_record_gene_to_disease,
-    on_data_begin_gene_to_phenotype,
-    on_data_end_gene_to_phenotype,
-    prepare_data_gene_to_phenotype,
-    transform_record_gene_to_phenotype,
+    transform_disease_to_phenotype_node_record,
+    transform_disease_to_phenotype_edge_record,
+    transform_gene_to_disease_record,
+    prepare_gene_to_phenotype_data,
+    transform_gene_to_phenotype_record,
 )
 
 from tests.unit.ingests import MockKozaWriter, MockKozaTransform, validate_transform_result
@@ -78,7 +75,72 @@ ASSOCIATION_TEST_SLOTS = (
 
 
 @pytest.mark.parametrize(
-    "test_record,result_nodes,result_edge",
+    "test_record,result_nodes",
+    [
+        (  # Query 0 - An 'aspect' == 'C' record processed (edge-specific fields ignored)
+            {
+                "database_id": "OMIM:614856",
+                "disease_name": "Osteogenesis imperfecta, type XIII",
+                "hpo_id": "HP:0000343",
+                "aspect": "C",  # assert 'Clinical' test record
+            },
+            # This is not a 'P' nor 'I' record, so it should be skipped
+            None
+        ),
+        (  # Query 1 - An 'aspect' == 'P' record processed (edge-specific fields ignored)
+            {
+                "database_id": "OMIM:117650",
+                "disease_name": "Cerebrocostomandibular syndrome",
+                "hpo_id": "HP:0001249",
+                "aspect": "P",
+                "biocuration": "HPO:probinson[2009-02-17]",
+            },
+            # Captured node identifiers
+            [
+                {
+                    "id": "OMIM:117650",
+                    "name": "Cerebrocostomandibular syndrome",
+                    "category": ["biolink:Disease"]
+                },
+                {
+                    "id": "HP:0001249",
+                    "category": ["biolink:PhenotypicFeature"]
+                },
+            ]
+        ),
+        (  # Query 2 - Disease inheritance 'aspect' == 'I' record processed (edge-specific fields ignored)
+            {
+                "database_id": "OMIM:300425",
+                "disease_name": "Autism susceptibility, X-linked 1",
+                "hpo_id": "HP:0001417",
+                "aspect": "I",  # assert 'Inheritance' test record
+            },
+            [
+                {
+                    "id": "OMIM:300425",
+                    "name": "Autism susceptibility, X-linked 1",
+                    "category": ["biolink:Disease"],
+                    "inheritance": "X-linked inheritance",
+                }
+            ]
+        ),
+    ],
+)
+def test_disease_to_phenotype_node_transform(
+    mock_koza_transform_1: koza.KozaTransform,
+    test_record: dict,
+    result_nodes: Optional[list]
+):
+    validate_transform_result(
+        result=transform_disease_to_phenotype_node_record(mock_koza_transform_1, test_record),
+        expected_nodes=result_nodes,
+        expected_edges=None,
+        node_test_slots=NODE_TEST_SLOTS
+    )
+
+
+@pytest.mark.parametrize(
+    "test_record,result_edge",
     [
         (  # Query 0 - An 'aspect' == 'C' record processed
             {
@@ -95,8 +157,7 @@ ASSOCIATION_TEST_SLOTS = (
                 "aspect": "C",  # assert 'Clinical' test record
                 "biocuration": "HPO:skoehler[2012-11-16]",
             },
-            # This is not a 'P' nor 'I' record, so it should be skipped
-            None,
+            # This is not a 'P' record, so it should be skipped
             None,
         ),
         (  # Query 1 - An 'aspect' == 'P' record processed
@@ -114,15 +175,6 @@ ASSOCIATION_TEST_SLOTS = (
                 "aspect": "P",
                 "biocuration": "HPO:probinson[2009-02-17]",
             },
-            # Captured node identifiers
-            [
-                {
-                    "id": "OMIM:117650",
-                    "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"]
-                },
-                {"id": "HP:0001249", "category": ["biolink:PhenotypicFeature"]},
-            ],
             # Captured edge contents
             {
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
@@ -166,14 +218,6 @@ ASSOCIATION_TEST_SLOTS = (
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
-            [
-                {
-                    "id": "OMIM:117650",
-                    "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"]
-                },
-                {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
-            ],
             {
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
@@ -212,14 +256,6 @@ ASSOCIATION_TEST_SLOTS = (
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
-            [
-                {
-                    "id": "OMIM:117650",
-                    "name": "Cerebrocostomandibular syndrome",
-                    "category": ["biolink:Disease"]
-                },
-                {"id": "HP:0001545", "category": ["biolink:PhenotypicFeature"]},
-            ],
             {
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
@@ -240,44 +276,18 @@ ASSOCIATION_TEST_SLOTS = (
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
-        ),
-        (  # Query 4 - Disease inheritance 'aspect' == 'I' record processed
-            {
-                "database_id": "OMIM:300425",
-                "disease_name": "Autism susceptibility, X-linked 1",
-                "hpo_id": "HP:0001417",
-                "reference": "OMIM:300425",
-                "evidence": "IEA",
-                "onset": "",
-                "frequency": "",
-                "sex": "",
-                "modifier": "",
-                "aspect": "I",  # assert 'Inheritance' test record
-                "biocuration": "HPO:iea[2009-02-17]",
-            },
-            [
-                {
-                    "id": "OMIM:300425",
-                    "name": "Autism susceptibility, X-linked 1",
-                    "category": ["biolink:Disease"],
-                    "inheritance": "X-linked inheritance",
-                }
-            ],
-            None,  # no edge is created for this record
-        ),
+        )
     ],
 )
-def test_disease_to_phenotype_transform(
+def test_disease_to_phenotype_edge_transform(
     mock_koza_transform_1: koza.KozaTransform,
     test_record: dict,
-    result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
     validate_transform_result(
-        result=transform_record_disease_to_phenotype(mock_koza_transform_1, test_record),
-        expected_nodes=result_nodes,
+        result=transform_disease_to_phenotype_edge_record(mock_koza_transform_1, test_record),
+        expected_nodes=None,
         expected_edges=result_edge,
-        node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
 
@@ -381,18 +391,13 @@ def test_gene_to_disease_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_data_begin_gene_to_disease(mock_koza_transform_1)
-
     validate_transform_result(
-        result=transform_record_gene_to_disease(mock_koza_transform_1, test_record),
+        result=transform_gene_to_disease_record(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
-
-    on_data_end_gene_to_disease(mock_koza_transform_1)
 
 @pytest.fixture(scope="package")
 def mock_koza_transform_2() -> koza.KozaTransform:
@@ -404,7 +409,7 @@ def mock_koza_transform_2() -> koza.KozaTransform:
 
 
 def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaTransform):
-    result: Iterable[dict[str, Any]] | None = prepare_data_gene_to_phenotype(mock_koza_transform_2, [])
+    result: Iterable[dict[str, Any]] | None = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
     assert result is not None
     expected_entry: dict[str, Any] = {
         "ncbi_gene_id": 22,  # this gotta be an 'int'!
@@ -582,15 +587,10 @@ def test_gene_to_phenotype_transform(
     result_nodes: Optional[list],
     result_edge: Optional[dict],
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_data_begin_gene_to_phenotype(mock_koza_transform_1)
-
     validate_transform_result(
-        result=transform_record_gene_to_phenotype(mock_koza_transform_1, test_record),
+        result=transform_gene_to_phenotype_record(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
-
-    on_data_end_gene_to_phenotype(mock_koza_transform_1)
