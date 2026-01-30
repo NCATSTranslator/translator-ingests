@@ -211,12 +211,13 @@ MOA_MAPPING = {
             "causal_mechanism_qualifier": CausalMechanismQualifierEnum.modulation,
         },
     },
-    ## from Allosteric modulator - Neutral: looked like 1 edge made
     "modulator (allosteric modulator)": {
-        "predicate": BIOLINK_DP_INTERACTS,
+        "predicate": BIOLINK_AFFECTS,
         "qualifiers": {
+            "object_aspect_qualifier": GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
             "causal_mechanism_qualifier": CausalMechanismQualifierEnum.allosteric_modulation,
         },
+        "extra_edge_pred": BIOLINK_DP_INTERACTS,
     },
     "opener": {
         "predicate": BIOLINK_AFFECTS,
