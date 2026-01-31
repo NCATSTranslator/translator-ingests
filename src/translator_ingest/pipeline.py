@@ -8,6 +8,7 @@ from dataclasses import is_dataclass, asdict
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -74,17 +75,20 @@ def get_last_successful_source_version(source: str) -> str | None:
         build_metadata = json.load(f)
         return build_metadata.get("source_version")
 
-
-# Determine the latest available version for the source using the function from the ingest module
-def get_latest_source_version(source):
+# Return an ingest module by source name so attributes from it can be accessed without explicit imports
+def get_ingest_module(source: str) -> ModuleType:
     try:
         # Import the ingest module for this source
         ingest_module = import_module(f"translator_ingest.ingests.{source}.{source}")
+        return ingest_module
     except ModuleNotFoundError:
         error_message = f"Python module for {source} was not found at translator_ingest.ingests.{source}.{source}.py"
         logger.error(error_message)
         raise NotImplementedError(error_message)
 
+# Determine the latest available version for the source using the function from the ingest module
+def get_latest_source_version(source):
+    ingest_module = get_ingest_module(source)
     try:
         # Get a reference to the get_latest_source_version function
         latest_version_fn = getattr(ingest_module, "get_latest_version")
@@ -113,6 +117,16 @@ def get_latest_source_version(source):
         logger.error(f'Fallback version could not be identified for {source}.')
         raise e
 
+# Determine the transform version for a particular ingest
+def get_transform_version(source):
+    ingest_module = get_ingest_module(source)
+    try:
+        # Get a reference to the transform version if it exists
+        transform_version = str(getattr(ingest_module, "TRANSFORM_VERSION"))
+    except AttributeError:
+        # Otherwise set it to 1.0
+        transform_version = "1.0"
+    return transform_version
 
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
@@ -505,7 +519,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     data_source_info.version = pipeline_metadata.source_version
 
     storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
-                   f"{pipeline_metadata.transform_version}/"
+                   f"transform_{pipeline_metadata.transform_version}/"
                    f"normalization_{pipeline_metadata.node_norm_version}/")
     pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
@@ -616,9 +630,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         extract_tmkp_archive(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
-    # TODO we need a way to version the transform (see issue #97)
+    # TODO we might want a better way to implement transform versioning (see issue #97)
     # Set transform_version before load_koza_config since it uses get_transform_directory
-    pipeline_metadata.transform_version = "1.0"
+    pipeline_metadata.transform_version = get_transform_version(source)
 
     # Load koza config early to get max_edge_count for all pipeline stages
     load_koza_config(source, pipeline_metadata)
