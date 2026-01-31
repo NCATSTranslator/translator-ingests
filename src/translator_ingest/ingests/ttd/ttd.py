@@ -28,6 +28,9 @@ import requests
 # ## needed for pd.read_excel
 # import openpyxl
 from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_TO_FILTER, MOA_MAPPING
+## increment this when your file changes will affect the output
+##   (even with the same resource data) to trigger a new build
+TRANSFORM_VERSION = "1.1"
 
 
 ## hard-coded values and mappings
