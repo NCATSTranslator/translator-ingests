@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -166,9 +166,8 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.3.6.post74.dev0+364d4ec76"
-source = { git = "https://github.com/biolink/biolink-model.git?rev=master#364d4ec760360de57999ed6d7d50fa690ae6fa95" }
-
+version = "4.3.6.post89.dev0+0a430bf2e"
+source = { git = "https://github.com/biolink/biolink-model.git?rev=master#0a430bf2e1cbed7b4349619135ac1cce32a569b7" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "click" },
@@ -1730,8 +1729,8 @@ wheels = [
 
 [[package]]
 name = "linkml"
-version = "1.10.0rc3.post14.dev0+a9b2018d"
-source = { git = "https://github.com/linkml/linkml.git?subdirectory=packages%2Flinkml&rev=improve-subproperty-of-support#a9b2018df2f494ee95edcbff90cc69ac04e4f910" }
+version = "1.9.4"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "antlr4-python3-runtime" },
     { name = "click" },
@@ -1758,11 +1757,15 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "watchdog" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/9d/7c/ea1548762bf9098d7a50925579318d1f773a97b2666c8eaa397321afe242/linkml-1.9.4.tar.gz", hash = "sha256:b5075a697bfdb6ef829e19e15046f6efc11a946352eb7f5024e89f710ebd96ca", size = 42799474, upload-time = "2025-08-26T18:07:49.725Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/bd/e46587d1c99334c708d485c7a357ee58de13e2348881917829001d7a11ac/linkml-1.9.4-py3-none-any.whl", hash = "sha256:ecc5cb73669da7d48340f689ae6ed8076b6b15099aef472668345fc9b5931b11", size = 337157, upload-time = "2025-08-26T18:07:47.205Z" },
+]
 
 [[package]]
 name = "linkml-runtime"
-version = "1.10.0rc3.post14.dev0+a9b2018d"
-source = { git = "https://github.com/linkml/linkml.git?subdirectory=packages%2Flinkml_runtime&rev=improve-subproperty-of-support#a9b2018df2f494ee95edcbff90cc69ac04e4f910" }
+version = "1.9.5"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "curies" },
@@ -1777,6 +1780,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "rdflib" },
     { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e0/38/38ac19a5b81982f03709cda0a008327dc775d11f008d0cbdc0f2a5389e24/linkml_runtime-1.9.5.tar.gz", hash = "sha256:78dc1383adf11ad5f20bb11b6adde56ed566fbd2429a292d57699ad4596c738a", size = 480288, upload-time = "2025-08-15T22:22:51.098Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/28/cdcbe1f0521a98b891dd30249513eef1ddcc7bb406be953b4a8d7825e68f/linkml_runtime-1.9.5-py3-none-any.whl", hash = "sha256:fece3e8aa25a4246165c6528b6a7fe83a929b985d2ce1951cc8a0f4da1a30b90", size = 576405, upload-time = "2025-08-15T22:22:49.264Z" },
 ]
 
 [[package]]
@@ -4138,19 +4145,6 @@ wheels = [
 ]
 
 [[package]]
-name = "yamllint"
-version = "1.38.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pathspec" },
-    { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/28/a0/8fc2d68e132cf918f18273fdc8a1b8432b60d75ac12fdae4b0ef5c9d2e8d/yamllint-1.38.0.tar.gz", hash = "sha256:09e5f29531daab93366bb061e76019d5e91691ef0a40328f04c927387d1d364d", size = 142446, upload-time = "2026-01-13T07:47:53.276Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/92/aed08e68de6e6a3d7c2328ce7388072cd6affc26e2917197430b646aed02/yamllint-1.38.0-py3-none-any.whl", hash = "sha256:fc394a5b3be980a4062607b8fdddc0843f4fa394152b6da21722f5d59013c220", size = 68940, upload-time = "2026-01-13T07:47:51.343Z" },
-]
-[[package]]
-
 name = "zstandard"
 version = "0.25.0"
 source = { registry = "https://pypi.org/simple" }
