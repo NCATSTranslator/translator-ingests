@@ -29,7 +29,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
     ChemicalAffectsGeneAssociation,
-    GeneToDiseaseAssociation,
+    CorrelatedGeneToDiseaseAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     GeneRegulatesGeneAssociation,
     Study,
@@ -51,9 +51,11 @@ TMKP_TO_BIOLINK_SLOT_MAP = {
     "has evidence count": "evidence_count",
     "has confidence score": "has_confidence_score",
     # Snake_case variations that need mapping
-    "has_evidence_count": "evidence_count",  # Handle underscore variant
+    "has_evidence_count": "evidence_count",
     "supporting_publications": "publications",
+    "supporting_document": "publications",
     "tmkp_confidence_score": "has_confidence_score",
+    "semmed_agreement_count": "semmed_agreement_count",  # TMKP-specific, no Biolink equivalent
 }
 
 # Track which unmapped attributes we've already warned about (to avoid log spam)
@@ -73,9 +75,13 @@ BIOLINK_CLASS_MAP = {
 }
 
 # Map edge types to association classes
+# Note: Using CorrelatedGeneToDiseaseAssociation instead of GeneToDiseaseAssociation
+# because text mining identifies correlations from literature, and the base
+# GeneToDiseaseAssociation constrains predicates to only 'contributes_to' or
+# 'associated_with', which doesn't include 'affects' used by TMKP.
 ASSOCIATION_MAP = {
     "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
-    "biolink:GeneToDiseaseAssociation": GeneToDiseaseAssociation,
+    "biolink:GeneToDiseaseAssociation": CorrelatedGeneToDiseaseAssociation,
     "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     "biolink:GeneRegulatoryRelationship": GeneRegulatesGeneAssociation,
 }
@@ -247,26 +253,30 @@ def get_latest_version() -> str:
     return "tmkp-2023-03-05"
 
 
-def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> Tuple[List[TextMiningStudyResult], Dict[str, Any]]:
+def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> None:
     """
-    Parse attribute objects and extract supporting studies and knowledge sources.
+    Parse attribute objects and populate the association with supporting studies and knowledge sources.
 
     Attributes can contain nested attributes representing TextMiningStudyResult objects,
     as well as knowledge source information that should be used to build the sources collection.
 
-    Returns:
-        Tuple of (text_mining_results, sources_info) where sources_info contains
-        primary_knowledge_source and supporting_data_source if present.
+    This function mutates the association in place, setting:
+    - has_supporting_studies: Dict of Study objects containing TextMiningStudyResult objects
+    - sources: Knowledge source attribution built from attribute data or defaults
+    - Any other direct attributes found in the attribute list
     """
-    text_mining_results = []
-    sources_info: Dict[str, Any] = {}
+    text_mining_results: List[TextMiningStudyResult] = []
+    primary_source = None
+    supporting_sources: List[str] = []
 
     for attr in attributes:
         attr_type = attr.get("attribute_type_id", "")
         value = attr.get("value")
 
-        # Handle supporting study results
-        if attr_type == "biolink:supporting_study_result":
+        # Strip "biolink:" prefix if present to get the actual slot name
+        slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
+
+        if slot_name == "supporting_study_result":
             # Create TextMiningStudyResult object
             tm_result = TextMiningStudyResult(
                 id=value,
@@ -282,50 +292,75 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                 if nested_type == "biolink:supporting_text":
                     tm_result.supporting_text = [nested_value] if nested_value else []
                 elif nested_type == "biolink:supporting_document":
-                    # Store document ID in xref field for now
                     tm_result.xref = [nested_value] if nested_value else []
+                elif nested_type == "biolink:supporting_text_located_in":
+                    tm_result.supporting_text_section_type = nested_value
+                elif nested_type == "biolink:extraction_confidence_score":
+                    tm_result.extraction_confidence_score = float(nested_value) if nested_value else None
+                elif nested_type == "biolink:subject_location_in_text":
+                    # Field expects list[int], TMKP sends pipe-delimited string like "42|50"
+                    tm_result.subject_location_in_text = (
+                        [int(x) for x in nested_value.split("|")]
+                        if isinstance(nested_value, str) else (nested_value or [])
+                    )
+                elif nested_type == "biolink:object_location_in_text":
+                    # Field expects list[int], TMKP sends pipe-delimited string like "42|50"
+                    tm_result.object_location_in_text = (
+                        [int(x) for x in nested_value.split("|")]
+                        if isinstance(nested_value, str) else (nested_value or [])
+                    )
+                elif nested_type == "biolink:supporting_document_year":
+                    tm_result.supporting_document_year = int(nested_value) if nested_value else None
 
             text_mining_results.append(tm_result)
-            continue
 
-        # Strip "biolink:" prefix if present to get the actual slot name
-        slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
+        elif slot_name == "primary_knowledge_source":
+            primary_source = value
 
-        # Handle knowledge source attributes separately - they should be used to build sources
-        if slot_name == "primary_knowledge_source":
-            sources_info["primary"] = value
-            continue
         elif slot_name == "supporting_data_source":
-            # supporting_data_source could be a list or single value
-            if "supporting" not in sources_info:
-                sources_info["supporting"] = []
             if isinstance(value, list):
-                sources_info["supporting"].extend(value)
+                supporting_sources.extend(value)
             else:
-                sources_info["supporting"].append(value)
-            continue
+                supporting_sources.append(value)
 
-        # Check if this is a direct attribute on the association
-        if hasattr(association, slot_name):
+        elif hasattr(association, slot_name):
             setattr(association, slot_name, value)
-            continue
 
-        # Handle TMKP-specific attribute names that need mapping to Biolink slots
-        if slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
+        elif slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
-                setattr(association, biolink_slot, value)
-                continue
+                # publications field expects a list, but TMKP sends pipe-separated strings
+                # Multiple attributes (supporting_publications, supporting_document) may map here
+                if biolink_slot == "publications":
+                    new_pubs = value.split("|") if isinstance(value, str) else (value or [])
+                    existing = getattr(association, biolink_slot) or []
+                    setattr(association, biolink_slot, existing + new_pubs)
+                else:
+                    setattr(association, biolink_slot, value)
 
-        # Log warning for unrecognized attributes (only once per attribute type)
-        if attr_type and attr_type not in _warned_unmapped_attrs:
+        elif attr_type and attr_type not in _warned_unmapped_attrs:
+            # Log warning for truly unrecognized attributes (only once per attribute type)
             logger.warning(
-                f"Skipping unrecognized TMKP edge attribute: '{attr_type}' "
-                f"(not a Biolink slot on {type(association).__name__})"
+
+                f"Skipping unknown TMKP edge attribute: '{attr_type}' "
+                f"(no mapping defined and not a slot on {type(association).__name__})"
             )
             _warned_unmapped_attrs.add(attr_type)
 
-    return text_mining_results, sources_info
+    # Build has_supporting_studies from collected TextMiningStudyResult objects
+    if text_mining_results:
+        study = Study(
+            id=entity_id(),
+            category=["biolink:Study"],
+            has_study_results=text_mining_results
+        )
+        association.has_supporting_studies = {study.id: study}
+
+    # Build knowledge sources with defaults if not provided in attributes
+    association.sources = build_association_knowledge_sources(
+        primary=primary_source or INFORES_TEXT_MINING_KP,
+        supporting=supporting_sources or ["infores:pubmed"]
+    )
 
 
 @koza.transform_record(tag="nodes")
@@ -414,34 +449,16 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         # Create association with all fields
         association = assoc_class(**assoc_kwargs)
 
-        # Parse attributes JSON and extract sources info
-        sources_info = {}
+        # Parse attributes JSON - this populates has_supporting_studies and sources on the association
         if attributes_json := record.get("_attributes"):
             attributes = json.loads(attributes_json)
-
-            # Extract supporting studies and knowledge source info
-            text_mining_results, sources_info = parse_attributes(attributes, association)
-
-            # Create a Study object to contain the TextMiningStudyResult objects
-            if text_mining_results:
-                # Create a single Study that contains all the text mining results
-                study = Study(
-                    id=entity_id(),  # Generate unique ID for this study
-                    category=["biolink:Study"],
-                    has_study_results=text_mining_results
-                )
-                # Add the Study to the association
-                studies_dict = {study.id: study}
-                association.has_supporting_studies = studies_dict
-
-        # Add knowledge sources - use from attributes if present, otherwise use defaults
-        primary_source = sources_info.get("primary", INFORES_TEXT_MINING_KP)
-        supporting_sources = sources_info.get("supporting", ["infores:pubmed"])
-
-        association.sources = build_association_knowledge_sources(
-            primary=primary_source,
-            supporting=supporting_sources
-        )
+            parse_attributes(attributes, association)
+        else:
+            # No attributes - set default sources
+            association.sources = build_association_knowledge_sources(
+                primary=INFORES_TEXT_MINING_KP,
+                supporting=["infores:pubmed"]
+            )
 
         # Create nodes for subject and object
         nodes = []

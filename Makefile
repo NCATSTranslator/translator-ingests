@@ -1,7 +1,12 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 # Configure which sources to process (default: all available sources)
+# Allow lowercase 'sources' as an alias for SOURCES
+ifdef sources
+SOURCES := $(sources)
+else
 SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther pathbank semmeddb sider signor tmkp ttd ubergraph
+endif
 NODE_PROPERTIES ?= ncbi_gene
 
 # Set to any non-empty value to overwrite previously generated files

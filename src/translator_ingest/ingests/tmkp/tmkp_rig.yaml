@@ -125,9 +125,6 @@ target_info:
         Association type: ChemicalAffectsGeneAssociation. The has_supporting_studies property
         contains Study objects with nested TextMiningStudyResult objects that include supporting
         text excerpts and publication references.
-        - "biolink:publications"
-        - "biolink:has_evidence_count"
-        - "biolink:tmkp_confidence_score"
     - subject_categories:
       - "biolink:Protein"
       predicates:
@@ -186,7 +183,6 @@ target_info:
         Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source data may
         contain reversed edges (disease treats chemical) that are filtered out during processing
         based on Biolink domain/range constraints.
-        - "biolink:publications"
     - subject_categories:
       - "biolink:SmallMolecule"
       - "biolink:ChemicalEntity"
