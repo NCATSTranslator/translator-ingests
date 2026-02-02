@@ -35,7 +35,7 @@ dev = [
     "black>=24.1.0",
     "codespell>=2.2.0",
     "ruff>=0.12.8",
-    "pandas", # also installs numpy
+    "pandas<3.0", # also installs numpy
     "openpyxl",    # for pandas read_excel to work
     "psycopg[binary]",     # for Postgres querying
     "requests",
