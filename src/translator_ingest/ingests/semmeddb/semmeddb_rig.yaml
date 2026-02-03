@@ -51,106 +51,128 @@ ingest_info:
 target_info:
   infores_id: infores:translator-semmeddb-kgx
 
+  # Manual QA fixes
   edge_type_info:
     - predicate: biolink:affects
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:located_in
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:related_to
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:interacts_with
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:coexists_with
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:treats_or_applied_or_studied_to_treat
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:causes
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:disrupts
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:predisposes_to_condition
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
     - predicate: biolink:preventative_for_condition
       edge_properties:
         - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
         - knowledge_level
         - agent_type
-        - provided_by
-    - predicate: biolink:associated_with
-      edge_properties:
-        - publications
-        - publications_info
-        - negated
-        - domain_range_exclusion
-        - knowledge_level
-        - agent_type
-        - provided_by
+        - original_subject
+        - original_object
+        - sources
+
+  # Manual QA fixes
+  node_type_info:
+    - node_category: biolink:SmallMolecule
+    - node_category: biolink:Drug
+    - node_category: biolink:ChemicalEntity
+    - node_category: biolink:MolecularMixture
+    - node_category: biolink:ChemicalMixture
+    - node_category: biolink:Cell
+    - node_category: biolink:Disease
+    - node_category: biolink:ComplexMolecularMixture
+    - node_category: biolink:PhenotypicFeature
+    - node_category: biolink:BiologicalProcess
+    - node_category: biolink:MolecularActivity
+    - node_category: biolink:CellularComponent
+    - node_category: biolink:Gene
+    - node_category: biolink:OrganismTaxon
+    - node_category: biolink:Protein
+    - node_category: biolink:GrossAnatomicalStructure
+    - node_category: biolink:AnatomicalEntity
+    - node_category: biolink:Polypeptide
+    - node_category: biolink:InformationContentEntity
+    - node_category: biolink:Procedure
+    - node_category: biolink:Behavior
+    - node_category: biolink:Agent
+    - node_category: biolink:Activity
+    - node_category: biolink:Device
+    - node_category: biolink:Cohort
+    - node_category: biolink:PopulationOfIndividualOrganisms
+    - node_category: biolink:Phenomenon
+    - node_category: biolink:GenomicEntity
+    - node_category: biolink:BiologicalEntity
+    - node_category: biolink:Publication
+    - node_category: biolink:NucleicAcidEntity
+    - node_category: biolink:ClinicalAttribute
+    - node_category: biolink:PhysicalEntity
+    - node_category: biolink:DiseaseOrPhenotypicFeature
+    - node_category: biolink:Human
+    - node_category: biolink:Event
+    - node_category: biolink:PhysiologicalProcess
 
 provenance_info:
   contributions:

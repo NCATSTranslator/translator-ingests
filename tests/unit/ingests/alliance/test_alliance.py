@@ -14,7 +14,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     CellularComponent,
     GeneToPhenotypicFeatureAssociation,
     GeneToExpressionSiteAssociation,
-    ResourceRoleEnum,
+    ResourceRoleEnum, GeneToPhenotypicFeaturePredicateEnum,
 )
 from translator_ingest.ingests.alliance.alliance import (
     transform_phenotype,
@@ -92,7 +92,7 @@ def test_mgi_phenotype(mgi_phenotype_row):
         assoc = result.edges[0]
         assert isinstance(assoc, GeneToPhenotypicFeatureAssociation)
         assert assoc.subject == "MGI:98834"
-        assert assoc.predicate == "biolink:has_phenotype"
+        assert assoc.predicate == GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONhas_phenotype
         assert assoc.object == "MP:0001262"
         assert assoc.publications == ["PMID:12345678"]
 
