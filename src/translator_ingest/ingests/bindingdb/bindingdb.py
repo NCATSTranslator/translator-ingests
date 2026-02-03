@@ -17,7 +17,6 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     extract_bindingdb_columns_polars,
     process_publications,
-
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR, web_string,
     MONOMER_ID,
@@ -32,10 +31,10 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     ARTICLE_DOI,
     PMID,
     PATENT_NUMBER,
-
     MISSING_PUBS
 )
 
+TRANSFORM_VERSION = '1.1'
 
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
