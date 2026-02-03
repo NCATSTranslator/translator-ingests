@@ -319,7 +319,7 @@ requires-dist = [
     { name = "koza", specifier = ">=2.1.1" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "openpyxl" },
-    { name = "pandas", specifier = "<3.0" },
+    { name = "pandas", specifier = "==2.3.3" },
     { name = "polars", specifier = ">=1.35.2" },
     { name = "psycopg", extras = ["binary"] },
     { name = "requests" },

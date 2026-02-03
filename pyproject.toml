@@ -20,7 +20,7 @@ dependencies = [
     "koza>=2.1.1",
     "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
-    "pandas<3.0",    # also installs numpy, used by some ingests
+    "pandas==2.3.3",    # also installs numpy, used by some ingests
     "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
     "requests",    ## needed for specific ingest
