@@ -192,9 +192,9 @@ target_info:
         is evidence that variants in the gene may cause or contribute to its manifestation.
         The Biolink predicate used to represent this relationship depends on the type of 
         Disease. For Mendelian disorders (where the HPOA "association_type" field = 'MENDELIAN')
-        'contributes to' is the primary predicate and the 'causes' predicate is used as the
+        'associated_with' is the primary predicate and the 'causes' predicate is used as the
         'qualified predicate'.  For polygenic disease (where the "association_type" field = "POLYGENIC")
-        'correlated with' is the primary predicate and the 'contributes to' predicate is used as the
+        'associated_with' is the primary predicate and the 'contributes_to' predicate is used as the
         'qualified predicate'. Qualifier is used to indicate that it is a 'genetic_variant_form'
         of the gene that participates in these relationships, not the Gene in general.
       source_files:
