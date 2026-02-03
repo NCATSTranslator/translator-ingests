@@ -21,6 +21,7 @@ from bmt.pydantic import entity_id, build_association_knowledge_sources
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     GeneToPhenotypicFeatureAssociation,
+    GeneToPhenotypicFeaturePredicateEnum,
     GeneToExpressionSiteAssociation,
     PhenotypicFeature,
     AnatomicalEntity,
@@ -237,7 +238,7 @@ def transform_phenotype(
         association = GeneToPhenotypicFeatureAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:has_phenotype",
+            predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONhas_phenotype,
             object=phenotypic_feature_id,
             publications=[row["evidence"]["publicationId"]],
             sources=build_association_knowledge_sources(
