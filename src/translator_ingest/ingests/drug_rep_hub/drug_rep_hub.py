@@ -20,7 +20,9 @@ from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 
-inchikey_regex = re.compile('^A-Z]{14}-[A-Z]{10}-[A-Z]$')
+TRANSFORM_VERSION="1.1"
+
+inchikey_regex = re.compile('^[A-Z]{14}-[A-Z]{10}-[A-Z]$')
 
 INFORES_DRUG_REP_HUB = "infores:drug-repurposing-hub"
 PUBCHEM_PREFIX = "PUBCHEM.COMPOUND:"
@@ -30,8 +32,8 @@ SMILES_PREFIX = "SMILES:"
 SAMPLES = defaultdict(dict)
 
 def load_json_config(filename: str) -> dict:
-    path = INGESTS_PARSER_PATH / 'drug_rep_hub' / filename
     """Load a JSON config file and return its contents."""
+    path = INGESTS_PARSER_PATH / 'drug_rep_hub' / filename
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -155,7 +157,7 @@ def create_chemical_role_association(chemical, indication, indication_info, pred
         sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
         original_object = indication
     )
-    return chemical, association
+    return chemical_role, association
 
 
 def create_target_association(chemical, target_gene_symbol, moa):
