@@ -9,7 +9,7 @@ readers:
       - 'id'
       - 'name'
       - 'category'
-      - 'equivalent_identifiers'  # rename this field to KGX 'xref' list value
+      - 'equivalent_identifiers'
   icees_edges:
     files:
       - 'edges.jsonl.gz'
