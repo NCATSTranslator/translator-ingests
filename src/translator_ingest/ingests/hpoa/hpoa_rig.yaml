@@ -166,8 +166,7 @@ target_info:
     - subject_categories:
       - "biolink:Gene"
       predicates:
-        - "biolink:contributes_to"
-        - "biolink:correlated_with"
+        - "biolink:associated_with"
       object_categories:
       - "biolink:Disease"
       qualifiers:
@@ -193,9 +192,9 @@ target_info:
         is evidence that variants in the gene may cause or contribute to its manifestation.
         The Biolink predicate used to represent this relationship depends on the type of 
         Disease. For Mendelian disorders (where the HPOA "association_type" field = 'MENDELIAN')
-        'contributes to' is the primary predicate and the 'causes' predicate is used as the
+        'associated_with' is the primary predicate and the 'causes' predicate is used as the
         'qualified predicate'.  For polygenic disease (where the "association_type" field = "POLYGENIC")
-        'correlated with' is the primary predicate and the 'contributes to' predicate is used as the
+        'associated_with' is the primary predicate and the 'contributes_to' predicate is used as the
         'qualified predicate'. Qualifier is used to indicate that it is a 'genetic_variant_form'
         of the gene that participates in these relationships, not the Gene in general.
       source_files:
@@ -262,11 +261,6 @@ target_info:
       - "NCBIGene"
     node_properties: null
     additional_notes: null
-  - node_category: "biolink:GeneticInheritance"
-    source_identifier_types:
-      - "HP"
-    node_properties: null
-    additional_notes: null
   future_considerations:
     - category: spoq_pattern
       consideration: >-
@@ -276,6 +270,11 @@ target_info:
         Should we consider creating support paths in our data/graphs, 
         for the G-D-P hops over which HPO infers G-P associations?
         (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)
+  additional_notes: >-
+    The HPOA ingest of the Disease.node_properties.inheritance value is currently thought to be mildly
+    unreliable due to the way node property merging is (not) currently implemented in the ingest. This is a
+    known issue (Translator Ingest PR https://github.com/NCATSTranslator/translator-ingests/issues/259)
+    which will be addressed in a future release of the pipeline and/or ingest.
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"
