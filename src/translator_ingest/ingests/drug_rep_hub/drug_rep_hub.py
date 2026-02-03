@@ -141,7 +141,7 @@ def create_disease_association(chemical, indication, indication_info, predicate,
 
 
 def create_chemical_role_association(chemical, indication, indication_info, predicate):
-    chemical = ChemicalEntity(
+    chemical_role = ChemicalEntity(
         id=indication_info['xref'],
         name=indication_info['primary_name'] if indication_info['primary_name'] else indication,
     )
@@ -149,7 +149,7 @@ def create_chemical_role_association(chemical, indication, indication_info, pred
         id = entity_id(),
         subject=chemical.id,
         predicate=predicate,
-        object=chemical.id,
+        object=chemical_role.id,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
