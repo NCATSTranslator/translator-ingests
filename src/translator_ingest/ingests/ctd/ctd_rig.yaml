@@ -473,7 +473,6 @@
           - CTD_chem_pathways_enriched.tsv
         additional_notes:
 
-# MHB Question: Can EVAN OR VLADO review/update the description of node types, identifiers, and properties below - I didn't have enough info to fully populate.
     node_type_info:
       - node_categories:
           - biolink:ChemicalEntity
@@ -481,7 +480,6 @@
           - biolink:MolecularMixture
         source_identifier_types:
           - MeSH
-          - CAS RN
         additional_notes: Majority are Biolink SmallMolecules
       - node_categories:
           - biolink:DiseaseOrPhenotypicFeature
@@ -490,7 +488,6 @@
         source_identifier_types:
           - MeSH
           - OMIM
-          - DOID
       - node_categories:
           - biolink:BiologicalProcess
           - biolink:BiologicalProcessOrActivity
@@ -505,13 +502,8 @@
       - node_categories:
           - biolink:Pathway
         source_identifier_types:
-          - KEGG
-          - Reactome
-          - WikiPathways ID
-      - node_categories:
-          - biolink:GrossAnatomicalStructure
-        source_identifier_types:
-          - MeSH
+          - KEGG.PATHWAY
+          - REACT
 
     future_considerations:
       - category: edge_properties
