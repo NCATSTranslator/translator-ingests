@@ -19,7 +19,11 @@ dependencies = [
     "kghub-downloader==0.4.3",
     "koza>=2.1.1",
     "mkdocs-minify-plugin>=0.8.0",
+    "openpyxl",      # for pandas read_excel to work, needed for specific ingest
+    "pandas<3.0",    # also installs numpy, used by some ingests
+    "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
+    "requests",    ## needed for specific ingest
     "robokop-orion==0.1.14",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
@@ -35,10 +39,6 @@ dev = [
     "black>=24.1.0",
     "codespell>=2.2.0",
     "ruff>=0.12.8",
-    "pandas<3.0", # also installs numpy
-    "openpyxl",    # for pandas read_excel to work
-    "psycopg[binary]",     # for Postgres querying
-    "requests",
     # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
     "jupyter_contrib_nbextensions",
