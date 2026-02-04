@@ -6,6 +6,7 @@ from loguru import logger
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,
     Study,
     KnowledgeLevelEnum,
     AgentTypeEnum
@@ -29,11 +30,21 @@ def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
 
+_icees_nodes: dict[str, NamedThing] = {}
+
 @koza.transform_record(tag="nodes")
 def transform_icees_node(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
+    """
+
+    :param koza_transform: Koza context of ingest
+    :param record: original Phase 2 ICEES node data record
+    :return: KnowledgeGraph[nodes=list[NamedThing]] streamed nodes
+    """
+    global _icees_nodes
+
     node_id = record["id"]
 
     # the node 'category' may be a list of ancestor types
@@ -53,9 +64,13 @@ def transform_icees_node(
         equivalent_identifiers=equivalent_identifiers,
         **{}
     )
+
+    # Cache the node for dereferencing during edge file ingest
+    _icees_nodes[node_id] = node
+
     return KnowledgeGraph(nodes=[node])
 
-@pytest.mark.skip
+
 @koza.transform_record(tag="edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
@@ -64,19 +79,36 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
     :param record:
     :return:
     """
+    global _icees_nodes
+
     edge_id = entity_id()
 
     icees_subject: str = record["subject"]
-    subject_category: list[str] = bmt.get_element_by_prefix(icees_subject)
+    subject_node: NamedThing = _icees_nodes.get(icees_subject)
+    if subject_node is None:
+        koza_transform.log(
+            msg=f"ICEES Edge subject node '{icees_subject}' missing in input nodes file?",
+            level="WARNING"
+        )
+        return None
+    subject_categories: list[str] = subject_node.category
 
     icees_predicate: str = record["predicate"]
 
     icees_object: str = record["object"]
-    object_category: list[str] = bmt.get_element_by_prefix(icees_object)
+    object_node: NamedThing = _icees_nodes.get(icees_object)
+    if object_node is None:
+        koza_transform.log(
+            msg=f"ICEES Edge object node '{icees_object}' missing in input nodes file?",
+            level="WARNING"
+        )
+        return None
+    object_categories: list[str] = object_node.category
+
     association_list = bmt.get_associations(
-                subject_categories=subject_category,
+                subject_categories=subject_categories,
                 predicates= [icees_predicate],
-                object_categories=object_category,
+                object_categories=object_categories,
                 formatted=True
         )
 

@@ -1,6 +1,6 @@
 import pytest
 
-from typing import Optional
+from typing import Optional, Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
@@ -47,11 +47,9 @@ CORE_ASSOCIATION_TEST_SLOTS = (
     "agent_type",
 )
 
-@pytest.mark.parametrize(
-    "test_record,result_nodes",
-    [
-        (  # Query 0 - A complete node record
-            {
+################ Shared test data ################
+
+PUBCHEM_NODE = {
                 "id": "PUBCHEM.COMPOUND:2083",
                 "name": "Salbutamol",
                 "category": [
@@ -74,7 +72,104 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "DRUGBANK:DB01001",
                     "DrugCentral:105"
                 ]
-            },
+            }
+
+MONDO_NODE = {
+    "id": "MONDO:0007079",
+    "name": "alcohol dependence",
+    "category": [
+        "biolink:Disease",
+        "biolink:ThingWithTaxon",
+        "biolink:BiologicalEntity",
+        "biolink:NamedThing",
+        "biolink:DiseaseOrPhenotypicFeature"
+    ],
+    "equivalent_identifiers": [
+        "MONDO:0007079",
+        "DOID:0050741",
+        "OMIM:103780",
+        "EFO:0003829",
+        "UMLS:C0001973",
+        "MEDDRA:10001585",
+        "NCIT:C93040",
+        "SNOMEDCT:284591009",
+        "KEGG.DISEASE:05034",
+        "HP:0030955"
+    ]
+}
+
+GENE_NODE = {
+    "id": "NCBIGene:3105",
+    "name": "HLA-A",
+    "category": [
+        "biolink:Protein",
+        "biolink:PhysicalEssenceOrOccurrent",
+        "biolink:BiologicalEntity",
+        "biolink:SequenceVariant",
+        "biolink:Polypeptide",
+        "biolink:GeneProductMixin",
+        "biolink:Gene",
+        "biolink:GenomicEntity",
+        "biolink:ChemicalEntityOrGeneOrGeneProduct",
+        "biolink:ThingWithTaxon",
+        "biolink:ChemicalEntityOrProteinOrPolypeptide",
+        "biolink:GeneOrGeneProduct",
+        "biolink:OntologyClass",
+        "biolink:NamedThing",
+        "biolink:MacromolecularMachineMixin",
+        "biolink:PhysicalEssence"
+    ],
+    "equivalent_identifiers": [
+        "NCBIGene:3105",
+        "ENSEMBL:ENSG00000206503",
+        "HGNC:4931",
+        "OMIM:142800",
+        "UMLS:C1333899",
+        "UniProtKB:B1PKY1",
+        "PR:P04439"
+    ]
+}
+
+TAXON_NODE = {
+    "id": "NCBITaxon:12092",
+    "name": "Hepatovirus A",
+    "category": [
+        "biolink:PhenotypicFeature",
+        "biolink:OrganismTaxon",
+        "biolink:NamedThing"
+    ],
+    "equivalent_identifiers":
+        [
+            "NCBITaxon:12092",
+            "MESH:D030041",
+            "UMLS:C0376325"
+        ]
+}
+
+UMLS_NODE = {
+    "id": "UMLS:C4049590",
+    "name": "Anti-HBc IgM antibody",
+    "category": [
+        "biolink:PhysicalEssenceOrOccurrent",
+        "biolink:ActivityAndBehavior",
+        "biolink:Procedure",
+        "biolink:Occurrent",
+        "biolink:PhenotypicFeature",
+        "biolink:NamedThing"
+    ],
+    "equivalent_identifiers": [
+        "UMLS:C4049590"
+    ]
+}
+
+
+################ End of shared test data ################
+
+@pytest.mark.parametrize(
+    "test_record,result_nodes",
+    [
+        (  # Query 0 - A complete node record
+            PUBCHEM_NODE,
             # Captured node contents
             [
                 {
@@ -92,35 +187,29 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             ]
         ),
         (  # Query 1- Another complete node record
-            {
-                "id": "MONDO:0004979",
-                "name": "asthma",
-                "category": [
-                    "biolink:Disease",
-                    "biolink:ThingWithTaxon",
-                    "biolink:BiologicalEntity",
-                    "biolink:NamedThing",
-                    "biolink:DiseaseOrPhenotypicFeature"
-                ],
-                "equivalent_identifiers": [
-                    "MONDO:0004979",
-                    "DOID:2841",
-                    "EFO:0000270"
-                ]
-            },
+            MONDO_NODE,
             #
             # Captured node contents
             [
                 {
-                    "id": "MONDO:0004979",
-                    "name": "asthma",
-                    "category": ["biolink:Disease"],
+                    "id": "MONDO:0007079",
+                    "name": "alcohol dependence",
+                    "category": [
+                        "biolink:Disease"
+                    ],
                     "equivalent_identifiers": [
-                        "MONDO:0004979",
-                        "DOID:2841",
-                        "EFO:0000270"
+                        "MONDO:0007079",
+                        "DOID:0050741",
+                        "OMIM:103780",
+                        "EFO:0003829",
+                        "UMLS:C0001973",
+                        "MEDDRA:10001585",
+                        "NCIT:C93040",
+                        "SNOMEDCT:284591009",
+                        "KEGG.DISEASE:05034",
+                        "HP:0030955"
                     ]
-                }
+                },
             ]
         ),
         (  # Query 2- One strange actual ICEES record (triggers a validation error?)
@@ -168,11 +257,14 @@ def test_transform_icees_nodes(
     )
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
-    "test_record,result_nodes,result_edge,qualifiers",
+    "test_nodes,test_edge_record,result_edge,qualifiers",
     [
-        (   # Query 1 - A complete record
+        (   # Query 0 - A complete edge record
+            [
+                PUBCHEM_NODE,
+                MONDO_NODE
+            ],
             {
                 "subject": "PUBCHEM.COMPOUND:2083",
                 "predicate": "biolink:positively_correlated_with",
@@ -197,8 +289,6 @@ def test_transform_icees_nodes(
                     "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"Asthma_UNC_EPR_patient_2013_v5_binned_deidentified|asthma|2013|2024_03_19_10_34_15\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 961.1556369070855}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 1}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 4.986523229006498e-211}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 158671.0}, {\"attribute_type_id\": \"fisher_exact_odds_ratio\", \"value\": 17.74280067875692}, {\"attribute_type_id\": \"fisher_exact_p\", \"value\": 4.494353716947507e-97}, {\"attribute_type_id\": \"log_odds_ratio\", \"value\": 2.875979838082306}, {\"attribute_type_id\": \"log_odds_ratio_95_ci\", \"value\": [2.6254515014378037, 3.126508174726808]}]}",
                 ]
             },
-            # Captured node contents
-            None,
             # Captured edge contents
             {
                 "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
@@ -244,7 +334,11 @@ def test_transform_icees_nodes(
                 "object_feature_name"
             )
         ),
-        (  # Query 2 - A complete record with different qualifiers
+        (  # Query 1 - A complete edge record with different qualifiers
+            [
+                GENE_NODE,
+                TAXON_NODE
+            ],
             {
                 "subject": "NCBIGene:3105",
                 "predicate": "biolink:correlated_with",
@@ -254,8 +348,6 @@ def test_transform_icees_nodes(
                     "{\"attribute_type_id\": \"biolink:has_supporting_study_result\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/ICEES\"}", "{\"attribute_type_id\": \"terms_and_conditions_of_use\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/Exposures-Provider-ICEES-and-ICEES-KG-Terms-and-Conditions-of-Use\"}", "{\"attribute_type_id\": \"subject_feature_name\", \"value\": \"A*02:01\"}", "{\"attribute_type_id\": \"object_feature_name\", \"value\": \"Anti_HAV\"}", "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"Augmentin_DILI_patient_v4_binned_deidentified|dili|binned|2024_03_15_17_08_01\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 8.340160221149161e-08}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 2}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 0.9999999582991997}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 228.0}]}"
                 ]
             },
-            # Captured node contents
-            None,
             # Captured edge contents
             {
                 "category": ["biolink:VariantToDiseaseAssociation"],
@@ -279,7 +371,11 @@ def test_transform_icees_nodes(
                 "object_feature_name"
             )
         ),
-        (   # Query 3 - A complete record with different qualifiers
+        (   # Query 2 - A complete edge record with different qualifiers
+            [
+                GENE_NODE,
+                UMLS_NODE
+            ],
             {
                 "subject": "NCBIGene:3105",
                 "predicate": "biolink:correlated_with",
@@ -289,8 +385,6 @@ def test_transform_icees_nodes(
                       "{\"attribute_type_id\": \"biolink:has_supporting_study_result\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/ICEES\"}", "{\"attribute_type_id\": \"terms_and_conditions_of_use\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/Exposures-Provider-ICEES-and-ICEES-KG-Terms-and-Conditions-of-Use\"}", "{\"attribute_type_id\": \"subject_feature_name\", \"value\": \"A*02:01\"}", "{\"attribute_type_id\": \"object_feature_name\", \"value\": \"Anti_HBc_IgM\"}", "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"Augmentin_DILI_patient_v4_binned_deidentified|dili|binned|2024_03_15_17_08_01\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 2.7441416237609344}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 2}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 0.253581296304747}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 190.0}]}"
                 ]
             },
-            # Captured node contents
-            None,
             # Captured edge contents
             {
                 "category": ["biolink:CausalGeneToDiseaseAssociation"],
@@ -318,15 +412,18 @@ def test_transform_icees_nodes(
 )
 def test_transform_icees_edges(
         mock_koza_transform: koza.KozaTransform,
-        test_record: dict,
-        result_nodes: Optional[list],
-        result_edge: Optional[dict],
-        qualifiers: tuple,
+        test_nodes: list[dict[str, Any]],
+        test_edge_record: dict,
+        result_edge: dict,
+        qualifiers: tuple
 ):
+    # The edge ingest needs the node categories cached from the corresponding node ingests
+    transform_icees_node(mock_koza_transform, test_nodes[0])
+    transform_icees_node(mock_koza_transform, test_nodes[1])
 
     validate_transform_result(
-        result=transform_icees_edge(mock_koza_transform, test_record),
-        expected_nodes=result_nodes,
+        result=transform_icees_edge(mock_koza_transform, test_edge_record),
+        expected_nodes=None,
         expected_edges=result_edge,
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS+qualifiers,
     )
