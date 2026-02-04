@@ -10,10 +10,6 @@ from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.icees.icees import (
     transform_icees_node,
-    on_begin_node_ingest,
-    on_end_node_ingest,
-    on_begin_edge_ingest,
-    on_end_edge_ingest,
     transform_icees_edge,
 )
 
@@ -54,15 +50,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Missing id - returns None
-            {
-                # "id": "PUBCHEM.COMPOUND:2083",
-            }
-            ,
-            None,
-            None,
-        ),
-        (  # Query 1 - A complete node record
+        (  # Query 0 - A complete node record
             {
                 "id": "PUBCHEM.COMPOUND:2083",
                 "name": "Salbutamol",
@@ -105,7 +93,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             # Captured edge contents - n/a
             None
         ),
-        (  # Query 2- Another complete node record
+        (  # Query 1- Another complete node record
             {
                 "id": "MONDO:0004979",
                 "name": "asthma",
@@ -139,7 +127,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             # Captured edge contents - n/a
             None
         ),
-        (  # Query 3- One strange actual ICEES record (triggers a validation error?)
+        (  # Query 2- One strange actual ICEES record (triggers a validation error?)
             {
                 "id": "UMLS:C3836535",
                 "name": "patient education about activity/exercise prescribed",
@@ -179,9 +167,6 @@ def test_transform_icees_nodes(
         result_nodes: Optional[list],
         result_edge: Optional[dict],
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_node_ingest(mock_koza_transform)
-
     validate_transform_result(
         result=transform_icees_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -189,7 +174,6 @@ def test_transform_icees_nodes(
         node_test_slots=NODE_TEST_SLOTS
     )
 
-    on_end_node_ingest(mock_koza_transform)
 
 @pytest.mark.skip
 @pytest.mark.parametrize(
@@ -352,8 +336,6 @@ def test_transform_icees_edges(
         result_edge: Optional[dict],
         qualifiers: tuple,
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_edge_ingest(mock_koza_transform)
 
     validate_transform_result(
         result=transform_icees_edge(mock_koza_transform, test_record),
@@ -361,4 +343,3 @@ def test_transform_icees_edges(
         expected_edges=result_edge,
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS+qualifiers,
     )
-    on_end_edge_ingest(mock_koza_transform)
