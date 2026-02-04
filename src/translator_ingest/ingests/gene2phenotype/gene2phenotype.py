@@ -167,6 +167,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         agent_type=AgentTypeEnum.manual_agent,
         update_date=date,
         allelic_requirement=koza.transform_metadata["allelicreq_mappings"][record["allelic requirement"]],
+        gene2phenotype_confidence_category=record["confidence"],
         ## include publications!!!
         publications=publications,
     )
