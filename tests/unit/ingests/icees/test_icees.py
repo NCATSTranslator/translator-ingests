@@ -48,7 +48,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
 )
 
 @pytest.mark.parametrize(
-    "test_record,result_nodes,result_edge",
+    "test_record,result_nodes",
     [
         (  # Query 0 - A complete node record
             {
@@ -89,9 +89,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                         "DrugCentral:105"
                     ]
                 }
-            ],
-            # Captured edge contents - n/a
-            None
+            ]
         ),
         (  # Query 1- Another complete node record
             {
@@ -123,9 +121,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                         "EFO:0000270"
                     ]
                 }
-            ],
-            # Captured edge contents - n/a
-            None
+            ]
         ),
         (  # Query 2- One strange actual ICEES record (triggers a validation error?)
             {
@@ -154,9 +150,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                         "UMLS:C3836535"
                     ],
                 }
-            ],
-            # Captured edge contents - n/a
-            None
+            ]
         )
     ],
     #
@@ -164,13 +158,12 @@ CORE_ASSOCIATION_TEST_SLOTS = (
 def test_transform_icees_nodes(
         mock_koza_transform: koza.KozaTransform,
         test_record: dict,
-        result_nodes: Optional[list],
-        result_edge: Optional[dict],
+        result_nodes: Optional[list]
 ):
     validate_transform_result(
         result=transform_icees_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
-        expected_edges=result_edge,
+        expected_edges=None,
         node_test_slots=NODE_TEST_SLOTS
     )
 
