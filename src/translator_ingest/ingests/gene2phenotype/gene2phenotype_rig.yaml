@@ -21,12 +21,14 @@ source_info:
     - csv    # on-the-fly downloads
     - other    # FTP static releases are csv.gz
   data_versioning_and_releases: "On-the-fly downloads: creation/download date are the same and can be used for versioning; note that the date in the filename may differ from the date in your timezone. Static releases: creation date (shown on FTP site and in folder/file names) can be used for versioning; releases cut and archived roughly every 1-2 months."
+  # additional_notes:  # (optional, range = string)
 
 # Information about Ingested Content
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: "EBI G2P associations are useful as edges in support paths for MVP1 ('what may treat disease X'), and in Pathfinder queries."
+  # scope:  # (optional, range = string)
   
   relevant_files:
     - file_name: "G2P_all_[date].csv"
@@ -62,6 +64,8 @@ ingest_info:
         There's more details on the molecular mechanism (but some columns are sparse, complex, and tricky to interpret/parse).
         And there's more detail on the gene-disease inheritance pattern ('cross cutting modifier' column).
         (Matt's note) Rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications)."
+  
+  # additional_notes:  # (optional, range = string)
 
 
 # Information about the Graph Output by the ingest
@@ -100,6 +104,7 @@ target_info:
       ui_explanation: "EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease."
       source_files: 
         - "G2P_all_[date].csv"
+      # additional_notes:  # (optional, range = string)
 
   node_type_info:
     - node_category: biolink:Gene
@@ -116,6 +121,9 @@ target_info:
       consideration: "May want to revisit how we handle the 'molecular mechanism' column vs the biolink-model qualifier options. Also consider ingesting/modeling the 'variant consequence' and 'variant types' columns."
     - category: other
       consideration: "Revisit biolink-model spec of allelic_requirement (currently uses a regex pattern to match HP ID syntax, rather than 'base mode of inheritance term and its descendants' or an enumerated list of permissible values)"
+
+  # additional_notes:  # (optional, range = string)
+
 
 # Information about the how the ingest was specified and performed
 provenance_info:
