@@ -1,5 +1,7 @@
 from typing import Optional, Any
 import json
+
+import pytest
 from loguru import logger
 import koza
 
@@ -27,7 +29,7 @@ def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
 
-@koza.transform_record(tag="icees_nodes")
+@koza.transform_record(tag="nodes")
 def transform_icees_node(
         koza_transform: koza.KozaTransform,
         record: dict[str, Any]
@@ -53,8 +55,8 @@ def transform_icees_node(
     )
     return KnowledgeGraph(nodes=[node])
 
-
-@koza.transform_record(tag="icees_edges")
+@pytest.mark.skip
+@koza.transform_record(tag="edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
 

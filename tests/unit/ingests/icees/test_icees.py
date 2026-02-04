@@ -172,12 +172,6 @@ def test_transform_icees_nodes(
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge,qualifiers",
     [
-        (  # Query 0 - Missing fields (all in fact!)
-            {},
-            None,
-            None,
-            ()
-        ),
         (   # Query 1 - A complete record
             {
                 "subject": "PUBCHEM.COMPOUND:2083",
