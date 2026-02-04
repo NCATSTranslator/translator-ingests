@@ -54,9 +54,14 @@ ingest_info:
 
   future_considerations:
     - category: edge_content
-      consideration: "Revisit exclusion of 'disputed' and/or 'refuted' records once Translator can model/handle negation better"
+      consideration: "Revisit exclusion of 'limited', 'disputed', and 'refuted' records once Translator can model/handle negation better"
     - category: edge_property_content
-      consideration: "Lots of additional edge-level information that we could include in future iterations, including: 'confidence' level values when we improve/refactor modeling of confidence in Biolink; variant information ('variant consequence', 'variant types' columns - their values map to SO terms); (Matt's note) rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications)."
+      consideration: >-
+        Review other columns in data - some contain edge-level information that we may want to include in future iterations. 
+        There's details on variants, but not their actual names/IDs ('variant consequence' and 'variant types' columns, which have values that map to SO terms).
+        There's more details on the molecular mechanism (but some columns are sparse, complex, and tricky to interpret/parse).
+        And there's more detail on the gene-disease inheritance pattern ('cross cutting modifier' column).
+        (Matt's note) Rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications)."
 
 
 # Information about the Graph Output by the ingest
@@ -104,9 +109,9 @@ target_info:
 
   future_considerations:
     - category: qualifiers
-      consideration: "May want to revisit how we handle the 'molecular mechanism' and 'variant types' columns VS the biolink-model qualifier options"
-    - category: edge_properties
-      consideration: "Revisit modeling of allelic_requirement (uses a regex pattern to match HP id syntax now, rather than an enumerated list of permissible values)"
+      consideration: "May want to revisit how we handle the 'molecular mechanism' column vs the biolink-model qualifier options. Also consider ingesting/modeling the 'variant consequence' and 'variant types' columns."
+    - category: other
+      consideration: "Revisit biolink-model spec of allelic_requirement (currently uses a regex pattern to match HP ID syntax, rather than 'base mode of inheritance term and its descendants' or an enumerated list of permissible values)"
 
 # Information about the how the ingest was specified and performed
 provenance_info:
