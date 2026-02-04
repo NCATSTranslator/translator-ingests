@@ -66,7 +66,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-gene2phenotype-kgx
+  infores_id: infores:translator-gene2phenotype
 
   edge_type_info:
     - subject_categories:
@@ -90,12 +90,16 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:gene2phenotype
       edge_properties:
         - biolink:original_subject
         - biolink:original_object
         - biolink:update_date
         - biolink:gene2phenotype_confidence_category
       ui_explanation: "EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease."
+      source_files: 
+        - "G2P_all_[date].csv"
 
   node_type_info:
     - node_category: biolink:Gene
