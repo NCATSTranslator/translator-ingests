@@ -174,10 +174,10 @@ _PREDICATE_MAPPINGS = {
         "biolink:positively_correlated_with": "biolink:was_tested_for_effect_on"
     },
     "DiseaseAssociatedWithResponseToChemicalEntityAssociation": {
-        # 'biolink:associated_with_resistance_to',
         # 'biolink:associated_with_response_to'
         # 'biolink:associated_with_sensitivity_to'
         "biolink:positively_correlated_with": "biolink:associated_with_sensitivity_to",
+        "biolink:negatively_correlated_with": "biolink:associated_with_resistance_to"
     },
     "DiseaseOrPhenotypicFeatureToLocationAssociation": {
         "biolink:correlated_with": "biolink:correlated_with",
