@@ -2,7 +2,7 @@ import pytest
 
 from typing import Optional, Any
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum, TaxonomicRank
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
 from koza.transform import Mappings

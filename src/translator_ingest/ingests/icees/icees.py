@@ -1,7 +1,6 @@
 from typing import Optional, Any
 import json
 
-import pytest
 from loguru import logger
 import koza
 
