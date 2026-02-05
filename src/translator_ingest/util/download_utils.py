@@ -3,11 +3,16 @@
 import tempfile
 import yaml
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 from translator_ingest.util.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+
+class EmptyDownloadedFileError(Exception):
+    """Raised when one or more downloaded files are empty (file size 0)."""
+    pass
 
 
 def substitute_version_in_download_yaml(
@@ -90,3 +95,55 @@ def substitute_version_in_download_yaml(
         temp_file.close()
         Path(temp_file.name).unlink(missing_ok=True)
         raise e
+
+
+def validate_downloaded_files(download_directory: Union[str, Path]) -> None:
+    """
+    Validate that downloaded files are not empty (file size > 0).
+
+    Checks all files in the download directory to ensure none have a size of 0 bytes.
+    This helps catch scenarios where a download succeeded but the source provided an empty file,
+    which would otherwise cause confusing errors during data processing.
+
+    Args:
+        download_directory: Path to the directory containing downloaded files
+
+    Raises:
+        EmptyDownloadedFileError: If one or more downloaded files have size 0
+
+    Example:
+        >>> validate_downloaded_files("/path/to/downloads")
+        # Raises EmptyDownloadedFileError if any files are empty
+    """
+    download_directory = Path(download_directory)
+
+    if not download_directory.exists():
+        logger.warning(f"Download directory does not exist: {download_directory}")
+        return
+
+    # Get all files in the directory (not subdirectories)
+    downloaded_files = [f for f in download_directory.iterdir() if f.is_file()]
+
+    if not downloaded_files:
+        logger.warning(f"No files found in download directory: {download_directory}")
+        return
+
+    # Check each file for empty size
+    empty_files: List[Path] = []
+    for file_path in downloaded_files:
+        file_size = file_path.stat().st_size
+        if file_size == 0:
+            empty_files.append(file_path)
+            logger.error(f"Downloaded file is empty (0 bytes): {file_path.name}")
+
+    # If any files are empty, raise an informative error
+    if empty_files:
+        file_names = ", ".join([f.name for f in empty_files])
+        error_message = (
+            f"Downloaded file(s) are empty (file size 0): {file_names}. "
+            f"This likely indicates an issue with the data source's pipeline. "
+            f"Please check the source's status and contact the data provider if necessary."
+        )
+        raise EmptyDownloadedFileError(error_message)
+
+    logger.info(f"Validated {len(downloaded_files)} downloaded file(s) - all non-empty")
