@@ -2,7 +2,7 @@ import pytest
 
 from typing import Optional, Any
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum, TaxonomicRank
 
 import koza
 from koza.transform import Mappings
@@ -130,7 +130,7 @@ GENE_NODE = {
     ]
 }
 
-TAXON_NODE = {
+TAXONOMIC_NODE = {
     "id": "NCBITaxon:12092",
     "name": "Hepatovirus A",
     "category": [
@@ -212,7 +212,26 @@ UMLS_NODE = {
                 },
             ]
         ),
-        (  # Query 2- One strange actual ICEES record (triggers a validation error?)
+        (  # Query 2- Taxonomic node
+            TAXONOMIC_NODE,
+            #
+            # Captured node contents
+            [
+                {
+                    "id": "NCBITaxon:12092",
+                    "name": "Hepatovirus A",
+                    "category": [
+                        "biolink:PhenotypicFeature"
+                    ],
+                    "equivalent_identifiers": [
+                        "NCBITaxon:12092",
+                        "MESH:D030041",
+                        "UMLS:C0376325"
+                    ]
+                }
+            ]
+        ),
+        (  # Query 3- UMLS node parsing
             {
                 "id": "UMLS:C3836535",
                 "name": "patient education about activity/exercise prescribed",
@@ -241,6 +260,7 @@ UMLS_NODE = {
                 }
             ]
         )
+
     ],
     #
 )
@@ -294,7 +314,7 @@ def test_transform_icees_nodes(
                 "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
                 "subject": "PUBCHEM.COMPOUND:2083",
                 "subject_feature_name": "AlbuterolRx",
-                "predicate": "biolink:positively_correlated_with",
+                "predicate": "biolink:associated_with_sensitivity_to",
                 "object": "MONDO:0007079",
                 "object_feature_name": "AlcoholDependenceDx",
                 #
@@ -337,7 +357,7 @@ def test_transform_icees_nodes(
         (  # Query 1 - A complete edge record with different qualifiers
             [
                 GENE_NODE,
-                TAXON_NODE
+                TAXONOMIC_NODE
             ],
             {
                 "subject": "NCBIGene:3105",
@@ -353,7 +373,7 @@ def test_transform_icees_nodes(
                 "category": ["biolink:VariantToDiseaseAssociation"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
-                "predicate": "biolink:correlated_with",
+                "predicate": "biolink:related_condition",
                 "object": "NCBITaxon:12092",
                 "object_feature_name": "Anti_HAV",
                 # See Query 1 comments above, regarding "has_supporting_studies"
@@ -387,10 +407,10 @@ def test_transform_icees_nodes(
             },
             # Captured edge contents
             {
-                "category": ["biolink:CausalGeneToDiseaseAssociation"],
+                "category": ["biolink:VariantToDiseaseAssociation"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
-                "predicate": "biolink:correlated_with",
+                "predicate": "biolink:related_condition",
                 "object": "UMLS:C4049590",
                 "object_feature_name": "Anti_HBc_IgM",
                 # See Query 1 comments above, regarding "has_supporting_studies"
