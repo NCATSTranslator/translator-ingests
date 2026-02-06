@@ -16,11 +16,18 @@ dependencies = [
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
     "hatchling",
-    "kghub-downloader>=0.4.2",
-    "koza>=2.1.0",
+    "kghub-downloader==0.4.3",
+    "koza>=2.1.1",
     "mkdocs-minify-plugin>=0.8.0",
-    "robokop-orion==0.1.12",
+    "openpyxl",      # for pandas read_excel to work, needed for specific ingest
+    "pandas==2.3.3",    # also installs numpy, used by some ingests
+    "psycopg[binary]",     # for Postgres querying, needed for specific ingest
+    "polars>=1.35.2",
+    "requests",    ## needed for specific ingest
+    "robokop-orion==0.1.14",
     "uv-dynamic-versioning>=0.11.2",
+    "xmltodict>=1.0.2",
+    "zstandard>=0.25.0"
 ]
 
 [project.scripts]
@@ -32,9 +39,6 @@ dev = [
     "black>=24.1.0",
     "codespell>=2.2.0",
     "ruff>=0.12.8",
-    "pandas", # also installs numpy
-    "openpyxl",    # for pandas read_excel to work
-    "requests",
     # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
     "jupyter_contrib_nbextensions",
@@ -44,7 +48,7 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
-    "biolink-model>=4.3.5.post29.dev0",
+    "biolink-model",
 ]
 
 [tool.pytest.ini_options]
@@ -76,3 +80,9 @@ source = "uv-dynamic-versioning"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/translator_ingest"]
+
+[tool.codespell]
+skip = [
+    "./src/translator_ingest/ingests/drug_rep_hub/indications_config.json",
+    "./src/translator_ingest/ingests/drug_rep_hub/target_config.json",
+]

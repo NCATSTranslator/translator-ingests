@@ -86,13 +86,21 @@
             value_id_prefixes: # (optional, multivalued, range = string)
               - 
             value_description:  # (optional, range = string)
-        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
-          -
         agent_type:  # (required, multivalued, range = AgentTypeEnum: manual_agent | automated_agent | computational_model | data_analysis_pipeline | text_mining_agent | image_processing_agent | manual_validation_of_ automated_agent | not_provided | varies)
           -
-        edge_properties:  # (optional, multivalued, range = URIorCURIE)
+        knowledge_level:  # (required, multivalued, range = KnowledgeLevelEnum: knowledge_assertion | logical_entailment | prediction | statistical_association | observation | not_provided | varies)
           -
-        ui_explanation:  # (required, range = string)
+        primary_knowledge_sources:  # (required, multivalued, range = URIorCURIE (an infores))
+          - 
+        supporting_data_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
+          -
+        aggregator_knowledge_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
+          - 
+        edge_properties:  # (optional, multivalued, range = URIorCURIE)
+          -     
+        ui_explanation:  # (required, range = string)  Follow templates/examples in the spreadsheet here when writing these: https://docs.google.com/spreadsheets/d/1Tl-FQYaxoB2QRdurm1EDBWYUOA0RhEU5S_3Qiw9SdkU/edit?gid=0#gid=0
+        source_files:   # (multivalued, range = string)  
+          - 
         additional_notes:  # (optional, range = string)
 
     node_type_info:  # (required, multivalued, range = NodeType)

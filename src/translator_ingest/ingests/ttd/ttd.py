@@ -584,7 +584,7 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## generate TTD urls to drug - based on manual review, target page sometimes doesn't have this info
     ## details: https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/30#issuecomment-3209944640
-    ttd_urls = ["https://ttd.idrblab.cn/data/drug/details/" + i.lower() for i in record["TargetID"]]
+    ttd_urls = ["https://ttd.idrblab.cn/data/drug/details/" + i.lower() for i in record["DrugID"]]
     ttd_source=[
         RetrievalSource(
             ## making the ID the same as infores for now, which is what go_cam did

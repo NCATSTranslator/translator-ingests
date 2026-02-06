@@ -10,7 +10,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
     GeneRegulatesGeneAssociation,
-    AnatomicalEntityToAnatomicalEntityPartOfAssociation,
+    PairwiseMolecularInteraction,
+    AnatomicalEntityHasPartAnatomicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
@@ -42,17 +43,9 @@ from translator_ingest.util.biolink import (
 # csv.field_size_limit(10_000_000)   # allow fields up to 10MB
 
 
-## adding additional needed resources
-BIOLINK_AFFECTS = "biolink:affects"
-BIOLINK_CAUSES = "biolink:causes"
-BIOLINK_HAS_PART = "biolink:has_part"
-BIOLINK_REGULATES = "biolink:regulates"
-BIOLINK_PHYSICALLY_INTERACTS_WITH = "biolink:physically_interacts_with"
-
-
 def get_latest_version() -> str:
-    # SIGNOR has some issues with downloading the latest data programmatically,
-    # in the short term we implemented downloading it from our own server,
+    # SIGNOR has some issues with downloading the latest data programmatically.
+    # In the short term we implemented downloading it from our own server,
     # so the data version is static. We would like to do something like following when that is fixed.
     #
     # SIGNOR doesn't provide a great way to get the version,
@@ -120,7 +113,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["subject_category"] == "protein" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-            predicate = BIOLINK_REGULATES
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -150,11 +142,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
-                predicate = predicate,
+                predicate = "biolink:regulates",
                 sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = BIOLINK_CAUSES,
+                qualified_predicate = "biolink:causes",
                 object_aspect_qualifier = object_aspect_qualifier,
                 object_direction_qualifier = object_direction_qualifier
             )
@@ -168,22 +160,21 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             object = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
 
             if record["EFFECT"] == 'form complex':
-                predicate = BIOLINK_HAS_PART
-                association_1 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+                association_1 = AnatomicalEntityHasPartAnatomicalEntityAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    predicate = predicate,
+                    predicate = "biolink:has_part",
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
-                predicate = BIOLINK_PHYSICALLY_INTERACTS_WITH
-                association_2 = AnatomicalEntityToAnatomicalEntityPartOfAssociation(
+
+                association_2 = PairwiseMolecularInteraction(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    predicate = predicate,
+                    predicate = "biolink:physically_interacts_with",
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
@@ -240,7 +231,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["subject_category"] == "chemical" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-            predicate = BIOLINK_AFFECTS
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -270,11 +260,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
-                predicate = predicate,
+                predicate = "biolink:affects",
                 sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = BIOLINK_CAUSES,
+                qualified_predicate = "biolink:causes",
                 object_aspect_qualifier = object_aspect_qualifier,
                 object_direction_qualifier = object_direction_qualifier
             )

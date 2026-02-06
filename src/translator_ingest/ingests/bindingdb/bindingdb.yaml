@@ -1,0 +1,9 @@
+name: bindingdb
+#
+# BindingDb data is in a huge tab-delimited file with 640 columns and truncated data rows
+# therefore, we don't ask Koza to directly ingest it following a reader specification
+# but instead directly access and pre-process the downloaded file in the
+# @koza.prepare_data() decorated method of the parser, which uses polars to read the file.
+#
+reader:
+  format: csv

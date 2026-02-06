@@ -4,6 +4,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 import uuid
+import math
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -11,6 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     MolecularMixture,
     DiseaseOrPhenotypicFeature,
     Disease,
+    Drug,
     PhenotypicFeature,
     SmallMolecule,
     ComplexMolecularMixture,
@@ -21,6 +23,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
     RetrievalSource,
+    ClinicalApprovalStatusEnum
 )
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import build_association_knowledge_sources
@@ -51,6 +54,7 @@ def create_node(node_data: dict) -> Any:
         "MolecularMixture": MolecularMixture,
         "ChemicalEntity": ChemicalEntity,
         "ComplexMolecularMixture": ComplexMolecularMixture,
+        "Drug": Drug,
         "Disease": Disease,
         "PhenotypicFeature": PhenotypicFeature,
         "DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
@@ -70,7 +74,7 @@ def create_node(node_data: dict) -> Any:
         return NamedThing(
             id=node_id,
             name=name,
-            category=[f"biolink:{category}"] if category else ["biolink:NamedThing"]
+            category=["biolink:NamedThing"]
         )
 
 
@@ -153,14 +157,18 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     }
 
     # Add optional edge properties if present
-    if "N_cases" in record:
+    if "N_cases" in record and not math.isnan(record["N_cases"]):
         edge_props["number_of_cases"] = record["N_cases"]
 
     # Add clinical_approval_status directly to edge properties
     # This is available on EntityToDiseaseAssociation and EntityToPhenotypicFeatureAssociation
     if "clinical_approval_status" in record:
-        edge_props["clinical_approval_status"] = record["clinical_approval_status"]
-    
+        if record["clinical_approval_status"] not in ClinicalApprovalStatusEnum.__members__:
+            # clinical_approval_status was sometimes "?" so this makes it the biolink-valid not_provided instead
+            edge_props["clinical_approval_status"] = ClinicalApprovalStatusEnum.not_provided
+        else:
+            edge_props["clinical_approval_status"] = record["clinical_approval_status"]
+
     # Add FDA regulatory approvals
     if "approvals" in record and record["approvals"]:
         edge_props["FDA_regulatory_approvals"] = record["approvals"]
