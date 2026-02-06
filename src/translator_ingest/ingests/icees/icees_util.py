@@ -143,6 +143,50 @@ _PREDICATE_MAPPINGS = {
         "biolink:correlated_with": "biolink:part_of",
         "biolink:positively_correlated_with": "biolink:part_of"
     },
+    "ChemicalEntityToChemicalDerivationAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "ChemicalEntityToBiologicalProcessAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "DiseaseToExposureEventAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "ExposureEventToPhenotypicFeatureAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "PopulationToPopulationAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "ReactionToParticipantAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "GeneToGeneHomologyAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "GeneToPhenotypicFeatureAssociation": {
+        "biolink:correlated_with": "biolink:has_phenotype",
+        "biolink:positively_correlated_with": "biolink:causes"
+    },
+    "VariantAsAModelOfDiseaseAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
+    "DruggableGeneToDiseaseAssociation": {
+        "biolink:correlated_with": "biolink:associated_with",
+        "biolink:positively_correlated_with": "biolink:associated_with"
+    },
+    "BiologicalProcessOrActivityToBiologicalProcessOrActivityAssociation": {
+        "biolink:correlated_with": "biolink:correlated_with",
+        "biolink:positively_correlated_with": "biolink:positively_correlated_with"
+    },
     "CausalGeneToDiseaseAssociation": {
         # 'biolink:causes'
         # 'biolink:contributes_to'
@@ -174,8 +218,7 @@ _PREDICATE_MAPPINGS = {
         "biolink:positively_correlated_with": "biolink:was_tested_for_effect_on"
     },
     "DiseaseAssociatedWithResponseToChemicalEntityAssociation": {
-        # 'biolink:associated_with_response_to'
-        # 'biolink:associated_with_sensitivity_to'
+        "biolink:correlated_with": "biolink:associated_with_response_to",
         "biolink:positively_correlated_with": "biolink:associated_with_sensitivity_to",
         "biolink:negatively_correlated_with": "biolink:associated_with_resistance_to"
     },
@@ -238,10 +281,7 @@ def remap_icees_predicate(
     """
     association_predicate_map: Optional[dict[str, str]] = _PREDICATE_MAPPINGS.get(association_type, None)
     if association_predicate_map is None:
-        logger.warning(
-            "REMAP MISS: No ICEES predicate remap map found "
-            f"for association type '{association_type}'"
-        )
+        logger.warning(f"MISSING: Association type '{association_type}' has no ICEES predicate map?")
         _PREDICATE_MAPPINGS[association_type] = association_predicate_map = dict()
 
     negation: bool = False
@@ -258,8 +298,7 @@ def remap_icees_predicate(
     remapped_predicate: Optional[str] = association_predicate_map.get(predicate, None)
     if remapped_predicate is None:
         logger.warning(
-            f"REMAP MISS: No specific remapping found for predicate '{predicate}' "
-            f"for association type '{association_type}'"
+            f"MISSING: ICEES predicate '{predicate}' has no mapping for association type '{association_type}'"
         )
         _PREDICATE_MAPPINGS[association_type][predicate] = remapped_predicate = predicate
 

@@ -40,24 +40,17 @@ ingest_info:
   - file_name: edges.jsonl
     included_records: all
     fields_used: id, subject, predicate, object, primary_knowledge_source, attributes
-  #  filtered_content:
-  #  - file_name: null
-  #    filtered_records: null
-  #    rationale: null
-  #  future_considerations:
-  #  - category: null
-  #    consideration: null
-  #    relevant_files: null
-  #  additional_notes: null
 target_info:
   infores_id: infores:icees-kg
   edge_type_info:
   - subject_categories:
     - biolink:SmallMolecule
     predicates:
-    - biolink:positively_correlated_with
+    - biolink:associated_with_sensitivity_to
+    - biolink:associated_with_resistance_to
     object_categories:
     - biolink:Disease
+    # DiseaseAssociatedWithResponseToChemicalEntityAssociation
     qualifiers:
     - property: biolink:subject_feature_name
       value_range: str
@@ -71,65 +64,7 @@ target_info:
     - biolink:SmallMolecule
     predicates:
     - biolink:correlated_with
-    object_categories:
-    - biolink:Disease
-    qualifiers:
-    - property: biolink:subject_feature_name
-      value_range: str
-    - property: biolink:object_feature_name
-      value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
-    - biolink:negatively_correlated_with
-    object_categories:
-    - biolink:Disease
-    qualifiers:
-    - property: biolink:subject_feature_name
-      value_range: str
-    - property: biolink:object_feature_name
-      value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
     - biolink:positively_correlated_with
-    object_categories:
-    - biolink:SmallMolecule
-    qualifiers:
-      - property: biolink:subject_feature_name
-        value_range: str
-      - property: biolink:object_feature_name
-        value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
-    - biolink:correlated_with
-    object_categories:
-    - biolink:SmallMolecule
-    qualifiers:
-      - property: biolink:subject_feature_name
-        value_range: str
-      - property: biolink:object_feature_name
-        value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:SmallMolecule
@@ -145,36 +80,8 @@ target_info:
   - subject_categories:
     - biolink:SmallMolecule
     predicates:
-    - biolink:positively_correlated_with
-    object_categories:
-    - biolink:ChemicalExposure
-    qualifiers:
-      - property: biolink:subject_feature_name
-        value_range: str
-      - property: biolink:object_feature_name
-        value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
     - biolink:correlated_with
-    object_categories:
-    - biolink:ChemicalExposure
-    qualifiers:
-      - property: biolink:subject_feature_name
-        value_range: str
-      - property: biolink:object_feature_name
-        value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
+    - biolink:positively_correlated_with
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:ChemicalExposure
@@ -190,36 +97,8 @@ target_info:
   - subject_categories:
     - biolink:SmallMolecule
     predicates:
-    - biolink:positively_correlated_with
-    object_categories:
-    - biolink:Drug
-    qualifiers:
-      - property: biolink:subject_feature_name
-        value_range: str
-      - property: biolink:object_feature_name
-        value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
     - biolink:correlated_with
-    object_categories:
-    - biolink:Drug
-    qualifiers:
-      - property: biolink:subject_feature_name
-        value_range: str
-      - property: biolink:object_feature_name
-        value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
-    edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
-  - subject_categories:
-    - biolink:SmallMolecule
-    predicates:
+    - biolink:positively_correlated_with
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:Drug

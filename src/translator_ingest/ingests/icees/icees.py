@@ -108,6 +108,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
                 subject_categories=subject_categories,
                 predicates= [icees_predicate],
                 object_categories=object_categories,
+                match_inverses=False,  # perhaps safer to ignore inverses here?
                 formatted=True
         )
 
