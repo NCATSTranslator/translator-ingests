@@ -195,6 +195,48 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     edges.append(association_1)
                     edges.append(association_2)
 
+        elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
+            subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
+            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+
+            if record["EFFECT"] == 'up-regulates activity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'down-regulates':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity by destabilization':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            else:
+                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
+
+            association = GeneRegulatesGeneAssociation(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:affects",
+                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                qualified_predicate = "biolink:causes",
+                object_aspect_qualifier = object_aspect_qualifier,
+                object_direction_qualifier = object_direction_qualifier
+            )
+            if subject is not None and object is not None and association is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association)
+
         elif record["subject_category"] == "chemical" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
@@ -233,6 +275,118 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 qualified_predicate = BIOLINK_CAUSES,
+                object_aspect_qualifier = object_aspect_qualifier,
+                object_direction_qualifier = object_direction_qualifier
+            )
+            if subject is not None and object is not None and association is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association)
+
+        elif record["subject_category"] == "smallmolecule" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
+            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
+            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+
+            if record["EFFECT"] == 'up-regulates activity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'down-regulates':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            else:
+                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
+
+            association = GeneRegulatesGeneAssociation(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:affects",
+                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                qualified_predicate = "biolink:causes",
+                object_aspect_qualifier = object_aspect_qualifier,
+                object_direction_qualifier = object_direction_qualifier
+            )
+            if subject is not None and object is not None and association is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association)
+
+        elif record["subject_category"] == "smallmolecule" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
+            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
+            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+
+            if record["EFFECT"] == 'up-regulates activity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            else:
+                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
+
+            association = GeneRegulatesGeneAssociation(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:affects",
+                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                qualified_predicate = "biolink:causes",
+                object_aspect_qualifier = object_aspect_qualifier,
+                object_direction_qualifier = object_direction_qualifier
+            )
+            if subject is not None and object is not None and association is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association)
+
+        elif record["subject_category"] == "smallmolecule" and record["object_category"] == "smallmolecule" and record["EFFECT"] in list_ppi_accept_effects:
+            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
+            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+
+            if record["EFFECT"] == 'up-regulates activity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity by expression':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'down-regulates activity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity by expression':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+
+            association = GeneRegulatesGeneAssociation(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:affects",
+                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                qualified_predicate = "biolink:causes",
                 object_aspect_qualifier = object_aspect_qualifier,
                 object_direction_qualifier = object_direction_qualifier
             )
