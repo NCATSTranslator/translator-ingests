@@ -87,10 +87,17 @@
           - property: "biolink:causal_mechanism_qualifier"
             value_range:
               - "biolink:CausalMechanismQualifierEnum"
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+          - property: "biolink:object_form_or_variant_qualifier"
+            value_range:
+              - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
+          - automated_agent
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
@@ -133,6 +140,7 @@
           - manual_agent
         edge_properties:
           - biolink:publications
+          - biolink:has_confidence_score
           - binding_site_name
           - binding_site_comment
           - mechanism_of_action_description
