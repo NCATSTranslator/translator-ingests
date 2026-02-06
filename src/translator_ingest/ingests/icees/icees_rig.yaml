@@ -50,7 +50,6 @@ target_info:
     - biolink:associated_with_resistance_to
     object_categories:
     - biolink:Disease
-    # DiseaseAssociatedWithResponseToChemicalEntityAssociation
     qualifiers:
     - property: biolink:subject_feature_name
       value_range: str
