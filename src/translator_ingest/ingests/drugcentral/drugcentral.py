@@ -23,10 +23,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-## increment this when your file changes will affect the output
-##   (even with the same resource data) to trigger a new build
-TRANSFORM_VERSION = "1.1"
-
 ## ADDED packages for this ingest
 import pandas as pd
 ## psycopg is underlying dependency
@@ -38,6 +34,9 @@ from translator_ingest.ingests.drugcentral.mappings import (
     INFORES_MAPPING,
     ACTION_TYPE_MAPPING
 )
+## increment this when your file changes will affect the output
+##   (even with the same resource data) to trigger a new build
+TRANSFORM_VERSION = "1.1"
 
 
 ## HARD-CODED values and mappings
@@ -211,7 +210,7 @@ def bioactivity_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     engine = create_engine(server_url)
 
     ## load table into pandas: do filtering in SQL query (faster, more efficient)
-    koza.log(f"Loading act_table_full into pandas...")
+    koza.log("Loading act_table_full into pandas...")
     koza.log(f"Only working with these columns: {", ".join(ACT_MAIN_COLUMNS)}")
     ## currently only ingesting rows with an action_type value (assertion of relationship)
     ## for reasoning behind other constraints, see comments where variables were defined
@@ -228,7 +227,7 @@ def bioactivity_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
     for i in df1_qfilter.columns:
         if df1_qfilter[i].hasnans:
             koza.log(f"{i} is present in {df1_qfilter[i].notna().sum()} rows")
-    koza.log(f"All other columns have no missing values")
+    koza.log("All other columns have no missing values")
     for i in ["struct_id", "accession", "action_type"]:
         koza.log(f"{i}: {df1_qfilter[i].nunique()} unique values")
     ## diff for act_source: list values
