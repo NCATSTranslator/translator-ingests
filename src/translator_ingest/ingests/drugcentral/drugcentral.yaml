@@ -5,3 +5,5 @@ readers:
   ## separate readers/code for each table
   omop_relationship:
     format: csv
+  act_table_full:
+    format: csv
