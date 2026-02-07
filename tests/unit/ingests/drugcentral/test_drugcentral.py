@@ -131,7 +131,7 @@ def test_substrate(substrate):
     association = [e for e in entities if isinstance(e, MacromolecularMachineHasSubstrateAssociation)][0]
     assert association
     ## check that subject is protein, object is chem
-    assert association.subject == "UNIPROTKB:P31645"
+    assert association.subject == "UniProtKB:P31645"
     assert association.object == "DrugCentral:618"
     ## predicate/qualifier stuff
     assert association.predicate == ACTION_TYPE_MAPPING["SUBSTRATE"]["predicate"]

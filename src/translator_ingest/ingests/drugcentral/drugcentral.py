@@ -277,7 +277,7 @@ def bioactivity_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> K
         pubs = [record["act_source_url"]]
 
     chemical = ChemicalEntity(id=f"DrugCentral:{record["struct_id"]}")
-    protein = Protein(id=f"UNIPROTKB:{record["accession"]}")
+    protein = Protein(id=f"UniProtKB:{record["accession"]}")
 
     ## diff Association type depending on predicate
     data_modeling = ACTION_TYPE_MAPPING[record["action_type"]]
