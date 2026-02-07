@@ -299,7 +299,7 @@ target_info:
     - category: node_properties
       consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
     - category: edge_content
-      consideration: "Ingest the P1-06 file for Drug-target_for-Disease edges. This would be a chance to explore utility and modeling of this new type of edge/knowledge.  May need some modeling work / Biolink updates. My understanding is that the targets here are necessarily mechanistic for the disease - which is new/valuable info.  
+      consideration: "Ingest the P1-06 file for Drug-target_for-Disease edges. This would be a chance to explore utility and modeling of this new type of edge/knowledge.  May need some modeling work / Biolink updates. Matt's understanding is that the targets here are necessarily mechanistic for the disease - which is new/valuable info."
   # additional_notes:  # (optional, range = string)
 
 
