@@ -288,11 +288,11 @@ target_info:
       additional_notes: "Used NameResolver on indication name to get IDs. Didn't use the data's 'icd-11 IDs' because (1) these were codes, not the actual ICD-11 foundation URIs; (2) NodeNorm currently has very little support for ICD-11 IDs (and the few IDs recognized are foundation URIs); and (3) the TTD values are sometimes a 'range' of codes that aren't listed individually, which we cannot handle (ex: for 'solid tumour/cancer', TTD uses '2A00-2F9Z' aka code '2A00' to '2F9Z')."
     - node_category: biolink:Gene
       source_identifier_types:
-        - "UNIPROTKB"
+        - "UniProtKB"
       additional_notes: "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human. NodeNorm with gene/protein conflation will set some of these to Gene entities."
     - node_category: biolink:Protein
       source_identifier_types:
-        - "UNIPROTKB"
+        - "UniProtKB"
       additional_notes: "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
 
   future_considerations:
