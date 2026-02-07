@@ -156,7 +156,10 @@ def mgi_expression_anatomy_row():
             "anatomicalStructureTermId": "EMAPA:17524"
         },
         "whenExpressed": {
-            "stageTermId": "MmusDv:0000003"
+            "stageName": "TS23",
+            "stageUberonSlimTerm": {
+                "uberonTerm": "UBERON:0000068"
+            }
         },
         "evidence": {
             "publicationId": "PMID:12345678"
@@ -169,7 +172,7 @@ def mgi_expression_anatomy_row():
 
 @pytest.fixture
 def mgi_expression_cellular_component_row():
-    """Mouse expression association with cellular component"""
+    """Mouse expression association with cellular component (RGD-like, no stage ontology term)"""
     return {
         "geneId": "MGI:98834",
         "assay": "MMO:0000655",
@@ -177,7 +180,7 @@ def mgi_expression_cellular_component_row():
             "cellularComponentTermId": "GO:0005737"
         },
         "whenExpressed": {
-            "stageTermId": "MmusDv:0000003"
+            "stageName": "N/A"
         },
         "evidence": {
             "publicationId": "PMID:12345678"
@@ -212,10 +215,10 @@ def test_mgi_expression_anatomy(mgi_expression_anatomy_row):
     assert assoc.subject == "MGI:98834"
     assert assoc.predicate == "biolink:expressed_in"
     assert assoc.object == "EMAPA:17524"
-    assert assoc.stage_qualifier == "MmusDv:0000003"
+    assert assoc.stage_qualifier == "UBERON:0000068"
     assert assoc.qualifier == "MMO:0000655"
     assert "PMID:12345678" in assoc.publications
-    assert "MGI:5555555" in assoc.publications
+    assert "MGI:5555555" not in assoc.publications  # annotation ID, not a publication
 
     # Check knowledge sources
     assert assoc.sources is not None
@@ -248,13 +251,55 @@ def test_mgi_expression_cellular_component(mgi_expression_cellular_component_row
     assert assoc.subject == "MGI:98834"
     assert assoc.predicate == "biolink:expressed_in"
     assert assoc.object == "GO:0005737"
-    assert assoc.stage_qualifier == "MmusDv:0000003"
+    assert assoc.stage_qualifier is None
     assert assoc.qualifier == "MMO:0000655"
     assert "PMID:12345678" in assoc.publications
-    assert "MGI:5555555" in assoc.publications
 
     # Check knowledge sources
     assert assoc.sources is not None
     source_ids = [s.resource_id for s in assoc.sources]
     assert "infores:mgi" in source_ids
     assert INFORES_AGRKB in source_ids
+
+
+# ===== STAGE QUALIFIER EDGE CASES =====
+
+
+@pytest.fixture
+def mgi_expression_label_stage_row(mgi_expression_anatomy_row):
+    """MGI expression row with stage label instead of CURIE."""
+    row = mgi_expression_anatomy_row.copy()
+    row["whenExpressed"] = {
+        "stageName": "TS11",
+        "stageUberonSlimTerm": {
+            "uberonTerm": "post embryonic, pre-adult"
+        }
+    }
+    return row
+
+
+@pytest.fixture
+def mgi_expression_invalid_stage_row(mgi_expression_anatomy_row):
+    """MGI expression row with an unrecognized non-CURIE stage value."""
+    row = mgi_expression_anatomy_row.copy()
+    row["whenExpressed"] = {
+        "stageName": "TS11",
+        "stageUberonSlimTerm": {
+            "uberonTerm": "some unknown label"
+        }
+    }
+    return row
+
+
+def test_mgi_expression_stage_label_mapped_to_curie(mgi_expression_label_stage_row):
+    """Label 'post embryonic, pre-adult' should be mapped to UBERON:0000092."""
+    result = transform_expression(None, mgi_expression_label_stage_row)
+    assoc = result.edges[0]
+    assert assoc.stage_qualifier == "UBERON:0000092"
+
+
+def test_mgi_expression_invalid_stage_filtered(mgi_expression_invalid_stage_row):
+    """Unrecognized non-CURIE stage values should be filtered to None."""
+    result = transform_expression(None, mgi_expression_invalid_stage_row)
+    assoc = result.edges[0]
+    assert assoc.stage_qualifier is None

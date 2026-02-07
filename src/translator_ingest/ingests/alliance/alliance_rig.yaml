@@ -65,10 +65,10 @@ ingest_info:
       fields_used: "objectId, phenotypeTermIdentifiers, evidence.publicationId, conditionRelations"
     - file_name: "EXPRESSION_MGI.json.gz"
       included_records: "All gene expression records"
-      fields_used: "geneId, whereExpressed.anatomicalStructureTermId, whereExpressed.cellularComponentTermId, whenExpressed.stageTermId, evidence.publicationId, crossReference.id, assay"
+      fields_used: "geneId, whereExpressed.anatomicalStructureTermId, whereExpressed.cellularComponentTermId, whenExpressed.stageUberonSlimTerm.uberonTerm, evidence.publicationId, assay"
     - file_name: "EXPRESSION_RGD.json.gz"
       included_records: "All gene expression records"
-      fields_used: "geneId, whereExpressed.anatomicalStructureTermId, whereExpressed.cellularComponentTermId, whenExpressed.stageTermId, evidence.publicationId, crossReference.id, assay"
+      fields_used: "geneId, whereExpressed.anatomicalStructureTermId, whereExpressed.cellularComponentTermId, whenExpressed.stageUberonSlimTerm.uberonTerm, evidence.publicationId, assay"
 
   filtered_content:
     - file_name: "PHENOTYPE_MGI.json.gz"
@@ -106,22 +106,23 @@ target_info:
         - biolink:has_phenotype
       object_categories:
         - biolink:PhenotypicFeature
-      qualifiers:
-        - property: biolink:qualifiers
-          value_id_prefixes:
-            - "ZECO"
-            - "XCO"
-            - "CHEBI"
-          value_description: "Experimental conditions under which the phenotype was observed, captured from the conditionRelations field. These may include environmental conditions, chemical treatments, or other qualifying context."
+      qualifiers: []
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
       edge_properties:
         - publications
-        - qualifiers
       ui_explanation: "These associations represent manually curated phenotype observations for genes in mouse and rat model organisms. Each association links a gene to one or more phenotypic features observed when the gene is perturbed, knocked out, or otherwise modified."
-      additional_notes: "Phenotype records may contain multiple phenotype terms (phenotypeTermIdentifiers), and each generates a separate association edge. Experimental conditions from conditionRelations are captured as qualifiers when present."
+      primary_knowledge_sources:
+        - infores:mgi
+        - infores:rgd
+      aggregator_knowledge_sources:
+        - infores:agrkb
+      source_files:
+        - "PHENOTYPE_MGI.json.gz"
+        - "PHENOTYPE_RGD.json.gz"
+      additional_notes: "Phenotype records may contain multiple phenotype terms (phenotypeTermIdentifiers), and each generates a separate association edge. Experimental conditions (conditionRelations) are not expected in mouse/rat data and would raise an error if encountered. Qualifier support for conditions may be needed if this ingest expands to species like zebrafish (ZFIN) in the future."
 
     - subject_categories:
         - biolink:Gene
@@ -134,11 +135,9 @@ target_info:
         - property: biolink:stage_qualifier
           value_id_prefixes:
             - "UBERON"
-            - "EMAPA"
-            - "GO"
-          value_description: "Developmental or life stage during which expression was observed"
+          value_description: "Developmental or life stage during which expression was observed, from UBERON slim terms. Present for MGI data only; RGD expression data does not include stage ontology terms."
         - property: biolink:qualifiers
-          value_description: "Assay type used to detect expression (e.g., 'MMO:0000648' for immunohistochemistry)"
+          value_description: "Assay type used to detect expression (e.g., 'MMO:0000658' for RNA in situ hybridization)"
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -148,6 +147,14 @@ target_info:
         - stage_qualifier
         - qualifiers
       ui_explanation: "These associations represent gene expression patterns observed in specific anatomical locations or cellular components in mouse and rat. Expression data is typically derived from experimental assays and annotated with developmental stage and assay type information."
+      primary_knowledge_sources:
+        - infores:mgi
+        - infores:rgd
+      aggregator_knowledge_sources:
+        - infores:agrkb
+      source_files:
+        - "EXPRESSION_MGI.json.gz"
+        - "EXPRESSION_RGD.json.gz"
       additional_notes: "The ingest prefers anatomical entity IDs (anatomicalStructureTermId) over cellular component IDs (cellularComponentTermId) when both are present. Stage information and assay type are captured as qualifiers when available."
 
   node_type_info:
@@ -163,7 +170,6 @@ target_info:
     - node_category: biolink:PhenotypicFeature
       source_identifier_types:
         - "MP (Mammalian Phenotype Ontology)"
-        - "HP (Human Phenotype Ontology)"
       node_properties:
         - id
         - category
@@ -171,9 +177,7 @@ target_info:
 
     - node_category: biolink:AnatomicalEntity
       source_identifier_types:
-        - "UBERON (Uber-anatomy ontology)"
-        - "EMAPA (Mouse anatomical dictionary)"
-        - "MA (Mouse adult gross anatomy)"
+        - "EMAPA (Mouse Developmental Anatomy Ontology)"
       node_properties:
         - id
         - category
