@@ -15,6 +15,7 @@ from translator_ingest.ingests.ttd.ttd import (
     p1_05_transform, p1_07_transform
 )
 from translator_ingest.ingests.ttd.mappings import MOA_MAPPING
+import pandas as pd
 
 
 ## P1-05
@@ -22,14 +23,15 @@ from translator_ingest.ingests.ttd.mappings import MOA_MAPPING
 def p1_05_output():
     writer = MockKozaWriter()
     ## example of df row after parsing with P1_05_prepare
-    ## from notebook, row with multiple clinical status values
     record = {
         "subject_pubchem": "PUBCHEM.COMPOUND:136033680",
         "biolink_predicate": "biolink:in_clinical_trials_for",
+        "clinical_approval_status": pd.NA,
+        "max_research_phase": "clinical_trial_phase_2",
         "object_nameres_id": "MONDO:0018177",
         "subject_ttd_drug": {"D0V8AG"},
         "object_indication_name": {"Glioblastoma multiforme", "Recurrent glioblastoma"},
-        "clinical_status": {"Phase 2", "Phase 1/2"},
+        "clinical_status": {"Phase 2"},
     }
     runner = KozaRunner(
         data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[p1_05_transform])
