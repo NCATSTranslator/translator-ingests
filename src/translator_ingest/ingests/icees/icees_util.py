@@ -1,6 +1,8 @@
 """
 This file contains utility functions for ICEES data processing
 """
+from typing import Optional
+from loguru import logger
 from biolink_model.datamodel.pydanticmodel_v2 import Study, IceesStudyResult
 
 #
@@ -69,58 +71,24 @@ def get_icees_supporting_study(
         has_study_results=[result]
     )
 
-#
-# TODO: this is a partial implementation of a more
-#       sophisticated qualifier mapping approach,
-#       ignored and unused for now
-#
-# _associations_missing_qualifiers: set[type[Association]] = set()
-#
-# def get_associations_missing_qualifiers() -> set[type[Association]]:
-#     return _associations_missing_qualifiers
-#
-# def map_icees_qualifiers(
-#     koza_transform: koza.KozaTransform,
-#     association: type[Association],
-#     subject_category: list[str],
-#     object_category: list[str],
-#     qualifiers: dict[str, str]
-# ) -> dict[str, str]:
-#     """
-#     Map ICEES input qualifiers to Association-specific Biolink Model qualifiers.
-#
-#     :param koza_transform: koza.KozaTransform, ingest context containing state information.
-#     :param association: type[Association], specific subtype of biolink:Association being assessed.
-#     :param subject_category: list[str], possible categories resolved for the subject in the association.
-#     :param object_category: list[str], possible categories resolved for the object in the association.
-#     :param qualifiers: dict[str, str], input target qualifiers being translated,
-#                                       indexed by target 'subject' or 'object'.
-#     :return: dict[str, str] of mapped qualifiers, currently either
-#              "subject_specialization_qualifier" or "object_specialization_qualifier"
-#              (returns an empty dictionary if not available in the given Association subtype).
-#     """
-#     mappings: dict[str, str] = {}
-#     if "subject_specialization_qualifier" in association.model_fields:
-#         mappings = {
-#             "subject": "subject_specialization_qualifier",
-#             "object": "object_specialization_qualifier"
-#         }
-#     elif "subject_aspect_qualifier" in association.model_fields:
-#         mappings = {
-#             "subject": "subject_aspect_qualifier",
-#             "object": "object_aspect_qualifier"
-#         }
-#     elif "subject_form_or_variant_qualifier" in association.model_fields:
-#         mappings = {
-#             "subject": "subject_form_or_variant_qualifier",
-#             # the corresponding 'object' qualifier may not be specific to this association?
-#         }
-#     if mappings:
-#         return {mappings[tag]: value for tag, value in qualifiers.items() if tag in mappings}
-#     else:
-#        association_type = type(association)
-#        if str(e) not in koza_transform.transform_metadata["icees_edges"]:
-#             koza_transform.transform_metadata["icees_edges"]["Association_classes_missing_qualifiers"] = {association_type}
-#         else:
-#             koza_transform.transform_metadata["icees_edges"][Association_classes_missing_qualifiers].add(association_type)
-#         return {}
+_META_MAP: dict[str,set[str]] = dict()
+
+def log_meta_edge(
+        subject_category: str,
+        predicate: str,
+        object_category: str
+
+):
+    """
+    This method reverse engineers the meta_knowledge SPOQ of ICEES data encountered (for the RIG).
+    :param subject_category:
+    :param predicate:
+    :param object_category:
+    :return: None (just builds the internal meta-knowledge-map)
+    """
+    association_predicate_map: Optional[set[str]] = _META_MAP.get(association_type)
+    if association_predicate_map is None:
+        _META_MAP[association_type] = set()
+
+    # Add the predicate to the Set associated with the given association_type
+    _META_MAP[association_type].add(predicate)
