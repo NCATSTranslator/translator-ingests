@@ -27,8 +27,11 @@ ingest_info:
       description: "KGX-compatible nodes referenced by the edges subset."
 
   included_content:
+    # Manual QA 1 fix: We include 10 predicates from the source data. We used to have
+    # physically_interacts_with in the config but it had no matching edges in the source,
+    # so we removed it.
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      included_records: "Edges whose predicate is in the selected Biolink predicate set: biolink:treats_or_applied_or_studied_to_treat, biolink:affects, biolink:preventative_for_condition, biolink:coexists_with, biolink:causes, biolink:related_to, biolink:interacts_with, biolink:located_in, biolink:predisposes_to_condition, biolink:physically_interacts_with, biolink:disrupts.  These are mapped to from the following set of source SEMMEDDB predicates: SEMMEDDB:ADMINISTERED_TO, SEMMEDDB:AFFECTS, SEMMEDDB:ASSOCIATED_WITH, SEMMEDDB:AUGMENTS, SEMMEDDB:CAUSES, SEMMEDDB:COEXISTS_WITH, SEMMEDDB:COMPARED_WITH, SEMMEDDB:DISRUPTS, SEMMEDDB:HIGHER_THAN, SEMMEDDB:INHIBITS, SEMMEDDB:INTERACTS_WITH, SEMMEDDB:ISA, SEMMEDDB:LOCATION_OF (invert), SEMMEDDB:LOWER_THAN, SEMMEDDB:MEASURES, SEMMEDDB:PREDISPOSES, SEMMEDDB:PREVENTS, SEMMEDDB:STIMULATES, SEMMEDDB:TREATS, SEMMEDDB:XREF. Edges retain evidence and negation flags."
+      included_records: "Edges whose predicate is in the selected Biolink predicate set: biolink:treats_or_applied_or_studied_to_treat, biolink:affects, biolink:preventative_for_condition, biolink:coexists_with, biolink:causes, biolink:related_to, biolink:interacts_with, biolink:located_in, biolink:predisposes_to_condition, biolink:disrupts. These are mapped from the following source SEMMEDDB predicates: SEMMEDDB:ADMINISTERED_TO, SEMMEDDB:AFFECTS, SEMMEDDB:ASSOCIATED_WITH, SEMMEDDB:AUGMENTS, SEMMEDDB:CAUSES, SEMMEDDB:COEXISTS_WITH, SEMMEDDB:COMPARED_WITH, SEMMEDDB:DISRUPTS, SEMMEDDB:HIGHER_THAN, SEMMEDDB:INHIBITS, SEMMEDDB:INTERACTS_WITH, SEMMEDDB:ISA, SEMMEDDB:LOCATION_OF (invert), SEMMEDDB:LOWER_THAN, SEMMEDDB:MEASURES, SEMMEDDB:PREDISPOSES, SEMMEDDB:PREVENTS, SEMMEDDB:STIMULATES, SEMMEDDB:TREATS, SEMMEDDB:XREF. Edges retain evidence and negation flags."
       fields_used: "subject, predicate, object, publications, publications_info, negated, domain_range_exclusion, provided_by, knowledge_level, agent_type"
     - file_name: "kg2.10.3-semmeddb-nodes.jsonl"
       included_records: "Only nodes referenced by included edges."
@@ -36,7 +39,7 @@ ingest_info:
 
   filtered_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges with predicates outside the selected set: biolink:exacerbates_condition, biolink:derives_from, biolink:diagnoses, biolink:produces, biolink:close_match, biolink:has_input, biolink:manifestation_of, biolink:occurs_in, biolink:has_part, biolink:precedes. These are mapped to from the following source SEMMEDDB predicates: SEMMEDDB:COMPLICATES, SEMMEDDB:CONVERTS_TO (invert), SEMMEDDB:DIAGNOSES, SEMMEDDB:PRODUCES, SEMMEDDB:SAME_AS, SEMMEDDB:USES,SEMMEDDB:MANIFESTATION_OF SEMMEDDB:OCCURS_IN, SEMMEDDB:PROCESS_OF, SEMMEDDB:PART_OF (invert), SEMMEDDB:PRECEDES. SEMMEDDB predicates dropped in the original RTX-KG2 ingest incldue: SEMMEDDB:MEASUREMENT_OF, SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, SEMMEDDB:VERB."
+      filtered_records: "Edges with predicates outside the selected set: biolink:exacerbates_condition, biolink:derives_from, biolink:diagnoses, biolink:produces, biolink:close_match, biolink:has_input, biolink:manifestation_of, biolink:occurs_in, biolink:has_part, biolink:precedes. These are mapped from the following source SEMMEDDB predicates: SEMMEDDB:COMPLICATES, SEMMEDDB:CONVERTS_TO (invert), SEMMEDDB:DIAGNOSES, SEMMEDDB:PRODUCES, SEMMEDDB:SAME_AS, SEMMEDDB:USES, SEMMEDDB:MANIFESTATION_OF, SEMMEDDB:OCCURS_IN, SEMMEDDB:PROCESS_OF, SEMMEDDB:PART_OF (invert), SEMMEDDB:PRECEDES. SEMMEDDB predicates dropped in the original RTX-KG2 ingest include: SEMMEDDB:MEASUREMENT_OF, SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, SEMMEDDB:VERB."
       rationale: "Reduce predicate heterogeneity to a core set used operationally."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: "Edges lacking publication evidence payload"
@@ -48,10 +51,56 @@ ingest_info:
       filtered_records: "Domain/range violations per exclusion configuration when present"
       rationale: "Improve semantic coherence against Biolink-like domain/range expectations."
 
+  # KNOWN ISSUES AND WARNINGS (Manual QA 1 fixes)
+  # We document stuff that might look weird but is expected behavior.
+  known_issues:
+    # Issue 1: Domain and range warnings from Biolink validation
+    # SemMedDB is a text-mining database. It extracts relationships from scientific papers.
+    # Sometimes the extracted subject or object doesn't match what Biolink expects for
+    # certain predicates. For example:
+    #   - treats_or_applied_or_studied_to_treat expects a drug/chemical as subject
+    #     but sometimes we get Procedure, Protein, Gene, or Device
+    #   - predisposes_to_condition expects drug/chemical as subject
+    #     but sometimes we get Disease, Gene, or Phenotype
+    #   - Object types like Cohort, Cell, or PopulationOfIndividualOrganisms
+    #     appear where Disease or PhenotypicFeature is expected
+    #
+    # We keep these edges because they still have scientific value from the literature.
+    # The validation warnings are expected and documented here so people know about them.
+    - issue: "Domain/range constraint violations in validation"
+      description: "Around 10,000+ warnings show up during Biolink validation. This happens because SemMedDB text mining extracts relationships that don't always fit Biolink's strict domain/range rules. For example, a paper might say 'surgery treats diabetes' but Biolink expects only drugs to treat diseases. We keep these edges because they are real findings from scientific papers. The warnings are expected behavior, not bugs."
+      affected_predicates:
+        - "biolink:treats_or_applied_or_studied_to_treat"
+        - "biolink:predisposes_to_condition"
+        - "biolink:preventative_for_condition"
+      common_mismatched_subjects:
+        - "biolink:Procedure"
+        - "biolink:Protein"
+        - "biolink:Gene"
+        - "biolink:Device"
+        - "biolink:Disease"
+        - "biolink:InformationContentEntity"
+      common_mismatched_objects:
+        - "biolink:Cohort"
+        - "biolink:Cell"
+        - "biolink:PopulationOfIndividualOrganisms"
+      resolution: "Accepted as expected warnings. Data is kept because it has scientific value from literature."
+
+    # Issue 2: original_json property in KGX summary
+    # The KGX summary tool shows original_json as an edge property but you won't
+    # find it in the actual normalized edges file. This is just how KGX works -
+    # it tracks some internal stuff that gets cleaned up during normalization.
+    # Nothing is wrong, it's just a display thing in the summary report.
+    - issue: "KGX summary shows original_json property not in output"
+      description: "The KGX summary report lists original_json as an edge property, but this property is not in the final normalized_edges.jsonl file. This is normal KGX behavior - the property exists in intermediate processing but gets stripped during normalization."
+      resolution: "Expected behavior from KGX tooling. No action needed."
+
 target_info:
   infores_id: infores:translator-semmeddb-kgx
 
-  # Manual QA fixes
+  # Edge types we actually output (Manual QA 1 fixes)
+  # Note: We removed biolink:physically_interacts_with because the source data
+  # didn't have any edges matching that predicate after our filters ran.
   edge_type_info:
     - predicate: biolink:affects
       edge_properties:
@@ -118,6 +167,7 @@ target_info:
         - original_subject
         - original_object
         - sources
+    # This predicate has lots of domain/range warnings - see known_issues section above
     - predicate: biolink:treats_or_applied_or_studied_to_treat
       edge_properties:
         - publications
@@ -157,6 +207,7 @@ target_info:
         - original_subject
         - original_object
         - sources
+    # This predicate has domain/range warnings - see known_issues section above
     - predicate: biolink:predisposes_to_condition
       edge_properties:
         - publications
@@ -170,6 +221,7 @@ target_info:
         - original_subject
         - original_object
         - sources
+    # This predicate has domain/range warnings - see known_issues section above
     - predicate: biolink:preventative_for_condition
       edge_properties:
         - publications
@@ -184,7 +236,8 @@ target_info:
         - original_object
         - sources
 
-  # Manual QA fixes
+  # Node types we see in the output
+  # This is a diverse set because SemMedDB covers many biomedical concepts
   node_type_info:
     - node_category: biolink:SmallMolecule
     - node_category: biolink:Drug
@@ -235,4 +288,4 @@ provenance_info:
     - "SemMedDB overview: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html"
     - "Biolink Model (schema): https://github.com/biolink/biolink-model"
     - "KGX documentation: https://kgx.readthedocs.io"
-    - Summary of predicates included and filtered and their mappings: https://docs.google.com/spreadsheets/d/12XmPE9eJp3H7yJnwg5Wmx5-BZdXXbiwO02vDRc1BY-c/edit?gid=520297121#gid=520297121
+    - "Summary of predicates included and filtered and their mappings: https://docs.google.com/spreadsheets/d/12XmPE9eJp3H7yJnwg5Wmx5-BZdXXbiwO02vDRc1BY-c/edit?gid=520297121#gid=520297121"
