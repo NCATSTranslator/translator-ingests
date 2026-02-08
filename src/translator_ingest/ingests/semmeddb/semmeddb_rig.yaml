@@ -16,7 +16,7 @@ ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: "Large-scale literature-derived relationships suitable for hypothesis generation and cross-graph enrichment with evidence-bearing edges."
-  scope: "Edges taken directly from RTX-KG2’s SemMedDB slice (nodes.jsonl/edges.jsonl), restricted to a selected predicate set and evidence-bearing records."
+  scope: "Edges taken directly from RTX-KG2's SemMedDB slice (nodes.jsonl/edges.jsonl), restricted to a selected predicate set and evidence-bearing records."
 
   relevant_files:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
@@ -56,14 +56,11 @@ target_info:
     - predicate: biolink:affects
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -72,14 +69,11 @@ target_info:
     - predicate: biolink:located_in
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -88,14 +82,11 @@ target_info:
     - predicate: biolink:related_to
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -104,14 +95,11 @@ target_info:
     - predicate: biolink:interacts_with
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -120,14 +108,11 @@ target_info:
     - predicate: biolink:coexists_with
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -136,14 +121,11 @@ target_info:
     - predicate: biolink:treats_or_applied_or_studied_to_treat
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -152,14 +134,11 @@ target_info:
     - predicate: biolink:causes
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -168,14 +147,11 @@ target_info:
     - predicate: biolink:disrupts
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -184,14 +160,11 @@ target_info:
     - predicate: biolink:predisposes_to_condition
       edge_properties:
         - publications
-<<<<<<< Updated upstream
-=======
         - publications_info
         - has_supporting_studies
         - supporting_text
         - negated
         - domain_range_exclusion
->>>>>>> Stashed changes
         - knowledge_level
         - agent_type
         - original_subject
@@ -200,7 +173,11 @@ target_info:
     - predicate: biolink:preventative_for_condition
       edge_properties:
         - publications
-<<<<<<< Updated upstream
+        - publications_info
+        - has_supporting_studies
+        - supporting_text
+        - negated
+        - domain_range_exclusion
         - knowledge_level
         - agent_type
         - original_subject
@@ -246,27 +223,6 @@ target_info:
     - node_category: biolink:Human
     - node_category: biolink:Event
     - node_category: biolink:PhysiologicalProcess
-=======
-        - publications_info
-        - has_supporting_studies
-        - supporting_text
-        - negated
-        - domain_range_exclusion
-        - knowledge_level
-        - agent_type
-        - provided_by
-    - predicate: biolink:associated_with
-      edge_properties:
-        - publications
-        - publications_info
-        - has_supporting_studies
-        - supporting_text
-        - negated
-        - domain_range_exclusion
-        - knowledge_level
-        - agent_type
-        - provided_by
->>>>>>> Stashed changes
 
 provenance_info:
   contributions:
