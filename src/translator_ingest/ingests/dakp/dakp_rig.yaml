@@ -6,12 +6,11 @@ supporting_data_source_info:
     description: "DailyMed provides trustworthy information about marketed drugs in the United States"
     terms_of_use_info:
       terms_of_use_description: >-
-         DailyMed data is freely available. The data is in the public domain.
+         DailyMed data are freely available. The data are in the public domain.
     relevant_files:
       - file_name: "DailyMed Data"
         location: "https://dailymed.nlm.nih.gov/dailymed/"
         description: "Structured product labeling documents"
-
   - infores_id: "infores:faers"
     name: "FDA Adverse Event Reporting System (FAERS)"
     description: "FAERS contains adverse event reports, medication error reports and product quality complaints"
@@ -22,6 +21,16 @@ supporting_data_source_info:
       - file_name: "FAERS Quarterly Data Files"
         location: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
         description: "Quarterly data files containing adverse event reports"
+  - infores_id: "infores:medi"
+    name: "MEDI"
+    description: "MEDI contains contraindication information extracted from DailyMed documents"
+    terms_of_use_info:
+      terms_of_use_description: >-
+         NA
+    relevant_files:
+      - file_name: "contraindicationList.xlsx"
+        location: "https://github.com/everycure-org/matrix-indication-list/releases/"
+        description: "Contraindications extracted from DailyMed"
 
 source_info:
   infores_id: "infores:multiomics-drugapprovals"
@@ -42,8 +51,8 @@ source_info:
 ingest_info:
   ingest_categories:
     - translator_knowledge_creator
-  utility: "DAKP provides curated drug-disease treatment relationships with FDA approval status and supporting evidence. This knowledge is essential for understanding approved therapeutic uses and clinical evidence."
-  scope: "FDA-approved drugs and their treatment relationships with diseases, including approval status, FDA approval numbers, and case counts from adverse event reporting."
+  utility: "DAKP provides curated drug-disease treatment relationships with FDA approval status and supporting evidence. This knowledge is essential for understanding approved therapeutic uses and clinical evidence. DAKP also provides information on drug use in the absence of FDA approval, and information on contraindications."
+  scope: "FDA-approved drugs and their treatment relationships with diseases, including approval status, FDA approval numbers, and case counts from adverse event reporting; information on drug use in the absence of FDA approval, with case counts from adverse event reporting; and information on contraindications."
   relevant_files:
     - file_name: "DAKP processed data"
       location: "https://db.systemsbiology.net/gestalt/KG/"
@@ -61,6 +70,7 @@ target_info:
         - "biolink:SmallMolecule"
         - "biolink:MolecularMixture"
         - "biolink:ComplexMolecularMixture"
+        - "biolink:Drug"
       predicates:
         - "biolink:treats"
       object_categories:
@@ -72,6 +82,40 @@ target_info:
       agent_type:
         - text_mining_agent
       ui_explanation: "The 'treats' predicate indicates an FDA-approved therapeutic relationship between a drug and a disease, with supporting regulatory approval information."
+    - subject_categories:
+        - "biolink:ChemicalEntity"
+        - "biolink:SmallMolecule"
+        - "biolink:MolecularMixture"
+        - "biolink:ComplexMolecularMixture"
+        - "biolink:Drug"
+      predicates:
+        - "biolink:applied_to_treat"
+      object_categories:
+        - "biolink:Disease"
+        - "biolink:PhenotypicFeature"
+        - "biolink:DiseaseOrPhenotypicFeature"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - text_mining_agent
+      ui_explanation: "The 'applied_to_treat' predicate indicates an therapeutic relationship between a drug and a disease, without FDA approval, based on usage reports in FAERS."
+    - subject_categories:
+        - "biolink:ChemicalEntity"
+        - "biolink:SmallMolecule"
+        - "biolink:MolecularMixture"
+        - "biolink:ComplexMolecularMixture"
+        - "biolink:Drug"
+      predicates:
+        - "biolink:contraindicated_in"
+      object_categories:
+        - "biolink:Disease"
+        - "biolink:PhenotypicFeature"
+        - "biolink:DiseaseOrPhenotypicFeature"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - text_mining_agent
+      ui_explanation: "The 'contraindicated_in' predicate indicates a contraindication relationship between a drug and a disease or condition, based on warnings present in FDA approval documents."
 
   node_type_info:
     - node_category: "biolink:ChemicalEntity"
