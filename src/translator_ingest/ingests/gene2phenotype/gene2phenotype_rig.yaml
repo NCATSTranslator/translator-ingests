@@ -99,6 +99,7 @@ target_info:
       edge_properties:
         - biolink:original_subject
         - biolink:original_object
+        - biolink:allelic_requirement
         - biolink:update_date
         - biolink:gene2phenotype_confidence_category
       ui_explanation: "EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease."
