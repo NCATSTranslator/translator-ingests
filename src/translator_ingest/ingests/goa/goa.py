@@ -21,7 +21,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
-from translator_ingest.util.biolink import INFORES_GOA, INFORES_BIOLINK
+from translator_ingest.util.biolink import INFORES_GOA
 
 # Constants
 GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
