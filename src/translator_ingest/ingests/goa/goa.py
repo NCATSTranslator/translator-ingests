@@ -121,17 +121,19 @@ EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE = {
     "HGI": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "HEP": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     # Phylogenetic evidence codes (prediction level)
-    "IBA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "IBD": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
+    # Manual QA 1 fix: IBA, IBD use manual_validation_of_automated_agent per ORION alignment
+    "IBA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "IBD": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
     "IKR": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "IRD": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
     # Computational analysis evidence codes (prediction level)
-    "ISS": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "ISO": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "ISA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "ISM": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
+    # Manual QA 1 fix: ISS, ISO, ISA, ISM, RCA use manual_validation_of_automated_agent per ORION alignment
+    "ISS": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "ISO": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "ISA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "ISM": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
     "IGC": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "RCA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
+    "RCA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
     # Author statement evidence codes
     "TAS": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "NAS": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
@@ -268,9 +270,9 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             negated="NOT" in qualifier,  # Handle negative associations from the GAF qualifier field
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
+            # Manual QA 1 fix: removed aggregator_knowledge_source per Matt's comment
             sources=build_association_knowledge_sources(
                 primary=INFORES_GOA,  # GOA as the primary source
-                aggregating=INFORES_BIOLINK,  # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
@@ -285,9 +287,9 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             negated="NOT" in qualifier,  # Handle negative associations from the GAF qualifier field
             has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
+            # Manual QA 1 fix: removed aggregator_knowledge_source per Matt's comment
             sources=build_association_knowledge_sources(
                 primary=INFORES_GOA,  # GOA as the primary source
-                aggregating=INFORES_BIOLINK,  # This repository as the aggregator
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
