@@ -251,6 +251,46 @@ target_info:
         - "BTO (BRENDA Tissue Ontology) identifiers for tissues (e.g., BTO:0000759 for Liver)"
       additional_notes: "Tissues and anatomical entities extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/AnatomicalEntity/"
 
+# Manual QA 1: Known issues identified during validation
+known_issues:
+  # Most PathBank edges involve MolecularActivity and MacromolecularComplex nodes
+  # that use internal PathBank IDs. NodeNorm doesn't recognize these, so ~88% of
+  # edges get dropped during normalization.
+  - issue: "Large normalization drop (~88% of edges)"
+    description: |
+      PathBank internal IDs (Reaction_, ProteinComplex_, some Compound_) are not
+      recognized by NodeNorm. The ingest correctly produces 12.8M edges, but 11.3M
+      are filtered out because subject or object nodes fail normalization.
+    resolution: "Long-term: Request NodeNorm support for PathBank IDs or map reactions to EC numbers."
+
+  # The RIG documents predicates like has_input, has_output, catalyzes, has_part,
+  # regulates, physically_interacts_with - but these only appear on edges involving
+  # MolecularActivity or MacromolecularComplex nodes that fail normalization.
+  - issue: "Missing predicates in normalized output"
+    description: |
+      Predicates like has_input, has_output, catalyzes, has_part, regulates, and
+      physically_interacts_with are correctly emitted by the ingest but only appear
+      on edges involving MolecularActivity/MacromolecularComplex nodes. These nodes
+      fail NodeNorm, so the edges are dropped.
+    resolution: "Long-term: Depends on fixing normalization drop. Final output only has has_participant, occurs_in, interacts_with."
+
+  # Biolink has_participant expects an "occurrent" (process/event) as object,
+  # but PathBank pathways correctly have chemicals and proteins as participants.
+  - issue: "Validation warnings for has_participant range"
+    description: |
+      66,656 validation warnings occur because biolink:has_participant expects
+      range 'occurrent' but objects are SmallMolecule, Protein, Drug, etc.
+      The data is semantically correct - pathways do have these participants.
+    resolution: "Accepted as warnings. The edges are valid pathway membership assertions."
+
+  # One GO term (GO:0043165) normalized to BiologicalProcess instead of CellularComponent
+  - issue: "occurs_in edge to BiologicalProcess"
+    description: |
+      1 edge has a BiologicalProcess object (from GO term normalization) instead
+      of the expected CellularComponent or AnatomicalEntity. This happens when
+      a GO cellular component term gets normalized to a process category.
+    resolution: "Accepted as edge case. The edge is valid but doesn't match RIG's expected object categories."
+
 provenance_info:
   contributions:
     - "Adilbek Bazarkulov: code implementation, support"
