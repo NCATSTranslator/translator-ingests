@@ -93,6 +93,8 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         return None
     subject_categories: list[str] = subject_node.category
 
+    koza_transform.state["subject_categories"].add(subject_categories[0])
+
     icees_predicate: str = record["predicate"]
 
     icees_object: str = record["object"]
@@ -104,6 +106,8 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         )
         return None
     object_categories: list[str] = object_node.category
+
+    koza_transform.state["object_categories"].add(object_categories[0])
 
     # Specialized case of G2D Association
     if "gene or gene product" in bmt.get_ancestors(subject_categories[0]) and \

@@ -434,7 +434,7 @@ def test_transform_icees_nodes(
             )
         ),
         (   # Query 3 - Gene to Disease association (actually, a fake edge...
-            #           just reused the gene and disease nodes above
+            #           just reused the gene and disease nodes above)
             [
                 GENE_NODE,
                 DISEASE_NODE
