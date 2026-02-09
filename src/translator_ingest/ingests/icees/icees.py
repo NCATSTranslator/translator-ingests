@@ -106,7 +106,8 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
     object_categories: list[str] = object_node.category
 
     # Specialized case of G2D Association
-    if subject_categories[0] == "biolink:Gene" and object_categories[0] == "biolink:Disease":
+    if "gene or gene product" in bmt.get_ancestors(subject_categories[0]) and \
+            object_categories[0] == "biolink:Disease":
         association = CorrelatedGeneToDiseaseAssociation
     else:
         association = Association

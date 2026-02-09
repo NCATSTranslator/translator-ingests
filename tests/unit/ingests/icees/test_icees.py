@@ -74,7 +74,7 @@ PUBCHEM_NODE = {
                 ]
             }
 
-MONDO_NODE = {
+DISEASE_NODE = {
     "id": "MONDO:0007079",
     "name": "alcohol dependence",
     "category": [
@@ -162,7 +162,6 @@ UMLS_NODE = {
     ]
 }
 
-
 ################ End of shared test data ################
 
 @pytest.mark.parametrize(
@@ -187,10 +186,10 @@ UMLS_NODE = {
             ]
         ),
         (  # Query 1- Another complete node record
-            MONDO_NODE,
-            #
-            # Captured node contents
-            [
+                DISEASE_NODE,
+                #
+                # Captured node contents
+                [
                 {
                     "id": "MONDO:0007079",
                     "name": "alcohol dependence",
@@ -283,7 +282,7 @@ def test_transform_icees_nodes(
         (   # Query 0 - A complete edge record
             [
                 PUBCHEM_NODE,
-                MONDO_NODE
+                DISEASE_NODE
             ],
             {
                 "subject": "PUBCHEM.COMPOUND:2083",
@@ -311,14 +310,15 @@ def test_transform_icees_nodes(
             },
             # Captured edge contents
             {
-                "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
+                "category": ["biolink:Association"],
                 "subject": "PUBCHEM.COMPOUND:2083",
                 "subject_feature_name": "AlbuterolRx",
-                "predicate": "biolink:associated_with_sensitivity_to",
+                "predicate": "biolink:positively_correlated_with",
                 "object": "MONDO:0007079",
                 "object_feature_name": "AlcoholDependenceDx",
                 #
-                # Testing the expected contents of this slot is a bit too challenging at this point in time...
+                # Testing the expected contents of this slot is a bit too challenging at this point in time,
+                # but the study generation is validated somewhat by human inspection.
                 #
                 # "has_supporting_studies": {
                 #     "PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22": {
@@ -365,15 +365,21 @@ def test_transform_icees_nodes(
                 "object": "NCBITaxon:12092",
                 "primary_knowledge_source": "infores:icees-kg",
                 "attributes": [
-                    "{\"attribute_type_id\": \"biolink:has_supporting_study_result\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/ICEES\"}", "{\"attribute_type_id\": \"terms_and_conditions_of_use\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/Exposures-Provider-ICEES-and-ICEES-KG-Terms-and-Conditions-of-Use\"}", "{\"attribute_type_id\": \"subject_feature_name\", \"value\": \"A*02:01\"}", "{\"attribute_type_id\": \"object_feature_name\", \"value\": \"Anti_HAV\"}", "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"Augmentin_DILI_patient_v4_binned_deidentified|dili|binned|2024_03_15_17_08_01\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 8.340160221149161e-08}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 2}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 0.9999999582991997}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 228.0}]}"
+                    "{\"attribute_type_id\": \"biolink:has_supporting_study_result\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/ICEES\"}",
+                    "{\"attribute_type_id\": \"terms_and_conditions_of_use\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/Exposures-Provider-ICEES-and-ICEES-KG-Terms-and-Conditions-of-Use\"}",
+
+                    "{\"attribute_type_id\": \"subject_feature_name\", \"value\": \"A*02:01\"}",
+                    "{\"attribute_type_id\": \"object_feature_name\", \"value\": \"Anti_HAV\"}",
+
+                    "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"Augmentin_DILI_patient_v4_binned_deidentified|dili|binned|2024_03_15_17_08_01\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 8.340160221149161e-08}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 2}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 0.9999999582991997}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 228.0}]}"
                 ]
             },
             # Captured edge contents
             {
-                "category": ["biolink:VariantToDiseaseAssociation"],
+                "category": ["biolink:Association"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
-                "predicate": "biolink:related_condition",
+                "predicate": "biolink:correlated_with",
                 "object": "NCBITaxon:12092",
                 "object_feature_name": "Anti_HAV",
                 # See Query 1 comments above, regarding "has_supporting_studies"
@@ -407,10 +413,10 @@ def test_transform_icees_nodes(
             },
             # Captured edge contents
             {
-                "category": ["biolink:VariantToDiseaseAssociation"],
+                "category": ["biolink:Association"],
                 "subject": "NCBIGene:3105",
                 "subject_feature_name": "A*02:01",
-                "predicate": "biolink:related_condition",
+                "predicate": "biolink:correlated_with",
                 "object": "UMLS:C4049590",
                 "object_feature_name": "Anti_HBc_IgM",
                 # See Query 1 comments above, regarding "has_supporting_studies"
@@ -426,8 +432,55 @@ def test_transform_icees_nodes(
             (
                 "subject_feature_name",
             )
-        )
+        ),
+        (   # Query 3 - Gene to Disease association (actually, a fake edge...
+            #           just reused the gene and disease nodes above
+            [
+                GENE_NODE,
+                DISEASE_NODE
+            ],
+            {
+                "subject": "NCBIGene:3105",
+                "predicate": "biolink:positively_correlated_with",
+                "object": "MONDO:0007079",
+                "primary_knowledge_source": "infores:icees-kg",
+                "attributes": [
+                    # These are the attributes in the original representative source data
+                    # are ignored in the data parse since they are DRY documented in the RIG?
+                    "{\"attribute_type_id\": \"biolink:has_supporting_study_result\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/ICEES\"}",
+                    "{\"attribute_type_id\": \"terms_and_conditions_of_use\", \"value\": \"https://github.com/NCATSTranslator/Translator-All/wiki/Exposures-Provider-ICEES-and-ICEES-KG-Terms-and-Conditions-of-Use\"}",
 
+                    # These attributes are tentatively captured as subject and
+                    # object context qualifiers (until further discussion suggests otherwise)
+                    "{\"attribute_type_id\": \"subject_feature_name\", \"value\": \"A*02:01\"}",
+                    "{\"attribute_type_id\": \"object_feature_name\", \"value\": \"AlcoholDependenceDx\"}",
+
+                    "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"PCD_UNC_patient_2020_v6_binned_deidentified|pcd|v6|2024_03_20_21_18_22\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 26.38523077566414}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 1}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 2.7967079822744063e-07}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 4753.0}, {\"attribute_type_id\": \"fisher_exact_odds_ratio\", \"value\": 3.226188583240579}, {\"attribute_type_id\": \"fisher_exact_p\", \"value\": 2.8581244515361156e-06}, {\"attribute_type_id\": \"log_odds_ratio\", \"value\": 1.1713014352915974}, {\"attribute_type_id\": \"log_odds_ratio_95_ci\", \"value\": [0.6996904681742875, 1.6429124024089072]}]}",
+                    "{\"attribute_type_id\": \"icees_cohort_identifier\", \"value\": \"Asthma_UNC_EPR_patient_2013_v5_binned_deidentified|asthma|2013|2024_03_19_10_34_15\", \"attributes\": [{\"attribute_type_id\": \"chi_squared_statistic\", \"value\": 961.1556369070855}, {\"attribute_type_id\": \"chi_squared_dof\", \"value\": 1}, {\"attribute_type_id\": \"chi_squared_p\", \"value\": 4.986523229006498e-211}, {\"attribute_type_id\": \"total_sample_size\", \"value\": 158671.0}, {\"attribute_type_id\": \"fisher_exact_odds_ratio\", \"value\": 17.74280067875692}, {\"attribute_type_id\": \"fisher_exact_p\", \"value\": 4.494353716947507e-97}, {\"attribute_type_id\": \"log_odds_ratio\", \"value\": 2.875979838082306}, {\"attribute_type_id\": \"log_odds_ratio_95_ci\", \"value\": [2.6254515014378037, 3.126508174726808]}]}",
+                ]
+            },
+            # Captured edge contents
+            {
+                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "subject": "NCBIGene:3105",
+                "subject_feature_name": "A*02:01",
+                "predicate": "biolink:positively_correlated_with",
+                "object": "MONDO:0007079",
+                "object_feature_name": "AlcoholDependenceDx",
+                # See Query 1 comments above, regarding "has_supporting_studies"
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:icees-kg"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.not_provided
+            },
+            (
+                "subject_feature_name",
+            )
+        )
     ],
 )
 def test_transform_icees_edges(
