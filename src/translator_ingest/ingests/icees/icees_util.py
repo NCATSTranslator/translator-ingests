@@ -1,8 +1,6 @@
 """
 This file contains utility functions for ICEES data processing
 """
-from typing import Optional
-from loguru import logger
 from biolink_model.datamodel.pydanticmodel_v2 import Study, IceesStudyResult
 
 #
@@ -70,25 +68,3 @@ def get_icees_supporting_study(
         id=study_id,
         has_study_results=[result]
     )
-
-_META_MAP: dict[str,set[str]] = dict()
-
-def log_meta_edge(
-        subject_category: str,
-        predicate: str,
-        object_category: str
-
-):
-    """
-    This method reverse engineers the meta_knowledge SPOQ of ICEES data encountered (for the RIG).
-    :param subject_category:
-    :param predicate:
-    :param object_category:
-    :return: None (just builds the internal meta-knowledge-map)
-    """
-    association_predicate_map: Optional[set[str]] = _META_MAP.get(association_type)
-    if association_predicate_map is None:
-        _META_MAP[association_type] = set()
-
-    # Add the predicate to the Set associated with the given association_type
-    _META_MAP[association_type].add(predicate)
