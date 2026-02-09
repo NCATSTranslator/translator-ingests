@@ -44,11 +44,11 @@ TARGETS = load_json_config('target_config.json')
 
 predicate_map = {
     'Launched':'biolink:treats',
-    'Phase 1':'biolink:in_clinical_trial_for',
-    'Phase 1/Phase 2':'biolink:in_clinical_trial_for',
-    'Phase 2':'biolink:in_clinical_trial_for',
-    'Phase 2/Phase 3':'biolink:in_clinical_trial_for',
-    'Phase 3':'biolink:in_clinical_trial_for',
+    'Phase 1':'biolink:in_clinical_trials_for',
+    'Phase 1/Phase 2':'biolink:in_clinical_trials_for',
+    'Phase 2':'biolink:in_clinical_trials_for',
+    'Phase 2/Phase 3':'biolink:in_clinical_trials_for',
+    'Phase 3':'biolink:in_clinical_trials_for',
     'Preclinical':'biolink:in_preclinical_trials_for',
     'Withdrawn':'biolink:treats_or_applied_or_studied_to_treat',
     '':'biolink:treats_or_applied_or_studied_to_treat'
