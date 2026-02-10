@@ -65,7 +65,7 @@
           - biolink:affects
           - biolink:disrupts
           - biolink:regulates
-        object_categories:        # MHB: The only categories I see in the data are Protein, ChEmicalEntity, and SmallMolecule - can we remove the others?
+        object_categories:        # MHB: The only categories I see in the data are Protein, ChemicalEntity, and SmallMolecule - can we remove the others?
           - CellLine
           - CellularComponent
           - CellularOrganism
@@ -99,8 +99,8 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-          - automated_agent        # MHB: when is autoamted_sgent used for this edge type?  Is it the small subset of edges created form the experimental activities table? I forgot if/how we brought these in.  If it does include these, they should be described in a SEPARATE  EdgeType object in the RIG, as they have differnet provenance andmethods behind them, and will need a different UI explanation. 
-        edge_properties:           # MHB: I don't see a lot of these edge properties in the data.  They could be getting created by the code, but removed after NN/validation because perhaps they are not in biolink?  Fix for this is to add them to 'attirbutes.yaml' ... and we should be sure that NN / validators are looking in this file for acceptable properties.
+          - automated_agent        
+        edge_properties:           # MHB: I don't see a lot of the edge properties below in the data according to the summary report.  They could be getting created by the code, but removed after NN/validation because perhaps they are not in biolink?  Fix for this is to add them to 'attirbutes.yaml' ... but we should be sure that NN / validators are looking in this file for acceptable properties.
           - biolink:publications
           - biolink:has_confidence_score
           - mechanism_of_action_description
@@ -157,7 +157,7 @@
       - subject_categories:
           - MacromolecularComplex
         predicates: 
-          - biolink:has_part        # I don't see this edge type appearing in the data - remove from RIG, and put note in future consideratiosn if this is something we need to bring in later. 
+          - biolink:has_part 
         object_categories:
           - NucleicAcidEntity
           - Protein
@@ -359,7 +359,7 @@
           - chembl_natural_product
           - chembl_prodrug
 
-  # MHB: I don't see any future considerations in the RIG - I recally serveal things we talked about doing next iteration - esp w.r.t. experimental activity tables, edge and node proeprties, etc.  
+  # MHB: I don't see any future considerations in the RIG - I recally serveal things we talked about doing next iteration - esp w.r.t. bringing in data from the experimental activity tables, and additional EPC metadata and edge and node proeprties, etc.  
 
   provenance_info:
     contributions:
