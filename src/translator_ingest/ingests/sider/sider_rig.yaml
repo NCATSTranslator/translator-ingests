@@ -83,6 +83,9 @@ target_info:  # (required, range = TargetInfo)
       node_properties:
         - biolink:name
 
+  future_considerations:
+   - category: edge_content
+     consideration: Some background exploration suggested that SIDER provides qualitative frequency info about side effects (e.g. terms like 'very common', 'uncommon'). This seems like useful info we should consider pulling in. 
 
 # Information about the how the ingest was specified and performed
 provenance_info:
