@@ -249,138 +249,170 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         # subject: Allosteric modulator
         if record["Type"] == 'Allosteric modulator':
+            ## reset a branch_num to 0
+            branch_num = 0
             if record["Action"] == "Activation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Antagonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Biased agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.biased_agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Binding":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation
                 object_direction_qualifier = None
                 qualified_predicate = None
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Full agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Inhibition":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Inverse agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inverse_agonism
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Negative":
                 causal_mechanism_qualifier = None
                 object_direction_qualifier = DirectionQualifierEnum.decreased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Partial agonist":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Positive":
                 causal_mechanism_qualifier = None
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
             elif record["Action"] == "Potentiation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
                 object_direction_qualifier = DirectionQualifierEnum.increased
                 qualified_predicate = BIOLINK_CAUSES
+                ## control to switch to use branch_num == 1 logic
+                branch_num = 1
 
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = BIOLINK_AFFECTS,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    qualified_predicate = qualified_predicate,
-                    object_direction_qualifier = object_direction_qualifier,
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-                # causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        if record["Type"] == 'Allosteric modulator':
-
-            if record["Action"] == "Biphasic":
+            elif record["Action"] == "Biphasic":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.biphasic_allosteric_modulation
                 predicate = "biolink:physically_interacts_with"
                 object_aspect_qualifier = None
                 object_direction_qualifier = None
                 qualified_predicate = None
+                ## control to switch to use branch_num == 2 logic
+                branch_num = 2
 
             elif record["Action"] == "Mixed" or record["Action"] == "Neutral" or record["Action"] is None:
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation
                 predicate = "biolink:physically_interacts_with"
                 object_direction_qualifier = None
                 qualified_predicate = None
+                ## control to switch to use branch_num == 2 logic
+                branch_num = 2
 
-            association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
-                subject=subject.id,
-                object=object.id,
-                predicate = predicate,
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = qualified_predicate,
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
-            )
 
-            if publications:
-                association.publications = publications
+            if branch_num == 1:
+                association_1 = ChemicalAffectsGeneAssociation(
+                        id=entity_id(),
+                        subject=subject.id,
+                        object=object.id,
+                        predicate = BIOLINK_AFFECTS,
+                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                        qualified_predicate = qualified_predicate,
+                        object_direction_qualifier = object_direction_qualifier,
+                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent,
+                        causal_mechanism_qualifier = causal_mechanism_qualifier,
+                    )
 
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
+                association_2 = PairwiseMolecularInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
+                    # causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
+                )
+
+                if publications and association_1 is not None and association_2 is not None:
+                    association_1.publications = publications
+                    association_2.publications = publications
+
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
+
+            elif branch_num == 2:
+                
+                association = ChemicalAffectsGeneAssociation(
+                    id=str(uuid.uuid4()),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = predicate,
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    qualified_predicate = qualified_predicate,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    causal_mechanism_qualifier = causal_mechanism_qualifier,
+                )
+
+                if publications:
+                    association.publications = publications
+
+                if subject is not None and object is not None and association is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association)
 
         # subject: Antagonist
         if record["Type"] == 'Antagonist' and record["Action"] == "Binding":
