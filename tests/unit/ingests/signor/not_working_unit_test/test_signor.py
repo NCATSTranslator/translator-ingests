@@ -11,6 +11,7 @@ from koza.io.writer.writer import KozaWriter
 from translator_ingest.ingests._ingest_template._ingest_template import (
     on_begin_ingest_by_record,
     transform_ingest_by_record,
+    transform_ingest_all,
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
@@ -110,7 +111,9 @@ def test_ingest_transform(
 ):
     on_begin_ingest_by_record(mock_koza_transform)
     validate_transform_result(
-        result=transform_ingest_by_record(mock_koza_transform, test_record),
+        ## should use transform_ingest_all?
+        # result=transform_ingest_by_record(mock_koza_transform, test_record),
+        result=transform_ingest_all(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
