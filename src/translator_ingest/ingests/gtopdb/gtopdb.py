@@ -106,8 +106,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             )
 
             if publications and association_1 is not None and association_2 is not None:
-                association1.publications = publications
-                association2.publications = publications
+                association_1.publications = publications
+                association_2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -187,8 +187,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             )
 
             if publications and association_1 is not None and association_2 is not None:
-                association1.publications = publications
-                association2.publications = publications
+                association_1.publications = publications
+                association_2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -336,8 +336,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             )
 
             if publications and association_1 is not None and association_2 is not None:
-                association1.publications = publications
-                association2.publications = publications
+                association_1.publications = publications
+                association_2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -409,8 +409,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             )
 
             if publications and association_1 is not None and association_2 is not None:
-                association1.publications = publications
-                association2.publications = publications
+                association_1.publications = publications
+                association_2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -484,8 +484,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             )
 
             if publications and association_1 is not None and association_2 is not None:
-                association1.publications = publications
-                association2.publications = publications
+                association_1.publications = publications
+                association_2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
