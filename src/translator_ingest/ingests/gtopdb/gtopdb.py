@@ -356,6 +356,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             elif record["Action"] == "Mixed" or record["Action"] == "Neutral" or record["Action"] is None:
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation
+                predicate = "biolink:physically_interacts_with"
                 object_direction_qualifier = None
                 qualified_predicate = None
 
