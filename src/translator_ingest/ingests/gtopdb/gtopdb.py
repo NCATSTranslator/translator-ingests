@@ -453,7 +453,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = BIOLINK_AFFECTS,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
                     sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
