@@ -80,9 +80,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                         subject=subject.id,
                         object=object.id,
                         predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                        qualified_predicate = BIOLINK_CAUSES
-                        object_direction_qualifier = DirectionQualifierEnum.increased
+                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                        qualified_predicate = BIOLINK_CAUSES,
+                        object_direction_qualifier = DirectionQualifierEnum.increased,
                         sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent,
@@ -160,9 +160,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                         subject=subject.id,
                         object=object.id,
                         predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                        qualified_predicate = BIOLINK_CAUSES
-                        object_direction_qualifier = DirectionQualifierEnum.increased
+                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                        qualified_predicate = BIOLINK_CAUSES,
+                        object_direction_qualifier = DirectionQualifierEnum.increased,
                         sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent,
@@ -307,9 +307,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = BIOLINK_AFFECTS,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                    qualified_predicate = qualified_predicate
-                    object_direction_qualifier = object_direction_qualifier
+                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                    qualified_predicate = qualified_predicate,
+                    object_direction_qualifier = object_direction_qualifier,
                     sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
@@ -381,9 +381,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                         subject=subject.id,
                         object=object.id,
                         predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                        qualified_predicate = BIOLINK_CAUSES
-                        object_direction_qualifier = DirectionQualifierEnum.increased
+                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                        qualified_predicate = BIOLINK_CAUSES,
+                        object_direction_qualifier = DirectionQualifierEnum.increased,
                         sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent,
