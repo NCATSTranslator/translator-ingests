@@ -4,7 +4,8 @@ import pandas as pd
 from typing import Any, Iterable
 
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import build_association_knowledge_sources
+from bmt.pydantic import entity_id, build_association_knowledge_sources
+
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -13,11 +14,16 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
+    PairwiseMolecularInteraction,
+    AnatomicalEntityHasPartAnatomicalEntityAssociation,
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+
+
+
 from translator_ingest.util.biolink import (
     INFORES_GTOPDB
 )
