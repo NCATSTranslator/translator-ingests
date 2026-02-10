@@ -15,7 +15,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     PairwiseMolecularInteraction,
-    AnatomicalEntityHasPartAnatomicalEntityAssociation,
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
@@ -349,7 +348,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = None
                 qualified_predicate = None
 
-            elif record["Action"] == "Mixed" or record["Action"] == "Neutral" or record["Action"] == None:
+            elif record["Action"] == "Mixed" or record["Action"] == "Neutral" or record["Action"] is None:
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation
                 object_direction_qualifier = None
                 qualified_predicate = None
