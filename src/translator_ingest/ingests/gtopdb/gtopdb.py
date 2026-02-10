@@ -391,7 +391,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     edges.append(association_2)
 
             elif branch_num == 2:
-                
+
                 association = ChemicalAffectsGeneAssociation(
                     id=str(uuid.uuid4()),
                     subject=subject.id,
