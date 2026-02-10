@@ -54,16 +54,18 @@
     infores_id: "infores:translator-chembl-kgx"
     edge_type_info:
 
+      # MHB:  Generally, the Edge Type descriptions don;t seem to be updated to refelct what data is actually in the KG - per the summary report here: https://docs.google.com/spreadsheets/d/1nt9s9NT_DloB6TMt_MpZDDvIVqtZeammLbxjPJvV6Xs/edit?.  gid=1712830697#gid=1712830697
+      # MHB: I made specific comments to this effect below - search for all "# MHB:" prefixed comments. 
       - subject_categories:
           - SmallMolecule
           - MolecularMixture
           - ChemicalEntity
           - Protein
-        predicates: 
+        predicates:               # MHB: I don't see disrupts or regulates in the data . . . . can we remove the others, or should they be getting created?  I do however see a has_substrate predicate in the data (and the mappings file)- so this should be added here.
           - biolink:affects
           - biolink:disrupts
           - biolink:regulates
-        object_categories:
+        object_categories:        # MHB: The only categories I see in the data are Protein, ChemicalEntity, and SmallMolecule - can we remove the others?
           - CellLine
           - CellularComponent
           - CellularOrganism
@@ -74,7 +76,7 @@
           - Protein
           - ProteinFamily
           - SmallMolecule
-        qualifiers:
+        qualifiers:              # I also see some edges with subject_aspect and subject_direction qualifiers in the data, and anatomical_context and causal_mechanism statement-level qualifiers - can we add this to the list of possible qualifiers for this edge type?
           - property: "biolink:qualified_predicate"
             value_enumeration:
               - "biolink:causes"
@@ -87,11 +89,18 @@
           - property: "biolink:causal_mechanism_qualifier"
             value_range:
               - "biolink:CausalMechanismQualifierEnum"
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+          - property: "biolink:object_form_or_variant_qualifier"
+            value_range:
+              - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
-        edge_properties:
+          - automated_agent        
+        edge_properties:           # MHB: I don't see a lot of the edge properties below in the data according to the summary report.  They could be getting created by the code, but removed after NN/validation because perhaps they are not in biolink?  Fix for this is to add them to 'attirbutes.yaml' ... but we should be sure that NN / validators are looking in this file for acceptable properties.
           - biolink:publications
           - biolink:has_confidence_score
           - mechanism_of_action_description
@@ -100,8 +109,9 @@
           - mutation_accession
           - selectivity_comment
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
-        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
-        
+        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects'edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
+
+        # MHB: many of the smae comments for this edge type as above, re: removing catogry values that don't show up in the data apply, 
       - subject_categories:
           - SmallMolecule
           - MolecularMixture
@@ -120,7 +130,7 @@
           - Protein
           - ProteinFamily
           - SmallMolecule
-        qualifiers:
+        qualifiers:                  # MHB: Again, I see anatomical_context and cuasal_mechanism statement-level qualifiers in the data - can we add this to the list of possible qualifiers for this edge type?
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
               - "NCBITaxon"
@@ -131,8 +141,9 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        edge_properties:
+        edge_properties:      # MHB: As above, most of these are not actually showing up in the final KG.. . .
           - biolink:publications
+          - biolink:has_confidence_score
           - binding_site_name
           - binding_site_comment
           - mechanism_of_action_description
@@ -141,12 +152,12 @@
           - mutation_accession
           - selectivity_comment
         ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
-        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' (or 'regulates' or 'disrupts') edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
+        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
 
       - subject_categories:
           - MacromolecularComplex
         predicates: 
-          - biolink:has_part
+          - biolink:has_part 
         object_categories:
           - NucleicAcidEntity
           - Protein
@@ -193,6 +204,7 @@
 
     node_type_info:
 
+     # MHB: please remove any node types and node properties below that are not actually being created in the data. 
       - node_category: AnatomicalEntity
         source_identifier_types: 
           - ChEMBL
@@ -347,6 +359,7 @@
           - chembl_natural_product
           - chembl_prodrug
 
+  # MHB: I don't see any future considerations in the RIG - I recally serveal things we talked about doing next iteration - esp w.r.t. bringing in data from the experimental activity tables, and additional EPC metadata and edge and node proeprties, etc.  
 
   provenance_info:
     contributions:
