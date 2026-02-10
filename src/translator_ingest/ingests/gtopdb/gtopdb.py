@@ -88,25 +88,25 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                 )
 
-                association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = "biolink:physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                )
+            association_2 = PairwiseMolecularInteraction(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:physically_interacts_with",
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                causal_mechanism_qualifier = causal_mechanism_qualifier,
+            )
 
-                if publications:
-                    association.publications = publications
+            if publications:
+                association.publications = publications
 
-                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                    nodes.append(subject)
-                    nodes.append(object)
-                    edges.append(association_1)
-                    edges.append(association_2)
+            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association_1)
+                edges.append(association_2)
 
         if record["Type"] == 'Activator' and record["Action"] != "Binding":
             predicate = BIOLINK_AFFECTS
@@ -167,25 +167,25 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                 )
 
-                association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = "biolink:physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                )
+            association_2 = PairwiseMolecularInteraction(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:physically_interacts_with",
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                causal_mechanism_qualifier = causal_mechanism_qualifier,
+            )
 
-                if publications:
-                    association.publications = publications
+            if publications:
+                association.publications = publications
 
-                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                    nodes.append(subject)
-                    nodes.append(object)
-                    edges.append(association_1)
-                    edges.append(association_2)
+            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association_1)
+                edges.append(association_2)
 
         if record["Type"] == 'Agonist' and record["Action"] != "Binding":
             predicate = BIOLINK_AFFECTS
@@ -314,25 +314,25 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                 )
 
-                association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = "biolink:physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
-                )
+            association_2 = PairwiseMolecularInteraction(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:physically_interacts_with",
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
+            )
 
-                if publications:
-                    association.publications = publications
+            if publications:
+                association.publications = publications
 
-                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                    nodes.append(subject)
-                    nodes.append(object)
-                    edges.append(association_1)
-                    edges.append(association_2)
+            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association_1)
+                edges.append(association_2)
 
         if record["Type"] == 'Allosteric modulator':
 
@@ -386,24 +386,24 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     agent_type=AgentTypeEnum.manual_agent,
                 )
 
-                association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = "biolink:physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
+            association_2 = PairwiseMolecularInteraction(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:physically_interacts_with",
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
 
-                if publications:
-                    association.publications = publications
+            if publications:
+                association.publications = publications
 
-                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                    nodes.append(subject)
-                    nodes.append(object)
-                    edges.append(association_1)
-                    edges.append(association_2)
+            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association_1)
+                edges.append(association_2)
 
         if record["Type"] == 'Antagonist' and record["Action"] != "Binding":
             predicate = BIOLINK_AFFECTS
@@ -459,24 +459,24 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     agent_type=AgentTypeEnum.manual_agent,
                 )
 
-                association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = "biolink:physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
+            association_2 = PairwiseMolecularInteraction(
+                id=entity_id(),
+                subject=subject.id,
+                object=object.id,
+                predicate = "biolink:physically_interacts_with",
+                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
 
-                if publications:
-                    association.publications = publications
+            if publications:
+                association.publications = publications
 
-                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                    nodes.append(subject)
-                    nodes.append(object)
-                    edges.append(association_1)
-                    edges.append(association_2)
+            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                nodes.append(subject)
+                nodes.append(object)
+                edges.append(association_1)
+                edges.append(association_2)
 
         if record["Type"] == 'Antibody':
             predicate = BIOLINK_AFFECTS
