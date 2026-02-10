@@ -101,7 +101,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
+                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
+                # causal_mechanism_qualifier = causal_mechanism_qualifier,
             )
 
             if publications:
@@ -180,7 +181,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
+                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
+                # causal_mechanism_qualifier = causal_mechanism_qualifier,
             )
 
             if publications:
@@ -327,7 +329,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
+                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
+                # causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
             )
 
             if publications:
@@ -399,6 +402,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
+                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
             )
 
             if publications:
@@ -472,6 +476,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
+                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
             )
 
             if publications:
