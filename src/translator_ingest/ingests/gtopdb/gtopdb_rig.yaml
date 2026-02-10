@@ -164,7 +164,7 @@ target_info:
 
 
   node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
-                                                      ## Qi: I am using the ligand id directly from the interactions csv file now...didnt notice this comment of using Pubchem CID only, the ligands.tsv file does have a mapping between them
+                                                      ## Qi: I am using the ligand id directly from the interactions csv file now...didn't notice this comment of using Pubchem CID only, the ligands.tsv file does have a mapping between them
                                                       ## however I need an example ingest.py code to show how koza model handle multiple files
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
