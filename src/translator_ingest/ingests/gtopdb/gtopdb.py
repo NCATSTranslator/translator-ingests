@@ -105,8 +105,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 # causal_mechanism_qualifier = causal_mechanism_qualifier,
             )
 
-            if publications:
-                association.publications = publications
+            if publications and association_1 is not None and association_2 is not None:
+                association1.publications = publications
+                association2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -185,8 +186,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 # causal_mechanism_qualifier = causal_mechanism_qualifier,
             )
 
-            if publications:
-                association.publications = publications
+            if publications and association_1 is not None and association_2 is not None:
+                association1.publications = publications
+                association2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -333,8 +335,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 # causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
             )
 
-            if publications:
-                association.publications = publications
+            if publications and association_1 is not None and association_2 is not None:
+                association1.publications = publications
+                association2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -405,8 +408,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
             )
 
-            if publications:
-                association.publications = publications
+            if publications and association_1 is not None and association_2 is not None:
+                association1.publications = publications
+                association2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
@@ -479,8 +483,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
             )
 
-            if publications:
-                association.publications = publications
+            if publications and association_1 is not None and association_2 is not None:
+                association1.publications = publications
+                association2.publications = publications
 
             if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                 nodes.append(subject)
