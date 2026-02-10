@@ -72,42 +72,41 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         publications = [f"PMID:{p}" for p in record["PubMed ID"].split("|")] if record["PubMed ID"] else None
 
         # subject: Activator
-        if record["Type"] == 'Activator':
-            if record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
-                association_1 = ChemicalAffectsGeneAssociation(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                        qualified_predicate = BIOLINK_CAUSES,
-                        object_direction_qualifier = DirectionQualifierEnum.increased,
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                        causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    )
+        if record["Type"] == 'Activator' and record["Action"] == "Binding":
+            causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
+            association_1 = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = BIOLINK_AFFECTS,
+                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_direction_qualifier = DirectionQualifierEnum.increased,
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    causal_mechanism_qualifier = causal_mechanism_qualifier,
+                )
 
-                    association_2 = PairwiseMolecularInteraction(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = "biolink:physically_interacts_with",
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                        causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    )
+                association_2 = PairwiseMolecularInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    causal_mechanism_qualifier = causal_mechanism_qualifier,
+                )
 
-                    if publications:
-                        association.publications = publications
+                if publications:
+                    association.publications = publications
 
-                    if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                        nodes.append(subject)
-                        nodes.append(object)
-                        edges.append(association_1)
-                        edges.append(association_2)
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
 
         if record["Type"] == 'Activator' and record["Action"] != "Binding":
             predicate = BIOLINK_AFFECTS
@@ -152,42 +151,41 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         # subject: Agonist
-        if record["Type"] == 'Agonist':
-            if record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                association_1 = ChemicalAffectsGeneAssociation(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                        qualified_predicate = BIOLINK_CAUSES,
-                        object_direction_qualifier = DirectionQualifierEnum.increased,
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                        causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    )
+        if record["Type"] == 'Agonist' and record["Action"] == "Binding":
+            causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
+            association_1 = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = BIOLINK_AFFECTS,
+                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_direction_qualifier = DirectionQualifierEnum.increased,
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    causal_mechanism_qualifier = causal_mechanism_qualifier,
+                )
 
-                    association_2 = PairwiseMolecularInteraction(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = "biolink:physically_interacts_with",
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                        causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    )
+                association_2 = PairwiseMolecularInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    causal_mechanism_qualifier = causal_mechanism_qualifier,
+                )
 
-                    if publications:
-                        association.publications = publications
+                if publications:
+                    association.publications = publications
 
-                    if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                        nodes.append(subject)
-                        nodes.append(object)
-                        edges.append(association_1)
-                        edges.append(association_2)
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
 
         if record["Type"] == 'Agonist' and record["Action"] != "Binding":
             predicate = BIOLINK_AFFECTS
@@ -373,40 +371,39 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         # subject: Antagonist
-        if record["Type"] == 'Antagonist':
-            if record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-                association_1 = ChemicalAffectsGeneAssociation(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                        qualified_predicate = BIOLINK_CAUSES,
-                        object_direction_qualifier = DirectionQualifierEnum.increased,
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                    )
+        if record["Type"] == 'Antagonist' and record["Action"] == "Binding":
+            causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
+            association_1 = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = BIOLINK_AFFECTS,
+                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_direction_qualifier = DirectionQualifierEnum.increased,
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
 
-                    association_2 = PairwiseMolecularInteraction(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = "biolink:physically_interacts_with",
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                    )
+                association_2 = PairwiseMolecularInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
 
-                    if publications:
-                        association.publications = publications
+                if publications:
+                    association.publications = publications
 
-                    if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                        nodes.append(subject)
-                        nodes.append(object)
-                        edges.append(association_1)
-                        edges.append(association_2)
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
 
         if record["Type"] == 'Antagonist' and record["Action"] != "Binding":
             predicate = BIOLINK_AFFECTS
@@ -449,38 +446,37 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         # subject: Antibody
-        if record["Type"] == 'Antibody':
-            if record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.binding
-                association_1 = ChemicalAffectsGeneAssociation(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = BIOLINK_AFFECTS,
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                    )
+        if record["Type"] == 'Antibody' and record["Action"] == "Binding":
+            causal_mechanism_qualifier = CausalMechanismQualifierEnum.binding
+            association_1 = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = BIOLINK_AFFECTS,
+                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
 
-                    association_2 = PairwiseMolecularInteraction(
-                        id=entity_id(),
-                        subject=subject.id,
-                        object=object.id,
-                        predicate = "biolink:physically_interacts_with",
-                        sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent,
-                    )
+                association_2 = PairwiseMolecularInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
 
-                    if publications:
-                        association.publications = publications
+                if publications:
+                    association.publications = publications
 
-                    if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                        nodes.append(subject)
-                        nodes.append(object)
-                        edges.append(association_1)
-                        edges.append(association_2)
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
 
         if record["Type"] == 'Antibody':
             predicate = BIOLINK_AFFECTS
