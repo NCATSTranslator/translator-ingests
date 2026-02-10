@@ -144,8 +144,6 @@ target_info:
         - manual_agent
       edge_properties:
         - publications
-        - stage_qualifier
-        - qualifiers
       ui_explanation: "These associations represent gene expression patterns observed in specific anatomical locations or cellular components in mouse and rat. Expression data is typically derived from experimental assays and annotated with developmental stage and assay type information."
       primary_knowledge_sources:
         - infores:mgi
@@ -198,6 +196,8 @@ target_info:
       consideration: "Review whether additional qualifying information could be extracted from Alliance data to further contextualize associations (e.g., genetic background, sex, age)."
     - category: edge_properties
       consideration: "Consider mapping evidence codes to more granular knowledge_level and agent_type enums if such mappings become available from Alliance."
+    - category: edge_content
+      consideration: Ingest additional species. 
 
   additional_notes: "The minimal placeholder approach for nodes is intentional: it reduces redundancy and allows authoritative sources for each entity type to provide the canonical entity information during normalization. The Alliance ingest focuses on providing high-quality associations while leaving entity enrichment to specialized sources."
 
