@@ -71,6 +71,14 @@ def prepare_pubchemID_mapping(koza: koza.KozaTransform, data: Iterable[dict[str,
     # this function is only preparing data, not yielding rows
     return None
 
+## Koza requires a transform function corresponding to each prepare_data.
+## Thus we already built the global dictionary in the prepare_data, and still need this empty transform function
+@koza.transform(tag="gtopdb_ligand_id_mapping")
+def transform_nothing(record: dict[str, Any]) -> None:
+    # This tag only prepares global state; no records emitted
+    return None
+
+
 ## previously working codes
 # @koza.prepare_data(tag="gtopdb_interaction_parsing")
 # def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
