@@ -31,6 +31,9 @@ from translator_ingest.util.biolink import (
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 
+## define a global dictionary to store the mapping dictionary between ligand id and pubmed id
+pubchem_id_mapping_dict = defaultdict(dict)
+
 def get_latest_version() -> str:
     from datetime import date
     today = date.today()
@@ -38,25 +41,86 @@ def get_latest_version() -> str:
 
     return formatted_date
 
-@koza.prepare_data(tag="gtopdb_parsing")
-def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+@koza.prepare_data(tag="gtopdb_ligand_id_mapping")
+def prepare_pubchemID_mapping(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    ## define a global dictionary to store the mapping dictionary between ligand id and pubmed id
+    global pubchem_id_mapping_dict
 
-    # convert the input dataframe into pandas df format
+    # initialize the global dictionary
+    pubchem_id_mapping_dict = {}
+
+    # convert the input iterable into a DataFrame
     source_df = pd.DataFrame(data)
 
-    # debugging usage
+    # sanity check (optional but recommended)
+    required_cols = {"Ligand ID", "PubChem CID"}
+    missing = required_cols - set(source_df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    # build the mapping
+    for _, row in source_df.iterrows():
+        ligand_id = row["Ligand ID"]
+        pubchem_id = row["PubChem CID"]
+
+        # skip nulls if needed
+        if pd.notna(ligand_id) and pd.notna(pubchem_id):
+            pubchem_id_mapping_dict[ligand_id] = pubchem_id
+
+    # this function is only preparing data, not yielding rows
+    return None
+
+## previously working codes
+# @koza.prepare_data(tag="gtopdb_interaction_parsing")
+# def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+#
+#     # convert the input dataframe into pandas df format
+#     source_df = pd.DataFrame(data)
+#
+#     # debugging usage
+#     koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
+#
+#     # include some basic quality control steps here
+#     # Drop nan values
+#     source_df = source_df.dropna(subset=['Ligand PubChem SID', 'Target UniProt ID'])
+#
+#     ## rename those columns into desired format
+#     source_df.rename(columns={'Ligand': 'subject_name', 'Target': 'object_name', 'Ligand ID': 'subject_id', 'Target UniProt ID': 'object_id'}, inplace=True)
+#
+#     return source_df.dropna().drop_duplicates().to_dict(orient="records")
+
+@koza.prepare_data(tag="gtopdb_interaction_parsing")
+def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+
+    ## convert the input dataframe into pandas df format
+    source_df = pd.DataFrame(data)
+
+    ## debugging usage
     koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
 
-    # include some basic quality control steps here
-    # Drop nan values
-    source_df = source_df.dropna(subset=['Ligand PubChem SID', 'Target UniProt ID'])
+    ## Drop nan values
+    source_df = source_df.dropna(subset=["Target UniProt ID", "Ligand ID"])
 
-    # rename those columns into desired format
-    source_df.rename(columns={'Ligand': 'subject_name', 'Target': 'object_name', 'Ligand ID': 'subject_id', 'Target UniProt ID': 'object_id'}, inplace=True)
+    ## rename those columns into desired format, note we need to obtain "pubchem CID" as subject id from "Ligand ID"
+    source_df.rename(
+        columns={
+            "Ligand": "subject_name",
+            "Target": "object_name",
+            "Target UniProt ID": "object_id",
+        },
+        inplace=True,
+    )
 
-    return source_df.dropna().drop_duplicates().to_dict(orient="records")
+    ## apply mapping use the global dictionary
+    source_df["subject_id"] = source_df["Ligand ID"].map(pubchem_id_mapping_dict)
 
-@koza.transform(tag="gtopdb_parsing")
+    ## drop NA of those dont find a mapping
+    source_df = source_df.dropna(subset=["subject_id"])
+
+    return source_df.drop_duplicates().to_dict(orient="records")
+
+
+@koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     nodes: list[NamedThing] = []
     edges: list[Association] = []

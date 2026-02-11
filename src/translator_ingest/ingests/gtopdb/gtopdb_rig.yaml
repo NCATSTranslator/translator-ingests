@@ -42,8 +42,8 @@ ingest_info:
     #   location: "https://www.guidetopharmacology.org/DATA/targets_and_families.csv"
     #   description: "complete target and family list"
     ## Qi review comment: will need this to mapping between ligand id and pubchem CID
-    - file_name: "ligands.csv"
-      location: "https://www.guidetopharmacology.org/DATA/ligands.csv"
+    - file_name: "ligand_id_mapping.csv"
+      location: "https://www.guidetopharmacology.org/DATA/ligand_id_mapping.csv"
     #   description: "complete ligand list"
     # - file_name: "peptides.csv"
     #   location: "https://www.guidetopharmacology.org/DATA/peptides.csv"

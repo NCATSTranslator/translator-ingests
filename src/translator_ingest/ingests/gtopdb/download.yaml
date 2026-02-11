@@ -1,3 +1,4 @@
 - url: https://www.guidetopharmacology.org/DATA/interactions.csv
   local_name: interactions.csv
-
+- url: https://www.guidetopharmacology.org/DATA/ligand_id_mapping.csv
+  local_name: ligand_id_mapping.csv
