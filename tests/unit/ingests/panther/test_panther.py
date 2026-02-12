@@ -22,7 +22,6 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     db_to_curie_map,
     _resolve_gene_curie,
     GENE_COL,
-    ORTHOLOG_COL,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
     NCBITAXON_A_COL,
