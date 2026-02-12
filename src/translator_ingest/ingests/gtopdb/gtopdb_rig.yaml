@@ -151,7 +151,7 @@ target_info:
         # - property: biolink:anatomical_context_qualifier         # MHB: same note as above
         #   value_description: N/A
         # - property: biolink:species_context_qualifier            # MHB: same note as above
-          value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
+          # value_description: String of species names to represent data in the gtopdb target species and ligand species columns.
       knowledge_level:
         - knowledge_assertion
       agent_type:
