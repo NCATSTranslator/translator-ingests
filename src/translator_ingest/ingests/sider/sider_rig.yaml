@@ -67,7 +67,11 @@ target_info:  # (required, range = TargetInfo)
         - knowledge_assertion
       agent_type:
         - manual_agent
-      ui_explanation: "Drug X causes adverse drug reaction Y"
+      primary_knowledge_sources:
+        - infores:sider
+      ui_explanation: "SIDER data report side effect information that is extracted from product labels, regulatory documents, and official package inserts - by an automated NLP-based pipeline tuned to parse text, recognize side-effect relationships between drug and condition concepts, and map them to vocabularies such as MedDRA. The SIDER record used here reports that [OBJECT] can have the side effect [SUBJECT]. This is represented in Translator using the [has_side_efect] relationship."
+      source_files:
+        - meddra_all_label_se.tsv.gz
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
@@ -79,6 +83,9 @@ target_info:  # (required, range = TargetInfo)
       node_properties:
         - biolink:name
 
+  future_considerations:
+   - category: edge_content
+     consideration: Some background exploration suggested that SIDER provides qualitative frequency info about side effects (e.g. terms like 'very common', 'uncommon'). This seems like useful info we should consider pulling in. 
 
 # Information about the how the ingest was specified and performed
 provenance_info:
