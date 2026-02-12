@@ -22,8 +22,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 
-
-
 from translator_ingest.util.biolink import (
     INFORES_GTOPDB
 )
@@ -73,30 +71,10 @@ def prepare_pubchemID_mapping(koza: koza.KozaTransform, data: Iterable[dict[str,
 
 ## Koza requires a transform function corresponding to each prepare_data.
 ## Thus we already built the global dictionary in the prepare_data, and still need this empty transform function
-@koza.transform(tag="gtopdb_ligand_id_mapping")
+@koza.transform_record(tag="gtopdb_ligand_id_mapping")
 def transform_nothing(record: dict[str, Any]) -> None:
     # This tag only prepares global state; no records emitted
     return None
-
-
-## previously working codes
-# @koza.prepare_data(tag="gtopdb_interaction_parsing")
-# def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-#
-#     # convert the input dataframe into pandas df format
-#     source_df = pd.DataFrame(data)
-#
-#     # debugging usage
-#     koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
-#
-#     # include some basic quality control steps here
-#     # Drop nan values
-#     source_df = source_df.dropna(subset=['Ligand PubChem SID', 'Target UniProt ID'])
-#
-#     ## rename those columns into desired format
-#     source_df.rename(columns={'Ligand': 'subject_name', 'Target': 'object_name', 'Ligand ID': 'subject_id', 'Target UniProt ID': 'object_id'}, inplace=True)
-#
-#     return source_df.dropna().drop_duplicates().to_dict(orient="records")
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
@@ -143,7 +121,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         causal_mechanism_qualifier = None
 
         # seems all subjects are chemical entity, and all objects are genes
-        subject = ChemicalEntity(id="GTOPDB:" + record["subject_id"], name=record["subject_name"])
+        subject = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record["subject_id"], name=record["subject_name"])
         object = Gene(id="UniProtKB:" + record["object_id"], name=record["object_name"])
 
         ## Obtain the publications information
@@ -497,7 +475,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     predicate = BIOLINK_AFFECTS,
                     object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
                     qualified_predicate = BIOLINK_CAUSES,
-                    object_direction_qualifier = DirectionQualifierEnum.increased,
+                    object_direction_qualifier = DirectionQualifierEnum.decreased,
                     sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
