@@ -35,7 +35,7 @@ import polars as pl
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 TEST_DATA_DIR = Path(__file__).resolve().parent
-TEST_ARCHIVE = TEST_DATA_DIR / "test_panther_data.tar.gz"
+TEST_ARCHIVE = TEST_DATA_DIR / "sample_panther_data.tar.gz"
 
 # Test normally works 99.9% of the time, except when
 # the Panther website is inaccessible, thus, breaking CI
