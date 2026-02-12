@@ -28,7 +28,7 @@ ingest_info:
 
   included_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      included_records: "Edges whose predicate is in the selected predicate set; edges retain evidence and negation flags."
+      included_records: "Edges whose predicate is in the selected Biolink predicate set: biolink:treats_or_applied_or_studied_to_treat, biolink:affects, biolink:preventative_for_condition, biolink:coexists_with, biolink:causes, biolink:related_to, biolink:interacts_with, biolink:located_in, biolink:predisposes_to_condition, biolink:physically_interacts_with, biolink:disrupts.  These are mapped to from the following set of source SEMMEDDB predicates: SEMMEDDB:ADMINISTERED_TO, SEMMEDDB:AFFECTS, SEMMEDDB:ASSOCIATED_WITH, SEMMEDDB:AUGMENTS, SEMMEDDB:CAUSES, SEMMEDDB:COEXISTS_WITH, SEMMEDDB:COMPARED_WITH, SEMMEDDB:DISRUPTS, SEMMEDDB:HIGHER_THAN, SEMMEDDB:INHIBITS, SEMMEDDB:INTERACTS_WITH, SEMMEDDB:ISA, SEMMEDDB:LOCATION_OF (invert), SEMMEDDB:LOWER_THAN, SEMMEDDB:MEASURES, SEMMEDDB:PREDISPOSES, SEMMEDDB:PREVENTS, SEMMEDDB:STIMULATES, SEMMEDDB:TREATS, SEMMEDDB:XREF. Edges retain evidence and negation flags."
       fields_used: "subject, predicate, object, publications, publications_info, negated, domain_range_exclusion, provided_by, knowledge_level, agent_type"
     - file_name: "kg2.10.3-semmeddb-nodes.jsonl"
       included_records: "Only nodes referenced by included edges."
@@ -36,7 +36,7 @@ ingest_info:
 
   filtered_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges with predicates outside the selected set"
+      filtered_records: "Edges with predicates outside the selected set: biolink:exacerbates_condition, biolink:derives_from, biolink:diagnoses, biolink:produces, biolink:close_match, biolink:has_input, biolink:manifestation_of, biolink:occurs_in, biolink:has_part, biolink:precedes. These are mapped to from the following source SEMMEDDB predicates: SEMMEDDB:COMPLICATES, SEMMEDDB:CONVERTS_TO (invert), SEMMEDDB:DIAGNOSES, SEMMEDDB:PRODUCES, SEMMEDDB:SAME_AS, SEMMEDDB:USES,SEMMEDDB:MANIFESTATION_OF SEMMEDDB:OCCURS_IN, SEMMEDDB:PROCESS_OF, SEMMEDDB:PART_OF (invert), SEMMEDDB:PRECEDES. SEMMEDDB predicates dropped in the original RTX-KG2 ingest incldue: SEMMEDDB:MEASUREMENT_OF, SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, SEMMEDDB:VERB."
       rationale: "Reduce predicate heterogeneity to a core set used operationally."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: "Edges lacking publication evidence payload"
@@ -53,87 +53,32 @@ target_info:
 
   # Manual QA fixes
   edge_type_info:
-    - predicate: biolink:affects
+     - predicates: 
+       - biolink:affects
+       - biolink:located_in
+       - biolink:related_to
+       - biolink:interacts_with
+       - biolink:coexists_with
+       - biolink:treats_or_applied_or_studied_to_treat
+       - biolink:causes
+       - biolink:disrupts
+       - biolink:predisposes_to_condition
+       - biolink:preventative_for_condition
+      knowledge_level:
+        - not_provided
+      agent_type:
+        - text_mining_agent
+      primary_knowledge_sources:
+        - infores:semmeddb
       edge_properties:
         - publications
-        - knowledge_level
-        - agent_type
         - original_subject
         - original_object
-        - sources
-    - predicate: biolink:located_in
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:related_to
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:interacts_with
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:coexists_with
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:treats_or_applied_or_studied_to_treat
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:causes
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:disrupts
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:predisposes_to_condition
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
-    - predicate: biolink:preventative_for_condition
-      edge_properties:
-        - publications
-        - knowledge_level
-        - agent_type
-        - original_subject
-        - original_object
-        - sources
+      ui_explanation: "SemmedDB data are generated by an automated text-mining agent that is tuned to extract specific types of relationships from the biomedical literature. The SemmedDB record used here reports that a span of text from the literature expressed a specific relationship between  [SUBJECT] and [OBJECT] mentions in the literature. This is represented in Translator using the [RELATIONSHIP] relationship."
+      source_files:
+        - kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)
 
+        
   # Manual QA fixes
   node_type_info:
     - node_category: biolink:SmallMolecule
@@ -174,6 +119,10 @@ target_info:
     - node_category: biolink:Event
     - node_category: biolink:PhysiologicalProcess
 
+
+future_considerations:
+  - category: edge_properties
+    consideration:  "No edge properties except a list of pubs taken initially.  Lots more available - look at what TMKP provides (evidence counts, text-mining study results, etc), and perhaps what the BTE ingest of semmeddb provides.  We would like to include supporting snippets, evidence / pub counts, and source confidence scores at minimum" 
 provenance_info:
   contributions:
       - "Erica Wood: code author"
@@ -185,3 +134,4 @@ provenance_info:
     - "SemMedDB overview: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html"
     - "Biolink Model (schema): https://github.com/biolink/biolink-model"
     - "KGX documentation: https://kgx.readthedocs.io"
+    - "Semmeddb predicate subset and mappings spreadsheet: https://docs.google.com/spreadsheets/d/12XmPE9eJp3H7yJnwg5Wmx5-BZdXXbiwO02vDRc1BY-c/edit?gid=520297121#gid=520297121"
