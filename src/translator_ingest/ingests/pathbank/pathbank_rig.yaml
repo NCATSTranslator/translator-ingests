@@ -1,5 +1,3 @@
-# MHB: general note based on the data examples you shared - you reported infores:Biolink as an aggregator on all edges - this is not correct.  No aggregator needed in these KGX ingest files (unless the external source is itself an aggregator)
-# AB: Addressed - All PathBank edges use PathBank as the primary knowledge source and do not list infores:biolink as an aggregator.
 name: PathBank Reference Ingest Guide (RIG)
 
 source_info:
@@ -58,8 +56,6 @@ target_info:
   edge_type_info:
     - subject_categories:
         - biolink:Pathway
-      # MHB: Use has_particpant for consistency with other sources/edges like this.
-      # AB: Addressed - Pathway membership edges use biolink:has_participant in the ingest.
       predicate: biolink:has_participant
       object_categories:
         - biolink:SmallMolecule
@@ -72,12 +68,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank
       ui_explanation: "Pathway has the specified entity as a participant (from PWML membership and context)."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:MolecularActivity
-      # MHB: This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier
-      # AB: Future work & consideration - Current pattern uses MolecularActivity with has_input/has_output. A redesign to direct input-output edges with reaction qualifiers would need an agreed KG modeling pattern across sources.
       predicate: biolink:has_input
       object_categories:
         - biolink:SmallMolecule
@@ -89,8 +87,12 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Reaction (molecular activity) consumes specified inputs (reactants) extracted from PWML participants."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:MolecularActivity
       predicate: biolink:has_output
@@ -104,8 +106,12 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Reaction (molecular activity) produces specified outputs (products) as defined in PWML."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:MacromolecularComplex
       predicate: biolink:catalyzes
@@ -115,12 +121,14 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Enzyme or protein complex catalyzes the specified reaction (molecular activity) as identified in PWML."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:MacromolecularComplex
-      # MHB: here we might use the more specific predicate has_component? But i see all that is in Biolink now is 'has_food_component?  Could we generalize this relation?
-      # AB: Addressed - biolink:has_part is used for complex composition; biolink:has_component is not available for this use case in Biolink.
       predicate: biolink:has_part
       object_categories:
         - biolink:Protein
@@ -128,15 +136,17 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Complex contains specified proteins per PWML composition."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      # MHB: can we dig into the data behind these edges - to see if we can be more precise/detailed w.r.t. our predicate (and possibly qualifiers) - based on interaction types Pathbank provides.
-      # AB: Addressed - PWML interaction types are mapped to regulates (with qualifiers), physically_interacts_with, and interacts_with (fallback).
       predicate: biolink:regulates
       qualifiers:
         - property: biolink:qualified_predicate
@@ -157,8 +167,12 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Directional regulation edges derived from PWML interaction types. Qualifiers specify affected aspect and direction when available."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -174,8 +188,12 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Physical interactions derived from PWML interaction types such as binding or complex formation."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -191,8 +209,12 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Fallback interaction predicate for PWML interaction types that cannot be mapped more specifically."
-
+      source_files:
+        - (file name here)
+        
     - subject_categories:
         - biolink:Pathway
       predicate: biolink:occurs_in
@@ -203,15 +225,17 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
       ui_explanation: "Pathway localization to subcellular compartments (GO terms) and tissues (BTO terms) as specified in PWML data."
+      source_files:
+        - (file name here)
 
   node_type_info:
     - node_category: biolink:Pathway
       source_identifier_types:
         - "Preferred: SMPDB pathway IDs from pathbank_pathways.csv (emitted as SMPDB:<id>)"
         - "Fallback: PathBank PW IDs from pathbank_pathways.csv (emitted as PathBank:PW<id> when SMPDB is missing)"
-      # MHB: Did we decide all equivalence relationships would be the purview of the ontology group and NN/CoCo?
-      # AB: Addressed - The ingest stores alternate identifiers in node xref rather than emitting biolink:same_as edges.
       additional_notes: "When SMPDB is present, the PW identifier is stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/Pathway/"
     - node_category: biolink:SmallMolecule
       source_identifier_types:
@@ -250,6 +274,50 @@ target_info:
       source_identifier_types:
         - "BTO (BRENDA Tissue Ontology) identifiers for tissues (e.g., BTO:0000759 for Liver)"
       additional_notes: "Tissues and anatomical entities extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/AnatomicalEntity/"
+
+    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
+      - category: spoq_pattern
+        consideration: "MolecularActivity nodes represent reactions.  Current modeling creates separate edges describing inputs and outputs for these reactions. This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier? A redesign to direct input-output edges with reaction qualifiers would need an agreed KG modeling pattern across sources."
+
+# Manual QA 1: Known issues identified during validation
+known_issues:
+  # Most PathBank edges involve MolecularActivity and MacromolecularComplex nodes
+  # that use internal PathBank IDs. NodeNorm doesn't recognize these, so ~88% of
+  # edges get dropped during normalization.
+  - issue: "Large normalization drop (~88% of edges)"
+    description: |
+      PathBank internal IDs (Reaction_, ProteinComplex_, some Compound_) are not
+      recognized by NodeNorm. The ingest correctly produces 12.8M edges, but 11.3M
+      are filtered out because subject or object nodes fail normalization.
+    resolution: "Long-term: Request NodeNorm support for PathBank IDs or map reactions to EC numbers."
+
+  # The RIG documents predicates like has_input, has_output, catalyzes, has_part,
+  # regulates, physically_interacts_with - but these only appear on edges involving
+  # MolecularActivity or MacromolecularComplex nodes that fail normalization.
+  - issue: "Missing predicates in normalized output"
+    description: |
+      Predicates like has_input, has_output, catalyzes, has_part, regulates, and
+      physically_interacts_with are correctly emitted by the ingest but only appear
+      on edges involving MolecularActivity/MacromolecularComplex nodes. These nodes
+      fail NodeNorm, so the edges are dropped.
+    resolution: "Long-term: Depends on fixing normalization drop. Final output only has has_participant, occurs_in, interacts_with."
+
+  # Biolink has_participant expects an "occurrent" (process/event) as object,
+  # but PathBank pathways correctly have chemicals and proteins as participants.
+  - issue: "Validation warnings for has_participant range"
+    description: |
+      66,656 validation warnings occur because biolink:has_participant expects
+      range 'occurrent' but objects are SmallMolecule, Protein, Drug, etc.
+      The data is semantically correct - pathways do have these participants.
+    resolution: "Accepted as warnings. The edges are valid pathway membership assertions."
+
+  # One GO term (GO:0043165) normalized to BiologicalProcess instead of CellularComponent
+  - issue: "occurs_in edge to BiologicalProcess"
+    description: |
+      1 edge has a BiologicalProcess object (from GO term normalization) instead
+      of the expected CellularComponent or AnatomicalEntity. This happens when
+      a GO cellular component term gets normalized to a process category.
+    resolution: "Accepted as edge case. The edge is valid but doesn't match RIG's expected object categories."
 
 provenance_info:
   contributions:
