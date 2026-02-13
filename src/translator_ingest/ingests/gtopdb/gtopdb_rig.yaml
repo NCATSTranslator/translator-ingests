@@ -42,8 +42,8 @@ ingest_info:
     #   location: "https://www.guidetopharmacology.org/DATA/targets_and_families.csv"
     #   description: "complete target and family list"
     ## Qi review comment: will need this to mapping between ligand id and pubchem CID
-    - file_name: "ligand_id_mapping.csv"
-      location: "https://www.guidetopharmacology.org/DATA/ligand_id_mapping.csv"
+    - file_name: "ligands.csv"
+      location: "https://www.guidetopharmacology.org/DATA/ligands.csv"
     #   description: "complete ligand list"
     # - file_name: "peptides.csv"
     #   location: "https://www.guidetopharmacology.org/DATA/peptides.csv"
@@ -60,6 +60,8 @@ ingest_info:
       # Qi review comment: you are correct, I have fixed it to be the columns actually used in the ingest.py
       ## Endogenous for future?
       fields_used: "Ligand, Target, Ligand ID, Target UniProt ID, Type, Action, PubMed ID"
+    - file_name: "ligands.csv"
+      fields_used: 'Ligand ID, PubChem CID'
 
     # MHB: Qi, can you update included_records and fields_used in objects below to match conventions / suggestions above. Remember, the ingest_info section of the RIG just describes what content we take from the source, and what we leave behind.  It doesn't describe how we model it. THat goes in the target_info section that follows.
     ## Qi review comments: not used

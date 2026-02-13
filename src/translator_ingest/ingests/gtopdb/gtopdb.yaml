@@ -57,7 +57,7 @@ readers:
     comment_char: "#" # Header line starts with #
     header_mode: infer
     files:
-      - ligand_id_mapping.csv
+      - ligands.csv
     columns:
-      - Ligand id
+      - Ligand ID
       - PubChem CID
