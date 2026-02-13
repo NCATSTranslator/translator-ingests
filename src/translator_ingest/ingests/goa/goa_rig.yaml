@@ -65,12 +65,11 @@ ingest_info:
     - category: node_property_content
       consideration: "t.b.d. if we will bring in taxon info about gene/gene product nodes from GOA, or rely on other gene property authorities for this information (e.g. ncbigene)"
 
-  # Note: additional_notes field has been removed from this section according to new schema
-  # Previous note: n/a - no records are filtered from the source data sets listed above. NOTE that where we can identify annotations that were imported/re-structured from GO-CAM, we can keep infores:goa as the primary source for these edges, but indicate infores:go-cam as a 'supporting_data_provider'
+  additional_notes: "no records are filtered from the source data sets listed above. NOTE that where we can identify annotations that were imported/re-structured from GO-CAM, we can keep infores:goa as the primary source for these edges, but indicate infores:go-cam as a 'supporting_data_source'"
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-goa-kgx
+  infores_id: infores:translator-goa
 
   edge_type_info:
     - subject_categories:
@@ -86,12 +85,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type 
         - publications
       ui_explanation: "A GO Annotation uses 'enables' predicate when a gene product is solely capable of executing the reported function."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:MacromolecularComplex
       predicates:
@@ -102,31 +108,45 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type 
         - publications
       ui_explanation: "A GO Annotation uses 'contributes_to' predicate when a gene product is required as part of a macromolecular complex for executing the reported function."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
+        - biolink:BiologicalProcess 
+      predicates:
+        - biolink:has_participant
+      object_categories:
         - biolink:Gene
         - biolink:Protein
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
-      predicates:
-        - biolink:involved_in
-      object_categories:
-        - biolink:BiologicalProcess
       knowledge_level:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
-      ui_explanation: "A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
+      ui_explanation: "A GO Annotation uses 'has_participant' predicate when a gene product's molecular function plays an integral role in the reported biological process."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -140,12 +160,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'acts_upstream_of_or_within' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, as is the directionality of its effect on the process."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -159,12 +186,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'acts_upstream_of_or_within_positive_effect' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, but the activity of the gene product has a positive effect on the process."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -178,12 +212,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'acts_upstream_of_or_within_negative_effect' predicate when the mechanism / timing of the gene product's activity relative to the reported biological process is not known, but the activity of the gene product has a negative effect on the process."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -197,12 +238,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'acts_upstream_of' predicate when the a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the directionality of its effect on the process is not known."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -216,12 +264,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'acts_upstream_of_positive_effect' predicate when a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the activity of the gene product is required for the process but does not regulate it."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -235,31 +290,45 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'acts_upstream_of_negative_effect' predicate when a gene product acts through a known mechanism upstream of the reported biological process, does not regulate the process, and the activity of the gene product prevents or reduces the process but does not regulate it."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:is_active_in
+        - biolink:active_in
       object_categories:
         - biolink:CellularComponent
       knowledge_level:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
-      ui_explanation: "A GO Annotation uses 'is_active_in' predicate when a gene product is present in and performs its molecular function in the reported cellular component."
+      ui_explanation: "A GO Annotation uses 'active_in' predicate when a gene product is present in and performs its molecular function in the reported cellular component."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -273,30 +342,19 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'located_in' predicate when a gene product enables is detected in the reported cellular component."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
-    - subject_categories:
-        - biolink:Gene
-        - biolink:Protein
-        - biolink:RNAProduct
-      predicates:
-        - biolink:part_of
-      object_categories:
-        - biolink:MacromolecularComplex
-      knowledge_level:
-        - varies
-      agent_type:
-        - varies
-      edge_properties:
-        - negated
-        - has_evidence
-        - publications
-      ui_explanation: "A GO Annotation uses 'part_of' predicate when a gene product is a component of the reported macromolecular complex."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -310,11 +368,42 @@ target_info:
         - varies
       agent_type:
         - varies
+      primary_knowledge_sources:
+        - infores:goa        
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'colocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+      
+    - subject_categories:
+        - biolink:MacromolecularComplex
+      predicates:
+        - biolink:has_part
+      object_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:RNAProduct        
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      primary_knowledge_sources:
+        - infores:goa        
+      edge_properties:
+        - negated
+        - has_evidence_of_type
+        - publications
+      ui_explanation: "A GO Annotation uses 'has_part' predicate when a gene product is a component of the reported macromolecular complex."
+      source_files:
+        - "goa_human.gaf"
+        - "mgi.gaf"
+        - "rgd.gaf"      
       additional_notes: "varies, depending on mappings from GO evidence codes"
 
   node_type_info:
