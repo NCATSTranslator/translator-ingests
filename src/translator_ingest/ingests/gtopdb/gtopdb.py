@@ -2,7 +2,7 @@ import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
-from collections import defaultdict
+
 
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
@@ -39,7 +39,7 @@ def get_latest_version() -> str:
 
 @koza.prepare_data(tag="gtopdb_ligand_id_mapping")
 def prepare_pubchemID_mapping(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-    
+
     ## Only need to download the corresponding ligand.csv file, but dont need to load it using a different tag and create a dictionary
 
     # this function is only preparing data, not yielding rows
