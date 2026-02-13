@@ -47,23 +47,6 @@ def get_latest_version() -> str:
         print(f"Could not determine latest version for Panther: {e}")
         return "unknown"
 
-@koza.on_data_begin()
-def on_begin_panther_ingest(koza_transform: koza.KozaTransform) -> None:
-    """
-    Called before processing begins.
-    Can be used for setup or validation of input files.
-    """
-    koza_transform.log("Starting Panther Gene Orthology processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
-
-@koza.on_data_end()
-def on_end_panther_ingest(koza_transform: koza.KozaTransform):
-    """
-    Called after all data has been processed.
-    Used for logging summary statistics.
-    """
-    koza_transform.log("Panther Gene Orthology processing complete")
-
 
 @koza.prepare_data()
 def prepare_panther_data(

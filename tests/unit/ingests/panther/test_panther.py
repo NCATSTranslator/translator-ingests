@@ -10,8 +10,6 @@ from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.panther.panther import (
     get_latest_version,
-    on_begin_panther_ingest,
-    on_end_panther_ingest,
     transform_gene_to_gene_orthology
 )
 
@@ -391,10 +389,6 @@ def test_ingest_transform(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_panther_ingest(mock_koza_transform)
-
     validate_transform_result(
         result=transform_gene_to_gene_orthology(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -403,5 +397,3 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS
     )
-
-    on_end_panther_ingest(mock_koza_transform)
