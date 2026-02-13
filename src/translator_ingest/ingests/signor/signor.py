@@ -12,6 +12,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneRegulatesGeneAssociation,
     PairwiseMolecularInteraction,
     AnatomicalEntityHasPartAnatomicalEntityAssociation,
+    GeneAffectsChemicalAssociation,
+    ChemicalEntityToChemicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
@@ -107,7 +109,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
     for record in data:
 
-        list_ppi_accept_effects = ['up-regulates activity', 'up-regulates', 'down-regulates activity', 'down-regulates', 'down-regulates quantity by expression', 'down-regulates quantity by destabilization']
+        list_ppi_accept_effects = ['up-regulates activity', 'up-regulates', 'down-regulates activity', 'down-regulates', 'down-regulates quantity by expression', 'down-regulates quantity by destabilization', 'up-regulates quantity', 'down-regulates quantity']
         list_pci_accept_effects = ['form complex']
 
         if record["subject_category"] == "protein" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
@@ -123,11 +125,17 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             elif record["EFFECT"] == 'up-regulates quantity by expression':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'down-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates quantity by expression':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
@@ -188,7 +196,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
-            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+            object = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -211,7 +219,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             else:
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
-            association = GeneRegulatesGeneAssociation(
+            association = GeneAffectsChemicalAssociation(
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
@@ -238,6 +246,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             elif record["EFFECT"] == 'up-regulates':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'up-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+                object_direction_qualifier = DirectionQualifierEnum.upregulated
             elif record["EFFECT"] == 'up-regulates quantity by expression':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
@@ -246,6 +257,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'down-regulates quantity by expression':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
@@ -280,6 +294,12 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
+            elif record["EFFECT"] == 'down-regulates activity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            elif record["EFFECT"] == 'down-regulates quantity':
+                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+                object_direction_qualifier = DirectionQualifierEnum.downregulated
             elif record["EFFECT"] == 'up-regulates':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
                 object_direction_qualifier = DirectionQualifierEnum.upregulated
@@ -310,8 +330,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         elif record["subject_category"] == "smallmolecule" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
+            ## chemical entity already have CHEBI prefix
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
-            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+            object = ChemicalEntity(id=record["IDA"], name=record["object_name"])
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -322,7 +343,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             else:
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
-            association = GeneRegulatesGeneAssociation(
+            association = ChemicalEntityToChemicalEntityAssociation(
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
@@ -330,9 +351,10 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = "biolink:causes",
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier
+                ## no following inputs
+                # qualified_predicate = "biolink:causes",
+                # object_aspect_qualifier = object_aspect_qualifier,
+                # object_direction_qualifier = object_direction_qualifier
             )
             if subject is not None and object is not None and association is not None:
                 nodes.append(subject)
@@ -341,7 +363,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         elif record["subject_category"] == "smallmolecule" and record["object_category"] == "smallmolecule" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
-            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+            object = ChemicalEntity(id=record["IDA"], name=record["object_name"])
 
             if record["EFFECT"] == 'up-regulates activity':
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -368,7 +390,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
 
-            association = GeneRegulatesGeneAssociation(
+            association = ChemicalEntityToChemicalEntityAssociation(
                 id=entity_id(),
                 subject=subject.id,
                 object=object.id,
@@ -376,9 +398,10 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = "biolink:causes",
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier
+                ## no following inputs
+                # qualified_predicate = "biolink:causes",
+                # object_aspect_qualifier = object_aspect_qualifier,
+                # object_direction_qualifier = object_direction_qualifier
             )
             if subject is not None and object is not None and association is not None:
                 nodes.append(subject)
