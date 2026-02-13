@@ -5,21 +5,38 @@ from typing import Any, Iterable
 ## build_association_knowledge_sources should be able to handle source_record_urls
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 ## using bmt to get UMLS semantic types for DiseaseOrPheno
-from translator_ingest.util.biolink import INFORES_DRUGCENTRAL, get_biolink_model_toolkit
+from translator_ingest.util.biolink import (
+    INFORES_DRUGCENTRAL,
+    ## getting other infores from my mapping py
+    get_biolink_model_toolkit
+)
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     DiseaseOrPhenotypicFeature,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    Protein,  ## because drugcentral uses uniprotkb IDs
+    ## ONLY for affects, currently works w/ Protein (inherits object:Biological Entity)
+    ChemicalAffectsGeneAssociation,
+    ## ONLY for interacts_with, currently works with GeneOrGeneProduct so Protein is fine
+    ChemicalGeneInteractionAssociation,
+    MacromolecularMachineHasSubstrateAssociation,    ## ONLY for has_substrate
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-
 ## ADDED packages for this ingest
 import pandas as pd
 ## psycopg is underlying dependency
 from sqlalchemy import create_engine, URL, text
 ## FYI: get bmt toolkit from util.biolink function, so not importing entire package here
-from translator_ingest.ingests.drugcentral.mappings import OMOP_RELATION_MAPPING
+from translator_ingest.ingests.drugcentral.mappings import (
+    OMOP_RELATION_MAPPING,
+    URL_TO_PREFIX,
+    INFORES_MAPPING,
+    ACTION_TYPE_MAPPING
+)
+## increment this when your file changes will affect the output
+##   (even with the same resource data) to trigger a new build
+TRANSFORM_VERSION = "1.1"
 
 
 ## HARD-CODED values and mappings
@@ -42,6 +59,15 @@ DOP_TO_FILTER = [
     "C0085228",   ## Fluvoxamine (drug): doesn't match predicate (contraindicated) or Association range
     "C0022650",   ## Kidney Calculi (aka stones, NodeNorm maps to AnatomicalEntity): doesn't match Association range
 ]
+## act_table_full
+## only columns we're using right now - total 23 columns
+ACT_MAIN_COLUMNS = ["struct_id", "accession", "action_type", "act_source", "act_source_url"]
+## removed because ingesting directly or licensing concerns
+## tuple so the f-string SQL query will have parentheses. Must be exact values
+ACT_REMOVED_SOURCES = ("CHEMBL", "IUPHAR", "DRUGBANK", "KEGG DRUG")
+## act_source values with same modeling (drugcentral primary)
+PRIMARY_DRUGCENTRAL = {"DRUG LABEL", "SCIENTIFIC LITERATURE", "UNKNOWN"}
+BIOLINK_SUBSTRATE = "biolink:has_substrate"   ## for logic check
 
 
 ## CUSTOM FUNCTIONS
@@ -147,7 +173,7 @@ def omop_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledg
     ## generate DrugCentral url
     drugcentral_url = f"https://drugcentral.org/drugcard/{record["struct_id"]}#druguse"
 
-    chemical = ChemicalEntity(id=f"DRUGCENTRAL:{record["struct_id"]}")
+    chemical = ChemicalEntity(id=f"DrugCentral:{record["struct_id"]}")
     dop = DiseaseOrPhenotypicFeature(id=f"UMLS:{record["umls_cui"]}")
 
     ## get mapped predicate/edge attribute for relationship_name 
@@ -169,3 +195,156 @@ def omop_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledg
     )
 
     return KnowledgeGraph(nodes=[chemical, dop], edges=[association])
+
+
+## act_table_full parsing
+@koza.prepare_data(tag="act_table_full")
+def bioactivity_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    """
+    Access database and load bioactivity table into pandas. Then process.
+    """
+    ## setup access to database
+    server_url = get_server_url(
+        dialect=DIALECT, driver=DRIVER, user=USER, password=PASSWORD, host=HOST, port=PORT, dbname=DBNAME
+    )
+    engine = create_engine(server_url)
+
+    ## load table into pandas: do filtering in SQL query (faster, more efficient)
+    koza.log("Loading act_table_full into pandas...")
+    koza.log(f"Only working with these columns: {", ".join(ACT_MAIN_COLUMNS)}")
+    ## currently only ingesting rows with an action_type value (assertion of relationship)
+    ## for reasoning behind other constraints, see comments where variables were defined
+    act_query = f"""
+        SELECT {", ".join(ACT_MAIN_COLUMNS)}
+        FROM act_table_full
+        WHERE (action_type IS NOT NULL) AND
+        (act_source NOT IN {ACT_REMOVED_SOURCES})
+    """
+    with engine.connect() as db_conn: 
+        df1_qfilter = pd.read_sql_query(act_query, con=db_conn)
+    koza.log(f"Successfully loaded act_table_full: {df1_qfilter.shape[0]} rows")
+    ## logging for easy inspection of data - that filtered query worked as-intended
+    for i in df1_qfilter.columns:
+        if df1_qfilter[i].hasnans:
+            koza.log(f"{i} is present in {df1_qfilter[i].notna().sum()} rows")
+    koza.log("All other columns have no missing values")
+    for i in ["struct_id", "accession", "action_type"]:
+        koza.log(f"{i}: {df1_qfilter[i].nunique()} unique values")
+    ## diff for act_source: list values
+    koza.log(f"act_source has {df1_qfilter["act_source"].nunique()} unique values: {", ".join(sorted(df1_qfilter["act_source"].unique()))}")
+
+    ## PREPROCESS, REMOVE DUPLICATES
+    ## multiple protein IDs, |-delimited. Split, explode to individ lines
+    df1_qfilter["accession"] = df1_qfilter["accession"].str.split("|")
+    df1_qfilter = df1_qfilter.explode("accession", ignore_index=True)
+    koza.log(f"{df1_qfilter.shape[0]} rows after splitting pipe-delimited accession values")
+    ## turn some urls into CURIEs, leaving rest as-is
+    for k,v in URL_TO_PREFIX.items():
+        df1_qfilter["act_source_url"] = df1_qfilter["act_source_url"].str.replace(k, v)
+    ## remove duplicates
+    ## currently, all action_type values have unique mappings. So using as-is when considering dups
+    ## using source: some have unique primary knowledge-source (KS)
+    ##   depending on pipeline's merge step to merge any edges with same triple and primary KS (drugcentral)
+    ACT_MAIN_TRIPLE = ["struct_id", "accession", "action_type", "act_source"]
+    df1_qfilter.drop_duplicates(subset=ACT_MAIN_TRIPLE, inplace=True, ignore_index=True)
+    koza.log(f"{df1_qfilter.shape[0]} rows kept after removing duplicates.")
+
+    ## DONE - output to transform step
+    return df1_qfilter.to_dict(orient="records")
+
+
+@koza.transform_record(tag="act_table_full")
+def bioactivity_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    ## set up sources: depends on act_source value
+    ## generate DrugCentral url
+    drugcentral_url = f"https://drugcentral.org/drugcard/{record["struct_id"]}#Bio"
+    if record["act_source"] in PRIMARY_DRUGCENTRAL:
+        record_sources = build_association_knowledge_sources(
+            ## set param as tuple to include source_record_urls list
+            primary=(INFORES_DRUGCENTRAL, [drugcentral_url])
+        )
+    else:
+        record_sources = build_association_knowledge_sources(
+            ## set param as tuple to include source_record_urls list
+            aggregating=(INFORES_DRUGCENTRAL, [drugcentral_url]),
+            primary=INFORES_MAPPING[record["act_source"]],
+        )
+
+    ## set up publications
+    if pd.isna(record["act_source_url"]):
+        pubs = None
+    else:  ## turn into a list, currently only 1 item
+        pubs = [record["act_source_url"]]
+
+    chemical = ChemicalEntity(id=f"DrugCentral:{record["struct_id"]}")
+    protein = Protein(id=f"UniProtKB:{record["accession"]}")
+
+    ## diff Association type depending on predicate
+    data_modeling = ACTION_TYPE_MAPPING[record["action_type"]]
+
+    if "interacts_with" in data_modeling["predicate"]:
+    ## covers "interacts_with" and descendants with substring
+    ## ASSUMING no special logic, so only 1 edge made
+        association = ChemicalGeneInteractionAssociation(
+            id=entity_id(),
+            subject=chemical.id,
+            object=protein.id,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            sources=record_sources,
+            publications=pubs,
+            predicate=data_modeling["predicate"],
+            ## return empty dict if mapping doesn't have "qualifiers" (ex: plain "interacts_with" edge)
+            **data_modeling.get("qualifiers", dict())
+        )
+        return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+    elif data_modeling["predicate"] == BIOLINK_SUBSTRATE:
+    ## ASSUMING no special logic, so only 1 edge made
+        association = MacromolecularMachineHasSubstrateAssociation(
+            id=entity_id(),
+            ## FLIP DIRECTION: protein has_substrate chem
+            subject=protein.id,
+            object=chemical.id,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            sources=record_sources,
+            publications=pubs,
+            predicate=data_modeling["predicate"],
+            ## return empty dict if mapping doesn't have "qualifiers" (ex: plain "interacts_with" edge)
+            **data_modeling.get("qualifiers", dict())
+        )
+        return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
+    elif "affects" in data_modeling["predicate"]:
+    ## currently covers all other cases
+        ## MAIN EDGE
+        association = ChemicalAffectsGeneAssociation(
+            id=entity_id(),
+            subject=chemical.id,
+            object=protein.id,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            sources=record_sources,
+            publications=pubs,
+            predicate=data_modeling["predicate"],
+            ## currently, there are always qualifiers
+            **data_modeling.get("qualifiers", dict())
+        )
+        ## if there's an extra edge field
+        if data_modeling.get("extra_edge_pred"):
+            ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
+            ## should be identical to original edge, except predicate/no qualifiers. 
+            extra_assoc = ChemicalGeneInteractionAssociation(
+                id=entity_id(),
+                subject=chemical.id,
+                object=protein.id,
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+                sources=record_sources,
+                publications=pubs,
+                predicate=data_modeling["extra_edge_pred"],
+            )
+            ## return both edges
+            return KnowledgeGraph(nodes=[chemical, protein], edges=[association, extra_assoc])
+        else:
+            ## return only 1 edge
+            return KnowledgeGraph(nodes=[chemical, protein], edges=[association])
