@@ -3,10 +3,8 @@ import koza
 import pandas as pd
 from typing import Any, Iterable
 
-
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
-
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
