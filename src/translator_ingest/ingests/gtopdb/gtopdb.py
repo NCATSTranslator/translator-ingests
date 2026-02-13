@@ -30,9 +30,6 @@ from translator_ingest.util.biolink import (
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 
-## define a global dictionary to store the mapping dictionary between ligand id and pubmed id
-pubchem_id_mapping_dict = defaultdict(dict)
-
 def get_latest_version() -> str:
     from datetime import date
     today = date.today()
@@ -42,29 +39,8 @@ def get_latest_version() -> str:
 
 @koza.prepare_data(tag="gtopdb_ligand_id_mapping")
 def prepare_pubchemID_mapping(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-    ## define a global dictionary to store the mapping dictionary between ligand id and pubmed id
-    global pubchem_id_mapping_dict
-
-    # initialize the global dictionary
-    pubchem_id_mapping_dict = {}
-
-    # convert the input iterable into a DataFrame
-    source_df = pd.DataFrame(data)
-
-    # sanity check (optional but recommended)
-    required_cols = {"Ligand ID", "PubChem CID"}
-    missing = required_cols - set(source_df.columns)
-    if missing:
-        raise ValueError(f"Missing required columns: {missing}")
-
-    # build the mapping
-    for _, row in source_df.iterrows():
-        ligand_id = row["Ligand ID"]
-        pubchem_id = row["PubChem CID"]
-
-        # skip nulls if needed
-        if pd.notna(ligand_id) and pd.notna(pubchem_id):
-            pubchem_id_mapping_dict[ligand_id] = pubchem_id
+    
+    ## Only need to download the corresponding ligand.csv file, but dont need to load it using a different tag and create a dictionary
 
     # this function is only preparing data, not yielding rows
     return None
@@ -78,6 +54,22 @@ def transform_nothing(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+
+    ## used for debugging only
+    ## check whether the mapping tag is in the same execution context
+    # print("STATE KEYS:", koza.state.keys())
+    # print("MAPPING SIZE:", len(koza.state.get("pubchem_id_mapping_dict", {})))
+
+    # Load ligands mapping CSV directly
+    # skip the metadata row
+    mapping_df = pd.read_csv("data/gtopdb/20260212/source_data/ligands.csv", skiprows = 1)
+    ## used for debugging only
+    # print("Mapping CSV columns:", mapping_df.columns.tolist())
+
+    mapping_dict = dict(zip(
+        mapping_df["Ligand ID"].astype(str).str.strip(),
+        mapping_df["PubChem CID"].astype(str).str.strip()
+    ))
 
     ## convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
@@ -98,8 +90,13 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         inplace=True,
     )
 
-    ## apply mapping use the global dictionary
-    source_df["subject_id"] = source_df["Ligand ID"].map(pubchem_id_mapping_dict)
+    ## avoid mismatching by converting string ids into integer IDs
+    source_df["subject_id"] = (
+        source_df["Ligand ID"]
+        .astype(str)
+        .str.strip()
+        .map(mapping_dict)
+    )
 
     ## drop NA of those dont find a mapping
     source_df = source_df.dropna(subset=["subject_id"])
@@ -121,7 +118,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         causal_mechanism_qualifier = None
 
         # seems all subjects are chemical entity, and all objects are genes
-        subject = ChemicalEntity(id="GTOPDB:" + record["subject_id"], name=record["subject_name"])
+        subject = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record["subject_id"], name=record["subject_name"])
         object = Gene(id="UniProtKB:" + record["object_id"], name=record["object_name"])
 
         ## Obtain the publications information

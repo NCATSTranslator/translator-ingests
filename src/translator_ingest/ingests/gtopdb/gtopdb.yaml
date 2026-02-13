@@ -1,6 +1,16 @@
 name: gtopdb
 
 readers:
+  gtopdb_ligand_id_mapping:
+    format: csv
+    delimiter: ","
+    comment_char: "#" # Header line starts with #
+    header_mode: infer
+    files:
+      - ligands.csv
+    columns:
+      - Ligand ID
+      - PubChem CID
   gtopdb_interaction_parsing:
     format: csv
     delimiter: ","
@@ -51,13 +61,3 @@ readers:
       - Receptor Site
       - Ligand Context
       - PubMed ID
-  gtopdb_ligand_id_mapping:
-    format: csv
-    delimiter: ","
-    comment_char: "#" # Header line starts with #
-    header_mode: infer
-    files:
-      - ligands.csv
-    columns:
-      - Ligand ID
-      - PubChem CID
