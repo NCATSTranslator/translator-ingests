@@ -20,5 +20,4 @@ readers:
           - "biolink:interacts_with"
           - "biolink:located_in"
           - "biolink:predisposes_to_condition"
-          - "biolink:physically_interacts_with"
           - "biolink:disrupts"
