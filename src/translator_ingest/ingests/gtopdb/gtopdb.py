@@ -121,7 +121,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         causal_mechanism_qualifier = None
 
         # seems all subjects are chemical entity, and all objects are genes
-        subject = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record["subject_id"], name=record["subject_name"])
+        subject = ChemicalEntity(id="GTOPDB:" + record["subject_id"], name=record["subject_name"])
         object = Gene(id="UniProtKB:" + record["object_id"], name=record["object_name"])
 
         ## Obtain the publications information
