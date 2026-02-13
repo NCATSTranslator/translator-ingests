@@ -43,7 +43,7 @@ target_info:
 
   edge_type_info:
     - subject_categories:
-        - biolink:SmallMolecule                         # I added biolink prefixes here - values need to be curies
+        - biolink:SmallMolecule
         - biolink:MolecularMixture
         - biolink:ChemicalEntity
       predicates: 
@@ -56,33 +56,56 @@ target_info:
         - manual_agent
       edge_properties:
         - mechanism_of_action_description             # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation?
-      ui_explanation: mechanism of mechanism and target information
+      ui_explanation: mechanism of action, target information
 
     - subject_categories:
         - biolink:SmallMolecule
         - biolink:MolecularMixture
         - biolink:ChemicalEntity
-      predicates:                                      # MHB: What cues in the data map to these predicates 
+      predicates:
         - biolink:treats
+        - biolink:treats_or_applied_or_studied_to_treat
+        - biolink:in_clinical_trials_for
         - biolink:ameliorates_condition
         - biolink:in_preclinical_trials_for
         - biolink:diagnoses
-        - biolink:disrupts
       object_categories:
         - biolink:DiseaseOrPhenotypicFeature
+        - biolink:OrganismTaxon
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:                                 # MHB: I expected to see approval status / research phase properties on these edges (or maybe on the chemical nodes)? 
+      edge_properties:
         - mechanism_of_action_description
+        - clinical_approval_status
+        - max_research_phase
       ui_explanation: drug indication
 
-  node_type_info:  # (required, multivalued, range = NodeType)
+    - subject_categories:
+        - biolink:SmallMolecule
+        - biolink:MolecularMixture
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:has_chemical_role
+      object_categories:
+        - biolink:ChemicalEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - mechanism_of_action_description
+        - clinical_approval_status
+        - max_research_phase
+      ui_explanation: drug categpry
+
+  node_type_info:
 
     - node_category: ChemicalEntity
       source_identifier_types: 
-        - PubChem                      # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
+        - PubChem
+        - CHEBI
       node_properties:
         - biolink:name
         - biolink:synonym
@@ -90,13 +113,13 @@ target_info:
 
     - node_category: DiseaseOrPhenotypicFeature
       source_identifier_types: 
-        - MONDO                        # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
+        - MONDO
       node_properties:
         - biolink:name
 
     - node_category: Gene
       source_identifier_types: 
-        - HGNC                         # MHB: Does the source provide these identifiers - i don't see them in the tsv file?
+        - HGNC
       node_properties:
         - biolink:symbol
 
