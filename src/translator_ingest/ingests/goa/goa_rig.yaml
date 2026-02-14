@@ -83,12 +83,12 @@ target_info:
       object_categories:
         - biolink:MolecularActivity
       knowledge_level:
-        - varies
+        - varies            # MHB: Can you list all that are relevant?
       agent_type:
-        - varies
+        - varies            # MHB: Can you list all that are relevant?
       edge_properties:
         - negated
-        - has_evidence
+        - has_evidence      # MHB: Biolink may have some updates in this area . . . e.g. a 'has evidence of type' property that we would use here. 
         - publications
       ui_explanation: "A GO Annotation uses 'enables' predicate when a gene product is solely capable of executing the reported function."
       additional_notes: "varies, depending on mappings from GO evidence codes"
@@ -127,6 +127,9 @@ target_info:
         - publications
       ui_explanation: "A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
       additional_notes: "varies, depending on mappings from GO evidence codes"
+
+    # MHB: I made notes on each ege type below as well, but in general, we should try to merge some Edge types where the provenance and S/O categories is the same, and the only differnece is some cue that differentiates between acts_upstream subpredicates. Ultimately, want to define EdgeTypes at a granularity that ensures shared provenance, ease of UI explanation authoring, and the same confidence prior.
+
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -152,7 +155,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:acts_upstream_of_or_within_positive_effect
+        - biolink:acts_upstream_of_or_within_positive_effect        # MHB: can probably merge this with previous EdgeType, and list both predicates - since provenance of these edges, and the S/O categories are the same . . . only differnece is cue that indicates the effect is positive.   IS this right?
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -171,7 +174,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:acts_upstream_of_or_within_negative_effect
+        - biolink:acts_upstream_of_or_within_negative_effect         # MHB: can probably merge this with previous EdgeType, and list both predicates - since provenance of these edges, and the S/O categories are the same . . . only differnece is cue that indicates the effect is negative.   IS this right?
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -190,7 +193,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:acts_upstream_of
+        - biolink:acts_upstream_of             # MHB: can probably merge this with previous EdgeType, and list both predicates - since provenance of these edges, and the S/O categories are the same.  Is this right?
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -266,7 +269,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:located_in
+        - biolink:located_in       # MHB: same issue as above - could probably merge with EdgeType above
       object_categories:
         - biolink:CellularComponent
       knowledge_level:
@@ -279,6 +282,27 @@ target_info:
         - publications
       ui_explanation: "A GO Annotation uses 'located_in' predicate when a gene product enables is detected in the reported cellular component."
       additional_notes: "varies, depending on mappings from GO evidence codes"
+
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
+        - biolink:colocalizes_with           # MHB: same issue as above - could probably merge with EdgeType above
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - varies
+      agent_type:
+        - varies
+      edge_properties:
+        - negated
+        - has_evidence
+        - publications
+      ui_explanation: "A GO Annotation uses 'colocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component."
+      additional_notes: "varies, depending on mappings from GO evidence codes"
+      
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -296,25 +320,6 @@ target_info:
         - has_evidence
         - publications
       ui_explanation: "A GO Annotation uses 'part_of' predicate when a gene product is a component of the reported macromolecular complex."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
-    - subject_categories:
-        - biolink:Gene
-        - biolink:Protein
-        - biolink:MacromolecularComplex
-        - biolink:RNAProduct
-      predicates:
-        - biolink:colocalizes_with
-      object_categories:
-        - biolink:CellularComponent
-      knowledge_level:
-        - varies
-      agent_type:
-        - varies
-      edge_properties:
-        - negated
-        - has_evidence
-        - publications
-      ui_explanation: "A GO Annotation uses 'colocalizes_with' predicate when a gene product has a transient or dynamic association with the reported cellular component."
       additional_notes: "varies, depending on mappings from GO evidence codes"
 
   node_type_info:
@@ -340,12 +345,46 @@ target_info:
     - node_category: biolink:CellularComponent
       source_identifier_types:
         - "Gene Ontology IDs (Aspect C)"
+    # Manual QA 1 fix: normalization re-categorizes some GO BP terms as Pathway
+    - node_category: biolink:Pathway
+      source_identifier_types:
+        - "Gene Ontology IDs (Aspect P, re-categorized by normalization)"
+
+  # Manual QA 1: Document known post-normalization behaviors and accepted warnings
+  known_issues:
+    # Predicate normalization inverts or generalizes some edges. This is expected behavior
+    # from the Babel/normalization pipeline, not a bug in the GOA ingest.
+    - issue: "Predicate normalization changes some edge types"
+      description: |
+        After normalization, predicates are transformed as follows:
+        - participates_in → has_participant (inverted, subject/object swap)
+        - part_of → has_part (inverted, subject/object swap)
+        - is_active_in → related_to (generalized, no good Biolink match)
+        This is documented in predicate_map.json output.
+      resolution: "Accepted. The ingest outputs the semantically correct predicates; normalization adjusts for Biolink conventions."
+    # Validation produces warnings for domain/range that we accept
+    - issue: "Domain/range validation warnings for has_participant and enables"
+      description: |
+        Validation reports ~68k warnings about domain/range constraints:
+        - has_participant expects range 'occurrent' but objects are Gene/Protein
+        - enables expects domain 'physical entity' but subjects are Gene/Protein
+        These occur because normalization inverts participates_in edges.
+      resolution: "Accepted as warnings. Edges pass validation; warnings reflect Biolink model strictness."
+    # Some GO BP terms become Pathway after normalization
+    - issue: "GO Biological Process terms re-categorized as Pathway"
+      description: |
+        Normalization re-categorizes approximately 418 GO terms from BiologicalProcess
+        to Pathway. This is handled by the node normalizer based on GO term semantics.
+      resolution: "Accepted. Added Pathway to node_type_info to document this behavior."
 
   future_considerations:
     - category: qualifiers
       consideration: "Introduce qualifier-based representation if/when we decide to ingest any qualifying context on GO annotations"
     - category: node_properties
       consideration: "If we end up ingesting taxon info for gene nodes, we may have to update the Biolink Model to support this (currently in_taxon is represented as a predicate, and species_context_qualifier as an edge property - but there is no taxon node property)"
+    # Manual QA 1: Matt's suggestion about edge type merging
+    - category: edge_content
+      consideration: "Consider merging edge types where provenance and S/O categories are the same (e.g., acts_upstream_of variants). This would simplify UI explanation authoring and ensure consistent confidence priors."
 
 # Information about the how the ingest was specified and performed
 provenance_info:
