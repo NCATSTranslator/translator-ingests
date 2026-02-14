@@ -20,6 +20,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 ## ADDED packages for this ingest
+from translator_ingest.util.logging_utils import get_logger
 import re
 ## batched was added in Python 3.12. Pipeline uses Python >=3.12
 from itertools import islice, batched
@@ -27,6 +28,9 @@ import requests
 # ## needed for pd.read_excel
 # import openpyxl
 from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, STRINGS_TO_FILTER, MOA_MAPPING
+## increment this when your file changes will affect the output
+##   (even with the same resource data) to trigger a new build
+TRANSFORM_VERSION = "1.1"
 
 
 ## hard-coded values and mappings
@@ -39,11 +43,9 @@ def parse_header(file_path) -> Dict[str, Union[str, int]]:
     Parse the headers of txt files with custom format.
     Returns: dict
     - len_header (int): number of lines in header
-    - version (str): semantic version from header
-    - date (str): date from header
     """
     ## use \\ to escape special characters like ".", "()"
-    version_pattern = "^Version ([0-9\\.]+) \\(([0-9\\.]+)\\)"
+    # version_pattern = "^Version ([0-9\\.]+) \\(([0-9\\.]+)\\)"
 
     line_counter = 0  ## count lines read so far
     dash_counter = 0  ## count dash "divider" lines - header ends after 2nd one
@@ -58,13 +60,14 @@ def parse_header(file_path) -> Dict[str, Union[str, int]]:
                 if line.startswith("---") or line.startswith("___"):
                     dash_counter += 1
                 ## assuming there's only 1 line in the header that matches this condition
-                elif line.startswith("Version"):
-                    capture = re.search(version_pattern, line)
-                    version = capture.group(1)
-                    date = capture.group(2)
-                    date = date.replace(".", "-")
+                # elif line.startswith("Version"):
+                #     capture = re.search(version_pattern, line)
+                #     version = capture.group(1)
+                #     date = capture.group(2)
+                #     date = date.replace(".", "-")
 
-    return {"len_header": line_counter, "version": version, "date": date}
+    return {"len_header": line_counter}
+    # return {"len_header": line_counter, "version": version, "date": date}
 
 
 def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
@@ -119,6 +122,7 @@ def run_nameres(
 
     Returns: tuple of mapping dict and failure stats dict
     """
+    logger = get_logger(__name__)
     ## set up variables to collect output
     mapping = {}
     stats_failures = {
@@ -126,8 +130,8 @@ def run_nameres(
         "returned_empty": [],
         "score_under_threshold": [],
     }
-    # ## for debug: stopping early
-    # counter = 0
+    ## for printing progress
+    counter = 0
 
     for batch in batched(names, batch_size):
         req_body = {
@@ -160,9 +164,12 @@ def run_nameres(
             except Exception as e:
                 stats_failures["unexpected_error"].update({k: e})
 
+        counter += batch_size
+        if counter < len(names):   ## will keep going, log where we're at
+            logger.info(f"{counter} names processed (out of {len(names)})")
+        else:   ## done: use actual length
+            logger.info(f"Finished processing {len(names)} names.")
 #         ## for debug: tracking progress, stopping early
-#         counter += batch_size
-#         print(counter)
 #         if counter >= 500:
 #             break
 
@@ -303,15 +310,31 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"{df["object_indication_name"].nunique()} unique indication names")
     koza.log(f"{df["clinical_status"].nunique()} unique clinical status values")
 
-    ## MAP "clinical status" to biolink predicate
-    ## get method returns None if key (clinical status) not found in mapping
-    df["biolink_predicate"] = [CLINICAL_STATUS_MAP.get(i) for i in df["clinical_status"]]
+    ## MAP "clinical status" to biolink predicate, edge-attributes
+    ## make case consistent - have stuff like "Phase 3" vs "phase 3"
+    df["clinical_status"] = df["clinical_status"].str.lower()
+    koza.log(f"Update: {df["clinical_status"].nunique()} unique clinical status values after making case consistent")
+    ## MAPPING
+    ## get method returns default None if key (clinical status) not found in mapping
+    df["biolink_predicate"] = [CLINICAL_STATUS_MAP[i]["predicate"] if CLINICAL_STATUS_MAP.get(i) else None for i in df["clinical_status"]]
+    df["clinical_approval_status"] = [
+        CLINICAL_STATUS_MAP[i].get("clinical_approval_status") if CLINICAL_STATUS_MAP.get(i) else None
+        for i in df["clinical_status"]
+    ]
+    df["max_research_phase"] = [
+        CLINICAL_STATUS_MAP[i].get("max_research_phase") if CLINICAL_STATUS_MAP.get(i) else None
+        for i in df["clinical_status"]
+    ]
     ## log how much data was successfully mapped
     n_mapped = df["biolink_predicate"].notna().sum()
     koza.log(f"{n_mapped} rows with mapped clinical status: {n_mapped / df.shape[0]:.1%}")
+    n_clinical_approval = df["clinical_approval_status"].notna().sum()
+    koza.log(f"{n_clinical_approval} rows with clinical_approval_status")
+    n_max_res = df["max_research_phase"].notna().sum()
+    koza.log(f"{n_max_res} rows with max_research_phase")
     ## save for debugging
     koza.transform_metadata["clinical_statuses_unmapped"] = sorted(df[df["biolink_predicate"].isna()].clinical_status.unique())
-    ## drop rows without predicate mapping
+    ## drop rows without predicate mapping - shortcut for having a mapping at all
     df.dropna(subset="biolink_predicate", inplace=True, ignore_index=True)
 
     ## MAP TTD drug IDs to PUBCHEM.COMPOUND (can NodeNorm)
@@ -322,7 +345,6 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"{n_mapped} rows with mapped TTD drug IDs: {n_mapped / df.shape[0]:.1%}")
     ## drop rows without drug mapping
     df.dropna(subset="subject_pubchem", inplace=True, ignore_index=True)
-
     ## expand to multiple rows when subject_pubchem list length > 1
     ## also pops every subject_pubchem value out into a string
     df = df.explode("subject_pubchem", ignore_index=True)
@@ -354,7 +376,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     koza.log(f"Retrieved {len(koza.transform_metadata["indication_mapping"])} indication name -> ID mappings from NameRes")
 
     ## MAP
-    ## get method returns None if key (indication name) not found in mapping 
+    ## get method returns None if key (indication name) not found in mapping
     df["object_nameres_id"] = [koza.transform_metadata["indication_mapping"].get(i) for i in df["object_indication_name"]]
     ## log how much data was successfully mapped
     n_mapped = df["object_nameres_id"].notna().sum()
@@ -364,9 +386,10 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## Merge rows that look like "duplicates" from Translator output POV
     ## With the current pipeline and data-modeling, only the mapped columns uniquely define an edge
-    cols_define_edge = ["subject_pubchem", "biolink_predicate", "object_nameres_id"]
-    df = df.groupby(by=cols_define_edge).agg(set).reset_index().copy()
-    
+    cols_define_edge = ["subject_pubchem", "biolink_predicate", "object_nameres_id", "clinical_approval_status", "max_research_phase"]
+    ## dropna is so it handles None values in edge-attribute columns
+    df = df.groupby(by=cols_define_edge, dropna=False).agg(set).reset_index().copy()
+
     ## log what data looks like at end!
     koza.log(f"{df.shape[0]} rows at end of parsing, after handling 'edge-level' duplicates")
     koza.log(f"{df["subject_pubchem"].nunique()} unique mapped drug IDs")
@@ -380,6 +403,16 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## generate TTD urls
     ttd_urls = ["https://ttd.idrblab.cn/data/drug/details/" + i.lower() for i in record["subject_ttd_drug"]]
+
+    ## process edge-attributes values - if NA, convert to None
+    if pd.isna(record["clinical_approval_status"]):
+        app_status = None
+    else:
+        app_status = record["clinical_approval_status"]
+    if pd.isna(record["max_research_phase"]):
+        max_res = None
+    else:
+        max_res = record["max_research_phase"]
 
     chemical = ChemicalEntity(id=record["subject_pubchem"])
     indication = DiseaseOrPhenotypicFeature(id=record["object_nameres_id"])
@@ -399,6 +432,8 @@ def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
         ],
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
+        clinical_approval_status=app_status,
+        max_research_phase=max_res,
     )
 
     return KnowledgeGraph(nodes=[chemical, indication], edges=[association])
@@ -474,7 +509,6 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## koza uses json dump, which doesn't accept sets
     koza.transform_metadata["targets_unmapped"] = list(failed_TTD_targets)
 
-
     ## Parse P1-07
     koza.log("Parsing P1-07 to retrieve drug-target data")
     p1_07_path = f"{koza.input_files_dir}/P1-07-Drug-TargetMapping.xlsx"  ## path to downloaded file
@@ -500,8 +534,8 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## otherwise will have buggy behavior with groupby having None in key column and dropping these rows
     df_07["MOA"] = df_07["MOA"].fillna("NO_VALUE")
     ## save info, log
-    koza.transform_metadata["moa_cleaned"] = df_07["MOA"].unique().tolist()
-    koza.log(f"Cleaned up MOA column: {len(koza.transform_metadata["moa_cleaned"])} unique values")
+    koza.transform_metadata["all_moa"] = sorted(df_07["MOA"].unique())
+    koza.log(f"Cleaned up MOA column: {len(koza.transform_metadata["all_moa"])} unique values")
 
     ## MAP TTD drug IDs to PUBCHEM.COMPOUND (can NodeNorm)
     ## get method returns None if key (TTD ID) not found in mapping
@@ -529,7 +563,7 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     df_07 = df_07.explode("object_id", ignore_index=True)
     koza.log(f"{df_07.shape[0]} rows after expanding mappings with multiple ID values")
 
-    ## create new column mod_moa with 1 "moa" value per each unique data-modeling 
+    ## create new column mod_moa with 1 "moa" value per each unique data-modeling
     ##   this is helpful for merging rows into "edges" later
     ## current MOA values with the same data-modeling
     BINDING_TYPES = {"binder", "ligand"}
@@ -540,14 +574,14 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
         else i
         for i in df_07["MOA"]
     ]
-    
+
     ## FILTER out rows with mod_moa values that aren't in MOA_MAPPING
     ## getting the unmapped values
-    before_mod_moa = set(df_07["mod_moa"].unique())
-    current_unmapped_moa = before_mod_moa - set(MOA_MAPPING.keys())
+    mod_moa = set(df_07["mod_moa"])
+    notmapped_indata = mod_moa - set(MOA_MAPPING.keys())
     ## make regex version to correctly select rows with these unmapped values
     regex_unmapped_moa = set()
-    for i in current_unmapped_moa:
+    for i in notmapped_indata:
         temp = i
         ## add escape characters
         temp = temp.replace("(", "\\(")
@@ -560,11 +594,25 @@ def p1_07_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
     ## use mod_moa to be consistent, mostly working with this col going forward
     df_07 = df_07[~ df_07.mod_moa.str.contains('|'.join(regex_unmapped_moa))]
     n_after = df_07.shape[0]
+    final_moa = set(df_07["MOA"])
+    final_mod_moa = set(df_07["mod_moa"])
     koza.log(f"{n_after} rows with mapped MOA: {n_after / n_before:.1%}")
-    ## save set of unused moa (based on original MOA column values, not mod_moa)
+    koza.log(f"{len(final_moa)} unique MOA values kept (corresponds to {len(final_mod_moa)} mapping keys)")
+    ## save lists of unused moa (based on original MOA column values, not mod_moa)
     ## koza uses json dump, which doesn't accept sets
-    koza.transform_metadata["moa_unused"] = list(set(koza.transform_metadata["moa_cleaned"]) - set(df_07["MOA"].unique()))
-    koza.log(f"{len(koza.transform_metadata["moa_unused"])} MOA values either didn't have mappings OR didn't exist in the data after the filtering steps.")
+    ## no mapping but is in the data
+    koza.transform_metadata["moa_notmapped_indata"] = sorted(notmapped_indata)
+    ## has mapping but wasn't in the data after mapping/filtering TTD IDs
+    koza.transform_metadata["moa_mapped_nodata"] = sorted(set(MOA_MAPPING.keys()) - mod_moa)
+    ## no mapping and wasn't in the data after mapping/filtering TTD IDs
+    ## starting MOA column values - mapped,indata - mapped,not_in_data - not_mapped,in_data
+    ## using MOA column because all_moa is based on it
+    koza.transform_metadata["moa_notmapped_nodata"] = sorted(
+        set(koza.transform_metadata["all_moa"])
+        - final_moa
+        - set(koza.transform_metadata["moa_mapped_nodata"])
+        - set(koza.transform_metadata["moa_notmapped_indata"])
+    )
 
     ## Merge rows that look like "duplicates" from Translator output POV
     ##   With the current pipeline and data-modeling, only the mapped columns uniquely define an edge

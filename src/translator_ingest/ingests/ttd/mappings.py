@@ -20,37 +20,108 @@ BIOLINK_CAUSES = "biolink:causes"
 ## purposely doesn't include all values - rest are filtered out
 CLINICAL_STATUS_MAP = {
     ## treats
-    "Approved": BIOLINK_TREATS,
-    "Approved (orphan drug)": BIOLINK_TREATS,
-    "Approved in China": BIOLINK_TREATS,
-    "Approved in EU": BIOLINK_TREATS,
-    "Phase 4": BIOLINK_TREATS,
+    "approved": {
+        "predicate": BIOLINK_TREATS,
+        ## not using fda term because not absolutely certain this is FDA
+        "clinical_approval_status": "approved_for_condition",
+    },
+    "approved (orphan drug)": {
+        "predicate": BIOLINK_TREATS,
+        ## not using fda term because not absolutely certain this is FDA
+        "clinical_approval_status": "approved_for_condition",
+    },
+    "approved in china": {
+        "predicate": BIOLINK_TREATS,
+        "clinical_approval_status": "approved_for_condition",
+    },
+    "approved in eu": {
+        "predicate": BIOLINK_TREATS,
+        "clinical_approval_status": "approved_for_condition",
+    },
+    "phase 4": {
+        "predicate": BIOLINK_TREATS,
+        "max_research_phase": "clinical_trial_phase_4",
+    },
     ## studied to treat
-    "Investigative": BIOLINK_STUDIED_TREAT,
-    "Patented": BIOLINK_STUDIED_TREAT,
+    "investigative": {
+        "predicate": BIOLINK_STUDIED_TREAT,
+    },
+    "patented": {
+        "predicate": BIOLINK_STUDIED_TREAT,
+    },
     ## in preclinical trials for
-    "Preclinical": BIOLINK_PRECLINICAL,
-    "IND submitted": BIOLINK_PRECLINICAL,
+    "preclinical": {
+        "predicate": BIOLINK_PRECLINICAL,
+        ## redundant w/ pred, for standards
+        "max_research_phase": "pre_clinical_research_phase",
+    },
+    "ind submitted": {
+        "predicate": BIOLINK_PRECLINICAL,
+        "max_research_phase": "pre_clinical_research_phase",
+    },
     ## in clinical trials for
-    "Clinical Trial": BIOLINK_CLINICAL_TRIALS,
-    "Clinical trial": BIOLINK_CLINICAL_TRIALS,
-    "Preregistration": BIOLINK_CLINICAL_TRIALS,
-    "Registered": BIOLINK_CLINICAL_TRIALS,
-    "Phase 0": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1b": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1/2": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1/2a": BIOLINK_CLINICAL_TRIALS,
-    "Phase 1b/2a": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2a": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2b": BIOLINK_CLINICAL_TRIALS,
-    "Phase 2/3": BIOLINK_CLINICAL_TRIALS,
-    "Phase 3": BIOLINK_CLINICAL_TRIALS,
-    "phase 3": BIOLINK_CLINICAL_TRIALS,
-    "NDA filed": BIOLINK_CLINICAL_TRIALS,
-    "BLA submitted": BIOLINK_CLINICAL_TRIALS,
-    "Approval submitted": BIOLINK_CLINICAL_TRIALS,
+    "clinical trial": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "not_provided",
+    },
+    "preregistration": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "registered": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 0": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "phase 1": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1",
+    },
+    "phase 1b": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1",
+    },
+    "phase 1/2": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1_to_2",
+    },
+    "phase 1/2a": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1_to_2",
+    },
+    "phase 1b/2a": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_1_to_2",
+    },
+    "phase 2": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2",
+    },
+    "phase 2a": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2",
+    },
+    "phase 2b": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2",
+    },
+    "phase 2/3": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_2_to_3",
+    },
+    "phase 3": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+        "max_research_phase": "clinical_trial_phase_3",
+    },
+    "nda filed": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "bla submitted": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
+    "approval submitted": {
+        "predicate": BIOLINK_CLINICAL_TRIALS,
+    },
 }
 
 ## indication names that are known to be problematic - not "conditions that are treated" or I'm worried how the statement will look
@@ -86,8 +157,8 @@ STRINGS_TO_FILTER = [
 ## imported enum from pydantic (vs hard-coded values)
 ## there's also no value (None), which maps to plain "interacts_with" edge and is handled in main code
 MOA_MAPPING = {
-    ## original value ".". 
-    ## appears to means no known mechanism of action, so treating as a plain "interacts_with" edge
+    ## original value ".", loaded as NA, then added placeholder value
+    ## appears to mean "no known mechanism of action", so treating as a plain "interacts_with" edge
     "NO_VALUE": {
         "predicate": BIOLINK_INTERACTS,
         ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
@@ -213,12 +284,13 @@ MOA_MAPPING = {
             "causal_mechanism_qualifier": CausalMechanismQualifierEnum.modulation,
         },
     },
-    ## from Allosteric modulator - Neutral: looked like 1 edge made
     "modulator (allosteric modulator)": {
-        "predicate": BIOLINK_DP_INTERACTS,
+        "predicate": BIOLINK_AFFECTS,
         "qualifiers": {
+            "object_aspect_qualifier": GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
             "causal_mechanism_qualifier": CausalMechanismQualifierEnum.allosteric_modulation,
         },
+        "extra_edge_pred": BIOLINK_DP_INTERACTS,
     },
     "opener": {
         "predicate": BIOLINK_AFFECTS,
