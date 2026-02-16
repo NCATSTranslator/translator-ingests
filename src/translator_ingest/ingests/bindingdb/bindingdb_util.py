@@ -2,10 +2,18 @@
 Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
+from typing import Optional, Any
 from pathlib import Path
 from zipfile import ZipFile
+from math import log10
 import polars as pl
 import koza
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AffinityParameterEnum as ape,
+    AffinityMeasurement,
+    BinaryRelationEnum as bre
+)
+from bmt.pydantic import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
 
@@ -20,12 +28,16 @@ MONOMER_ID = "BindingDB MonomerID"
 LIGAND_NAME = "BindingDB Ligand Name"
 TARGET_NAME = "Target Name"
 SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
-# KI = "Ki (nM)"
-# IC50 = "IC50 (nM)"
-# KD = "Kd (nM)"
-# EC50 = "EC50 (nM)"
-# KON = "kon (M-1-s-1)"
-# KOFF = "koff (s-1)"
+
+AFFINITY_PARAMETERS = {
+    ape.pKi: "Ki (nM)",
+    ape.pIC50: "IC50 (nM)",
+    ape.pKd: "Kd (nM)",
+    ape.pEC50: "EC50 (nM)",
+    ape.pKon: "kon (M-1-s-1)",
+    ape.pKoff: "koff (s-1)"
+}
+
 # "pH" = "7.4",
 # "Temp (C)" = "25.00",
 CURATION_DATASOURCE = "Curation/DataSource"
@@ -85,6 +97,19 @@ def web_string(s: str) -> str:
         s = s.replace(a, b)
     return s
 
+SCHEMA_OVERRIDES = {
+    MONOMER_ID: pl.Utf8,
+    PUBCHEM_CID: pl.Utf8,
+    TARGET_NAME: pl.Utf8,
+    UNIPROT_ID: pl.Utf8,
+    CURATION_DATASOURCE: pl.Utf8,
+    ARTICLE_DOI: pl.Utf8,
+    PMID: pl.Utf8,
+    PATENT_NUMBER: pl.Utf8,
+}
+SCHEMA_OVERRIDES = SCHEMA_OVERRIDES.update(
+    {label: pl.Utf8 for label in AFFINITY_PARAMETERS.values()}
+)
 
 def extract_bindingdb_columns_polars(
     data_archive_path: Path,
@@ -111,16 +136,7 @@ def extract_bindingdb_columns_polars(
                     datafile,
                     separator="\t",
                     has_header=True,  # header_mode: 0 means that the first row is the header
-                    schema_overrides={
-                        MONOMER_ID: pl.Utf8,
-                        PUBCHEM_CID: pl.Utf8,
-                        TARGET_NAME: pl.Utf8,
-                        UNIPROT_ID: pl.Utf8,
-                        CURATION_DATASOURCE: pl.Utf8,
-                        ARTICLE_DOI: pl.Utf8,
-                        PMID: pl.Utf8,
-                        PATENT_NUMBER: pl.Utf8,
-                    },
+                    schema_overrides=SCHEMA_OVERRIDES,
                     # not ideal to skip problematic BindingDB data rows, but if
                     # most of the other data can be read, we still make progress
                     ignore_errors=True
@@ -180,3 +196,31 @@ def process_publications(
     df = df.filter(pl.col(PUBLICATION).is_not_null())
 
     return df
+
+def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
+    affinity_parameter: ape
+    measurements: Optional[list[AffinityMeasurement]] = None
+    for affinity_parameter, column in AFFINITY_PARAMETERS.items():
+        if column in record and record[column]:
+            value: str = record[column]
+            has_binary_relation: bre
+            if value.startswith("<"):
+                value = value[1:]
+                has_binary_relation = bre.less_than
+            elif value.startswith(">"):
+                value = value[1:]
+                has_binary_relation = bre.greater_than
+            else:
+                has_binary_relation = bre.equal_to
+            affinity = log10(float(value))
+            affinity_measurement = AffinityMeasurement(
+                id=entity_id(),
+                affinity_parameter=affinity_parameter,
+                affinity=affinity,
+                has_binary_relation=has_binary_relation
+            )
+            if measurements is None:
+                measurements = [affinity_measurement]
+            else:
+                measurements.append(affinity_measurement)
+    return measurements

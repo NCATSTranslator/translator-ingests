@@ -6,6 +6,7 @@ import polars as pl
 import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
+    AffinityMeasurement,
     ChemicalGeneInteractionAssociation,
     Protein,
     KnowledgeLevelEnum,
@@ -17,12 +18,14 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     extract_bindingdb_columns_polars,
     process_publications,
+    get_affinity_measurements,
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR, web_string,
     MONOMER_ID,
     TARGET_NAME,
     SOURCE_ORGANISM,
+    AFFINITY_PARAMETERS,
     CURATION_DATASOURCE,
     PUBCHEM_CID,
     UNIPROT_ID,
@@ -36,7 +39,6 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     MISSING_PUBS
 )
 
-
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
     MONOMER_ID,
@@ -48,7 +50,7 @@ BINDINGDB_COLUMNS = (
     ARTICLE_DOI,
     PMID,
     PATENT_NUMBER
-)
+) + tuple(AFFINITY_PARAMETERS.values())
 
 SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
     "Homo sapiens": "9606",
@@ -214,6 +216,10 @@ def transform_bindingdb_by_record(
     # Publications
     publications = [record[PUBLICATION]]
 
+    # Measurements of the molecular interaction affinity of
+    # chemical 'subject' to gene product target 'object'
+    affinity_measurements: Optional[list[AffinityMeasurement]] = get_affinity_measurements(record)
+
     # Sources
     target_label = web_string(target_name)
     supporting_data_id = record[SUPPORTING_DATA_ID]
@@ -230,6 +236,7 @@ def transform_bindingdb_by_record(
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,
+        has_affinity=affinity_measurements,
         publications=publications,
         sources=sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
