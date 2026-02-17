@@ -1,8 +1,12 @@
+from typing import Optional, Any
 import pytest
 from pathlib import Path
-from typing import Optional
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AffinityMeasurement,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
+)
 
 import koza
 from koza.transform import Mappings
@@ -27,7 +31,8 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     TARGET_NAME,
     SOURCE_ORGANISM,
     PUBLICATION,
-    SUPPORTING_DATA_ID
+    SUPPORTING_DATA_ID,
+    get_affinity_measurements
 )
 from tests.unit.ingests.bindingdb.sample_data import (
     RECORD_MISSING_FIELD_1,
@@ -38,6 +43,47 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE1_RECORD_WITH_DOI,
     BINDINGDB_RECORD_WITH_A_US_PATENT
 )
+
+
+# get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
+@pytest.mark.parametrize(
+    "test_record,expected",
+    [
+        (   # Query 0
+            {},
+            None
+        ),
+        (   # Query 1
+            RECORD_MISSING_FIELD_1,
+            ("pKi", 2.0, "equal_to")
+        ),
+        (   # Query 2
+            CASPASE1_KI_RECORD,
+            ("pKi", 2.2041199826559246, "equal_to")
+        ),
+        (   # Query 3
+            CASPASE1_WEAK_KI_RECORD,
+            ("pKi", 3.591064607026499, "equal_to")
+        ),
+        (   # Query 4
+            CASPASE1_RECORD_WITH_DOI,
+            ("pEC50", 3.591064607026499, "equal_to")
+        ),
+        (   # Query 5
+            BINDINGDB_RECORD_WITH_A_US_PATENT,
+            ("pIC50", 4.698970004336019, "greater_than")
+        )
+    ]
+)
+def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[str,float,str]):
+    result: Optional[list[AffinityMeasurement]] = get_affinity_measurements(test_record)
+    if expected is None:
+        assert result is None
+    else:
+        affinity_measurement: AffinityMeasurement = result[0]
+        assert affinity_measurement.affinity_parameter == expected[0]
+        assert affinity_measurement.affinity == expected[1]
+        assert affinity_measurement.has_binary_relation == expected[2]
 
 
 @pytest.fixture(scope="package")
