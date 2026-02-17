@@ -135,6 +135,8 @@ def _match_edge(
                                     returned_sources = flatten_sources(reasv)
                                 if not validate_sources(expected=entry, returned=returned_sources):
                                     return f"Invalid returned sources '{returned_sources}'"
+                            # TODO: it would be nice to have code here to validate other
+                            #       inlined_as_list data like StudyResult and AffinityMeasurement class objects
                         else:
                             return (
                                 "Unexpected value type for "
