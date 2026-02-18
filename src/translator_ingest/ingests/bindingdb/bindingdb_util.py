@@ -110,7 +110,7 @@ SCHEMA_OVERRIDES = {
     PMID: pl.Utf8,
     PATENT_NUMBER: pl.Utf8,
 }
-SCHEMA_OVERRIDES = SCHEMA_OVERRIDES.update(
+SCHEMA_OVERRIDES.update(
     {label: pl.Utf8 for label in AFFINITY_PARAMETERS.values()}
 )
 
