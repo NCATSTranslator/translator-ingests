@@ -105,7 +105,7 @@ CASPASE3_KI_RECORD = {
 }
 
 # Test record 3: Caspase-1 inhibitor with Ki = 160 nM
-CASPASE1_KI_RECORD = {
+CASPASE1_KD_RECORD = {
     "BindingDB Reactant_set_id": "200",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)cc1)C=O",
     "Ligand InChI": "InChI=1S/C19H18N2O9S/c22-10-13(7-17(24)25)21-18(26)12-3-1-11(2-4-12)9-20-31(29,30)14-5-6-16(23)15(8-14)19(27)28/h1-6,8,10,13,20,23H,7,9H2,(H,21,26)(H,24,25)(H,27,28)",
@@ -114,9 +114,9 @@ CASPASE1_KI_RECORD = {
     "BindingDB Ligand Name": "Inhibitor 3",
     "Target Name": "Caspase-1",
     "Target Source Organism According to Curator or DataSource": "Homo sapiens",
-    "Ki (nM)": "160",
+    "Ki (nM)": "",
     "IC50 (nM)": "",
-    "Kd (nM)": "",
+    "Kd (nM)": "<160",
     "EC50 (nM)": "",
     "kon (M-1-s-1)": "",
     "koff (s-1)": "",
@@ -138,7 +138,7 @@ CASPASE1_KI_RECORD = {
 }
 
 # Test record 4: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
-CASPASE1_WEAK_KI_RECORD = {
+CASPASE1_WEAK_KON_RECORD = {
     "BindingDB Reactant_set_id": "201",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)nc1)C=O",
     "Ligand InChI": "InChI=1S/C18H17N3O9S/c22-9-12(5-16(24)25)21-17(26)10-1-2-11(19-7-10)8-20-31(29,30)13-3-4-15(23)14(6-13)18(27)28/h1-4,6-7,9,12,20,23H,5,8H2,(H,21,26)(H,24,25)(H,27,28)",
@@ -147,11 +147,11 @@ CASPASE1_WEAK_KI_RECORD = {
     "BindingDB Ligand Name": "Pyridine Scaffold 4",
     "Target Name": "Caspase-1",
     "Target Source Organism According to Curator or DataSource": "Homo sapiens",
-    "Ki (nM)": "3900",
+    "Ki (nM)": "",
     "IC50 (nM)": "",
     "Kd (nM)": "",
     "EC50 (nM)": "",
-    "kon (M-1-s-1)": "",
+    "kon (M-1-s-1)": "3900",
     "koff (s-1)": "",
     "pH": "7.4",
     "Temp (C)": "25.00",

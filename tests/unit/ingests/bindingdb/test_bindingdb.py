@@ -38,8 +38,8 @@ from tests.unit.ingests.bindingdb.sample_data import (
     RECORD_MISSING_FIELD_1,
     RECORD_MISSING_FIELD_2,
     CASPASE3_KI_RECORD,
-    CASPASE1_KI_RECORD,
-    CASPASE1_WEAK_KI_RECORD,
+    CASPASE1_KD_RECORD,
+    CASPASE1_WEAK_KON_RECORD,
     CASPASE1_RECORD_WITH_DOI,
     BINDINGDB_RECORD_WITH_A_US_PATENT
 )
@@ -55,23 +55,23 @@ from tests.unit.ingests.bindingdb.sample_data import (
         ),
         (   # Query 1
             RECORD_MISSING_FIELD_1,
-            ("pKi", 2.0, "equal_to")
+            ("pKi", 4.0, "equal_to")
         ),
         (   # Query 2
-            CASPASE1_KI_RECORD,
-            ("pKi", 2.2041199826559246, "equal_to")
+            CASPASE1_KD_RECORD,
+            ("pKd", 3.7958800173440754, "less_than")
         ),
         (   # Query 3
-            CASPASE1_WEAK_KI_RECORD,
-            ("pKi", 3.591064607026499, "equal_to")
+            CASPASE1_WEAK_KON_RECORD,
+            ("pKon", -3.591064607026499, "equal_to")
         ),
         (   # Query 4
             CASPASE1_RECORD_WITH_DOI,
-            ("pEC50", 3.591064607026499, "equal_to")
+            ("pEC50", 2.408935392973501, "equal_to")
         ),
         (   # Query 5
             BINDINGDB_RECORD_WITH_A_US_PATENT,
-            ("pIC50", 4.698970004336019, "greater_than")
+            ("pIC50", 1.3010299956639813, "greater_than")
         )
     ]
 )
@@ -216,8 +216,8 @@ def test_prepare_bindingdb_data(
             }
         ),
         (   # Test record 1: Caspase-1 inhibitor with Ki = 160 nM
-            CASPASE1_KI_RECORD,
-            [
+                CASPASE1_KD_RECORD,
+                [
                 {
                     "id": "PUBCHEM.COMPOUND:5327302",
                     "category": ["biolink:ChemicalEntity"]
@@ -230,7 +230,7 @@ def test_prepare_bindingdb_data(
                     "in_taxon_label": "Homo sapiens"
                 },
             ],
-            {
+                {
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
@@ -254,8 +254,8 @@ def test_prepare_bindingdb_data(
             }
         ),
         (   # Test record 2: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
-            CASPASE1_WEAK_KI_RECORD,
-            [
+                CASPASE1_WEAK_KON_RECORD,
+                [
                 {
                     "id": "PUBCHEM.COMPOUND:5327304",
                     "category": ["biolink:ChemicalEntity"]
@@ -268,7 +268,7 @@ def test_prepare_bindingdb_data(
                     "in_taxon_label": "Homo sapiens"
                 },
             ],
-            {
+                {
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],

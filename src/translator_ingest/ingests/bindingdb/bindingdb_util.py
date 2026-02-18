@@ -38,6 +38,9 @@ AFFINITY_PARAMETERS = {
     ape.pKoff: "koff (s-1)"
 }
 
+# nanoMolar multiplier
+nM = 1.0e-6
+
 # "pH" = "7.4",
 # "Temp (C)" = "25.00",
 CURATION_DATASOURCE = "Curation/DataSource"
@@ -212,7 +215,12 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
                 has_binary_relation = bre.greater_than
             else:
                 has_binary_relation = bre.equal_to
-            affinity = log10(float(value))
+            if affinity_parameter in [ape.pKd, ape.pKi, ape.pEC50, ape.pIC50]:
+                # columns recording in nanomolars
+                affinity = -log10(float(value)*nM)
+            else:
+                # columns like kon and koff with raw value ratios
+                affinity = -log10(float(value))
             affinity_measurement = AffinityMeasurement(
                 id=entity_id(),
                 affinity_parameter=affinity_parameter,
