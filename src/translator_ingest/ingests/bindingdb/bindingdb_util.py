@@ -55,7 +55,7 @@ ROWS_MISSING_AFFINITY = "rows_missing_affinity"
 ROWS_OUT_OF_RANGE_AFFINITY = "rows_out_of_range_affinity"
 
 # nanoMolar multiplier
-nM = 1.0e-6
+nM = 1.0e-9
 
 # "pH" = "7.4",
 # "Temp (C)" = "25.00",
