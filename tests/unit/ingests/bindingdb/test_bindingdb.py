@@ -1,6 +1,7 @@
 from typing import Optional, Any
 import pytest
 from pathlib import Path
+import polars as pl
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AffinityMeasurement,
@@ -32,7 +33,10 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     SOURCE_ORGANISM,
     PUBLICATION,
     SUPPORTING_DATA_ID,
-    get_affinity_measurements
+    ROWS_MISSING_AFFINITY,
+    AFFINITY_PARAMETERS,
+    get_affinity_measurements,
+    filter_affinity_values
 )
 from tests.unit.ingests.bindingdb.sample_data import (
     RECORD_MISSING_FIELD_1,
@@ -142,7 +146,9 @@ def test_prepare_bindingdb_data(
     for test_record in merged_records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
         # Record "6" excluded because the source organism "Pan troglodytes" is not in the target list of taxa
-        assert test_record[REACTANT_SET_ID] not in ["3", "6"]
+        # Record "7" excluded because it has no affinity values at all
+        # Record "8" excluded because its only affinity value (IC50=50000) is out of range
+        assert test_record[REACTANT_SET_ID] not in ["3", "6", "7", "8"]
 
         # Didn't extract this field (among others...) - column was not needed
         assert LIGAND_SMILES not in test_record
@@ -162,6 +168,11 @@ def test_prepare_bindingdb_data(
             assert test_record[SOURCE_ORGANISM] == "Mus musculus"
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
+        elif test_record[REACTANT_SET_ID] == "9":
+            # Row 9 has Ki=90 (in range) and IC50=50000 (out of range for 1e4 bound);
+            # Ki should be retained, IC50 should be nulled out
+            assert test_record["Ki (nM)"] == "90"
+            assert test_record["IC50 (nM)"] is None
 
 
 @pytest.mark.parametrize(
@@ -391,3 +402,109 @@ def test_ingest_transform(
     )
 
     on_end_ingest_by_record(mock_koza_transform)
+
+
+@pytest.fixture
+def affinity_metadata_transform() -> koza.KozaTransform:
+    """Separate fixture with mutable metadata for filter_affinity_values tests."""
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = dict()
+    return MockKozaTransform(
+        extra_fields=dict(),
+        writer=writer,
+        mappings=mappings,
+        transform_metadata={},
+        input_files_dir=Path(__file__).resolve().parent
+    )
+
+
+def _affinity_df(rows: list[dict]) -> pl.DataFrame:
+    """Build a minimal polars DataFrame with affinity columns from row dicts."""
+    columns = {col: [] for col in AFFINITY_PARAMETERS.values()}
+    for row in rows:
+        for col in columns:
+            columns[col].append(row.get(col))
+    schema = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    return pl.DataFrame(columns, schema=schema)
+
+
+@pytest.mark.parametrize(
+    "rows,expected_count,expected_filtered,description",
+    [
+        (
+            [{"Ki (nM)": "90"}],
+            1, 0,
+            "single in-range Ki value passes"
+        ),
+        (
+            [{}],
+            0, 1,
+            "row with no affinity values is filtered"
+        ),
+        (
+            [{"IC50 (nM)": "50000"}],
+            0, 1,
+            "IC50=50000 exceeds 1e4 bound"
+        ),
+        (
+            [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
+            1, 0,
+            "Ki in range keeps row; IC50 out of range is nulled"
+        ),
+        (
+            [{"Ki (nM)": "<500"}],
+            1, 0,
+            "relational prefix '<' is stripped before range check"
+        ),
+        (
+            [{"Ki (nM)": ">2000000"}],
+            0, 1,
+            "Ki=2000000 exceeds 1e6 bound"
+        ),
+        (
+            [{"kon (M-1-s-1)": "50"}],
+            0, 1,
+            "kon=50 below lower bound of 1e2"
+        ),
+        (
+            [{"kon (M-1-s-1)": "100"}],
+            1, 0,
+            "kon=100 at inclusive lower bound of 1e2"
+        ),
+        (
+            [{"Kd (nM)": "0"}],
+            0, 1,
+            "Kd=0 excluded by exclusive lower bound"
+        ),
+        (
+            [{"Kd (nM)": "100000"}, {"Kd (nM)": "200000"}],
+            1, 1,
+            "Kd=100000 at upper bound passes; Kd=200000 exceeds 1e5"
+        ),
+    ]
+)
+def test_filter_affinity_values(
+    affinity_metadata_transform: koza.KozaTransform,
+    rows: list[dict],
+    expected_count: int,
+    expected_filtered: int,
+    description: str
+):
+    df = _affinity_df(rows)
+    result = filter_affinity_values(affinity_metadata_transform, df)
+    assert result.height == expected_count, description
+    actual_filtered = affinity_metadata_transform.transform_metadata.get(ROWS_MISSING_AFFINITY, 0)
+    assert actual_filtered == expected_filtered, description
+    # Reset metadata for the next parametrized call
+    affinity_metadata_transform.transform_metadata.clear()
+
+
+def test_filter_affinity_values_nulls_out_of_range_columns(
+    affinity_metadata_transform: koza.KozaTransform,
+):
+    """Verify that out-of-range values are nulled while in-range values are preserved."""
+    df = _affinity_df([{"Ki (nM)": "90", "IC50 (nM)": "50000"}])
+    result = filter_affinity_values(affinity_metadata_transform, df)
+    row = result.to_dicts()[0]
+    assert row["Ki (nM)"] == "90"
+    assert row["IC50 (nM)"] is None

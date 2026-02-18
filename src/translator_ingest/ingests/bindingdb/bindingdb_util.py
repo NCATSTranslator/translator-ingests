@@ -38,6 +38,22 @@ AFFINITY_PARAMETERS = {
     ape.pKoff: "koff (s-1)"
 }
 
+# Affinity value bounds for input filtering.
+# Each entry maps a column name to (lower, upper, lower_exclusive):
+#   - lower_exclusive=True:  lower < value <= upper
+#   - lower_exclusive=False: lower <= value <= upper
+AFFINITY_BOUNDS: dict[str, tuple[float, float, bool]] = {
+    "Ki (nM)": (0.0, 1e6, True),
+    "IC50 (nM)": (0.0, 1e4, True),
+    "Kd (nM)": (0.0, 1e5, True),
+    "EC50 (nM)": (0.0, 1e4, True),
+    "kon (M-1-s-1)": (1e2, 1e10, False),
+    "koff (s-1)": (1e2, 1e10, False),
+}
+
+ROWS_MISSING_AFFINITY = "rows_missing_affinity"
+ROWS_OUT_OF_RANGE_AFFINITY = "rows_out_of_range_affinity"
+
 # nanoMolar multiplier
 nM = 1.0e-6
 
@@ -110,7 +126,7 @@ SCHEMA_OVERRIDES = {
     PMID: pl.Utf8,
     PATENT_NUMBER: pl.Utf8,
 }
-SCHEMA_OVERRIDES = SCHEMA_OVERRIDES.update(
+SCHEMA_OVERRIDES.update(
     {label: pl.Utf8 for label in AFFINITY_PARAMETERS.values()}
 )
 
@@ -199,6 +215,63 @@ def process_publications(
     df = df.filter(pl.col(PUBLICATION).is_not_null())
 
     return df
+
+def filter_affinity_values(
+        koza_transform: koza.KozaTransform,
+        df: pl.DataFrame
+) -> pl.DataFrame:
+    """
+    Filter BindingDB records by affinity value validity and range.
+
+    Two-stage filtering:
+    1. Null out individual affinity column values that fall outside
+       the bounds defined in AFFINITY_BOUNDS.
+    2. Remove rows where all affinity columns are null (either
+       originally missing or nulled by range filtering).
+
+    Values may contain relational prefixes (``<``, ``>``) which are
+    stripped before numeric comparison.
+
+    :param koza_transform: Ingest context for recording filter metadata.
+    :param df: Polars DataFrame with affinity columns as strings.
+    :return: Filtered DataFrame with out-of-range values nulled.
+    """
+    initial_count = df.height
+
+    # Stage 1: null out individual values outside bounds
+    bound_exprs = []
+    for col_name, (lower, upper, lower_exclusive) in AFFINITY_BOUNDS.items():
+        parsed = (
+            pl.col(col_name)
+            .str.strip_chars("<> ")  #  TODO: review whether the loss of these binary
+                                     #        relation specifications changes output
+            .cast(pl.Float64, strict=False)
+        )
+        if lower_exclusive:
+            in_range = parsed.gt(lower) & parsed.le(upper)
+        else:
+            in_range = parsed.ge(lower) & parsed.le(upper)
+        bound_exprs.append(
+            pl.when(in_range)
+            .then(pl.col(col_name))
+            .otherwise(None)
+            .alias(col_name)
+        )
+    df = df.with_columns(bound_exprs)
+
+    # Stage 2: remove rows where all affinity columns are null
+    has_any_affinity = pl.lit(False)
+    for col_name in AFFINITY_PARAMETERS.values():
+        has_any_affinity = has_any_affinity | pl.col(col_name).is_not_null()
+    df = df.filter(has_any_affinity)
+
+    rows_filtered = initial_count - df.height
+    if rows_filtered > 0:
+        koza_transform.transform_metadata[ROWS_MISSING_AFFINITY] = rows_filtered
+        logger.info(f"Filtered {rows_filtered} rows with missing or out-of-range affinity values")
+
+    return df
+
 
 def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
     affinity_parameter: ape
