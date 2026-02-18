@@ -118,10 +118,10 @@ target_info:
       primary_knowledge_sources: 
         - infores:ttd
       edge_properties:
-        - clinical_approval_status    ## values: approved_for_condition
-        - max_research_phase    ## values: clinical_trial_phase_4
-        - original_subject
-        - original_object
+        - biolink:clinical_approval_status    ## values: approved_for_condition
+        - biolink:max_research_phase    ## values: clinical_trial_phase_4
+        - biolink:original_subject
+        - biolink:original_object
       ## GENERAL NOTE: we are assuming manual agent because edges generally come from "literature search" that we assume was done manually. However, papers only sometimes use the words "manual review".
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Approved', 'Approved (orphan drug)', 'Approved in China)', 'Approved in EU', or 'Phase 4'."
       source_files:
@@ -139,8 +139,8 @@ target_info:
       primary_knowledge_sources: 
         - infores:ttd
       edge_properties:
-        - original_subject
-        - original_object
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Investigative' or 'Patented'."
       source_files:
         - P1-05-Drug_disease.txt
@@ -158,9 +158,9 @@ target_info:
         - infores:ttd
       edge_properties:
         ## redundant w/ pred, for standards
-        - max_research_phase    ## values: pre_clinical_research_phase
-        - original_subject
-        - original_object
+        - biolink:max_research_phase    ## values: pre_clinical_research_phase
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Preclinical' or 'IND submitted'."
       source_files:
         - P1-05-Drug_disease.txt
@@ -177,9 +177,9 @@ target_info:
       primary_knowledge_sources: 
         - infores:ttd
       edge_properties:
-        - max_research_phase    ## values: not_provided, phase values
-        - original_subject
-        - original_object
+        - biolink:max_research_phase    ## values: not_provided, phase values
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registration/preregistration, or submissions for approval)."
       source_files:
         - P1-05-Drug_disease.txt
@@ -219,8 +219,8 @@ target_info:
       primary_knowledge_sources: 
         - infores:ttd
       edge_properties:
-        - original_subject
-        - original_object
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The qualifier-set is based on the TTD reported mechanism-of-action."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
@@ -240,8 +240,8 @@ target_info:
       primary_knowledge_sources: 
         - infores:ttd
       edge_properties:
-        - original_subject
-        - original_object
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). TTD did not include a mechanism-of-action."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
@@ -266,8 +266,8 @@ target_info:
       primary_knowledge_sources: 
         - infores:ttd
       edge_properties:
-        - original_subject
-        - original_object
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The TTD-reported mechanism-of-action either (1) corresponds to the predicate and causal_mechanism_qualifier OR (2) implied a physical-interaction (so Translator generated another edge to represent this)."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
