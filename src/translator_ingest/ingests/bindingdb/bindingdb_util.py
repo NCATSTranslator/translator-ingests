@@ -243,8 +243,8 @@ def filter_affinity_values(
     for col_name, (lower, upper, lower_exclusive) in AFFINITY_BOUNDS.items():
         parsed = (
             pl.col(col_name)
-            .str.strip_chars("<> ")  #  TODO: review whether the loss of these binary
-                                     #        relation specifications changes output
+            .str.strip_chars("<> ")  #  TODO: review whether the loss of these binary relation
+                                     #        specifications changes the intent of the output
             .cast(pl.Float64, strict=False)
         )
         if lower_exclusive:
