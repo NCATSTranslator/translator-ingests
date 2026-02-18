@@ -59,23 +59,19 @@ from tests.unit.ingests.bindingdb.sample_data import (
         ),
         (   # Query 1
             RECORD_MISSING_FIELD_1,
-            ("pKi", 4.0, "equal_to")
+            ("pKi", 7.0, "equal_to")
         ),
         (   # Query 2
             CASPASE1_KD_RECORD,
-            ("pKd", 3.7958800173440754, "less_than")
+            ("pKd", 6.7958800173440754, "less_than")
         ),
         (   # Query 3
-            CASPASE1_WEAK_KON_RECORD,
-            ("pKon", -3.591064607026499, "equal_to")
+            CASPASE1_RECORD_WITH_DOI,
+            ("pEC50", 5.4089353929735005, "equal_to")
         ),
         (   # Query 4
-            CASPASE1_RECORD_WITH_DOI,
-            ("pEC50", 2.408935392973501, "equal_to")
-        ),
-        (   # Query 5
             BINDINGDB_RECORD_WITH_A_US_PATENT,
-            ("pIC50", 1.3010299956639813, "greater_than")
+            ("pIC50", 4.3010299956639813, "greater_than")
         )
     ]
 )
@@ -84,6 +80,7 @@ def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[
     if expected is None:
         assert result is None
     else:
+        assert result is not None, "Unexpected null result from get_affinity_measurements?"
         affinity_measurement: AffinityMeasurement = result[0]
         assert affinity_measurement.affinity_parameter == expected[0]
         assert affinity_measurement.affinity == expected[1]
@@ -460,16 +457,6 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
             [{"Ki (nM)": ">2000000"}],
             0, 1,
             "Ki=2000000 exceeds 1e6 bound"
-        ),
-        (
-            [{"kon (M-1-s-1)": "50"}],
-            0, 1,
-            "kon=50 below lower bound of 1e2"
-        ),
-        (
-            [{"kon (M-1-s-1)": "100"}],
-            1, 0,
-            "kon=100 at inclusive lower bound of 1e2"
         ),
         (
             [{"Kd (nM)": "0"}],

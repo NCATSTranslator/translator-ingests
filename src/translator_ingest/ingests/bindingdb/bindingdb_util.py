@@ -34,8 +34,10 @@ AFFINITY_PARAMETERS = {
     ape.pIC50: "IC50 (nM)",
     ape.pKd: "Kd (nM)",
     ape.pEC50: "EC50 (nM)",
-    ape.pKon: "kon (M-1-s-1)",
-    ape.pKoff: "koff (s-1)"
+    # Ignore pKon and pKoff for now - they are not
+    # concentration driven affinity parameters
+    # ape.pKon: "kon (M-1-s-1)",
+    # ape.pKoff: "koff (s-1)"
 }
 
 # Affinity value bounds for input filtering.
@@ -47,8 +49,9 @@ AFFINITY_BOUNDS: dict[str, tuple[float, float, bool]] = {
     "IC50 (nM)": (0.0, 1e4, True),
     "Kd (nM)": (0.0, 1e5, True),
     "EC50 (nM)": (0.0, 1e4, True),
-    "kon (M-1-s-1)": (1e2, 1e10, False),
-    "koff (s-1)": (1e2, 1e10, False),
+    # See comments above
+    # "kon (M-1-s-1)": (1e2, 1e10, False),
+    # "koff (s-1)": (1e2, 1e10, False),
 }
 
 ROWS_MISSING_AFFINITY = "rows_missing_affinity"
@@ -243,8 +246,8 @@ def filter_affinity_values(
     for col_name, (lower, upper, lower_exclusive) in AFFINITY_BOUNDS.items():
         parsed = (
             pl.col(col_name)
-            .str.strip_chars("<> ")  #  TODO: review whether the loss of these binary relation
-                                     #        specifications changes the intent of the output
+            .str.strip_chars("<> ")  #  TODO: need to review whether ignoring these binary relation
+                                     #        specifications change the semantic intent of the output
             .cast(pl.Float64, strict=False)
         )
         if lower_exclusive:
