@@ -19,6 +19,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+## increment this when your file changes will affect the output
+##   (even with the same resource data) to trigger a new build
+TRANSFORM_VERSION = "1.1"
 
 
 BIOLINK_OCCURS_IN_LIT_WITH = "biolink:occurs_together_in_literature_with"
@@ -146,7 +149,7 @@ def knowledge_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
     ## data was loaded with empty values = "". Just in case, replace these empty strings with None so isna() methods will work
     df.replace(to_replace="", value=None, inplace=True)
     ## debugging: keep because it tells us how much was removed by filter
-    print(f"After filter, but before prepare_data: {df.shape}")
+    koza.log(f"After filter, but before prepare_data: {df.shape}")
 
     ## remove duplicates, record count of duplicates
     df, koza.state["knowledge_row_counts"]["duplicate_rows"] = remove_duplicates(df)
@@ -189,10 +192,10 @@ def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kn
                 source_record_urls=[record["url"]],
             )
         ],
-        knowledge_level=KnowledgeLevelEnum.statistical_association,
-        agent_type=AgentTypeEnum.text_mining_agent,
+        knowledge_level=KnowledgeLevelEnum.text_co_occurrence,
+        agent_type=AgentTypeEnum.data_analysis_pipeline,
         z_score=record["z_score"],
-        has_confidence_score=record["confidence_score"],
+        diseases_confidence_score=record["confidence_score"],
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])
@@ -250,7 +253,7 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
         sources=current_sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        has_confidence_score=record["confidence_score"],
+        diseases_confidence_score=record["confidence_score"],
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])

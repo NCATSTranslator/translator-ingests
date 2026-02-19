@@ -18,6 +18,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from datetime import datetime
 import pandas as pd
 import requests
+## increment this when your file changes will affect the output
+##   (even with the same resource data) to trigger a new build
+TRANSFORM_VERSION = "1.1"
 
 
 ## HARD-CODED VALUES
@@ -167,6 +170,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         agent_type=AgentTypeEnum.manual_agent,
         update_date=date,
         allelic_requirement=koza.transform_metadata["allelicreq_mappings"][record["allelic requirement"]],
+        gene2phenotype_confidence_category=record["confidence"],
         ## include publications!!!
         publications=publications,
     )
