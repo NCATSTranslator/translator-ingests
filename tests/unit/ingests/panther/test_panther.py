@@ -15,18 +15,12 @@ from translator_ingest.ingests.panther.panther import (
 
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
     extract_panther_data_polars,
-    panther_taxon_map,
-    db_to_curie_map,
-    _resolve_gene_curie,
-    GENE_COL,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
     NCBITAXON_A_COL,
     NCBITAXON_B_COL,
     GENE_FAMILY_ID_COL,
 )
-
-import polars as pl
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
