@@ -13,6 +13,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    Study,
+    TextMiningStudyResult,
 )
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_SEMMEDDB
@@ -34,6 +36,58 @@ PREFIX_TO_CLASS = {
 
 def get_latest_version() -> str:
     return "semmeddb-2023-kg2.10.3"
+
+
+def _extract_supporting_studies(
+    publications_info: dict[str, dict[str, str]]
+) -> dict[str, Study] | None:
+    """
+    Extract supporting text from publications_info and create Study objects.
+    
+    publications_info format:
+    {
+        "PMID:12345": {
+            "sentence": "The actual supporting text...",
+            "publication date": "2014 Mar",
+            "subject score": "1000",
+            "object score": "790"
+        }
+    }
+    """
+    if not publications_info:
+        return None
+    
+    text_mining_results = []
+    
+    for pmid, info in publications_info.items():
+        sentence = info.get("sentence")
+        if not sentence:
+            continue
+        
+        # Create TextMiningStudyResult with supporting text
+        tm_result = TextMiningStudyResult(
+            id=entity_id(),
+            category=["biolink:TextMiningStudyResult"],
+            supporting_text=[sentence],
+        )
+        # Store the PMID as an xref for provenance
+        if pmid:
+            tm_result.xref = [pmid]
+        
+        text_mining_results.append(tm_result)
+    
+    if not text_mining_results:
+        return None
+    
+    # Create a Study object containing all text mining results
+    study = Study(
+        id=entity_id(),
+        category=["biolink:Study"],
+        has_study_results=text_mining_results,
+    )
+    
+    return {study.id: study}
+
 
 def _make_node(curie: str, koza: koza.KozaTransform = None) -> NamedThing | None:
     # create a node from an identifier
@@ -171,6 +225,10 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
     else:
         koza.state["edges_without_publications"] += 1
     
+    # extract supporting sentences from publications_info
+    publications_info = record.get("publications_info", {})
+    supporting_studies = _extract_supporting_studies(publications_info)
+    
     # create association between nodes
     association = Association(
         id=entity_id(),
@@ -182,5 +240,9 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent,
     )
+    
+    # attach supporting studies with text if we extracted any
+    if supporting_studies:
+        association.has_supporting_studies = supporting_studies
     
     return KnowledgeGraph(nodes=nodes, edges=[association])

@@ -31,7 +31,7 @@ readers:
       - disease_name
       - source_db
       - evidence_type
-      ## actually an int, but making this float to match text-mining's attribute later. ?? see how it goes
+      ## actually an int, but making this float to match text-mining's attribute later
       - confidence_score: float
     filters:
       ## remove rows when source_db == "UniProtKB-KW": ingest directly through that resource instead
