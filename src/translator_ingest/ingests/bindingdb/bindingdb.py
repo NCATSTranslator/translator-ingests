@@ -18,6 +18,7 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     extract_bindingdb_columns_polars,
     process_publications,
+    filter_affinity_values,
     get_affinity_measurements,
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
@@ -36,7 +37,8 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     PMID,
     PATENT_NUMBER,
 
-    MISSING_PUBS
+    MISSING_PUBS,
+    ROWS_MISSING_AFFINITY
 )
 
 BINDINGDB_COLUMNS = (
@@ -93,6 +95,13 @@ def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
                 msg=f"Warning: {num_missing_pubs} BindingDb records were missing publications.",
                 level="WARNING"
             )
+    if ROWS_MISSING_AFFINITY in metadata:
+        num_missing_affinity = metadata.pop(ROWS_MISSING_AFFINITY)
+        if num_missing_affinity > 0:
+            koza_transform.log(
+                msg=f"Warning: {num_missing_affinity} BindingDb records had missing or out-of-range affinity values.",
+                level="WARNING"
+            )
     for tag, value in koza_transform.transform_metadata.items():
         koza_transform.log(
             msg=f"{str(tag)}: {value}.",
@@ -143,6 +152,9 @@ def prepare_bindingdb_data(
         columns=BINDINGDB_COLUMNS,
         target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
     )
+
+    # Filter records by affinity value validity and range
+    df = filter_affinity_values(koza_transform, df)
 
     # Process publications
     df = process_publications(koza_transform, df)
