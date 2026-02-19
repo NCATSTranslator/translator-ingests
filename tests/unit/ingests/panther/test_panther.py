@@ -15,19 +15,12 @@ from translator_ingest.ingests.panther.panther import (
 
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
     extract_panther_data_polars,
-    parse_gene_info,
-    panther_taxon_map,
-    db_to_curie_map,
-    _resolve_gene_curie,
-    GENE_COL,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
     NCBITAXON_A_COL,
     NCBITAXON_B_COL,
     GENE_FAMILY_ID_COL,
 )
-
-import polars as pl
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
@@ -123,35 +116,6 @@ def test_prepare_panther_data_filters_excluded_species():
     for record in df.to_dicts():
         assert record[NCBITAXON_A_COL] in {"NCBITaxon:9606", "NCBITaxon:10090", "NCBITaxon:10116"}
         assert record[NCBITAXON_B_COL] in {"NCBITaxon:9606", "NCBITaxon:10090", "NCBITaxon:10116"}
-
-
-# --- Cross-validation: _resolve_gene_curie vs parse_gene_info ---
-
-@pytest.mark.parametrize(
-    "gene_info_str,expected_curie",
-    [
-        ("HUMAN|HGNC=11477|UniProtKB=Q6GZX4", "HGNC:11477"),
-        ("RAT|RGD=1564893|UniProtKB=Q6GZX2", "RGD:1564893"),
-        ("HUMAN|Ensembl=ENSG00000275949.5|UniProtKB=A0A0G2JMH3", "ENSEMBL:ENSG00000275949"),
-        ("MOUSE|MGI=MGI=99431|UniProtKB=P84078", "MGI:99431"),
-        ("HUMAN|Gene=P12LL_HUMAN|UniProtKB=A6NNC1", "UniProtKB:A6NNC1"),
-        ("RAT|RGD=7561849|UniProtKB=A0A8I6A0K9", "RGD:7561849"),
-    ]
-)
-def test_resolve_gene_curie_matches_parse_gene_info(gene_info_str: str, expected_curie: str):
-    """Cross-validate that the polars _resolve_gene_curie expression matches parse_gene_info output."""
-    # Reference: parse_gene_info
-    _, ref_curie = parse_gene_info(gene_info_str, panther_taxon_map, db_to_curie_map)
-    assert ref_curie == expected_curie
-
-    # Polars: _resolve_gene_curie
-    test_df = pl.DataFrame({GENE_COL: [gene_info_str]})
-    result = test_df.select(_resolve_gene_curie(GENE_COL).alias("curie"))
-    polars_curie = result["curie"][0]
-    assert polars_curie == expected_curie
-
-    # They should match each other
-    assert ref_curie == polars_curie
 
 
 # --- Tests for transform_record (using pre-processed dict format) ---

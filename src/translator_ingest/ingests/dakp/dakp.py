@@ -39,9 +39,9 @@ logger = get_logger(__name__)
 def create_node(node_data: dict) -> Any:
     node_id = node_data.get("id")
     name = node_data.get("name")
-    category = node_data.get("category")
+    categories = node_data.get("category", [])
 
-    if not category:
+    if not categories:
         return NamedThing(
             id=node_id,
             name=name,
@@ -60,21 +60,26 @@ def create_node(node_data: dict) -> Any:
         "DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
     }
 
-    node_class = category_to_class.get(category)
+    # Iterate through categories to find the first matching class
+    node_class = None
+    for cat in categories:
+        short_name = cat.removeprefix("biolink:")
+        node_class = category_to_class.get(short_name)
+        if node_class:
+            break
 
     if node_class:
         return node_class(
             id=node_id,
             name=name,
-            category=[f"biolink:{category}"]
+            category=categories,
         )
     else:
-        # For unknown categories, use NamedThing as default
-        logger.debug(f"Unknown category {category} for node {node_id}, using NamedThing")
+        logger.debug(f"Unknown categories {categories} for node {node_id}, using NamedThing")
         return NamedThing(
             id=node_id,
             name=name,
-            category=["biolink:NamedThing"]
+            category=categories,
         )
 
 
