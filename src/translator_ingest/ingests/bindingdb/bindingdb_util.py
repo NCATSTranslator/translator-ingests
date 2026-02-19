@@ -35,20 +35,25 @@ AFFINITY_PARAMETERS = {
     ape.pKd: "Kd (nM)",
     ape.pEC50: "EC50 (nM)",
     # Ignore pKon and pKoff for now - they are not
-    # concentration driven affinity parameters
+    # concentration-driven affinity parameters
     # ape.pKon: "kon (M-1-s-1)",
     # ape.pKoff: "koff (s-1)"
 }
+
+# An upper filter threshold of 1.0e-6 (1 micromole) is specified,
+# which is 1,000 (1.0e+3) times the  1.0e-9 (nanoMolar) of the
+# BindingDb dataset-recorded values
+AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
 
 # Affinity value bounds for input filtering.
 # Each entry maps a column name to (lower, upper, lower_exclusive):
 #   - lower_exclusive=True:  lower < value <= upper
 #   - lower_exclusive=False: lower <= value <= upper
 AFFINITY_BOUNDS: dict[str, tuple[float, float, bool]] = {
-    "Ki (nM)": (0.0, 1e6, True),
-    "IC50 (nM)": (0.0, 1e4, True),
-    "Kd (nM)": (0.0, 1e5, True),
-    "EC50 (nM)": (0.0, 1e4, True),
+    "Ki (nM)": (0.0, AFFINITY_FILTER_UPPER_BOUND, True),
+    "IC50 (nM)": (0.0, AFFINITY_FILTER_UPPER_BOUND, True),
+    "Kd (nM)": (0.0, AFFINITY_FILTER_UPPER_BOUND, True),
+    "EC50 (nM)": (0.0, AFFINITY_FILTER_UPPER_BOUND, True),
     # See comments above
     # "kon (M-1-s-1)": (1e2, 1e10, False),
     # "koff (s-1)": (1e2, 1e10, False),
@@ -291,12 +296,12 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
                 has_binary_relation = bre.greater_than
             else:
                 has_binary_relation = bre.equal_to
-            if affinity_parameter in [ape.pKd, ape.pKi, ape.pEC50, ape.pIC50]:
-                # columns recording in nanomolars
-                affinity = -log10(float(value)*nM)
-            else:
-                # columns like kon and koff with raw value ratios
-                affinity = -log10(float(value))
+
+            # Adjust BindingDb nominal nanomolar values to actual float values
+            # then transform to a linearized negative base 10 logarithm value
+            # in which a higher nominal value represents higher binding affinity
+            affinity = -log10(float(value)*nM)
+
             affinity_measurement = AffinityMeasurement(
                 id=entity_id(),
                 affinity_parameter=affinity_parameter,

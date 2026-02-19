@@ -145,27 +145,40 @@ def test_prepare_bindingdb_data(
         # Record "6" excluded because the source organism "Pan troglodytes" is not in the target list of taxa
         # Record "7" excluded because it has no affinity values at all
         # Record "8" excluded because its only affinity value (IC50=50000) is out of range
-        assert test_record[REACTANT_SET_ID] not in ["3", "6", "7", "8"]
+        assert test_record[REACTANT_SET_ID] not in [3, 6, 7, 8], \
+            f"Unexpected reactant set ID # {test_record[REACTANT_SET_ID]}"
+
+        # ... but expecting all the other records being tested further
+        assert test_record[REACTANT_SET_ID] in [1, 2, 4, 5, 9], \
+            f"Missing expected reactant set ID # {test_record[REACTANT_SET_ID]}"
 
         # Didn't extract this field (among others...) - column was not needed
         assert LIGAND_SMILES not in test_record
 
         # Check that the publication and supporting data fields are set correctly
-        if test_record[REACTANT_SET_ID] == "1":
+        if test_record[REACTANT_SET_ID] == 1:
             assert test_record[PUBLICATION] == "PMID:12408711"
             assert test_record[SUPPORTING_DATA_ID] is None
-        elif test_record[REACTANT_SET_ID] == "2":
+
+        elif test_record[REACTANT_SET_ID] == 2:
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
-        elif test_record[REACTANT_SET_ID] == "4":
+
+        elif test_record[REACTANT_SET_ID] == 4:
             assert test_record[TARGET_NAME] == "Caspase-1b"
             assert test_record[PUBLICATION] == "uspto-patent:9447092"
             assert test_record[SUPPORTING_DATA_ID] == "infores:uspto-patent"
-        elif test_record[REACTANT_SET_ID] == "5":
+
+            # testing here that the greater than binary relation
+            # operator is kept during filtering
+            assert test_record["Ki (nM)"] == ">390"
+
+        elif test_record[REACTANT_SET_ID] == 5:
             assert test_record[SOURCE_ORGANISM] == "Mus musculus"
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
-        elif test_record[REACTANT_SET_ID] == "9":
+
+        elif test_record[REACTANT_SET_ID] == 9:
             # Row 9 has Ki=90 (in range) and IC50=50000 (out of range for 1e4 bound);
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
@@ -441,7 +454,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"IC50 (nM)": "50000"}],
             0, 1,
-            "IC50=50000 exceeds 1e4 bound"
+            "IC50=50000 exceeds 1000 nanomolar (1 micromolar) concentration"
         ),
         (
             [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
@@ -456,7 +469,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"Ki (nM)": ">2000000"}],
             0, 1,
-            "Ki=2000000 exceeds 1e6 bound"
+            "Ki=2000000 exceeds 1000 nanomolar (1 micromolar) concentration"
         ),
         (
             [{"Kd (nM)": "0"}],
@@ -464,9 +477,9 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
             "Kd=0 excluded by exclusive lower bound"
         ),
         (
-            [{"Kd (nM)": "100000"}, {"Kd (nM)": "200000"}],
+            [{"Kd (nM)": "1000"}, {"Kd (nM)": "2000"}],
             1, 1,
-            "Kd=100000 at upper bound passes; Kd=200000 exceeds 1e5"
+            "Kd=1000 at upper bound passes; Kd=2000 exceeds 1000 nanomolar (1 micromolar) concentration"
         ),
     ]
 )
