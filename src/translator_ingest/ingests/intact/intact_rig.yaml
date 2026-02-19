@@ -113,7 +113,7 @@ ingest_info:
         consideration: >-
           Consider importing the long tail of records with additional interaction types not taken in first iteration (see filtered content above).
         relevant_files: intact.txt
-       - category:  edge_property_content
+      - category:  edge_property_content
         consideration: >-
           Short term, go back and pull edge properties including the Confidence Value(s) (specifically the intact-miscore - we can create a temp intact_confidence_value_miscore in attributes.yaml until we implement standard modeling for this info) and Interaction detection method(s) (use biolink supporting_method_types). Longer term, we can create ExperimentalStudyResult objects to capture metadata for each experiment that supports an edge  (e.g. interactor roles, host organism, stoichiometries, features, parameters, experiment-associated publications etc).
         relevant_files: intact.txt
