@@ -31,24 +31,6 @@ def get_latest_version() -> str:
     return "2024-11-25"  # last Phase 2 release of COHD
 
 
-@koza.on_data_begin(tag="cohd_nodes")
-def on_begin_node_ingest(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.log("Starting COHD nodes transformation")
-    koza_transform.log(f"Version: {get_latest_version()}")
-    koza_transform.transform_metadata["cohd_nodes"] = {}
-
-
-@koza.on_data_end(tag="cohd_nodes")
-def on_end_node_ingest(koza_transform: koza.KozaTransform) -> None:
-    if koza_transform.transform_metadata["cohd_nodes"]:
-        for tag, value in koza_transform.transform_metadata["cohd_nodes"].items():
-            koza_transform.log(
-                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
-                level="WARNING"
-            )
-    koza_transform.log("End of COHD nodes transformation")
-
-
 @koza.transform_record(tag="cohd_nodes")
 def transform_cohd_node(
         koza_transform: koza.KozaTransform,
@@ -85,24 +67,6 @@ def transform_cohd_node(
             koza_transform.transform_metadata["cohd_nodes"][exception_tag].append(rec_id)
 
         return None
-
-
-@koza.on_data_begin(tag="cohd_edges")
-def on_begin_edge_ingest(koza_transform: koza.KozaTransform) -> None:
-    koza_transform.log("Starting COHD edges transformation")
-    koza_transform.log(f"Version: {get_latest_version()}")
-    koza_transform.transform_metadata["cohd_edges"] = {}
-
-
-@koza.on_data_end(tag="cohd_edges")
-def on_end_edge_ingest(koza_transform: koza.KozaTransform) -> None:
-    if koza_transform.transform_metadata["cohd_edges"]:
-        for tag, value in koza_transform.transform_metadata["cohd_edges"].items():
-            koza_transform.log(
-                msg=f"Exception {str(tag)} encountered for records: {',\n'.join(value)}.",
-                level="WARNING"
-            )
-    koza_transform.log("End of COHD edges transformation")
 
 
 @koza.transform_record(tag="cohd_edges")
