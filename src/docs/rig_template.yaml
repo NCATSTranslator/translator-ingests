@@ -24,14 +24,18 @@
     name: # (optional, range = string)    
     description:  # (optional, range = string)
     citations:  # (optional, multivalued, range = string)
+      - 
     terms_of_use_info:  # (required, range = TermsOfUseInfo)
       terms_of_use_url: # (optional, range = URIorCURIE)
       terms_of_use_description:  # (optional, range = string)
       license name:  # (optional, range = string)
       license url:   # (optional, range = URIorCURIE)
     data_access_locations:  # (required, multivalued, range = string) Each value should include a url, and optional description of what is provided at that location.
+      - 
     data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
+      - 
     data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+      - 
     data_versioning_and_releases:  # (optional, range = string)
     additional_notes:  # (optional, range = string)
 
