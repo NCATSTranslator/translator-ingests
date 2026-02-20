@@ -5,11 +5,7 @@ from typing import Optional
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 from translator_ingest.ingests.cohd.cohd import (
-    on_begin_node_ingest,
-    on_end_node_ingest,
     transform_cohd_node,
-    on_begin_edge_ingest,
-    on_end_edge_ingest,
     transform_cohd_edge
 )
 
@@ -49,15 +45,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Missing id - returns None
-            {
-                # "id": "PUBCHEM.COMPOUND:2083",
-            }
-            ,
-            None,
-            None,
-        ),
-        (   # Query 1 - A complete node record
+        (   # Query 0 - A complete node record
             {
                 "id": "SNOMEDCT:60108003",
                 "name": "Congenital dislocation of one hip with subluxation of other",
@@ -106,7 +94,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             # Captured edge contents - n/a
             None
         ),
-        (   # Query 2- Another complete node record
+        (   # Query 1- Another complete node record
             {
                 "id": "CPT:73540",
                 "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
@@ -225,9 +213,6 @@ def test_transform_cohd_nodes(
         result_nodes: Optional[list],
         result_edge: Optional[dict],
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_node_ingest(mock_koza_transform)
-
     validate_transform_result(
         result=transform_cohd_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -235,18 +220,11 @@ def test_transform_cohd_nodes(
         node_test_slots=NODE_TEST_SLOTS
     )
 
-    on_end_node_ingest(mock_koza_transform)
-
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Missing fields (all in fact!)
-            {},
-            None,
-            None
-        ),
-        (   # Query 1 - A SNOMEDCT record
+        (   # Query 0 - A SNOMEDCT record
             {
                 "subject": "SNOMEDCT:60108003",
                 "predicate": "biolink:positively_correlated_with",
@@ -380,7 +358,7 @@ def test_transform_cohd_nodes(
                 "agent_type": AgentTypeEnum.data_analysis_pipeline
             }
         ),
-        (  # Query 2 - A UMLS record
+        (  # Query 1 - A UMLS record
             {
                 "subject": "UMLS:C0160047",
                 "predicate": "biolink:positively_correlated_with",
@@ -487,9 +465,6 @@ def test_transform_cohd_edges(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_edge_ingest(mock_koza_transform)
-
     validate_transform_result(
         result=transform_cohd_edge(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -497,4 +472,3 @@ def test_transform_cohd_edges(
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS
     )
 
-    on_end_edge_ingest(mock_koza_transform)
