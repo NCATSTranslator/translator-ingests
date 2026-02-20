@@ -120,6 +120,7 @@ ASSOCIATION_TEST_SLOTS = (
     "predicate",
     "object",
     "publications",
+    "has_affinity",
     "sources",
     "knowledge_level",
     "agent_type",
@@ -189,17 +190,17 @@ def test_prepare_bindingdb_data(
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (
-                RECORD_MISSING_FIELD_1,
-                None,  # Should be filtered out
-                None
+        (   # Test record 0: missing field
+            RECORD_MISSING_FIELD_1,
+            None,  # Should be filtered out
+            None
         ),
-        (
-                RECORD_MISSING_FIELD_2,
-                None,  # Should be filtered out
-                None
+        (   # Test record 1: missing field
+            RECORD_MISSING_FIELD_2,
+            None,  # Should be filtered out
+            None
         ),
-        (   # Test record 0: Caspase-3 inhibitor with Ki = 90 nM
+        (   # Test record 2: Caspase-3 inhibitor with Ki = 90 nM
             CASPASE3_KI_RECORD,
             [
                 {
@@ -222,22 +223,21 @@ def test_prepare_bindingdb_data(
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
                 "publications": ["PMID:12408711"],
+                "has_affinity": [
+                    {
+                        "affinity_parameter": "pKi",
+                        "affinity": 7.045757490560675,
+                        "has_binary_relation": "equal_to"
+                    }
+                ],
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-                #
-                # The initial iteration of BindingDb will ignore study results
-                # "has_attribute": [
-                #     {
-                #         "has_attribute_type": "biolink:ki_inhibition_constant",
-                #         "has_quantitative_value": "90"
-                #     }
-                # ]
+                "agent_type": AgentTypeEnum.manual_agent
             }
         ),
-        (   # Test record 1: Caspase-1 inhibitor with Ki < 160 nM
+        (   # Test record 3: Caspase-1 inhibitor with Ki < 160 nM
                 CASPASE1_KD_RECORD,
                 [
                 {
@@ -263,19 +263,18 @@ def test_prepare_bindingdb_data(
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "has_affinity": [
+                    {
+                        "affinity_parameter": "pKd",
+                        "affinity": 6.795880017344075,
+                        "has_binary_relation": "less_than"
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-                #
-                # The initial iteration of BindingDb will ignore study results
-                # "has_attribute": [
-                #     {
-                #         "has_attribute_type": "biolink:ki_inhibition_constant",
-                #         "has_quantitative_value": "160"
-                #     }
-                # ]
+                "agent_type": AgentTypeEnum.manual_agent
             }
         ),
-        (       #  Test record 2: Caspase-1 inhibitor with kon = 3900
+        (       #  Test record 4: Caspase-1 inhibitor with kon = 3900
                 #  (parameter not tracked; no affinity extracted)
                 CASPASE1_WEAK_KON_RECORD,
                 [
@@ -302,19 +301,12 @@ def test_prepare_bindingdb_data(
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "has_affinity": None,
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-                #
-                # The initial iteration of BindingDb will ignore study results
-                # "has_attribute": [
-                #     {
-                #         "has_attribute_type": "biolink:ki_inhibition_constant",
-                #         "has_quantitative_value": "3900"
-                #     }
-                # ]
+                "agent_type": AgentTypeEnum.manual_agent
             }
         ),
-        (   # Test record 3: Caspase-1 record with only a DOI publication citation
+        (   # Test record 5: Caspase-1 record with only a DOI publication citation
             CASPASE1_RECORD_WITH_DOI,
             [
                 {
@@ -340,19 +332,18 @@ def test_prepare_bindingdb_data(
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
+                "has_affinity": [
+                    {
+                        "affinity_parameter": "pEC50",
+                        "affinity": 5.4089353929735005,
+                        "has_binary_relation": "equal_to"
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-                #
-                # The initial iteration of BindingDb will ignore study results
-                # "has_attribute": [
-                #     {
-                #         "has_attribute_type": "biolink:ki_inhibition_constant",
-                #         "has_quantitative_value": "3900"
-                #     }
-                # ]
+                "agent_type": AgentTypeEnum.manual_agent
             }
         ),
-        (  # Test record 4: BindingDb record with a US Patent citation
+        (  # Test record 6: BindingDb record with a US Patent citation
             BINDINGDB_RECORD_WITH_A_US_PATENT,
             [
                 {
@@ -379,16 +370,15 @@ def test_prepare_bindingdb_data(
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:uspto-patent"}
                 ],
+                "has_affinity": [
+                    {
+                        "affinity_parameter": "pIC50",
+                        "affinity": 4.301029995663981,
+                        "has_binary_relation": "greater_than"
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-                #
-                # The initial iteration of BindingDb will ignore study results
-                # "has_attribute": [
-                #     {
-                #         "has_attribute_type": "biolink:ki_inhibition_constant",
-                #         "has_quantitative_value": "3900"
-                #     }
-                # ]
+                "agent_type": AgentTypeEnum.manual_agent
             }
         )
     ]
