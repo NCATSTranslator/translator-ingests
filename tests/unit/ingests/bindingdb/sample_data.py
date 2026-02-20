@@ -104,7 +104,7 @@ CASPASE3_KI_RECORD = {
     "supporting_data_id": None
 }
 
-# Test record 3: Caspase-1 inhibitor with Ki = 160 nM
+# Test record 3: Caspase-1 inhibitor with Ki < 160 nM
 CASPASE1_KD_RECORD = {
     "BindingDB Reactant_set_id": "200",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)cc1)C=O",
@@ -137,7 +137,8 @@ CASPASE1_KD_RECORD = {
     "supporting_data_id": None
 }
 
-# Test record 4: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
+# Test record 4: Test record 4: Caspase-1 inhibitor with
+# kon = 3900 M-1-s-1 (no tracked affinity measurement)
 CASPASE1_WEAK_KON_RECORD = {
     "BindingDB Reactant_set_id": "201",
     "Ligand SMILES": "OC(=O)C[C@H](NC(=O)c1ccc(CNS(=O)(=O)c2ccc(O)c(c2)C(O)=O)nc1)C=O",

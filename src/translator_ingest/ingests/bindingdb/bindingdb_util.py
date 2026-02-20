@@ -15,10 +15,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from bmt.pydantic import entity_id
 
-from translator_ingest.util.logging_utils import get_logger
-
-logger = get_logger(__name__)
-
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
 #
@@ -45,7 +41,6 @@ AFFINITY_PARAMETERS = {
 AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
 
 ROWS_MISSING_AFFINITY = "rows_missing_affinity"
-ROWS_OUT_OF_RANGE_AFFINITY = "rows_out_of_range_affinity"
 
 # nanoMolar multiplier
 nM = 1.0e-9
@@ -124,6 +119,7 @@ SCHEMA_OVERRIDES.update(
 )
 
 def extract_bindingdb_columns_polars(
+    koza_transform: koza.KozaTransform,
     data_archive_path: Path,
     columns: tuple[str,...],
     target_taxa: tuple[str,...],
@@ -136,6 +132,7 @@ def extract_bindingdb_columns_polars(
     - Filters data by desired taxa
     - Lazy evaluation optimizes the query
 
+    :param koza_transform: Ingest context
     :param data_archive_path: Path to BindingDB TSV archive.
     :param columns: Target BindingDB columns to extract.
     :param target_taxa: Target species to be included in extracted BindingDB data.
@@ -165,8 +162,8 @@ def extract_bindingdb_columns_polars(
             pl.col(SOURCE_ORGANISM).is_in(target_taxa)
         )
 
-    logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    logger.info(df.columns)
+    koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
+    koza_transform.log(df.columns)
 
     return df
 
@@ -218,7 +215,7 @@ def filter_affinity_values(
 
     Two-stage filtering:
     1. Null out individual affinity column values that fall outside
-       the bounds defined in AFFINITY_BOUNDS.
+       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND.
     2. Remove rows where all affinity columns are null (either
        originally missing or nulled by range filtering).
 
@@ -257,7 +254,7 @@ def filter_affinity_values(
     rows_filtered = initial_count - df.height
     if rows_filtered > 0:
         koza_transform.transform_metadata[ROWS_MISSING_AFFINITY] = rows_filtered
-        logger.info(f"Filtered {rows_filtered} rows with missing or out-of-range affinity values")
+        koza_transform.log(f"Filtered {rows_filtered} rows with missing or out-of-range affinity values")
 
     return df
 
@@ -268,6 +265,7 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
     for affinity_parameter, column in AFFINITY_PARAMETERS.items():
         if column in record and record[column]:
             value: str = record[column]
+            value = value.strip()
             has_binary_relation: bre
             if value.startswith("<"):
                 value = value[1:]
@@ -278,9 +276,9 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
             else:
                 has_binary_relation = bre.equal_to
 
-            # Adjust BindingDb nominal nanomolar values to actual float values
-            # then transform to a linearized negative base 10 logarithm value
-            # in which a higher nominal value represents higher binding affinity
+            # Adjust BindingDb nominal nanomolar values to actual float values then transform
+            # to a linearized negative base 10 logarithm ("pK") value in which a higher
+            # real value represents higher binding affinity at lower ligand concentrations
             affinity = -log10(float(value)*nM)
 
             affinity_measurement = AffinityMeasurement(

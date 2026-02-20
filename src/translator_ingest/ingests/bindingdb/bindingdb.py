@@ -148,6 +148,7 @@ def prepare_bindingdb_data(
     # Directly read and extract useful columns from the original
     # downloaded bindingdb data file, using the 'polars' library.
     df = extract_bindingdb_columns_polars(
+        koza_transform,
         data_archive_path,
         columns=BINDINGDB_COLUMNS,
         target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())

@@ -179,7 +179,8 @@ def test_prepare_bindingdb_data(
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 9:
-            # Row 9 has Ki=90 (in range) and IC50=50000 (out of range for 1e4 bound);
+            # Row 9 has Ki=90 (in range) and IC50=50000 
+            # (out of range for 1000 nM (1 micromolar) threshold);
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
             assert test_record["IC50 (nM)"] is None
@@ -236,7 +237,7 @@ def test_prepare_bindingdb_data(
                 # ]
             }
         ),
-        (   # Test record 1: Caspase-1 inhibitor with Ki = 160 nM
+        (   # Test record 1: Caspase-1 inhibitor with Ki < 160 nM
                 CASPASE1_KD_RECORD,
                 [
                 {
@@ -274,7 +275,8 @@ def test_prepare_bindingdb_data(
                 # ]
             }
         ),
-        (   # Test record 2: Caspase-1 inhibitor with Ki = 3900 nM (weaker binder)
+        (       #  Test record 2: Caspase-1 inhibitor with kon = 3900
+                #  (parameter not tracked; no affinity extracted)
                 CASPASE1_WEAK_KON_RECORD,
                 [
                 {
@@ -454,7 +456,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"IC50 (nM)": "50000"}],
             0, 1,
-            "IC50=50000 exceeds 1000 nanomolar (1 micromolar) concentration"
+            "IC50=50000 nM (50 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
         ),
         (
             [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
@@ -469,7 +471,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"Ki (nM)": ">2000000"}],
             0, 1,
-            "Ki=2000000 exceeds 1000 nanomolar (1 micromolar) concentration"
+            "Ki=2000000 nM (2000 micromolar) far exceeds the 1000 nM (1 micromolar) threshold"
         ),
         (
             [{"Kd (nM)": "0"}],
@@ -479,7 +481,8 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"Kd (nM)": "1000"}, {"Kd (nM)": "2000"}],
             1, 1,
-            "Kd=1000 at upper bound passes; Kd=2000 exceeds 1000 nanomolar (1 micromolar) concentration"
+            "Kd=1000 nM (1 micromolar) at upper bound passes; "+
+            "Kd=2000 nM (2 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
         ),
     ]
 )
