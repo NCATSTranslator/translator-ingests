@@ -211,20 +211,6 @@ def extract_panther_data_polars(
         how="left"
     )
 
-    # Filter out any rows where derived IDs or taxa are null/empty
-    df = df.filter(
-        pl.col(GENE_A_ID_COL).is_not_null()
-        & (pl.col(GENE_A_ID_COL).str.len_bytes() > 0)
-        & pl.col(GENE_B_ID_COL).is_not_null()
-        & (pl.col(GENE_B_ID_COL).str.len_bytes() > 0)
-        & pl.col(GENE_FAMILY_ID_COL).is_not_null()
-        & (pl.col(GENE_FAMILY_ID_COL).str.len_bytes() > 0)
-        & pl.col(NCBITAXON_A_COL).is_not_null()
-        & (pl.col(NCBITAXON_A_COL).str.len_bytes() > 0)
-        & pl.col(NCBITAXON_B_COL).is_not_null()
-        & (pl.col(NCBITAXON_B_COL).str.len_bytes() > 0)
-    )
-
     # Select only the derived columns needed downstream
     df = df.select([GENE_A_ID_COL, GENE_B_ID_COL, NCBITAXON_A_COL, NCBITAXON_B_COL, GENE_FAMILY_ID_COL])
 
