@@ -16,7 +16,7 @@ from translator_ingest.util.biolink import INFORES_BGEE
 
 from koza.model.graphs import KnowledgeGraph
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 
 BIOLINK_EXPRESSED_IN = "biolink:expressed_in"
 
@@ -76,7 +76,6 @@ def transform_bgee_expressed_in(
         raise ValueError(f"In Bgee Ingest; 'Anatomical entity ID' {anatomical_id} does not start with 'CL:' or 'UBERON:'.")
     # Generate our association objects
     association = Association(
-        id=entity_id(),
         subject=gene_id,
         predicate=BIOLINK_EXPRESSED_IN,
         object=anatomical_id,

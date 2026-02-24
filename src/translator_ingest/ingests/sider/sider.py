@@ -13,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest import INGESTS_PARSER_PATH
 
 SIDER_INGEST_PATH = INGESTS_PARSER_PATH / "sider"
@@ -80,7 +80,6 @@ def transform_ingest_all_streaming(
             continue
         all_triples.add((chemical.id, predicate, disease.id))
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=entity_id(),
             subject=chemical.id,
             predicate=predicate,
             object=disease.id,

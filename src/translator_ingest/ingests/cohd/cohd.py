@@ -11,7 +11,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 from bmt.pydantic import (
-    entity_id,
     get_node_class,
     # get_edge_class
 )
@@ -109,8 +108,6 @@ def on_end_edge_ingest(koza_transform: koza.KozaTransform) -> None:
 def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
 
     try:
-        edge_id = entity_id()
-
         cohd_subject: str = record["subject"]
         # subject_category: list[str] = bmt.get_element_by_prefix(cohd_subject)
 
@@ -137,7 +134,6 @@ def transform_cohd_edge(koza_transform: koza.KozaTransform, record: dict[str, An
         #
         # association = edge_class(
         association = Association(
-            id=edge_id,
             subject=cohd_subject,
             predicate=cohd_predicate,
             object=cohd_object,

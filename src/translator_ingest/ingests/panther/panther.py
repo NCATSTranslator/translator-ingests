@@ -12,7 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum, GeneFamily
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 
 import koza
 from koza.model.graphs import KnowledgeGraph
@@ -115,7 +115,6 @@ def transform_gene_to_gene_orthology(
 
         # Generate our association objects
         orthology_relationship = GeneToGeneHomologyAssociation(
-            id=entity_id(),
             subject=gene_a.id,
             object=gene_b.id,
             predicate="biolink:orthologous_to",
@@ -125,7 +124,6 @@ def transform_gene_to_gene_orthology(
             agent_type=AgentTypeEnum.manual_validation_of_automated_agent
         )
         gene_a_family_relationship = GeneToGeneFamilyAssociation(
-            id=entity_id(),
             subject=gene_a.id,
             object=gene_family.id,
             predicate="biolink:member_of",
@@ -134,7 +132,6 @@ def transform_gene_to_gene_orthology(
             agent_type=AgentTypeEnum.manual_validation_of_automated_agent
         )
         gene_b_family_relationship = GeneToGeneFamilyAssociation(
-            id=entity_id(),
             subject=gene_b.id,
             object=gene_family.id,
             predicate="biolink:member_of",

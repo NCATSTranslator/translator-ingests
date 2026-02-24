@@ -231,7 +231,6 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
     
     # create association between nodes
     association = Association(
-        id=entity_id(),
         subject=subject_id,
         predicate=predicate,
         object=object_id,

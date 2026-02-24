@@ -19,7 +19,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import (
     INFORES_SIGNOR
@@ -147,7 +147,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
             association = GeneRegulatesGeneAssociation(
-                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:regulates",
@@ -169,7 +168,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             if record["EFFECT"] == 'form complex':
                 association_1 = AnatomicalEntityHasPartAnatomicalEntityAssociation(
-                    id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:has_part",
@@ -179,7 +177,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 )
 
                 association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:physically_interacts_with",
@@ -220,7 +217,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
             association = GeneAffectsChemicalAssociation(
-                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:affects",
@@ -271,7 +267,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
             association = GeneRegulatesGeneAssociation(
-                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:affects",
@@ -313,7 +308,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
             association = GeneRegulatesGeneAssociation(
-                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:affects",
@@ -344,7 +338,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
             association = ChemicalEntityToChemicalEntityAssociation(
-                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:affects",
@@ -391,7 +384,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = DirectionQualifierEnum.downregulated
 
             association = ChemicalEntityToChemicalEntityAssociation(
-                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:affects",

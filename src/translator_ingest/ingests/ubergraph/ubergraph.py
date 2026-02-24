@@ -14,7 +14,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 
 INFORES_UBERGRAPH = "infores:ubergraph"
 
@@ -238,7 +238,6 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
             nodes_seen.add(object_curie)
         
         edges_batch.append(Association(
-            id=entity_id(),
             subject=subject_curie,
             predicate=predicate_curie,
             object=object_curie,

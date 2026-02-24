@@ -3,7 +3,7 @@ import koza
 import pandas as pd
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     Gene,    ## because terms/IDs dgidb gives are for genes
@@ -173,7 +173,6 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     ## ASSUMING no special logic, so only 1 edge made
     ## NOTE: sometimes supporting sources, publications, scores will be empty (None, empty list). Then don't want them present in output
         association = ChemicalGeneInteractionAssociation(
-            id=entity_id(),
             subject=chemical.id,
             object=gene.id,
             ## KL/AT is for dgidb
@@ -195,7 +194,6 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     ## NOTE: sometimes supporting sources, publications, scores will be empty (None, empty list). Then don't want them present in output
         ## MAIN EDGE
         association = ChemicalAffectsGeneAssociation(
-            id=entity_id(),
             subject=chemical.id,
             object=gene.id,
             ## KL/AT is for dgidb
@@ -216,7 +214,6 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
             ## should be identical to original edge, except predicate/no qualifiers. And CX decided not to include dgidb scores
             extra_assoc = ChemicalGeneInteractionAssociation(
-                id=entity_id(),
                 subject=chemical.id,
                 object=gene.id,
                 ## KL/AT is for dgidb

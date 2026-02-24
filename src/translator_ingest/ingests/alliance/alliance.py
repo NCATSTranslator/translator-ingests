@@ -17,7 +17,7 @@ from koza.model.graphs import KnowledgeGraph
 from loguru import logger
 from pathlib import Path
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     GeneToPhenotypicFeatureAssociation,
@@ -236,7 +236,6 @@ def transform_phenotype(
         nodes.append(phenotype)
 
         association = GeneToPhenotypicFeatureAssociation(
-            id=entity_id(),
             subject=gene_id,
             predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONhas_phenotype,
             object=phenotypic_feature_id,
@@ -316,7 +315,6 @@ def transform_expression(
 
             edges.append(
                 GeneToExpressionSiteAssociation(
-                    id=entity_id(),
                     subject=gene_id,
                     predicate="biolink:expressed_in",
                     object=anatomical_entity_id,
@@ -335,7 +333,6 @@ def transform_expression(
 
             edges.append(
                 GeneToExpressionSiteAssociation(
-                    id=entity_id(),
                     subject=gene_id,
                     predicate="biolink:expressed_in",
                     object=cellular_component_id,

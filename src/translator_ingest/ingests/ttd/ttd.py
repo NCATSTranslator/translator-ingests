@@ -3,7 +3,7 @@ import koza
 import pandas as pd
 from typing import Any, Iterable, Dict, Union
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id
+
 from translator_ingest.util.biolink import INFORES_TTD
 from translator_ingest.util.http_utils import get_modify_date
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -384,7 +384,6 @@ def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
     chemical = ChemicalEntity(id=record["subject_pubchem"])
     indication = DiseaseOrPhenotypicFeature(id=record["object_nameres_id"])
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
         subject=chemical.id,
         predicate=record["biolink_predicate"],
         object=indication.id,
@@ -608,7 +607,6 @@ def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
     ## covers "interacts_with" and descendants with substring
     ## ASSUMING no special logic, so only 1 edge made
         association = ChemicalGeneInteractionAssociation(
-            id=entity_id(),
             subject=chemical.id,
             object=protein.id,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
@@ -623,7 +621,6 @@ def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
     ## currently covers all other cases
         ## MAIN EDGE
         association = ChemicalAffectsGeneAssociation(
-            id=entity_id(),
             subject=chemical.id,
             object=protein.id,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
@@ -638,7 +635,6 @@ def p1_07_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
             ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
             ## should be identical to original edge, except predicate/no qualifiers
             extra_assoc = ChemicalGeneInteractionAssociation(
-                id=entity_id(),
                 subject=chemical.id,
                 object=protein.id,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,

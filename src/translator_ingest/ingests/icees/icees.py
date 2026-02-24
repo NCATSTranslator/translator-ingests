@@ -142,7 +142,6 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
                 pass # all other attributes ignored at this time
 
         association = edge_class(
-            id=entity_id(),
             subject=icees_subject,
             predicate=icees_predicate,
             object=icees_object,

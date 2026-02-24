@@ -153,7 +153,6 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 
         # Build association kwargs with all fields
         assoc_kwargs = {
-            "id": entity_id(),
             "subject": subject_id,
             "predicate": predicate,
             "object": object_id,

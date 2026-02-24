@@ -183,7 +183,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     qualifiers = record.get("qualifiers", [])
 
     edge_props = {
-        "id": record.get("id", str(uuid.uuid4())),
+        "id": record.get("id"),
         "subject": subject_id,
         "predicate": predicate,
         "object": object_id,

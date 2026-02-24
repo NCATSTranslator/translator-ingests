@@ -14,7 +14,6 @@ import gzip
 import tarfile
 from pathlib import Path
 from typing import Any, Dict, Optional
-import uuid
 from datetime import datetime
 import koza
 
@@ -198,7 +197,7 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
     
     # Build edge properties
     edge_props = {
-        "id": record.get("id", str(uuid.uuid4())),
+        "id": record.get("id"),
         "subject": subject_id,
         "predicate": predicate,
         "object": object_id,

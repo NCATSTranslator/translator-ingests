@@ -356,7 +356,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
             {
                 "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
                 "subject": "NCBIGene:6505",
-                "predicate": "biolink:associated_with",
+                "predicate": "biolink:correlated_with",
                 "object": "OMIM:615232",
                 "qualified_predicate": "biolink:contributes_to",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",

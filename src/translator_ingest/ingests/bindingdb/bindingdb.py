@@ -11,7 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
@@ -226,7 +226,6 @@ def transform_bindingdb_by_record(
 
     # Edge
     association = ChemicalGeneInteractionAssociation(
-        id=entity_id(),
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,

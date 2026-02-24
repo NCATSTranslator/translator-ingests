@@ -1,4 +1,3 @@
-import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
@@ -13,7 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_CTD
 
 # !!! README First !!!
@@ -106,7 +105,6 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
         subject=chemical.id,
         predicate="biolink:related_to",
         object=disease.id,
@@ -130,7 +128,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
             subject=chemical.id,
             predicate="biolink:related_to",
             object=disease.id,
@@ -153,7 +150,6 @@ def transform_ingest_all_streaming(
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
             subject=chemical.id,
             predicate="biolink:related_to",
             object=disease.id,

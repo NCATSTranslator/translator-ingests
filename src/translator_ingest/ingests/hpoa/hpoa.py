@@ -33,7 +33,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from translator_ingest.util.github import GitHubReleases
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_HPOA
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
@@ -216,7 +216,6 @@ def transform_disease_to_phenotype_edge_record(
 
         # Association/Edge
         association = DiseaseToPhenotypicFeatureAssociation(
-            id=entity_id(),
             subject=disease_id,
             predicate="biolink:has_phenotype",
             negated=negated,
@@ -263,7 +262,6 @@ def transform_gene_to_disease_record(
 
     if qualified_predicate == "biolink:causes":
         association = CausalGeneToDiseaseAssociation(
-            id=entity_id(),
             subject=gene_id,
             predicate="biolink:associated_with",
             object=disease_id,
@@ -276,9 +274,8 @@ def transform_gene_to_disease_record(
         )
     elif qualified_predicate == "biolink:contributes_to":
         association = CorrelatedGeneToDiseaseAssociation(
-            id=entity_id(),
             subject=gene_id,
-            predicate="biolink:associated_with",
+            predicate="biolink:correlated_with",
             object=disease_id,
             qualified_predicate="biolink:contributes_to",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
@@ -394,7 +391,6 @@ def transform_gene_to_phenotype_record(
     publications = [pub.strip() for pub in str(record["publications"]).split(";")] if record["publications"] else []
 
     association = GeneToPhenotypicFeatureAssociation(
-        id=entity_id(),
         subject=gene_id,
         predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
         object=hpo_id,

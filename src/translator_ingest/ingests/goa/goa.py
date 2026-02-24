@@ -20,7 +20,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RNAProduct,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_GOA, INFORES_INTACT
 
 # Constants
@@ -294,7 +294,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     if biolink_class == Gene:
         # Use GeneToGoTermAssociation for gene entities
         association = GeneToGoTermAssociation(
-            id=entity_id(),
             subject=entity.id,
             predicate=predicate,
             object=go_term.id,
@@ -312,7 +311,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     else:
         # Use generic Association for protein, complex, and RNA entities since there are no specific associations
         association = Association(
-            id=entity_id(),
             subject=entity.id,
             predicate=predicate,
             object=go_term.id,

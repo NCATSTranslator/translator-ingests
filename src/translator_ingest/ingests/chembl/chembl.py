@@ -18,7 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from koza.model.graphs import KnowledgeGraph
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 
 from translator_ingest import INGESTS_PARSER_PATH
 
@@ -542,7 +542,6 @@ def get_association(koza, record, action_type_map):
             return [], []
             # Create association
         association = association_class(
-                id=entity_id(),
                 subject=chemical.id,
                 predicate=predicate,
                 object=target.id,
@@ -573,7 +572,6 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
     predicate = action_type_map["predicate"]
     qualifiers = action_type_map["qualifiers"]
     association = ChemicalAffectsGeneAssociation(
-        id=entity_id(),
         subject=chemical.id,
         predicate=predicate,
         object=target.id,
@@ -597,7 +595,6 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
     connection = koza.state['chembl_db_connection']
     references = get_references(connection, "metabolism_refs", "met_id", record["met_id"])
     association = ChemicalEntityToChemicalEntityAssociation(
-        id=entity_id(),
         subject=substrate.id,
         predicate="biolink:has_metabolite",
         object=metabolite.id,
@@ -617,7 +614,6 @@ def get_has_part_association(koza: koza.KozaTransform, component, target, record
     species_context_qualifier = get_species_context_qualifier(record)
     species_context_qualifier = species_context_qualifier
     association = AnatomicalEntityHasPartAnatomicalEntityAssociation(
-        id=entity_id(),
         subject=target.id,
         predicate="biolink:has_part",
         object=component.id,

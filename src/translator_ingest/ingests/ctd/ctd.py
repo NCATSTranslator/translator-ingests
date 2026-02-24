@@ -18,7 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_CTD
 
 from bs4 import BeautifulSoup
@@ -76,7 +76,6 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
     predicate = CHEM_TO_DISEASE_PREDICATES[evidence_type]
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
         subject=chemical.id,
         predicate=predicate,
         object=disease.id,
@@ -119,7 +118,6 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
     if disease_id:
         nodes.append(Disease(id=disease_id))
         c_to_d_association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-                id=entity_id(),
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=disease_id,
@@ -136,7 +134,6 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
     if phenotype_id:
         nodes.append(PhenotypicFeature(id=phenotype_id))
         c_to_p_association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-                id=entity_id(),
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=phenotype_id,
@@ -293,7 +290,6 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
 
     association = ChemicalAffectsGeneAssociation(
-        id=entity_id(),
         subject=chemical_id,
         predicate=predicate,
         object=gene_id,
@@ -322,7 +318,6 @@ def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any])
     p_value = record['PValue']
     corrected_p_value = record['CorrectedPValue']
     edge = ChemicalEntityToBiologicalProcessAssociation(
-        id=entity_id(),
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=go_term,
@@ -347,7 +342,6 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
     p_value = record['PValue']
     corrected_p_value = record['CorrectedPValue']
     edge = ChemicalEntityToPathwayAssociation(
-        id=entity_id(),
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=pathway_id,
@@ -403,7 +397,6 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
             koza.transform_metadata['unmapped_pheno_ixn_types'].add(interaction)
 
     edge = ChemicalEntityToBiologicalProcessAssociation(
-        id=entity_id(),
         subject=chemical_id,
         predicate=BIOLINK_AFFECTS,
         object=phenotype_id,

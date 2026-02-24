@@ -17,7 +17,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 
 
 TRANSFORM_VERSION="1.1"
@@ -127,7 +127,6 @@ def create_disease_association(chemical, indication, indication_info, predicate,
     #TODO: clinical_approval_status = clinical_approval_map.get(clinical_phase, None)
     #TODO: max_research_phase = research_phase_map.get(clinical_phase, None)
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id = entity_id(),
         subject=chemical.id,
         object=disease.id,
         predicate=predicate,
@@ -148,7 +147,6 @@ def create_chemical_role_association(chemical, indication, indication_info, pred
         name=indication_info['primary_name'] if indication_info['primary_name'] else indication,
     )
     association = ChemicalEntityToChemicalEntityAssociation(
-        id = entity_id(),
         subject=chemical.id,
         predicate=predicate,
         object=chemical_role.id,
@@ -170,7 +168,6 @@ def create_target_association(chemical, target_gene_symbol, moa):
         symbol = target_gene_symbol
     )
     association = ChemicalAffectsGeneAssociation(
-        id = entity_id(),
         subject=chemical.id,
         predicate='biolink:affects',
         object=target.id,

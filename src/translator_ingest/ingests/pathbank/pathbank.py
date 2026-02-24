@@ -30,7 +30,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneOrGeneProductOrChemicalEntityAspectEnum,
 )
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_PATHBANK
 from translator_ingest.util.http_utils import get_modify_date
 
@@ -242,7 +242,6 @@ def _create_compound_node_and_edges(
     # Create has_participant edge from pathway to compound (use primary ID)
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
@@ -335,7 +334,6 @@ def _create_protein_node_and_edges(
     # Create has_participant edge from pathway to protein (use primary ID)
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
@@ -416,7 +414,6 @@ def _create_protein_complex_node_and_edges(
     # Create has_protein_in_complex edges
     for protein_id in sorted(set(complex_proteins)):
         has_protein_edge = Association(
-            id=entity_id(),
             subject=pwp_curie,
             predicate="biolink:has_part",
             object=protein_id,
@@ -431,7 +428,6 @@ def _create_protein_complex_node_and_edges(
     # Create has_participant edge from pathway to complex
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=pwp_curie,
@@ -510,7 +506,6 @@ def _create_nucleic_acid_node_and_edges(
     # Create has_participant edge from pathway to nucleic acid (use primary ID)
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
@@ -616,7 +611,6 @@ def _create_reaction_node_and_edges(
             else:
                 object_curie = f"{prefix}:{primary_equiv_id}"
             reactant_edge = Association(
-                id=entity_id(),
                 subject=primary_curie,
                 predicate="biolink:has_input",
                 object=object_curie,
@@ -650,7 +644,6 @@ def _create_reaction_node_and_edges(
             else:
                 object_curie = f"{prefix}:{primary_equiv_id}"
             product_edge = Association(
-                id=entity_id(),
                 subject=primary_curie,
                 predicate="biolink:has_output",
                 object=object_curie,
@@ -682,7 +675,6 @@ def _create_reaction_node_and_edges(
             else:
                 subject_curie = f"{prefix}:{primary_equiv_id}"
             enzyme_edge = Association(
-                id=entity_id(),
                 subject=subject_curie,
                 predicate="biolink:catalyzes",
                 object=primary_curie,
@@ -697,7 +689,6 @@ def _create_reaction_node_and_edges(
     # Create has_participant edge from pathway to reaction (use primary ID)
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
@@ -769,7 +760,6 @@ def _create_bound_node_and_edges(
                 continue
 
             has_part_edge = Association(
-                id=entity_id(),
                 subject=pwb_curie,
                 predicate="biolink:has_part",
                 object=object_curie,
@@ -784,7 +774,6 @@ def _create_bound_node_and_edges(
     # Create has_participant edge from pathway to bound
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=pwb_curie,
@@ -875,7 +864,6 @@ def _create_element_collection_node_and_edges(
     # Create has_participant edge from pathway to element collection (use primary ID)
     pathway_curie = _pathway_id_to_curie(pathway_id)
     has_component_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
@@ -1028,7 +1016,6 @@ def _create_interaction_edges(
 
             # Create interaction edge with predicate and qualifiers based on interaction type
             interaction_edge_kwargs = {
-                "id": entity_id(),
                 "subject": left_curie,
                 "predicate": predicate,
                 "object": right_curie,
@@ -1089,7 +1076,6 @@ def _create_subcellular_location_nodes_and_edges(
     # Create occurs_in edge from pathway to location
     pathway_curie = _pathway_id_to_curie(pathway_id)
     occurs_in_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:occurs_in",
         object=location_curie,
@@ -1142,7 +1128,6 @@ def _create_tissue_nodes_and_edges(
     # Create occurs_in edge from pathway to tissue
     pathway_curie = _pathway_id_to_curie(pathway_id)
     occurs_in_edge = Association(
-        id=entity_id(),
         subject=pathway_curie,
         predicate="biolink:occurs_in",
         object=tissue_curie,

@@ -3,7 +3,7 @@ import koza
 from koza.model.graphs import KnowledgeGraph
 from typing import Any, Iterable
 ## build_association_knowledge_sources should be able to handle source_record_urls
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 ## using bmt to get UMLS semantic types for DiseaseOrPheno
 from translator_ingest.util.biolink import INFORES_DRUGCENTRAL, get_biolink_model_toolkit
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -154,7 +154,6 @@ def omop_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledg
     data_modeling = OMOP_RELATION_MAPPING[record["relationship_name"]]
 
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
         subject=chemical.id,
         predicate=data_modeling["predicate"],
         object=dop.id,

@@ -1,4 +1,3 @@
-import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
@@ -92,7 +91,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -143,7 +141,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = DirectionQualifierEnum.increased
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -219,7 +216,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 qualified_predicate = BIOLINK_CAUSES
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -257,7 +253,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.non_competitive_antagonism
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -301,7 +296,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 qualified_predicate = None
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -341,7 +335,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 qualified_predicate = None
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -367,7 +360,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             qualified_predicate = BIOLINK_CAUSES
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -411,7 +403,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 qualified_predicate = BIOLINK_CAUSES
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -453,7 +444,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -484,7 +474,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = DirectionQualifierEnum.increased
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,
@@ -515,7 +504,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = DirectionQualifierEnum.increased
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=subject.id,
                 object=object.id,
                 predicate = predicate,

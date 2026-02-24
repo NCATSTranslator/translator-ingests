@@ -12,7 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from translator_ingest.util.biolink import INFORES_INTACT
 from translator_ingest.util.http_utils import get_ftp_modify_date
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import build_association_knowledge_sources
 from koza.model.graphs import KnowledgeGraph
 
 # Allowed interaction types as per RIG documentation
@@ -403,7 +403,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
 
     # Create the interaction edge
     interaction = PairwiseMolecularInteraction(
-        id=entity_id(),
         subject=entity_a.id,
         predicate=predicate,
         object=entity_b.id,

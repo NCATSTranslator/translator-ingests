@@ -1,7 +1,6 @@
 import json
 import tarfile
 import tempfile
-import uuid
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -340,7 +339,6 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
-                id=str(uuid.uuid4()),
                 subject=normalized_source_id,
                 predicate=biolink_predicate,
                 object=normalized_target_id,

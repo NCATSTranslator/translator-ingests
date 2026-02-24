@@ -9,6 +9,7 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 
+import translator_ingest.util.association_id  # noqa: F401 — triggers singleton config
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
