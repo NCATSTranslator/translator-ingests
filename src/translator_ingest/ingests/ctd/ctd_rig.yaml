@@ -74,7 +74,7 @@
 
     included_content:
       - file_name: CTD_chemicals_diseases.tsv.gz
-        included_records:  All records, including curated therapeutic and marker/mechanism associations
+        included_records: Associations curated and designated therapeutic or marker/mechanism
         fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, OmimIDs, PubMedIDs
       - file_name: CTD_exposure_events.tsv.gz
         included_records: All records with an outcomerelationship of "positive correlation" or "negative correlation"
