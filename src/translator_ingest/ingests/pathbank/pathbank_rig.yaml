@@ -275,9 +275,9 @@ target_info:
         - "BTO (BRENDA Tissue Ontology) identifiers for tissues (e.g., BTO:0000759 for Liver)"
       additional_notes: "Tissues and anatomical entities extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/AnatomicalEntity/"
 
-    future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
-      - category: spoq_pattern
-        consideration: "MolecularActivity nodes represent reactions.  Current modeling creates separate edges describing inputs and outputs for these reactions. This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier? A redesign to direct input-output edges with reaction qualifiers would need an agreed KG modeling pattern across sources."
+  future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
+    - category: spoq_pattern
+      consideration: "MolecularActivity nodes represent reactions.  Current modeling creates separate edges describing inputs and outputs for these reactions. This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier? A redesign to direct input-output edges with reaction qualifiers would need an agreed KG modeling pattern across sources."
 
 # Manual QA 1: Known issues identified during validation
 known_issues:
