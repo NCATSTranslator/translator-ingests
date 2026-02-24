@@ -2,14 +2,18 @@
 Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
+from typing import Optional, Any
 from pathlib import Path
 from zipfile import ZipFile
+from math import log10
 import polars as pl
 import koza
-
-from translator_ingest.util.logging_utils import get_logger
-
-logger = get_logger(__name__)
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AffinityParameterEnum as ape,
+    AffinityMeasurement,
+    BinaryRelationEnum as bre
+)
+from bmt.pydantic import entity_id
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
@@ -20,12 +24,27 @@ MONOMER_ID = "BindingDB MonomerID"
 LIGAND_NAME = "BindingDB Ligand Name"
 TARGET_NAME = "Target Name"
 SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
-# KI = "Ki (nM)"
-# IC50 = "IC50 (nM)"
-# KD = "Kd (nM)"
-# EC50 = "EC50 (nM)"
-# KON = "kon (M-1-s-1)"
-# KOFF = "koff (s-1)"
+
+# Ignoring pKon and pKoff for now - since they
+# are not concentration-driven affinity parameters
+AFFINITY_PARAMETERS = {
+    ape.pKi: "Ki (nM)",
+    ape.pIC50: "IC50 (nM)",
+    ape.pKd: "Kd (nM)",
+    ape.pEC50: "EC50 (nM)",
+}
+
+# An upper filter threshold of 1.0e-6 (1 micromole)
+# (equal to a negative base 10 logarithm value of 6)
+# is specified, which is 1,000 (1.0e+3) times the recorded
+# 1.0e-9 (nanoMolar) units of the BindingDb dataset values
+AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
+
+ROWS_MISSING_AFFINITY = "rows_missing_affinity"
+
+# nanoMolar multiplier
+nM = 1.0e-9
+
 # "pH" = "7.4",
 # "Temp (C)" = "25.00",
 CURATION_DATASOURCE = "Curation/DataSource"
@@ -85,8 +104,22 @@ def web_string(s: str) -> str:
         s = s.replace(a, b)
     return s
 
+SCHEMA_OVERRIDES = {
+    MONOMER_ID: pl.Utf8,
+    PUBCHEM_CID: pl.Utf8,
+    TARGET_NAME: pl.Utf8,
+    UNIPROT_ID: pl.Utf8,
+    CURATION_DATASOURCE: pl.Utf8,
+    ARTICLE_DOI: pl.Utf8,
+    PMID: pl.Utf8,
+    PATENT_NUMBER: pl.Utf8,
+}
+SCHEMA_OVERRIDES.update(
+    {label: pl.Utf8 for label in AFFINITY_PARAMETERS.values()}
+)
 
 def extract_bindingdb_columns_polars(
+    koza_transform: koza.KozaTransform,
     data_archive_path: Path,
     columns: tuple[str,...],
     target_taxa: tuple[str,...],
@@ -99,6 +132,7 @@ def extract_bindingdb_columns_polars(
     - Filters data by desired taxa
     - Lazy evaluation optimizes the query
 
+    :param koza_transform: Ingest context
     :param data_archive_path: Path to BindingDB TSV archive.
     :param columns: Target BindingDB columns to extract.
     :param target_taxa: Target species to be included in extracted BindingDB data.
@@ -111,16 +145,7 @@ def extract_bindingdb_columns_polars(
                     datafile,
                     separator="\t",
                     has_header=True,  # header_mode: 0 means that the first row is the header
-                    schema_overrides={
-                        MONOMER_ID: pl.Utf8,
-                        PUBCHEM_CID: pl.Utf8,
-                        TARGET_NAME: pl.Utf8,
-                        UNIPROT_ID: pl.Utf8,
-                        CURATION_DATASOURCE: pl.Utf8,
-                        ARTICLE_DOI: pl.Utf8,
-                        PMID: pl.Utf8,
-                        PATENT_NUMBER: pl.Utf8,
-                    },
+                    schema_overrides=SCHEMA_OVERRIDES,
                     # not ideal to skip problematic BindingDB data rows, but if
                     # most of the other data can be read, we still make progress
                     ignore_errors=True
@@ -137,8 +162,8 @@ def extract_bindingdb_columns_polars(
             pl.col(SOURCE_ORGANISM).is_in(target_taxa)
         )
 
-    logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    logger.info(df.columns)
+    koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
+    koza_transform.log(df.columns)
 
     return df
 
@@ -180,3 +205,90 @@ def process_publications(
     df = df.filter(pl.col(PUBLICATION).is_not_null())
 
     return df
+
+def filter_affinity_values(
+        koza_transform: koza.KozaTransform,
+        df: pl.DataFrame
+) -> pl.DataFrame:
+    """
+    Filter BindingDB records by affinity value validity and range.
+
+    Two-stage filtering:
+    1. Null out individual affinity column values that fall outside
+       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND.
+    2. Remove rows where all affinity columns are null (either
+       originally missing or nulled by range filtering).
+
+    Values may contain relational prefixes (``<``, ``>``) which are
+    stripped before numeric comparison.
+
+    :param koza_transform: Ingest context for recording filter metadata.
+    :param df: Polars DataFrame with affinity columns as strings.
+    :return: Filtered DataFrame with out-of-range values nulled.
+    """
+    initial_count = df.height
+
+    # Stage 1: null out individual values outside bounds
+    bound_exprs = []
+    for col_name in AFFINITY_PARAMETERS.values():
+        parsed = (
+            pl.col(col_name)
+            .str.strip_chars("<> ")
+            .cast(pl.Float64, strict=False)
+        )
+        in_range = parsed.gt(0.0) & parsed.le(AFFINITY_FILTER_UPPER_BOUND)
+        bound_exprs.append(
+            pl.when(in_range)
+            .then(pl.col(col_name))
+            .otherwise(None)
+            .alias(col_name)
+        )
+    df = df.with_columns(bound_exprs)
+
+    # Stage 2: remove rows where all affinity columns are null
+    has_any_affinity = pl.lit(False)
+    for col_name in AFFINITY_PARAMETERS.values():
+        has_any_affinity = has_any_affinity | pl.col(col_name).is_not_null()
+    df = df.filter(has_any_affinity)
+
+    rows_filtered = initial_count - df.height
+    if rows_filtered > 0:
+        koza_transform.transform_metadata[ROWS_MISSING_AFFINITY] = rows_filtered
+        koza_transform.log(f"Filtered {rows_filtered} rows with missing or out-of-range affinity values")
+
+    return df
+
+
+def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
+    affinity_parameter: ape
+    measurements: Optional[list[AffinityMeasurement]] = None
+    for affinity_parameter, column in AFFINITY_PARAMETERS.items():
+        if column in record and record[column]:
+            value: str = record[column]
+            value = value.strip()
+            has_binary_relation: bre
+            if value.startswith("<"):
+                value = value[1:]
+                has_binary_relation = bre.less_than
+            elif value.startswith(">"):
+                value = value[1:]
+                has_binary_relation = bre.greater_than
+            else:
+                has_binary_relation = bre.equal_to
+
+            # Adjust BindingDb nominal nanomolar values to actual float values then transform
+            # to a linearized negative base 10 logarithm ("pK") value in which a higher
+            # real value represents higher binding affinity at lower ligand concentrations
+            affinity = -log10(float(value)*nM)
+
+            affinity_measurement = AffinityMeasurement(
+                id=entity_id(),
+                affinity_parameter=affinity_parameter,
+                affinity=affinity,
+                has_binary_relation=has_binary_relation
+            )
+            if measurements is None:
+                measurements = [affinity_measurement]
+            else:
+                measurements.append(affinity_measurement)
+    return measurements
