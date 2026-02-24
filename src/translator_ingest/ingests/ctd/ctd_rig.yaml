@@ -74,8 +74,8 @@
 
     included_content:
       - file_name: CTD_chemicals_diseases.tsv.gz
-        included_records:  All records, including curated therapeutic and marker/mechanism associations, as well as inferred associtionas (records lacking a value in the DirectEvidence column).
-        fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs
+        included_records:  All records, including curated therapeutic and marker/mechanism associations
+        fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, OmimIDs, PubMedIDs
       - file_name: CTD_exposure_events.tsv.gz
         included_records: All records with an outcomerelationship of "positive correlation" or "negative correlation"
       - file_name: CTD_chem_gene_ixns.tsv.gz
@@ -88,6 +88,9 @@
         included_records: All records (none filtered)
 
     filtered_content:
+      - file_name: CTD_chemicals_diseases.tsv.gz
+        filtered_records: Records lacking a DirectEvidence designation
+        rationale: These relationships are only based on computational inference and were found to be not reliably useful enough to include
       - file_name: CTD_chem_gene_ixns.tsv.gz
         filtered_records: Records involving three or more entities are removed.
         rationale: It is not clear how we could split them into individual edges in a way that preserves the original knowledge assertion.
