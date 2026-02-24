@@ -24,6 +24,7 @@ from translator_ingest.util.biolink import INFORES_CTD
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
 
+TRANSFORM_VERSION = "1.1"
 
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
@@ -315,14 +316,18 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
 
 @koza.transform_record(tag="chem_go_enriched")
 def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    # filter out associations with a weak p value or go level < 3
+    highest_go_level = record['HighestGOLevel']
+    if int(highest_go_level) < 3:
+        return None
+    corrected_p_value = record['CorrectedPValue']
+    if float(corrected_p_value) > 1e-10:
+        return None
     # chemical ids are mesh ids without the curie prefix
     chemical_id = f'MESH:{record['ChemicalID']}'
     # GO curies
     go_term = record['GOTermID']
     p_value = record['PValue']
-    corrected_p_value = record['CorrectedPValue']
-    if float(corrected_p_value) > 1e-10:
-        return None
     edge = ChemicalEntityToBiologicalProcessAssociation(
         id=entity_id(),
         subject=chemical_id,
