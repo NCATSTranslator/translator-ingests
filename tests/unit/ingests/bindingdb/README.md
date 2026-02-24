@@ -10,8 +10,8 @@ Contains Python dictionaries representing real BindingDB records for Homo sapien
 ```python
 from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
-    CASPASE1_KI_RECORD,
-    CASPASE1_WEAK_KI_RECORD,
+    CASPASE1_KD_RECORD,
+    CASPASE1_WEAK_KON_RECORD,
     RECORD_MISSING_FIELD_1
 )
 ```
@@ -62,7 +62,7 @@ from translator_ingest.ingests.bindingdb.bindingdb import transform_bindingdb_by
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE3_KI_RECORD,
-    CASPASE1_KI_RECORD,
+    CASPASE1_KD_RECORD,
     RECORD_MISSING_FIELD_1
 )
 

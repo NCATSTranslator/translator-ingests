@@ -1,9 +1,11 @@
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
+    CausalGeneToDiseaseAssociation,
     ChemicalEntity,
     Disease,
     Gene,
+    GeneToPhenotypicFeatureAssociation,
     Protein,
     KnowledgeLevelEnum,
     AgentTypeEnum,
@@ -61,8 +63,8 @@ def test_therapeutic_edge_entities(therapeutic_edge_output):
     assert association.subject == "CHEBI:15365"
     assert association.object == "MONDO:0005148"
     assert association.publications == ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"]
-    assert association.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
-    assert association.agent_type == AgentTypeEnum.automated_agent
+    assert association.knowledge_level == KnowledgeLevelEnum.not_provided
+    assert association.agent_type == AgentTypeEnum.text_mining_agent
     
     # verify node creation
     chemical = [e for e in entities if isinstance(e, ChemicalEntity)][0]
@@ -285,3 +287,77 @@ def test_edge_with_publications_info(edge_with_publications_info):
     
     tm_result = study.has_study_results[0]
     assert "Aspirin effectively reduces inflammation in diabetic patients." in tm_result.supporting_text
+
+
+def test_preventative_predicate_remapped():
+    """Test that preventative_for_condition is remapped to treats_or_applied_or_studied_to_treat."""
+    record = {
+        "subject": "CHEBI:15365",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:preventative_for_condition",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.predicate == "biolink:treats_or_applied_or_studied_to_treat"
+
+
+def test_gene_causes_disease_gets_variant_qualifier():
+    """Test that gene causes disease edges get genetic_variant_form qualifier."""
+    record = {
+        "subject": "NCBIGene:100",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:causes",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    assert isinstance(association, CausalGeneToDiseaseAssociation)
+    assert association.subject_form_or_variant_qualifier == "genetic_variant_form"
+
+
+def test_protein_causes_phenotype_gets_variant_qualifier():
+    """Test that protein causes phenotype edges get genetic_variant_form qualifier."""
+    record = {
+        "subject": "PR:P12345",
+        "object": "HP:0000118",
+        "predicate": "biolink:causes",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    assert isinstance(association, GeneToPhenotypicFeatureAssociation)
+    assert association.subject_form_or_variant_qualifier == "genetic_variant_form"
+
+
+def test_causes_without_disease_or_phenotype_no_variant_qualifier():
+    """Test that causes edges to unsupported object classes keep generic Association."""
+    record = {
+        "subject": "NCBIGene:100",
+        "object": "UMLS:C0011847",
+        "predicate": "biolink:causes",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    assert type(association) is Association
+    assert not hasattr(association, "subject_form_or_variant_qualifier")
