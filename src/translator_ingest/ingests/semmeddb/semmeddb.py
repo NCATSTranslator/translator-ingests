@@ -4,9 +4,12 @@ from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AnatomicalEntity,
+    CausalGeneToDiseaseAssociation,
     ChemicalEntity,
+    ChemicalOrGeneOrGeneProductFormOrVariantEnum,
     Disease,
     Gene,
+    GeneToPhenotypicFeatureAssociation,
     NamedThing,
     PhenotypicFeature,
     Protein,
@@ -36,6 +39,30 @@ PREFIX_TO_CLASS = {
 
 def get_latest_version() -> str:
     return "semmeddb-2023-kg2.10.3"
+
+PREDICATE_REMAP = {
+    "biolink:preventative_for_condition": "biolink:treats_or_applied_or_studied_to_treat",
+}
+
+GENETIC_VARIANT_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_variant_form
+
+
+def _get_node_class(curie: str) -> type[NamedThing]:
+    if ":" not in curie:
+        return NamedThing
+    return PREFIX_TO_CLASS.get(curie.split(":", 1)[0], NamedThing)
+
+
+def _is_gene_or_protein(curie: str) -> bool:
+    return _get_node_class(curie) in {Gene, Protein}
+
+
+def _is_disease(curie: str) -> bool:
+    return _get_node_class(curie) is Disease
+
+
+def _is_phenotypic_feature(curie: str) -> bool:
+    return _get_node_class(curie) is PhenotypicFeature
 
 
 def _extract_supporting_studies(
@@ -229,17 +256,34 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
     publications_info = record.get("publications_info", {})
     supporting_studies = _extract_supporting_studies(publications_info)
     
-    # create association between nodes
-    association = Association(
-        id=entity_id(),
-        subject=subject_id,
-        predicate=predicate,
-        object=object_id,
-        publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_SEMMEDDB),
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.automated_agent,
-    )
+    predicate = PREDICATE_REMAP.get(predicate, predicate)
+
+    association_kwargs = {
+        "id": entity_id(),
+        "subject": subject_id,
+        "predicate": predicate,
+        "object": object_id,
+        "publications": publications,
+        "sources": build_association_knowledge_sources(primary=INFORES_SEMMEDDB),
+        "knowledge_level": KnowledgeLevelEnum.not_provided,
+        "agent_type": AgentTypeEnum.text_mining_agent,
+    }
+
+    if predicate == "biolink:causes" and _is_gene_or_protein(subject_id):
+        if _is_disease(object_id):
+            association = CausalGeneToDiseaseAssociation(
+                **association_kwargs,
+                subject_form_or_variant_qualifier=GENETIC_VARIANT_FORM,
+            )
+        elif _is_phenotypic_feature(object_id):
+            association = GeneToPhenotypicFeatureAssociation(
+                **association_kwargs,
+                subject_form_or_variant_qualifier=GENETIC_VARIANT_FORM,
+            )
+        else:
+            association = Association(**association_kwargs)
+    else:
+        association = Association(**association_kwargs)
     
     # attach supporting studies with text if we extracted any
     if supporting_studies:

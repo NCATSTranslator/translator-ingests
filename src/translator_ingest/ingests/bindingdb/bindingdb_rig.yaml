@@ -105,6 +105,8 @@ target_info:
   additional_notes: null
 provenance_info:
   contributions:
-  - null
+  - "Richard Bruskiewich - data modeling, domain expertise, code author"
+  - "Sierra Moxon - data modeling, domain expertise, code support"
+  - "Matthew Brush - data modeling, domain expertise"
   artifacts:
-  - null
+  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1gcjjdLmghvDVNwfjak5ar8PZuzNSJC_Q1OTeWKKwaA0/edit?gid=0#gid=0)"
