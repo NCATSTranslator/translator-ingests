@@ -348,6 +348,8 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
     pathway_id = record['PathwayID'].replace('KEGG', 'KEGG.PATHWAY')
     p_value = record['PValue']
     corrected_p_value = record['CorrectedPValue']
+    if float(corrected_p_value) > 1e-10:
+        return None
     edge = ChemicalEntityToPathwayAssociation(
         id=entity_id(),
         subject=chemical_id,

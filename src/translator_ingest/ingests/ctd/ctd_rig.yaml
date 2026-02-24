@@ -83,7 +83,7 @@
       - file_name: CTD_chem_go_enriched.tsv.gz
         included_records: Records with a corrected p value less than 1e-10
       - file_name: CTD_chem_pathways_enriched.tsv.gz
-        included_records: All records (none filtered)
+        included_records: Records with a corrected p value less than 1e-10
       - file_name: CTD_pheno_term_ixns.tsv.gz
         included_records: All records (none filtered)
 
@@ -95,6 +95,9 @@
         filtered_records: Records involving three or more entities are removed.
         rationale: It is not clear how we could split them into individual edges in a way that preserves the original knowledge assertion.
       - file_name: CTD_chem_go_enriched.tsv.gz
+        filtered_records: Records with a corrected p value higher than 1e-10
+        rationale: This removes a large number of weak associations.
+      - file_name: CTD_chem_pathways_enriched.tsv.gz
         filtered_records: Records with a corrected p value higher than 1e-10
         rationale: This removes a large number of weak associations.
       - file_name: CTD_exposure_events.tsv.gz
