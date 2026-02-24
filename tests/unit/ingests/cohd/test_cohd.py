@@ -27,7 +27,8 @@ def mock_koza_transform() -> koza.KozaTransform:
 NODE_TEST_SLOTS = (
     "id",
     "name",
-    "category"
+    "category",
+    "xref"
 )
 
 # list of slots whose values are
@@ -37,6 +38,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
     "subject",
     "predicate",
     "object",
+    "has_confidence_score",
     "sources",
     "knowledge_level",
     "agent_type"
@@ -49,38 +51,11 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             {
                 "id": "SNOMEDCT:60108003",
                 "name": "Congenital dislocation of one hip with subluxation of other",
-                "categories": ["biolink:DiseaseOrPhenotypicFeature"],
+                "categories": [
+                    "biolink:DiseaseOrPhenotypicFeature"
+                ],
                 "attributes": [
-                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
-                    "{"+
-                        "\"attribute_source\": \"infores:cohd\","
-                        " \"attribute_type_id\": \"EDAM:data_0954\","
-                        " \"attributes\": ["
-                            "{"
-                               "\"attribute_source\": \"infores:omop-ohdsi\", "
-                               "\"attribute_type_id\": \"EDAM:data_1087\", "
-                               "\"original_attribute_name\": \"concept_id\", "
-                               "\"value\": \"OMOP:77661\", "
-                               "\"value_type_id\": \"EDAM:data_1087\", "
-                               "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\""
-                            "}, "
-                               "{\"attribute_source\": \"infores:omop-ohdsi\", "
-                                "\"attribute_type_id\": \"EDAM:data_2339\", "
-                                "\"original_attribute_name\": \"concept_name\", "
-                                "\"value\": \"Congenital dislocation of one hip with subluxation of other\", "
-                                "\"value_type_id\": \"EDAM:data_2339\""
-                            "}, "
-                                "{\"attribute_source\": \"infores:omop-ohdsi\", "
-                                "\"attribute_type_id\": \"EDAM:data_0967\", "
-                                "\"original_attribute_name\": \"domain\", "
-                                "\"value\": \"Condition\", "
-                                "\"value_type_id\": \"EDAM:data_0967\""
-                            "}"
-                        "], "
-                        "\"original_attribute_name\": \"Database cross-mapping\", "
-                        "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
-                        "\"value_type_id\": \"EDAM:data_0954\""
-                    "}"
+                    "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"EDAM:data_0954\", \"attributes\": [{\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_1087\", \"original_attribute_name\": \"concept_id\", \"value\": \"OMOP:77661\", \"value_type_id\": \"EDAM:data_1087\", \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_2339\", \"original_attribute_name\": \"concept_name\", \"value\": \"Congenital dislocation of one hip with subluxation of other\", \"value_type_id\": \"EDAM:data_2339\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_0967\", \"original_attribute_name\": \"domain\", \"value\": \"Condition\", \"value_type_id\": \"EDAM:data_0967\"}], \"original_attribute_name\": \"Database cross-mapping\", \"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", \"value_type_id\": \"EDAM:data_0954\"}"
                 ]
             },
             # Captured node contents
@@ -89,6 +64,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "id": "SNOMEDCT:60108003",
                     "name": "Congenital dislocation of one hip with subluxation of other",
                     "category": ["biolink:DiseaseOrPhenotypicFeature"],
+                    "xref": ["https://athena.ohdsi.org/search-terms/terms/77661"]
                 }
             ],
             # Captured edge contents - n/a
@@ -98,40 +74,11 @@ CORE_ASSOCIATION_TEST_SLOTS = (
             {
                 "id": "CPT:73540",
                 "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
-                "categories": ["biolink:Procedure"],
+                "categories": [
+                    "biolink:Procedure"
+                ],
                 "attributes": [
-                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
-                    "{"
-                        "\"attribute_source\": \"infores:cohd\", "
-                        "\"attribute_type_id\": \"EDAM:data_0954\", "
-                        "\"attributes\": ["
-                            "{"
-                            "\"attribute_source\": \"infores:omop-ohdsi\", "
-                            "\"attribute_type_id\": \"EDAM:data_1087\", "
-                            "\"original_attribute_name\": \"concept_id\", "
-                            "\"value\": \"OMOP:2211477\", "
-                            "\"value_type_id\": \"EDAM:data_1087\", "
-                            "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/2211477\""
-                            "}, "
-                            "{"
-                            "\"attribute_source\": \"infores:omop-ohdsi\", "
-                            "\"attribute_type_id\": \"EDAM:data_2339\", "
-                            "\"original_attribute_name\": \"concept_name\", "
-                            "\"value\": \"Radiologic examination, pelvis and hips, infant or child, minimum of 2 views\", "
-                            "\"value_type_id\": \"EDAM:data_2339\""
-                            "}, "
-                            "{"
-                            "\"attribute_source\": \"infores:omop-ohdsi\", "
-                            "\"attribute_type_id\": \"EDAM:data_0967\", "
-                            "\"original_attribute_name\": \"domain\", "
-                            "\"value\": \"Procedure\", "
-                            "\"value_type_id\": \"EDAM:data_0967\""
-                            "}"
-                        "], "
-                        "\"original_attribute_name\": \"Database cross-mapping\", "
-                        "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
-                        "\"value_type_id\": \"EDAM:data_0954\""
-                    "}"
+                    "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"EDAM:data_0954\", \"attributes\": [{\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_1087\", \"original_attribute_name\": \"concept_id\", \"value\": \"OMOP:2211477\", \"value_type_id\": \"EDAM:data_1087\", \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/2211477\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_2339\", \"original_attribute_name\": \"concept_name\", \"value\": \"Radiologic examination, pelvis and hips, infant or child, minimum of 2 views\", \"value_type_id\": \"EDAM:data_2339\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_0967\", \"original_attribute_name\": \"domain\", \"value\": \"Procedure\", \"value_type_id\": \"EDAM:data_0967\"}], \"original_attribute_name\": \"Database cross-mapping\", \"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", \"value_type_id\": \"EDAM:data_0954\"}"
                 ]
             },
             #
@@ -141,12 +88,13 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "id": "CPT:73540",
                     "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
                     "category": ["biolink:Procedure"],
+                    "xref": ["https://athena.ohdsi.org/search-terms/terms/2211477"]
                 }
             ],
             # Captured edge contents - n/a
             None
         ),
-        (   # Query 4- Another complete node record
+        (   # Query 2- Another complete node record
             {
                 "id": "UMLS:C0160047",
                 "name": "Sprain, coracoclavicular ligament",
@@ -158,40 +106,9 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "biolink:NamedThing"
                 ],
                 "attributes": [
-                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
-                    "{"
-                    "\"attribute_source\": \"infores:cohd\", "
-                    "\"attribute_type_id\": \"EDAM:data_0954\", "
-                    "\"attributes\": "
-                    "["
-                    "{"
-                    "\"attribute_source\": \"infores:omop-ohdsi\", "
-                    "\"attribute_type_id\": \"EDAM:data_1087\", "
-                    "\"original_attribute_name\": \"concept_id\", "
-                    "\"value\": \"OMOP:77698\", "
-                    "\"value_type_id\": \"EDAM:data_1087\", "
-                    "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77698\""
-                    "}, "
-                    "{"
-                    "\"attribute_source\": \"infores:omop-ohdsi\", "
-                    "\"attribute_type_id\": \"EDAM:data_2339\", "
-                    "\"original_attribute_name\": \"concept_name\", "
-                    "\"value\": \"Sprain, coracoclavicular ligament\", "
-                    "\"value_type_id\": \"EDAM:data_2339\"}, "
-                    "{"
-                    "\"attribute_source\": \"infores:omop-ohdsi\", "
-                    "\"attribute_type_id\": \"EDAM:data_0967\", "
-                    "\"original_attribute_name\": \"domain\", "
-                    "\"value\": \"Condition\", "
-                    "\"value_type_id\": \"EDAM:data_0967\""
-                    "}"
-                    "], "
-                    "\"original_attribute_name\": \"Database cross-mapping\", "
-                    "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
-                    "\"value_type_id\": \"EDAM:data_0954\""
-                    "}"
+                    "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"EDAM:data_0954\", \"attributes\": [{\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_1087\", \"original_attribute_name\": \"concept_id\", \"value\": \"OMOP:77698\", \"value_type_id\": \"EDAM:data_1087\", \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77698\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_2339\", \"original_attribute_name\": \"concept_name\", \"value\": \"Sprain, coracoclavicular ligament\", \"value_type_id\": \"EDAM:data_2339\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_0967\", \"original_attribute_name\": \"domain\", \"value\": \"Condition\", \"value_type_id\": \"EDAM:data_0967\"}], \"original_attribute_name\": \"Database cross-mapping\", \"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", \"value_type_id\": \"EDAM:data_0954\"}"
                 ]
-             },
+            },
             #
             # Captured node contents
             [
@@ -199,6 +116,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "id": "UMLS:C0160047",
                     "name": "Sprain, coracoclavicular ligament",
                     "category": ["biolink:Disease"],
+                    "xref": ["https://athena.ohdsi.org/search-terms/terms/77698"]
                 }
             ],
             # Captured edge contents - n/a
@@ -340,7 +258,7 @@ def test_transform_cohd_nodes(
                 "subject": "SNOMEDCT:60108003",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:73540",
-                "score": 5.861265273152199,
+                "has_confidence_score": 5.861265273152199,
                 "sources": [
                     {
                         "resource_id": "infores:columbia-cdw-ehr-data",
@@ -388,7 +306,7 @@ def test_transform_cohd_nodes(
                 "subject": "UMLS:C0160047",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:73030",
-                "score": 3.3254987202521264,
+                "has_confidence_score": 3.3254987202521264,
                 "sources": [
                     {
                         "resource_id": "infores:columbia-cdw-ehr-data",
@@ -438,7 +356,7 @@ def test_transform_cohd_nodes(
                 "subject": "MONDO:0000888",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:99232",
-                "score": 2.5595194408846957,
+                "has_confidence_score": 2.5595194408846957,
                 "sources": [
                     {
                         "resource_id": "infores:columbia-cdw-ehr-data",

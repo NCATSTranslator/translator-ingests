@@ -8,8 +8,9 @@ supporting_data_source_info:
 - infores_id: "infores:columbia-cdw-ehr-data"
   name: "Columbia University Irving Medical Center's clinical data warehouse"
 - infores_id: "omop-ohdsi"
-  name: "Observational Medical Outcomes Partnership Observational Health Data Sciences and
-      Informatics"
+  name: >-
+    Observational Medical Outcomes Partnership 
+    Observational Health Data Sciences and Informatics
   terms_of_use_info:
     terms_of_use_url: "https://chime.ucsf.edu/observational-medical-outcomes-partnership-omop"
 source_info:
@@ -87,164 +88,22 @@ target_info:
   edge_type_info:
   - subject:
     - biolink:Disease
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:Disease
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Disease
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:SmallMolecule
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Disease
-    predicates:
-    - biolink:negatively_correlated_with
-    object:
-    - biolink:SmallMolecule
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Disease
-    predicates:
-    - biolink:positively_correlated_with
-    object:
     - biolink:Drug
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Disease
-    predicates:
-    - biolink:negatively_correlated_with
-    object:
-    - biolink:Drug
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Disease
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:MolecularMixture
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Disease
-    predicates:
-    - biolink:positively_correlated_with
-    object:
     - biolink:ChemicalEntity
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
     - biolink:SmallMolecule
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:Disease
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:SmallMolecule
-    predicates:
-    - biolink:negatively_correlated_with
-    object:
-    - biolink:Disease
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:SmallMolecule
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:Drug
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:SmallMolecule
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:SmallMolecule
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Drug
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:Disease
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Drug
-    predicates:
-    - biolink:negatively_correlated_with
-    object:
-    - biolink:Disease
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
-    - biolink:Drug
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:SmallMolecule
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
     - biolink:MolecularMixture
     predicates:
     - biolink:positively_correlated_with
     object:
     - biolink:Disease
-    knowledge_level: statistical_association
-    agent_type: not_provided
-    edge_properties:
-    - score
-  - subject:
+    - biolink:SmallMolecule
+    - biolink:Drug
+    - biolink:MolecularMixture
     - biolink:ChemicalEntity
-    predicates:
-    - biolink:positively_correlated_with
-    object:
-    - biolink:Disease
     knowledge_level: statistical_association
-    agent_type: not_provided
+    agent_type: data_analysis_pipeline
     edge_properties:
-    - score
+    - has_confidence_score
   node_type_info:
   - node_category: biolink:Disease
     source_identifier_types:
@@ -275,9 +134,6 @@ target_info:
     - CHEBI
     node_properties:
     - name
-#  future_considerations:
-#  - category: null
-#    consideration: null
   additional_notes: null
 provenance_info:
   contributions:
