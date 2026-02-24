@@ -321,6 +321,8 @@ def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any])
     go_term = record['GOTermID']
     p_value = record['PValue']
     corrected_p_value = record['CorrectedPValue']
+    if float(corrected_p_value) > 1e-10:
+        return None
     edge = ChemicalEntityToBiologicalProcessAssociation(
         id=entity_id(),
         subject=chemical_id,
