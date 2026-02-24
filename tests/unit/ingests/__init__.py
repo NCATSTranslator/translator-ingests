@@ -16,7 +16,7 @@ from koza.io.writer.writer import KozaWriter
 from koza.model.graphs import KnowledgeGraph
 from koza.transform import Record
 
-from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association, RetrievalSource
+from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association
 
 
 class MockKozaWriter(KozaWriter):
@@ -66,29 +66,6 @@ def mock_koza_transform() -> koza.KozaTransform:
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
 
 
-def flatten_sources(sources: list[RetrievalSource]) -> list[dict[str, str]]:
-    flat_sources: list[dict[str, str]] = []
-    source: RetrievalSource
-    for source in sources:
-        flat_sources.append({"resource_id": source.resource_id, "resource_role": source.resource_role})
-    return flat_sources
-
-
-def validate_sources(expected: dict[str, str], returned: list[dict[str, str]]) -> bool:
-    """
-    Validates selected field content the Association.sources list of RetrievalSource instances.
-    :param expected: dict[str, str] of (selective) expected field values
-    :param returned: list[dict[str, str]] key fields extracted from sources associated with an edge
-    :return: bool, True if validation passed
-    """
-    return any(
-        [
-            expected["resource_id"] in entry["resource_id"] and expected["resource_role"] in entry["resource_role"]
-            for entry in returned
-        ]
-    )
-
-
 def _compare_slot_values(returned_value, expected_value):
     return returned_value == expected_value or (
         isinstance(returned_value, list)
@@ -97,12 +74,36 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
+def _validate_pydantic_collection(
+    expected: dict[str, Any],
+    returned: list | dict,
+) -> bool:
+    """
+    Returns True if at least one Pydantic model instance in *returned* has all
+    fields matching those specified in *expected*.
+
+    Works for both list collections (e.g. ``has_affinity: list[AffinityMeasurement]``)
+    and dict collections (e.g. ``has_supporting_studies: dict[str, Study]``),
+    iterating ``dict.values()`` for the latter.
+
+    :param expected: mapping of field-name → expected-value pairs to match
+    :param returned: list of Pydantic model instances, or a dict whose values
+                     are Pydantic model instances
+    :return: True if at least one instance satisfies all expected field values
+    """
+    items = returned.values() if isinstance(returned, dict) else returned
+    return any(
+        all(hasattr(item, field) and getattr(item, field) == value
+            for field, value in expected.items())
+        for item in items
+    )
+
+
 def _match_edge(
         returned_edge: dict,
         expected_edge: dict,
         target_slots: tuple[str,...]
 ) -> Optional[str]:
-    returned_sources: Optional[list[dict[str, str]]]
     # We only bother with a comparison if the slot is included in both the
     # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
     # and in the list of slots in the 'expected_edge' test data.
@@ -118,7 +119,6 @@ def _match_edge(
                     return f"Unexpected return values '{reasv}' for slot '{association_slot}' in edge"
                 # ...but we only specifically validate non-empty expectations
                 if expected_edge[association_slot]:
-                    returned_sources = None
                     for entry in expected_edge[association_slot]:
                         if isinstance(entry, str):
                             # Simple Membership value test.
@@ -128,13 +128,13 @@ def _match_edge(
                                     + f"is missing in returned edge values '{reasv}?'"
                                 )
                         elif isinstance(entry, dict):
-                            # A more complex validation of field
-                            # content, e.g., Association.sources
-                            if association_slot == "sources":
-                                if returned_sources is None:
-                                    returned_sources = flatten_sources(reasv)
-                                if not validate_sources(expected=entry, returned=returned_sources):
-                                    return f"Invalid returned sources '{returned_sources}'"
+                            # Validate that at least one Pydantic model instance
+                            # in the collection matches all expected field values.
+                            if not _validate_pydantic_collection(entry, reasv):
+                                return (
+                                    f"Expected fields {entry!r} not found in any returned "
+                                    f"'{association_slot}' entry in '{reasv}'"
+                                )
                         else:
                             return (
                                 "Unexpected value type for "
