@@ -36,15 +36,11 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     ARTICLE_DOI,
     PMID,
     PATENT_NUMBER,
-    MISSING_PUBS
-)
-
-TRANSFORM_VERSION = '1.1'
-
-
     MISSING_PUBS,
     ROWS_MISSING_AFFINITY
 )
+
+TRANSFORM_VERSION = '1.1'
 
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
