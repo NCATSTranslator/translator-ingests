@@ -52,6 +52,8 @@ def transform_cohd_node(
     category = record.get("categories", [])
     node_class: type[NamedThing] = get_node_class(node_id, category, bmt=bmt)
 
+    # It currently seems that the COHD attributes block wraps a
+    # complex representation of a simple database xref of the node
     node_properties = parse_node_properties(record.get("attributes", []))
 
     node = node_class(id=node_id, name=record["name"], **node_properties, **{})

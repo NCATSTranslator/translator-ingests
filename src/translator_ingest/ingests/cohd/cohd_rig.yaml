@@ -94,6 +94,7 @@ target_info:
     - biolink:MolecularMixture
     predicates:
     - biolink:positively_correlated_with
+    - biolink:negatively_correlated_with
     object:
     - biolink:Disease
     - biolink:SmallMolecule
