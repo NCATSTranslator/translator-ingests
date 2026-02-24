@@ -6,6 +6,7 @@ import polars as pl
 import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
+    AffinityMeasurement,
     ChemicalGeneInteractionAssociation,
     Protein,
     KnowledgeLevelEnum,
@@ -17,11 +18,15 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
     extract_bindingdb_columns_polars,
     process_publications,
+    filter_affinity_values,
+    get_affinity_measurements,
+
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR, web_string,
     MONOMER_ID,
     TARGET_NAME,
     SOURCE_ORGANISM,
+    AFFINITY_PARAMETERS,
     CURATION_DATASOURCE,
     PUBCHEM_CID,
     UNIPROT_ID,
@@ -36,6 +41,11 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
 
 TRANSFORM_VERSION = '1.1'
 
+
+    MISSING_PUBS,
+    ROWS_MISSING_AFFINITY
+)
+
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
     MONOMER_ID,
@@ -47,7 +57,7 @@ BINDINGDB_COLUMNS = (
     ARTICLE_DOI,
     PMID,
     PATENT_NUMBER
-)
+) + tuple(AFFINITY_PARAMETERS.values())
 
 SOURCE_ORGANISM_TO_TAXON_ID_MAPPING = {
     "Homo sapiens": "9606",
@@ -88,6 +98,13 @@ def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
         if num_missing_pubs > 0:
             koza_transform.log(
                 msg=f"Warning: {num_missing_pubs} BindingDb records were missing publications.",
+                level="WARNING"
+            )
+    if ROWS_MISSING_AFFINITY in metadata:
+        num_missing_affinity = metadata.pop(ROWS_MISSING_AFFINITY)
+        if num_missing_affinity > 0:
+            koza_transform.log(
+                msg=f"Warning: {num_missing_affinity} BindingDb records had missing or out-of-range affinity values.",
                 level="WARNING"
             )
     for tag, value in koza_transform.transform_metadata.items():
@@ -136,10 +153,14 @@ def prepare_bindingdb_data(
     # Directly read and extract useful columns from the original
     # downloaded bindingdb data file, using the 'polars' library.
     df = extract_bindingdb_columns_polars(
+        koza_transform,
         data_archive_path,
         columns=BINDINGDB_COLUMNS,
         target_taxa=tuple(SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.keys())
     )
+
+    # Filter records by affinity value validity and range
+    df = filter_affinity_values(koza_transform, df)
 
     # Process publications
     df = process_publications(koza_transform, df)
@@ -213,6 +234,10 @@ def transform_bindingdb_by_record(
     # Publications
     publications = [record[PUBLICATION]]
 
+    # Measurements of the molecular interaction affinity of
+    # chemical 'subject' to gene product target 'object'
+    affinity_measurements: Optional[list[AffinityMeasurement]] = get_affinity_measurements(record)
+
     # Sources
     target_label = web_string(target_name)
     supporting_data_id = record[SUPPORTING_DATA_ID]
@@ -229,6 +254,7 @@ def transform_bindingdb_by_record(
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,
+        has_affinity=affinity_measurements,
         publications=publications,
         sources=sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
