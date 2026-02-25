@@ -135,7 +135,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 @koza.transform_record()
 def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## processing `publications` field
-    if record["publications"]:
+    if pd.notna(record["publications"]):
         publications = ["PMID:" + i.strip() for i in record["publications"].split(";")]
     else:
         publications = None
@@ -146,7 +146,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
 
     gene = Gene(id="HGNC:" + record["hgnc id"])
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
-    if record["disease mim"]:
+    if pd.notna(record["disease mim"]):
         ## assuming value is a string OMIM ID without a prefix
         disease = Disease(id="OMIM:" + record["disease mim"])
     else:  ## use "disease MONDO" column, which already has the correct prefix/format for Translator
