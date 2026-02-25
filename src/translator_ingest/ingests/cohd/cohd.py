@@ -6,6 +6,7 @@ from typing import Optional, Any
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
+    Study,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -24,7 +25,7 @@ from translator_ingest.util.biolink import (
 
 from .cohd_util import (
     parse_node_properties,
-    parse_association_slots
+    get_cohd_supporting_study
 )
 
 bmt = get_biolink_model_toolkit()
@@ -84,7 +85,10 @@ def transform_cohd_edge(
 
     confidence_score: Optional[float] = record.get("score", None)
 
-    association_slots = parse_association_slots(record.get("attributes", []))
+    cohd_study: Optional[dict[str, Study]] = get_cohd_supporting_study(
+        edge_id=edge_id,
+        attribute_list=record.get("attributes", [])
+    )
 
     association = Association(
         id=edge_id,
@@ -92,10 +96,10 @@ def transform_cohd_edge(
         predicate=cohd_predicate,
         object=cohd_object,
         has_confidence_score=confidence_score,
+        has_supporting_studies=cohd_study,
         sources=knowledge_sources_from_trapi(record["sources"]),
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
-        **association_slots,
         ** {}
     )
     return KnowledgeGraph(edges=[association])

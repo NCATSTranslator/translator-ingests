@@ -2,11 +2,19 @@ import pytest
 
 from typing import Optional
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    Study,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
+)
 
 from translator_ingest.ingests.cohd.cohd import (
     transform_cohd_node,
     transform_cohd_edge
+)
+
+from translator_ingest.ingests.cohd.cohd_util import (
+    get_cohd_supporting_study
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
@@ -16,11 +24,29 @@ from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 
+def test_parse_attributes():
+    # def parse_attributes(attribute_list: list[str]) -> list[dict[str, Any]]:
+    pass
+
+def test_parse_node_properties():
+    # def parse_node_properties(attribute_list: list[str]) -> dict[str, Any]:
+    pass
+
+
+def test_get_cohd_supporting_study():
+    # cohd_study: Optional[dict[str, Study]] = get_cohd_supporting_study(
+    #     edge_id="fake_test_edge",
+    #     attribute_list=record.get("attributes", [])
+    # )
+    pass
+
+
 @pytest.fixture(scope="module")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = dict()
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
+
 
 # list of slots whose values are
 # to be checked in a result node

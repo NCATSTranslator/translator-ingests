@@ -105,6 +105,7 @@ target_info:
     agent_type: data_analysis_pipeline
     edge_properties:
     - has_confidence_score
+    - has_supporting_studies
   node_type_info:
   - node_category: biolink:Disease
     source_identifier_types:
