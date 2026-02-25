@@ -97,8 +97,8 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## data was loaded with empty values = "". Replace these empty strings with None, so isna() methods will work
     df.replace(to_replace="", value=None, inplace=True)
     ## for debugging
-    # print(df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape)
-    # print(df[df["gene mim"].isna()].shape)
+    koza.log(f"{df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape[0]} rows are missing disease IDs (NA)")
+    koza.log(f"{df[df["gene mim"].isna()].shape[0]} rows are missing gene IDs (NA)")
 
     ## temp? filter out rows where "disease mim" == 188400
     ## NodeNorm incorrectly categorizes this ID/entity as a Gene when it's actually a Disease
@@ -135,7 +135,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 @koza.transform_record()
 def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## processing `publications` field
-    publications = ["PMID:" + i.strip() for i in record["publications"].split(";")] if record["publications"] else None
+    if record["publications"]:
+        publications = ["PMID:" + i.strip() for i in record["publications"].split(";")]
+    else:
+        publications = None
     ## creating url
     url = "https://www.ebi.ac.uk/gene2phenotype/lgd/" + record["g2p id"]
     ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error
