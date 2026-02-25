@@ -1,4 +1,5 @@
 import click
+import hashlib
 import json
 import tarfile
 import time
@@ -117,16 +118,25 @@ def get_latest_source_version(source):
         logger.error(f'Fallback version could not be identified for {source}.')
         raise e
 
-# Determine the transform version for a particular ingest
-def get_transform_version(source):
-    ingest_module = get_ingest_module(source)
-    try:
-        # Get a reference to the transform version if it exists
-        transform_version = str(getattr(ingest_module, "TRANSFORM_VERSION"))
-    except AttributeError:
-        # Otherwise set it to 1.0
-        transform_version = "1.0"
-    return transform_version
+def get_transform_version(source: str) -> str:
+    """Compute a content hash of the ingest's source files.
+
+    Hashes all .py files and the ingest YAML config in the ingest directory,
+    producing a short hash that changes whenever the ingest changes.
+    This automatically triggers a new build when the pipeline detects a new version.
+    """
+    ingest_dir = INGESTS_PARSER_PATH / source
+    source_yaml = ingest_dir / f"{source}.yaml"
+
+    files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py"))
+    if source_yaml.exists():
+        files_to_hash.append(source_yaml)
+
+    hasher = hashlib.sha256()
+    for file_path in files_to_hash:
+        hasher.update(file_path.read_bytes())
+
+    return hasher.hexdigest()[:8]
 
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
@@ -630,7 +640,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         extract_tmkp_archive(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
-    # TODO we might want a better way to implement transform versioning (see issue #97)
+    # Transform version is auto-computed as a content hash of the ingest's source files
     # Set transform_version before load_koza_config since it uses get_transform_directory
     pipeline_metadata.transform_version = get_transform_version(source)
 

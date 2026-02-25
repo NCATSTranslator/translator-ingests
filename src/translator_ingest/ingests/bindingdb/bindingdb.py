@@ -40,8 +40,6 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     ROWS_MISSING_AFFINITY
 )
 
-TRANSFORM_VERSION = '1.1'
-
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
     MONOMER_ID,
