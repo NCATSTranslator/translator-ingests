@@ -121,21 +121,20 @@ def get_latest_source_version(source):
 def get_transform_version(source: str) -> str:
     """Compute a content hash of the ingest's source files.
 
-    Hashes all .py files and the ingest YAML config in the ingest directory,
+    Hashes all .py files, .json files, and the ingest YAML config in the ingest directory,
     producing a short hash that changes whenever the ingest changes.
     This automatically triggers a new build when the pipeline detects a new version.
     """
     ingest_dir = INGESTS_PARSER_PATH / source
     source_yaml = ingest_dir / f"{source}.yaml"
 
-    files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py"))
+    files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py")) + sorted(ingest_dir.glob("*.json"))
     if source_yaml.exists():
         files_to_hash.append(source_yaml)
 
     hasher = hashlib.sha256()
     for file_path in files_to_hash:
         hasher.update(file_path.read_bytes())
-
     return hasher.hexdigest()[:8]
 
 # Download the source data for a source from the original location

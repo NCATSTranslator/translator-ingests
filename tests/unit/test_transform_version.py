@@ -45,7 +45,12 @@ def test_get_transform_version_changes_with_content(tmp_path, monkeypatch):
     version_after_yaml = get_transform_version("fake_source")
     assert version_after != version_after_yaml
 
+    # test that changing a json file changes the transform version
+    (fake_ingest / "mapping.json").write_text('{"key": "value"}')
+    version_after_json = get_transform_version("fake_source")
+    assert version_after_json != version_after_yaml
+
     # test that changing the download yaml file does not change the transform version
     (fake_ingest / "download.yaml").write_text("download: fake2")
     version_after_download_yaml = get_transform_version("fake_source")
-    assert version_after_download_yaml == version_after_yaml
+    assert version_after_download_yaml == version_after_json
