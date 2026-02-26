@@ -166,6 +166,7 @@ def _create_associations(record: dict[str, Any]):
             if edge_type == 'biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation':
                 if record['object_type'] == 'AdverseEvent':
                     params['FDA_adverse_event_level'] = get_adverse_event_level_from_outcomes(record['outcome'].split(';'))
+                    params['knowledge_level'] = KnowledgeLevelEnum.observation # adverse events are observations, while other associations are assertions
                     associations.append(ChemicalOrDrugOrTreatmentSideEffectDiseaseOrPhenotypicFeatureAssociation(
                         **params
                     ))

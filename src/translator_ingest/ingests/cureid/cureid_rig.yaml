@@ -75,8 +75,8 @@ target_info:
       agent_type:
         - manual_agent
       edge_properties:
-        - publications
         - FDA_adverse_event_level
+        - publications
       ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype.
     - subject_categories:
         - biolink:Disease
