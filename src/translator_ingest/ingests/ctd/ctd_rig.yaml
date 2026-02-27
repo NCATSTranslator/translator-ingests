@@ -74,23 +74,32 @@
 
     included_content:
       - file_name: CTD_chemicals_diseases.tsv.gz
-        included_records:  All records, including curated therapeutic and marker/mechanism associations, as well as inferred associtionas (records lacking a value in the DirectEvidence column).
-        fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, InferenceGeneSymbol, InferenceScore, OmimIDs, PubMedIDs
+        included_records: Associations curated and designated therapeutic or marker/mechanism
+        fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, OmimIDs, PubMedIDs
       - file_name: CTD_exposure_events.tsv.gz
         included_records: All records with an outcomerelationship of "positive correlation" or "negative correlation"
       - file_name: CTD_chem_gene_ixns.tsv.gz
         included_records: All records that only involve two entities, records that involve three or more entities are dropped.
       - file_name: CTD_chem_go_enriched.tsv.gz
-        included_records: All records (none filtered)
+        included_records: Records with a corrected p value less than 1e-10 and a highest go level greater than or equal to 3
       - file_name: CTD_chem_pathways_enriched.tsv.gz
-        included_records: All records (none filtered)
+        included_records: Records with a corrected p value less than 1e-10
       - file_name: CTD_pheno_term_ixns.tsv.gz
         included_records: All records (none filtered)
 
     filtered_content:
+      - file_name: CTD_chemicals_diseases.tsv.gz
+        filtered_records: Records lacking a DirectEvidence designation
+        rationale: These relationships are only based on computational inference and were found to be not reliably useful enough to include
       - file_name: CTD_chem_gene_ixns.tsv.gz
         filtered_records: Records involving three or more entities are removed.
         rationale: It is not clear how we could split them into individual edges in a way that preserves the original knowledge assertion.
+      - file_name: CTD_chem_go_enriched.tsv.gz
+        filtered_records: Records with a corrected p value higher than 1e-10 or a highestGoLevel lower than 3 are dropped.
+        rationale: This removes a large number of weak and overly vague associations.
+      - file_name: CTD_chem_pathways_enriched.tsv.gz
+        filtered_records: Records with a corrected p value higher than 1e-10 are dropped.
+        rationale: This removes a large number of weak associations.
       - file_name: CTD_exposure_events.tsv.gz
         filtered_records: Records that do not have an outcomerelationship of "positive correlation" or "negative correlation" are dropped.
 
