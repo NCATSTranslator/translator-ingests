@@ -142,27 +142,9 @@ def genetic_inference_output():
 
 
 def test_genetic_inference(genetic_inference_output):
+    # records with DirectEvidence == "" should not produce any associations
     entities = genetic_inference_output
-    assert len(entities) == 3
-    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
-    assert association.predicate == BIOLINK_ASSOCIATED_WITH
-    assert "PMID:21983787" in association.publications
-
-    assert (
-        association.sources
-        and isinstance(association.sources[0], RetrievalSource)
-        and association.sources[0].resource_id == "infores:ctd"
-    )
-
-    assert association.has_confidence_score == 4.23
-
-    disease = [e for e in entities if isinstance(e, Disease)][0]
-    assert disease.id == "MESH:D008545"
-    assert disease.name == "Melanoma"
-
-    chemical = [e for e in entities if isinstance(e, ChemicalEntity)][0]
-    assert chemical.id == "MESH:C534422"
-    assert chemical.name == "10-(2-pyrazolylethoxy)camptothecin"
+    assert len(entities) == 0
 
 
 # ---- Tests for transform_exposure_events ----
@@ -436,25 +418,26 @@ def test_chem_gene_ixns_multiple_interactions_skipped(chem_gene_ixns_multiple_in
 
 # ---- Tests for transform_chem_go_enriched ----
 
-@pytest.fixture
-def chem_go_enriched_output():
-    writer = MockKozaWriter()
-    record = {
+chem_go_record = {
         "ChemicalName": "Acetaminophen",
         "ChemicalID": "D000082",
         "Ontology": "Biological Process",
         "GOTermName": "response to drug",
         "GOTermID": "GO:0042493",
         "HighestGOLevel": "5",
-        "PValue": "0.001",
-        "CorrectedPValue": "0.005",
+        "PValue": "1e-11",
+        "CorrectedPValue": "1e-11",
         "TargetMatchQty": "10",
         "TargetTotalQty": "100",
         "BackgroundMatchQty": "50",
         "BackgroundTotalQty": "5000",
-    }
+}
+
+@pytest.fixture
+def chem_go_output():
+    writer = MockKozaWriter()
     runner = KozaRunner(
-        data=[record],
+        data=[chem_go_record],
         writer=writer,
         hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
     )
@@ -462,15 +445,15 @@ def chem_go_enriched_output():
     return writer.items
 
 
-def test_chem_go_enriched(chem_go_enriched_output):
-    entities = chem_go_enriched_output
+def test_chem_go_enriched(chem_go_output):
+    entities = chem_go_output
     assert len(entities) == 3  # chemical, pathway, association
     association = [e for e in entities if isinstance(e, ChemicalEntityToBiologicalProcessAssociation)][0]
     assert association.predicate == BIOLINK_ASSOCIATED_WITH
     assert association.subject == "MESH:D000082"
     assert association.object == "GO:0042493"
-    assert association.p_value == 0.001
-    assert association.adjusted_p_value == 0.005
+    assert association.p_value == 1e-11
+    assert association.adjusted_p_value == 1e-11
 
     assert (
         association.sources
@@ -484,26 +467,62 @@ def test_chem_go_enriched(chem_go_enriched_output):
     chemical = [e for e in entities if isinstance(e, ChemicalEntity)][0]
     assert chemical.id == "MESH:D000082"
 
+@pytest.fixture
+def chem_go_output_weak_p_value():
+    chem_go_record_weak_p_value = chem_go_record.copy()
+    chem_go_record_weak_p_value["PValue"] = "0.001"
+    writer = MockKozaWriter()
+    runner = KozaRunner(
+        data=[],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
+    )
+    runner.run()
+    return writer.items
+
+def test_chem_go_weak_p_value(chem_go_output_weak_p_value):
+    # records with weak p values should not produce associations
+    entities = chem_go_output_weak_p_value
+    assert len(entities) == 0
+
+@pytest.fixture
+def chem_go_output_low_go_level():
+    chem_go_record_weak_p_value = chem_go_record.copy()
+    chem_go_record_weak_p_value["HighestGOLevel"] = "2"
+    writer = MockKozaWriter()
+    runner = KozaRunner(
+        data=[],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
+    )
+    runner.run()
+    return writer.items
+
+def test_chem_go_low_go_level(chem_go_output_low_go_level):
+    # records with the highest go level < 3 should not produce associations
+    entities = chem_go_output_low_go_level
+    assert len(entities) == 0
 
 # ---- Tests for transform_chem_pathways_enriched ----
+
+chem_pathways_record = {
+    "ChemicalName": "Acetaminophen",
+    "ChemicalID": "D000082",
+    "PathwayName": "Drug metabolism",
+    "PathwayID": "KEGG:hsa00982",
+    "PValue": "1e-12",
+    "CorrectedPValue": "1e-11",
+    "TargetMatchQty": "15",
+    "TargetTotalQty": "200",
+    "BackgroundMatchQty": "100",
+    "BackgroundTotalQty": "10000",
+}
 
 @pytest.fixture
 def chem_pathways_enriched_kegg_output():
     writer = MockKozaWriter()
-    record = {
-        "ChemicalName": "Acetaminophen",
-        "ChemicalID": "D000082",
-        "PathwayName": "Drug metabolism",
-        "PathwayID": "KEGG:hsa00982",
-        "PValue": "0.0001",
-        "CorrectedPValue": "0.0005",
-        "TargetMatchQty": "15",
-        "TargetTotalQty": "200",
-        "BackgroundMatchQty": "100",
-        "BackgroundTotalQty": "10000",
-    }
     runner = KozaRunner(
-        data=[record],
+        data=[chem_pathways_record],
         writer=writer,
         hooks=KozaTransformHooks(transform_record=[transform_chem_pathways_enriched])
     )
@@ -518,8 +537,8 @@ def test_chem_pathways_enriched_kegg(chem_pathways_enriched_kegg_output):
     assert association.predicate == BIOLINK_ASSOCIATED_WITH
     assert association.subject == "MESH:D000082"
     assert association.object == "KEGG.PATHWAY:hsa00982"  # KEGG should be replaced with KEGG.PATHWAY
-    assert association.p_value == 0.0001
-    assert association.adjusted_p_value == 0.0005
+    assert association.p_value == 1e-12
+    assert association.adjusted_p_value == 1e-11
 
     assert (
         association.sources
@@ -542,8 +561,8 @@ def chem_pathways_enriched_react_output():
         "ChemicalID": "D001241",
         "PathwayName": "Arachidonic acid metabolism",
         "PathwayID": "REACT:R-HSA-2142753",
-        "PValue": "0.00001",
-        "CorrectedPValue": "0.00005",
+        "PValue": "1e-13",
+        "CorrectedPValue": "1e-12",
         "TargetMatchQty": "20",
         "TargetTotalQty": "300",
         "BackgroundMatchQty": "150",
@@ -566,6 +585,25 @@ def test_chem_pathways_enriched_react(chem_pathways_enriched_react_output):
 
     pathway = [e for e in entities if isinstance(e, Pathway)][0]
     assert pathway.id == "REACT:R-HSA-2142753"
+
+
+@pytest.fixture
+def chem_pathways_output_weak_p_value():
+    record = chem_pathways_record.copy()
+    record["CorrectedPValue"] = "0.001"
+    writer = MockKozaWriter()
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_chem_pathways_enriched])
+    )
+    runner.run()
+    return writer.items
+
+def test_chem_pathways_weak_p_value(chem_pathways_output_weak_p_value):
+    # records with weak p values should not produce associations
+    entities = chem_pathways_output_weak_p_value
+    assert len(entities) == 0
 
 
 # ---- Tests for transform_pheno_term_ixns ----

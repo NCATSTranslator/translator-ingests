@@ -97,11 +97,11 @@ target_info:
         - infores:pharmgkb
         - infores:ttd
       edge_properties:
-        - publications    ## for specific underlying sources
-        - dgidb_interaction_score    ## temp attribute!
-        - dgidb_evidence_score       ## temp attribute!
-        - original_subject
-        - original_object        
+        - biolink:publications    ## for specific underlying sources
+        - biolink:dgidb_interaction_score    ## temp attribute!
+        - biolink:dgidb_evidence_score       ## temp attribute!
+        - biolink:original_subject
+        - biolink:original_object        
       ui_explanation: "Source DGIdb aggregates drug-gene interaction statements of different types (e.g. 'antagonist', blocker', inhibitor', 'unknown') from several external knowledgebases. An automated algorithm assigns an 'interaction score' to each unique drug-gene pair across aggregated records. In performing this aggregation and 'meta-assessment', DGIdb makes its own implicit claims about each interaction, which are captured in Translator edges. The record(s) used to create this particular edge have a DGIdb 'interaction_type' that is empty or explicitly reported as 'other/unknown' - and thus assert only that an interaction of some type is occurring. This relationship is represented using the broadly-scoped Biolink 'interacts with' predicate."
       source_files:
         - interactions.tsv
@@ -148,11 +148,11 @@ target_info:
         - infores:pharmgkb
         - infores:ttd    
       edge_properties:
-        - publications    ## for specific underlying sources
-        - dgidb_interaction_score    ## temp attribute! currently not on inferred edges
-        - dgidb_evidence_score       ## temp attribute! currently not on inferred edges
-        - original_subject
-        - original_object
+        - biolink:publications    ## for specific underlying sources
+        - biolink:dgidb_interaction_score    ## temp attribute! currently not on inferred edges
+        - biolink:dgidb_evidence_score       ## temp attribute! currently not on inferred edges
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "Source DGIdb aggregates drug-gene interaction statements of different types (e.g. 'antagonist', blocker', inhibitor', 'unknown') from several external knowledgebases. An automated algorithm assigns an 'interaction score' to each unique drug-gene pair across aggregated records. In performing this aggregation and 'meta-assessment', DGIdb makes its own implicit claims about each interaction, which are captured in Translator edges. The record(s) used to create this particular edge have a DGIdb 'interaction_type' that explicitly states an interaction (e.g. 'binder'), or necessarily implies that a physical-interaction is occurring (e.g. 'agonist', 'antibody', 'blocker', 'inhibitor', 'inverse agonist'). This relationship is represented using the Biolink 'directly physically interacts with' predicate, with qualifiers that report the interaction mechanism when provided (e.g. 'binding')."
       source_files:
         - interactions.tsv
@@ -212,11 +212,11 @@ target_info:
         - infores:pharmgkb
         - infores:ttd
       edge_properties:
-        - publications    ## for specific underlying sources
-        - dgidb_interaction_score    ## temp attribute! currently not on some edges
-        - dgidb_evidence_score       ## temp attribute! currently not on some edges
-        - original_subject
-        - original_object
+        - biolink:publications    ## for specific underlying sources
+        - biolink:dgidb_interaction_score    ## temp attribute! currently not on some edges
+        - biolink:dgidb_evidence_score       ## temp attribute! currently not on some edges
+        - biolink:original_subject
+        - biolink:original_object
       ui_explanation: "Source DGIdb aggregates drug-gene interaction statements of different types (e.g. 'antagonist', blocker', inhibitor', 'unknown') from several external knowledgebases. An automated algorithm assigns an 'interaction score' to each unique drug-gene pair across aggregated records. In performing this aggregation and 'meta-assessment', DGIdb makes its own implicit claims about each interaction, which are captured in Translator edges. The record(s) used to create this particular edge have a DGIDb 'interaction_type' that indicates a specific type of effect the drug has on the activity or abundance of a gene/protein, and often the direction of the effect (e.g. that it causes increased activity of the gene/protein, or decreased stability of the gene/protein). These causal relationships are represented using the Biolink 'affects' predicate, with qualifiers capturing additional detail about the aspect and direction of the effect, and a causal mechanism where provided."
       source_files:
         - interactions.tsv
