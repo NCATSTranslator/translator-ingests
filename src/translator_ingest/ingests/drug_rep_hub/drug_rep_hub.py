@@ -20,8 +20,6 @@ from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 
-TRANSFORM_VERSION="1.1"
-
 inchikey_regex = re.compile('^[A-Z]{14}-[A-Z]{10}-[A-Z]$')
 
 INFORES_DRUG_REP_HUB = "infores:drug-repurposing-hub"
