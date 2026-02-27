@@ -1,12 +1,17 @@
 import pytest
 
-from typing import Optional
+from typing import Optional, Any
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
+    ConceptCountAnalysisResult,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
+
+import koza
+from koza.transform import Mappings
+from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.cohd.cohd import (
     transform_cohd_node,
@@ -14,31 +19,202 @@ from translator_ingest.ingests.cohd.cohd import (
 )
 
 from translator_ingest.ingests.cohd.cohd_util import (
+    parse_attributes,
+    parse_node_properties,
     get_cohd_supporting_study
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
-import koza
-from koza.transform import Mappings
-from koza.io.writer.writer import KozaWriter
+SAMPLE_NODE_ATTRIBUTE_STR = "{"+\
+                "\"attribute_source\": \"infores:cohd\", "+\
+                "\"attribute_type_id\": \"EDAM:data_0954\", "+\
+                "\"attributes\": ["+\
+                    "{"+\
+                        "\"attribute_source\": \"infores:omop-ohdsi\","+\
+                        " \"attribute_type_id\": \"EDAM:data_1087\","+\
+                        " \"original_attribute_name\": \"concept_id\","+\
+                        " \"value\": \"OMOP:77661\","+\
+                        " \"value_type_id\": \"EDAM:data_1087\","+\
+                        " \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\""+\
+                    "}"+\
+                "]"+\
+            "}"
 
+SAMPLE_EDGE_ATTRIBUTE_STR = "{"+\
+    "\"attribute_source\": \"infores:cohd\", "+\
+    "\"attribute_type_id\": \"biolink:has_supporting_study_result\", "+\
+    "\"description\": \"A study result describing the initial count of concepts\", "+\
+    "\"value\": \"SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12\", "+\
+    "\"value_type_id\": \"biolink:ConceptCountAnalysisResult\", "+\
+    "\"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", "+\
+    "\"attributes\": ["+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:concept_pair_count\", "+\
+            "\"original_attribute_name\": \"concept_pair_count\", "+\
+            "\"value\": 12, \"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Observed concept count between the pair of subject and object nodes\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:concept_count_subject\", "+\
+            "\"original_attribute_name\": \"concept_count_subject\", "+\
+            "\"value\": 11, "+\
+            "\"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Observed concept count of the subject node (SNOMEDCT:60108003)\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:concept_count_object\", "+\
+            "\"original_attribute_name\": \"concept_count_object\", "+\
+            "\"value\": 927, "+\
+            "\"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Observed concept count of the object node (CPT:73540)\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:dataset_count\", "+\
+            "\"original_attribute_name\": \"patient_count\", "+\
+            "\"value\": 1790431, "+\
+            "\"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Number of patients in the COHD dataset\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:supporting_data_set\", "+\
+            "\"original_attribute_name\": \"dataset_id\", "+\
+            "\"value\": \"COHD:dataset_1\", "+\
+            "\"value_type_id\": \"EDAM:data_1048\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Dataset ID within COHD\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:knowledge_level\", "+\
+            "\"value\": \"statistical_association\", "+\
+            "\"attribute_source\": \"infores:cohd\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:agent_type\", "+\
+            "\"value\": \"data_analysis_pipeline\", "+\
+            "\"attribute_source\": \"infores:cohd\" "+\
+        "}"+\
+    "]"+\
+"}"
 
-def test_parse_attributes():
-    # def parse_attributes(attribute_list: list[str]) -> list[dict[str, Any]]:
-    pass
+@pytest.mark.parametrize(
+    "attribute_list,expected_result",
+    [
+        (
+            [SAMPLE_NODE_ATTRIBUTE_STR],
+            [
+                {
+                    "attribute_source": "infores:cohd",
+                    "attribute_type_id": "EDAM:data_0954",
+                    "attributes": [
+                        {
+                            "attribute_source": "infores:omop-ohdsi",
+                            "attribute_type_id": "EDAM:data_1087",
+                            "original_attribute_name": "concept_id",
+                            "value": "OMOP:77661",
+                            "value_type_id": "EDAM:data_1087",
+                            "value_url": "https://athena.ohdsi.org/search-terms/terms/77661"
+                        }
+                    ]
+                }
+            ]
+        ),
+        (
+            [SAMPLE_EDGE_ATTRIBUTE_STR],
+            [
+                {
+                    "attribute_source": "infores:cohd",
+                    "attribute_type_id": "biolink:has_supporting_study_result",
+                    "description": "A study result describing the initial count of concepts",
+                    "value": "SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12",
+                    "value_type_id": "biolink:ConceptCountAnalysisResult",
+                    "value_url": "https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP",
+                    "attributes": [
+                        {
+                            "attribute_type_id": "biolink:concept_pair_count",
+                            "original_attribute_name": "concept_pair_count",
+                            "value": 12, "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Observed concept count between the pair of subject and object nodes"
+                        },
+                        {
+                            "attribute_type_id": "biolink:concept_count_subject",
+                            "original_attribute_name": "concept_count_subject",
+                            "value": 11,
+                            "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Observed concept count of the subject node (SNOMEDCT:60108003)"
+                        },
+                        {
+                            "attribute_type_id": "biolink:concept_count_object",
+                            "original_attribute_name": "concept_count_object",
+                            "value": 927,
+                            "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Observed concept count of the object node (CPT:73540)"
+                        },
+                        {
+                            "attribute_type_id": "biolink:dataset_count",
+                            "original_attribute_name": "patient_count",
+                            "value": 1790431,
+                            "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Number of patients in the COHD dataset"
+                        },
+                        {
+                            "attribute_type_id": "biolink:supporting_data_set",
+                            "original_attribute_name": "dataset_id",
+                            "value": "COHD:dataset_1",
+                            "value_type_id": "EDAM:data_1048",
+                            "attribute_source": "infores:cohd",
+                            "description": "Dataset ID within COHD"
+                        },
+                        {
+                            "attribute_type_id": "biolink:knowledge_level",
+                            "value": "statistical_association",
+                            "attribute_source": "infores:cohd"
+                        },
+                        {
+                            "attribute_type_id": "biolink:agent_type",
+                            "value": "data_analysis_pipeline",
+                            "attribute_source": "infores:cohd"
+                        }
+                    ]
+                }
+            ]
+        )
+    ]
+)
+def test_parse_attributes(attribute_list: list[str], expected_result:list[dict[str, Any]]):
+    result:list[dict[str, Any]] =  parse_attributes(attribute_list)
+    assert result == expected_result, "Python attribute parsing result parsing doesn't match expectations"
 
 def test_parse_node_properties():
-    # def parse_node_properties(attribute_list: list[str]) -> dict[str, Any]:
-    pass
+    result = parse_node_properties([SAMPLE_NODE_ATTRIBUTE_STR])
+    assert result == {"xref": ["https://athena.ohdsi.org/search-terms/terms/77661"]}
 
 
 def test_get_cohd_supporting_study():
-    # cohd_study: Optional[dict[str, Study]] = get_cohd_supporting_study(
-    #     edge_id="fake_test_edge",
-    #     attribute_list=record.get("attributes", [])
-    # )
-    pass
+    cohd_study_data: Optional[dict[str, Study]] = \
+        get_cohd_supporting_study(
+            edge_id="fake_test_edge",
+            attribute_list=[SAMPLE_EDGE_ATTRIBUTE_STR]
+        )
+    assert "COHD:dataset_1" in cohd_study_data
+    cohd_study = cohd_study_data["COHD:dataset_1"]
+    assert isinstance(cohd_study, Study)
+    assert cohd_study.id == "COHD:dataset_1"
+    study_results = cohd_study.has_study_results
+    assert study_results
+    result = study_results[0]
+    assert isinstance(result, ConceptCountAnalysisResult)
+    assert result.id == "fake_test_edge"
+    assert "biolink:ConceptCountAnalysisResult" in result.category
+    assert result.name == "SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12"
 
 
 @pytest.fixture(scope="module")
