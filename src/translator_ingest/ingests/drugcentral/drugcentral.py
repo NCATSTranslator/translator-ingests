@@ -34,13 +34,10 @@ from translator_ingest.ingests.drugcentral.mappings import (
     INFORES_MAPPING,
     ACTION_TYPE_MAPPING
 )
-## increment this when your file changes will affect the output
-##   (even with the same resource data) to trigger a new build
-TRANSFORM_VERSION = "1.1"
 
 
 ## HARD-CODED values and mappings
-## connection info for public Postgres database 
+## connection info for public Postgres database
 DIALECT = "postgresql"
 DRIVER = "psycopg"    ## dependency
 ## from DrugCentral downloads page
@@ -50,7 +47,7 @@ HOST = "unmtid-dbs.net"
 PORT = 5433
 DBNAME = "drugcentral"
 ## omop_relationship
-## actually using this view, which adds doid column to omop_relationship. 
+## actually using this view, which adds doid column to omop_relationship.
 ##   Just in case we later want to use other ID namespaces for DoP objects
 OMOP_TABLE = "omop_relationship_doid_view"
 OMOP_MAIN_COLUMNS = ["struct_id", "relationship_name", "umls_cui", "cui_semantic_type"]
@@ -73,9 +70,9 @@ BIOLINK_SUBSTRATE = "biolink:has_substrate"   ## for logic check
 ## CUSTOM FUNCTIONS
 def get_server_url(dialect, driver, user, password, host, port: int, dbname):
     """
-    Uses SQLAlchemy method to compose server url for SQLAlchemy engine, 
-    rather than using hard-coded string formatting. 
-    
+    Uses SQLAlchemy method to compose server url for SQLAlchemy engine,
+    rather than using hard-coded string formatting.
+
     Returns: sqlalchemy.engine.url.URL
     """
     return URL.create(
@@ -100,7 +97,7 @@ def get_latest_version() -> str:
     engine = create_engine(server_url)
 
     ## closes connection automatically afterwards
-    with engine.connect() as db_conn: 
+    with engine.connect() as db_conn:
         result = db_conn.execute(text("SELECT * FROM dbversion"))
         ## date is second element (idx 1) in row. First element is data version number
         version_date = result.fetchone()[1]
@@ -124,7 +121,7 @@ def omop_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> It
     ## load table into pandas: only the columns we're currently using
     koza.log(f"Loading {OMOP_TABLE} into pandas...")
     koza.log(f"Only working with these columns: {", ".join(OMOP_MAIN_COLUMNS)}")
-    with engine.connect() as db_conn: 
+    with engine.connect() as db_conn:
         df2 = pd.read_sql_table(table_name=OMOP_TABLE, con=db_conn, columns=OMOP_MAIN_COLUMNS)
     koza.log(f"Successfully loaded {OMOP_TABLE}: {df2.shape[0]} rows")
 
@@ -176,7 +173,7 @@ def omop_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledg
     chemical = ChemicalEntity(id=f"DrugCentral:{record["struct_id"]}")
     dop = DiseaseOrPhenotypicFeature(id=f"UMLS:{record["umls_cui"]}")
 
-    ## get mapped predicate/edge attribute for relationship_name 
+    ## get mapped predicate/edge attribute for relationship_name
     data_modeling = OMOP_RELATION_MAPPING[record["relationship_name"]]
 
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
@@ -220,7 +217,7 @@ def bioactivity_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
         WHERE (action_type IS NOT NULL) AND
         (act_source NOT IN {ACT_REMOVED_SOURCES})
     """
-    with engine.connect() as db_conn: 
+    with engine.connect() as db_conn:
         df1_qfilter = pd.read_sql_query(act_query, con=db_conn)
     koza.log(f"Successfully loaded act_table_full: {df1_qfilter.shape[0]} rows")
     ## logging for easy inspection of data - that filtered query worked as-intended
@@ -332,7 +329,7 @@ def bioactivity_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> K
         ## if there's an extra edge field
         if data_modeling.get("extra_edge_pred"):
             ## SPECIAL logic: create extra "physical interaction" edge for some "affects" edges
-            ## should be identical to original edge, except predicate/no qualifiers. 
+            ## should be identical to original edge, except predicate/no qualifiers.
             extra_assoc = ChemicalGeneInteractionAssociation(
                 id=entity_id(),
                 subject=chemical.id,
