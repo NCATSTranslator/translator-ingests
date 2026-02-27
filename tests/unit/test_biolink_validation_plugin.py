@@ -84,6 +84,8 @@ def schema_plugin():
     # Range constraint tests
     ('biolink:Disease', 'disease or phenotypic feature', True),
     ('biolink:PhenotypicFeature', 'disease or phenotypic feature', True),
+    # Edge case: empty string
+    ('', 'chemical or drug or treatment', False),
 ])
 def test_category_satisfies_constraint(schema_plugin, category, constraint, expected):
     """Test that a category satisfies or doesn't satisfy a domain/range constraint."""

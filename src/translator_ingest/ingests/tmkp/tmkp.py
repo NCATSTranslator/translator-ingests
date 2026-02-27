@@ -13,7 +13,6 @@ import json
 from functools import lru_cache
 from typing import Any, Dict, List, Set, Tuple
 from loguru import logger
-from bmt import Toolkit
 from bmt.utils import parse_name
 import koza
 from koza.model.graphs import KnowledgeGraph
@@ -38,7 +37,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from bmt.pydantic import entity_id, build_association_knowledge_sources
-from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP
+from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP, get_biolink_model_toolkit
 
 
 # Map TMKP attribute names to Biolink slot names
@@ -89,16 +88,11 @@ ASSOCIATION_MAP = {
 # Track edges skipped due to invalid subject/object prefixes (for reporting)
 _skipped_edges_by_prefix: Set[Tuple[str, str, str, str]] = set()
 
-# Module-level BMT Toolkit instance (instantiated once)
-_toolkit: Toolkit | None = None
 
-
-def _get_toolkit() -> Toolkit:
-    """Get the module-level BMT Toolkit instance."""
-    global _toolkit
-    if _toolkit is None:
-        _toolkit = Toolkit()
-    return _toolkit
+def _reset_module_state() -> None:
+    """Reset module-level mutable state. Used by tests to ensure clean state between runs."""
+    _skipped_edges_by_prefix.clear()
+    _warned_unmapped_attrs.clear()
 
 
 def _get_id_prefix(curie: str) -> str:
@@ -136,7 +130,7 @@ def _get_valid_prefixes_for_class(class_name: str) -> frozenset[str]:
     >>> 'MONDO' in _get_valid_prefixes_for_class('DiseaseOrPhenotypicFeature')
     True
     """
-    tk = _get_toolkit()
+    tk = get_biolink_model_toolkit()
     prefixes: set[str] = set()
 
     # Get the class and all its descendants
@@ -171,7 +165,7 @@ def _get_predicate_domain_range_prefixes(predicate: str) -> tuple[frozenset[str]
     >>> 'MONDO' in range_prefixes  # diseases can be treated
     True
     """
-    tk = _get_toolkit()
+    tk = get_biolink_model_toolkit()
     predicate_name = parse_name(predicate)
     elem = tk.get_element(predicate_name)
 
@@ -341,7 +335,6 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         elif attr_type and attr_type not in _warned_unmapped_attrs:
             # Log warning for truly unrecognized attributes (only once per attribute type)
             logger.warning(
-
                 f"Skipping unknown TMKP edge attribute: '{attr_type}' "
                 f"(no mapping defined and not a slot on {type(association).__name__})"
             )
@@ -366,114 +359,105 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
 @koza.transform_record(tag="nodes")
 def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP node records."""
-    try:
-        node_id = record.get("id")
-        name = record.get("name")
-        category = record.get("category")
+    node_id = record.get("id")
+    name = record.get("name")
+    category = record.get("category")
 
-        if not all([node_id, category]):
-            return None
-
-        # Get appropriate class from mapping
-        node_class = BIOLINK_CLASS_MAP.get(category, NamedThing)
-
-        # Create node
-        node = node_class(
-            id=node_id,
-            name=name,
-            category=node_class.model_fields["category"].default
-        )
-
-        # Return node in graph
-        return KnowledgeGraph(nodes=[node])
-
-    except Exception as e:
-        logger.error(f"Error processing node: {e}")
+    if not all([node_id, category]):
         return None
+
+    # Get appropriate class from mapping
+    node_class = BIOLINK_CLASS_MAP.get(category, NamedThing)
+
+    # Create node
+    node = node_class(
+        id=node_id,
+        name=name,
+        category=node_class.model_fields["category"].default
+    )
+
+    # Return node in graph
+    return KnowledgeGraph(nodes=[node])
 
 
 @koza.transform_record(tag="edges")
 def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP-edge records with attribute parsing."""
-    try:
-        subject_id = record.get("subject")
-        predicate = record.get("predicate")
-        object_id = record.get("object")
-        relation = record.get("relation")
+    subject_id = record.get("subject")
+    predicate = record.get("predicate")
+    object_id = record.get("object")
+    relation = record.get("relation")
 
-        if not all([subject_id, predicate, object_id]):
-            return None
-
-        # Validate subject/object prefixes match predicate domain/range constraints
-        if not _validate_edge_prefixes(subject_id, object_id, predicate):
-            _skipped_edges_by_prefix.add((subject_id, predicate, object_id, relation))
-            return None
-
-        # Get association class
-        assoc_class = ASSOCIATION_MAP.get(relation, Association)
-
-        # Build association kwargs with all fields
-        assoc_kwargs = {
-            "id": entity_id(),
-            "subject": subject_id,
-            "predicate": predicate,
-            "object": object_id,
-            "knowledge_level": KnowledgeLevelEnum.not_provided,
-            "agent_type": AgentTypeEnum.text_mining_agent,
-        }
-
-        # Add all qualifiers to kwargs if present
-        if qualified_pred := record.get("qualified_predicate"):
-            assoc_kwargs["qualified_predicate"] = qualified_pred
-        elif assoc_class == GeneRegulatesGeneAssociation:
-            # For GeneRegulatesGeneAssociation, use predicate as qualified_predicate if not provided
-            assoc_kwargs["qualified_predicate"] = predicate
-
-        # Add all other qualifiers
-        for qualifier in ["subject_aspect_qualifier", "subject_direction_qualifier",
-                         "object_aspect_qualifier", "object_direction_qualifier"]:
-            if value := record.get(qualifier):
-                assoc_kwargs[qualifier] = value
-
-        # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
-        if assoc_class == GeneRegulatesGeneAssociation:
-            # If either qualifier is missing, skip the edge to avoid semantic errors.
-            if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
-                logger.warning(
-                    "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
-                    f"object_aspect_qualifier={assoc_kwargs.get('object_aspect_qualifier')}, "
-                    f"object_direction_qualifier={assoc_kwargs.get('object_direction_qualifier')}. "
-                    "These qualifiers are required for semantic correctness."
-                )
-                return None
-        # Create association with all fields
-        association = assoc_class(**assoc_kwargs)
-
-        # Parse attributes JSON - this populates has_supporting_studies and sources on the association
-        if attributes_json := record.get("_attributes"):
-            attributes = json.loads(attributes_json)
-            parse_attributes(attributes, association)
-        else:
-            # No attributes - set default sources
-            association.sources = build_association_knowledge_sources(
-                primary=INFORES_TEXT_MINING_KP,
-                supporting=["infores:pubmed"]
-            )
-
-        # Create nodes for subject and object
-        nodes = []
-
-        # Create subject node (we don't have name info in edges, so minimal node)
-        subject_node = NamedThing(id=subject_id)
-        nodes.append(subject_node)
-
-        # Create object node
-        object_node = NamedThing(id=object_id)
-        nodes.append(object_node)
-
-        # Return graph with nodes and edges
-        return KnowledgeGraph(nodes=nodes, edges=[association])
-
-    except Exception as e:
-        logger.error(f"Error processing edge: {e}")
+    if not all([subject_id, predicate, object_id]):
         return None
+
+    # Validate subject/object prefixes match predicate domain/range constraints
+    if not _validate_edge_prefixes(subject_id, object_id, predicate):
+        _skipped_edges_by_prefix.add((subject_id, predicate, object_id, relation))
+        return None
+
+    # Get association class
+    assoc_class = ASSOCIATION_MAP.get(relation, Association)
+
+    # Build association kwargs with all fields
+    assoc_kwargs = {
+        "id": entity_id(),
+        "subject": subject_id,
+        "predicate": predicate,
+        "object": object_id,
+        "knowledge_level": KnowledgeLevelEnum.not_provided,
+        "agent_type": AgentTypeEnum.text_mining_agent,
+    }
+
+    # Add all qualifiers to kwargs if present
+    if qualified_pred := record.get("qualified_predicate"):
+        assoc_kwargs["qualified_predicate"] = qualified_pred
+    elif assoc_class == GeneRegulatesGeneAssociation:
+        # For GeneRegulatesGeneAssociation, use predicate as qualified_predicate if not provided
+        assoc_kwargs["qualified_predicate"] = predicate
+
+    # Add all other qualifiers
+    for qualifier in ["subject_aspect_qualifier", "subject_direction_qualifier",
+                     "object_aspect_qualifier", "object_direction_qualifier"]:
+        if value := record.get(qualifier):
+            assoc_kwargs[qualifier] = value
+
+    # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
+    if assoc_class == GeneRegulatesGeneAssociation:
+        # If either qualifier is missing, skip the edge to avoid semantic errors.
+        if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
+            logger.warning(
+                "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
+                f"object_aspect_qualifier={assoc_kwargs.get('object_aspect_qualifier')}, "
+                f"object_direction_qualifier={assoc_kwargs.get('object_direction_qualifier')}. "
+                "These qualifiers are required for semantic correctness."
+            )
+            return None
+
+    # Create association with all fields
+    association = assoc_class(**assoc_kwargs)
+
+    # Parse attributes JSON - this populates has_supporting_studies and sources on the association
+    if attributes_json := record.get("_attributes"):
+        attributes = json.loads(attributes_json)
+        parse_attributes(attributes, association)
+    else:
+        # No attributes - set default sources
+        association.sources = build_association_knowledge_sources(
+            primary=INFORES_TEXT_MINING_KP,
+            supporting=["infores:pubmed"]
+        )
+
+    # Create nodes for subject and object
+    nodes = []
+
+    # Create subject node (we don't have name info in edges, so minimal node)
+    subject_node = NamedThing(id=subject_id)
+    nodes.append(subject_node)
+
+    # Create object node
+    object_node = NamedThing(id=object_id)
+    nodes.append(object_node)
+
+    # Return graph with nodes and edges
+    return KnowledgeGraph(nodes=nodes, edges=[association])
