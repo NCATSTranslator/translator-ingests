@@ -58,8 +58,11 @@ def get_latest_version() -> str:
     # extract the version from the file name
     # file_name = signor_latest_response.headers['Content-Disposition']
     # file_name = file_name.replace("attachment; filename=", "").replace("_release.txt",
-    #                                                                   "").replace('"', '')
-    return "2025_Oct"
+    #
+    #
+    # also note that currently the file we have on the RENCI server corresponds to a date but that's the download date
+    # the actual version is
+    return "2026_January"
 
 
 @koza.prepare_data(tag="signor_parsing")
