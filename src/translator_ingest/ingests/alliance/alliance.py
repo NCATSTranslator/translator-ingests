@@ -9,6 +9,7 @@ All nodes are minimal placeholders (id only) intended to be merged
 with richer data from other sources.
 """
 
+import re
 from typing import Any
 
 import duckdb
@@ -21,6 +22,7 @@ from bmt.pydantic import entity_id, build_association_knowledge_sources
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     GeneToPhenotypicFeatureAssociation,
+    GeneToPhenotypicFeaturePredicateEnum,
     GeneToExpressionSiteAssociation,
     PhenotypicFeature,
     AnatomicalEntity,
@@ -53,6 +55,30 @@ TAXON_LABEL_MAP = {
     "NCBITaxon:10090": "Mus musculus",
     "NCBITaxon:10116": "Rattus norvegicus",
 }
+
+# Known label-to-CURIE mappings for stage terms
+_STAGE_LABEL_TO_CURIE = {
+    "post embryonic, pre-adult": "UBERON:0000092",
+}
+
+# CURIE pattern: prefix (letters/digits/underscore) + colon + local ID
+_CURIE_PATTERN = re.compile(r"^[A-Za-z_]+:\S+$")
+
+
+def _normalize_stage_term(stage_term_id: str | None) -> str | None:
+    """Normalize a stage term to a valid CURIE, or return None.
+
+    Maps known labels to their CURIE equivalents and filters out
+    unrecognized non-CURIE values.
+    """
+    if stage_term_id is None:
+        return None
+    if stage_term_id in _STAGE_LABEL_TO_CURIE:
+        return _STAGE_LABEL_TO_CURIE[stage_term_id]
+    if _CURIE_PATTERN.match(stage_term_id):
+        return stage_term_id
+    return None
+
 
 # Global variable to hold the DuckDB connection for entity lookup
 _entity_lookup_conn = None
@@ -237,7 +263,7 @@ def transform_phenotype(
         association = GeneToPhenotypicFeatureAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:has_phenotype",
+            predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONhas_phenotype,
             object=phenotypic_feature_id,
             publications=[row["evidence"]["publicationId"]],
             sources=build_association_knowledge_sources(
@@ -284,12 +310,10 @@ def transform_expression(
 
         cellular_component_id = get_data(row, "whereExpressed.cellularComponentTermId")
         anatomical_entity_id = get_data(row, "whereExpressed.anatomicalStructureTermId")
-        stage_term_id = get_data(row, "whenExpressed.stageTermId")
+        stage_term_id = get_data(row, "whenExpressed.stageUberonSlimTerm.uberonTerm")
+        stage_term_id = _normalize_stage_term(stage_term_id)
 
         publication_ids = [get_data(row, "evidence.publicationId")]
-        xref = get_data(row, "crossReference.id")
-        if xref:
-            publication_ids.append(xref)
 
         nodes = []
         edges = []

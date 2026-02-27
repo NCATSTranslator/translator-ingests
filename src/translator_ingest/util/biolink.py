@@ -34,6 +34,7 @@ INFORES_DISEASES = "infores:diseases"
 INFORES_MEDLINEPLUS = "infores:medlineplus"
 INFORES_AMYCO = "infores:amyco"
 INFORES_EBI_G2P = "infores:gene2phenotype"
+INFORES_DRUGCENTRAL = "infores:drugcentral"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
 INFORES_CIVIC = "infores:civic"

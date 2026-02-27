@@ -5,8 +5,9 @@ RUN = uv run
 ifdef sources
 SOURCES := $(sources)
 else
-SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther pathbank semmeddb sider signor tmkp ttd ubergraph
+SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub drugcentral gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther pathbank semmeddb sider signor tmkp ttd ubergraph
 endif
+
 NODE_PROPERTIES ?= ncbi_gene
 
 # Set to any non-empty value to overwrite previously generated files
