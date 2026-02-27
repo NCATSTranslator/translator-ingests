@@ -24,7 +24,6 @@ from translator_ingest.util.biolink import INFORES_CTD
 from bs4 import BeautifulSoup
 from koza.model.graphs import KnowledgeGraph
 
-TRANSFORM_VERSION = "1.1"
 
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
