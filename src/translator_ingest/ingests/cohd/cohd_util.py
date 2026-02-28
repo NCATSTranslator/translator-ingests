@@ -75,13 +75,15 @@ def get_cohd_supporting_study(
                     if attribute.get("attribute_type_id",None) == "biolink:supporting_data_set"
                 ]
                 study_id = sds[0] if sds else None
-        else:
-            # fall back study_id is the infores?
-            study_id = "infores:cohd"
+
 
         node_class: type[NamedThing] = get_node_class(node_id=edge_id, categories=[sa["value_type_id"]], bmt=bmt)
         study_result = node_class(id=edge_id, name=sa["value"], **{})
         study_results.append(study_result)
+
+    if study_id is None:
+        # fall back study_id is the infores?
+        study_id = "infores:cohd"
 
     return {
         study_id: Study(
