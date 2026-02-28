@@ -74,13 +74,52 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
+def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
+    """
+    Returns True if *item* (a Pydantic model instance) satisfies all field
+    constraints in *expected*.
+
+    For each ``(field, value)`` pair:
+
+    * If *value* is a non-empty list of dicts, each sub-dict must be satisfied
+      by at least one element in the item's corresponding sub-collection
+      (recursive via :func:`_validate_pydantic_collection`).
+    * Otherwise a direct equality check is used.
+
+    :param item: a Pydantic model instance to inspect
+    :param expected: mapping of field-name → expected-value
+    :return: True if all constraints are satisfied
+    """
+    for field, value in expected.items():
+        if not hasattr(item, field):
+            return False
+        actual = getattr(item, field)
+        if isinstance(value
+                , list) and value and isinstance(value[0], dict):
+            # Nested Pydantic collection: each expected sub-dict must be
+            # satisfied by at least one element in the actual sub-collection.
+            if not actual:
+                return False
+            if not all(_validate_pydantic_collection(sub, actual) for sub in value):
+                return False
+        else:
+            if actual != value:
+                return False
+    return True
+
+
 def _validate_pydantic_collection(
     expected: dict[str, Any],
     returned: list | dict,
 ) -> bool:
     """
-    Returns True if at least one Pydantic model instance in *returned* has all
-    fields matching those specified in *expected*.
+    Returns True if at least one Pydantic model instance in *returned* satisfies
+    all field constraints in *expected*.
+
+    Field values in *expected* may be nested: if a value is a non-empty list of
+    dicts, each sub-dict is matched recursively against the corresponding
+    sub-collection on the candidate item, enabling deep validation such as
+    ``Association.has_supporting_studies.has_study_results``.
 
     Works for both list collections (e.g. ``has_affinity: list[AffinityMeasurement]``)
     and dict collections (e.g. ``has_supporting_studies: dict[str, Study]``),
@@ -92,11 +131,7 @@ def _validate_pydantic_collection(
     :return: True if at least one instance satisfies all expected field values
     """
     items = returned.values() if isinstance(returned, dict) else returned
-    return any(
-        all(hasattr(item, field) and getattr(item, field) == value
-            for field, value in expected.items())
-        for item in items
-    )
+    return any(_item_matches_expected(item, expected) for item in items)
 
 
 def _match_edge(

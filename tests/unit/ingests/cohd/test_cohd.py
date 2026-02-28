@@ -685,7 +685,7 @@ def test_transform_cohd_nodes(
                                 },
                                 {
                                     "category": ["biolink:RelativeFrequencyAnalysisResult"],
-                                    "name": "Relative to CPT:73540: 0.013 [0.004, 0.026]"
+                                    "name": "Relative to SNOMEDCT:60108003: 1.091 [0.200, 5.500]; Relative to CPT:73540: 0.013 [0.004, 0.026]"
                                 }
     ,
                                 {
