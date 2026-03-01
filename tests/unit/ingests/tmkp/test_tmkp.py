@@ -16,7 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
     TextMiningStudyResult,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from bmt.pydantic import entity_id
 from koza.runner import KozaRunner, KozaTransformHooks
 
 from tests.unit.ingests import MockKozaWriter
@@ -32,7 +32,6 @@ from translator_ingest.ingests.tmkp.tmkp import (
     parse_attributes,
     transform_tmkp_edge,
     INFORES_TEXT_MINING_KP,
-    ASSOCIATION_MAP,
 )
 
 
