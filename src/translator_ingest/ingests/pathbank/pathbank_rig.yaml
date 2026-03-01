@@ -307,8 +307,6 @@ target_info:
   future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
     - category: spoq_pattern
       consideration: "MolecularActivity nodes represent reactions.  Current modeling creates separate edges describing inputs and outputs for these reactions. This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier? A redesign to direct input-output edges with reaction qualifiers would need an agreed KG modeling pattern across sources."
-<<<<<<< Updated upstream
-
 # Manual QA 1: Known issues identified during validation
 known_issues:
   # Most PathBank edges involve MolecularActivity and MacromolecularComplex nodes
@@ -348,8 +346,6 @@ known_issues:
       of the expected CellularComponent or AnatomicalEntity. This happens when
       a GO cellular component term gets normalized to a process category.
     resolution: "Accepted as edge case. The edge is valid but doesn't match RIG's expected object categories."
-=======
->>>>>>> Stashed changes
 
 provenance_info:
   contributions:

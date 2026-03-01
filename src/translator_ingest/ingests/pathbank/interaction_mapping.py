@@ -43,7 +43,9 @@ def map_interaction_edge(
         "bind" in interaction_type_lower
         or "physical" in interaction_type_lower
         or "complex" in interaction_type_lower
-        or "associat" in interaction_type_lower
+        or "association" in interaction_type_lower
+        or "associate" in interaction_type_lower
+        or "associated" in interaction_type_lower
     )
 
     is_left_chem = left_type in CHEMICAL_TYPES
