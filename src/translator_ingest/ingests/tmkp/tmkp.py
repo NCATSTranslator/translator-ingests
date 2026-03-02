@@ -70,10 +70,6 @@ BIOLINK_CLASS_MAP = {
 }
 
 # Map edge types to association classes
-# Note: Using CorrelatedGeneToDiseaseAssociation instead of GeneToDiseaseAssociation
-# because text mining identifies correlations from literature, and the base
-# GeneToDiseaseAssociation constrains predicates to only 'contributes_to' or
-# 'associated_with', which doesn't include 'affects' used by TMKP.
 ASSOCIATION_MAP = {
     "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
     "biolink:GeneToDiseaseAssociation": CorrelatedGeneToDiseaseAssociation,
