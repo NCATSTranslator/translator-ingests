@@ -323,7 +323,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.35.2" },
     { name = "psycopg", extras = ["binary"] },
     { name = "requests" },
-    { name = "robokop-orion", specifier = "==0.1.14" },
+    { name = "robokop-orion" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
     { name = "xmltodict", specifier = ">=1.0.2" },
     { name = "zstandard", specifier = ">=0.25.0" },

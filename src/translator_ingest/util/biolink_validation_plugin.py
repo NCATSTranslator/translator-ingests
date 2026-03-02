@@ -56,19 +56,19 @@ class BiolinkValidationPlugin(ValidationPlugin):
         self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
         self._bmt = get_biolink_model_toolkit()  # BMT toolkit for domain/range validation
         self._ancestors_cache = {}  # Maps category name to its ancestors for performance
-        
+
     def _normalize_biolink_name(self, name: str) -> str:
         """Normalize biolink element names to sentence case format used by BMT.
-        
+
         This handles various formats:
         - biolink:is_sequence_variant_of -> is sequence variant of
-        - is_sequence_variant_of -> is sequence variant of  
+        - is_sequence_variant_of -> is sequence variant of
         - IsSequenceVariantOf -> is sequence variant of
         - is sequence variant of -> is sequence variant of
-        
+
         Args:
             name: The name in any format
-            
+
         Returns:
             Normalized name in sentence case (space-separated)
         """
@@ -76,17 +76,17 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
     def _collect_valid_uris_with_mixins(self, descendants: list[str], uri_attr: str) -> Set[str]:
         """Helper to collect valid URIs from descendants and their mixins.
-        
+
         Args:
             descendants: List of descendant names from BMT
             uri_attr: Attribute name for URI ('class_uri' or 'slot_uri')
-            
+
         Returns:
             Set of valid URIs including both descendants and used mixins
         """
         valid_uris = set()
         used_mixins = set()
-        
+
         # Single pass: collect URIs and track used mixins
         for desc in descendants:
             element = self._bmt.get_element(desc)
@@ -94,22 +94,22 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 # Collect URI if present
                 if hasattr(element, uri_attr) and getattr(element, uri_attr):
                     valid_uris.add(getattr(element, uri_attr))
-                
+
                 # Track used mixins
                 if hasattr(element, 'mixins') and element.mixins:
                     used_mixins.update(str(m) for m in element.mixins)
-        
+
         # Add URIs for used mixins
         for mixin_name in used_mixins:
             element = self._bmt.get_element(mixin_name)
             if element and hasattr(element, uri_attr) and getattr(element, uri_attr):
                 valid_uris.add(getattr(element, uri_attr))
-        
+
         return valid_uris
 
     def _get_valid_categories(self) -> Set[str]:
         """Get valid Biolink Model categories.
-        
+
         This includes both regular classes that are descendants of 'named thing'
         and ALL mixin classes that have a class_uri defined. Mixins can be used
         as node categories even if they're not descendants of named thing.
@@ -119,13 +119,13 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
         try:
             valid_uris = set()
-            
+
             # Get all class descendants of named thing
             descendants = self._bmt.get_descendants("named thing", reflexive=True, mixin=True)
-            
+
             # Collect URIs from descendants and their used mixins
             valid_uris.update(self._collect_valid_uris_with_mixins(descendants, 'class_uri'))
-            
+
             # Additionally, get ALL classes (including top-level mixins) that have a class_uri
             # Important: Only ClassDefinitions can be mixins used as categories, not SlotDefinitions
             all_classes = self._bmt.get_all_classes()
@@ -136,9 +136,9 @@ class BiolinkValidationPlugin(ValidationPlugin):
                     # Only add mixins that aren't already captured
                     if getattr(element, 'mixin', False):
                         valid_uris.add(element.class_uri)
-            
+
             self._valid_categories_cache = valid_uris
-                    
+
         except Exception as e:
             # Having a working schema is required
             raise RuntimeError(f"Failed to get valid categories from Biolink schema: {e}")
@@ -147,7 +147,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
 
     def _get_valid_predicates(self) -> Set[str]:
         """Get valid Biolink Model predicates.
-        
+
         This includes both regular slots and mixin slots that are descendants of 'related to'.
         Mixins are valid predicates and are already handled by get_descendants with mixin=True.
         """
@@ -157,10 +157,10 @@ class BiolinkValidationPlugin(ValidationPlugin):
         try:
             # Get all slot descendants using BMT (mixin=True means traverse mixin relationships)
             descendants = self._bmt.get_descendants("related to", reflexive=True, mixin=True)
-            
+
             # Collect valid predicate URIs including used mixins
             self._valid_predicates_cache = self._collect_valid_uris_with_mixins(descendants, 'slot_uri')
-                    
+
         except Exception as e:
             # Having a working schema with predicates is required
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
@@ -176,53 +176,46 @@ class BiolinkValidationPlugin(ValidationPlugin):
         # Prefix and identifier must start with alphanumeric
         curie_pattern = r"^[A-Za-z0-9][A-Za-z0-9_\-\.]*:[A-Za-z0-9][A-Za-z0-9_\-\.]*$"
         return bool(re.match(curie_pattern, identifier))
-    
-    def _category_matches_constraint(self, categories: list[str], constraint: str) -> bool:
-        """Check if any category matches the domain/range constraint using BMT.
-        
+
+    def category_satisfies_constraint(self, category: str, constraint: str) -> bool:
+        """Check if a category satisfies a domain/range constraint.
+
+        A category satisfies a constraint if the constraint appears in the category's
+        ancestor chain (including both is_a and mixin ancestors, reflexively).
+
         Args:
-            categories: List of categories (with biolink: prefix)
-            constraint: Domain or range constraint (without biolink: prefix)
-            
+            category: A category name (with or without biolink: prefix)
+            constraint: The domain or range constraint value from the predicate definition
+
         Returns:
-            True if any category matches the constraint
+            True if the category (or any of its ancestors) matches the constraint
         """
-        if not constraint or not categories:
-            return True
-            
-        # Check each category against the constraint
-        for category in categories:
-            # Normalize category name for BMT lookup
-            cat_name = self._normalize_biolink_name(category)
-            
-            # Get all ancestors including mixins (with caching)
-            if cat_name not in self._ancestors_cache:
-                self._ancestors_cache[cat_name] = self._bmt.get_ancestors(cat_name, reflexive=True, mixin=True)
-            ancestors = self._ancestors_cache[cat_name]
-            
-            # Check if the constraint is in the ancestors
-            if constraint in ancestors:
-                return True
-                
-        return False
-    
-    def _validate_domain_range(self, edge_obj: dict, path: str, predicate: str, 
+        cat_name = self._normalize_biolink_name(category)
+
+        if cat_name not in self._ancestors_cache:
+            self._ancestors_cache[cat_name] = self._bmt.get_ancestors(
+                cat_name, reflexive=True, mixin=True
+            )
+
+        return constraint in self._ancestors_cache[cat_name]
+
+    def _validate_domain_range(self, edge_obj: dict, path: str, predicate: str,
                               schema_view: SchemaView) -> Iterator[ValidationResult]:
         """Validate domain and range constraints for an edge predicate."""
         # Normalize predicate name for schema lookup
         pred_name = self._normalize_biolink_name(predicate)
-        
+
         # Get the slot definition
         slot = schema_view.get_slot(pred_name)
         if not slot:
             return
-            
+
         # Check domain constraint
         if slot.domain:
             subject_id = edge_obj.get('subject')
             if subject_id and subject_id in self._node_categories_cache:
                 subject_categories = self._node_categories_cache[subject_id]
-                if not self._category_matches_constraint(subject_categories, slot.domain):
+                if not any(self.category_satisfies_constraint(cat, slot.domain) for cat in subject_categories):
                     yield ValidationResult(
                         type="biolink-model validation",
                         severity=Severity.WARN,
@@ -231,13 +224,13 @@ class BiolinkValidationPlugin(ValidationPlugin):
                         message=f"Edge at /{path} violates domain constraint: predicate '{predicate}' "
                                f"expects domain '{slot.domain}' but subject has categories {subject_categories}",
                     )
-                    
+
         # Check range constraint
         if slot.range:
             object_id = edge_obj.get('object')
             if object_id and object_id in self._node_categories_cache:
                 object_categories = self._node_categories_cache[object_id]
-                if not self._category_matches_constraint(object_categories, slot.range):
+                if not any(self.category_satisfies_constraint(cat, slot.range) for cat in object_categories):
                     yield ValidationResult(
                         type="biolink-model validation",
                         severity=Severity.WARN,
@@ -286,7 +279,7 @@ class BiolinkValidationPlugin(ValidationPlugin):
             categories = node_obj["category"]
             if isinstance(categories, str):
                 categories = [categories]
-            
+
             # Store categories for domain/range validation
             if node_id:
                 self._node_categories_cache[node_id] = categories
