@@ -57,9 +57,26 @@ ingest_info:
       filtered_records: GeneRegulatesGeneAssociation edges that lack required qualifiers (object_aspect_qualifier or object_direction_qualifier).
       rationale: "These qualifiers are required for semantic correctness of regulatory relationships. Edges without them would have ambiguous meaning."
 
+  transformed_content:
+    - file_name: edges.tsv
+      transformation: "Predicate remap: 'biolink:treats' → 'biolink:treats_or_applied_or_studied_to_treat'"
+      rationale: "NLP tools cannot reliably distinguish between actual treatment, studied treatment, and applied treatment relationships. The broader predicate accurately represents the uncertainty in text-mined assertions."
+    - file_name: edges.tsv
+      transformation: "Knowledge level: edges with 'biolink:treats_or_applied_or_studied_to_treat' are assigned knowledge_level='knowledge_assertion' instead of 'not_provided'"
+      rationale: "The broad predicate semantics already account for all knowledge levels (hypothesis, assertion, observation), so 'knowledge_assertion' is warranted. All other text-mined predicates remain 'not_provided'."
+    - file_name: edges.tsv
+      transformation: "EPC pattern: Gene-disease 'biolink:contributes_to' edges are transformed to predicate='biolink:affects', qualified_predicate='biolink:contributes_to', subject_form_or_variant_qualifier='modified_form'. Source edges that already provide predicate='affects' with their own qualifiers pass those qualifiers through unchanged."
+      rationale: "Follows the canonical Biolink EPC (Edge Property Constraint) pattern for gene-disease causal relationships. The EPC default uses 'modified_form', but source edges that already arrive pre-qualified (e.g., with 'loss_of_function_variant_form' or 'gain_of_function_variant_form') retain their source qualifiers."
+    - file_name: edges.tsv
+      transformation: "Qualifier passthrough: all source record fields that are valid slots on the association class are passed through to the output edge. Computed fields (subject, predicate, object, knowledge_level, agent_type, EPC defaults) are not overridden."
+      rationale: "Ensures no source qualifiers are silently dropped. The Biolink pydantic model validates that values are valid for each field."
+    - file_name: edges.tsv
+      transformation: "Attribute mapping: TMKP attribute names are mapped to Biolink slot names (e.g. 'has_evidence_count' → 'evidence_count', 'supporting_publications' → 'publications', 'tmkp_confidence_score' → 'has_confidence_score')"
+      rationale: "TMKP uses different naming conventions for some attributes. The ingest maps these to their canonical Biolink Model equivalents so they are recognized by downstream consumers."
+
   future_considerations:
     - category: edge_property_content
-      consideration: "Review study results data and modeling (didn't have time to review thoroughly this pass), and it may be that we can simplify modeling depending on what requirements are for this type of metadata this phase."
+      consideration: "Review study results data and modeling - it may be that we can simplify modeling depending on what requirements are for this type of metadata this phase."
     - category: other
       consideration: "Consider whether it is sufficient to have RIG Edge Type objects be the source of truth for UI explanations, given that edges end up being generated in normalized KGs that don't fit into these categories. How to ensure that all edges in a KG will have an explanation, and that the UI team will be able to find and access and use these explanations easily and accurately."
     - category: edge_content
@@ -85,7 +102,7 @@ target_info:
         - "biolink:affects"
       object_categories:
         - "biolink:Protein"
-      qualifiers:                       # MHB: Note I removed entries for subject aspect and direction qualifiers - as the summary report does not show these in the data. Add back if the TMKP code is able to create them.
+      qualifiers:
         - property: "biolink:qualified_predicate"
           value_enumeration:
             - "biolink:causes"
@@ -104,8 +121,9 @@ target_info:
         - infores:text-mining-provider-targeted
       supporting_data_sources:
         - infores:pubmed
-      edge_properties:                  # MHB: these don't match what I see in the data - only has_supporting_studies (not sure why we need these) Note that the summary code likely doesn't dig into nested properties.  The json examples to show the full nested study result objects under has_study_result, and the only nested properties here is publications and supporting_text. We should try to fix this up as I think some of the scores/metadata TMKP captures will be useful for scoring.
+      edge_properties:
         - "biolink:has_supporting_studies"
+        - "biolink:publications"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
@@ -128,7 +146,7 @@ target_info:
       qualifiers:
         - property: "biolink:qualified_predicate"
           value_enumeration:
-            - "biolink:affects"
+            - "biolink:causes"
         - property: "biolink:object_aspect_qualifier"
           value_enumeration:
             - "activity_or_abundance"
@@ -146,18 +164,19 @@ target_info:
         - infores:pubmed
       edge_properties:
         - "biolink:has_supporting_studies"
+        - "biolink:publications"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
-        Targeted text mining identified gene regulatory relationships where one protein affects
-        another protein's activity or abundance. These edges include required qualifiers indicating
-        the direction and magnitude of the regulatory effect.
+        Targeted text mining identified gene regulatory relationships where one protein causes
+        changes in another protein's activity or abundance. These edges include required qualifiers
+        indicating the direction and magnitude of the regulatory effect.
       source_files:
         - edges.tsv
       additional_notes: |
         Association type: GeneRegulatesGeneAssociation. Requires object_aspect_qualifier and
         object_direction_qualifier for semantic correctness. Edges lacking these qualifiers are
-        filtered out during processing.
+        filtered out during processing. All source edges provide qualified_predicate='biolink:causes'.
 
     - subject_categories:
         - "biolink:SmallMolecule"
@@ -179,6 +198,7 @@ target_info:
         - infores:pubmed
       edge_properties:
         - "biolink:has_supporting_studies"
+        - "biolink:publications"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
@@ -216,6 +236,7 @@ target_info:
         - infores:pubmed
       edge_properties:
         - "biolink:has_supporting_studies"
+        - "biolink:publications"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
@@ -241,6 +262,8 @@ target_info:
         - property: "biolink:subject_form_or_variant_qualifier"
           value_enumeration:
             - "modified_form"
+            - "loss_of_function_variant_form"
+            - "gain_of_function_variant_form"
       knowledge_level:
         - not_provided
       agent_type:
@@ -251,21 +274,24 @@ target_info:
         - infores:pubmed
       edge_properties:
         - "biolink:has_supporting_studies"
+        - "biolink:publications"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
-        Targeted text mining identified that a protein/gene in a modified form contributes to a
-        disease or phenotypic feature, indicating molecular involvement based on evidence from
-        literature. Uses the canonical Biolink EPC pattern with 'affects' as the primary predicate,
-        'contributes_to' as the qualified predicate, and 'modified_form' as the subject qualifier.
+        Targeted text mining identified that a protein/gene contributes to a disease or phenotypic
+        feature, indicating molecular involvement based on evidence from literature. Uses the
+        Biolink EPC pattern with 'affects' as the primary predicate and 'contributes_to' as the
+        qualified predicate. The subject_form_or_variant_qualifier indicates the form of the
+        protein involved (modified, loss-of-function, or gain-of-function).
       source_files:
         - edges.tsv
       additional_notes: |
-        Association type: CorrelatedGeneToDiseaseAssociation. Source predicate 'biolink:contributes_to'
-        is transformed to the canonical EPC pattern: predicate='affects', qualified_predicate=
-        'contributes_to', subject_form_or_variant_qualifier='modified_form'. The 'modified_form'
-        qualifier is used rather than 'genetic_variant_form' because text mining cannot distinguish
-        the specific form of protein modification contributing to disease.
+        Association type: CorrelatedGeneToDiseaseAssociation. Two code paths produce these edges:
+        (1) Source predicate 'biolink:contributes_to' is transformed to the canonical EPC pattern
+        with subject_form_or_variant_qualifier defaulting to 'modified_form'. (2) Source edges
+        that already arrive with predicate='biolink:affects' and qualified_predicate=
+        'biolink:contributes_to' pass through their source subject_form_or_variant_qualifier
+        (typically 'loss_of_function_variant_form' or 'gain_of_function_variant_form').
 
     - subject_categories:
         - "biolink:Protein"
@@ -284,6 +310,7 @@ target_info:
         - infores:pubmed
       edge_properties:
         - "biolink:has_supporting_studies"
+        - "biolink:publications"
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |

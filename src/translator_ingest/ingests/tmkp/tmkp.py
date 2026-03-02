@@ -422,29 +422,27 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         "agent_type": AgentTypeEnum.text_mining_agent,
     }
 
-    # For gene-disease 'contributes_to' edges, use the canonical Biolink EPC pattern:
-    # primary predicate 'affects', qualified predicate 'contributes_to', with
-    # subject_form_or_variant_qualifier indicating the protein is in a modified form.
+    # Pass through all source record fields that are valid slots on the association class
+    # and not already set in assoc_kwargs (preserving computed values like predicate).
+    for key, value in record.items():
+        if value and key not in assoc_kwargs and key in assoc_class.model_fields:
+            assoc_kwargs[key] = value
+
+    # For gene-disease 'contributes_to' edges, apply the canonical Biolink EPC pattern
+    # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
+    # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
+    # by the source data (which may provide e.g. 'loss_of_function_variant_form').
     if (
         assoc_class == CorrelatedGeneToDiseaseAssociation
         and predicate == "biolink:contributes_to"
     ):
         assoc_kwargs["predicate"] = "biolink:affects"
-        assoc_kwargs["qualified_predicate"] = "biolink:contributes_to"
-        assoc_kwargs["subject_form_or_variant_qualifier"] = MODIFIED_FORM
+        assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
+        assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
-    # Add all qualifiers to kwargs if present (source qualifiers override defaults)
-    if qualified_pred := record.get("qualified_predicate"):
-        assoc_kwargs["qualified_predicate"] = qualified_pred
-    elif assoc_class == GeneRegulatesGeneAssociation:
-        # For GeneRegulatesGeneAssociation, use predicate as qualified_predicate if not provided
+    # For GeneRegulatesGeneAssociation, default qualified_predicate to the predicate if not set
+    if assoc_class == GeneRegulatesGeneAssociation and "qualified_predicate" not in assoc_kwargs:
         assoc_kwargs["qualified_predicate"] = predicate
-
-    # Add all other qualifiers
-    for qualifier in ["subject_aspect_qualifier", "subject_direction_qualifier",
-                     "object_aspect_qualifier", "object_direction_qualifier"]:
-        if value := record.get(qualifier):
-            assoc_kwargs[qualifier] = value
 
     # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
     if assoc_class == GeneRegulatesGeneAssociation:

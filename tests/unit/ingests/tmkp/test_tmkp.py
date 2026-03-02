@@ -635,6 +635,31 @@ class TestTransformTmkpEdge:
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == MODIFIED_FORM
 
+    def test_gene_disease_contributes_to_source_qualifier_overrides_default(self):
+        """Source subject_form_or_variant_qualifier takes precedence over the EPC default.
+
+        When a gene-disease edge has predicate='contributes_to' AND the source provides
+        its own subject_form_or_variant_qualifier (e.g. 'loss_of_function_variant_form'),
+        the source value is kept instead of the 'modified_form' default.
+        """
+        record = {
+            "subject": "UniProtKB:Q06609",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0000605",
+            "relation": "biolink:GeneToDiseaseAssociation",
+            "subject_form_or_variant_qualifier": "loss_of_function_variant_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
+
     def test_chemical_disease_contributes_to_not_transformed(self):
         """Chemical-disease 'contributes_to' is NOT transformed (only gene-disease gets EPC)."""
         record = {
@@ -669,6 +694,112 @@ class TestTransformTmkpEdge:
         assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
         assert assoc.predicate == "biolink:affects"
         assert not hasattr(assoc, "qualified_predicate") or assoc.qualified_predicate is None
+
+    def test_gene_disease_pre_qualified_preserves_subject_form_or_variant_qualifier(self):
+        """Source edges with predicate=affects + qp=contributes_to + sfvq pass through sfvq.
+
+        Reproduces a bug where 13,135 source edges arrived with all three fields set
+        but subject_form_or_variant_qualifier was silently dropped.
+        """
+        record = {
+            "subject": "UniProtKB:Q06609",
+            "predicate": "biolink:affects",
+            "object": "MONDO:0000605",
+            "relation": "biolink:GeneToDiseaseAssociation",
+            "qualified_predicate": "biolink:contributes_to",
+            "subject_form_or_variant_qualifier": "loss_of_function_variant_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
+
+    def test_chemical_gene_anatomical_context_qualifier_passthrough(self):
+        """anatomical_context_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+            "anatomical_context_qualifier": ["UBERON:0002107"],
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalAffectsGeneAssociation)
+        assert assoc.anatomical_context_qualifier == ["UBERON:0002107"]
+
+    def test_chemical_gene_object_form_or_variant_qualifier_passthrough(self):
+        """object_form_or_variant_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+            "object_form_or_variant_qualifier": "modified_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalAffectsGeneAssociation)
+        assert assoc.object_form_or_variant_qualifier == "modified_form"
+
+    def test_chemical_gene_subject_part_qualifier_passthrough(self):
+        """subject_part_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+            "subject_part_qualifier": "promoter",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalAffectsGeneAssociation)
+        assert assoc.subject_part_qualifier == "promoter"
+
+    def test_qualifier_not_on_model_is_silently_ignored(self):
+        """Qualifiers not in the association's model_fields are ignored without error.
+
+        ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation lacks most qualifier fields.
+        """
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+            "subject_form_or_variant_qualifier": "modified_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+        assert assoc.predicate == "biolink:contributes_to"
 
 
 class TestPredicateRemap:
