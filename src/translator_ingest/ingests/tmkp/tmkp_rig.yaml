@@ -2,7 +2,7 @@ name: Text Mining Knowledge Provider (TMKP)
 
 # Information about the Source of the data ingest
 source_info:
-  infores_id: infores:text-mining-provider-cooccurrence
+  infores_id: infores:text-mining-provider-targeted
   name: Text Mining Knowledge Provider (TMKP)
   description: |
     The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts
@@ -141,7 +141,7 @@ target_info:
       agent_type:
         - text_mining_agent
       primary_knowledge_sources:
-        - infores:text-mining-provider-cooccurrence
+        - infores:text-mining-provider-targeted
       supporting_data_sources:
         - infores:pubmed
       edge_properties:
@@ -165,16 +165,16 @@ target_info:
         - "biolink:MolecularMixture"
         - "biolink:ComplexMolecularMixture"
       predicates:
-        - "biolink:treats"
+        - "biolink:treats_or_applied_or_studied_to_treat"
       object_categories:
         - "biolink:Disease"
         - "biolink:PhenotypicFeature"
       knowledge_level:
-        - not_provided
+        - knowledge_assertion
       agent_type:
         - text_mining_agent
       primary_knowledge_sources:
-        - infores:text-mining-provider-cooccurrence
+        - infores:text-mining-provider-targeted
       supporting_data_sources:
         - infores:pubmed
       edge_properties:
@@ -182,14 +182,19 @@ target_info:
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
-        Targeted text mining identified therapeutic relationships where a chemical treats a disease
-        or phenotypic feature, based on linguistic patterns in scientific literature.
+        Targeted text mining identified therapeutic or studied-for-treatment relationships where
+        a chemical treats, or was applied or studied to treat, a disease or phenotypic feature.
+        The broad predicate reflects that NLP cannot distinguish between actual treatment and
+        studied/applied treatment relationships.
       source_files:
         - edges.tsv
       additional_notes: |
-        Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source data may
-        contain reversed edges (disease treats chemical) that are filtered out during processing
-        based on Biolink domain/range constraints.
+        Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source predicate
+        'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat' during
+        ingest because NLP tools cannot reliably distinguish treatment intent. Knowledge level is
+        'knowledge_assertion' because the broad predicate semantics already account for the
+        uncertainty inherent in text-mined data. Source data may contain reversed edges (disease
+        treats chemical) that are filtered out based on Biolink domain/range constraints.
 
     - subject_categories:
         - "biolink:SmallMolecule"
@@ -206,7 +211,7 @@ target_info:
       agent_type:
         - text_mining_agent
       primary_knowledge_sources:
-        - infores:text-mining-provider-cooccurrence
+        - infores:text-mining-provider-targeted
       supporting_data_sources:
         - infores:pubmed
       edge_properties:
@@ -225,16 +230,23 @@ target_info:
     - subject_categories:
         - "biolink:Protein"
       predicates:
-        - "biolink:contributes_to"
+        - "biolink:affects"
       object_categories:
         - "biolink:Disease"
         - "biolink:PhenotypicFeature"
+      qualifiers:
+        - property: "biolink:qualified_predicate"
+          value_enumeration:
+            - "biolink:contributes_to"
+        - property: "biolink:subject_form_or_variant_qualifier"
+          value_enumeration:
+            - "modified_form"
       knowledge_level:
         - not_provided
       agent_type:
         - text_mining_agent
       primary_knowledge_sources:
-        - infores:text-mining-provider-cooccurrence
+        - infores:text-mining-provider-targeted
       supporting_data_sources:
         - infores:pubmed
       edge_properties:
@@ -242,16 +254,18 @@ target_info:
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
-        Targeted text mining identified that a protein/gene contributes to a disease or phenotypic
-        feature, indicating genetic or molecular involvement based on evidence from literature.
+        Targeted text mining identified that a protein/gene in a modified form contributes to a
+        disease or phenotypic feature, indicating molecular involvement based on evidence from
+        literature. Uses the canonical Biolink EPC pattern with 'affects' as the primary predicate,
+        'contributes_to' as the qualified predicate, and 'modified_form' as the subject qualifier.
       source_files:
         - edges.tsv
       additional_notes: |
-        Association type: CorrelatedGeneToDiseaseAssociation. The code uses
-        CorrelatedGeneToDiseaseAssociation rather than GeneToDiseaseAssociation because
-        the base GeneToDiseaseAssociation constrains predicates to only 'contributes_to'
-        or 'associated_with', and does not support 'affects' which is also used by TMKP
-        for gene-disease edges.
+        Association type: CorrelatedGeneToDiseaseAssociation. Source predicate 'biolink:contributes_to'
+        is transformed to the canonical EPC pattern: predicate='affects', qualified_predicate=
+        'contributes_to', subject_form_or_variant_qualifier='modified_form'. The 'modified_form'
+        qualifier is used rather than 'genetic_variant_form' because text mining cannot distinguish
+        the specific form of protein modification contributing to disease.
 
     - subject_categories:
         - "biolink:Protein"
@@ -265,7 +279,7 @@ target_info:
       agent_type:
         - text_mining_agent
       primary_knowledge_sources:
-        - infores:text-mining-provider-cooccurrence
+        - infores:text-mining-provider-targeted
       supporting_data_sources:
         - infores:pubmed
       edge_properties:

@@ -32,6 +32,8 @@ from translator_ingest.ingests.tmkp.tmkp import (
     parse_attributes,
     transform_tmkp_edge,
     INFORES_TEXT_MINING_KP,
+    PREDICATE_REMAP,
+    MODIFIED_FORM,
 )
 
 
@@ -415,7 +417,11 @@ class TestTransformTmkpEdge:
     """Integration tests for transform_tmkp_edge via KozaRunner."""
 
     def test_basic_edge_with_attributes(self):
-        """Full round-trip: edge with JSON attributes produces association + nodes."""
+        """Full round-trip: edge with JSON attributes produces association + nodes.
+
+        Source 'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat'
+        and knowledge_level is set to 'knowledge_assertion' for this predicate.
+        """
         attributes = [
             {
                 "attribute_type_id": "biolink:supporting_study_result",
@@ -442,8 +448,8 @@ class TestTransformTmkpEdge:
         assert isinstance(assoc, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
         assert assoc.subject == "DRUGBANK:DB01248"
         assert assoc.object == "MONDO:0008315"
-        assert assoc.predicate == "biolink:treats"
-        assert assoc.knowledge_level == KnowledgeLevelEnum.not_provided
+        assert assoc.predicate == "biolink:treats_or_applied_or_studied_to_treat"
+        assert assoc.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
         assert assoc.agent_type == AgentTypeEnum.text_mining_agent
 
         # Verify supporting studies populated
@@ -456,7 +462,7 @@ class TestTransformTmkpEdge:
         assert len(nodes) == 2
 
     def test_edge_without_attributes_gets_default_sources(self):
-        """Edge without _attributes still gets default sources."""
+        """Edge without _attributes still gets default sources and remapped predicate."""
         record = {
             "subject": "DRUGBANK:DB01248",
             "predicate": "biolink:treats",
@@ -469,6 +475,7 @@ class TestTransformTmkpEdge:
         assert len(associations) == 1
 
         assoc = associations[0]
+        assert assoc.predicate == "biolink:treats_or_applied_or_studied_to_treat"
         source_ids = [s.resource_id for s in assoc.sources]
         assert INFORES_TEXT_MINING_KP in source_ids
         assert "infores:pubmed" in source_ids
@@ -550,3 +557,125 @@ class TestTransformTmkpEdge:
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 1
         assert isinstance(associations[0], expected_class)
+
+    def test_treats_predicate_is_remapped(self):
+        """Source 'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat'."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert associations[0].predicate == "biolink:treats_or_applied_or_studied_to_treat"
+
+    def test_non_treats_predicate_not_remapped(self):
+        """Predicates not in PREDICATE_REMAP pass through unchanged."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert associations[0].predicate == "biolink:affects"
+
+    def test_treats_edge_gets_knowledge_assertion(self):
+        """Remapped treats edges get knowledge_level=knowledge_assertion."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert associations[0].knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+
+    def test_non_treats_edge_gets_not_provided(self):
+        """Non-treats edges keep knowledge_level=not_provided."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert associations[0].knowledge_level == KnowledgeLevelEnum.not_provided
+
+    def test_gene_disease_contributes_to_gets_epc_pattern(self):
+        """Gene-disease 'contributes_to' is transformed to canonical EPC pattern.
+
+        Primary predicate becomes 'affects', qualified_predicate becomes 'contributes_to',
+        and subject_form_or_variant_qualifier is set to 'modified_form'.
+        """
+        record = {
+            "subject": "UniProtKB:P12345",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0008315",
+            "relation": "biolink:GeneToDiseaseAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == MODIFIED_FORM
+
+    def test_chemical_disease_contributes_to_not_transformed(self):
+        """Chemical-disease 'contributes_to' is NOT transformed (only gene-disease gets EPC)."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+        assert assoc.predicate == "biolink:contributes_to"
+
+    def test_gene_disease_affects_not_transformed(self):
+        """Gene-disease 'affects' is NOT transformed (only contributes_to triggers EPC)."""
+        record = {
+            "subject": "UniProtKB:P12345",
+            "predicate": "biolink:affects",
+            "object": "MONDO:0008315",
+            "relation": "biolink:GeneToDiseaseAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert not hasattr(assoc, "qualified_predicate") or assoc.qualified_predicate is None
+
+
+class TestPredicateRemap:
+    """Tests for the PREDICATE_REMAP constant."""
+
+    def test_treats_is_remapped(self):
+        assert PREDICATE_REMAP["biolink:treats"] == "biolink:treats_or_applied_or_studied_to_treat"
+
+    def test_only_treats_is_remapped(self):
+        assert len(PREDICATE_REMAP) == 1

@@ -35,10 +35,20 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     TextMiningStudyResult,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    ChemicalOrGeneOrGeneProductFormOrVariantEnum,
 )
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP, get_biolink_model_toolkit
 
+
+# Remap predicates from source to canonical Biolink form.
+# Text-mined 'treats' edges should use the broader 'treats_or_applied_or_studied_to_treat'
+# because NLP cannot distinguish between studied, applied, and actual treatment relationships.
+PREDICATE_REMAP = {
+    "biolink:treats": "biolink:treats_or_applied_or_studied_to_treat",
+}
+
+MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
 # Map TMKP attribute names to Biolink slot names
 TMKP_TO_BIOLINK_SLOT_MAP = {
@@ -146,7 +156,7 @@ def _get_predicate_domain_range_prefixes(predicate: str) -> tuple[frozenset[str]
     and returns the valid ID prefixes for each.
 
     Args:
-        predicate: Biolink predicate CURIE (e.g., 'biolink:treats')
+        predicate: Biolink predicate CURIE (e.g., 'biolink:treats' converted to "treats or applied or studied to treat"))
 
     Returns:
         Tuple of (domain_prefixes, range_prefixes) or None if predicate has no constraints.
@@ -388,8 +398,19 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         _skipped_edges_by_prefix.add((subject_id, predicate, object_id, relation))
         return None
 
+    # Remap predicates from source to canonical Biolink form
+    predicate = PREDICATE_REMAP.get(predicate, predicate)
+
     # Get association class
     assoc_class = ASSOCIATION_MAP.get(relation, Association)
+
+    # Knowledge level: 'treats_or_applied_or_studied_to_treat' is broad enough to warrant
+    # 'knowledge_assertion' (the predicate semantics already account for uncertainty).
+    # All other text-mined predicates use 'not_provided'.
+    if predicate == "biolink:treats_or_applied_or_studied_to_treat":
+        knowledge_level = KnowledgeLevelEnum.knowledge_assertion
+    else:
+        knowledge_level = KnowledgeLevelEnum.not_provided
 
     # Build association kwargs with all fields
     assoc_kwargs = {
@@ -397,11 +418,22 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         "subject": subject_id,
         "predicate": predicate,
         "object": object_id,
-        "knowledge_level": KnowledgeLevelEnum.not_provided,
+        "knowledge_level": knowledge_level,
         "agent_type": AgentTypeEnum.text_mining_agent,
     }
 
-    # Add all qualifiers to kwargs if present
+    # For gene-disease 'contributes_to' edges, use the canonical Biolink EPC pattern:
+    # primary predicate 'affects', qualified predicate 'contributes_to', with
+    # subject_form_or_variant_qualifier indicating the protein is in a modified form.
+    if (
+        assoc_class == CorrelatedGeneToDiseaseAssociation
+        and predicate == "biolink:contributes_to"
+    ):
+        assoc_kwargs["predicate"] = "biolink:affects"
+        assoc_kwargs["qualified_predicate"] = "biolink:contributes_to"
+        assoc_kwargs["subject_form_or_variant_qualifier"] = MODIFIED_FORM
+
+    # Add all qualifiers to kwargs if present (source qualifiers override defaults)
     if qualified_pred := record.get("qualified_predicate"):
         assoc_kwargs["qualified_predicate"] = qualified_pred
     elif assoc_class == GeneRegulatesGeneAssociation:
