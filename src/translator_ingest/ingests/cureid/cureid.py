@@ -11,7 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    Association, PhenotypicFeature, ChemicalOrDrugOrTreatmentSideEffectDiseaseOrPhenotypicFeatureAssociation,
+    Association, PhenotypicFeature, ChemicalOrDrugOrTreatmentAdverseEventAssociation,
     FDAIDAAdverseEventEnum, DiseaseToPhenotypicFeatureAssociation, Gene, GeneToDiseaseAssociation, SequenceVariant,
     GenotypeToVariantAssociation, VariantToDiseaseAssociation, ResourceRoleEnum, RetrievalSource
 )
@@ -127,6 +127,10 @@ def _create_node(id: str, label: str, obj_type: str, record: dict[str, Any]):
     else:
         raise ValueError(f"Unhandled node type: {obj_type} in record: {record}")
 
+def _get_predicate(record: dict[str, Any]):
+    if record['biolink_predicate'] == 'biolink:gene_associated_with_condition':  # map old predicate :(
+        return 'biolink:associated_with'
+    return record['biolink_predicate']
 
 def _create_associations(record: dict[str, Any]):
     edge_type = record['association_category']
@@ -143,7 +147,7 @@ def _create_associations(record: dict[str, Any]):
             params = {
                 'id': str(uuid.uuid4()),
                 'subject': subject,
-                'predicate': record['biolink_predicate'],
+                'predicate': _get_predicate(record),
                 'object': object,
                 'primary_knowledge_source': INFORES_CUREID,
                 'knowledge_level': KnowledgeLevelEnum.knowledge_assertion,
@@ -167,7 +171,7 @@ def _create_associations(record: dict[str, Any]):
                 if record['object_type'] == 'AdverseEvent':
                     params['FDA_adverse_event_level'] = get_adverse_event_level_from_outcomes(record['outcome'].split(';'))
                     params['knowledge_level'] = KnowledgeLevelEnum.observation # adverse events are observations, while other associations are assertions
-                    associations.append(ChemicalOrDrugOrTreatmentSideEffectDiseaseOrPhenotypicFeatureAssociation(
+                    associations.append(ChemicalOrDrugOrTreatmentAdverseEventAssociation(
                         **params
                     ))
                 else:

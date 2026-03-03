@@ -71,7 +71,7 @@ target_info:
         - biolink:Disease
         - biolink:PhenotypicFeature
       knowledge_level:
-        - knowledge_assertion
+        - observation
       agent_type:
         - manual_agent
       edge_properties:
@@ -95,7 +95,7 @@ target_info:
     - subject_categories:
         - biolink:Gene
       predicates:
-        - biolink:gene_associated_with_condition
+        - biolink:associated_with
       object_categories:
         - biolink:Disease
       knowledge_level:

@@ -46,9 +46,9 @@
 | Subject Categories | Predicates | Object Categories | Knowledge Level | Agent Type | UI Explanation |
 | --- | --- | --- | --- | --- | --- |
 | biolink:ChemicalEntity, biolink:SmallMolecule | biolink:applied_to_treat | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication was applied_to_treat a particular disease or phenotype. |
-| biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype. |
+| biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype. |
 | biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype. |
-| biolink:Gene | biolink:gene_associated_with_condition | biolink:Disease | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease. |
+| biolink:Gene | biolink:associated_with | biolink:Disease | knowledge_assertion | manual_agent | A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease. |
 
 ### Node Types
 
@@ -59,4 +59,12 @@
 | biolink:PhenotypicFeature | HP, NCIT, UMLS |  |
 | biolink:Gene | NCBIGene |  |
 | biolink:ChemicalEntity | UNII |  |
+
+## Provenance Information
+
+**Contributors:**
+- Keith Kelleher - ingest code author
+- Jessica Maine - data cleansing, domain expertise
+- Tahsin Farid - domain expertise
+- Keyla Tumas - domain expertise
 
