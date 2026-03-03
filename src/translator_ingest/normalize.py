@@ -32,12 +32,14 @@ def normalize_kgx_files(
     normalization_metadata_file_path: str,
     pipeline_metadata: PipelineMetadata = None,
 ):
-    normalization_scheme = NormalizationScheme(conflation=True)
-
     # Get max_edge_count from pipeline metadata if available
     max_edge_count = None
+    strict_normalization = True
     if pipeline_metadata:
-        max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+        max_edge_count = pipeline_metadata.koza_config.get("max_edge_count")
+        strict_normalization = pipeline_metadata.koza_config.get("strict_normalization", True)
+
+    normalization_scheme = NormalizationScheme(conflation=True, strict=strict_normalization)
 
     # Build kwargs for KGXFileNormalizer based on whether this is nodes-only
     normalizer_kwargs = {

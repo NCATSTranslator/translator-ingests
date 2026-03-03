@@ -102,7 +102,7 @@ def get_source_data_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / "source_data"
 
 def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
-    return get_output_directory(pipeline_metadata) / pipeline_metadata.transform_version
+    return get_output_directory(pipeline_metadata) / f"transform_{pipeline_metadata.transform_version}"
 
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_transform_directory(pipeline_metadata) / f"normalization_{pipeline_metadata.node_norm_version}"

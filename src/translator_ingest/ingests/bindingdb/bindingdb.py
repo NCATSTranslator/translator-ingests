@@ -36,7 +36,6 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     ARTICLE_DOI,
     PMID,
     PATENT_NUMBER,
-
     MISSING_PUBS,
     ROWS_MISSING_AFFINITY
 )

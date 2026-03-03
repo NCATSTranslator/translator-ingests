@@ -14,15 +14,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+
 ## ADDED packages for this ingest
 from datetime import datetime
 import pandas as pd
 import requests
-## increment this when your file changes will affect the output
-##   (even with the same resource data) to trigger a new build
-TRANSFORM_VERSION = "1.1"
-
-
 ## HARD-CODED VALUES
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
