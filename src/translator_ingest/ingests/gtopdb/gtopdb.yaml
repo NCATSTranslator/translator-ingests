@@ -1,7 +1,7 @@
 name: gtopdb
 
 readers:
-  gtopdb_parsing:
+  gtopdb_interaction_parsing:
     format: csv
     delimiter: ","
     comment_char: "#" # Header line starts with #

@@ -1,4 +1,5 @@
 import click
+import hashlib
 import json
 import tarfile
 import time
@@ -8,6 +9,7 @@ from dataclasses import is_dataclass, asdict
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -39,6 +41,13 @@ from translator_ingest.util.download_utils import substitute_version_in_download
 
 logger = get_logger(__name__)
 
+# Short-term source-specific normalization overrides.
+# PathBank emits many valid source-local identifiers that NodeNorm does not currently resolve.
+# Running lenient normalization preserves those nodes/edges until broader identifier support lands.
+NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {
+    "pathbank": False,
+}
+
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
     """Load koza config to get ingest-specific settings like max_edge_count."""
@@ -49,8 +58,12 @@ def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
+    strict_normalization = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
+    if not strict_normalization:
+        logger.info(f"Using lenient normalization for {source} (strict_normalization=False)")
     pipeline_metadata.koza_config = {
-        'max_edge_count': config.writer.max_edge_count if config.writer else None
+        "max_edge_count": config.writer.max_edge_count if config.writer else None,
+        "strict_normalization": strict_normalization,
     }
 
 
@@ -74,17 +87,20 @@ def get_last_successful_source_version(source: str) -> str | None:
         build_metadata = json.load(f)
         return build_metadata.get("source_version")
 
-
-# Determine the latest available version for the source using the function from the ingest module
-def get_latest_source_version(source):
+# Return an ingest module by source name so attributes from it can be accessed without explicit imports
+def get_ingest_module(source: str) -> ModuleType:
     try:
         # Import the ingest module for this source
         ingest_module = import_module(f"translator_ingest.ingests.{source}.{source}")
+        return ingest_module
     except ModuleNotFoundError:
         error_message = f"Python module for {source} was not found at translator_ingest.ingests.{source}.{source}.py"
         logger.error(error_message)
         raise NotImplementedError(error_message)
 
+# Determine the latest available version for the source using the function from the ingest module
+def get_latest_source_version(source):
+    ingest_module = get_ingest_module(source)
     try:
         # Get a reference to the get_latest_source_version function
         latest_version_fn = getattr(ingest_module, "get_latest_version")
@@ -99,7 +115,10 @@ def get_latest_source_version(source):
 
     try:
         # Call it and return the latest version
-        return latest_version_fn()
+        logger.info(f"Determining latest version for {source}...")
+        latest_version = latest_version_fn()
+        logger.info(f"Latest version for {source} established: {latest_version}")
+        return latest_version
     except Exception as e:
         logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
                      f'Error: {e}.')
@@ -110,12 +129,33 @@ def get_latest_source_version(source):
         logger.error(f'Fallback version could not be identified for {source}.')
         raise e
 
+def get_transform_version(source: str) -> str:
+    """Compute a content hash of the ingest's source files.
+
+    Hashes all .py files, .json files, and the ingest YAML config in the ingest directory,
+    producing a short hash that changes whenever the ingest changes.
+    This automatically triggers a new build when the pipeline detects a new version.
+    """
+    ingest_dir = INGESTS_PARSER_PATH / source
+    source_yaml = ingest_dir / f"{source}.yaml"
+
+    files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py")) + sorted(ingest_dir.glob("*.json"))
+    if source_yaml.exists():
+        files_to_hash.append(source_yaml)
+
+    hasher = hashlib.sha256()
+    for file_path in files_to_hash:
+        hasher.update(file_path.read_bytes())
+    return hasher.hexdigest()[:8]
 
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Downloading source data for {pipeline_metadata.source}...")
     # Find the path to the source-specific download yaml
     download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
+    # If the download yaml does not exist, assume it isn't needed for this source and back out
+    if not download_yaml_file.exists():
+        logger.info(f"Download yaml not found for {pipeline_metadata.source}. Skipping download...")
+        return
 
     # Substitute version placeholders in download.yaml if they exist
     download_yaml_with_version = substitute_version_in_download_yaml(
@@ -128,6 +168,7 @@ def download(pipeline_metadata: PipelineMetadata):
     try:
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
+        logger.info(f"Downloading source data for {pipeline_metadata.source}...")
         kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
@@ -498,7 +539,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     data_source_info.version = pipeline_metadata.source_version
 
     storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
-                   f"{pipeline_metadata.transform_version}/"
+                   f"transform_{pipeline_metadata.transform_version}/"
                    f"normalization_{pipeline_metadata.node_norm_version}/")
     pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
@@ -609,9 +650,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         extract_tmkp_archive(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
-    # TODO we need a way to version the transform (see issue #97)
+    # Transform version is auto-computed as a content hash of the ingest's source files
     # Set transform_version before load_koza_config since it uses get_transform_directory
-    pipeline_metadata.transform_version = "1.0"
+    pipeline_metadata.transform_version = get_transform_version(source)
 
     # Load koza config early to get max_edge_count for all pipeline stages
     load_koza_config(source, pipeline_metadata)

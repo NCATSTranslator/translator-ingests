@@ -14,12 +14,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+
 ## ADDED packages for this ingest
 from datetime import datetime
 import pandas as pd
 import requests
-
-
 ## HARD-CODED VALUES
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
@@ -167,6 +166,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         agent_type=AgentTypeEnum.manual_agent,
         update_date=date,
         allelic_requirement=koza.transform_metadata["allelicreq_mappings"][record["allelic requirement"]],
+        gene2phenotype_confidence_category=record["confidence"],
         ## include publications!!!
         publications=publications,
     )

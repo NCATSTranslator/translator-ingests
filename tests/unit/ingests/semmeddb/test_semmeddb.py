@@ -1,18 +1,23 @@
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
+    CausalGeneToDiseaseAssociation,
     ChemicalEntity,
     Disease,
     Gene,
+    GeneToPhenotypicFeatureAssociation,
     Protein,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    Study,
+    TextMiningStudyResult,
 )
 
 from koza.runner import KozaRunner, KozaTransformHooks
 from translator_ingest.ingests.semmeddb.semmeddb import (
     transform_semmeddb_edge,
     _make_node,
+    _extract_supporting_studies,
 )
 
 from tests.unit.ingests import MockKozaWriter
@@ -58,8 +63,8 @@ def test_therapeutic_edge_entities(therapeutic_edge_output):
     assert association.subject == "CHEBI:15365"
     assert association.object == "MONDO:0005148"
     assert association.publications == ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"]
-    assert association.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
-    assert association.agent_type == AgentTypeEnum.automated_agent
+    assert association.knowledge_level == KnowledgeLevelEnum.not_provided
+    assert association.agent_type == AgentTypeEnum.text_mining_agent
     
     # verify node creation
     chemical = [e for e in entities if isinstance(e, ChemicalEntity)][0]
@@ -187,3 +192,172 @@ def test_edge_with_domain_range_exclusion(edge_with_domain_range_exclusion):
     # Edges with domain_range_exclusion == True should be filtered out
     associations = [e for e in entities if isinstance(e, Association)]
     assert len(associations) == 0, "Edges with domain_range_exclusion should be filtered out"
+
+
+def test_extract_supporting_studies():
+    """Test the _extract_supporting_studies function."""
+    publications_info = {
+        "PMID:12345678": {
+            "sentence": "This drug treats the disease effectively.",
+            "publication date": "2020 Jan",
+            "subject score": "1000",
+            "object score": "900"
+        },
+        "PMID:87654321": {
+            "sentence": "Further studies confirmed the therapeutic effect.",
+            "publication date": "2021 Mar",
+            "subject score": "950",
+            "object score": "850"
+        }
+    }
+    
+    result = _extract_supporting_studies(publications_info)
+    
+    # Should return a dict with study ID as key
+    assert result is not None
+    assert len(result) == 1  # One Study object containing all results
+    
+    # Get the study
+    study = list(result.values())[0]
+    assert isinstance(study, Study)
+    
+    # Check the study has study results
+    assert study.has_study_results is not None
+    assert len(study.has_study_results) == 2
+    
+    # Verify supporting text is captured
+    all_sentences = []
+    for tm_result in study.has_study_results:
+        assert isinstance(tm_result, TextMiningStudyResult)
+        if tm_result.supporting_text:
+            all_sentences.extend(tm_result.supporting_text)
+    
+    assert "This drug treats the disease effectively." in all_sentences
+    assert "Further studies confirmed the therapeutic effect." in all_sentences
+
+
+def test_extract_supporting_studies_empty():
+    """Test _extract_supporting_studies with empty input."""
+    assert _extract_supporting_studies({}) is None
+    assert _extract_supporting_studies(None) is None
+
+
+@pytest.fixture
+def edge_with_publications_info():
+    """Test edge with publications_info containing sentences."""
+    record = {
+        "subject": "CHEBI:15365",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "publications_info": {
+            "PMID:12345678": {
+                "sentence": "Aspirin effectively reduces inflammation in diabetic patients.",
+                "publication date": "2020 Jan",
+                "subject score": "1000",
+                "object score": "900"
+            }
+        },
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    return _create_test_runner(record)
+
+
+def test_edge_with_publications_info(edge_with_publications_info):
+    """Test that publications_info sentences are properly extracted."""
+    entities = edge_with_publications_info
+    
+    # Find the association
+    associations = [e for e in entities if isinstance(e, Association)]
+    assert len(associations) == 1
+    
+    association = associations[0]
+    
+    # Verify supporting studies are attached
+    assert association.has_supporting_studies is not None
+    assert len(association.has_supporting_studies) == 1
+    
+    # Get the study and verify it contains the sentence
+    study = list(association.has_supporting_studies.values())[0]
+    assert study.has_study_results is not None
+    assert len(study.has_study_results) == 1
+    
+    tm_result = study.has_study_results[0]
+    assert "Aspirin effectively reduces inflammation in diabetic patients." in tm_result.supporting_text
+
+
+def test_preventative_predicate_remapped():
+    """Test that preventative_for_condition is remapped to treats_or_applied_or_studied_to_treat."""
+    record = {
+        "subject": "CHEBI:15365",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:preventative_for_condition",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.predicate == "biolink:treats_or_applied_or_studied_to_treat"
+
+
+def test_gene_causes_disease_gets_variant_qualifier():
+    """Test that gene causes disease edges get genetic_variant_form qualifier."""
+    record = {
+        "subject": "NCBIGene:100",
+        "object": "MONDO:0005148",
+        "predicate": "biolink:causes",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    assert isinstance(association, CausalGeneToDiseaseAssociation)
+    assert association.subject_form_or_variant_qualifier == "genetic_variant_form"
+
+
+def test_protein_causes_phenotype_gets_variant_qualifier():
+    """Test that protein causes phenotype edges get genetic_variant_form qualifier."""
+    record = {
+        "subject": "PR:P12345",
+        "object": "HP:0000118",
+        "predicate": "biolink:causes",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    assert isinstance(association, GeneToPhenotypicFeatureAssociation)
+    assert association.subject_form_or_variant_qualifier == "genetic_variant_form"
+
+
+def test_causes_without_disease_or_phenotype_no_variant_qualifier():
+    """Test that causes edges to unsupported object classes keep generic Association."""
+    record = {
+        "subject": "NCBIGene:100",
+        "object": "UMLS:C0011847",
+        "predicate": "biolink:causes",
+        "publications": ["PMID:12345678", "PMID:87654321", "PMID:11111111", "PMID:22222222"],
+        "negated": False,
+        "domain_range_exclusion": False,
+        "subject_novelty": 1,
+        "object_novelty": 1,
+    }
+    entities = _create_test_runner(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    assert type(association) is Association
+    assert not hasattr(association, "subject_form_or_variant_qualifier")

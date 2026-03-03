@@ -116,7 +116,7 @@ def get_molepro_targets(molepro_targets):
 
 def generate_target_config():
     gene_ids, aliases = get_genes()
-    if sys.argv.length > 1:
+    if len(sys.argv) > 1:
         molepro_targets = sys.argv[1]
         molepro_targets = get_molepro_targets(molepro_targets)
     dru_rep_hub_file = 'data/drug_rep_hub/v1/source_data/repo-drug-annotation.txt'

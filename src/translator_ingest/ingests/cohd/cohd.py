@@ -24,8 +24,7 @@ from translator_ingest.util.biolink import (
 
 from koza.model.graphs import KnowledgeGraph
 
-from bmt import Toolkit
-bmt: Toolkit = get_biolink_model_toolkit()
+bmt = get_biolink_model_toolkit()
 
 
 def get_latest_version() -> str:

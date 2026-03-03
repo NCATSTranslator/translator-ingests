@@ -3,7 +3,7 @@ import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.http_utils import get_modify_date
-from translator_ingest.util.biolink import INFORES_DISEASES, INFORES_MEDLINEPLUS, INFORES_AMYCO 
+from translator_ingest.util.biolink import INFORES_DISEASES, INFORES_MEDLINEPLUS, INFORES_AMYCO
 ## ADDED packages for this ingest
 from datetime import datetime
 import pandas as pd
@@ -19,7 +19,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-
 
 BIOLINK_OCCURS_IN_LIT_WITH = "biolink:occurs_together_in_literature_with"
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
@@ -146,7 +145,7 @@ def knowledge_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
     ## data was loaded with empty values = "". Just in case, replace these empty strings with None so isna() methods will work
     df.replace(to_replace="", value=None, inplace=True)
     ## debugging: keep because it tells us how much was removed by filter
-    print(f"After filter, but before prepare_data: {df.shape}")
+    koza.log(f"After filter, but before prepare_data: {df.shape}")
 
     ## remove duplicates, record count of duplicates
     df, koza.state["knowledge_row_counts"]["duplicate_rows"] = remove_duplicates(df)
@@ -189,10 +188,10 @@ def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kn
                 source_record_urls=[record["url"]],
             )
         ],
-        knowledge_level=KnowledgeLevelEnum.statistical_association,
-        agent_type=AgentTypeEnum.text_mining_agent,
+        knowledge_level=KnowledgeLevelEnum.text_co_occurrence,
+        agent_type=AgentTypeEnum.data_analysis_pipeline,
         z_score=record["z_score"],
-        has_confidence_score=record["confidence_score"],
+        diseases_confidence_score=record["confidence_score"],
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])
@@ -250,7 +249,7 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
         sources=current_sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        has_confidence_score=record["confidence_score"],
+        diseases_confidence_score=record["confidence_score"],
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])

@@ -54,7 +54,7 @@ ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources
             ],
             # Captured edge contents
             {
-                "category": ["biolink:AnatomicalEntityToAnatomicalEntityPartOfAssociation"],
+                "category": ["biolink:AnatomicalEntityHasPartAnatomicalEntityAssociation"],
                 "subject": "CHEMBL.TARGET:CHEMBL612409",
                 "predicate": "biolink:has_part",
                 "object": "UniProtKB:Q15125",
