@@ -130,9 +130,9 @@ target_info:
       source_identifier_types:
         - UNII
 
-  provenance_info:
-    contributions:
-      - "Keith Kelleher - ingest code author"
-      - "Jessica Maine - data cleansing, domain expertise"
-      - "Tahsin Farid - domain expertise"
-      - "Keyla Tumas - domain expertise"
+provenance_info:
+  contributions:
+    - "Keith Kelleher - ingest code author"
+    - "Jessica Maine - data cleansing, domain expertise"
+    - "Tahsin Farid - domain expertise"
+    - "Keyla Tumas - domain expertise"
