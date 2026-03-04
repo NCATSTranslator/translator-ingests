@@ -667,7 +667,7 @@ def test_transform_cohd_nodes(
                 "has_confidence_score": 5.861265273152199,
                 "has_supporting_studies": [
                     {
-                        # "COHD:dataset_1": {
+                        "COHD:dataset_1": {
                             "id": "COHD:dataset_1",
                             "category": ["biolink:Study"],
                             "has_study_results": [
@@ -686,14 +686,13 @@ def test_transform_cohd_nodes(
                                 {
                                     "category": ["biolink:RelativeFrequencyAnalysisResult"],
                                     "name": "Relative to SNOMEDCT:60108003: 1.091 [0.200, 5.500]; Relative to CPT:73540: 0.013 [0.004, 0.026]"
-                                }
-    ,
+                                },
                                 {
                                     "category": ["biolink:LogOddsAnalysisResult"],
                                     "name": "999.000 [999.000, 999.000]"
                                 }
                             ]
-                        # }
+                        }
                     }
                 ],
                 "sources": [
@@ -744,8 +743,35 @@ def test_transform_cohd_nodes(
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:73030",
                 "has_confidence_score": 3.3254987202521264,
-                "has_study_results": [
-
+                "has_supporting_studies": [
+                    {
+                        "COHD:dataset_1": {
+                            "id": "COHD:dataset_1",
+                            "category": ["biolink:Study"],
+                            "has_study_results": [
+                                {
+                                    "category": ["biolink:ConceptCountAnalysisResult"],
+                                    "name": "UMLS:C0160047: 11; CPT:73030: 29261; pair: 16"
+                                },
+                                {
+                                    "category": ["biolink:ChiSquaredAnalysisResult"],
+                                    "name": "p-value: 1.00e-12; Bonferonni p-value: 1.00e-12"
+                                },
+                                {
+                                    "category": ["biolink:ObservedExpectedFrequencyAnalysisResult"],
+                                    "name": "4.489 [3.325, 5.150]"
+                                },
+                                {
+                                    "category": ["biolink:RelativeFrequencyAnalysisResult"],
+                                    "name": "Relative to UMLS:C0160047: 1.455 [0.350, 6.750]; Relative to CPT:73030: 0.001 [0.000, 0.001]"
+                                },
+                                {
+                                    "category": ["biolink:LogOddsAnalysisResult"],
+                                    "name": "999.000 [999.000, 999.000]"
+                                }
+                            ]
+                        }
+                    }
                 ],
                 "sources": [
                     {
@@ -797,8 +823,35 @@ def test_transform_cohd_nodes(
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:99232",
                 "has_confidence_score": 2.5595194408846957,
-                "has_study_results": [
-
+                "has_supporting_studies": [
+                    {
+                        "COHD:dataset_1": {
+                            "id": "COHD:dataset_1",
+                            "category": ["biolink:Study"],
+                            "has_study_results": [
+                                {
+                                    "category": ["biolink:ConceptCountAnalysisResult"],
+                                    "name": "MONDO:0000888: 11; CPT:99232: 75532; pair: 19"
+                                },
+                                {
+                                    "category": ["biolink:ChiSquaredAnalysisResult"],
+                                    "name": "p-value: 1.00e-12; Bonferonni p-value: 1.00e-12"
+                                },
+                                {
+                                    "category": ["biolink:ObservedExpectedFrequencyAnalysisResult"],
+                                    "name": "3.712 [2.560, 4.323]"
+                                },
+                                {
+                                    "category": ["biolink:RelativeFrequencyAnalysisResult"],
+                                    "name": "Relative to MONDO:0000888: 1.727 [0.450, 7.750]; Relative to CPT:99232: 0.000 [0.000, 0.000]"
+                                },
+                                {
+                                    "category": ["biolink:LogOddsAnalysisResult"],
+                                    "name": "999.000 [999.000, 999.000]"
+                                }
+                            ]
+                        }
+                    }
                 ],
                 "sources": [
                     {
