@@ -330,9 +330,9 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             # Extract publications from references
             publications = edge.get("causal_predicate_has_reference", [])
             if isinstance(publications, str):
-                publications = [publications]
+                publications = [publications.strip()]
             if publications and isinstance(publications, list):
-                publications = [pub for pub in publications if isinstance(pub, str) and pub.startswith("PMID:")]
+                publications = [pub.strip() for pub in publications if isinstance(pub, str) and pub.startswith("PMID:")]
 
             # Get normalized IDs for the association with safe fallback
             normalized_source_id = node_lookup.get(source_id, {}).get("id", normalize_id(source_id))

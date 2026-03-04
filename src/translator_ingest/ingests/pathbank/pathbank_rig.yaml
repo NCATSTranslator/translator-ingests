@@ -72,7 +72,8 @@ target_info:
         - infores:pathbank
       ui_explanation: "Pathway has the specified entity as a participant (from PWML membership and context)."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
+        - pathbank_all_pathways.csv.zip
         
     - subject_categories:
         - biolink:MolecularActivity
@@ -91,7 +92,7 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Reaction (molecular activity) consumes specified inputs (reactants) extracted from PWML participants."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:MolecularActivity
@@ -110,7 +111,7 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Reaction (molecular activity) produces specified outputs (products) as defined in PWML."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:MacromolecularComplex
@@ -125,7 +126,7 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Enzyme or protein complex catalyzes the specified reaction (molecular activity) as identified in PWML."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:MacromolecularComplex
@@ -140,13 +141,11 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Complex contains specified proteins per PWML composition."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
-        - biolink:SmallMolecule
-        - biolink:ChemicalEntity
       predicate: biolink:regulates
       qualifiers:
         - property: biolink:qualified_predicate
@@ -171,7 +170,36 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Directional regulation edges derived from PWML interaction types. Qualifiers specify affected aspect and direction when available."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
+
+    - subject_categories:
+        - biolink:SmallMolecule
+        - biolink:ChemicalEntity
+      predicate: biolink:affects
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+            - "biolink:causes"
+        - property: biolink:object_aspect_qualifier
+          value_range:
+            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+        - property: biolink:object_direction_qualifier
+          value_range:
+            - biolink:DirectionQualifierEnum
+      object_categories:
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:SmallMolecule
+        - biolink:ChemicalEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:pathbank        
+      ui_explanation: "Directional chemical effect edges derived from PWML interaction types. Qualifiers specify affected aspect and direction when available."
+      source_files:
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:Protein
@@ -192,7 +220,7 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Physical interactions derived from PWML interaction types such as binding or complex formation."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:Protein
@@ -213,7 +241,7 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Fallback interaction predicate for PWML interaction types that cannot be mapped more specifically."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
         
     - subject_categories:
         - biolink:Pathway
@@ -229,7 +257,8 @@ target_info:
         - infores:pathbank        
       ui_explanation: "Pathway localization to subcellular compartments (GO terms) and tissues (BTO terms) as specified in PWML data."
       source_files:
-        - (file name here)
+        - pathbank_all_pwml.zip
+        - pathbank_all_pathways.csv.zip
 
   node_type_info:
     - node_category: biolink:Pathway
@@ -278,7 +307,6 @@ target_info:
   future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
     - category: spoq_pattern
       consideration: "MolecularActivity nodes represent reactions.  Current modeling creates separate edges describing inputs and outputs for these reactions. This is supported by Biolink, but longer term consider is this the most useful pattern for Translator? Could we model direct 'derived from/into' edges between inputs and outputs and hang the reaction id as a qualifier? A redesign to direct input-output edges with reaction qualifiers would need an agreed KG modeling pattern across sources."
-
 # Manual QA 1: Known issues identified during validation
 known_issues:
   # Most PathBank edges involve MolecularActivity and MacromolecularComplex nodes

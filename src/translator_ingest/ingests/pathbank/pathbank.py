@@ -1,4 +1,5 @@
 import csv
+import re
 import time
 import zipfile
 from datetime import datetime
@@ -23,16 +24,18 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AnatomicalEntity,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    ChemicalAffectsBiologicalEntityAssociation,
-    GeneRegulatesGeneAssociation,
-    GeneAffectsChemicalAssociation,
-    DirectionQualifierEnum,
-    GeneOrGeneProductOrChemicalEntityAspectEnum,
 )
 
 from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.ingests.pathbank.interaction_mapping import map_interaction_edge
 from translator_ingest.util.biolink import INFORES_PATHBANK
 from translator_ingest.util.http_utils import get_modify_date
+
+EXCLUDED_OCCURS_IN_GO_TERMS = {
+    # This GO ID currently normalizes to BiologicalProcess, which violates the expected
+    # Pathway occurs_in object categories for this ingest.
+    "GO:0043165",
+}
 
 
 def _load_pw_to_smpdb_mapping(source_data_dir: Path) -> dict[str, str]:
@@ -896,8 +899,8 @@ def _create_interaction_edges(
     """Create interaction edges for protein-protein or other entity interactions.
 
     Maps PathBank interaction types to Biolink predicates with qualifiers:
-    - Inhibition/Repression → regulates with downregulates qualifier
-    - Activation/Induction/Promotion → regulates with upregulates qualifier
+    - Inhibition/Repression → regulates or affects with downregulates qualifier
+    - Activation/Induction/Promotion → regulates or affects with upregulates qualifier
     - Binding/Physical/Complex → physically_interacts_with
     - Default → interacts_with
 
@@ -918,36 +921,9 @@ def _create_interaction_edges(
             return None
         return next(iter(equiv_id_to_prefix.keys()))
 
-    # Extract interaction type and map to Biolink predicate and qualifiers
+    # Extract interaction type
     interaction_type_raw = interaction.get("interaction-type", "")
     interaction_type = _normalize_xml_value(interaction_type_raw)
-
-    # Map PathBank interaction types to Biolink predicates and qualifiers
-    # Using case-insensitive matching for robustness
-    interaction_type_lower = interaction_type.lower() if interaction_type else ""
-
-    # Initialize qualifier variables
-    qualified_predicate = None
-    object_aspect_qualifier = None
-    object_direction_qualifier = None
-
-    if "inhibit" in interaction_type_lower or "repress" in interaction_type_lower:
-        predicate = "biolink:regulates"
-        qualified_predicate = "biolink:causes"
-        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-        object_direction_qualifier = DirectionQualifierEnum.downregulated
-    elif "active" in interaction_type_lower or "induc" in interaction_type_lower or "promot" in interaction_type_lower:
-        predicate = "biolink:regulates"
-        qualified_predicate = "biolink:causes"
-        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-        object_direction_qualifier = DirectionQualifierEnum.upregulated
-    elif (
-        "bind" in interaction_type_lower or "physical" in interaction_type_lower or "complex" in interaction_type_lower
-    ):
-        predicate = "biolink:physically_interacts_with"
-    else:
-        # Default to generic interacts_with for unknown types
-        predicate = "biolink:interacts_with"
 
     # Extract left elements
     left_elements_data = interaction.get("interaction-left-elements", {})
@@ -960,10 +936,6 @@ def _create_interaction_edges(
     right_elements = _normalize_to_list(
         right_elements_data.get("interaction-right-element") if isinstance(right_elements_data, dict) else None
     )
-
-    # Define entity types for association class selection
-    CHEMICAL_TYPES = {"Compound", "Bound", "ElementCollection"}
-    BIO_TYPES = {"Protein", "ProteinComplex", "NucleicAcid", "Reaction"}
 
     # Create edges between all left and right elements
     for left_element in left_elements:
@@ -1010,21 +982,16 @@ def _create_interaction_edges(
             if not right_curie:
                 continue
 
-            # Determine appropriate Association class based on types
-            assoc_class = Association
-
-            # Check types against sets
-            is_left_chem = left_type in CHEMICAL_TYPES
-            is_left_bio = left_type in BIO_TYPES
-            is_right_chem = right_type in CHEMICAL_TYPES
-            is_right_bio = right_type in BIO_TYPES
-
-            if is_left_chem and is_right_bio:
-                assoc_class = ChemicalAffectsBiologicalEntityAssociation
-            elif is_left_bio and is_right_bio:
-                assoc_class = GeneRegulatesGeneAssociation
-            elif is_left_bio and is_right_chem:
-                assoc_class = GeneAffectsChemicalAssociation
+            interaction_mapping = map_interaction_edge(
+                interaction_type=interaction_type,
+                left_type=left_type,
+                right_type=right_type,
+            )
+            assoc_class = interaction_mapping.association_class
+            predicate = interaction_mapping.predicate
+            qualified_predicate = interaction_mapping.qualified_predicate
+            object_aspect_qualifier = interaction_mapping.object_aspect_qualifier
+            object_direction_qualifier = interaction_mapping.object_direction_qualifier
 
             # Create interaction edge with predicate and qualifiers based on interaction type
             interaction_edge_kwargs = {
@@ -1076,6 +1043,8 @@ def _create_subcellular_location_nodes_and_edges(
     ontology_id = _normalize_xml_value(location.get("ontology-id"))
 
     if not ontology_id:
+        return [], []
+    if ontology_id in EXCLUDED_OCCURS_IN_GO_TERMS:
         return [], []
 
     # Create CellularComponent node using GO CURIE
@@ -1408,8 +1377,9 @@ def _normalize_external_id(external_id: str | None, prefix: str) -> str | None:
     """Normalize external database ID by stripping any existing prefix.
 
     Some XML fields may already contain the prefix (e.g., "CHEBI:62370"),
-    while others may not (e.g., "62370"). This function ensures we always
-    get just the ID part without the prefix.
+    while others may not (e.g., "62370"). A small number of records contain
+    multiple IDs in one field (e.g., "15378, 24636"); in those cases this
+    function keeps the first ID token.
 
     Args:
         external_id: The external ID (may already contain prefix like "CHEBI:123")
@@ -1422,6 +1392,9 @@ def _normalize_external_id(external_id: str | None, prefix: str) -> str | None:
         return None
 
     external_id = str(external_id).strip()
+
+    # Some source rows contain multiple IDs in one value; keep the first token.
+    external_id = re.split(r"[;,|]", external_id, maxsplit=1)[0].strip()
 
     # Strip existing prefix if present (case-insensitive)
     prefix_with_colon = f"{prefix}:"

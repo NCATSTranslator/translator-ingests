@@ -41,6 +41,13 @@ from translator_ingest.util.download_utils import substitute_version_in_download
 
 logger = get_logger(__name__)
 
+# Short-term source-specific normalization overrides.
+# PathBank emits many valid source-local identifiers that NodeNorm does not currently resolve.
+# Running lenient normalization preserves those nodes/edges until broader identifier support lands.
+NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {
+    "pathbank": False,
+}
+
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
     """Load koza config to get ingest-specific settings like max_edge_count."""
@@ -51,8 +58,12 @@ def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
+    strict_normalization = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
+    if not strict_normalization:
+        logger.info(f"Using lenient normalization for {source} (strict_normalization=False)")
     pipeline_metadata.koza_config = {
-        'max_edge_count': config.writer.max_edge_count if config.writer else None
+        "max_edge_count": config.writer.max_edge_count if config.writer else None,
+        "strict_normalization": strict_normalization,
     }
 
 
