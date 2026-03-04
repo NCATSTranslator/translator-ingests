@@ -138,7 +138,11 @@ target_info:
     node_properties:
     - name
     - xref
-  additional_notes: null
+  future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
+    - category:  edge_property_content
+      consideration: >-
+        Second level ("EPC") study result attributes from the Phase 2 source edge jsonl file are not yet being ingested.
+      relevant_files:  cohd_edges.jsonl
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, code author"
