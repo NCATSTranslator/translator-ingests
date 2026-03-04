@@ -8,7 +8,7 @@ expected content in node and edge slots, with test expectations defined by const
 """
 
 import pytest
-from typing import Optional, Iterable, Any, Iterator
+from typing import Optional, Iterable, Any, Union, Iterator
 
 import koza
 from koza.transform import Mappings
@@ -100,8 +100,9 @@ def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
             # satisfied by at least one element in the actual sub-collection.
             if not actual:
                 return False
-            if not all(_validate_pydantic_collection(sub, actual) for sub in value):
-                return False
+            for sub in value:
+                if not _validate_pydantic_collection(sub, actual):
+                    return False
         else:
             if actual != value:
                 return False
@@ -109,7 +110,7 @@ def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
 
 
 def _validate_pydantic_collection(
-    expected: dict[str, Any],
+    expected: Union[dict[str, Any],list[dict[str, Any]]],
     returned: list | dict,
 ) -> bool:
     """
@@ -130,8 +131,52 @@ def _validate_pydantic_collection(
                      are Pydantic model instances
     :return: True if at least one instance satisfies all expected field values
     """
-    items = returned.values() if isinstance(returned, dict) else returned
-    return any(_item_matches_expected(item, expected) for item in items)
+    # check if two dictionary collections are being matched...
+    if isinstance(expected, dict) and isinstance(returned, dict):
+        # better iterate, if more than one expected item
+        found: list[bool] = []
+        for key, value in expected.items():
+            if key not in returned.keys():
+                # All expected keys must be somewhere
+                # in the returned dictionary, which essentially
+                # tests if expected.key == returned.key ...
+                return False
+            returned_item = returned[key]
+            expected_item = expected[key]
+
+            # ...then one-on-one match attempted of the body of the items
+            found.append(_item_matches_expected(returned_item, expected_item))
+
+        # since I'm matching all expected against
+        # returned, then I need to match all of them?
+        return all(found)
+
+    elif isinstance(returned, list):
+
+        items = returned
+        if isinstance(expected, list):
+            # matching a list of expected instances?
+            found: list[bool] = []
+            for entry in expected:
+                for item in items:
+                    if _item_matches_expected(item, entry):
+                        found.append(True)
+                found.append(False)
+
+            # since I'm matching all expected against
+            # returned, then I need to match all of them?
+            return all(found)
+
+        else:
+            # perhaps just one expected (dictionary) entry
+            # to match against a simple list of return values?
+            for item in items:
+                if _item_matches_expected(item, expected):
+                    return True
+            return False
+    else:
+        # just comparing a simple returned item against simple expected value
+        return _item_matches_expected(returned, expected)
 
 
 def _match_edge(
