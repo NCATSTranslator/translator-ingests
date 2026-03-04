@@ -23,7 +23,7 @@ from translator_ingest.util.biolink import (
     knowledge_sources_from_trapi
 )
 
-from .cohd_util import (
+from translator_ingest.ingests.cohd.cohd_util import (
     parse_node_properties,
     get_cohd_supporting_study
 )
