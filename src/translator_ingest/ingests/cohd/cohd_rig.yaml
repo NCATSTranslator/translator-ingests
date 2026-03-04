@@ -32,6 +32,7 @@ source_info:
   citations:
     - https://www.nature.com/articles/sdata2018273
     - https://github.com/NCATSTranslator/NCATSTranslator.github.io/raw/master/presentations/Translator_2020_Kick-Off_Presentation-Clinical_Data_Services.pdf
+    - https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP
   terms_of_use_info:
     terms_of_use_url: null
     terms_of_use_description: null
@@ -136,11 +137,10 @@ target_info:
     - CHEBI
     node_properties:
     - name
+    - xref
   additional_notes: null
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, code author"
   - "Kara Fecho: domain expertise"
   - "Matthew Brush - data modeling, domain expertise"
-  artifacts:
-  - null
