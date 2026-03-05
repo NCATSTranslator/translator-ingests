@@ -57,10 +57,11 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     # print("STATE KEYS:", koza.state.keys())
     # print("MAPPING SIZE:", len(koza.state.get("pubchem_id_mapping_dict", {})))
 
-    # Load ligands mapping CSV directly
-    # skip the metadata row
+    ## Load ligands mapping CSV directly
+    ## skip the metadata row
+    ## Specify that 'Ligand ID' and "PubChem CID" should be read as a string
     ligands_file_path = Path(koza.input_files_dir) / "ligands.csv"
-    mapping_df = pd.read_csv(ligands_file_path, skiprows = 1)
+    mapping_df = pd.read_csv(ligands_file_path, skiprows = 1, dtype={'Ligand ID': str, 'PubChem CID': str})
     ## used for debugging only
     # print("Mapping CSV columns:", mapping_df.columns.tolist())
 
@@ -70,7 +71,8 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ))
 
     ## convert the input dataframe into pandas df format
-    source_df = pd.DataFrame(data)
+    ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifer from 1102 -> 1102.0
+    source_df = pd.DataFrame(data, dtype={'Ligand ID': object, "Target UniProt ID": object})
 
     ## debugging usage
     koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
