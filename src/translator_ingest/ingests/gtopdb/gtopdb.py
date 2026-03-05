@@ -71,8 +71,13 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ))
 
     ## convert the input dataframe into pandas df format
-    ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifer from 1102 -> 1102.0
-    source_df = pd.DataFrame(data, dtype={'Ligand ID': object, "Target UniProt ID": object})
+    source_df = pd.DataFrame(data)
+
+    ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifier from 1102 -> 1102.0
+    source_df = source_df.astype({
+        "Ligand ID": "string",
+        "Target UniProt ID": "string"
+    })
 
     ## debugging usage
     koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
