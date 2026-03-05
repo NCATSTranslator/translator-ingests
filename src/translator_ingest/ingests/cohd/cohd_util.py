@@ -53,7 +53,6 @@ def get_cohd_supporting_study(
 
     all_attributes: list[dict[str, Any]] = parse_attributes(attribute_list)
 
-    entry: dict
     study_attributes: list[dict[str, Any]] = [
         entry for entry in all_attributes
         if entry["attribute_type_id"] == "biolink:has_supporting_study_result"
