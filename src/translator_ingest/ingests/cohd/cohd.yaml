@@ -8,8 +8,8 @@ readers:
     required_properties:
       - 'id'
       - 'name'
-      - 'categories'  # Rename this KGX field to 'category' for compliance to the latest Biolink Model
-      - 'attributes'  # how do we unpack this into the Pydantic model?
+      - 'categories'  # to be renamed to 'category' during ingest
+      - 'attributes'
   cohd_edges:
     files:
       - 'cohd_edges.jsonl'
@@ -20,4 +20,4 @@ readers:
       - 'object'
       - 'score'
       - 'attributes'
-      - 'sources'  # This is a TRAPI-style 'sources' provenance field
+      - 'sources'
