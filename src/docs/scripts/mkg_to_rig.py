@@ -97,7 +97,7 @@ def read_mkg_edges(
         attributes = edge.get('attributes',[])
         for attribute in attributes:
             if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
-                pass
+                continue  # these are dedicated RIG fields, not edge_properties
             else:
                 attribute_type_id = attribute['attribute_type_id']
                 edge_data['edge_properties'].append(attribute_type_id)
