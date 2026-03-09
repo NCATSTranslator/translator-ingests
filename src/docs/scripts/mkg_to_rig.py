@@ -96,7 +96,7 @@ def read_mkg_edges(
         edge_data['edge_properties'] = []
         attributes = edge.get('attributes',[])
         for attribute in attributes:
-            if attribute['attribute_type_id'] in []:
+            if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
                 pass
             else:
                 attribute_type_id = attribute['attribute_type_id']
