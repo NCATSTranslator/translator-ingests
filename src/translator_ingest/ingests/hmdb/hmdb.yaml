@@ -1,13 +1,10 @@
-name: ingest_template
+name: hmdb
 
 readers:
   ingest_by_record:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: 27
-    header_prefix: "#"
+    format: "xml"
     files:
-      - "example_data.tsv.gz"
+      - "hmdb_metabolites.zip"
     columns:
       - ChemicalName
       - ChemicalID

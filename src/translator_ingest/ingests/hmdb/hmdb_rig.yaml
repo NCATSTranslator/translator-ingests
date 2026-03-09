@@ -14,23 +14,28 @@ supporting_data_source_info:
     description: null
 source_info:
   infores_id: infores:hmdb
-  name: null
-  description: null
+  name: Human Metabolome DataBase (HMDB)
+  description: >-
+    The Human Metabolome DataBase (HMDB) is an openly accessible database
+    containing detailed information about small molecule metabolites found
+    in the human body, with links between chemical data, clinical data, and
+    molecular biology/biochemistry data, including protein sequences (enzymes and transporters).
   citations:
-  - null
+    - "https://doi.org/10.1093/nar/gkl923"
+    - "https://doi.org/10.1093/nar/gkab1062"
   terms_of_use_info:
     terms_of_use_url: null
     terms_of_use_description: null
     license name: null
     license url: null
   data_access_locations:
-  - null
+    - HMDB Download - https://hmdb.ca/system/downloads/current/hmdb_metabolites.zip
   data_provision_mechanisms:
-  - null
+    - file_download
   data_formats:
-  - null
-  data_versioning_and_releases: null
-  additional_notes: null
+    - xml
+  data_versioning_and_releases: >-
+      Current version parsed out of index HTML page at https://hmdb.ca/downloads
 ingest_info:
   ingest_categories:
   - null
