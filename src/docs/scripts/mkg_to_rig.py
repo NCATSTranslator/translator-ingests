@@ -96,12 +96,15 @@ def read_mkg_edges(
         edge_data['edge_properties'] = []
         attributes = edge.get('attributes',[])
         for attribute in attributes:
-            attribute_type_id = attribute['attribute_type_id']
-            edge_data['edge_properties'].append(attribute_type_id)
+            if attribute['attribute_type_id'] in []:
+                pass
+            else:
+                attribute_type_id = attribute['attribute_type_id']
+                edge_data['edge_properties'].append(attribute_type_id)
 
-            # TODO: unsure if or how to really record this at the moment,
-            #       let alone, other associated properties?
-            # original_attribute_names = attribute['original_attribute_names']
+                # TODO: unsure if or how to really record this at the moment,
+                #       let alone, other associated properties?
+                # original_attribute_names = attribute['original_attribute_names']
 
         edge_info.append(edge_data)
 
