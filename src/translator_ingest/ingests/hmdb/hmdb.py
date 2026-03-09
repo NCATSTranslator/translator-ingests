@@ -1,7 +1,18 @@
-import uuid
-import koza
-import pandas as pd
+"""
+Human Metabolome Database (HMDB) ingest script.
+Derived from https://github.com/RobokopU24/ORION/blob/master/parsers/hmdb/src/loadHMDB.py
+with modifications as required from other KPs identified by the Phase 2 ingest survey
+"""
 from typing import Any, Iterable
+import re
+
+import uuid
+import requests
+
+from bs4 import BeautifulSoup
+import pandas as pd
+
+import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -27,13 +38,25 @@ from translator_ingest.util.biolink import INFORES_CTD
 # yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
 
 
-# Always implement a function that returns a string representing the latest version of the source data.
-# Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
-# If a source does not implement versioning, we need to do it. For static datasets, assign a version string
-# corresponding to the current version. For sources that are updated regularly, use file modification dates if
-# possible, or the current date. Versions should (ideally) be sortable (ie YYYY-MM-DD) and should contain no spaces.
-def get_latest_version() -> str:
-    return "v1"
+def get_latest_version(self) -> str:
+    """
+    Gets the version of the HMDB data.
+    Adapted from RENCI Orion code "get_latest_source_version" method.
+
+    :return: str, version
+    """
+    # this grabs the html from the downloads page and searches for the Current Version on it
+    html_page: requests.Response = requests.get('https://hmdb.ca/downloads')
+    html_page.raise_for_status()
+
+    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    search_text = 'Current Version '
+    div_tag = resp.find('a', string=re.compile('Current Version'))
+    if div_tag:
+        latest_version = div_tag.text.split(search_text)[1].strip('() ')
+        return latest_version
+    else:
+        raise Exception(f"Version could not be determined from html parsing for HMDB.")
 
 
 # Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
