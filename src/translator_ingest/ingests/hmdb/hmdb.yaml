@@ -2,7 +2,7 @@ name: hmdb
 
 readers:
   ingest_by_record:
-    format: "xml"
+    format: "csv"
     files:
       - "hmdb_metabolites.zip"
     columns:
