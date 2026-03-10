@@ -56,7 +56,7 @@ def get_latest_version(self) -> str:
         latest_version = div_tag.text.split(search_text)[1].strip('() ')
         return latest_version
     else:
-        raise Exception(f"Version could not be determined from html parsing for HMDB.")
+        raise Exception("Version could not be determined from html parsing for HMDB.")
 
 
 # Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
