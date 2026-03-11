@@ -7,7 +7,7 @@ source_info:
     considered to be drug-targets with small, drug-like molecules. As of July 31,
     2021, BindingDB contains thousands of dataset Entries, each with a DOI,
     containing millions of binding assay results for thousands of protein targets
-    assayed against over a million distinct small molecule ligands.
+    assayed against over a million distinct small molecule ligands. 
   citations:
     - https://doi.org/10.1093/nar/gkae1075
   terms_of_use_info:
@@ -90,8 +90,21 @@ target_info:
     - biolink:Protein
     knowledge_level: knowledge_assertion
     agent_type: manual_agent
+    primary_knowledge_sources:
+      - infores:bindingdb
+    supporting_data_sources:
+      - infores:chembl
+      - infores:ki-database
+      - infores:taylor-research-group-ucsd
+      - infores:uspto-patent
     edge_properties:
     - biolink:publications
+    - biolink:has_affinity
+    ui_explanation: TO DO
+    source_files:
+      - BindingDB_All_{version}_tsv.zip
+    additional_notes: "BindingDB provides generates chemical-protein interaction statements based on manual curation from the literature, or import from external knowledgebases. Records include details about experiment supporting each interaction, including binding/affinity metrics. The source tsv may therefore include >1 row for a given chemical-protein interaction.  Translator's ingest collapses records with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)  into a single edge, and aggregates metadata across contributing records (e.g. a list of all supporting publications, all supporting data sources across contributing BindingDB records).  Vlado indicated that BindingDB does some QA/filtering of binding assay records it imports to ensure that it only includes those with affinity metrics suggesting a bona fide physical interaction is occurring - which is why we use the biolink:physically_interacts_with predicate".
+      
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
