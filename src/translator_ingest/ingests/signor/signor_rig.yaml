@@ -101,7 +101,7 @@ target_info:
         - manual_agent
       edge_properties:
         - biolink:publications
-        - biolink:has_confidence_score
+        - biolink:signor_confidence_score
         - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule or complex / small molecule to 'regulate' another complex / protein / protein family / small molecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
 
@@ -143,7 +143,7 @@ target_info:
         - manual_agent
       edge_properties:
         - publications
-        - has_confidence_score
+        - biolink:signor_confidence_score
         - supporting_text
       ui_explanation: "Signor records indicate the chemical or drug to 'affect' a protein / small molecule / other chemical or drug - which maps best to the Biolink predicate 'affects' with additional aspect and direction qualifiers."
       
@@ -184,7 +184,7 @@ target_info:
         - manual_agent
       edge_properties:
         - biolink:publications
-        - biolink:has_confidence_score
+        - biolink:biolink:signor_confidence_score
         - biolink:supporting_text
       ui_explanation: "Signor records indicate the protein / complex / proteinfamily / small molecule to be 'affects' another chemical - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
 
@@ -213,7 +213,7 @@ target_info:
         - manual_agent
       edge_properties:
         - biolink:publications
-        - biolink:has_confidence_score
+        - biolink:signor_confidence_score
         - biolink:supporting_text
        ## Note to QW: SIGNOR includes a column that explicitly reports whether each causal association is direct or not - use this as a flag to determine for what records to create this additional 'directly_physically_interacts_with' edge, instead of implicit definitions/mappings from MECHANISM terms.
       ui_explanation: "When the value of the "DIRECT" column is 'true' - this implies a direct physical interaction, and the ingestion creates a separate 'physically_interacts_with' edge in addition to the affects/regulates edge (e.g. 'binding') "
