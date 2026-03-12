@@ -7,7 +7,7 @@ The script now provides two complementary output formats:
 1. A human-readable spreadsheet table (i.e. "Translator Phase 2 Ingest Inventory" style).
 2. Population of a Reference Ingest Guide ("RIG") YAML file 'target_info' section.
 """
-from typing import Optional
+from typing import Optional, Any
 from os import path, rename
 from pathlib import Path
 import sys
@@ -52,11 +52,57 @@ def read_mkg_nodes(nodes, node_info):
 
         node_info.append(node_data)
 
+
+def process_qualifiers(edge: dict[str, Any], edge_data: dict[str, Any]) -> Optional[str]:
+    #         qualifiers: # (optional, multivalued, range = Qualifier)
+    #           - property:  # (required, range = URIorCURIE)
+    #           # Choose one (or more) of the 'value' slots to describe the type of value hold by the qualifier
+    #             value_range: # (optional, multivalued, range = URIorCURIE)
+    #               -
+    #             value_enumeration: # (optional, multivalued, range = string)
+    #               -
+    #             value_id_prefixes: # (optional, multivalued, range = string)
+    #               -
+    #             value_description:  # (optional, range = string)
+    qualifiers = edge.get('qualifiers', None)
+    if not qualifiers:
+        return None
+
+    if 'qualifiers' not in edge_data:
+        edge_data['qualifiers'] = []
+
+    for qualifier in qualifiers:
+        # {
+        #   "qualifier_type_id": "object_aspect_qualifier",
+        #   "applicable_values": [
+        #     "transport"
+        #   ]
+        # }
+        rig_qualifier = dict()
+        rig_qualifier["property"] = qualifier["qualifier_type_id"]
+
+        # it is guess anything else here except a "value_enumeration"
+        rig_qualifier["value_enumeration"] = qualifier["qualifier_type_id"]
+
+        edge_data['qualifiers'].extend(qualifier)
+
+
+def _sets_to_lists(edge_data: dict[str, Any]) -> dict[str, Any]:
+    # Converts all dictionary set() values to list() values
+    converted: dict[str, Any] = {}
+    for key, value in edge_data.items():
+        if isinstance(value, set):
+            converted[key] = list(value)
+        else:
+            converted[key] = value
+    return converted
+
 def read_mkg_edges(
         edges,
         edge_info,
         knowledge_level,
-        agent_type
+        agent_type,
+        merge_edges
 ):
     """
     Convert the input MKG edge data into an output list of edges.
@@ -65,45 +111,73 @@ def read_mkg_edges(
     :param edge_info: Parsed out edge information for the output.
     :param knowledge_level: Knowledge level for the edge.
     :param agent_type: Agent type for the edge.
+    :param merge_edges: Merge edge_type_info specified edges metadata into one definition.
     :return: Modified edge_info list.
     """
+    edge_data: Optional[dict[str, Any]] = None
+
     for edge in edges:
-        edge_data = dict()
+
+        if not edge_data:
+            edge_data = dict()
 
         #       subject_categories:
         #       - "biolink:Disease"
-        edge_data['subject'] = [edge['subject']]
+        if 'subject' not in edge_data:
+            edge_data['subject'] = set()
+        edge_data['subject'].add(edge['subject'])
 
         #       predicates:
         #         - "biolink:has_phenotype"
-        edge_data['predicates'] = [edge['predicate']]
+        if 'predicates' not in edge_data:
+            edge_data['predicates'] = set()
+        edge_data['predicates'].add(edge['predicate'])
 
         #       object_categories:
         #       - "biolink:PhenotypicFeature"
-        edge_data['object'] = [edge['object']]
+        if 'object' not in edge_data:
+            edge_data['object'] = set()
+        edge_data['object'].add(edge['object'])
 
-        # TODO: Not really sure how best to capture qualifiers yet, if they are available
-        edge_data['qualifiers'] = edge.get('qualifiers',[])
+        # qualifiers are weirdly discriminating of edge type,
+        # somewhat hard to resolve...
+        # TODO: generate an indexing key using process qualifiers
+        #       then use it to discriminate between edge types?
+        process_qualifiers(edge, edge_data)
 
         #       knowledge_level:
         #       - knowledge_assertion
-        edge_data['knowledge_level'] = knowledge_level
+        if 'knowledge_level' not in edge_data:
+            edge_data['knowledge_level'] = knowledge_level
 
         #       agent_type:
         #       - manual_agent
-        edge_data['agent_type'] = agent_type
+        if 'agent_type' not in edge_data:
+            edge_data['agent_type'] = agent_type
 
-        edge_data['edge_properties'] = []
-        attributes = edge.get('attributes',[])
+        if 'edge_properties' not in edge_data:
+            edge_data['edge_properties'] = set()
+
+        attributes = edge.get('attributes', [])
         for attribute in attributes:
-            attribute_type_id = attribute['attribute_type_id']
-            edge_data['edge_properties'].append(attribute_type_id)
+            if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
+                continue  # these are dedicated RIG fields, not edge_properties
+            else:
+                attribute_type_id = attribute['attribute_type_id']
+                edge_data['edge_properties'].add(attribute_type_id)
 
-            # TODO: unsure if or how to really record this at the moment,
-            #       let alone, other associated properties?
-            # original_attribute_names = attribute['original_attribute_names']
+                # TODO: unsure if or how to really record this at the moment,
+                #       let alone, other associated properties?
+                # original_attribute_names = attribute['original_attribute_names']
 
-        edge_info.append(edge_data)
+        if not merge_edges:
+            # merge each separately
+            edge_info.append(_sets_to_lists(edge_data))
+            edge_data = None
+
+    if merge_edges and edge_data is not None:
+        # merge the edge data once
+        edge_info.append(_sets_to_lists(edge_data))
 
 CSV_TABLE_HEADERS:list[str] = [
     "MetaEdge Subject Category",
@@ -174,6 +248,17 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
         )
     return kg_data
 
+
+def prune_empty(x):
+    if isinstance(x, dict):
+        return {k: prune_empty(v) for k, v in x.items()
+                if v not in (None, "", [], {}) and prune_empty(v) not in (None, "", [], {})}
+    if isinstance(x, list):
+        return [prune_empty(v) for v in x
+                if v not in (None, "", [], {}) and prune_empty(v) not in (None, "", [], {})]
+    return x
+
+
 @click.command()
 @click.option(
     '--ingest',
@@ -202,11 +287,16 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
     help='Biolink Edge Agent Type (default: "not_provided")'
 )
 @click.option(
+    '--merge_edges',
+    default=True,
+    help='Merge edge_type_info specified edges metadata into one definition (default: True)'
+)
+@click.option(
     '--output',
     default='rig',
     help='Desired format of the output, i.e., "rig" or "csv" (default: "rig")'
 )
-def main(ingest, mkg, rig, knowledge_level, agent_type, output):
+def main(ingest, mkg, rig, knowledge_level, agent_type, merge_edges, output):
     """
     Either populate the 'target_info' section of a given RIG YAML file or
     create a comparable CSV formatted edge inventory file, using node and
@@ -214,11 +304,15 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
 
     :param ingest: Target ingest folder name of the target data source folder (e.g., icees)
     :param mkg: Meta Knowledge Graph JSON file source of details to be
-                loaded into the RIG (assumed co-located with RIG in the ingest task folder
+                loaded into the RIG (assumed co-located with RIG in the ingest task folder)
     :param rig: Reference-Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
                 This switch is ignored if the output format is "table".
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
+    :param merge_edges: Merge "edge_type_info" specified edges metadata into one definition (default: True)
+                        This supports the RIG convention that allows for multiple predicates and S/O categories
+                        as long as the provenance of all these edges is the same (same source file, KL/AT, and
+                        general curation or generation method by the source)
     :param output: Desired format of the output, i.e., "rig" or "csv" (default: "rig")
     :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
 
@@ -309,12 +403,13 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
         with open(mkg_path, 'r') as mkg:
             mkg_data = json.load(mkg)
             read_mkg_nodes(mkg_data['nodes'], node_info)
-            read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type)
+            read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type, merge_edges)
 
         if output == 'rig':
             rename(kg_data_path, str(kg_data_path)+".original")
             with open(kg_data_path, 'w') as rig:
-                yaml.safe_dump(kg_data, rig, sort_keys=False)
+                cleaned = prune_empty(kg_data)
+                yaml.safe_dump(cleaned, rig, sort_keys=False)
         else:
             # Generate 'csv' output file
             kg_data = prepare_table_data(node_info, edge_info)
