@@ -403,3 +403,247 @@ def test_is_sequence_variant_of_predicate_domain_validation():
     # Verify the error message contains expected information
     assert "expects domain 'sequence variant'" in domain_violations[0].message
     assert "subject has categories ['biolink:NamedThing']" in domain_violations[0].message
+
+
+# ============================================================================
+# Node Property Validation Tests
+# ============================================================================
+
+
+def test_valid_node_property_with_valid_enum_value():
+    """A node with a valid Biolink slot and correct enum value should produce no property warnings."""
+    test_data = {
+        'nodes': [
+            {
+                'id': 'DRUGBANK:DB14764',
+                'category': ['biolink:ChemicalEntity'],
+                'name': 'Dengue tetravalent vaccine, live',
+                'highest_FDA_approval_status': 'regular_fda_approval',
+            }
+        ],
+        'edges': []
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+
+    # No property-related warnings
+    property_warnings = [r for r in results if 'unrecognized property' in r.message or 'not in' in r.message]
+    assert len(property_warnings) == 0, \
+        f"Valid property with valid enum should have no warnings, got: {[r.message for r in property_warnings]}"
+
+
+def test_invalid_enum_value_warns():
+    """A node with a valid Biolink slot but invalid enum value should produce a warning."""
+    test_data = {
+        'nodes': [
+            {
+                'id': 'DRUGBANK:DB14764',
+                'category': ['biolink:ChemicalEntity'],
+                'name': 'Test Drug',
+                'highest_FDA_approval_status': 'not_a_real_status',
+            }
+        ],
+        'edges': []
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+
+    enum_warnings = [r for r in results if 'not in' in r.message and 'ApprovalStatusEnum' in r.message]
+    assert len(enum_warnings) == 1, \
+        f"Expected 1 enum value warning, got {len(enum_warnings)}: {[r.message for r in enum_warnings]}"
+    assert "'not_a_real_status'" in enum_warnings[0].message
+
+
+def test_unknown_property_warns():
+    """A node with a property that is not a Biolink slot should produce a warning."""
+    test_data = {
+        'nodes': [
+            {
+                'id': 'CHEBI:12345',
+                'category': ['biolink:ChemicalEntity'],
+                'name': 'Test Chemical',
+                'made_up_property': 'some value',
+            }
+        ],
+        'edges': []
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+
+    unknown_warnings = [r for r in results if 'unrecognized property' in r.message]
+    assert len(unknown_warnings) == 1, \
+        f"Expected 1 unknown property warning, got {len(unknown_warnings)}: {[r.message for r in unknown_warnings]}"
+    assert "'made_up_property'" in unknown_warnings[0].message
+
+
+def test_kgx_convention_properties_no_warning():
+    """Properties in the KGX convention skip list should not produce warnings."""
+    test_data = {
+        'nodes': [
+            {
+                'id': 'CHEBI:12345',
+                'category': ['biolink:ChemicalEntity'],
+                'name': 'Test Chemical',
+                'all_categories': ['biolink:ChemicalEntity', 'biolink:NamedThing'],
+            }
+        ],
+        'edges': []
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+
+    # all_categories should be silently skipped
+    property_warnings = [r for r in results if 'unrecognized property' in r.message and 'all_categories' in r.message]
+    assert len(property_warnings) == 0, \
+        f"all_categories should be skipped, got: {[r.message for r in property_warnings]}"
+
+
+def test_valid_non_enum_property_passes():
+    """A node with a valid Biolink slot that has a non-enum range should pass without warnings."""
+    test_data = {
+        'nodes': [
+            {
+                'id': 'CHEBI:12345',
+                'category': ['biolink:ChemicalEntity'],
+                'name': 'Test Chemical',
+                'description': 'A test chemical entity',
+                'iri': 'https://identifiers.org/chebi:12345',
+                'synonym': ['Test Chem', 'Chem Test'],
+            }
+        ],
+        'edges': []
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+
+    property_warnings = [r for r in results if 'unrecognized property' in r.message or 'not in' in r.message]
+    assert len(property_warnings) == 0, \
+        f"Valid non-enum properties should have no warnings, got: {[r.message for r in property_warnings]}"
+
+    results = list(plugin.process(test_data, context))
+
+    property_warnings = [r for r in results if 'unrecognized property' in r.message or 'not in' in r.message]
+    assert len(property_warnings) == 0, \
+        f"Valid non-enum property should have no warnings, got: {[r.message for r in property_warnings]}"
+
+# ============================================================================
+# Edge Property Validation Tests
+# ============================================================================
+
+def test_valid_edge_property_with_valid_enum_value():
+    """An edge with a valid Biolink slot and correct enum value should produce no warnings."""
+    test_data = {
+        'nodes': [],
+        'edges': [
+            {
+                'subject': 'DRUGBANK:DB14764',
+                'predicate': 'biolink:related_to',
+                'object': 'MONDO:0005148',
+                'knowledge_level': 'knowledge_assertion',
+            }
+        ]
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+    property_warnings = [r for r in results if 'unrecognized property' in r.message or 'not in' in r.message]
+    assert len(property_warnings) == 0, \
+        f"Valid property with valid enum should have no warnings, got: {[r.message for r in property_warnings]}"
+
+
+def test_invalid_edge_enum_value_warns():
+    """An edge with a valid Biolink slot but invalid enum value should produce a warning."""
+    test_data = {
+        'nodes': [],
+        'edges': [
+            {
+                'subject': 'DRUGBANK:DB14764',
+                'predicate': 'biolink:related_to',
+                'object': 'MONDO:0005148',
+                'knowledge_level': 'not_a_real_level',
+            }
+        ]
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+    enum_warnings = [r for r in results if 'not in' in r.message and 'KnowledgeLevelEnum' in r.message]
+    assert len(enum_warnings) == 1, \
+        f"Expected 1 enum value warning, got {len(enum_warnings)}: {[r.message for r in enum_warnings]}"
+    assert "'not_a_real_level'" in enum_warnings[0].message
+
+
+def test_unknown_edge_property_warns():
+    """An edge with a property that is not a Biolink slot should produce a warning."""
+    test_data = {
+        'nodes': [],
+        'edges': [
+            {
+                'subject': 'DRUGBANK:DB14764',
+                'predicate': 'biolink:related_to',
+                'object': 'MONDO:0005148',
+                'made_up_edge_prop': 'some value',
+            }
+        ]
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+    unknown_warnings = [r for r in results if 'unrecognized property' in r.message and 'made_up_edge_prop' in r.message]
+    assert len(unknown_warnings) == 1, \
+        f"Expected 1 unknown property warning, got {len(unknown_warnings)}: {[r.message for r in unknown_warnings]}"
+
+
+def test_edge_structural_and_kgx_properties_no_warning():
+    """Edge structural properties and KGX convention properties should be skipped and produce no warnings."""
+    test_data = {
+        'nodes': [],
+        'edges': [
+            {
+                'subject': 'DRUGBANK:DB14764',
+                'predicate': 'biolink:related_to',
+                'object': 'MONDO:0005148',
+                'provided_by': ['Some Source'],  # KGX Convention
+            }
+        ]
+    }
+
+    schema = get_biolink_schema()
+    plugin = BiolinkValidationPlugin(schema_view=schema)
+    context = ValidationContext(target_class='KnowledgeGraph', schema=schema.schema)
+
+    results = list(plugin.process(test_data, context))
+    property_warnings = [r for r in results if 'unrecognized property' in r.message or 'not in' in r.message]
+    
+    # We should NOT see warnings about 'subject', 'predicate', 'object', or 'provided_by'
+    assert len(property_warnings) == 0, \
+        f"Structural/KGX properties should be safely skipped, got: {[r.message for r in property_warnings]}"

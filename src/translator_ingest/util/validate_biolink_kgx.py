@@ -131,6 +131,7 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
         # Adaptive reservoir sampling - grow reservoir as we see more edges
         if len(edge_sample) < current_target_size:
             # Fill or expand reservoir
+            edge["_original_line"] = edge_count
             edge_sample.append(edge)
 
             # Track nodes referenced in this sampled edge
@@ -143,6 +144,7 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
             j = random.randint(1, edge_count)
             if j <= len(edge_sample):
                 # Replace existing edge
+                edge["_original_line"] = edge_count
                 edge_sample[j - 1] = edge
 
                 # Note: We rebuild sampled_node_refs after sampling is complete

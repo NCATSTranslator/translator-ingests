@@ -47,11 +47,26 @@ class BiolinkValidationPlugin(ValidationPlugin):
       7. Ensure proper evidence and provenance metadata
     """
 
+    # Structural properties already validated by other checks.
+    STRUCTURAL_PROPERTIES = {'id', 'category', 'name'}
+    
+    # We skip predicate and structural subject/object
+    EDGE_STRUCTURAL_PROPERTIES = {'subject', 'predicate', 'object'}
+
+    # Properties that are standard in KGX or heavily used but aren't strictly in Biolink
+    KGX_CONVENTION_PROPERTIES = {
+        'all_categories',
+        'provided_by',  # Translator commonly uses provided_by instead of/in addition to knowledge_source
+        '_original_line',  # Internal annotation added during reservoir sampling for line tracking
+    }
+
     def __init__(self, schema_view: Optional[SchemaView] = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._schema_view = schema_view
         self._valid_categories_cache = None
         self._valid_predicates_cache = None
+        self._valid_node_slots_cache = None
+        self._valid_edge_slots_cache = None
         self._node_ids_cache = set()
         self._node_categories_cache = {}  # Maps node ID to its categories for domain/range validation
         self._bmt = get_biolink_model_toolkit()  # BMT toolkit for domain/range validation
@@ -166,6 +181,25 @@ class BiolinkValidationPlugin(ValidationPlugin):
             raise RuntimeError(f"Failed to get valid predicates from Biolink schema: {e}")
 
         return self._valid_predicates_cache
+
+    def _get_valid_edge_slots(self) -> dict[str, Any]:
+        """Get all valid slots that can be applied to edges with their definitions."""
+        if self._valid_edge_slots_cache is not None:
+            return self._valid_edge_slots_cache
+
+        slots_map: dict[str, Any] = {}
+        # BMT's get_all_slots() retrieves all slots defined in the schema
+        # Though it includes node slots, an edge can theoretically use some node-like slots 
+        # (like 'name' or 'description'). To be robust, we look them all up, but we could
+        # filter to just Association slots if we wanted to be very strict. 
+        # For now, matching the node logic is safer since KGX allows flexibility.
+        for slot_name in self._bmt.get_all_slots():
+            element = self._bmt.get_element(slot_name)
+            if element:
+                slots_map[slot_name] = element
+                
+        self._valid_edge_slots_cache = slots_map
+        return self._valid_edge_slots_cache
 
     def _is_valid_curie(self, identifier: str) -> bool:
         """Check if the identifier follows a valid CURIE format."""
@@ -312,6 +346,81 @@ class BiolinkValidationPlugin(ValidationPlugin):
                 message=f"Node at /{path} is missing recommended 'name' field",
             )
 
+        # Validate additional node properties against the Biolink schema
+        yield from self._validate_node_properties(node_obj, path, context)
+
+    def _get_valid_node_slots(self) -> dict[str, Any]:
+        """Get cached mapping of normalized slot names to their BMT elements.
+
+        Returns a dict: normalized_name -> element.
+        """
+        if self._valid_node_slots_cache is not None:
+            return self._valid_node_slots_cache
+
+        slots_map: dict[str, Any] = {}
+        for slot_name in self._bmt.get_all_slots():
+            element = self._bmt.get_element(slot_name)
+            if element:
+                # Store under the normalized name (space-separated, lowercase)
+                slots_map[slot_name] = element
+        self._valid_node_slots_cache = slots_map
+        return self._valid_node_slots_cache
+
+    def _validate_node_properties(self, node_obj: dict, path: str,
+                                  context: ValidationContext) -> Iterator[ValidationResult]:
+        """Validate node properties against the Biolink schema.
+
+        For each property on the node (excluding structural fields like id/category/name):
+        1. Check that the property name is a recognized Biolink slot.
+        2. If the slot has an enum range, check that the value is a permissible value.
+        """
+        schema_view = self._schema_view
+        valid_slots = self._get_valid_node_slots()
+
+        for prop_key, prop_value in node_obj.items():
+            # Skip structural properties and KGX conventions
+            if prop_key in self.STRUCTURAL_PROPERTIES or prop_key in self.KGX_CONVENTION_PROPERTIES:
+                continue
+
+            # Normalize the property name for BMT lookup
+            normalized_name = self._normalize_biolink_name(prop_key)
+
+            # Check if it's a recognized Biolink slot
+            element = valid_slots.get(normalized_name)
+            if element is None:
+                # Try direct BMT lookup as fallback
+                element = self._bmt.get_element(normalized_name)
+
+            if element is None:
+                yield ValidationResult(
+                    type="biolink-model validation",
+                    severity=Severity.WARN,
+                    instance=node_obj,
+                    instantiates=context.target_class,
+                    message=f"Node at /{path} has unrecognized property '{prop_key}'"
+                            f" (not a known Biolink slot)",
+                )
+                continue
+
+            # Validate enum values if the slot has an enum range
+            if element.range and schema_view:
+                enum_def = schema_view.get_enum(element.range)
+                if enum_def and enum_def.permissible_values:
+                    # Handle both single values and lists
+                    values_to_check = prop_value if isinstance(prop_value, list) else [prop_value]
+                    for val in values_to_check:
+                        if isinstance(val, str) and val not in enum_def.permissible_values:
+                            allowed = sorted(enum_def.permissible_values.keys())
+                            yield ValidationResult(
+                                type="biolink-model validation",
+                                severity=Severity.WARN,
+                                instance=node_obj,
+                                instantiates=context.target_class,
+                                message=f"Node at /{path} property '{prop_key}' has value"
+                                        f" '{val}' which is not in {element.range}."
+                                        f" Allowed: {allowed}",
+                            )
+
     def _validate_edge(self, edge_obj: dict, path: str, context: ValidationContext) -> Iterator[ValidationResult]:
         """Validate a single edge object."""
         # Get required fields from Association class in schema
@@ -397,6 +506,61 @@ class BiolinkValidationPlugin(ValidationPlugin):
                             instantiates=context.target_class,
                             message=f"Edge at /{path} primary source missing 'resource_id'",
                         )
+
+        # Validate additional edge properties against the Biolink schema
+        yield from self._validate_edge_properties(edge_obj, path, context)
+
+    def _validate_edge_properties(self, edge_obj: dict, path: str, 
+                                  context: ValidationContext) -> Iterator[ValidationResult]:
+        """Validate edge properties against Biolink schema (including enum values)."""
+        schema_view = self._schema_view
+        valid_slots = self._get_valid_edge_slots()
+
+        for prop_key, prop_value in edge_obj.items():
+            # Skip structural fields (subject, object, predicate) and KGX conventions
+            if prop_key in self.EDGE_STRUCTURAL_PROPERTIES or prop_key in self.KGX_CONVENTION_PROPERTIES:
+                continue
+
+            # Normalize property name to Biolink sentence case format
+            normalized_name = self._normalize_biolink_name(prop_key)
+            
+            # Check if property is a valid slot
+            element = valid_slots.get(normalized_name)
+            
+            # Fallback to BMT lookup in case it was a mixin slot missed by get_all_slots
+            if element is None:
+                element = self._bmt.get_element(normalized_name)
+                
+            if element is None:
+                yield ValidationResult(
+                    type="biolink-model validation",
+                    severity=Severity.WARN,
+                    instance=edge_obj,
+                    instantiates=context.target_class,
+                    message=f"Edge at /{path} has unrecognized property '{prop_key}'"
+                            f" (not a known Biolink slot)",
+                )
+                continue
+
+            # Check enum constraints if schema view and slot range exist
+            if element.range and schema_view:
+                enum_def = schema_view.get_enum(element.range)
+                if enum_def and enum_def.permissible_values:
+                    # Value can be single string or list of strings
+                    values_to_check = prop_value if isinstance(prop_value, list) else [prop_value]
+                    
+                    for val in values_to_check:
+                        if isinstance(val, str) and val not in enum_def.permissible_values:
+                            allowed = sorted(enum_def.permissible_values.keys())
+                            yield ValidationResult(
+                                type="biolink-model validation",
+                                severity=Severity.WARN,
+                                instance=edge_obj,
+                                instantiates=context.target_class,
+                                message=f"Edge at /{path} property '{prop_key}' has value"
+                                        f" '{val}' which is not in {element.range}."
+                                        f" Allowed: {allowed}",
+                            )
 
     def process(self, instance: Any, context: ValidationContext) -> Iterator[ValidationResult]:
         """Perform Biolink Model validation on KGX data.

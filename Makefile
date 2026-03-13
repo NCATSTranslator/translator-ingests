@@ -157,8 +157,10 @@ validate: run
 .PHONY: validate-%
 validate-%:
 	@echo "Validating $*..."
-	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_nodes.jsonl" -type f | head -1 || find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
-	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_edges.jsonl" -type f | head -1 || find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
+	@NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_nodes.jsonl" -type f | head -1); \
+	[ -z "$$NODES_FILE" ] && NODES_FILE=$$(find $(ROOTDIR)/data/$* -name "*nodes.jsonl" -type f | head -1); \
+	EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "normalized_edges.jsonl" -type f | head -1); \
+	[ -z "$$EDGES_FILE" ] && EDGES_FILE=$$(find $(ROOTDIR)/data/$* -name "*edges.jsonl" -type f | head -1); \
 	if [ -z "$$NODES_FILE" ] || [ -z "$$EDGES_FILE" ]; then \
 		echo "Error: Could not find nodes or edges files for $*"; \
 		exit 1; \
