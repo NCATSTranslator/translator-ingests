@@ -33,7 +33,7 @@ ingest_info:
     location: https://www.bindingdb.org/rwd/bind/downloads/
     description: All data in BindingdDB
   included_content:
-  - file_name: null
+  - file_name: BindingDB_All_{version}_tsv.zip
     included_records: Homo sapien-related entries only
     fields_used:
       - BindingDB Reactant_set_id
@@ -46,32 +46,26 @@ ingest_info:
       - Article DOI
       - PMID
       - Patent Number
-      # The value of this data field can be synthesized from the monomerid and the target name
-      # - Link to Ligand-Target Pair in BindingDB
-      #
-      # The next round of data collection may include:
-      #
-      # - Ki (nM)- C9
-      # - IC50 (nM)- C10
-      # - Kd (nM)- C11
-      # - EC50 (nM)- C12
-      # - kon (M-1-s-1)- C13
-      # - koff (s-1)- C14
-      # - pH
-      # - Temp(C)
+      - Ki (nM)
+      - IC50 (nM)
+      - Kd (nM)
+      - EC50 (nM)
+  filtered_content:
+    - file_name:  BindingDB_All_{version}_tsv.zip
+      filtered_records: >-
+        The records are currently filtered out based upon:
+        'Ki','IC50','Kd' and 'EC50' having values below 1 micromolar.
+      rationale:  >-
+        The units of these kinetic parameters are nM. 
+        Lower values imply stronger binding affinity
+        or functional effects. Imposing a threshold
+        focuses on the most relevant interactions.
+        For Ki, IC50, EC50, the value relates to
+        the concentration of ligand (or drug) 
+        needed to inhibit 50% of enzyme activity.
   future_considerations:
   - category: edge_content
     consideration: >-
-      The records could be filtered out based upon:
-      'Ki','IC50','Kd','EC50','kon','koff'
-      having values below some threshold (e.g., 10,000nm ?)
-      The units of these kinetic parameters are nM. 
-      Lower values imply stronger binding affinity
-      or functional effects. Imposing a threshold
-      focuses on the most relevant interactions.
-      For Ki, IC50, EC50, the value relates to
-      the concentration of ligand (or drug) 
-      needed to inhibit 50% of enzyme activity.
       Kon and Koff rates are, respectively, the rate
       which a ligand binds and dissociates from a protein.
       The ratio of Koff/Kon is Kd, the binding affinity
@@ -80,7 +74,7 @@ ingest_info:
     - BindingDB_All_{version}_tsv.zip
   additional_notes: null
 target_info:
-  infores_id: null
+  infores_id: infores:translator-bindingdb-kgx
   edge_type_info:
   - subject:
     - biolink:ChemicalEntity
@@ -103,8 +97,19 @@ target_info:
     ui_explanation: TO DO
     source_files:
       - BindingDB_All_{version}_tsv.zip
-    additional_notes: "BindingDB provides generates chemical-protein interaction statements based on manual curation from the literature, or import from external knowledgebases. Records include details about experiment supporting each interaction, including binding/affinity metrics. The source tsv may therefore include >1 row for a given chemical-protein interaction.  Translator's ingest collapses records with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)  into a single edge, and aggregates metadata across contributing records (e.g. a list of all supporting publications, all supporting data sources across contributing BindingDB records).  Vlado indicated that BindingDB does some QA/filtering of binding assay records it imports to ensure that it only includes those with affinity metrics suggesting a bona fide physical interaction is occurring - which is why we use the biolink:physically_interacts_with predicate".
-      
+    additional_notes: >-
+      BindingDB provides generates chemical-protein interaction statements based on
+      manual curation from the literature, or import from external knowledgebases.
+      Records include details about experiment supporting each interaction,
+      including binding/affinity metrics. The source tsv may therefore include >1 row
+      for a given chemical-protein interaction.  Translator's ingest collapses records
+      with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
+      into a single edge, and aggregates metadata across contributing records
+      (e.g. a list of all supporting publications, all supporting data sources
+      across contributing BindingDB records).  Vlado indicated that BindingDB does
+      some QA/filtering of binding assay records it imports to ensure that it only
+      includes those with affinity metrics suggesting a bona fide physical interaction
+      is occurring - which is why we use the biolink:physically_interacts_with predicate.
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
