@@ -1,0 +1,101 @@
+# FoodData Central Foundation Foods Reference Ingest Guide (draft)
+name: FoodData Central Foundation Foods Reference Ingest Guide
+
+source_info:
+  infores_id: infores:fooddata-central
+  name: FoodData Central
+  description: "USDA FoodData Central aggregates food composition and related nutritional data. This initial ingest targets Foundation Foods records and their linked nutrient/component measurements."
+  citations:
+    - "Site: https://fdc.nal.usda.gov/"
+    - "Downloads: https://fdc.nal.usda.gov/download-datasets/"
+  terms_of_use_info:
+    terms_of_use_url: "https://fdc.nal.usda.gov/api-guide"
+    license_name: "CC0 1.0"
+    license_url: "https://creativecommons.org/publicdomain/zero/1.0/"
+  data_access_locations:
+    - "Foundation Foods bulk downloads: https://fdc.nal.usda.gov/download-datasets/"
+    - "Data documentation: https://fdc.nal.usda.gov/data-documentation/"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - csv
+  data_versioning_and_releases: "Foundation Foods is released as dated bulk downloads. The draft ingest currently targets the Foundation Foods CSV archive and expects a release date in YYYY-MM-DD format."
+
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "FoodData Central can connect foods to Translator-relevant chemicals through nutrient/component measurements, enabling downstream linkage from foods to normalized chemical entities already represented elsewhere in Translator."
+  scope: "This v1 ingest is intentionally narrow. It includes Foundation Foods food records and their nutrient/component measurements from food_nutrient.csv, plus a small curated nutrient-to-chemical crosswalk for high-confidence mappings."
+  relevant_files:
+    - file_name: "FoodData_Central_foundation_food_csv_<release>.zip"
+      location: "https://fdc.nal.usda.gov/download-datasets/"
+      description: "Foundation Foods CSV archive containing food.csv, nutrient.csv, and food_nutrient.csv among other tables"
+    - file_name: "food.csv"
+      location: "Foundation Foods CSV archive"
+      description: "Food-level identifiers and descriptions"
+    - file_name: "nutrient.csv"
+      location: "Foundation Foods CSV archive"
+      description: "Nutrient/component identifiers, names, units, and nutrient numbers"
+    - file_name: "food_nutrient.csv"
+      location: "Foundation Foods CSV archive"
+      description: "Food-to-nutrient quantitative composition records"
+  included_content:
+    - file_name: "food_nutrient.csv"
+      included_records: "Rows with non-empty food identifier, nutrient identifier, and amount, where food and nutrient lookup rows are present"
+      fields_used: "fdc_id, nutrient_id, amount"
+    - file_name: "food.csv"
+      included_records: "Foundation Foods records referenced by included food_nutrient rows"
+      fields_used: "fdc_id, description, food_category_id, publication_date"
+    - file_name: "nutrient.csv"
+      included_records: "Nutrient/component rows referenced by included food_nutrient rows"
+      fields_used: "id, name, unit_name, nutrient_nbr"
+    - file_name: "fdc_nutrient_mappings.tsv"
+      included_records: "Only rows with mapping_status exact are used to normalize nutrient/component nodes to external chemical identifiers"
+      fields_used: "fdc_nutrient_id, target_curie, target_category, mapping_status"
+  filtered_content:
+    - file_name: "food_nutrient.csv"
+      filtered_records: "Rows missing amount, fdc_id, or nutrient_id"
+      rationale: "The initial ingest only emits composition assertions with minimally usable identifiers and quantitative source values."
+    - file_name: "fdc_nutrient_mappings.tsv"
+      filtered_records: "Mappings whose status is not exact"
+      rationale: "The first Translator-facing crosswalk should prefer precision over recall."
+  future_considerations:
+    - category: edge_content
+      consideration: "Model nutrient amount/unit as structured edge attributes rather than the current descriptive text placeholder once a preferred Biolink-compatible pattern is agreed on for food composition quantities."
+    - category: edge_content
+      consideration: "Add Foundation Foods ingredient/source-food relationships from input_food.csv if those edges appear useful for Translator queries."
+    - category: node_property_content
+      consideration: "Expand the nutrient crosswalk beyond the starter exact mappings and review whether some currently unmapped nutritional constructs belong on distinct non-chemical node categories."
+    - category: edge_content
+      consideration: "Assess whether SR Legacy should be merged into the same ingest after Foundation Foods stabilizes."
+
+target_info:
+  infores_id: infores:translator-fooddata-central-kgx
+  edge_type_info:
+    - subject_categories:
+        - biolink:Food
+      predicates:
+        - biolink:has_part
+      object_categories:
+        - biolink:ChemicalEntity
+        - biolink:NamedThing
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:fooddata-central
+      edge_properties:
+        - description
+      ui_explanation: "FoodData Central composition rows indicate that a given food record contains a reported nutrient/component. Exact nutrient crosswalk mappings emit ChemicalEntity nodes. In this draft, unmapped nutrient records remain source-native fallback nodes."
+      additional_notes: "biolink:NamedThing is listed temporarily because the current Biolink snapshot in this repo does not provide a FoodComponent class, while some FoodData Central nutrient rows are not yet safe to normalize to chemical identifiers. This initial draft also uses edge description text to preserve quantitative amount/unit information until the team finalizes a structured representation for food composition quantities."
+  node_type_info:
+    - node_category: biolink:Food
+      source_identifier_types:
+        - "FoodData Central fdc_id"
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - "Curated external identifiers such as CHEBI"
+    - node_category: biolink:NamedThing
+      source_identifier_types:
+        - "Temporary fallback FoodData Central nutrient identifiers for unmapped nutrient/component records"
