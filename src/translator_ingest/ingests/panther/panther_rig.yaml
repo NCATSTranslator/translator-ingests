@@ -82,9 +82,14 @@ target_info:
     - knowledge_assertion
     agent_type:
     - manual_validation_of_automated_agent
+    primary_knowledge_sources:
+      - infores:panther    
     edge_properties:
     - has_evidence
     ui_explanation: "Panther gene orthology"
+    source_files:
+      - "RefGenomeOrthologs.tar.gz" 
+    additional_notes: "To determine when two genes are orthologus, Panther uses advanced automated algorithms that rely only on sequence similarity, evolutionary tree topology, and evolutionary event labeling. Curators will manually review the data underlying orthology calls to improve accuracy."      
   - subject_categories:
     - "biolink:Gene"
     predicates:
@@ -94,8 +99,13 @@ target_info:
     knowledge_level:
     - knowledge_assertion
     agent_type:
-    - manual_validation_of_automated_agent
+    - automated_agent
+    primary_knowledge_sources:
+      - infores:panther
     ui_explanation: "Gene membership in Panther orthology family"
+    source_files:
+      -  # MHB: TO DO - Richard can you record what file the family membership info came form here?
+    additional_notes: "Panther defines protein families using a statistical Hidden Markov Model (HMM) that represents its sequence signature. Individual protein sequences are compared to and scored against these signatures, with those passing a membership threshold being assigned to a family."
   node_type_info:
   - node_category: "biolink:Gene"
     source_identifier_types:
