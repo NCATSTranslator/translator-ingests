@@ -46,7 +46,7 @@ PREDICATE_REMAP = {
 
 GENETIC_VARIANT_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_variant_form
 
-MAX_PUBLICATIONS_PER_EDGE = 100
+MAX_PUBLICATIONS_PER_STRATEGY = 100  # up to 2x this many total (score + recency)
 
 
 def _get_node_class(curie: str) -> type[NamedThing]:
@@ -171,7 +171,7 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:
     if koza.state["zero_novelty_skipped"] > 0:
         koza.log(f"  Zero novelty skipped: {koza.state['zero_novelty_skipped']}", level="INFO")
     if koza.state["publications_capped"] > 0:
-        koza.log(f"  Edges with publications capped (top {MAX_PUBLICATIONS_PER_EDGE} by min-score + top {MAX_PUBLICATIONS_PER_EDGE} by recency): {koza.state['publications_capped']}", level="INFO")
+        koza.log(f"  Edges with publications capped (top {MAX_PUBLICATIONS_PER_STRATEGY} by min-score + top {MAX_PUBLICATIONS_PER_STRATEGY} by recency): {koza.state['publications_capped']}", level="INFO")
 
 @koza.transform_record(tag="filter_edges")
 def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
@@ -261,8 +261,8 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
     publications_info = record.get("publications_info", {})
 
     # cap publications to avoid oversized edges (some have 60k+ PMIDs)
-    # keep up to MAX_PUBLICATIONS_PER_EDGE by confidence + MAX_PUBLICATIONS_PER_EDGE by recency
-    if len(publications) > MAX_PUBLICATIONS_PER_EDGE:
+    # keep up to MAX_PUBLICATIONS_PER_STRATEGY by confidence + MAX_PUBLICATIONS_PER_STRATEGY by recency (200 total max)
+    if len(publications) > MAX_PUBLICATIONS_PER_STRATEGY:
         koza.state["publications_capped"] += 1
 
         def _pub_min_score(pmid: str) -> float:
@@ -278,8 +278,8 @@ def transform_semmeddb_edge(koza: koza.KozaTransform, record: dict[str, Any]) ->
             except ValueError:
                 return 0
 
-        top_by_score = set(sorted(publications, key=_pub_min_score, reverse=True)[:MAX_PUBLICATIONS_PER_EDGE])
-        top_by_recency = set(sorted(publications, key=_pub_year, reverse=True)[:MAX_PUBLICATIONS_PER_EDGE])
+        top_by_score = set(sorted(publications, key=_pub_min_score, reverse=True)[:MAX_PUBLICATIONS_PER_STRATEGY])
+        top_by_recency = set(sorted(publications, key=_pub_year, reverse=True)[:MAX_PUBLICATIONS_PER_STRATEGY])
         kept = top_by_score | top_by_recency
         publications = [p for p in publications if p in kept]
         publications_info = {k: v for k, v in publications_info.items() if k in kept}
