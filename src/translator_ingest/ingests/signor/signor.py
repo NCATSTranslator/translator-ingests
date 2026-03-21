@@ -113,10 +113,10 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         ## reset to default value for each input row from the source file
         ## add those reset to make sure no leftover values from last records got leaked into the current record, but for some reason the make test keep raise errors on them
         #predicate = "None"
-        qualified_predicate = None
-        object_direction_qualifier = None
-        object_aspect_qualifier = None
-        association = None
+        # qualified_predicate = None
+        # object_direction_qualifier = None
+        # object_aspect_qualifier = None
+        # association = None
         #causal_mechanism_qualifier = None
 
         ## Obtain the publications information
