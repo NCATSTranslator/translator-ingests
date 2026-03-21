@@ -8,13 +8,17 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
     MacromolecularComplex,
     NamedThing,
+    ## necessary associations and interactions
     Association,
     GeneRegulatesGeneAssociation,
     PairwiseMolecularInteraction,
-    AnatomicalEntityHasPartAnatomicalEntityAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
+    ChemicalAffectsGeneAssociation,
+    PairwiseGeneToGeneInteraction,
+    ## necessary enums
+    CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
     AgentTypeEnum,
@@ -24,6 +28,11 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import (
     INFORES_SIGNOR
 )
+
+# adding additional needed resources
+BIOLINK_CAUSES = "biolink:causes"
+BIOLINK_AFFECTS = "biolink:affects"
+BIOLINK_REGULATES = "biolink:regulates"
 
 # TODO - was this mapping intended to be applied in some way?
 #  for example "smallmolecule" is a type in the source data but is not used, is that right?
@@ -71,9 +80,6 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
 
-    ## debugging usage
-    # print(source_df.columns)
-
     ## include some basic quality control steps here
     ## Drop nan values
     source_df = source_df.dropna(subset=['ENTITYA', 'ENTITYB'])
@@ -94,14 +100,6 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_df = source_df[(source_df['subject_category'] != 'fusion Protein') & (source_df['object_category'] != 'fusion Protein')]
     source_df = source_df[(source_df['subject_category'] != 'stimulus') & (source_df['object_category'] != 'stimulus')]
 
-    ## for first pass ingestion, limited to the largest portion combo
-    ## subject_category: protein, object_category:protein, effect: up-regulates activity
-    # filtered_df = source_df[
-    #     (source_df['subject_category'] == 'protein') &
-    #     (source_df['object_category'] == 'protein') &
-    #     (source_df['EFFECT'] == 'up-regulates activity')
-    #     ]
-
     return source_df.dropna().drop_duplicates().to_dict(orient="records")
 
 
@@ -112,303 +110,563 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
     for record in data:
 
-        list_ppi_accept_effects = ['up-regulates activity', 'up-regulates', 'down-regulates activity', 'down-regulates', 'down-regulates quantity by expression', 'down-regulates quantity by destabilization', 'up-regulates quantity', 'down-regulates quantity']
+        ## reset to default value for each input row from the source file
+        ## add those reset to make sure no leftover values from last records got leaked into the current record, but for some reason the make test keep raise errors on them
+        #predicate = "None"
+        qualified_predicate = None
+        object_direction_qualifier = None
+        object_aspect_qualifier = None
+        association = None
+        #causal_mechanism_qualifier = None
+
+        ## Obtain the publications information
+        publications = [f"PMID:{p}" for p in record["PMID"].split("|")] if record["PMID"] else None
+
+        ## Obtain the species context information
+        ## notice both "-1" and none values indicating an unknown or unspecified species
+        if record["TAX_ID"] == '-1' or record["TAX_ID"] is None:
+            species_context_qualifier = None
+        else:
+            species_context_qualifier = "NCBITaxon:" + record["TAX_ID"]
+
+        ## Obtain the anatomical_context_qualifiers information from either column('CELL_DATA') or column('TISSUE_DATA')
+        if record["CELL_DATA"] is not None:
+            ## Note, need to split based on ";"
+            anatomical_context_qualifier = [f"{p}" for p in record["CELL_DATA"].split(";")]
+        elif record["TISSUE_DATA"] is not None:
+            ## Note, need to split based on ";"
+            anatomical_context_qualifier = [f"{p}" for p in record["TISSUE_DATA"].split(";")]
+        else:
+            anatomical_context_qualifier = None
+
+        ## Obtain the supporting_text information from record["SENTENCE"]
+        ## Note: the expected type for supporting_text is list type, so we do the conversion from a string to list here.
+        ## Split by "|" and strip whitespace from each sentence
+        supporting_text = [s.strip() for s in record["SENTENCE"].split("|")] if record.get("SENTENCE") else []
+
+        ## Obtain the confidence_score information from record["SCORE"]
+        confidence_score = record["SCORE"]
+
+        list_ppi_accept_effects = ['up-regulates', 'up-regulates activity', 'up-regulates quantity', 'up-regulates quantity by expression', 'up-regulates quantity by stabilization', 'down-regulates', 'down-regulates activity', 'down-regulates quantity', 'down-regulates quantity by destabilization', 'down-regulates quantity by repression']
         list_pci_accept_effects = ['form complex']
+
+        ## initialize variables to hold information
+        ## on whether an edge should use BIOLINK_AFFECTS and increased/decreased (if Endogenous == False)
+        ## or should use BIOLINK_REGULATES and upregulated/downregulated (if Endogenous == True)
+        current_predicate_mapping = BIOLINK_AFFECTS
+        ## will be assigned as a tuple later, since we need to store two values
+        current_direction_mapping = None
+        gene_product_list = ["protein", "complex", "smallmolecule"]
+        if record["subject_category"] in gene_product_list and record["object_category"] in gene_product_list:
+            current_predicate_mapping = BIOLINK_REGULATES
+            current_direction_mapping = (DirectionQualifierEnum.upregulated, DirectionQualifierEnum.downregulated)
+        else:
+            # current_predicate_mapping = BIOLINK_AFFECTS
+            current_direction_mapping = (DirectionQualifierEnum.increased, DirectionQualifierEnum.decreased)
+
+        ## initialize variable to hold information
+        ## on which biolink mechanism mapping enum to use based on the column('MECHANISM') from the source filename
+        current_causual_mechanism_mapping = None
+        if record['MECHANISM'] == 'transcriptional regulation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.transcriptional_regulation
+        elif record['MECHANISM'] == 'translation regulation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.translational_regulation
+        elif record['MECHANISM'] == 'binding':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.binding
+        elif record['MECHANISM'] == 'stabilization':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.stabilization
+        elif record['MECHANISM'] == 'destabilization':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.destabilization
+        elif record['MECHANISM'] == 'cleavage':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.cleavage
+        elif record['MECHANISM'] == 'isomerization':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.isomerization
+        elif record['MECHANISM'] == 'chemical inhibition':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.inhibition
+        elif record['MECHANISM'] == 'chemical activation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.activation
+        elif record['MECHANISM'] == 'catalytic activity':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.catalytic_activity
+        elif record['MECHANISM'] == 'small molecule catalysis':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.catalytic_activity
+        elif record['MECHANISM'] == 'gtpase-activating protein':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.gtpase_activation
+        elif record['MECHANISM'] == 'guanine nucleotide exchange factor':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.guanyl_nucleotide_exchange
+        elif record['MECHANISM'] == 'relocalization':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.relocalization
+        elif record['MECHANISM'] == 'chemical modification':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.chemical_modification
+        elif record['MECHANISM'] == 'post transcriptional regulation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.post_transcriptional_regulation
+        elif record['MECHANISM'] == 'post translational modification':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.molecular_modification
+        elif record['MECHANISM'] == 'phosphorylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.phosphorylation
+        elif record['MECHANISM'] == 'dephosphorylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.dephosphorylation
+        elif record['MECHANISM'] == 'neddylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.neddylation
+        elif record['MECHANISM'] == 'lipidation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.lipidation
+        elif record['MECHANISM'] == 'tyrosination':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.tyrosination
+        elif record['MECHANISM'] == 'carboxylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.carboxylation
+        elif record['MECHANISM'] == 'ubiquitination':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.ubiquitination
+        elif record['MECHANISM'] == 'monoubiquitination':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.monoubiquitination
+        elif record['MECHANISM'] == 'polyubiquitination':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.polyubiquitination
+        elif record['MECHANISM'] == 'deubiquitination':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.deubiquitination
+        elif record['MECHANISM'] == 'acetylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.acetylation
+        elif record['MECHANISM'] == 'oxidation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.oxidation
+        elif record['MECHANISM'] == 'deacetylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.deacetylation
+        elif record['MECHANISM'] == 'glycosylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.glycosylation
+        elif record['MECHANISM'] == 'deglycosylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.deglycosylation
+        elif record['MECHANISM'] == 'methylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.methylation
+        elif record['MECHANISM'] == 'demethylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.demethylation
+        elif record['MECHANISM'] == 'trimethylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.trimethylation
+        elif record['MECHANISM'] == 'sumoylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.sumoylation
+        elif record['MECHANISM'] == 'desumoylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.desumoylation
+        elif record['MECHANISM'] == 'ADP-ribosylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.ADP_ribosylation
+        elif record['MECHANISM'] == 'palmitoylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.palmitoylation
+        elif record['MECHANISM'] == 'hydroxylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.hydroxylation
+        elif record['MECHANISM'] == 's-nitrosylation':
+            current_causual_mechanism_mapping = CausalMechanismQualifierEnum.s_nitrosylation
+        elif record['MECHANISM'] == 'precursor of':
+            current_causual_mechanism_mapping = None
+        elif not record.get('MECHANISM'):  # catches None, "", or missing key
+            current_causual_mechanism_mapping = None
+        else:
+            raise NotImplementedError(f'Effect {record["MECHANISM"]} could not be mapped to required qualifiers.')
+
+        ## initialize variables to hold information
+        ## on which object_aspect_qualifier (GeneOrGeneProductOrChemicalEntityAspectEnum) and object_direction_qualifier to use
+        if record["EFFECT"] == 'up-regulates':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+            object_direction_qualifier = current_direction_mapping[0]
+        elif record["EFFECT"] == 'up-regulates activity':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+            object_direction_qualifier = current_direction_mapping[0]
+        elif record["EFFECT"] == 'up-regulates quantity':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+            object_direction_qualifier = current_direction_mapping[0]
+        elif record["EFFECT"] == 'up-regulates quantity by expression':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+            object_direction_qualifier = current_direction_mapping[0]
+        elif record["EFFECT"] == 'up-regulates quantity by stabilization':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
+            object_direction_qualifier = current_direction_mapping[0]
+        elif record["EFFECT"] == 'down-regulates':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
+            object_direction_qualifier = current_direction_mapping[1]
+        elif record["EFFECT"] == 'down-regulates activity':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
+            object_direction_qualifier = current_direction_mapping[1]
+        elif record["EFFECT"] == 'down-regulates quantity':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+            object_direction_qualifier = current_direction_mapping[1]
+        elif record["EFFECT"] == 'down-regulates quantity by destabilization':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
+            object_direction_qualifier = current_direction_mapping[1]
+        elif record["EFFECT"] == 'down-regulates quantity by repression':
+            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
+            object_direction_qualifier = current_direction_mapping[1]
+        elif record["EFFECT"] == 'form complex':
+            object_aspect_qualifier = None
+            object_direction_qualifier = None
+        elif record["EFFECT"] == 'unknown':
+            object_aspect_qualifier = None
+            object_direction_qualifier = None
+        elif not record.get('EFFECT'):  # catches None, "", or missing key
+            object_aspect_qualifier = None
+            object_direction_qualifier = None
+        else:
+            raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
 
         if record["subject_category"] == "protein" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
 
-            if record["EFFECT"] == 'up-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity by expression':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'down-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity by expression':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity by destabilization':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            else:
-                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
-
-            association = GeneRegulatesGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:regulates",
-                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = "biolink:causes",
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier
-            )
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
-
-        elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
-            subject = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
-            object = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
-
-            if record["EFFECT"] == 'form complex':
-                association_1 = AnatomicalEntityHasPartAnatomicalEntityAssociation(
+            ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
+            ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
+            ## otherwise, don't add a separate edge
+            if record["DIRECT"] == "YES":
+                ### two associations created
+                association_1 = GeneRegulatesGeneAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    predicate = "biolink:has_part",
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes in order
+                    predicate = current_predicate_mapping,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
+                    # causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                )
+
+                association_2 = PairwiseGeneToGeneInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:directly_physically_interacts_with",
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
 
-                association_2 = PairwiseMolecularInteraction(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate = "biolink:physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
+                if publications and association_1 is not None and association_2 is not None:
+                    association_1.publications = publications
+                    association_2.publications = publications
+
+                if supporting_text and association_1 is not None and association_2 is not None:
+                    association_1.supporting_text = supporting_text
+                    association_2.supporting_text = supporting_text
+
+                if confidence_score and association_1 is not None and association_2 is not None:
+                    association_1.has_confidence_score = confidence_score
+                    association_2.has_confidence_score = confidence_score
 
                 if subject is not None and object is not None and association_1 is not None and association_2 is not None:
                     nodes.append(subject)
                     nodes.append(object)
                     edges.append(association_1)
                     edges.append(association_2)
+            else:
+                association = GeneRegulatesGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes in order
+                    predicate = current_predicate_mapping,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
+                    # causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                )
+
+                if publications:
+                    association.publications = publications
+                if supporting_text:
+                    association.supporting_text = supporting_text
+                if confidence_score:
+                    association.has_confidence_score = confidence_score
+
+                if subject is not None and object is not None and association is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association)
+
+        elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
+            subject = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
+            object = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
+
+            if record["EFFECT"] == 'form complex':
+                association = PairwiseGeneToGeneInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes
+                    predicate = "biolink:part_of",
+                    # qualified_predicate = qualified_predicate,
+                    # object_aspect_qualifier = object_aspect_qualifier,
+                    # object_direction_qualifier = object_direction_qualifier,
+                    # causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                )
+
+                if publications:
+                    association.publications = publications
+                if supporting_text:
+                    association.supporting_text = supporting_text
+                if confidence_score:
+                    association.has_confidence_score = confidence_score
+
+                if subject is not None and object is not None and association is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association)
 
         elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
             object = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
 
-            if record["EFFECT"] == 'up-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'down-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity by destabilization':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
+            ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
+            ## otherwise, don't add a separate edge
+            if record["DIRECT"] == "YES":
+                ### two associations created
+                association_1 = GeneAffectsChemicalAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes in order
+                    predicate = current_predicate_mapping,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                    anatomical_context_qualifier = anatomical_context_qualifier,
+                )
+
+                association_2 = PairwiseGeneToGeneInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:directly_physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
+
+                if publications and association_1 is not None and association_2 is not None:
+                    association_1.publications = publications
+                    association_2.publications = publications
+
+                if supporting_text and association_1 is not None and association_2 is not None:
+                    association_1.supporting_text = supporting_text
+                    association_2.supporting_text = supporting_text
+
+                if confidence_score and association_1 is not None and association_2 is not None:
+                    association_1.has_confidence_score = confidence_score
+                    association_2.has_confidence_score = confidence_score
+
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
             else:
-                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
+                association = GeneAffectsChemicalAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes in order
+                    predicate = current_predicate_mapping,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                    anatomical_context_qualifier = anatomical_context_qualifier,
+                )
 
-            association = GeneAffectsChemicalAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:affects",
-                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = "biolink:causes",
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier
-            )
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
+                if publications:
+                    association.publications = publications
+                if supporting_text:
+                    association.supporting_text = supporting_text
+                if confidence_score:
+                    association.has_confidence_score = confidence_score
 
-        elif record["subject_category"] == "chemical" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
+                if subject is not None and object is not None and association is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association)
+
+        elif (record["subject_category"] == "chemical" or record["subject_category"] == "smallmolecule") and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
 
-            if record["EFFECT"] == 'up-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity by expression':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'down-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity by expression':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity by destabilization':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.stability
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
+            ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
+            ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
+            ## otherwise, don't add a separate edge
+            if record["DIRECT"] == "YES":
+                ### two associations created
+                association_1 = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes in order
+                    predicate = current_predicate_mapping,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                    anatomical_context_qualifier = anatomical_context_qualifier,
+                )
+
+                association_2 = PairwiseGeneToGeneInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:directly_physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
+
+                if publications and association_1 is not None and association_2 is not None:
+                    association_1.publications = publications
+                    association_2.publications = publications
+
+                if supporting_text and association_1 is not None and association_2 is not None:
+                    association_1.supporting_text = supporting_text
+                    association_2.supporting_text = supporting_text
+
+                if confidence_score and association_1 is not None and association_2 is not None:
+                    association_1.has_confidence_score = confidence_score
+                    association_2.has_confidence_score = confidence_score
+
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
             else:
-                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
+                association = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## five edge attributes in order
+                    predicate = current_predicate_mapping,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                    anatomical_context_qualifier = anatomical_context_qualifier,
+                )
 
-            association = GeneRegulatesGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:affects",
-                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = "biolink:causes",
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier
-            )
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
+                if publications:
+                    association.publications = publications
+                if supporting_text:
+                    association.supporting_text = supporting_text
+                if confidence_score:
+                    association.has_confidence_score = confidence_score
 
-        elif record["subject_category"] == "smallmolecule" and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
-            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
-            object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
+                if subject is not None and object is not None and association is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association)
 
-            if record["EFFECT"] == 'up-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'down-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'up-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'down-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            else:
-                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
-
-            association = GeneRegulatesGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:affects",
-                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                qualified_predicate = "biolink:causes",
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier
-            )
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
-
-        elif record["subject_category"] == "smallmolecule" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
+        elif record["subject_category"] == "smallmolecule" and (record["object_category"] == "chemical" or record["object_category"] == "smallmolecule") and record["EFFECT"] in list_ppi_accept_effects:
             ## chemical entity already have CHEBI prefix
             subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
             object = ChemicalEntity(id=record["IDA"], name=record["object_name"])
 
-            if record["EFFECT"] == 'up-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
+            ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
+            ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
+            ## otherwise, don't add a separate edge
+            if record["DIRECT"] == "YES":
+                ### two associations created
+                association_1 = ChemicalEntityToChemicalEntityAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = current_predicate_mapping,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                    ## no following inputs
+                    # qualified_predicate = "biolink:causes",
+                    # object_aspect_qualifier = object_aspect_qualifier,
+                    # object_direction_qualifier = object_direction_qualifier
+                )
+
+                association_2 = PairwiseMolecularInteraction(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = "biolink:directly_physically_interacts_with",
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
+
+                if publications and association_1 is not None and association_2 is not None:
+                    association_1.publications = publications
+                    association_2.publications = publications
+
+                if supporting_text and association_1 is not None and association_2 is not None:
+                    association_1.supporting_text = supporting_text
+                    association_2.supporting_text = supporting_text
+
+                if confidence_score and association_1 is not None and association_2 is not None:
+                    association_1.has_confidence_score = confidence_score
+                    association_2.has_confidence_score = confidence_score
+
+                if subject is not None and object is not None and association_1 is not None and association_2 is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association_1)
+                    edges.append(association_2)
             else:
-                raise NotImplementedError(f'Effect {record["EFFECT"]} could not be mapped to required qualifiers.')
+                association = ChemicalEntityToChemicalEntityAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate = current_predicate_mapping,
+                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
+                    ## no following inputs
+                    # qualified_predicate = "biolink:causes",
+                    # object_aspect_qualifier = object_aspect_qualifier,
+                    # object_direction_qualifier = object_direction_qualifier
+                )
 
-            association = ChemicalEntityToChemicalEntityAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:affects",
-                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## no following inputs
-                # qualified_predicate = "biolink:causes",
-                # object_aspect_qualifier = object_aspect_qualifier,
-                # object_direction_qualifier = object_direction_qualifier
-            )
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
+                if publications:
+                    association.publications = publications
+                if supporting_text:
+                    association.supporting_text = supporting_text
+                if confidence_score:
+                    association.has_confidence_score = confidence_score
 
-        elif record["subject_category"] == "smallmolecule" and record["object_category"] == "smallmolecule" and record["EFFECT"] in list_ppi_accept_effects:
-            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
-            object = ChemicalEntity(id=record["IDA"], name=record["object_name"])
-
-            if record["EFFECT"] == 'up-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'up-regulates quantity by expression':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.upregulated
-            elif record["EFFECT"] == 'down-regulates activity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity_or_abundance
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-            elif record["EFFECT"] == 'down-regulates quantity by expression':
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
-                object_direction_qualifier = DirectionQualifierEnum.downregulated
-
-            association = ChemicalEntityToChemicalEntityAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:affects",
-                sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## no following inputs
-                # qualified_predicate = "biolink:causes",
-                # object_aspect_qualifier = object_aspect_qualifier,
-                # object_direction_qualifier = object_direction_qualifier
-            )
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
+                if subject is not None and object is not None and association is not None:
+                    nodes.append(subject)
+                    nodes.append(object)
+                    edges.append(association)
 
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
