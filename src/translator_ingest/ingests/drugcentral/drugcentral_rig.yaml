@@ -137,7 +137,7 @@ target_info:
       primary_knowledge_sources:
         - infores:drugcentral
       edge_properties:
-        - "biolink:clinical_approval_status"    ## only for off_label_use records
+        - "biolink:clinical_approval_status"    ## for off-label use, indication (treating as approved) records
       ## DRAFT: for Matt to review, write to his liking
       ui_explanation: >-
         Source DrugCentral data provides drug use assertions that were either extracted from the OMOP
@@ -153,9 +153,9 @@ target_info:
             specific record/row came from (out of two possibilities, see next point).
         (3) The UI explanation origin info is based on https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10. 
             The paper says 'indications, contraindications, and off-label uses have been extracted from the OMOP data model version 4.4 up to 2012' and 'all information after 2012 has been manually curated from approved drug labels'.
-        (4) See ingest code's mapping.py for the relationship_name value to predicate/edge-attribute mapping. Notes: 'indication' means approved, on-label use according to
-        https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10; for 'off-label use', there was
-        discussion on using the current 'treats' vs previous 'applied_to_treat'.
+        (4) See ingest code's mapping.py for the relationship_name value to predicate/edge-attribute mapping. Notes: 
+            'indication' seems to equate to on-label/approved use based on first two paragraphs of https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec15; 
+            for 'off-label use', there was discussion on using the current 'treats' vs previous 'applied_to_treat'.
     ## act_table_full
     ## PLAIN INTERACTS_WITH
     - subject_categories:
