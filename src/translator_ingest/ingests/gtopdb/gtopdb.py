@@ -33,6 +33,7 @@ from translator_ingest.util.biolink import (
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
+BIOLINK_RELATED = "biolink:related_to"
 
 def get_latest_version() -> str:
     # lacking a better programmatic approach, derive the version from the gtopdb html
@@ -393,11 +394,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 qualified_predicate = BIOLINK_CAUSES
 
             elif record["Action"] == "Neutral" or record["Action"] is None:
-                predicate = "None"
-                object_aspect_qualifier = None
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
+                print("not applicable")
+                break
 
             elif record["Action"] == "Partial agonist":
                 predicate = current_predicate_mapping
@@ -513,11 +511,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 qualified_predicate = BIOLINK_CAUSES
 
             elif record["Action"] == "Partial agonist":
-                predicate = "None"
-                object_aspect_qualifier = None
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
+                print("not applicable")
+                break
 
             association_1 = ChemicalAffectsGeneAssociation(
                     id=entity_id(),
@@ -696,11 +691,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             qualified_predicate = BIOLINK_CAUSES
 
             if record["Action"] == "Binding":
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
-                predicate = "None"
-                object_aspect_qualifier = None
+                print("not applicable")
+                break
             elif record["Action"] == "Inhibition":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
                 object_direction_qualifier = current_direction_mapping[1]
@@ -913,18 +905,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         none_list_with_separate_directly_physically_interacts_with_edge = ['Binding', 'Competitive', 'Inhibition']
         if record["Type"] is None and record["Action"] in none_list_with_separate_directly_physically_interacts_with_edge:
 
-            if record["Action"] == "Binding":
-                predicate = "None"
-                object_aspect_qualifier = None
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
-            elif record["Action"] == "Competitive":
-                predicate = "None"
-                object_aspect_qualifier = None
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
+            if record["Action"] == "Binding" or record["Action"] == "Competitive":
+                print("not applicable")
+                break
             elif record["Action"] == "Inhibition":
                 predicate = current_predicate_mapping
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -972,7 +955,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["Type"] is None and record["Action"] not in none_list_with_separate_directly_physically_interacts_with_edge:
 
             if record["Action"] is None:
-                predicate = "None"
+                predicate = BIOLINK_RELATED
                 object_aspect_qualifier = None
                 causal_mechanism_qualifier = None
                 object_direction_qualifier = None
@@ -1061,11 +1044,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["Type"] == "Subunit-specific" and record["Action"] not in subunit_specific_list_with_separate_directly_physically_interacts_with_edge:
 
             if record["Action"] == "Mixed":
-                predicate = "None"
-                object_aspect_qualifier = None
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
+                print("not applicable")
+                break
             elif record["Action"] == "Potentiation":
                 predicate = current_predicate_mapping
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
