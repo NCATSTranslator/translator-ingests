@@ -1,23 +1,220 @@
 import pytest
 
-from typing import Optional
+from typing import Optional, Any
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
-
-from translator_ingest.ingests.cohd.cohd import (
-    on_begin_node_ingest,
-    on_end_node_ingest,
-    transform_cohd_node,
-    on_begin_edge_ingest,
-    on_end_edge_ingest,
-    transform_cohd_edge
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    Study,
+    ConceptCountAnalysisResult,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
 )
-
-from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
+
+from translator_ingest.ingests.cohd.cohd import (
+    transform_cohd_node,
+    transform_cohd_edge
+)
+
+from translator_ingest.ingests.cohd.cohd_util import (
+    parse_attributes,
+    parse_node_properties,
+    get_cohd_supporting_study
+)
+
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
+
+SAMPLE_NODE_ATTRIBUTE_STR = "{"+\
+                "\"attribute_source\": \"infores:cohd\", "+\
+                "\"attribute_type_id\": \"EDAM:data_0954\", "+\
+                "\"attributes\": ["+\
+                    "{"+\
+                        "\"attribute_source\": \"infores:omop-ohdsi\","+\
+                        " \"attribute_type_id\": \"EDAM:data_1087\","+\
+                        " \"original_attribute_name\": \"concept_id\","+\
+                        " \"value\": \"OMOP:77661\","+\
+                        " \"value_type_id\": \"EDAM:data_1087\","+\
+                        " \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\""+\
+                    "}"+\
+                "]"+\
+            "}"
+
+SAMPLE_EDGE_ATTRIBUTE_STR = "{"+\
+    "\"attribute_source\": \"infores:cohd\", "+\
+    "\"attribute_type_id\": \"biolink:has_supporting_study_result\", "+\
+    "\"description\": \"A study result describing the initial count of concepts\", "+\
+    "\"value\": \"SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12\", "+\
+    "\"value_type_id\": \"biolink:ConceptCountAnalysisResult\", "+\
+    "\"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", "+\
+    "\"attributes\": ["+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:concept_pair_count\", "+\
+            "\"original_attribute_name\": \"concept_pair_count\", "+\
+            "\"value\": 12, \"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Observed concept count between the pair of subject and object nodes\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:concept_count_subject\", "+\
+            "\"original_attribute_name\": \"concept_count_subject\", "+\
+            "\"value\": 11, "+\
+            "\"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Observed concept count of the subject node (SNOMEDCT:60108003)\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:concept_count_object\", "+\
+            "\"original_attribute_name\": \"concept_count_object\", "+\
+            "\"value\": 927, "+\
+            "\"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Observed concept count of the object node (CPT:73540)\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:dataset_count\", "+\
+            "\"original_attribute_name\": \"patient_count\", "+\
+            "\"value\": 1790431, "+\
+            "\"value_type_id\": \"EDAM:data_0006\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Number of patients in the COHD dataset\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:supporting_data_set\", "+\
+            "\"original_attribute_name\": \"dataset_id\", "+\
+            "\"value\": \"COHD:dataset_1\", "+\
+            "\"value_type_id\": \"EDAM:data_1048\", "+\
+            "\"attribute_source\": \"infores:cohd\", "+\
+            "\"description\": \"Dataset ID within COHD\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:knowledge_level\", "+\
+            "\"value\": \"statistical_association\", "+\
+            "\"attribute_source\": \"infores:cohd\" "+\
+        "},"+\
+        "{"+\
+            "\"attribute_type_id\": \"biolink:agent_type\", "+\
+            "\"value\": \"data_analysis_pipeline\", "+\
+            "\"attribute_source\": \"infores:cohd\" "+\
+        "}"+\
+    "]"+\
+"}"
+
+@pytest.mark.parametrize(
+    "attribute_list,expected_result",
+    [
+        (
+            [SAMPLE_NODE_ATTRIBUTE_STR],
+            [
+                {
+                    "attribute_source": "infores:cohd",
+                    "attribute_type_id": "EDAM:data_0954",
+                    "attributes": [
+                        {
+                            "attribute_source": "infores:omop-ohdsi",
+                            "attribute_type_id": "EDAM:data_1087",
+                            "original_attribute_name": "concept_id",
+                            "value": "OMOP:77661",
+                            "value_type_id": "EDAM:data_1087",
+                            "value_url": "https://athena.ohdsi.org/search-terms/terms/77661"
+                        }
+                    ]
+                }
+            ]
+        ),
+        (
+            [SAMPLE_EDGE_ATTRIBUTE_STR],
+            [
+                {
+                    "attribute_source": "infores:cohd",
+                    "attribute_type_id": "biolink:has_supporting_study_result",
+                    "description": "A study result describing the initial count of concepts",
+                    "value": "SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12",
+                    "value_type_id": "biolink:ConceptCountAnalysisResult",
+                    "value_url": "https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP",
+                    "attributes": [
+                        {
+                            "attribute_type_id": "biolink:concept_pair_count",
+                            "original_attribute_name": "concept_pair_count",
+                            "value": 12, "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Observed concept count between the pair of subject and object nodes"
+                        },
+                        {
+                            "attribute_type_id": "biolink:concept_count_subject",
+                            "original_attribute_name": "concept_count_subject",
+                            "value": 11,
+                            "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Observed concept count of the subject node (SNOMEDCT:60108003)"
+                        },
+                        {
+                            "attribute_type_id": "biolink:concept_count_object",
+                            "original_attribute_name": "concept_count_object",
+                            "value": 927,
+                            "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Observed concept count of the object node (CPT:73540)"
+                        },
+                        {
+                            "attribute_type_id": "biolink:dataset_count",
+                            "original_attribute_name": "patient_count",
+                            "value": 1790431,
+                            "value_type_id": "EDAM:data_0006",
+                            "attribute_source": "infores:cohd",
+                            "description": "Number of patients in the COHD dataset"
+                        },
+                        {
+                            "attribute_type_id": "biolink:supporting_data_set",
+                            "original_attribute_name": "dataset_id",
+                            "value": "COHD:dataset_1",
+                            "value_type_id": "EDAM:data_1048",
+                            "attribute_source": "infores:cohd",
+                            "description": "Dataset ID within COHD"
+                        },
+                        {
+                            "attribute_type_id": "biolink:knowledge_level",
+                            "value": "statistical_association",
+                            "attribute_source": "infores:cohd"
+                        },
+                        {
+                            "attribute_type_id": "biolink:agent_type",
+                            "value": "data_analysis_pipeline",
+                            "attribute_source": "infores:cohd"
+                        }
+                    ]
+                }
+            ]
+        )
+    ]
+)
+def test_parse_attributes(attribute_list: list[str], expected_result:list[dict[str, Any]]):
+    result:list[dict[str, Any]] =  parse_attributes(attribute_list)
+    assert result == expected_result, "Python attribute parsing result parsing doesn't match expectations"
+
+def test_parse_node_properties():
+    result = parse_node_properties([SAMPLE_NODE_ATTRIBUTE_STR])
+    assert result == {"xref": ["https://athena.ohdsi.org/search-terms/terms/77661"]}
+
+
+def test_get_cohd_supporting_study():
+    cohd_study_data: Optional[dict[str, Study]] = \
+        get_cohd_supporting_study(
+            edge_id="fake_test_edge",
+            attribute_list=[SAMPLE_EDGE_ATTRIBUTE_STR]
+        )
+    assert "COHD:dataset_1" in cohd_study_data
+    cohd_study = cohd_study_data["COHD:dataset_1"]
+    assert isinstance(cohd_study, Study)
+    assert cohd_study.id == "COHD:dataset_1"
+    study_results = cohd_study.has_study_results
+    assert study_results
+    result = study_results[0]
+    assert isinstance(result, ConceptCountAnalysisResult)
+    assert result.id == "fake_test_edge"
+    assert "biolink:ConceptCountAnalysisResult" in result.category
+    assert result.name == "SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12"
 
 
 @pytest.fixture(scope="module")
@@ -26,12 +223,14 @@ def mock_koza_transform() -> koza.KozaTransform:
     mappings: Mappings = dict()
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
 
+
 # list of slots whose values are
 # to be checked in a result node
 NODE_TEST_SLOTS = (
     "id",
     "name",
-    "category"
+    "category",
+    "xref"
 )
 
 # list of slots whose values are
@@ -41,6 +240,8 @@ CORE_ASSOCIATION_TEST_SLOTS = (
     "subject",
     "predicate",
     "object",
+    "has_confidence_score",
+    "has_supporting_studies",
     "sources",
     "knowledge_level",
     "agent_type"
@@ -49,50 +250,15 @@ CORE_ASSOCIATION_TEST_SLOTS = (
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Missing id - returns None
-            {
-                # "id": "PUBCHEM.COMPOUND:2083",
-            }
-            ,
-            None,
-            None,
-        ),
-        (   # Query 1 - A complete node record
+        (   # Query 0 - A complete node record
             {
                 "id": "SNOMEDCT:60108003",
                 "name": "Congenital dislocation of one hip with subluxation of other",
-                "categories": ["biolink:DiseaseOrPhenotypicFeature"],
+                "categories": [
+                    "biolink:DiseaseOrPhenotypicFeature"
+                ],
                 "attributes": [
-                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
-                    "{"+
-                        "\"attribute_source\": \"infores:cohd\","
-                        " \"attribute_type_id\": \"EDAM:data_0954\","
-                        " \"attributes\": ["
-                            "{"
-                               "\"attribute_source\": \"infores:omop-ohdsi\", "
-                               "\"attribute_type_id\": \"EDAM:data_1087\", "
-                               "\"original_attribute_name\": \"concept_id\", "
-                               "\"value\": \"OMOP:77661\", "
-                               "\"value_type_id\": \"EDAM:data_1087\", "
-                               "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\""
-                            "}, "
-                               "{\"attribute_source\": \"infores:omop-ohdsi\", "
-                                "\"attribute_type_id\": \"EDAM:data_2339\", "
-                                "\"original_attribute_name\": \"concept_name\", "
-                                "\"value\": \"Congenital dislocation of one hip with subluxation of other\", "
-                                "\"value_type_id\": \"EDAM:data_2339\""
-                            "}, "
-                                "{\"attribute_source\": \"infores:omop-ohdsi\", "
-                                "\"attribute_type_id\": \"EDAM:data_0967\", "
-                                "\"original_attribute_name\": \"domain\", "
-                                "\"value\": \"Condition\", "
-                                "\"value_type_id\": \"EDAM:data_0967\""
-                            "}"
-                        "], "
-                        "\"original_attribute_name\": \"Database cross-mapping\", "
-                        "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
-                        "\"value_type_id\": \"EDAM:data_0954\""
-                    "}"
+                    "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"EDAM:data_0954\", \"attributes\": [{\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_1087\", \"original_attribute_name\": \"concept_id\", \"value\": \"OMOP:77661\", \"value_type_id\": \"EDAM:data_1087\", \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77661\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_2339\", \"original_attribute_name\": \"concept_name\", \"value\": \"Congenital dislocation of one hip with subluxation of other\", \"value_type_id\": \"EDAM:data_2339\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_0967\", \"original_attribute_name\": \"domain\", \"value\": \"Condition\", \"value_type_id\": \"EDAM:data_0967\"}], \"original_attribute_name\": \"Database cross-mapping\", \"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", \"value_type_id\": \"EDAM:data_0954\"}"
                 ]
             },
             # Captured node contents
@@ -101,49 +267,21 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "id": "SNOMEDCT:60108003",
                     "name": "Congenital dislocation of one hip with subluxation of other",
                     "category": ["biolink:DiseaseOrPhenotypicFeature"],
+                    "xref": ["https://athena.ohdsi.org/search-terms/terms/77661"]
                 }
             ],
             # Captured edge contents - n/a
             None
         ),
-        (   # Query 2- Another complete node record
+        (   # Query 1- Another complete node record
             {
                 "id": "CPT:73540",
                 "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
-                "categories": ["biolink:Procedure"],
+                "categories": [
+                    "biolink:Procedure"
+                ],
                 "attributes": [
-                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
-                    "{"
-                        "\"attribute_source\": \"infores:cohd\", "
-                        "\"attribute_type_id\": \"EDAM:data_0954\", "
-                        "\"attributes\": ["
-                            "{"
-                            "\"attribute_source\": \"infores:omop-ohdsi\", "
-                            "\"attribute_type_id\": \"EDAM:data_1087\", "
-                            "\"original_attribute_name\": \"concept_id\", "
-                            "\"value\": \"OMOP:2211477\", "
-                            "\"value_type_id\": \"EDAM:data_1087\", "
-                            "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/2211477\""
-                            "}, "
-                            "{"
-                            "\"attribute_source\": \"infores:omop-ohdsi\", "
-                            "\"attribute_type_id\": \"EDAM:data_2339\", "
-                            "\"original_attribute_name\": \"concept_name\", "
-                            "\"value\": \"Radiologic examination, pelvis and hips, infant or child, minimum of 2 views\", "
-                            "\"value_type_id\": \"EDAM:data_2339\""
-                            "}, "
-                            "{"
-                            "\"attribute_source\": \"infores:omop-ohdsi\", "
-                            "\"attribute_type_id\": \"EDAM:data_0967\", "
-                            "\"original_attribute_name\": \"domain\", "
-                            "\"value\": \"Procedure\", "
-                            "\"value_type_id\": \"EDAM:data_0967\""
-                            "}"
-                        "], "
-                        "\"original_attribute_name\": \"Database cross-mapping\", "
-                        "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
-                        "\"value_type_id\": \"EDAM:data_0954\""
-                    "}"
+                    "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"EDAM:data_0954\", \"attributes\": [{\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_1087\", \"original_attribute_name\": \"concept_id\", \"value\": \"OMOP:2211477\", \"value_type_id\": \"EDAM:data_1087\", \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/2211477\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_2339\", \"original_attribute_name\": \"concept_name\", \"value\": \"Radiologic examination, pelvis and hips, infant or child, minimum of 2 views\", \"value_type_id\": \"EDAM:data_2339\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_0967\", \"original_attribute_name\": \"domain\", \"value\": \"Procedure\", \"value_type_id\": \"EDAM:data_0967\"}], \"original_attribute_name\": \"Database cross-mapping\", \"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", \"value_type_id\": \"EDAM:data_0954\"}"
                 ]
             },
             #
@@ -153,12 +291,13 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "id": "CPT:73540",
                     "name": "Radiologic examination, pelvis and hips, infant or child, minimum of 2 views",
                     "category": ["biolink:Procedure"],
+                    "xref": ["https://athena.ohdsi.org/search-terms/terms/2211477"]
                 }
             ],
             # Captured edge contents - n/a
             None
         ),
-        (   # Query 4- Another complete node record
+        (   # Query 2- Another complete node record
             {
                 "id": "UMLS:C0160047",
                 "name": "Sprain, coracoclavicular ligament",
@@ -170,40 +309,9 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "biolink:NamedThing"
                 ],
                 "attributes": [
-                    # The 'attributes' here are strings of embedded JSON data, re-formatted for readability here
-                    "{"
-                    "\"attribute_source\": \"infores:cohd\", "
-                    "\"attribute_type_id\": \"EDAM:data_0954\", "
-                    "\"attributes\": "
-                    "["
-                    "{"
-                    "\"attribute_source\": \"infores:omop-ohdsi\", "
-                    "\"attribute_type_id\": \"EDAM:data_1087\", "
-                    "\"original_attribute_name\": \"concept_id\", "
-                    "\"value\": \"OMOP:77698\", "
-                    "\"value_type_id\": \"EDAM:data_1087\", "
-                    "\"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77698\""
-                    "}, "
-                    "{"
-                    "\"attribute_source\": \"infores:omop-ohdsi\", "
-                    "\"attribute_type_id\": \"EDAM:data_2339\", "
-                    "\"original_attribute_name\": \"concept_name\", "
-                    "\"value\": \"Sprain, coracoclavicular ligament\", "
-                    "\"value_type_id\": \"EDAM:data_2339\"}, "
-                    "{"
-                    "\"attribute_source\": \"infores:omop-ohdsi\", "
-                    "\"attribute_type_id\": \"EDAM:data_0967\", "
-                    "\"original_attribute_name\": \"domain\", "
-                    "\"value\": \"Condition\", "
-                    "\"value_type_id\": \"EDAM:data_0967\""
-                    "}"
-                    "], "
-                    "\"original_attribute_name\": \"Database cross-mapping\", "
-                    "\"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", "
-                    "\"value_type_id\": \"EDAM:data_0954\""
-                    "}"
+                    "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"EDAM:data_0954\", \"attributes\": [{\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_1087\", \"original_attribute_name\": \"concept_id\", \"value\": \"OMOP:77698\", \"value_type_id\": \"EDAM:data_1087\", \"value_url\": \"https://athena.ohdsi.org/search-terms/terms/77698\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_2339\", \"original_attribute_name\": \"concept_name\", \"value\": \"Sprain, coracoclavicular ligament\", \"value_type_id\": \"EDAM:data_2339\"}, {\"attribute_source\": \"infores:omop-ohdsi\", \"attribute_type_id\": \"EDAM:data_0967\", \"original_attribute_name\": \"domain\", \"value\": \"Condition\", \"value_type_id\": \"EDAM:data_0967\"}], \"original_attribute_name\": \"Database cross-mapping\", \"value\": \"(OMOP:2313993)-[OMOP Map]-(CPT:93976)\", \"value_type_id\": \"EDAM:data_0954\"}"
                 ]
-             },
+            },
             #
             # Captured node contents
             [
@@ -211,6 +319,7 @@ CORE_ASSOCIATION_TEST_SLOTS = (
                     "id": "UMLS:C0160047",
                     "name": "Sprain, coracoclavicular ligament",
                     "category": ["biolink:Disease"],
+                    "xref": ["https://athena.ohdsi.org/search-terms/terms/77698"]
                 }
             ],
             # Captured edge contents - n/a
@@ -225,9 +334,6 @@ def test_transform_cohd_nodes(
         result_nodes: Optional[list],
         result_edge: Optional[dict],
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_node_ingest(mock_koza_transform)
-
     validate_transform_result(
         result=transform_cohd_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -235,18 +341,11 @@ def test_transform_cohd_nodes(
         node_test_slots=NODE_TEST_SLOTS
     )
 
-    on_end_node_ingest(mock_koza_transform)
-
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Missing fields (all in fact!)
-            {},
-            None,
-            None
-        ),
-        (   # Query 1 - A SNOMEDCT record
+        (   # Query 0 - A SNOMEDCT record
             {
                 "subject": "SNOMEDCT:60108003",
                 "predicate": "biolink:positively_correlated_with",
@@ -336,7 +435,210 @@ def test_transform_cohd_nodes(
                         "\"attributes\": ["
                             "{"
                                 "\"attribute_type_id\": \"biolink:unadjusted_p_value\", "
-                                "\"original_attribute_name\": \"p-value\", \"value\": 1e-12, \"value_type_id\": \"EDAM:data_1669\", \"attribute_source\": \"infores:cohd\", \"value_url\": \"http://edamontology.org/data_1669\", \"description\": \"Chi-square p-value, unadjusted.\"}, {\"attribute_type_id\": \"biolink:bonferonni_adjusted_p_value\", \"original_attribute_name\": \"p-value adjusted\", \"value\": 1e-12, \"value_type_id\": \"EDAM:data_1669\", \"attribute_source\": \"infores:cohd\", \"value_url\": \"http://edamontology.org/data_1669\", \"description\": \"Chi-square p-value, Bonferonni adjusted by number of pairs of concepts.\"}, {\"attribute_type_id\": \"biolink:supporting_data_set\", \"original_attribute_name\": \"dataset_id\", \"value\": \"COHD:dataset_1\", \"value_type_id\": \"EDAM:data_1048\", \"attribute_source\": \"infores:cohd\", \"description\": \"Dataset ID within COHD\"}, {\"attribute_type_id\": \"biolink:knowledge_level\", \"value\": \"statistical_association\", \"attribute_source\": \"infores:cohd\"}, {\"attribute_type_id\": \"biolink:agent_type\", \"value\": \"data_analysis_pipeline\", \"attribute_source\": \"infores:cohd\"}]}", "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"biolink:has_supporting_study_result\", \"description\": \"A study result describing an observed-expected frequency analysis on a single pair of concepts\", \"value\": \"7.653 [5.861, 8.387]\", \"value_type_id\": \"biolink:ObservedExpectedFrequencyAnalysisResult\", \"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", \"attributes\": [{\"attribute_type_id\": \"biolink:expected_count\", \"original_attribute_name\": \"expected_count\", \"value\": 0.005695276723872632, \"value_type_id\": \"EDAM:operation_3438\", \"attribute_source\": \"infores:cohd\", \"description\": \"Calculated expected count of concept pair.\"}, {\"attribute_type_id\": \"biolink:ln_ratio\", \"original_attribute_name\": \"ln_ratio\", \"value\": 7.653024742380254, \"value_type_id\": \"EDAM:data_1772\", \"attribute_source\": \"infores:cohd\", \"description\": \"Observed-expected frequency ratio.\"}, {\"attribute_type_id\": \"biolink:ln_ratio_confidence_interval\", \"original_attribute_name\": \"ln_ratio_confidence_interval\", \"value\": [5.861265273152199, 8.386993917460455], \"value_type_id\": \"EDAM:data_0951\", \"attribute_source\": \"infores:cohd\", \"description\": \"Observed-expected frequency ratio 99.0% confidence interval\"}, {\"attribute_type_id\": \"biolink:supporting_data_set\", \"original_attribute_name\": \"dataset_id\", \"value\": \"COHD:dataset_1\", \"value_type_id\": \"EDAM:data_1048\", \"attribute_source\": \"infores:cohd\", \"description\": \"Dataset ID within COHD\"}, {\"attribute_type_id\": \"biolink:knowledge_level\", \"value\": \"statistical_association\", \"attribute_source\": \"infores:cohd\"}, {\"attribute_type_id\": \"biolink:agent_type\", \"value\": \"data_analysis_pipeline\", \"attribute_source\": \"infores:cohd\"}]}", "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"biolink:has_supporting_study_result\", \"description\": \"A study result describing a relative frequency analysis on a single pair of concepts\", \"value\": \"Relative to SNOMEDCT:60108003: 1.091 [0.200, 5.500]; Relative to CPT:73540: 0.013 [0.004, 0.026]\", \"value_type_id\": \"biolink:RelativeFrequencyAnalysisResult\", \"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", \"attributes\": [{\"attribute_type_id\": \"biolink:relative_frequency_subject\", \"original_attribute_name\": \"relative_frequency_subject\", \"value\": 1.0909090909090908, \"value_type_id\": \"EDAM:data_1772\", \"attribute_source\": \"infores:cohd\", \"description\": \"Relative frequency, relative to the subject node (SNOMEDCT:60108003).\"}, {\"attribute_type_id\": \"biolink:relative_frequency_subject_confidence_interval\", \"original_attribute_name\": \"relative_freq_subject_confidence_interval\", \"value\": [0.2, 5.5], \"value_type_id\": \"EDAM:data_0951\", \"attribute_source\": \"infores:cohd\", \"description\": \"Relative frequency (subject) 99.0% confidence interval\"}, {\"attribute_type_id\": \"biolink:relative_frequency_object\", \"original_attribute_name\": \"relative_frequency_object\", \"value\": 0.012944983818770227, \"value_type_id\": \"EDAM:data_1772\", \"attribute_source\": \"infores:cohd\", \"description\": \"Relative frequency, relative to the object node (CPT:73540).\"}, {\"attribute_type_id\": \"biolink:relative_frequency_object_confidence_interval\", \"original_attribute_name\": \"relative_freq_object_confidence_interval\", \"value\": [0.003976143141153081, 0.02588235294117647], \"value_type_id\": \"EDAM:data_0951\", \"attribute_source\": \"infores:cohd\", \"description\": \"Relative frequency (object) 99.0% confidence interval\"}, {\"attribute_type_id\": \"biolink:supporting_data_set\", \"original_attribute_name\": \"dataset_id\", \"value\": \"COHD:dataset_1\", \"value_type_id\": \"EDAM:data_1048\", \"attribute_source\": \"infores:cohd\", \"description\": \"Dataset ID within COHD\"}, {\"attribute_type_id\": \"biolink:knowledge_level\", \"value\": \"statistical_association\", \"attribute_source\": \"infores:cohd\"}, {\"attribute_type_id\": \"biolink:agent_type\", \"value\": \"data_analysis_pipeline\", \"attribute_source\": \"infores:cohd\"}]}", "{\"attribute_source\": \"infores:cohd\", \"attribute_type_id\": \"biolink:has_supporting_study_result\", \"description\": \"A study result describing a log-odds analysis on a single pair of concepts\", \"value\": \"999.000 [999.000, 999.000]\", \"value_type_id\": \"biolink:LogOddsAnalysisResult\", \"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", \"attributes\": [{\"attribute_type_id\": \"biolink:log_odds_ratio\", \"original_attribute_name\": \"log_odds\", \"value\": 999, \"value_type_id\": \"EDAM:data_1772\", \"attribute_source\": \"infores:cohd\", \"description\": \"Natural logarithm of the odds-ratio\"}, {\"attribute_type_id\": \"biolink:log_odds_ratio_95_ci\", \"original_attribute_name\": \"log_odds_ci\", \"value\": [999, 999], \"value_type_id\": \"EDAM:data_0951\", \"attribute_source\": \"infores:cohd\", \"description\": \"Log-odds 95% confidence interval\"}, {\"attribute_type_id\": \"biolink:total_sample_size\", \"original_attribute_name\": \"concept_pair_count\", \"value\": 12, \"value_type_id\": \"EDAM:data_0006\", \"attribute_source\": \"infores:cohd\", \"description\": \"Observed concept count between the pair of subject and object nodes\"}, {\"attribute_type_id\": \"biolink:supporting_data_set\", \"original_attribute_name\": \"dataset_id\", \"value\": \"COHD:dataset_1\", \"value_type_id\": \"EDAM:data_1048\", \"attribute_source\": \"infores:cohd\", \"description\": \"Dataset ID within COHD\"}, {\"attribute_type_id\": \"biolink:knowledge_level\", \"value\": \"statistical_association\", \"attribute_source\": \"infores:cohd\"}, {\"attribute_type_id\": \"biolink:agent_type\", \"value\": \"data_analysis_pipeline\", \"attribute_source\": \"infores:cohd\"}]}"
+                                "\"original_attribute_name\": \"p-value\", "
+                                "\"value\": 1e-12, "
+                                "\"value_type_id\": \"EDAM:data_1669\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"value_url\": \"http://edamontology.org/data_1669\", "
+                                "\"description\": \"Chi-square p-value, unadjusted.\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:bonferonni_adjusted_p_value\", "
+                                "\"original_attribute_name\": \"p-value adjusted\", "
+                                "\"value\": 1e-12, "
+                                "\"value_type_id\": \"EDAM:data_1669\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"value_url\": \"http://edamontology.org/data_1669\", "
+                                "\"description\": \"Chi-square p-value, Bonferonni adjusted by number of pairs of concepts.\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:supporting_data_set\", "
+                                "\"original_attribute_name\": \"dataset_id\", "
+                                "\"value\": \"COHD:dataset_1\", "
+                                "\"value_type_id\": \"EDAM:data_1048\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Dataset ID within COHD\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:knowledge_level\", "
+                                "\"value\": \"statistical_association\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:agent_type\", "
+                                "\"value\": \"data_analysis_pipeline\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}"
+                        "]"
+                    "}",
+                    "{"
+                        "\"attribute_source\": \"infores:cohd\", "
+                        "\"attribute_type_id\": \"biolink:has_supporting_study_result\", "
+                        "\"description\": \"A study result describing an observed-expected "
+                                           "frequency analysis on a single pair of concepts\", "
+                        "\"value\": \"7.653 [5.861, 8.387]\", "
+                        "\"value_type_id\": \"biolink:ObservedExpectedFrequencyAnalysisResult\", "
+                        "\"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", "
+                        "\"attributes\": ["
+                            "{"
+                                "\"attribute_type_id\": \"biolink:expected_count\", "
+                                "\"original_attribute_name\": \"expected_count\", "
+                                "\"value\": 0.005695276723872632, "
+                                "\"value_type_id\": \"EDAM:operation_3438\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Calculated expected count of concept pair.\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:ln_ratio\", "
+                                "\"original_attribute_name\": \"ln_ratio\", "
+                                "\"value\": 7.653024742380254, "
+                                "\"value_type_id\": \"EDAM:data_1772\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Observed-expected frequency ratio.\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:ln_ratio_confidence_interval\", "
+                                "\"original_attribute_name\": \"ln_ratio_confidence_interval\", "
+                                "\"value\": [5.861265273152199, 8.386993917460455], "
+                                "\"value_type_id\": \"EDAM:data_0951\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Observed-expected frequency ratio 99.0% confidence interval\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:supporting_data_set\", "
+                                "\"original_attribute_name\": \"dataset_id\", "
+                                "\"value\": \"COHD:dataset_1\", "
+                                "\"value_type_id\": \"EDAM:data_1048\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Dataset ID within COHD\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:knowledge_level\", "
+                                "\"value\": \"statistical_association\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:agent_type\", "
+                                "\"value\": \"data_analysis_pipeline\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}"
+                        "]"
+                    "}",
+                    "{"
+                        "\"attribute_source\": \"infores:cohd\", "
+                        "\"attribute_type_id\": \"biolink:has_supporting_study_result\", "
+                        "\"description\": \"A study result describing a relative "
+                                           "frequency analysis on a single pair of concepts\", "
+                        "\"value\": \"Relative to SNOMEDCT:60108003: 1.091 [0.200, 5.500]; "
+                                     "Relative to CPT:73540: 0.013 [0.004, 0.026]\", "
+                        "\"value_type_id\": \"biolink:RelativeFrequencyAnalysisResult\", "
+                        "\"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", "
+                        "\"attributes\": ["
+                            "{"
+                                "\"attribute_type_id\": \"biolink:relative_frequency_subject\", "
+                                "\"original_attribute_name\": \"relative_frequency_subject\", "
+                                "\"value\": 1.0909090909090908, "
+                                "\"value_type_id\": \"EDAM:data_1772\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Relative frequency, relative to the "
+                                                   "subject node (SNOMEDCT:60108003).\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:relative_frequency_subject_confidence_interval\", "
+                                "\"original_attribute_name\": \"relative_freq_subject_confidence_interval\", "
+                                "\"value\": [0.2, 5.5], "
+                                "\"value_type_id\": \"EDAM:data_0951\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Relative frequency (subject) 99.0% confidence interval\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:relative_frequency_object\", "
+                                "\"original_attribute_name\": \"relative_frequency_object\", "
+                                "\"value\": 0.012944983818770227, "
+                                "\"value_type_id\": \"EDAM:data_1772\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Relative frequency, relative to the object node (CPT:73540).\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:relative_frequency_object_confidence_interval\", "
+                                "\"original_attribute_name\": \"relative_freq_object_confidence_interval\", "
+                                "\"value\": [0.003976143141153081, 0.02588235294117647], "
+                                "\"value_type_id\": \"EDAM:data_0951\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Relative frequency (object) 99.0% confidence interval\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:supporting_data_set\", "
+                                "\"original_attribute_name\": \"dataset_id\", "
+                                "\"value\": \"COHD:dataset_1\", "
+                                "\"value_type_id\": \"EDAM:data_1048\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Dataset ID within COHD\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:knowledge_level\", "
+                                "\"value\": \"statistical_association\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:agent_type\", "
+                                "\"value\": \"data_analysis_pipeline\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}"
+                        "]"
+                    "}",
+                    "{"
+                        "\"attribute_source\": \"infores:cohd\", "
+                        "\"attribute_type_id\": \"biolink:has_supporting_study_result\", "
+                        "\"description\": \"A study result describing a log-odds analysis on a single pair of concepts\", "
+                        "\"value\": \"999.000 [999.000, 999.000]\", "
+                        "\"value_type_id\": \"biolink:LogOddsAnalysisResult\", "
+                        "\"value_url\": \"https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP\", "
+                        "\"attributes\": ["
+                            "{"
+                                "\"attribute_type_id\": \"biolink:log_odds_ratio\", "
+                                "\"original_attribute_name\": \"log_odds\", "
+                                "\"value\": 999, "
+                                "\"value_type_id\": \"EDAM:data_1772\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Natural logarithm of the odds-ratio\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:log_odds_ratio_95_ci\", "
+                                "\"original_attribute_name\": \"log_odds_ci\", "
+                                "\"value\": [999, 999], "
+                                "\"value_type_id\": \"EDAM:data_0951\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Log-odds 95% confidence interval\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:total_sample_size\", "
+                                "\"original_attribute_name\": \"concept_pair_count\", "
+                                "\"value\": 12, \"value_type_id\": \"EDAM:data_0006\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Observed concept count between "
+                                                   "the pair of subject and object nodes\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:supporting_data_set\", "
+                                "\"original_attribute_name\": \"dataset_id\", "
+                                "\"value\": \"COHD:dataset_1\", "
+                                "\"value_type_id\": \"EDAM:data_1048\", "
+                                "\"attribute_source\": \"infores:cohd\", "
+                                "\"description\": \"Dataset ID within COHD\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:knowledge_level\", "
+                                "\"value\": \"statistical_association\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}, "
+                            "{"
+                                "\"attribute_type_id\": \"biolink:agent_type\", "
+                                "\"value\": \"data_analysis_pipeline\", "
+                                "\"attribute_source\": \"infores:cohd\""
+                            "}"
+                        "]"
+                    "}"
                 ],
                 "sources": [
                     {
@@ -362,7 +664,37 @@ def test_transform_cohd_nodes(
                 "subject": "SNOMEDCT:60108003",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:73540",
-                "score": 5.861265273152199,
+                "has_confidence_score": 5.861265273152199,
+                "has_supporting_studies": [
+                    {
+                        "COHD:dataset_1": {
+                            "id": "COHD:dataset_1",
+                            "category": ["biolink:Study"],
+                            "has_study_results": [
+                                {
+                                    "category": ["biolink:ConceptCountAnalysisResult"],
+                                    "name": "SNOMEDCT:60108003: 11; CPT:73540: 927; pair: 12"
+                                },
+                                {
+                                    "category": ["biolink:ChiSquaredAnalysisResult"],
+                                    "name": "p-value: 1.00e-12; Bonferonni p-value: 1.00e-12"
+                                },
+                                {
+                                    "category": ["biolink:ObservedExpectedFrequencyAnalysisResult"],
+                                    "name": "7.653 [5.861, 8.387]"
+                                },
+                                {
+                                    "category": ["biolink:RelativeFrequencyAnalysisResult"],
+                                    "name": "Relative to SNOMEDCT:60108003: 1.091 [0.200, 5.500]; Relative to CPT:73540: 0.013 [0.004, 0.026]"
+                                },
+                                {
+                                    "category": ["biolink:LogOddsAnalysisResult"],
+                                    "name": "999.000 [999.000, 999.000]"
+                                }
+                            ]
+                        }
+                    }
+                ],
                 "sources": [
                     {
                         "resource_id": "infores:columbia-cdw-ehr-data",
@@ -380,7 +712,7 @@ def test_transform_cohd_nodes(
                 "agent_type": AgentTypeEnum.data_analysis_pipeline
             }
         ),
-        (  # Query 2 - A UMLS record
+        (  # Query 1 - A UMLS record
             {
                 "subject": "UMLS:C0160047",
                 "predicate": "biolink:positively_correlated_with",
@@ -410,7 +742,37 @@ def test_transform_cohd_nodes(
                 "subject": "UMLS:C0160047",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:73030",
-                "score": 3.3254987202521264,
+                "has_confidence_score": 3.3254987202521264,
+                "has_supporting_studies": [
+                    {
+                        "COHD:dataset_1": {
+                            "id": "COHD:dataset_1",
+                            "category": ["biolink:Study"],
+                            "has_study_results": [
+                                {
+                                    "category": ["biolink:ConceptCountAnalysisResult"],
+                                    "name": "UMLS:C0160047: 11; CPT:73030: 29261; pair: 16"
+                                },
+                                {
+                                    "category": ["biolink:ChiSquaredAnalysisResult"],
+                                    "name": "p-value: 1.00e-12; Bonferonni p-value: 1.00e-12"
+                                },
+                                {
+                                    "category": ["biolink:ObservedExpectedFrequencyAnalysisResult"],
+                                    "name": "4.489 [3.325, 5.150]"
+                                },
+                                {
+                                    "category": ["biolink:RelativeFrequencyAnalysisResult"],
+                                    "name": "Relative to UMLS:C0160047: 1.455 [0.350, 6.750]; Relative to CPT:73030: 0.001 [0.000, 0.001]"
+                                },
+                                {
+                                    "category": ["biolink:LogOddsAnalysisResult"],
+                                    "name": "999.000 [999.000, 999.000]"
+                                }
+                            ]
+                        }
+                    }
+                ],
                 "sources": [
                     {
                         "resource_id": "infores:columbia-cdw-ehr-data",
@@ -428,7 +790,7 @@ def test_transform_cohd_nodes(
                 "agent_type": AgentTypeEnum.data_analysis_pipeline
             }
         ),
-        (   # Query 3 - A MONDO subject record
+        (   # Query 2 - A MONDO subject record
             {
                 "subject": "MONDO:0000888",
                 "predicate": "biolink:positively_correlated_with",
@@ -460,7 +822,37 @@ def test_transform_cohd_nodes(
                 "subject": "MONDO:0000888",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:99232",
-                "score": 2.5595194408846957,
+                "has_confidence_score": 2.5595194408846957,
+                "has_supporting_studies": [
+                    {
+                        "COHD:dataset_1": {
+                            "id": "COHD:dataset_1",
+                            "category": ["biolink:Study"],
+                            "has_study_results": [
+                                {
+                                    "category": ["biolink:ConceptCountAnalysisResult"],
+                                    "name": "MONDO:0000888: 11; CPT:99232: 75532; pair: 19"
+                                },
+                                {
+                                    "category": ["biolink:ChiSquaredAnalysisResult"],
+                                    "name": "p-value: 1.00e-12; Bonferonni p-value: 1.00e-12"
+                                },
+                                {
+                                    "category": ["biolink:ObservedExpectedFrequencyAnalysisResult"],
+                                    "name": "3.712 [2.560, 4.323]"
+                                },
+                                {
+                                    "category": ["biolink:RelativeFrequencyAnalysisResult"],
+                                    "name": "Relative to MONDO:0000888: 1.727 [0.450, 7.750]; Relative to CPT:99232: 0.000 [0.000, 0.000]"
+                                },
+                                {
+                                    "category": ["biolink:LogOddsAnalysisResult"],
+                                    "name": "999.000 [999.000, 999.000]"
+                                }
+                            ]
+                        }
+                    }
+                ],
                 "sources": [
                     {
                         "resource_id": "infores:columbia-cdw-ehr-data",
@@ -487,9 +879,6 @@ def test_transform_cohd_edges(
         result_nodes: Optional[list],
         result_edge: Optional[dict]
 ):
-    # Just to ensure that the Koza context is properly initialized
-    on_begin_edge_ingest(mock_koza_transform)
-
     validate_transform_result(
         result=transform_cohd_edge(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -497,4 +886,3 @@ def test_transform_cohd_edges(
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS
     )
 
-    on_end_edge_ingest(mock_koza_transform)

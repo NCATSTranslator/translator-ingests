@@ -1,6 +1,10 @@
 import uuid
 import koza
 import pandas as pd
+import requests
+import re
+from bs4 import BeautifulSoup
+from pathlib import Path
 from typing import Any, Iterable
 
 from koza.model.graphs import KnowledgeGraph
@@ -29,26 +33,21 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 
 def get_latest_version() -> str:
-    from datetime import date
-    today = date.today()
-    formatted_date = today.strftime("%Y%m%d")
+    # lacking a better programmatic approach, derive the version from the gtopdb html
+    html_page: requests.Response = requests.get('https://www.guidetopharmacology.org/download.jsp')
+    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
 
-    return formatted_date
+    # we expect the html to contain version text like 'Downloads are from the 2025.4 version.'
+    # the following should extract the version from it (2025.4)
+    search_text = 'Downloads are from the *'
+    b_tag: BeautifulSoup.Tag = resp.find('b', string=re.compile(search_text))
+    if len(b_tag) > 0:
+        html_value = b_tag.text
+        html_value = html_value[len(search_text) - 1:]  # remove the 'Downloads are from the' part
+        source_version = html_value.split(' version')[0]  # remove the ' version.' part
+        return source_version
 
-@koza.prepare_data(tag="gtopdb_ligand_id_mapping")
-def prepare_pubchemID_mapping(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-
-    ## Only need to download the corresponding ligand.csv file, but dont need to load it using a different tag and create a dictionary
-
-    # this function is only preparing data, not yielding rows
-    return None
-
-## Koza requires a transform function corresponding to each prepare_data.
-## Thus we already built the global dictionary in the prepare_data, and still need this empty transform function
-@koza.transform(tag="gtopdb_ligand_id_mapping")
-def transform_nothing(koza: koza.KozaTransform, record: dict[str, Any]) -> None:
-    # This tag only prepares global state; no records emitted
-    return None
+    raise RuntimeError('Could not find the "Downloads are from the" text in the html to find the latest version.')
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
@@ -58,9 +57,11 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     # print("STATE KEYS:", koza.state.keys())
     # print("MAPPING SIZE:", len(koza.state.get("pubchem_id_mapping_dict", {})))
 
-    # Load ligands mapping CSV directly
-    # skip the metadata row
-    mapping_df = pd.read_csv("data/gtopdb/20260212/source_data/ligands.csv", skiprows = 1)
+    ## Load ligands mapping CSV directly
+    ## skip the metadata row
+    ## Specify that 'Ligand ID' and "PubChem CID" should be read as a string
+    ligands_file_path = Path(koza.input_files_dir) / "ligands.csv"
+    mapping_df = pd.read_csv(ligands_file_path, skiprows = 1, dtype={'Ligand ID': str, 'PubChem CID': str})
     ## used for debugging only
     # print("Mapping CSV columns:", mapping_df.columns.tolist())
 
@@ -71,6 +72,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     ## convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
+
+    ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifier from 1102 -> 1102.0
+    source_df = source_df.astype({
+        "Ligand ID": "string",
+        "Target UniProt ID": "string"
+    })
 
     ## debugging usage
     koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
@@ -851,8 +858,3 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
-
-# Functions decorated with @koza.on_data_begin() run before transform or transform_record
-
-# koza.state is a dictionary that can be used to store arbitrary variables
-# Now create specific transform ingest function for each pair of edges in SIGNOR

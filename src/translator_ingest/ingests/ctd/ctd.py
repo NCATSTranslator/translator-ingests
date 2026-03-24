@@ -36,8 +36,7 @@ BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_st
 
 CHEM_TO_DISEASE_PREDICATES = {
     "therapeutic": BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
-    "marker/mechanism": BIOLINK_CORRELATED_WITH,
-    "inference": BIOLINK_ASSOCIATED_WITH,  # the files don't have "inference" but we use it in the transform
+    "marker/mechanism": BIOLINK_CORRELATED_WITH
 }
 
 EXPOSURE_EVENTS_PREDICATES = {
@@ -71,8 +70,11 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
 
     # Check the evidence type and assign a predicate based on that
-    # DirectEvidence should be "therapeutic", "marker/mechanism", or blank (in which case we assign "inference")
-    evidence_type = record["DirectEvidence"] if record["DirectEvidence"] else "inference"
+    # DirectEvidence should be "therapeutic", "marker/mechanism", or blank
+    evidence_type = record["DirectEvidence"]
+    # a lack of DirectEvidence indicates the relationship is only based on inference, we decided not to include these
+    if not evidence_type:
+        return None
     predicate = CHEM_TO_DISEASE_PREDICATES[evidence_type]
     publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
@@ -86,8 +88,6 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
     )
     if publications:
         association.publications = publications
-    if evidence_type == "inference":
-        association.has_confidence_score = float(record["InferenceScore"])
     return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
 
 @koza.transform_record(tag="exposure_events")
@@ -315,12 +315,18 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
 
 @koza.transform_record(tag="chem_go_enriched")
 def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
+    # filter out associations with a weak p value or go level < 3
+    highest_go_level = record['HighestGOLevel']
+    if int(highest_go_level) < 3:
+        return None
+    corrected_p_value = record['CorrectedPValue']
+    if float(corrected_p_value) > 1e-10:
+        return None
     # chemical ids are mesh ids without the curie prefix
     chemical_id = f'MESH:{record['ChemicalID']}'
     # GO curies
     go_term = record['GOTermID']
     p_value = record['PValue']
-    corrected_p_value = record['CorrectedPValue']
     edge = ChemicalEntityToBiologicalProcessAssociation(
         id=entity_id(),
         subject=chemical_id,
@@ -346,6 +352,8 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
     pathway_id = record['PathwayID'].replace('KEGG', 'KEGG.PATHWAY')
     p_value = record['PValue']
     corrected_p_value = record['CorrectedPValue']
+    if float(corrected_p_value) > 1e-10:
+        return None
     edge = ChemicalEntityToPathwayAssociation(
         id=entity_id(),
         subject=chemical_id,
