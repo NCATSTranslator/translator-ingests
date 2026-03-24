@@ -63,7 +63,7 @@ ingest_info:
   - category: other
     consideration: "Additional model species may be included in the future."
   - category: edge_property
-    consideration: "Are there any useful edge properties / EPC metrics that could be collected on orthology edges (e.g. data items output from the sequence alignment / phylogenetic analysis) that could be used to socre these edges?"
+    consideration: "Are there any useful edge properties / EPC metrics that could be collected on orthology edges (e.g. data items output from the sequence alignment / phylogenetic analysis) that could be used to score these edges?"
   - category: edge_property
     consideration: "Do we want to capture the ortholog type (e.g. "least diverged ortholog", "paralog", etc.) . . . or consider additional / more granular predicates (RO has several under 'orthologous to', Biolink has 'xenologous to', 'paralogous to').
   - category: node_property
