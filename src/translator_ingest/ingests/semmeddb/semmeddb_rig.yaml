@@ -47,6 +47,9 @@ ingest_info:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: "Domain/range violations per exclusion configuration when present"
       rationale: "Improve semantic coherence against Biolink-like domain/range expectations."
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: "Excess publications per edge trimmed to at most 200: top 100 by min(subject_score, object_score) and top 100 by publication year (most recent). Only edges with more than 100 publications are affected."
+      rationale: "Some edges have 60,000+ supporting PMIDs. Retaining all of them makes output impractical and adds no scientific value beyond a few hundred. The hybrid strategy keeps the most reliable evidence — min(subject_score, object_score) ensures both entities were confidently identified by SemRep — and the most current evidence by year."
 
   # KNOWN ISSUES AND WARNINGS (Manual QA 1 fixes)
   # We document stuff that might look weird but is expected behavior.
