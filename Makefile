@@ -58,6 +58,9 @@ define HELP
 │                                                                              │
 │     test                Run all tests                                        │
 │                                                                              │
+│     build               Run full pipeline end-to-end with progress & report  │
+│     report              Generate automated build report                      │
+│                                                                              │
 │     upload              Upload data and releases to S3                       │
 │     upload-all          Upload all sources to S3                             │
 │     cleanup-ebs         Clean up old EBS versions                            │
@@ -188,22 +191,50 @@ release-%:
 	@echo "Creating release for $*..."
 	@$(RUN) python src/translator_ingest/release.py $*
 
+### Full Build (end-to-end with progress & report) ###
+
+.PHONY: build
+build:
+	@$(RUN) python -m translator_ingest.util.run_build.run_build \
+		--sources "$(SOURCES)" \
+		--graph-id $(GRAPH_ID) \
+		--node-properties "$(NODE_PROPERTIES)" \
+		$(if $(OVERWRITE),--overwrite) \
+		$(if $(NO_UPLOAD),--no-upload) \
+		$(if $(MAX_WORKERS),--max-workers $(MAX_WORKERS)) \
+		$(if $(MEMORY_THRESHOLD),--memory-threshold $(MEMORY_THRESHOLD))
+
+### Build Report ###
+
+.PHONY: report
+report:
+	@echo "Generating build report..."
+	@UPLOAD_RESULTS=""; \
+	if [ -f "$(ROOTDIR)/reports/upload-results-latest.json" ]; then \
+		UPLOAD_RESULTS="--upload-results $(ROOTDIR)/reports/upload-results-latest.json"; \
+	fi; \
+	$(RUN) python -m translator_ingest.util.run_build.build_report \
+		--sources "$(SOURCES)" \
+		--graph-id $(GRAPH_ID) \
+		--node-properties "$(NODE_PROPERTIES)" \
+		$$UPLOAD_RESULTS
+
 ### S3 Upload and Storage Management ###
 
 .PHONY: upload
 upload:
 	@echo "Uploading sources to S3: $(SOURCES)"
-	@$(RUN) python src/translator_ingest/upload_s3.py $(SOURCES)
+	@$(RUN) python -m translator_ingest.util.storage.upload_s3 $(SOURCES)
 
 .PHONY: upload-%
 upload-%:
 	@echo "Uploading $* to S3..."
-	@$(RUN) python src/translator_ingest/upload_s3.py $*
+	@$(RUN) python -m translator_ingest.util.storage.upload_s3 $*
 
 .PHONY: upload-all
 upload-all:
 	@echo "Uploading all sources to S3..."
-	@$(RUN) python src/translator_ingest/upload_s3.py
+	@$(RUN) python -m translator_ingest.util.storage.upload_s3
 
 .PHONY: cleanup-ebs
 cleanup-ebs:
