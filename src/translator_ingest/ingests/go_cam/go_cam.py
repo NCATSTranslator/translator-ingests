@@ -258,7 +258,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 # Store both original and normalized for edge lookup
                 node_lookup[node_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
                 if normalized_id != node_id:
-                    node_lookup[normalized_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
+                    node_lookup[normalized_id] = node_lookup[node_id]
 
         # Determine knowledge sources based on model_id
         sources = []
