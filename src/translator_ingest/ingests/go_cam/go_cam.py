@@ -53,10 +53,10 @@ def extract_value(value):
 
 
 def normalize_id(node_id: str) -> str:
-    """Remove duplicate prefixes from node IDs (e.g., MGI:MGI:1921700 -> MGI:1921700) and convert URIs to CURIEs."""
-    if not node_id:
-        return node_id
-
+    """
+    Remove duplicate prefixes from node IDs
+    (e.g., MGI:MGI:1921700 -> MGI:1921700) and convert URIs to CURIEs.
+    """
     # Handle REACTO URIs - convert to Biolink-compliant reactome: CURIEs
     if node_id.startswith("obo:go/extensions/reacto.owl#REACTO_"):
         # Convert obo:go/extensions/reacto.owl#REACTO_R-HSA-12345 to reactome:R-HSA-12345
@@ -308,30 +308,23 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 logger.debug(f"Skipping edge {source_id}->{target_id}: node(s) not found in model")
                 continue
 
-            # Create gene nodes for this edge
-            edge_failed = False
+            # Create the Gene nodes for this edge
             for gene_id in [source_id, target_id]:
-                try:
-                    gene_info = node_lookup[gene_id]
-                    if gene_info["id"] not in nodes:
-                        # Only create a node the first time
-                        # it is encountered within an edge
-                        gene_node = Gene(
-                            id=gene_info["id"],
-                            name=gene_info["name"],
-                            category=["biolink:Gene"],
-                            in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
-                        )
-                        nodes[gene_info["id"]] = gene_node
+                gene_info = node_lookup[gene_id]
+                if gene_info["id"] not in nodes:
+                    # Only create a node once the first time
+                    # it is encountered within at least one edge
+                    gene_node = Gene(
+                        id=gene_info["id"],
+                        name=gene_info["name"],
+                        category=["biolink:Gene"],
+                        in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
+                    )
+                    nodes[gene_info["id"]] = gene_node
 
-                except Exception as e:
-                    logger.error(f"Failed to create gene node {gene_id}: {e}")
-                    edge_failed = True
-                    break
-
-            # Skip creating the association if any node failed
-            if edge_failed:
-                continue
+            # Since we know here that they exist, get the normalized IDs for the association
+            normalized_source_id = node_lookup[source_id]["id"]
+            normalized_target_id = node_lookup[target_id]["id"]
 
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
@@ -345,11 +338,10 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             if isinstance(publications, str):
                 publications = [publications.strip()]
             if publications and isinstance(publications, list):
-                publications = [pub.strip() for pub in publications if isinstance(pub, str) and pub.startswith("PMID:")]
-
-            # Get normalized IDs for the association with safe fallback
-            normalized_source_id = node_lookup.get(source_id, {}).get("id", normalize_id(source_id))
-            normalized_target_id = node_lookup.get(target_id, {}).get("id", normalize_id(target_id))
+                publications = [
+                    pub.strip() for pub in publications
+                    if isinstance(pub, str) and pub.startswith("PMID:")
+                ]
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
