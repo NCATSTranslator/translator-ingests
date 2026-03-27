@@ -289,7 +289,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             sources.append(primary_source)
 
         # Track nodes and edges for this model
-        nodes = []
+        nodes = dict()
         edges = []
 
         # Process edges with linked validation
@@ -313,13 +313,17 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             for gene_id in [source_id, target_id]:
                 try:
                     gene_info = node_lookup[gene_id]
-                    gene_node = Gene(
-                        id=gene_info["id"],
-                        name=gene_info["name"],
-                        category=["biolink:Gene"],
-                        in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
-                    )
-                    nodes.append(gene_node)
+                    if gene_info["id"] not in nodes:
+                        # Only create a node the first time
+                        # it is encountered within an edge
+                        gene_node = Gene(
+                            id=gene_info["id"],
+                            name=gene_info["name"],
+                            category=["biolink:Gene"],
+                            in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
+                        )
+                        nodes[gene_info["id"]] = gene_node
+
                 except Exception as e:
                     logger.error(f"Failed to create gene node {gene_id}: {e}")
                     edge_failed = True
@@ -366,7 +370,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
         # Yield a KnowledgeGraph for this model if there are any edges
         if edges:
-            yield KnowledgeGraph(nodes=nodes, edges=edges)
+            yield KnowledgeGraph(nodes=list(nodes.values()), edges=edges)
 
     # Report all unique unmapped predicates at the end
     if unmapped_predicates:
