@@ -1,7 +1,7 @@
 import json
 import tarfile
 import tempfile
-import uuid
+
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -16,6 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
+from bmt.pydantic import entity_id
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.logging_utils import get_logger
@@ -53,10 +54,10 @@ def extract_value(value):
 
 
 def normalize_id(node_id: str) -> str:
-    """Remove duplicate prefixes from node IDs (e.g., MGI:MGI:1921700 -> MGI:1921700) and convert URIs to CURIEs."""
-    if not node_id:
-        return node_id
-
+    """
+    Remove duplicate prefixes from node IDs
+    (e.g., MGI:MGI:1921700 -> MGI:1921700) and convert URIs to CURIEs.
+    """
     # Handle REACTO URIs - convert to Biolink-compliant reactome: CURIEs
     if node_id.startswith("obo:go/extensions/reacto.owl#REACTO_"):
         # Convert obo:go/extensions/reacto.owl#REACTO_R-HSA-12345 to reactome:R-HSA-12345
@@ -195,6 +196,10 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
             logger.info(f"Configured to include taxa: {target_taxa}")
             break
 
+    if not target_taxa:
+        logger.error("No target taxa included in the Koza GO-CAM ingest configuration? No data to process!")
+        return []
+
     logger.info(f"Filtering for taxa: {target_taxa}")
 
     models_processed = 0
@@ -212,7 +217,7 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
             taxon = model_data.get("graph", {}).get("model_info", {}).get("taxon", "")
 
             # Apply filtering based on configuration
-            if target_taxa and taxon in target_taxa:
+            if taxon in target_taxa:
                 model_data["taxon"] = taxon  # Expose for consistency
                 model_data["_file_path"] = str(json_file)
                 yield model_data
@@ -228,6 +233,8 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
     if models_filtered == 0:
         logger.warning(f"No models matched the filter criteria. Target taxa: {target_taxa}")
+
+    return []  # empty run or just the end of yielded data...
 
 
 @koza.transform()
@@ -252,7 +259,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 # Store both original and normalized for edge lookup
                 node_lookup[node_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
                 if normalized_id != node_id:
-                    node_lookup[normalized_id] = {"id": normalized_id, "name": node.get("label"), "taxon": taxon}
+                    node_lookup[normalized_id] = node_lookup[node_id]
 
         # Determine knowledge sources based on model_id
         sources = []
@@ -270,17 +277,20 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 id=INFORES_GO_CAM,
                 resource_id=INFORES_GO_CAM,
                 resource_role=ResourceRoleEnum.aggregator_knowledge_source,
+                upstream_resource_ids=[INFORES_REACTOME]
             )
             sources.append(aggregator_source)
         else:
             # GO-CAM model - only primary source
             primary_source = RetrievalSource(
-                id=INFORES_GO_CAM, resource_id=INFORES_GO_CAM, resource_role=ResourceRoleEnum.primary_knowledge_source
+                id=INFORES_GO_CAM,
+                resource_id=INFORES_GO_CAM,
+                resource_role=ResourceRoleEnum.primary_knowledge_source
             )
             sources.append(primary_source)
 
         # Track nodes and edges for this model
-        nodes = []
+        nodes = dict()
         edges = []
 
         # Process edges with linked validation
@@ -299,26 +309,23 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 logger.debug(f"Skipping edge {source_id}->{target_id}: node(s) not found in model")
                 continue
 
-            # Create gene nodes for this edge
-            edge_failed = False
+            # Create the Gene nodes for this edge
             for gene_id in [source_id, target_id]:
-                try:
-                    gene_info = node_lookup[gene_id]
+                gene_info = node_lookup[gene_id]
+                if gene_info["id"] not in nodes:
+                    # Only create a node once the first time
+                    # it is encountered within at least one edge
                     gene_node = Gene(
                         id=gene_info["id"],
                         name=gene_info["name"],
                         category=["biolink:Gene"],
                         in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
                     )
-                    nodes.append(gene_node)
-                except Exception as e:
-                    logger.error(f"Failed to create gene node {gene_id}: {e}")
-                    edge_failed = True
-                    break
+                    nodes[gene_info["id"]] = gene_node
 
-            # Skip creating the association if any node failed
-            if edge_failed:
-                continue
+            # Since we know here that they exist, get the normalized IDs for the association
+            normalized_source_id = node_lookup[source_id]["id"]
+            normalized_target_id = node_lookup[target_id]["id"]
 
             # Map causal predicate to biolink predicate
             biolink_predicate = map_causal_predicate_to_biolink(causal_predicate)
@@ -332,15 +339,14 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             if isinstance(publications, str):
                 publications = [publications.strip()]
             if publications and isinstance(publications, list):
-                publications = [pub.strip() for pub in publications if isinstance(pub, str) and pub.startswith("PMID:")]
-
-            # Get normalized IDs for the association with safe fallback
-            normalized_source_id = node_lookup.get(source_id, {}).get("id", normalize_id(source_id))
-            normalized_target_id = node_lookup.get(target_id, {}).get("id", normalize_id(target_id))
+                publications = [
+                    pub.strip() for pub in publications
+                    if isinstance(pub, str) and pub.startswith("PMID:")
+                ]
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=normalized_source_id,
                 predicate=biolink_predicate,
                 object=normalized_target_id,
@@ -357,7 +363,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
         # Yield a KnowledgeGraph for this model if there are any edges
         if edges:
-            yield KnowledgeGraph(nodes=nodes, edges=edges)
+            yield KnowledgeGraph(nodes=list(nodes.values()), edges=edges)
 
     # Report all unique unmapped predicates at the end
     if unmapped_predicates:
