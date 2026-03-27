@@ -195,6 +195,10 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
             logger.info(f"Configured to include taxa: {target_taxa}")
             break
 
+    if not target_taxa:
+        logger.error("No target taxa included in the Koza GO-CAM ingest configuration? No data to process!")
+        return []
+
     logger.info(f"Filtering for taxa: {target_taxa}")
 
     models_processed = 0
@@ -212,7 +216,7 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
             taxon = model_data.get("graph", {}).get("model_info", {}).get("taxon", "")
 
             # Apply filtering based on configuration
-            if target_taxa and taxon in target_taxa:
+            if taxon in target_taxa:
                 model_data["taxon"] = taxon  # Expose for consistency
                 model_data["_file_path"] = str(json_file)
                 yield model_data
@@ -228,6 +232,8 @@ def prepare_go_cam_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
 
     if models_filtered == 0:
         logger.warning(f"No models matched the filter criteria. Target taxa: {target_taxa}")
+
+    return []  # empty run or just the end of yielded data...
 
 
 @koza.transform()
