@@ -1,7 +1,7 @@
 import json
 import tarfile
 import tempfile
-import uuid
+
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -16,6 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
+from bmt.pydantic import entity_id
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.logging_utils import get_logger
@@ -345,7 +346,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
 
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=normalized_source_id,
                 predicate=biolink_predicate,
                 object=normalized_target_id,
