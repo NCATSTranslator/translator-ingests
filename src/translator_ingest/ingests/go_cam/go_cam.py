@@ -282,7 +282,9 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         else:
             # GO-CAM model - only primary source
             primary_source = RetrievalSource(
-                id=INFORES_GO_CAM, resource_id=INFORES_GO_CAM, resource_role=ResourceRoleEnum.primary_knowledge_source
+                id=INFORES_GO_CAM,
+                resource_id=INFORES_GO_CAM,
+                resource_role=ResourceRoleEnum.primary_knowledge_source
             )
             sources.append(primary_source)
 
