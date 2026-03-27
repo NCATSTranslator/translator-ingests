@@ -276,6 +276,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 id=INFORES_GO_CAM,
                 resource_id=INFORES_GO_CAM,
                 resource_role=ResourceRoleEnum.aggregator_knowledge_source,
+                upstream_resource_ids=[INFORES_REACTOME]
             )
             sources.append(aggregator_source)
         else:
