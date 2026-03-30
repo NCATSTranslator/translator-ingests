@@ -55,6 +55,8 @@ def merge_single(
         graph_url="",
         graph_version=source_version or "",
         graph_output_format="jsonl",
+        add_edge_id=True,
+        edge_id_type="uuid",
         sources=[
             SubGraphSource(
                 id=source_id,
