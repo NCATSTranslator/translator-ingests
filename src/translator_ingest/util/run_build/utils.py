@@ -74,8 +74,8 @@ BYTES_PER_MB = 1024**2
 BYTES_PER_GB = 1024**3
 
 # Memory guardian thresholds (system-wide RAM usage percentage)
-MEMORY_WARNING_THRESHOLD_PERCENT = 80.0
-MEMORY_CRITICAL_THRESHOLD_PERCENT = 90.0
+MEMORY_WARNING_THRESHOLD_PERCENT = 85.0
+MEMORY_CRITICAL_THRESHOLD_PERCENT = 95.0
 
 # Number of consecutive samples above critical threshold before triggering shutdown.
 # At the default 2-second sample interval this means ~6 seconds of sustained pressure,

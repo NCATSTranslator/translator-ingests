@@ -83,6 +83,10 @@ define HELP
 │                         Default: all available sources                       │
 │     GRAPH_ID            Graph ID for merged graphs                           │
 │                         Default: translator_kg                               │
+│     SEQUENTIAL_SOURCES  Sources run one-at-a-time before the parallel batch  │
+│                         Default: "ctd semmeddb" (memory-intensive ingests)   │
+│                         Override: make build SEQUENTIAL_SOURCES="ctd"        │
+│                         Disable:  make build SEQUENTIAL_SOURCES=""           │
 │                                                                              │
 │ Examples:                                                                    │
 │     # Run pipeline for all sources                                           │
@@ -193,12 +197,20 @@ release-%:
 
 ### Full Build (end-to-end with progress & report) ###
 
+# Sources to run one at a time before the parallel batch.
+# ctd and semmeddb are memory-intensive: running them sequentially prevents
+# them from competing for RAM and triggering the memory abort threshold.
+# To disable sequential pre-pass: make build SEQUENTIAL_SOURCES=""
+# To change the set:              make build SEQUENTIAL_SOURCES="ctd"
+SEQUENTIAL_SOURCES ?= ctd semmeddb
+
 .PHONY: build
 build:
 	@$(RUN) python -m translator_ingest.util.run_build.run_build \
 		--sources "$(SOURCES)" \
 		--graph-id $(GRAPH_ID) \
 		--node-properties "$(NODE_PROPERTIES)" \
+		--sequential-sources "$(SEQUENTIAL_SOURCES)" \
 		$(if $(OVERWRITE),--overwrite) \
 		$(if $(NO_UPLOAD),--no-upload) \
 		$(if $(MAX_WORKERS),--max-workers $(MAX_WORKERS)) \

@@ -136,15 +136,12 @@ SAMPLE_INTERVAL = 2.0  # seconds between memory samples
 
 
 def _get_memory_mb() -> float:
-    """Get current process tree memory usage in MB (RSS)."""
-    process = psutil.Process(os.getpid())
-    mem = process.memory_info().rss
-    for child in process.children(recursive=True):
-        try:
-            mem += child.memory_info().rss
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    return mem / BYTES_PER_MB
+    """Get current system-wide used memory in MB.
+
+    Matches what the sample loop records and what the abort threshold checks,
+    so display and report numbers are all comparable.
+    """
+    return psutil.virtual_memory().used / BYTES_PER_MB
 
 
 def _get_cpu_percent() -> float:
@@ -242,14 +239,13 @@ class PerformanceTracker:
             if self._current_stage == stage:
                 self._current_stage = None
 
-    def _check_memory_threshold(self) -> None:
+    def _check_memory_threshold(self, vm: object) -> None:
         """Check system-wide memory against warning and critical thresholds.
 
-        Uses ``psutil.virtual_memory()`` for the system-wide measurement
-        because the kernel OOM killer operates on total system memory, not
-        per-process RSS.
+        Args:
+            vm: A ``psutil.virtual_memory()`` snapshot, shared with the caller
+                so that only one syscall is made per sample-loop iteration.
         """
-        vm = psutil.virtual_memory()
         used_percent = vm.percent
 
         # Warning threshold — log once, reset when memory drops back down
@@ -294,7 +290,9 @@ class PerformanceTracker:
     def _sample_loop(self) -> None:
         """Sampling loop run in background thread."""
         while not self._stop_event.is_set():
-            mem = _get_memory_mb()
+            # Single syscall per iteration — reused for both stats and threshold check.
+            vm = psutil.virtual_memory()
+            mem = vm.used / BYTES_PER_MB
             cpu = _get_cpu_percent()
             with self._lock:
                 self._all_memory_samples.append(mem)
@@ -302,7 +300,7 @@ class PerformanceTracker:
                 if self._current_stage:
                     self._stage_memory_samples.setdefault(self._current_stage, []).append(mem)
                     self._stage_cpu_samples.setdefault(self._current_stage, []).append(cpu)
-            self._check_memory_threshold()
+            self._check_memory_threshold(vm)
             self._stop_event.wait(self.sample_interval)
 
     def _stats_from_samples(self, samples: list[float]) -> dict[str, float]:
@@ -382,6 +380,178 @@ class PerformanceTracker:
 
 DISPLAY_REFRESH_INTERVAL = 10.0  # seconds between display refreshes
 
+# Consecutive DISPLAY_REFRESH_INTERVAL samples with zero I/O delta before flagging stalled
+_STALL_SAMPLE_THRESHOLD = 3
+
+# Per-source historical I/O totals — persisted across builds for ETA estimation
+SOURCE_IO_HISTORY_FILE = REPORTS_BASE / "source_io_history.json"
+
+
+# ── Per-source I/O progress tracking ──────────────────────────────────────────
+
+
+def _read_proc_rchar(pid: int) -> int | None:
+    """Read rchar (application-level bytes read) from /proc/<pid>/io.
+
+    ``rchar`` counts every byte delivered to the process by read() calls,
+    including cached data.  It advances monotonically as the worker processes
+    its input files, making it a reliable progress signal.
+
+    Returns None if the process is inaccessible (not started yet or finished).
+    """
+    try:
+        for line in Path(f"/proc/{pid}/io").read_text().splitlines():
+            if line.startswith("rchar:"):
+                return int(line.split()[1])
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def _worker_pid_path(source: str) -> Path:
+    """Temp file where a worker process records its PID on startup."""
+    return Path(f"/tmp/translator_ingest_{source}.pid")
+
+
+def _load_source_io_history() -> dict[str, int]:
+    """Load per-source total rchar bytes from previous successful runs.
+
+    Returns an empty dict if the history file is absent or unreadable.
+    """
+    if SOURCE_IO_HISTORY_FILE.exists():
+        try:
+            with SOURCE_IO_HISTORY_FILE.open() as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {}
+
+
+def _save_source_io_history(history: dict[str, int]) -> None:
+    """Persist updated I/O history for future ETA estimates."""
+    SOURCE_IO_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with SOURCE_IO_HISTORY_FILE.open("w") as f:
+        json.dump(history, f, indent=2, sort_keys=True)
+
+
+class SourceProgress:
+    """Tracks I/O throughput and ETA for a single running source worker.
+
+    Every ``DISPLAY_REFRESH_INTERVAL`` seconds the orchestrator calls
+    :meth:`update`, which reads ``/proc/<pid>/io`` to get the cumulative bytes
+    delivered to the worker process.  Rate is smoothed with an EMA (α=0.3).
+    If no bytes arrive for ``_STALL_SAMPLE_THRESHOLD`` consecutive samples the
+    source is flagged as stalled.
+
+    On the first build there is no baseline, so only elapsed time and rate are
+    shown.  After the source completes successfully its final rchar total is
+    saved to :data:`SOURCE_IO_HISTORY_FILE` and used as the denominator on
+    subsequent builds.
+    """
+
+    def __init__(self, source: str, expected_bytes: int | None = None) -> None:
+        self.source = source
+        self.expected_bytes = expected_bytes
+        self._start_time = time.time()
+        self._pid: int | None = None
+        self._bytes_read: int = 0
+        self._prev_bytes_read: int = 0
+        self._rate_bps: float = 0.0  # smoothed bytes per second
+        self._stall_samples: int = 0
+
+    def update(self) -> None:
+        """Poll /proc/<pid>/io and recompute rate.  Called every 10 s."""
+        if self._pid is None:
+            try:
+                self._pid = int(_worker_pid_path(self.source).read_text().strip())
+            except (OSError, ValueError):
+                return  # process hasn't written its PID yet
+
+        new_bytes = _read_proc_rchar(self._pid)
+        if new_bytes is None:
+            return  # process finished or not yet accessible
+
+        delta = new_bytes - self._prev_bytes_read
+        if delta > 0:
+            self._stall_samples = 0
+        else:
+            self._stall_samples += 1
+
+        new_rate = delta / DISPLAY_REFRESH_INTERVAL
+        self._rate_bps = 0.7 * self._rate_bps + 0.3 * new_rate if self._rate_bps > 0 else new_rate
+
+        self._prev_bytes_read = new_bytes
+        self._bytes_read = new_bytes
+
+    @property
+    def elapsed(self) -> float:
+        """Seconds since this source started."""
+        return time.time() - self._start_time
+
+    @property
+    def is_stalled(self) -> bool:
+        """True when no I/O progress for ≥3 consecutive 10 s samples (≥30 s elapsed)."""
+        return self._stall_samples >= _STALL_SAMPLE_THRESHOLD and self.elapsed > 30
+
+    @property
+    def progress_pct(self) -> float | None:
+        """0–99 % completion based on historical total, or None if no baseline."""
+        if self.expected_bytes and self.expected_bytes > 0 and self._bytes_read > 0:
+            return min(99.0, self._bytes_read / self.expected_bytes * 100)
+        return None
+
+    @property
+    def eta_seconds(self) -> float | None:
+        """Estimated seconds to completion, or None if rate/baseline unknown."""
+        if self.expected_bytes and self._rate_bps > 1024:
+            return max(0.0, self.expected_bytes - self._bytes_read) / self._rate_bps
+        return None
+
+    @property
+    def total_bytes_read(self) -> int:
+        """Final rchar value — saved to history after successful completion."""
+        return self._bytes_read
+
+    def format_line(self) -> str:
+        """One-line progress summary suitable for the run log.
+
+        Examples::
+
+            semmeddb  [████████░░░░░░░░] 52%  1.19/2.29 GB  |  2.1 MB/s  |  ETA ~9m
+            ctd       [no baseline]  342 MB read  |  1.8 MB/s  |  3m elapsed
+            bindingdb [waiting...]  |  measuring...  |  5s elapsed
+            signor    [████░░░░░░░░░░░░] 27%  STALLED (35s no I/O)
+        """
+        pct = self.progress_pct
+
+        if pct is not None:
+            width = 16
+            filled = int(pct / 100 * width)
+            bar = "█" * filled + "░" * (width - filled)
+            read_gb = self._bytes_read / BYTES_PER_GB
+            total_gb = self.expected_bytes / BYTES_PER_GB
+            progress = f"[{bar}] {pct:.0f}%  {read_gb:.2f}/{total_gb:.2f} GB"
+        elif self._bytes_read > 0:
+            progress = f"[no baseline]  {self._bytes_read / BYTES_PER_MB:.0f} MB read"
+        else:
+            progress = "[waiting...]"
+
+        if self.is_stalled:
+            stall_dur = format_duration(self._stall_samples * DISPLAY_REFRESH_INTERVAL)
+            rate_timing = f"STALLED ({stall_dur} no I/O)"
+        else:
+            if self._rate_bps >= BYTES_PER_MB:
+                rate = f"{self._rate_bps / BYTES_PER_MB:.1f} MB/s"
+            elif self._rate_bps >= 1024:
+                rate = f"{self._rate_bps / 1024:.0f} KB/s"
+            else:
+                rate = "measuring..."
+
+            eta = self.eta_seconds
+            timing = f"ETA ~{format_duration(eta)}" if eta is not None else f"{format_duration(self.elapsed)} elapsed"
+            rate_timing = f"{rate}  |  {timing}"
+
+        return f"  {self.source:<16}  {progress}  |  {rate_timing}"
 
 
 class BuildDisplay:
@@ -413,6 +583,9 @@ class BuildDisplay:
         self.run_failed: list[str] = []
         self.run_running: list[str] = []
         self.run_start_time: float = 0.0
+
+        # Per-source I/O progress (populated by stage_run)
+        self.source_progress: dict[str, "SourceProgress"] = {}
 
         self._render_lock = threading.Lock()
 
@@ -452,6 +625,10 @@ class BuildDisplay:
                     "[RUN] %d/%d  running: %s  |  %s",
                     complete, total, running_str, mem_str,
                 )
+                # Per-source progress lines (rate, ETA, stall detection)
+                for src in sorted(self.run_running):
+                    if src in self.source_progress:
+                        logger.info(self.source_progress[src].format_line())
             elif running_stage:
                 elapsed = time.time() - self.stage_durations.get(f"{running_stage}_start", time.time())
                 logger.info(
@@ -575,6 +752,10 @@ def _run_single_source(
     errors: list[str] = []
     warnings: list[str] = []
 
+    # Write our PID so the orchestrator can poll /proc/<pid>/io for progress
+    _pid_path = _worker_pid_path(source)
+    _pid_path.write_text(str(os.getpid()))
+
     # Background memory sampling in the worker process
     proc = psutil.Process()
     mem_samples: list[float] = []
@@ -635,6 +816,9 @@ def _run_single_source(
 
     root_logger.removeHandler(buffer_handler)
     buffer_handler.close()
+
+    # Clean up PID file — orchestrator reads absence as "source finished"
+    _pid_path.unlink(missing_ok=True)
 
     duration = time.time() - start
     mem_stats = {
@@ -730,8 +914,13 @@ def stage_run(
     stage_log_path: str | None,
     error_log_path: str | None,
     max_workers: int | None = None,
+    sequential_sources: list[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Execute the RUN stage: parallel pipeline execution for all sources.
+    """Execute the RUN stage: sequential heavy sources first, then parallel remainder.
+
+    Sources listed in ``sequential_sources`` run one at a time before the
+    parallel batch.  This prevents memory-intensive ingests (ctd, semmeddb)
+    from competing with each other.
 
     Worker processes log live to the shared stage log file at
     ``logs/run/{timestamp}/run.log``.
@@ -743,26 +932,50 @@ def stage_run(
         report_dir: Report directory for per-source JSON results
         stage_log_path: Path string to the shared run stage log file
         error_log_path: Path string to the shared error log file
-        max_workers: Max parallel workers (default: number of sources)
+        max_workers: Max parallel workers for the parallel phase (default: min(4, len(sources)))
+        sequential_sources: Sources to run one-at-a-time before the parallel batch
+            (default: ``["ctd", "semmeddb"]``)
 
     Returns:
         Dict mapping source name -> result dict
     """
+    if sequential_sources is None:
+        sequential_sources = ["ctd", "semmeddb"]
+
     display.start_stage("RUN")
     display.run_start_time = time.time()
     results: dict[str, dict[str, Any]] = {}
 
-    if max_workers is None:
-        max_workers = min(4, len(sources))
+    # I/O history for ETA estimation; updated after each successful source
+    io_history = _load_source_io_history()
+    # Per-source progress objects shared with the display's render()
+    source_progress: dict[str, SourceProgress] = {}
+    display.source_progress = source_progress
 
-    # Background thread refreshes the display every DISPLAY_REFRESH_INTERVAL seconds
-    # so the user sees live memory/ETA updates even when no source finishes.
+    # Partition: heavy sources run sequentially first, rest run in parallel.
+    # Preserve the original ordering within each group.
+    sequential = [s for s in sources if s in sequential_sources]
+    parallel = [s for s in sources if s not in sequential_sources]
+
+    if max_workers is None:
+        max_workers = min(4, len(parallel)) if parallel else 1
+
+    if sequential:
+        logger.info("[RUN] Sequential phase (%d source(s)): %s", len(sequential), ", ".join(sequential))
+    if parallel:
+        logger.info("[RUN] Parallel phase (%d source(s), %d worker(s)): %s", len(parallel), max_workers, ", ".join(parallel))
+
+    # Background thread refreshes the display every DISPLAY_REFRESH_INTERVAL seconds.
+    # Also polls /proc/<pid>/io for each running source so progress lines stay current.
     stop_refresh = threading.Event()
 
     def _refresh_loop() -> None:
         while not stop_refresh.is_set():
             stop_refresh.wait(DISPLAY_REFRESH_INTERVAL)
             if not stop_refresh.is_set():
+                for src in list(display.run_running):
+                    if src in source_progress:
+                        source_progress[src].update()
                 display.render()
 
     refresh_thread = threading.Thread(target=_refresh_loop, daemon=True)
@@ -770,74 +983,130 @@ def stage_run(
 
     memory_aborted = False
 
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        future_to_source: dict[Any, str] = {}
-        for source in sources:
-            display.run_running.append(source)
-            future = executor.submit(
-                _run_single_source, source, overwrite, stage_log_path, error_log_path,
-            )
-            future_to_source[future] = source
+    # ── Phase 1: Sequential sources ────────────────────────────────────────────
+    for source in sequential:
+        if memory_aborted or display.perf.memory_critical_event.is_set():
+            memory_aborted = True
+            result = _make_cancelled_result(source, "memory")
+            results[source] = result
+            _log_and_record_result(result, source, display, report_dir)
+            continue
 
+        source_progress[source] = SourceProgress(source=source, expected_bytes=io_history.get(source))
+        display.run_running.append(source)
         display.render()
 
-        pending = set(future_to_source.keys())
-
-        while pending:
-            # Check memory guardian before waiting for the next future
-            if display.perf.memory_critical_event.is_set():
-                memory_aborted = True
-                break
-
-            done_futures, pending = wait(
-                pending, timeout=DISPLAY_REFRESH_INTERVAL, return_when=FIRST_COMPLETED,
+        with ProcessPoolExecutor(max_workers=1) as seq_executor:
+            future = seq_executor.submit(
+                _run_single_source, source, overwrite, stage_log_path, error_log_path,
             )
+            # Wait for completion, checking memory periodically.
+            # If memory fires mid-run, let the current source finish (only one
+            # running) then mark abort so remaining sources are skipped.
+            while True:
+                done_f, _ = wait([future], timeout=DISPLAY_REFRESH_INTERVAL, return_when=FIRST_COMPLETED)
+                if done_f:
+                    break
+                if display.perf.memory_critical_event.is_set():
+                    memory_aborted = True
+                    # Give the running source up to 5 min to finish cleanly.
+                    wait([future], timeout=300)
+                    break
 
-            for future in done_futures:
-                source = future_to_source[future]
-                if source in display.run_running:
-                    display.run_running.remove(source)
+        if source in display.run_running:
+            display.run_running.remove(source)
 
-                result = _collect_future_result(future, source)
-                results[source] = result
-                _log_and_record_result(result, source, display, report_dir)
+        result = _collect_future_result(future, source)
+        results[source] = result
+        _log_and_record_result(result, source, display, report_dir)
 
-            # Nothing completed this round — refresh thread handles periodic display
+        # Save final I/O total for future ETA estimation
+        if result["status"] == "completed" and source_progress[source].total_bytes_read > 0:
+            io_history[source] = source_progress[source].total_bytes_read
+            _save_source_io_history(io_history)
 
-        if memory_aborted:
-            mem_info = display.perf.get_memory_critical_info()
-            cancelled_count = 0
-            for future in pending:
-                source = future_to_source[future]
-                if future.cancel():
-                    cancelled_count += 1
-                    if source in display.run_running:
-                        display.run_running.remove(source)
-                    results[source] = _make_cancelled_result(source, "memory")
+    # ── Phase 2: Parallel sources ──────────────────────────────────────────────
+    if memory_aborted:
+        # Memory was critical after sequential phase — cancel all parallel sources.
+        for source in parallel:
+            result = _make_cancelled_result(source, "memory")
+            results[source] = result
+            _log_and_record_result(result, source, display, report_dir)
+    elif parallel:
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_source: dict[Any, str] = {}
+            for source in parallel:
+                source_progress[source] = SourceProgress(source=source, expected_bytes=io_history.get(source))
+                display.run_running.append(source)
+                future = executor.submit(
+                    _run_single_source, source, overwrite, stage_log_path, error_log_path,
+                )
+                future_to_source[future] = source
 
-            logger.error(
-                "BUILD ABORTED: Memory usage at %.0f MB / %.0f MB (%.0f%% threshold). "
-                "Cancelled %d pending futures. Waiting for running workers to finish.",
-                mem_info["used_mb"], mem_info["total_mb"],
-                mem_info["threshold_percent"], cancelled_count,
-            )
+            display.render()
 
-            # Wait for already-running futures to finish (up to 5 min timeout)
-            still_running = {f for f in pending if not f.cancelled()}
-            if still_running:
-                done_remaining, timed_out = wait(still_running, timeout=300)
-                for future in done_remaining:
+            pending = set(future_to_source.keys())
+
+            while pending:
+                # Check memory guardian before waiting for the next future
+                if display.perf.memory_critical_event.is_set():
+                    memory_aborted = True
+                    break
+
+                done_futures, pending = wait(
+                    pending, timeout=DISPLAY_REFRESH_INTERVAL, return_when=FIRST_COMPLETED,
+                )
+
+                for future in done_futures:
                     source = future_to_source[future]
                     if source in display.run_running:
                         display.run_running.remove(source)
+
                     result = _collect_future_result(future, source)
                     results[source] = result
                     _log_and_record_result(result, source, display, report_dir)
-                for future in timed_out:
+
+                    # Save final I/O total for future ETA estimation
+                    if result["status"] == "completed" and source in source_progress and source_progress[source].total_bytes_read > 0:
+                        io_history[source] = source_progress[source].total_bytes_read
+                        _save_source_io_history(io_history)
+
+                # Nothing completed this round — refresh thread handles periodic display
+
+            if memory_aborted:
+                mem_info = display.perf.get_memory_critical_info()
+                cancelled_count = 0
+                for future in pending:
                     source = future_to_source[future]
-                    if source in display.run_running:
-                        display.run_running.remove(source)
-                    results[source] = _make_cancelled_result(source, "timeout_after_memory")
+                    if future.cancel():
+                        cancelled_count += 1
+                        if source in display.run_running:
+                            display.run_running.remove(source)
+                        results[source] = _make_cancelled_result(source, "memory")
+
+                logger.error(
+                    "BUILD ABORTED: Memory usage at %.0f MB / %.0f MB (%.0f%% threshold). "
+                    "Cancelled %d pending futures. Waiting for running workers to finish.",
+                    mem_info["used_mb"], mem_info["total_mb"],
+                    mem_info["threshold_percent"], cancelled_count,
+                )
+
+                # Wait for already-running futures to finish (up to 5 min timeout)
+                still_running = {f for f in pending if not f.cancelled()}
+                if still_running:
+                    done_remaining, timed_out = wait(still_running, timeout=300)
+                    for future in done_remaining:
+                        source = future_to_source[future]
+                        if source in display.run_running:
+                            display.run_running.remove(source)
+                        result = _collect_future_result(future, source)
+                        results[source] = result
+                        _log_and_record_result(result, source, display, report_dir)
+                    for future in timed_out:
+                        source = future_to_source[future]
+                        if source in display.run_running:
+                            display.run_running.remove(source)
+                        results[source] = _make_cancelled_result(source, "timeout_after_memory")
 
     # Stop the periodic refresh thread
     stop_refresh.set()
@@ -1074,10 +1343,15 @@ def run_full_build(
     upload: bool = True,
     max_workers: int | None = None,
     memory_critical_percent: float | None = None,
+    sequential_sources: list[str] | None = None,
 ) -> tuple[Path, Path, bool]:
     """Run the complete build pipeline end-to-end.
 
-    Stages: RUN (parallel) -> MERGE -> RELEASE -> UPLOAD (optional)
+    Stages: RUN (sequential-first then parallel) -> MERGE -> RELEASE -> UPLOAD (optional)
+
+    Sources in ``sequential_sources`` run one at a time first (default: ctd,
+    semmeddb) to avoid memory spikes from concurrent heavy ingests.  Remaining
+    sources then run in parallel.
 
     If system memory exceeds ``memory_critical_percent`` for several
     consecutive samples, pending work is cancelled and remaining stages
@@ -1099,9 +1373,11 @@ def run_full_build(
         node_properties: Sources that are node-properties only
         overwrite: Whether to overwrite existing files
         upload: Whether to upload to S3
-        max_workers: Max parallel workers for RUN stage
+        max_workers: Max parallel workers for the parallel RUN phase
         memory_critical_percent: System memory % that triggers abort
             (default: ``MEMORY_CRITICAL_THRESHOLD_PERCENT``)
+        sequential_sources: Sources to run one-at-a-time before the parallel batch
+            (default: ``["ctd", "semmeddb"]``)
 
     Returns:
         Tuple of (report_dir, error_log_path, memory_aborted)
@@ -1198,6 +1474,7 @@ def run_full_build(
         sources, overwrite, display, report_dir,
         str(stage_log_paths["run"]), str(error_log_path),
         max_workers,
+        sequential_sources=sequential_sources,
     )
 
     stage_timing_reports.append(_collect_stage_timing("RUN"))
@@ -1220,36 +1497,54 @@ def run_full_build(
 
     _remove_handler(run_handler)
 
-    memory_aborted = perf.memory_critical_event.is_set()
+    # memory_critical_event is a sticky latch: it records whether the threshold
+    # was ever hit. But we only skip a stage if memory is STILL critical right
+    # now at stage-start (workers from RUN are done, memory may have recovered).
+    def _memory_still_critical() -> bool:
+        return psutil.virtual_memory().percent >= perf._memory_critical_percent
 
     # All sources proceed to MERGE/RELEASE -- failed sources fall back to
     # their previous successful build (latest-build.json is only updated on
     # success, so it still points to the last good version).
 
     # ── STAGE 2: MERGE ──
-    if memory_aborted:
+    if _memory_still_critical():
+        logger.error(
+            "Memory still at %.1f%% after RUN — skipping MERGE/RELEASE/UPLOAD.",
+            psutil.virtual_memory().percent,
+        )
         display.skip_stage("MERGE")
+        display.skip_stage("RELEASE")
+        display.skip_stage("UPLOAD")
     else:
         merge_handler = _add_stage_handler("merge")
         stage_merge(graph_id, sources, overwrite, display, report_dir)
         stage_timing_reports.append(_collect_stage_timing("MERGE"))
         _remove_handler(merge_handler)
-        memory_aborted = perf.memory_critical_event.is_set()
 
-    # ── STAGE 3: RELEASE ──
-    if memory_aborted:
-        display.skip_stage("RELEASE")
-    else:
-        release_handler = _add_stage_handler("release")
-        stage_release(sources, node_properties, display, report_dir)
-        stage_timing_reports.append(_collect_stage_timing("RELEASE"))
-        _remove_handler(release_handler)
-        memory_aborted = perf.memory_critical_event.is_set()
+        # ── STAGE 3: RELEASE ──
+        if _memory_still_critical():
+            logger.error(
+                "Memory at %.1f%% after MERGE — skipping RELEASE/UPLOAD.",
+                psutil.virtual_memory().percent,
+            )
+            display.skip_stage("RELEASE")
+            display.skip_stage("UPLOAD")
+        else:
+            release_handler = _add_stage_handler("release")
+            stage_release(sources, node_properties, display, report_dir)
+            stage_timing_reports.append(_collect_stage_timing("RELEASE"))
+            _remove_handler(release_handler)
 
-    # ── STAGE 4: UPLOAD ──
-    if memory_aborted:
-        display.skip_stage("UPLOAD")
-    elif upload:
+            # ── STAGE 4: UPLOAD ──
+            if _memory_still_critical():
+                logger.error(
+                    "Memory at %.1f%% after RELEASE — skipping UPLOAD.",
+                    psutil.virtual_memory().percent,
+                )
+                display.skip_stage("UPLOAD")
+
+    if upload and display.stage_status.get("UPLOAD") not in ("skipped", "pending"):
         upload_handler = _add_stage_handler("upload")
 
         upload_result = stage_upload(report_dir, display)
@@ -1258,7 +1553,7 @@ def run_full_build(
 
         stage_timing_reports.append(_collect_stage_timing("UPLOAD"))
         _remove_handler(upload_handler)
-    else:
+    elif not upload and display.stage_status.get("UPLOAD") == "pending":
         display.skip_stage("UPLOAD")
 
     total_duration = time.time() - build_start
@@ -1288,16 +1583,31 @@ def run_full_build(
     # ── Generate report ──
     logger.info("Generating build report...")
 
-    # Surface memory abort in report
+    # memory_critical_event is the sticky record of whether threshold was hit.
+    # Some stages may still have run if memory recovered between stages.
+    memory_aborted = perf.memory_critical_event.is_set()
+    stages_skipped = [
+        s for s in ("MERGE", "RELEASE", "UPLOAD")
+        if display.stage_status.get(s) == "skipped"
+        and s not in ("UPLOAD",) or (s == "UPLOAD" and not upload)
+    ]
     build_notes: list[str] = []
     if memory_aborted:
         mem_info = perf.get_memory_critical_info()
-        build_notes.append(
-            f"BUILD ABORTED: System memory exceeded critical threshold "
-            f"({mem_info['threshold_percent']:.0f}%). "
-            f"Usage: {mem_info['used_mb']:.0f} MB / {mem_info['total_mb']:.0f} MB. "
-            f"Some stages may be incomplete."
-        )
+        if stages_skipped:
+            build_notes.append(
+                f"MEMORY WARNING: System memory hit critical threshold "
+                f"({mem_info['threshold_percent']:.0f}%) during build — "
+                f"peak usage {mem_info['used_mb']:.0f} MB / {mem_info['total_mb']:.0f} MB. "
+                f"Stages skipped due to memory: {', '.join(stages_skipped)}."
+            )
+        else:
+            build_notes.append(
+                f"MEMORY WARNING: System memory hit critical threshold "
+                f"({mem_info['threshold_percent']:.0f}%) during RUN stage — "
+                f"peak usage {mem_info['used_mb']:.0f} MB / {mem_info['total_mb']:.0f} MB. "
+                f"Memory recovered before subsequent stages."
+            )
 
     report = generate_build_report(
         sources=sources,
@@ -1374,7 +1684,7 @@ def discover_ingest_sources() -> list[str]:
 @click.option("--node-properties", type=str, default="ncbi_gene", help="Space-separated node-property-only sources")
 @click.option("--overwrite", is_flag=True, help="Overwrite previously generated files")
 @click.option("--no-upload", is_flag=True, help="Skip S3 upload stage")
-@click.option("--max-workers", type=int, default=None, help="Max parallel workers for RUN stage")
+@click.option("--max-workers", type=int, default=None, help="Max parallel workers for parallel RUN phase")
 @click.option(
     "--memory-threshold",
     type=float,
@@ -1385,6 +1695,12 @@ def discover_ingest_sources() -> list[str]:
         f"Build aborts gracefully when exceeded."
     ),
 )
+@click.option(
+    "--sequential-sources",
+    type=str,
+    default="ctd semmeddb",
+    help="Space-separated sources to run one-at-a-time before the parallel batch (default: 'ctd semmeddb')",
+)
 def main(
     sources: str | None,
     graph_id: str,
@@ -1393,10 +1709,11 @@ def main(
     no_upload: bool,
     max_workers: int | None,
     memory_threshold: float | None,
+    sequential_sources: str,
 ) -> None:
     """Run the full translator-ingests pipeline build end-to-end.
 
-    Stages: RUN (parallel) -> MERGE -> RELEASE -> UPLOAD
+    Stages: RUN (sequential-first then parallel) -> MERGE -> RELEASE -> UPLOAD
 
     Per-stage logs are written live to logs/{stage}/{timestamp}/.
     JSON artifacts and build reports go to reports/{timestamp}/.
@@ -1407,6 +1724,7 @@ def main(
         source_list = discover_ingest_sources()
         logger.info("Auto-discovered %d sources from ingests/ directory", len(source_list))
     node_props = node_properties.split() if node_properties else ["ncbi_gene"]
+    seq_sources = sequential_sources.split() if sequential_sources and sequential_sources.strip() else []
 
     _report_dir, _error_log_path, memory_aborted = run_full_build(
         sources=source_list,
@@ -1416,12 +1734,22 @@ def main(
         upload=not no_upload,
         max_workers=max_workers,
         memory_critical_percent=memory_threshold,
+        sequential_sources=seq_sources,
     )
 
-    if memory_aborted:
+    # Only exit(2) if stages were skipped because memory was still critical
+    # at stage start. A spike during RUN that recovered before MERGE is not
+    # an abort — it's a warning that appears in the report notes.
+    stages_skipped_for_memory = [
+        s for s in ("MERGE", "RELEASE")  # UPLOAD skip due to --no-upload is normal
+        if (_report_dir / "stages" / s.lower() / "_summary.json").exists() is False
+        and memory_aborted
+    ]
+    if stages_skipped_for_memory:
         logger.error(
-            "BUILD ABORTED: System memory exceeded critical threshold. "
-            "See report for details."
+            "BUILD INCOMPLETE: Memory was still critical at stage start — "
+            "%s were skipped. See report for details.",
+            ", ".join(stages_skipped_for_memory),
         )
         sys.exit(2)
 
