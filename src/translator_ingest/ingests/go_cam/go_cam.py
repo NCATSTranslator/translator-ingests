@@ -242,6 +242,8 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
     """Process all GO-CAM model data with linked node/edge validation."""
     unmapped_predicates = set()  # Track unique unmapped predicates
 
+    nodes_created = dict()
+
     for model_data in data:
 
         # Get model info (filtering is now handled by Koza filters in YAML)
@@ -312,16 +314,21 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             # Create the Gene nodes for this edge
             for gene_id in [source_id, target_id]:
                 gene_info = node_lookup[gene_id]
-                if gene_info["id"] not in nodes:
-                    # Only create a node once the first time
-                    # it is encountered within at least one edge
+                if gene_info["id"] not in nodes_created:
+                    # Only create a node once the first time it is
+                    # encountered within at least one edge in any model_data
                     gene_node = Gene(
                         id=gene_info["id"],
                         name=gene_info["name"],
                         category=["biolink:Gene"],
                         in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
                     )
-                    nodes[gene_info["id"]] = gene_node
+                    nodes_created[gene_info["id"]] = gene_node
+
+                # Only add a node to the 'nodes' set once
+                # for a given collection of model_data edges
+                if gene_info["id"] not in nodes:
+                    nodes[gene_info["id"]] = nodes_created[gene_info["id"]]
 
             # Since we know here that they exist, get the normalized IDs for the association
             normalized_source_id = node_lookup[source_id]["id"]
