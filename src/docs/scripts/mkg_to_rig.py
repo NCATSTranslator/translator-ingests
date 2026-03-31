@@ -100,8 +100,8 @@ def _sets_to_lists(edge_data: dict[str, Any]) -> dict[str, Any]:
 def read_mkg_edges(
         edges,
         edge_info,
-        knowledge_level,
-        agent_type,
+        knowledge_level: str,
+        agent_type: str,
         merge_edges
 ):
     """
@@ -171,7 +171,7 @@ def read_mkg_edges(
                 # original_attribute_names = attribute['original_attribute_names']
 
         if not merge_edges:
-            # merge each separately
+            # Publish each edge separately
             edge_info.append(_sets_to_lists(edge_data))
             edge_data = None
 
@@ -296,23 +296,31 @@ def prune_empty(x):
     default='rig',
     help='Desired format of the output, i.e., "rig" or "csv" (default: "rig")'
 )
-def main(ingest, mkg, rig, knowledge_level, agent_type, merge_edges, output):
+def main(
+        ingest: str,
+        rig: str,
+        mkg: str,
+        knowledge_level: str,
+        agent_type: str,
+        merge_edges: bool,
+        output: str
+):
     """
     Either populate the 'target_info' section of a given RIG YAML file or
     create a comparable CSV formatted edge inventory file, using node and
     edge information from a (TRAPI-generated) Meta Knowledge Graph JSON file.
 
-    :param ingest: Target ingest folder name of the target data source folder (e.g., icees)
-    :param mkg: Meta Knowledge Graph JSON file source of details to be
-                loaded into the RIG (assumed co-located with RIG in the ingest task folder)
+    :param ingest: str, Target ingest folder name of the target data source folder (e.g., icees)
     :param rig: Reference-Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
-                This switch is ignored if the output format is "table".
+            This switch is ignored if the output format is "table".
+    :param mkg: Meta Knowledge Graph JSON file name source of details to be
+                loaded into the RIG (assumed co-located with RIG in the ingest task folder)
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
-    :param merge_edges: Merge "edge_type_info" specified edges metadata into one definition (default: True)
-                        This supports the RIG convention that allows for multiple predicates and S/O categories
-                        as long as the provenance of all these edges is the same (same source file, KL/AT, and
-                        general curation or generation method by the source)
+    :param merge_edges: boolean flag triggering merging "edge_type_info" specified edges metadata into one definition
+                        (default: True)  This supports the RIG convention that allows for multiple predicates
+                        and S/O categories as long as the provenance of all these edges is the same
+                        (same source file, KL/AT, and general curation or generation method by the source)
     :param output: Desired format of the output, i.e., "rig" or "csv" (default: "rig")
     :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
 
