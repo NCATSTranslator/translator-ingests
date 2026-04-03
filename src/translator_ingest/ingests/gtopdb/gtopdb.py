@@ -76,20 +76,35 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
 
+    ## Only select needed columns
+    sele_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action',
+    'Endogenous', 'Ligand Context', 'PubMed ID']
+    source_subset_df = source_df[sele_cols].drop_duplicates()
+
     ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifier from 1102 -> 1102.0
-    source_df = source_df.astype({
+    source_subset_df = source_subset_df.astype({
         "Ligand ID": "string",
         "Target UniProt ID": "string"
     })
 
     ## debugging usage
-    koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
+    # koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
 
     ## Drop nan values
-    source_df = source_df.dropna(subset=["Target UniProt ID", "Ligand ID"])
+    source_subset_df = source_subset_df.dropna(subset=["Target UniProt ID", "Ligand ID"])
+
+    ## Implement logic to aggregate source records into a single edge based on SPO + qualifier pair (subject_name, subject_category, object_name, object_category, MECHANISM, EFFECT, DIRECT)
+    group_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action', 'Endogenous']
+
+    source_agg_df = (
+        source_subset_df.groupby(group_cols, as_index=False)
+        .agg({
+            "PubMed ID": lambda x: "|".join(x.dropna().astype(str))
+            })
+    )
 
     ## rename those columns into desired format, note we need to obtain "pubchem CID" as subject id from "Ligand ID"
-    source_df.rename(
+    source_agg_df.rename(
         columns={
             "Ligand": "subject_name",
             "Target": "object_name",
@@ -99,17 +114,17 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     )
 
     ## avoid mismatching by converting string ids into integer IDs
-    source_df["subject_id"] = (
-        source_df["Ligand ID"]
+    source_agg_df["subject_id"] = (
+        source_agg_df["Ligand ID"]
         .astype(str)
         .str.strip()
         .map(mapping_dict)
     )
 
     ## drop NA of those dont find a mapping
-    source_df = source_df.dropna(subset=["subject_id"])
+    source_agg_df = source_agg_df.dropna(subset=["subject_id"])
 
-    return source_df.drop_duplicates().to_dict(orient="records")
+    return source_agg_df.drop_duplicates().to_dict(orient="records")
 
 
 @koza.transform(tag="gtopdb_interaction_parsing")
