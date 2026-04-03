@@ -1,6 +1,6 @@
 from typing import Any
 
-import requests
+import requests # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -21,7 +21,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_CTD
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
 from koza.model.graphs import KnowledgeGraph
 
 
