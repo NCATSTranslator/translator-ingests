@@ -151,7 +151,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         current_predicate_mapping = BIOLINK_AFFECTS
         ## will be assigned as a tuple later, since we need to store two values
         current_direction_mapping = None
-        gene_product_list = ["protein", "complex", "smallmolecule"]
+        ## checked via HMDB, none of the "smallmolecule" subject that paired with a "protein" object is endogenous, thus should use affect, increased/decreased
+        gene_product_list = ["protein", "complex"]
         if record["subject_category"] in gene_product_list and record["object_category"] in gene_product_list:
             current_predicate_mapping = BIOLINK_REGULATES
             current_direction_mapping = (DirectionQualifierEnum.upregulated, DirectionQualifierEnum.downregulated)
@@ -517,7 +518,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
                     predicate = current_predicate_mapping,
-                    qualified_predicate = BIOLINK_CAUSES,
+                    qualified_predicate = BIOLINK_AFFECTS,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = current_causual_mechanism_mapping,
