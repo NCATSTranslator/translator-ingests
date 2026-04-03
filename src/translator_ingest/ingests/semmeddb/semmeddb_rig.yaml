@@ -288,4 +288,3 @@ provenance_info:
     - "Biolink Model (schema): https://github.com/biolink/biolink-model"
     - "KGX documentation: https://kgx.readthedocs.io"
     - "Summary of predicates included and filtered and their mappings: https://docs.google.com/spreadsheets/d/12XmPE9eJp3H7yJnwg5Wmx5-BZdXXbiwO02vDRc1BY-c/edit?gid=520297121#gid=520297121"
-    - "SEMMEDDB_TRACKER.md: historical record of analysis, issues, and decisions"
