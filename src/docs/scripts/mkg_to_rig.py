@@ -67,13 +67,47 @@ class EdgeData:
         Initializes data structures to capture processed meta knowledge graph edge data.
         Initializes the initial edge type to 'global'.
         """
-        self.current_edge_label = 'global'
+        self.current_edge_type_id = 'global'
         self.edge_data: dict[str, dict[str, Any]] = {'global': dict()}
         self.knowledge_level = knowledge_level
         self.agent_type = agent_type
 
-    def get_current_edge_label(self) -> str:
-        return self.current_edge_label
+    def set_current_id(self, identifier: str):
+        self.current_edge_type_id = identifier
+
+    def get_current_id(self) -> str:
+        return self.current_edge_type_id
+
+    def add_identifier(self, identifier: str):
+        """
+        Appends an identifier to the current edge identifier, then moves
+        any current edge data under that revised current identifier. As a side effect,
+        the edge_data dictionary is created for empty or current identifiers without data.
+        """
+        current_id = self.get_current_id()
+        if current_id and current_id in self.edge_data:
+            current_data = self.edge_data.pop(current_id)
+        else:
+            current_data = dict()
+        # appends the new identifier to the current identifier string
+        current_id = f"{current_id},{identifier}" if current_id else identifier
+        # re-adds the current edge data under the new identifier string
+        self.edge_data[current_id] = current_data
+        self.set_current_id(current_id)
+
+    def get_current_edge_data(self) -> dict[str, Any]:
+        current_id = self.get_current_id()
+        if current_id not in self.edge_data:
+            self.edge_data[current_id] = dict()
+        return self.edge_data[current_id]
+
+    def add_value(self, key: str, value: str):
+        edge_data = self.get_current_edge_data()
+        if key not in edge_data:
+            edge_data[key] = set()
+        else:
+            assert isinstance(edge_data[key], set)
+        edge_data[key].add(value)
 
     def process_qualifiers(self, edge: dict[str, Any]):
         """
@@ -92,19 +126,23 @@ class EdgeData:
         #       -
         #     value_description:  # (optional, range = string)
         #
-        qualifiers = edge.get('qualifiers', None)
-        if not qualifiers:
-            # no qualifiers, so no further processing required - set edge type to 'global'
-            self.current_edge_label = 'global'
+        qualifiers = edge.get('qualifiers', [])
+        attributes = edge.get('attributes', [])
+        if not (qualifiers or attributes):
+            # No qualifiers or attributes observed in this edge,
+            # thus no further processing is needed,
+            # plus the current id is set to 'global'
+            self.set_current_id('global')
             return
 
-        # Else, use encountered qualifiers to construct and
-        # reset the EdgeData instance to a unique index key string label
-        self.current_edge_label = ""  # reset to empty string
+        # Otherwise, any encountered qualifiers and discriminating attributes are used
+        # to construct and reset the EdgeData instance to a unique current identifier
 
-        qualifier_ids: list[str] = []
+        # recreating the current identifier here, thus starting with an empty string
+        self.set_current_id("")
+
+        # collect the list of qualifiers for this edge type
         qualifier_list: list[dict[str, Any]] = []
-
         for qualifier in qualifiers:
             #
             # Sample meta_knowledge_graph.json edge qualifier data:
@@ -125,88 +163,67 @@ class EdgeData:
             rig_qualifier["value_enumeration"] = applicable_values
             qualifier_list.append(rig_qualifier)
 
-        # Generate the unique index key string
-        # for this particular set of qualifiers
-        self.current_edge_label = ','.join(qualifier_ids)
+        # Capture the qualifiers for this edge type, setting up
+        # edge_data dictionary, if not already created
+        current_id = self.get_current_id()
 
-        attributes = edge.get('attributes', [])
+        # Sanity check: create the qualifier-specified
+        # edge_data dictionary if not already created
+        if current_id not in self.edge_data:
+            self.edge_data[current_id] = dict()
+
+            # Record the qualifiers for this edge type
+            self.edge_data[current_id]['qualifiers'] = qualifier_list
+
+        # Collect the list of attributes (ignoring knowledge_level and agent type)
+        # that discriminate for this edge type if any are encountered
         for attribute in attributes:
             if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
                 continue  # these are now dedicated RIG fields, not 'edge_properties'
             else:
                 attribute_type_id = attribute['attribute_type_id']
-                # Discriminate 'edge type' by these extra attributes
+                # add the discriminating attribute type id to the current identifier string
+                # TODO: unsure whether to treat regular edge_properties as edge discriminating attributes?
                 self.add_identifier(attribute_type_id)
-                self.add_set_member(key='edge_properties', value=attribute_type_id)
-
-        # Capture the qualifiers for this edge type, setting up
-        # edge_data dictionary, if not already created
-        if self.current_edge_label not in self.edge_data:
-            self.edge_data[self.current_edge_label] = dict()
-            self.edge_data[self.current_edge_label]['qualifiers'] = qualifier_list
+                self.add_value(key='edge_properties', value=attribute_type_id)
 
     def sets_to_lists(self) -> dict[str, Any]:
         # Converts all dictionary set() values to list() values
         converted: dict[str, Any] = {}
         for key, value in self.edge_data.items():
-            if key == 'qid':
-                continue # skip this one, it's a special case
             if isinstance(value, set):
                 converted[key] = list(value)
             else:
                 converted[key] = value
         return converted
 
-    def add_identifier(self, identifier: str):
-        """
-        Appends an identifier to the current edge label string,
-        then moves any current edge data under that new label.
-        """
-        if self.current_edge_label and self.current_edge_label in self.edge_data:
-            current_data = self.edge_data.pop(self.current_edge_label)
-        else:
-            current_data = dict()
-        self.current_edge_label = \
-            f"{self.current_edge_label},{identifier}" \
-            if self.current_edge_label else identifier
-        self.edge_data[self.current_edge_label] = current_data
-
-    def set_value(self, key: str, value: str):
-        self.edge_data[self.current_edge_label][key] = value
-
-    def add_set_member(self, key: str, value: str):
-        if key not in self.edge_data[self.current_edge_label]:
-            self.edge_data[self.current_edge_label][key] = set()
-        self.edge_data[self.current_edge_label][key].add(value)
-
     def add_edge(self, edge: dict[str, Any]):
         #       subject_categories:
         #       - "biolink:Disease"
-        self.add_set_member('subject', edge['subject'])
+        self.add_value('subject', edge['subject'])
 
         #       predicates:
         #         - "biolink:has_phenotype"
-        self.add_set_member('predicates', edge['predicate'])
+        self.add_value('predicates', edge['predicate'])
 
         #       object_categories:
         #       - "biolink:PhenotypicFeature"
-        self.add_set_member('object', edge['object'])
+        self.add_value('object', edge['object'])
 
         #       knowledge_level:
         #       - knowledge_assertion
-        self.add_set_member('knowledge_level', self.knowledge_level)
+        self.add_value('knowledge_level', self.knowledge_level)
 
         #       agent_type:
         #       - manual_agent
-        self.add_set_member('agent_type', self.agent_type)
+        self.add_value('agent_type', self.agent_type)
 
 
 def read_mkg_edges(
         edges,
         edge_info,
         knowledge_level: str,
-        agent_type: str,
-        merge_edges
+        agent_type: str
 ):
     """
     Convert the input MKG edge data into an output list of edges.
@@ -215,7 +232,6 @@ def read_mkg_edges(
     :param edge_info: Parsed out edge information for the output.
     :param knowledge_level: Knowledge level for the edge.
     :param agent_type: Agent type for the edge.
-    :param merge_edges: Merge edge_type_info specified edges metadata into one definition.
     :return: Modified edge_info list.
     """
     # Edge data partitions edges by qualifiers and/or attributes;
@@ -233,12 +249,7 @@ def read_mkg_edges(
         # tagged by the edge_type_info identifier.
         edge_data.add_edge(edge)
 
-    if not edge_data.is_empty() is not None:
-        if merge_edges:
-            # Publish merged edge data, possibly partitioned
-            edge_info.append(edge_data.sets_to_lists())
-        else:
-            edge_info.append(edge_data.sets_to_lists())
+    edge_info.append(edge_data.sets_to_lists())
 
 
 CSV_TABLE_HEADERS:list[str] = [
@@ -349,11 +360,6 @@ def prune_empty(x):
     help='Biolink Edge Agent Type (default: "not_provided")'
 )
 @click.option(
-    '--merge_edges', '-e',
-    default=True,
-    help='Merge "edge_type_info" specified edges metadata into one definition (default: True)'
-)
-@click.option(
     '--output', '-o',
     default='rig',
     help='Desired format of the output, i.e., "rig" or "csv" (default: "rig")'
@@ -364,7 +370,6 @@ def main(
         mkg: str,
         knowledge_level: str,
         agent_type: str,
-        merge_edges: bool,
         output: str
 ):
     """
@@ -379,10 +384,6 @@ def main(
                 loaded into the RIG (assumed co-located with RIG in the ingest task folder)
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
-    :param merge_edges: boolean flag triggering merging "edge_type_info" specified edges metadata into one definition
-                        (default: True)  This supports the RIG convention that allows for multiple predicates
-                        and S/O categories as long as the provenance of all these edges is the same
-                        (same source file, KL/AT, and general curation or generation method by the source)
     :param output: Desired format of the output, i.e., "rig" or "csv" (default: "rig")
     :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
 
@@ -473,7 +474,7 @@ def main(
         with open(mkg_path, 'r') as mkg:
             mkg_data = json.load(mkg)
             read_mkg_nodes(mkg_data['nodes'], node_info)
-            read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type, merge_edges)
+            read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type)
 
         if output == 'rig':
             rename(kg_data_path, str(kg_data_path)+".original")
