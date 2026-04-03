@@ -127,9 +127,8 @@ class EdgeData:
         #     value_description:  # (optional, range = string)
         #
         qualifiers = edge.get('qualifiers', [])
-        attributes = edge.get('attributes', [])
-        if not (qualifiers or attributes):
-            # No qualifiers or attributes observed in this edge,
+        if not qualifiers:
+            # No qualifiers are observed on this edge,
             # thus no further processing is needed,
             # plus the current id is set to 'global'
             self.set_current_id('global')
@@ -172,29 +171,23 @@ class EdgeData:
         if current_id not in self.edge_data:
             self.edge_data[current_id] = dict()
 
+        if 'qualifiers' not in self.edge_data[current_id]:
             # Record the qualifiers for this edge type
             self.edge_data[current_id]['qualifiers'] = qualifier_list
 
-        # Collect the list of attributes (ignoring knowledge_level and agent type)
-        # that discriminate for this edge type if any are encountered
-        for attribute in attributes:
-            if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
-                continue  # these are now dedicated RIG fields, not 'edge_properties'
-            else:
-                attribute_type_id = attribute['attribute_type_id']
-                # add the discriminating attribute type id to the current identifier string
-                # TODO: unsure whether to treat regular edge_properties as edge discriminating attributes?
-                self.add_identifier(attribute_type_id)
-                self.add_value(key='edge_properties', value=attribute_type_id)
-
-    def sets_to_lists(self) -> dict[str, Any]:
-        # Converts all dictionary set() values to list() values
-        converted: dict[str, Any] = {}
-        for key, value in self.edge_data.items():
-            if isinstance(value, set):
-                converted[key] = list(value)
-            else:
-                converted[key] = value
+    def sets_to_lists(self) -> list[dict[str, Any]]:
+        # Each edge_data dictionary entry is an indexed collection
+        # of SPOQ values plus edge properties for one edge type.
+        converted: list[dict[str, Any]] = []
+        for entry in self.edge_data.values():
+            # Converts all dictionary set() values to list() values
+            for key, value in entry.items():
+                if isinstance(value, set):
+                    entry[key] = list(value)
+                else:
+                    entry[key] = value
+            converted.append(entry)
+        # TODO: need to re-order the fields in desired output order?
         return converted
 
     def add_edge(self, edge: dict[str, Any]):
@@ -217,6 +210,17 @@ class EdgeData:
         #       agent_type:
         #       - manual_agent
         self.add_value('agent_type', self.agent_type)
+
+        # Collect the list of attributes (ignoring knowledge_level and agent type)
+        # that discriminate for this edge type if any are encountered
+        attributes = edge.get('attributes', [])
+        for attribute in attributes:
+            if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
+                continue  # these are now dedicated RIG fields, not 'edge_properties'
+            else:
+                attribute_type_id = attribute['attribute_type_id']
+                # add the discriminating attribute type id to the current identifier string
+                self.add_value(key='edge_properties', value=attribute_type_id)
 
 
 def read_mkg_edges(
@@ -249,7 +253,7 @@ def read_mkg_edges(
         # tagged by the edge_type_info identifier.
         edge_data.add_edge(edge)
 
-    edge_info.append(edge_data.sets_to_lists())
+    edge_info.extend(edge_data.sets_to_lists())
 
 
 CSV_TABLE_HEADERS:list[str] = [
