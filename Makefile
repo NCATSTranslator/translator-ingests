@@ -24,7 +24,7 @@ endif
 # **/*.ipynb is skipped because notebook JSON embeds cell outputs: (1) base64-encoded
 # plot images contain random-looking letter runs that codespell treats as typos;
 # (2) pandas/HTML previews truncate long cell text and often split words mid-token
-# (e.g. "connecte..." where the full word was "connected"), causing false positives;
+# (truncation can leave a substring that looks like a misspelling of a longer word),
 # (3) acronyms and external vocabulary tokens in analysis cells add more noise.
 # Prefer spell-checking .py, .yaml, and prose docs instead.
 CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
