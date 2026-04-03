@@ -233,7 +233,6 @@ def _make_node(curie: str, koza: koza.KozaTransform = None) -> NamedThing | None
 _STATE_DEFAULTS: dict[str, int] = {
     "total_edges_processed": 0,
     "edges_with_publications": 0,
-    "edges_without_publications": 0,
     "edges_with_qualifiers": 0,
     "bad_id_format": 0,
     "invalid_edges": 0,
@@ -258,8 +257,10 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
     s = koza.state
     koza.log("semmeddb processing complete:", level="INFO")
     koza.log(f"  Total edges processed: {s['total_edges_processed']}", level="INFO")
-    koza.log(f"  Edges with publications: {s['edges_with_publications']}", level="INFO")
-    koza.log(f"  Edges without publications: {s['edges_without_publications']}", level="INFO")
+    koza.log(
+        f"  Edges emitted (>3 PMIDs each): {s['edges_with_publications']}",
+        level="INFO",
+    )
     koza.log(f"  Edges with qualifiers: {s['edges_with_qualifiers']}", level="INFO")
     koza.log(f"  Unique nodes extracted: {len(s['seen_node_ids'])}", level="INFO")
 
@@ -415,10 +416,8 @@ def transform_semmeddb_edge(
     if nodes is None:
         return None
 
-    if publications:
-        koza.state["edges_with_publications"] += 1
-    else:
-        koza.state["edges_without_publications"] += 1
+    # _apply_filters requires len(publications) > 3, so every emitted edge has publications.
+    koza.state["edges_with_publications"] += 1
 
     publications_info: dict[str, dict[str, str]] = record.get(
         "publications_info", {},
