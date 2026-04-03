@@ -5,7 +5,15 @@ source_info:
   name: Semantic MEDLINE Database (SemMedDB)
   description: "Literature-derived semantic predications extracted by SemRep from PubMed; this RIG documents a post-processed RTX-KG2 edges subset rather than a raw MySQL ingest."
   data_access_locations:
-    - "SemMedDB downloads: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/SemMedDB_download.html"
+    - >-
+      SemMedDB (original NLM source behind SemRep; not the file this ingest reads directly):
+      https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/SemMedDB_download.html
+    - >-
+      RTX-KG2 public SemMedDB edges slice (gzipped JSONL — this is what translator-ingests downloads):
+      https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
+      RTX-KG2 has already projected SemMedDB predications into Biolink-shaped edges (predicate, publications,
+      publications_info, kg2_ids, optional qualifiers, domain_range_exclusion). This pipeline transforms
+      that slice with Koza; it does not ingest raw SemMedDB MySQL dumps.
   data_provision_mechanisms:
     - file_download
   data_formats:
@@ -20,11 +28,15 @@ ingest_info:
 
   relevant_files:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
-      location: "internal graph build artifact"
-      description: "KGX-compatible edges with SemMedDB predicate CURIEs and literature evidence."
-    - file_name: "kg2.10.3-semmeddb-nodes.jsonl (RTX-KG2 SemMedDB slice)"
-      location: "internal graph build artifact"
-      description: "KGX-compatible nodes referenced by the edges subset."
+      location: >-
+        https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
+        (downloaded via semmeddb/download.yaml; decompressed JSONL is the Koza reader input)
+      description: "KGX-compatible edges with Biolink predicates, literature evidence, kg2_ids, and optional qualifiers."
+    - file_name: "kg2.10.3-semmeddb-nodes.jsonl (conceptual / transform output)"
+      location: >-
+        Not a separate download for this ingest; subject/object nodes are emitted by the transform from edge
+        endpoints (PREFIX_TO_CLASS). A full KG2 graph build may ship a companion nodes file elsewhere on rtx-kg2-public.
+      description: "Nodes correspond to CURIEs appearing on included edges after typing by prefix."
 
   included_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
