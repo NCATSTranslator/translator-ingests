@@ -34,21 +34,6 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 
-# TODO - was this mapping intended to be applied in some way?
-#  for example "smallmolecule" is a type in the source data but is not used, is that right?
-# the definition of biolink class can be found here: https://github.com/monarch-initiative/biolink-model-pydantic/blob/main/biolink_model_pydantic/model.py
-# * existing biolink category mapping:
-#     * 'Gene': 'biolink:Gene',
-#     * 'Chemical': 'biolink:ChemicalEntity',
-#     * 'Smallmolecule': 'biolink:SmallMolecule',
-#     * 'Phenotype': 'biolink:PhenotypicFeature', -> BiologicalProcess
-#     * 'Protein': 'biolink:Protein',
-# * went through valid check cause there is potential issue:
-#     * 'Antibody': 'biolink:Drug', ## check if all are indeed drug
-#     * 'Complex': 'biolink:MacromolecularComplex',
-#     * 'Mirna': 'biolink:MicroRNA',
-#     * 'Ncrna': 'biolink:Noncoding_RNAProduct',
-
 # Qi had used this to avoid an issue with long 'description' fields,
 # but I am not seeing any issue without it, so removing it for now.
 # csv.field_size_limit(10_000_000)   # allow fields up to 10MB
@@ -71,7 +56,7 @@ def get_latest_version() -> str:
     #
     # also note that currently the file we have on the RENCI server corresponds to a date but that's the download date
     # the actual version is
-    return "2026_January"
+    return "2026_March"
 
 
 @koza.prepare_data(tag="signor_parsing")
@@ -80,27 +65,37 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
 
+    ## Only select needed columns
+    sele_cols = ['ENTITYA', 'ENTITYB', 'TYPEA', 'TYPEB', 'IDA', 'IDB', 'EFFECT', 'MECHANISM', 'TAX_ID', 'CELL_DATA', 'TISSUE_DATA', 'DIRECT', 'SCORE', 'SENTENCE', 'PMID']
+    source_subset_df = source_df[sele_cols].drop_duplicates()
+
     ## include some basic quality control steps here
     ## Drop nan values
-    source_df = source_df.dropna(subset=['ENTITYA', 'ENTITYB'])
+    source_subset_df = source_subset_df.dropna(subset=['ENTITYA', 'ENTITYB'])
+
+    ## Implement logic to aggregate source records into a single edge based on SPO + qualifier pair (subject_name, subject_category, object_name, object_category, MECHANISM, EFFECT, DIRECT)
+    group_cols = ['ENTITYA', 'ENTITYB', 'TYPEA', 'TYPEB', 'IDA', 'IDB', 'EFFECT', 'MECHANISM', 'TAX_ID', 'CELL_DATA', 'TISSUE_DATA', 'DIRECT', 'SCORE']
+
+    source_agg_df = (
+        source_subset_df.groupby(group_cols, as_index=False)
+          .agg({
+            "PMID": lambda x: "|".join(x.dropna().astype(str)),
+            "SENTENCE": lambda x: "|".join(x.dropna().astype(str))
+          })
+    )
 
     ## rename those columns into desired format
-    source_df.rename(columns={'ENTITYA': 'subject_name', 'TYPEA': 'subject_category', 'ENTITYB': 'object_name', 'TYPEB': 'object_category'}, inplace=True)
-
-    # TODO - it doesn't look like BiologicalProcess is ever used, is this right/necessary?
-    # replace phenotype labeling into biologicalProcess
-    # source_df["subject_category"] = source_df["subject_category"].replace("phenotype", "BiologicalProcess")
-    # source_df["object_category"] = source_df["object_category"].replace("phenotype", "BiologicalProcess")
+    source_agg_df.rename(columns={'ENTITYA': 'subject_name', 'TYPEA': 'subject_category', 'ENTITYB': 'object_name', 'TYPEB': 'object_category'}, inplace=True)
 
     ## replace all 'miR-34' to 'miR-34a' in two columns subject_category and object_category in the pandas dataframe
-    source_df['subject_name'] = source_df['subject_name'].replace('miR-34', 'miR-34a')
-    source_df['object_name'] = source_df['object_name'].replace('miR-34', 'miR-34a')
+    source_agg_df['subject_name'] = source_agg_df['subject_name'].replace('miR-34', 'miR-34a')
+    source_agg_df['object_name'] = source_agg_df['object_name'].replace('miR-34', 'miR-34a')
 
     ## remove those rows with category in fusion protein or stimulus from source_df for now, and expecting biolink team to add those new categories
-    source_df = source_df[(source_df['subject_category'] != 'fusion Protein') & (source_df['object_category'] != 'fusion Protein')]
-    source_df = source_df[(source_df['subject_category'] != 'stimulus') & (source_df['object_category'] != 'stimulus')]
+    source_agg_df = source_agg_df[(source_agg_df['subject_category'] != 'fusion Protein') & (source_agg_df['object_category'] != 'fusion Protein')]
+    source_agg_df = source_agg_df[(source_agg_df['subject_category'] != 'stimulus') & (source_agg_df['object_category'] != 'stimulus')]
 
-    return source_df.dropna().drop_duplicates().to_dict(orient="records")
+    return source_agg_df.dropna().drop_duplicates().to_dict(orient="records")
 
 
 @koza.transform(tag="signor_parsing")
@@ -171,6 +166,10 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             current_causual_mechanism_mapping = CausalMechanismQualifierEnum.transcriptional_regulation
         elif record['MECHANISM'] == 'translation regulation':
             current_causual_mechanism_mapping = CausalMechanismQualifierEnum.translational_regulation
+        elif record['MECHANISM'] == 'precursor of':
+            ## Note for QA: change to biochemical conversion / precursor once implemented in the biolink CausalMechanismQualifierEnum class
+            ## assign None for now to avoid providing false information in the tier 0 graph
+            current_causual_mechanism_mapping = None
         elif record['MECHANISM'] == 'binding':
             current_causual_mechanism_mapping = CausalMechanismQualifierEnum.binding
         elif record['MECHANISM'] == 'stabilization':
@@ -249,8 +248,6 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             current_causual_mechanism_mapping = CausalMechanismQualifierEnum.hydroxylation
         elif record['MECHANISM'] == 's-nitrosylation':
             current_causual_mechanism_mapping = CausalMechanismQualifierEnum.s_nitrosylation
-        elif record['MECHANISM'] == 'precursor of':
-            current_causual_mechanism_mapping = None
         elif not record.get('MECHANISM'):  # catches None, "", or missing key
             current_causual_mechanism_mapping = None
         else:
