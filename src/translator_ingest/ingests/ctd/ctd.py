@@ -1,6 +1,6 @@
 from typing import Any
 
-import requests
+import requests # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -21,7 +21,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from bmt.pydantic import entity_id, build_association_knowledge_sources
 from translator_ingest.util.biolink import INFORES_CTD
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
 from koza.model.graphs import KnowledgeGraph
 
 
@@ -46,23 +46,30 @@ EXPOSURE_EVENTS_PREDICATES = {
 
 
 # !!! !!! README !!! !!!
-# CTD implemented a CAPTCHA which unfortunately breaks dependable programmatic access for determining the version
-# and downloading data. If possible, opening a browser and passing the CAPTCHA at ctdbase.org should allow everything
-# to run. If not, when determining the latest version, the translator-ingests pipeline will fall back to a previously
-# successful build, so if running in an environment where passing the CAPTCHA is not possible, copy a previous CTD
-# directory from /data/ including the latest-build.json file and the pipeline will utilize the last successful version.
+# CTD implemented a CAPTCHA (ALTCHA) on ctdbase.org, which breaks dependable programmatic access for determining
+# the version and for automated downloads. If possible, open a browser, pass the CAPTCHA, and download manually.
+# When version discovery fails, the pipeline can fall back to a previously successful build: copy a prior CTD
+# tree under data/ including latest-build.json so the pipeline uses that source_version.
+#
+# We no longer scrape https://ctdbase.org/about/dataStatus.go for "Data Status: <Month> <Year>" because the HTML
+# is behind CAPTCHA and returns a bot wall instead of the real page. Bump the hardcoded return below when CTD
+# releases a new public data drop you intend to track (string must match how you name data/<ctd>/<version>/).
 
-def get_latest_version():
-    # CTD doesn't provide a great programmatic way to determine the latest version, but it does have a Data Status page
-    # with a version on it. Fetch the html and parse it to determine the current version.
-    html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, "html.parser")
-    version_header: BeautifulSoup.Tag = resp.find(id="pgheading")
-    if version_header is not None:
-        # pgheading looks like "Data Status: July 2025", convert it to "July_2025"
-        return version_header.text.split(":")[1].strip().replace(" ", "_")
-    else:
-        raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
+def get_latest_version() -> str:
+    """Return the CTD data release label used as ``source_version`` in the pipeline.
+
+    Former implementation fetched ``dataStatus.go`` and parsed ``#pgheading``; that no longer works site-wide due
+    to CAPTCHA. Update the literal when you adopt a newer CTD export.
+    """
+    return "January_2026"
+
+    # --- Previous scrape (broken behind CAPTCHA; kept for reference) ---
+    # html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
+    # resp: BeautifulSoup = BeautifulSoup(html_page.content, "html.parser")
+    # version_header: BeautifulSoup.Tag = resp.find(id="pgheading")
+    # if version_header is not None:
+    #     return version_header.text.split(":")[1].strip().replace(" ", "_")
+    # raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
 
 @koza.transform_record(tag="chemicals_diseases")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
