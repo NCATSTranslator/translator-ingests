@@ -1,0 +1,599 @@
+name: Human Metabolome Database
+supporting_data_source_info:
+- infores_id: null
+  name: null
+  description: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license_name: null
+    license_url: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+source_info:
+  infores_id: infores:hmdb
+  name: Human Metabolome DataBase (HMDB)
+  description: >-
+    The Human Metabolome DataBase (HMDB) is an openly accessible database
+    containing detailed information about small molecule metabolites found
+    in the human body, with links between chemical data, clinical data, and
+    molecular biology/biochemistry data, including protein sequences (enzymes and transporters).
+  citations:
+    - "https://doi.org/10.1093/nar/gkl923"
+    - "https://doi.org/10.1093/nar/gkab1062"
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations:
+    - HMDB Download - https://hmdb.ca/system/downloads/current/hmdb_metabolites.zip
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - xml
+  data_versioning_and_releases: >-
+      Current version parsed out of index HTML page at https://hmdb.ca/downloads
+ingest_info:
+  ingest_categories:
+  - null
+  utility: null
+  scope: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+  included_content:
+  - file_name: null
+    included_records: null
+    fields_used: null
+  filtered_content:
+  - file_name: null
+    filtered_records: null
+    rationale: null
+  future_considerations:
+  - category: null
+    consideration: null
+    relevant_files: null
+  additional_notes: null
+target_info:
+  infores_id: infores:hmdb
+  edge_type_info:
+  - subject:
+    - biolink:Pathway
+    predicates:
+    - biolink:has_participant
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Pathway
+    predicates:
+    - biolink:has_participant
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Pathway
+    predicates:
+    - biolink:has_participant
+    object:
+    - biolink:MolecularMixture
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:Disease
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+    - biolink:publications
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    qualifiers:
+    - qualifier_type_id: object_aspect_qualifier
+      applicable_values:
+      - abundance
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:Gene
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+    - biolink:publications
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:MolecularMixture
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:SmallMolecule
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalMixture
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties: []
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties: []
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:MolecularMixture
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties: []
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:Disease
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Disease
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:PhenotypicFeature
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:SmallMolecule
+    qualifiers:
+    - qualifier_type_id: object_aspect_qualifier
+      applicable_values:
+      - transport
+    - qualifier_type_id: object_direction_qualifier
+      applicable_values:
+      - increased
+    - qualifier_type_id: qualified_predicate
+      applicable_values:
+      - biolink:causes
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:ChemicalEntity
+    qualifiers:
+    - qualifier_type_id: object_aspect_qualifier
+      applicable_values:
+      - transport
+    - qualifier_type_id: object_direction_qualifier
+      applicable_values:
+      - increased
+    - qualifier_type_id: qualified_predicate
+      applicable_values:
+      - biolink:causes
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:MolecularMixture
+    qualifiers:
+    - qualifier_type_id: object_aspect_qualifier
+      applicable_values:
+      - transport
+    - qualifier_type_id: object_direction_qualifier
+      applicable_values:
+      - increased
+    - qualifier_type_id: qualified_predicate
+      applicable_values:
+      - biolink:causes
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:Protein
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:Gene
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties: []
+  - subject:
+    - biolink:Gene
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties: []
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:Gene
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+    - biolink:publications
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:Disease
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+    - biolink:publications
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    qualifiers:
+    - qualifier_type_id: object_aspect_qualifier
+      applicable_values:
+      - abundance
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:ChemicalEntity
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:MolecularMixture
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    qualifiers:
+    - qualifier_type_id: object_aspect_qualifier
+      applicable_values:
+      - abundance
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:correlated_with
+    object:
+    - biolink:Disease
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+    - biolink:publications
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:ChemicalEntity
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:MolecularMixture
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:PhenotypicFeature
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:Disease
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  - subject:
+    - biolink:ChemicalMixture
+    predicates:
+    - biolink:subclass_of
+    object:
+    - biolink:SmallMolecule
+    qualifiers: []
+    knowledge_level: not_provided
+    agent_type: not_provided
+    edge_properties:
+    - biolink:knowledge_level
+    - biolink:agent_type
+  node_type_info:
+  - node_category: biolink:Pathway
+    source_identifier_types:
+    - SMPDB
+    node_properties:
+    - biolink:same_as
+  - node_category: biolink:Disease
+    source_identifier_types:
+    - UMLS
+    - NCIT
+    - OMIM
+    - MONDO
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:Protein
+    source_identifier_types:
+    - UniProtKB
+    - PR
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - GTOPDB
+    - CHEBI
+    - UNII
+    - PUBCHEM.COMPOUND
+    - CHEMBL.COMPOUND
+    - HMDB
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:Gene
+    source_identifier_types:
+    - NCBIGene
+    node_properties:
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - UNII
+    - HMDB
+    - CHEBI
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - CHEBI
+    - CHEMBL.COMPOUND
+    - UNII
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:PhenotypicFeature
+    source_identifier_types:
+    - NCIT
+    - HP
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:ChemicalMixture
+    source_identifier_types:
+    - CHEBI
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  future_considerations:
+  - category: null
+    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - null
+  artifacts:
+  - null
