@@ -186,8 +186,18 @@ class EdgeData:
                     entry[key] = list(value)
                 else:
                     entry[key] = value
-            converted.append(entry)
-        # TODO: need to re-order the fields in desired output order?
+
+            # enforce expected ordering of the entry fields
+            ordered_entry: dict[str,Any] = dict()
+            for key in [
+                'subject', 'predicates', 'object', 'qualifiers',
+                'knowledge_level', 'agent_type', 'edge_properties'
+            ]:
+                if key in entry:
+                    ordered_entry[key] = entry[key]
+
+            converted.append(ordered_entry)
+
         return converted
 
     def add_edge(self, edge: dict[str, Any]):
@@ -274,7 +284,7 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
     Prepare data for use in a Translator Phase 2 Ingest Inventory style spreadsheet.
     :param node_info: List of node information.
     :param edge_info: List of edge information.
-    :return: A list[dict] of merged, flattened and renamed
+    :return: A list[dict] of merged, flattened, and renamed
              node and edge information, one dictionary per edge, per list row.
     """
     kg_nodes: dict = dict()
