@@ -37,6 +37,8 @@ SPLIT_COLS = [
 DEFINE_EDGE_COLS = ["entity1_id", "relation", "entity2_id"]
 ## NodeNorm currently doesn't include variant namespaces, so filtering out
 EXCLUDED_ENTITY_TYPES = ["DNAMutation", "ProteinMutation", "SNP", "Mutation"]
+## not a useful relationship or no biolink-model mapping
+EXCLUDED_RELATIONS = ["compare", "cotreat"]
 
 
 ## CUSTOM FUNCTIONS
@@ -97,6 +99,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out entity types that can't be NodeNormed:")
     koza.log(f"{", ".join(EXCLUDED_ENTITY_TYPES)}")
 
+    ## log, filter out rows with EXCLUDED_RELATIONS
+    n_before = df.shape[0]    ## save for log: calculating change
+    df = df.filter(~(pl.col("relation").is_in(EXCLUDED_RELATIONS)))
+    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out some relation values:")
+    koza.log(f"{", ".join(EXCLUDED_RELATIONS)}")
+
     ## group-by/merge rows by unique triple
     df = (
         df.group_by(DEFINE_EDGE_COLS)
@@ -124,7 +132,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     # entity2 = NamedThing(id=record["entity2_id"])
 
     data_modeling = RELATION_MODELING.get(record["relation"], None)
-    ## if there isn't a mapping, skip the record
+    ## just in case - if there isn't a mapping, skip the record
     if not data_modeling:
         return None
     
