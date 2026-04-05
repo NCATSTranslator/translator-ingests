@@ -96,14 +96,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
             | pl.col("entity2_type").is_in(EXCLUDED_ENTITY_TYPES)
         )
     )
-    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out entity types that can't be NodeNormed:")
-    koza.log(f"{", ".join(EXCLUDED_ENTITY_TYPES)}")
+    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out entity types that can't be NodeNormed: {", ".join(EXCLUDED_ENTITY_TYPES)}")
 
     ## log, filter out rows with EXCLUDED_RELATIONS
     n_before = df.shape[0]    ## save for log: calculating change
     df = df.filter(~(pl.col("relation").is_in(EXCLUDED_RELATIONS)))
-    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out some relation values:")
-    koza.log(f"{", ".join(EXCLUDED_RELATIONS)}")
+    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out some relation values: {", ".join(EXCLUDED_RELATIONS)}")
 
     ## group-by/merge rows by unique triple
     df = (
