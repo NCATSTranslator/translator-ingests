@@ -245,9 +245,10 @@ target_info:
 
   additional_notes: >-
     (1) Relation name can be specific, but def is usually very general (starts with positive/negative correlation…). And the relation-assignment can be incorrect, so using weaker/general predicates may be better?
-    (2) Can't create links to Pubtator webpages (source_record_urls) because they include entity names/labels, which aren't in the relation file (ref: https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Search").
-    (3) Using relation definitions in tutorial https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ("Relation Annotations", Table 2), which seem to make more sense and match the current data better than the paper's supplementary table 2.
-    (4) Paper Supplementary Table 7 summarizes each tool within Pubtator (what it does, citation, all public domain license) 
+    (2) When running the ingest, there are some validation warnings that Gene/Protein are encountered when Chemical was expected. And there's some unexpected primary node categories for MESH IDs in the graph-metadata file (OrganismTaxon, CellularComponent). CX expects that these are due to MESH IDs - either issues with the data, issues with NodeNorm, or understandable issues resolving proteins vs drugs. 
+    (3) Can't create links to Pubtator webpages (source_record_urls) because they include entity names/labels, which aren't in the relation file (ref: https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Search").
+    (4) Using relation definitions in tutorial https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ("Relation Annotations", Table 2), which seem to make more sense and match the current data better than the paper's supplementary table 2.
+    (5) Paper Supplementary Table 7 summarizes each tool within Pubtator (what it does, citation, all public domain license) 
 
 
 # Information about how the ingest was specified and performed
