@@ -175,7 +175,7 @@ target_info:
     - node_category: biolink:SmallMolecule
       source_identifier_types:
         - "GTOPDB Ligand ID"
-    - node_category: biolink:Gene
+    - node_category: biolink:Protein
       source_identifier_types:
         - "UniProt"
   future_considerations:
