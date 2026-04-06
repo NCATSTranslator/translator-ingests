@@ -41,7 +41,7 @@ ingest_info:
       filtered_records: "Entity types - removed entity types in [stimulus, fusion protein]"
       rationale: "waiting for future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
     - file_name: "all_data_<the date when accessed, in format 'dd_mm_yy'>.tsv"
-      filtered_records: "Entity types - removed entity types in [mirna, antibody, phenotype, ncrna, fusion Protein, stimulus]"
+      filtered_records: "Entity types - removed entity types in [mirna, antibody, phenotype, ncrna, fusion protein, stimulus]"
       rationale: "very small proportion of the SIGNOR data, modeling may be needed in following phases, and currently considered to be less impactful in translator"
 
   ## causing issues in local test
