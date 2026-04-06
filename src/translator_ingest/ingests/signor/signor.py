@@ -77,7 +77,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     group_cols = ['ENTITYA', 'ENTITYB', 'TYPEA', 'TYPEB', 'IDA', 'IDB', 'EFFECT', 'MECHANISM', 'TAX_ID', 'CELL_DATA', 'TISSUE_DATA', 'DIRECT', 'SCORE']
 
     source_agg_df = (
-        source_subset_df.groupby(group_cols, as_index=False)
+        source_subset_df.groupby(group_cols, as_index=False, dropna=False)
           .agg({
             "PMID": lambda x: "|".join(x.dropna().astype(str)),
             "SENTENCE": lambda x: "|".join(x.dropna().astype(str))
@@ -92,8 +92,14 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_agg_df['object_name'] = source_agg_df['object_name'].replace('miR-34', 'miR-34a')
 
     ## remove those rows with category in fusion protein or stimulus from source_df for now, and expecting biolink team to add those new categories
-    source_agg_df = source_agg_df[(source_agg_df['subject_category'] != 'fusion Protein') & (source_agg_df['object_category'] != 'fusion Protein')]
-    source_agg_df = source_agg_df[(source_agg_df['subject_category'] != 'stimulus') & (source_agg_df['object_category'] != 'stimulus')]
+    source_agg_df = source_agg_df[
+        (source_agg_df['subject_category'].str.lower() != 'fusion protein')
+        & (source_agg_df['object_category'].str.lower() != 'fusion protein')
+    ]
+    source_agg_df = source_agg_df[
+        (source_agg_df['subject_category'].str.lower() != 'stimulus')
+        & (source_agg_df['object_category'].str.lower() != 'stimulus')
+    ]
 
     ## only drop rows missing fields required to build a valid record
     required_cols = ['subject_name', 'object_name', 'IDA', 'IDB']
@@ -429,7 +435,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
-            object = ChemicalEntity(id=record["IDB"], name=record["subject_name"])
+            object = ChemicalEntity(id=record["IDB"], name=record["object_name"])
 
             ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
             ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
