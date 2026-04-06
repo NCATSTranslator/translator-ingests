@@ -16,6 +16,8 @@ import json
 import csv
 import click
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from jinja2.nodes import If
+
 from translator_ingest import INGESTS_PARSER_PATH
 
 
@@ -301,36 +303,45 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
     kg_data: list[dict] = list()
     for edge in edge_info:
         try:
-            subject_category = edge['subject'][0]
-            subject_category = subject_category.replace("biolink:", "")
-            subject_metadata: Optional[dict] = kg_nodes.get(subject_category, None)
-            object_category = edge['object'][0]
-            object_category = object_category.replace("biolink:", "")
-            object_metadata: Optional[dict] = kg_nodes.get(object_category, None)
+            subject_categories = "- "
+            subject_categories += ",\n- ".join([category.replace("biolink:", "") for category in edge['subject']])
+            # subject_metadata: Optional[dict] = kg_nodes.get(subject_category, None)
+            object_categories = "- "
+            object_categories += ",\n- ".join([category.replace("biolink:", "") for category in edge['object']])
+            # object_metadata: Optional[dict] = kg_nodes.get(object_category, None)
             # Sanity check: skip edges with missing subject or object nodes
-            if subject_metadata is None or object_metadata is None:
-                continue
-            predicate = edge['predicates'][0].replace("biolink:","")
+            # if subject_metadata is None or object_metadata is None:
+            #     continue
+            predicates = "- "
+            predicates += ",\n- ".join([category.replace("biolink:", "") for category in edge['predicates']])
             qualifiers = edge.get('qualifiers',[])
-            qualifiers = ",".join(qualifiers) if qualifiers else ""
+            if qualifiers:
+                qualifier_list = "- "
+                qualifier_list += ",\n- ".join([qualifier['property'] for qualifier in qualifiers])
+            else:
+                qualifier_list = ""
             edge_properties = edge.get('edge_properties',[])
-            edge_properties = ",".join(edge_properties) if edge_properties else ""
-        except Exception:
+            if edge_properties:
+                edge_property_list = "- "
+                edge_property_list += ",\n- ".join(edge_properties)
+            else:
+                edge_property_list = ""
+        except RuntimeError as e:
             continue  # just ignore faulty or missing data
 
         kg_data.append(
             {
-                "MetaEdge Subject Category": subject_category,
-                "MetaEdge Predicate": predicate,
-                "MetaEdge Object Category": object_category,
-                "MetaEdge Qualifiers": qualifiers,
+                "MetaEdge Subject Category": subject_categories,
+                "MetaEdge Predicate": predicates,
+                "MetaEdge Object Category": object_categories,
+                "MetaEdge Qualifiers": qualifier_list,
                 "KL": edge['knowledge_level'],
                 "AT": edge['agent_type'],
-                "Other Edge Attributes": edge_properties,
-                "Subject Node Properties": subject_metadata['node_properties'],
-                "Subject Identifier Prefixes": subject_metadata['id_prefixes'],
-                "Object Node Properties": object_metadata['node_properties'],
-                "Object Identifier Prefixes": object_metadata['id_prefixes']
+                "Other Edge Attributes": edge_property_list,
+                # "Subject Node Properties": subject_metadata['node_properties'],
+                # "Subject Identifier Prefixes": subject_metadata['id_prefixes'],
+                # "Object Node Properties": object_metadata['node_properties'],
+                # "Object Identifier Prefixes": object_metadata['id_prefixes']
             }
         )
     return kg_data
