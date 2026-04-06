@@ -11,12 +11,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ## necessary associations and interactions
     Association,
     GeneRegulatesGeneAssociation,
-    PairwiseMolecularInteraction,
+    #PairwiseMolecularInteraction,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     ChemicalAffectsGeneAssociation,
-    PairwiseGeneToGeneInteraction,
+    #PairwiseGeneToGeneInteraction,
     ## necessary enums
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
@@ -328,7 +328,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     species_context_qualifier = species_context_qualifier,
                 )
 
-                association_2 = PairwiseGeneToGeneInteraction(
+                association_2 = GeneRegulatesGeneAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -336,6 +336,13 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
+                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
                 )
 
                 if publications and association_1 is not None and association_2 is not None:
@@ -447,7 +454,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
-                association_2 = PairwiseGeneToGeneInteraction(
+                association_2 = GeneAffectsChemicalAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -455,6 +462,13 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
+                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
                 )
 
                 if publications and association_1 is not None and association_2 is not None:
@@ -532,7 +546,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
-                association_2 = PairwiseGeneToGeneInteraction(
+                association_2 = ChemicalAffectsGeneAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -540,6 +554,13 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
+                    qualified_predicate = BIOLINK_CAUSES,
+                    object_aspect_qualifier = object_aspect_qualifier,
+                    object_direction_qualifier = object_direction_qualifier,
+                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
+                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    ## additional species and anatomical_context qualifiers if existing in the current association type
+                    species_context_qualifier = species_context_qualifier,
                 )
 
                 if publications and association_1 is not None and association_2 is not None:
@@ -616,7 +637,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     # object_direction_qualifier = object_direction_qualifier
                 )
 
-                association_2 = PairwiseMolecularInteraction(
+                association_2 = ChemicalEntityToChemicalEntityAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
