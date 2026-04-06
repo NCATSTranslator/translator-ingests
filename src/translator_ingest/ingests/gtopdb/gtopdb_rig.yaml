@@ -110,7 +110,7 @@ target_info:
       edge_properties:
         - biolink:publications
       ui_explanation: TO DO
-      additional_notes: "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision agout 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
+      additional_notes: "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -140,7 +140,7 @@ target_info:
       edge_properties:
         - biolink:publications
       ui_explanation: TO DO
-      additional_notes: "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision agout 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
+      additional_notes: "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -174,7 +174,7 @@ target_info:
         - "GTOPDB Ligand ID"
     - node_category: biolink:SmallMolecule
       source_identifier_types:
-        - "GTOPDBLigand ID"
+        - "GTOPDB Ligand ID"
     - node_category: biolink:Gene
       source_identifier_types:
         - "UniProt"

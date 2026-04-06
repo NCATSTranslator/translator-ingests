@@ -99,7 +99,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_agg_df = (
         source_subset_df.groupby(group_cols, as_index=False)
         .agg({
-            "PubMed ID": lambda x: "|".join(x.dropna().astype(str))
+            "PubMed ID": lambda x: "|".join(pd.unique(x.dropna().astype(str)))
             })
     )
 
@@ -164,7 +164,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             current_direction_mapping = (DirectionQualifierEnum.increased, DirectionQualifierEnum.decreased)
 
         # subject: Activator
-        activator_list_with_separate_directly_physically_interacts_with_edge = ['Agnoist', 'Binding', 'Full agonist', 'Partial agonist']
+        activator_list_with_separate_directly_physically_interacts_with_edge = ['Agonist', 'Binding', 'Full agonist', 'Partial agonist']
         if record["Type"] == 'Activator' and record["Action"] in activator_list_with_separate_directly_physically_interacts_with_edge:
             ## define CausalMechanismQualifierEnum for each unique action values
             if record["Action"] == "Agonist":
@@ -253,9 +253,9 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 edges.append(association)
 
         ## subject: Agonist
-        ## all action == agnoist edges need a separate directly_physically_interacts_with edge
-        agnoist_list_with_separate_directly_physically_interacts_with_edge = ['Activation', 'Agnoist', 'Biased agonist', 'Binding', 'Full agonist', 'Inverse agonist', 'Irreversible agonist', 'Mixed', None, 'Partial agonist', 'Unknown']
-        if record["Type"] == 'Agonist' and record["Action"] in agnoist_list_with_separate_directly_physically_interacts_with_edge:
+        ## all action == agonist edges need a separate directly_physically_interacts_with edge
+        agonist_list_with_separate_directly_physically_interacts_with_edge = ['Activation', 'Agonist', 'Biased agonist', 'Binding', 'Full agonist', 'Inverse agonist', 'Irreversible agonist', 'Mixed', None, 'Partial agonist', 'Unknown']
+        if record["Type"] == 'Agonist' and record["Action"] in agonist_list_with_separate_directly_physically_interacts_with_edge:
 
             if record["Action"] == "Activation":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
@@ -328,7 +328,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         # subject: Allosteric modulator
         ## all action == Allosteric modulator need a seaparate directly_physically_interacts_with edge, thus no need of the branch switch code
-        allosteric_modulator_list_with_separate_directly_physically_interacts_with_edge = ['Activation', 'Agnoist', 'Antagonist', 'Biased agonist', 'Binding', 'Biphasic', 'Full agonist', 'Inhibition', 'Inverse agonist', 'Mixed', 'Negative', 'Neutral', None, 'Partial agonist', 'Positive', 'Potentiation']
+        allosteric_modulator_list_with_separate_directly_physically_interacts_with_edge = ['Activation', 'Agonist', 'Antagonist', 'Biased agonist', 'Binding', 'Biphasic', 'Full agonist', 'Inhibition', 'Inverse agonist', 'Mixed', 'Negative', 'Neutral', None, 'Partial agonist', 'Positive', 'Potentiation']
         if record["Type"] == 'Allosteric modulator' and record["Action"] in allosteric_modulator_list_with_separate_directly_physically_interacts_with_edge:
 
             if record["Action"] == "Activation":
@@ -410,7 +410,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             elif record["Action"] == "Neutral" or record["Action"] is None:
                 print("not applicable")
-                break
+                ## only jump off the parsing of current records, not the whole dataframe
+                continue
 
             elif record["Action"] == "Partial agonist":
                 predicate = current_predicate_mapping
@@ -527,7 +528,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             elif record["Action"] == "Partial agonist":
                 print("not applicable")
-                break
+                ## only jump off the parsing of current records, not the whole dataframe
+                continue
 
             association_1 = ChemicalAffectsGeneAssociation(
                     id=entity_id(),
@@ -707,7 +709,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             if record["Action"] == "Binding":
                 print("not applicable")
-                break
+                ## only jump off the parsing of current records, not the whole dataframe
+                continue
             elif record["Action"] == "Inhibition":
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
                 object_direction_qualifier = current_direction_mapping[1]
@@ -922,7 +925,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             if record["Action"] == "Binding" or record["Action"] == "Competitive":
                 print("not applicable")
-                break
+                ## only jump off the parsing of current records, not the whole dataframe
+                continue
             elif record["Action"] == "Inhibition":
                 predicate = current_predicate_mapping
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
@@ -1060,7 +1064,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
             if record["Action"] == "Mixed":
                 print("not applicable")
-                break
+                ## only jump off the parsing of current records, not the whole dataframe
+                continue
             elif record["Action"] == "Potentiation":
                 predicate = current_predicate_mapping
                 object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
