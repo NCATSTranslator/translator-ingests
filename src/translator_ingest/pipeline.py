@@ -41,8 +41,8 @@ from translator_ingest.util.download_utils import substitute_version_in_download
 
 logger = get_logger(__name__)
 
-# Source-specific normalization overrides (strict=True is the default for all sources).
-# Add an entry here only when a source has documented reasons to allow unnormalized nodes through.
+# Source-specific normalization overrides.
+# All sources default to strict normalization (True).
 NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {}
 
 
