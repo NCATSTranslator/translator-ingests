@@ -7,7 +7,7 @@ The script now provides two complementary output formats:
 1. A human-readable spreadsheet table (i.e. "Translator Phase 2 Ingest Inventory" style).
 2. Population of a Reference Ingest Guide ("RIG") YAML file 'target_info' section.
 """
-from typing import Optional, Any, Literal
+from typing import Optional, Any
 from os import path, rename
 from pathlib import Path
 import sys
@@ -15,11 +15,10 @@ import yaml
 import json
 import csv
 import click
+
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
-from jinja2.nodes import If
 
 from translator_ingest import INGESTS_PARSER_PATH
-
 
 def read_mkg_nodes(nodes, node_info):
     """
@@ -372,7 +371,7 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
             knowledge_level = flatten_values('knowledge_level', edge)
             agent_type = flatten_values('agent_type', edge)
 
-        except RuntimeError as e:
+        except (RuntimeError, KeyError):
             continue  # just ignore faulty or missing data
 
         kg_data.append(
