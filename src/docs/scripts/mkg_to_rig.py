@@ -7,7 +7,7 @@ The script now provides two complementary output formats:
 1. A human-readable spreadsheet table (i.e. "Translator Phase 2 Ingest Inventory" style).
 2. Population of a Reference Ingest Guide ("RIG") YAML file 'target_info' section.
 """
-from typing import Optional, Any
+from typing import Optional, Any, Literal
 from os import path, rename
 from pathlib import Path
 import sys
@@ -269,6 +269,7 @@ def read_mkg_edges(
 
 
 CSV_TABLE_HEADERS:list[str] = [
+    "Columns / Fields Used",
     "MetaEdge Subject Category",
     "MetaEdge Predicate",
     "MetaEdge Object Category",
@@ -276,11 +277,66 @@ CSV_TABLE_HEADERS:list[str] = [
     "KL",
     "AT",
     "Other Edge Attributes",
-    "Subject Node Properties",
     "Subject Identifier Prefixes",
-    "Object Node Properties",
-    "Object Identifier Prefixes"
+    "Subject Node Properties",
+    "Object Identifier Prefixes",
+    "Object Node Properties"
 ]
+
+COLUMNS_FIELDS_USED = "'- subject, \n- predicate, \n- object, \n- attributes"
+
+def flatten(data:list[str], rewrite) -> str:
+    if data:
+        output = "'- "
+        output += "\n- ".join(
+            [rewrite(entry) for entry in data]
+        )
+    else:
+        output = ""
+    return output
+
+def flatten_field(field_name: str, edge: dict, rewrite) -> str:
+    field_value = edge.get(field_name, [])
+    return flatten(field_value, rewrite)
+
+def flatten_biolink(field_name: str, edge: dict) -> str:
+    return flatten_field(field_name, edge, rewrite=lambda x: x.replace("biolink:", ""))
+
+def flatten_qualifiers(edge: dict) -> str:
+    return flatten_field('qualifiers', edge, rewrite=lambda x: x['property'])
+
+def flatten_values(field_name: str, data: dict) -> str:
+    return flatten_field(field_name, data, rewrite=lambda x: x)
+
+def flatten_id_prefixes(node: dict) -> str:
+    return flatten_field('id_prefixes', node, rewrite=lambda x: x)
+
+def flatten_node_properties(node: dict) -> str:
+    return flatten_field('node_properties', node, rewrite=lambda x: x)
+
+def process_nodes(field_name: str, edge: dict, kg_nodes: dict) -> tuple[str, str]:
+    # 'field_name' is one of 'subject' or 'object';
+    # absent data will trigger a RuntimeError
+    categories: Optional[list[str]] = edge.get(field_name)
+    if not categories:
+        raise RuntimeError(f"Edge Missing '{field_name}' categories")
+
+    # else: categories is a list of node categories
+    # First, remove the biolink: prefix from each category
+    category_list: list[str] = [x.replace("biolink:", "") for x in categories]
+
+    # using sets to remove duplicates, for flattening to a string
+    id_prefixes: set = set()
+    node_properties: set = set()
+    for category in category_list:
+        node_info = kg_nodes.get(category)
+        if not node_info:
+            raise RuntimeError(f"MKG missing node category '{category}' used in edge")
+        id_prefixes.update(node_info['id_prefixes'])
+        node_properties.update(node_info['node_properties'])
+
+    return flatten(list(id_prefixes), rewrite=lambda x: x), flatten(list(node_properties), rewrite=lambda x: x)
+
 def prepare_table_data(node_info, edge_info) -> list[dict]:
     """
     Prepare data for use in a Translator Phase 2 Ingest Inventory style spreadsheet.
@@ -292,56 +348,47 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
     kg_nodes: dict = dict()
     for node in node_info:
         node_category = node['node_category'].replace("biolink:","")
-        id_prefixes = node.get('source_identifier_types', [])
-        node_properties = node.get('node_properties', [])
-
         kg_nodes[node_category] = {
-            "id_prefixes": ",".join(id_prefixes),
-            "node_properties": ",".join(node_properties)
+            "id_prefixes": node.get('source_identifier_types', []),
+            "node_properties": node.get('node_properties', [])
         }
 
     kg_data: list[dict] = list()
     for edge in edge_info:
         try:
-            subject_categories = "- "
-            subject_categories += ",\n- ".join([category.replace("biolink:", "") for category in edge['subject']])
-            # subject_metadata: Optional[dict] = kg_nodes.get(subject_category, None)
-            object_categories = "- "
-            object_categories += ",\n- ".join([category.replace("biolink:", "") for category in edge['object']])
-            # object_metadata: Optional[dict] = kg_nodes.get(object_category, None)
-            # Sanity check: skip edges with missing subject or object nodes
-            # if subject_metadata is None or object_metadata is None:
-            #     continue
-            predicates = "- "
-            predicates += ",\n- ".join([category.replace("biolink:", "") for category in edge['predicates']])
-            qualifiers = edge.get('qualifiers',[])
-            if qualifiers:
-                qualifier_list = "- "
-                qualifier_list += ",\n- ".join([qualifier['property'] for qualifier in qualifiers])
-            else:
-                qualifier_list = ""
-            edge_properties = edge.get('edge_properties',[])
-            if edge_properties:
-                edge_property_list = "- "
-                edge_property_list += ",\n- ".join(edge_properties)
-            else:
-                edge_property_list = ""
+            subject_categories = flatten_biolink('subject', edge)
+            subject_id_prefixes, subject_node_properties = process_nodes('subject', edge, kg_nodes)
+
+            predicates = flatten_biolink('predicates', edge)
+
+            object_categories = flatten_biolink('object', edge)
+            object_id_prefixes, object_node_properties = process_nodes('object', edge, kg_nodes)
+
+            qualifiers = flatten_qualifiers(edge)
+
+            # Note: edge properties keep the biolink: prefix
+            edge_properties = flatten_values('edge_properties', edge)
+
+            knowledge_level = flatten_values('knowledge_level', edge)
+            agent_type = flatten_values('agent_type', edge)
+
         except RuntimeError as e:
             continue  # just ignore faulty or missing data
 
         kg_data.append(
             {
+                "Columns / Fields Used": COLUMNS_FIELDS_USED,
                 "MetaEdge Subject Category": subject_categories,
                 "MetaEdge Predicate": predicates,
                 "MetaEdge Object Category": object_categories,
-                "MetaEdge Qualifiers": qualifier_list,
-                "KL": edge['knowledge_level'],
-                "AT": edge['agent_type'],
-                "Other Edge Attributes": edge_property_list,
-                # "Subject Node Properties": subject_metadata['node_properties'],
-                # "Subject Identifier Prefixes": subject_metadata['id_prefixes'],
-                # "Object Node Properties": object_metadata['node_properties'],
-                # "Object Identifier Prefixes": object_metadata['id_prefixes']
+                "MetaEdge Qualifiers": qualifiers,
+                "KL": knowledge_level,
+                "AT": agent_type,
+                "Other Edge Attributes": edge_properties,
+                "Subject Identifier Prefixes": subject_id_prefixes,
+                "Subject Node Properties": subject_node_properties,
+                "Object Identifier Prefixes": object_id_prefixes,
+                "Object Node Properties": object_node_properties
             }
         )
     return kg_data
@@ -510,7 +557,7 @@ def main(
             # Generate 'csv' output file
             kg_data = prepare_table_data(node_info, edge_info)
             with open(kg_data_path, mode="w", newline="", encoding="utf-8") as table_file:
-                writer = csv.DictWriter(table_file, fieldnames=CSV_TABLE_HEADERS)
+                writer = csv.DictWriter(table_file, fieldnames=CSV_TABLE_HEADERS, quoting=0) # quoting=csv.QUOTE_ALL
                 writer.writeheader()
                 writer.writerows(kg_data)
 
