@@ -374,6 +374,10 @@ class PerformanceTracker:
             "threshold_percent": self._memory_critical_percent,
         }
 
+    def is_memory_critical(self) -> bool:
+        """Return True if current system memory exceeds the critical threshold."""
+        return psutil.virtual_memory().percent >= self._memory_critical_percent
+
 
 # ── Console display ───────────────────────────────────────────────────────────
 
@@ -1143,7 +1147,7 @@ def stage_merge(
     overwrite: bool,
     display: BuildDisplay,
     report_dir: Path,
-) -> bool:
+) -> None:
     """Execute the MERGE stage.
 
     Args:
@@ -1153,13 +1157,16 @@ def stage_merge(
         display: BuildDisplay instance
         report_dir: Report directory
 
-    Returns:
-        True if merge succeeded
+    Raises:
+        Exception: If the merge or graph release generation fails.
     """
     display.start_stage("MERGE")
     logger.info("STAGE: MERGE  |  graph: %s  |  %d sources", graph_id, len(sources))
 
-    merge_result = {"stage": "MERGE", "graph_id": graph_id, "sources": sources, "status": "pending"}
+    merge_result: dict[str, Any] = {
+        "stage": "MERGE", "graph_id": graph_id, "sources": sources, "status": "failed",
+    }
+    _stage_start = time.time()
 
     try:
         merged_graph_metadata, _kgx_sources = merge(graph_id, sources=sources, overwrite=overwrite)
@@ -1173,20 +1180,15 @@ def stage_merge(
         merge_result["build_version"] = merged_graph_metadata.build_version
         display.complete_stage("MERGE")
         logger.info("MERGE: completed successfully")
-        ok = True
     except Exception:
-        merge_result["status"] = "failed"
         display.fail_stage("MERGE")
         logger.exception("[MERGE] FAILED")
-        ok = False
-
-    merge_result["duration_seconds"] = display.stage_durations.get("MERGE", 0)
-    merge_result["performance"] = display.perf.get_stage_stats("MERGE")
-
-    with (report_dir / "stages" / "merge" / "_summary.json").open("w") as f:
-        json.dump(merge_result, f, indent=2)
-
-    return ok
+        raise
+    finally:
+        merge_result["duration_seconds"] = display.stage_durations.get("MERGE") or (time.time() - _stage_start)
+        merge_result["performance"] = display.perf.get_stage_stats("MERGE")
+        with (report_dir / "stages" / "merge" / "_summary.json").open("w") as f:
+            json.dump(merge_result, f, indent=2)
 
 
 def stage_release(
@@ -1194,8 +1196,12 @@ def stage_release(
     node_properties: list[str],
     display: BuildDisplay,
     report_dir: Path,
-) -> bool:
+) -> None:
     """Execute the RELEASE stage: create releases for each source.
+
+    Processes each source independently — one source failure is recorded but
+    does not prevent other sources from being released.  Raises at the end if
+    any source failed so the caller can gate the UPLOAD stage.
 
     Args:
         sources: List of sources to release
@@ -1203,8 +1209,8 @@ def stage_release(
         display: BuildDisplay instance
         report_dir: Report directory
 
-    Returns:
-        True if all releases succeeded
+    Raises:
+        RuntimeError: If any source release fails.
     """
     display.start_stage("RELEASE")
     logger.info("STAGE: RELEASE")
@@ -1213,49 +1219,52 @@ def stage_release(
     per_source: dict[str, dict[str, Any]] = {}
     all_ok = True
 
-    for source in releasable:
-        src_start = time.time()
-        try:
-            release_ingest(source)
-            per_source[source] = {"status": "completed", "duration_seconds": time.time() - src_start}
-            logger.info("  %s: released (%s)", source, format_duration(time.time() - src_start))
-        except Exception:
-            all_ok = False
-            per_source[source] = {"status": "failed", "duration_seconds": time.time() - src_start}
-            logger.exception("[RELEASE] %s: FAILED", source)
-
-    # Generate summary
     try:
-        generate_release_summary()
-        logger.info("  Release summary generated")
-    except Exception:
-        logger.exception("[RELEASE] summary generation failed")
+        for source in releasable:
+            src_start = time.time()
+            try:
+                release_ingest(source)
+                per_source[source] = {"status": "completed", "duration_seconds": time.time() - src_start}
+                logger.info("  %s: released (%s)", source, format_duration(time.time() - src_start))
+            except Exception:
+                all_ok = False
+                per_source[source] = {"status": "failed", "duration_seconds": time.time() - src_start}
+                logger.exception("[RELEASE] %s: FAILED", source)
 
-    if all_ok:
-        display.complete_stage("RELEASE")
-    else:
-        display.fail_stage("RELEASE")
+        # Generate summary
+        try:
+            generate_release_summary()
+            logger.info("  Release summary generated")
+        except Exception:
+            logger.exception("[RELEASE] summary generation failed")
 
-    release_result = {
-        "stage": "RELEASE",
-        "status": "completed" if all_ok else "failed",
-        "total_sources": len(releasable),
-        "completed": sum(1 for v in per_source.values() if v["status"] == "completed"),
-        "failed": sum(1 for v in per_source.values() if v["status"] == "failed"),
-        "duration_seconds": display.stage_durations.get("RELEASE", 0),
-        "performance": display.perf.get_stage_stats("RELEASE"),
-        "per_source": per_source,
-    }
-    with (report_dir / "stages" / "release" / "_summary.json").open("w") as f:
-        json.dump(release_result, f, indent=2)
-
-    return all_ok
+        if all_ok:
+            display.complete_stage("RELEASE")
+        else:
+            display.fail_stage("RELEASE")
+            raise RuntimeError(
+                f"Release failed for "
+                f"{sum(1 for v in per_source.values() if v['status'] == 'failed')} source(s)"
+            )
+    finally:
+        release_result = {
+            "stage": "RELEASE",
+            "status": "completed" if all_ok else "failed",
+            "total_sources": len(releasable),
+            "completed": sum(1 for v in per_source.values() if v["status"] == "completed"),
+            "failed": sum(1 for v in per_source.values() if v["status"] == "failed"),
+            "duration_seconds": display.stage_durations.get("RELEASE", 0),
+            "performance": display.perf.get_stage_stats("RELEASE"),
+            "per_source": per_source,
+        }
+        with (report_dir / "stages" / "release" / "_summary.json").open("w") as f:
+            json.dump(release_result, f, indent=2)
 
 
 def stage_upload(
     report_dir: Path,
     display: BuildDisplay,
-) -> dict[str, Any] | None:
+) -> None:
     """Execute the UPLOAD stage: auto-discover and upload to S3.
 
     Auto-discovers data and release sources from /data and /releases directories,
@@ -1265,11 +1274,14 @@ def stage_upload(
         report_dir: Report directory to save upload results
         display: BuildDisplay instance
 
-    Returns:
-        Upload results dict, or None if failed
+    Raises:
+        Exception: If the upload operation itself fails (network/S3 error).
     """
     display.start_stage("UPLOAD")
     logger.info("STAGE: UPLOAD")
+
+    upload_summary: dict[str, Any] = {"stage": "UPLOAD", "status": "failed"}
+    _stage_start = time.time()
 
     try:
         data_sources = discover_data_sources()
@@ -1292,19 +1304,6 @@ def stage_upload(
             with path.open("w") as f:
                 json.dump(results, f, indent=2)
 
-        # Save stage summary with perf
-        upload_summary = {
-            "stage": "UPLOAD",
-            "status": "completed" if results["total_failed"] == 0 else "failed",
-            "duration_seconds": display.stage_durations.get("UPLOAD", 0),
-            "performance": display.perf.get_stage_stats("UPLOAD"),
-            "files_uploaded": results["total_uploaded"],
-            "files_failed": results["total_failed"],
-            "bytes_transferred": results.get("total_bytes_transferred", 0),
-        }
-        with (report_dir / "stages" / "upload" / "_summary.json").open("w") as f:
-            json.dump(upload_summary, f, indent=2)
-
         logger.info("  Files uploaded: %d", results["total_uploaded"])
         logger.info("  Files failed: %d", results["total_failed"])
 
@@ -1314,23 +1313,23 @@ def stage_upload(
         else:
             display.complete_stage("UPLOAD")
 
-        return results
-
-    except Exception as exc:
-        display.fail_stage("UPLOAD")
-        logger.exception("[UPLOAD] FAILED")
-
         upload_summary = {
             "stage": "UPLOAD",
-            "status": "failed",
-            "error": str(exc),
-            "duration_seconds": display.stage_durations.get("UPLOAD", 0),
-            "performance": display.perf.get_stage_stats("UPLOAD"),
+            "status": "completed" if results["total_failed"] == 0 else "failed",
+            "files_uploaded": results["total_uploaded"],
+            "files_failed": results["total_failed"],
+            "bytes_transferred": results.get("total_bytes_transferred", 0),
         }
+    except Exception:
+        if display.stage_status.get("UPLOAD") == "running":
+            display.fail_stage("UPLOAD")
+        logger.exception("[UPLOAD] FAILED")
+        raise
+    finally:
+        upload_summary["duration_seconds"] = display.stage_durations.get("UPLOAD") or (time.time() - _stage_start)
+        upload_summary["performance"] = display.perf.get_stage_stats("UPLOAD")
         with (report_dir / "stages" / "upload" / "_summary.json").open("w") as f:
             json.dump(upload_summary, f, indent=2)
-
-        return None
 
 
 # ── Main orchestrator ─────────────────────────────────────────────────────────
@@ -1501,7 +1500,7 @@ def run_full_build(
     # was ever hit. But we only skip a stage if memory is STILL critical right
     # now at stage-start (workers from RUN are done, memory may have recovered).
     def _memory_still_critical() -> bool:
-        return psutil.virtual_memory().percent >= perf._memory_critical_percent
+        return perf.is_memory_critical()
 
     # All sources proceed to MERGE/RELEASE -- failed sources fall back to
     # their previous successful build (latest-build.json is only updated on
@@ -1517,12 +1516,19 @@ def run_full_build(
         display.skip_stage("RELEASE")
         display.skip_stage("UPLOAD")
     else:
+        # ── STAGE 2: MERGE ──
         merge_handler = _add_stage_handler("merge")
-        stage_merge(graph_id, sources, overwrite, display, report_dir)
-        stage_timing_reports.append(_collect_stage_timing("MERGE"))
-        _remove_handler(merge_handler)
+        try:
+            stage_merge(graph_id, sources, overwrite, display, report_dir)
+        except Exception:
+            pass  # stage_merge already called fail_stage and logged the exception
+        finally:
+            stage_timing_reports.append(_collect_stage_timing("MERGE"))
+            _remove_handler(merge_handler)
 
         # ── STAGE 3: RELEASE ──
+        # Always proceeds regardless of MERGE outcome — failed sources fall back
+        # to their previous successful build via latest-build.json.
         if _memory_still_critical():
             logger.error(
                 "Memory at %.1f%% after MERGE — skipping RELEASE/UPLOAD.",
@@ -1532,9 +1538,13 @@ def run_full_build(
             display.skip_stage("UPLOAD")
         else:
             release_handler = _add_stage_handler("release")
-            stage_release(sources, node_properties, display, report_dir)
-            stage_timing_reports.append(_collect_stage_timing("RELEASE"))
-            _remove_handler(release_handler)
+            try:
+                stage_release(sources, node_properties, display, report_dir)
+            except Exception:
+                pass  # stage_release already called fail_stage and logged the exception
+            finally:
+                stage_timing_reports.append(_collect_stage_timing("RELEASE"))
+                _remove_handler(release_handler)
 
             # ── STAGE 4: UPLOAD ──
             if _memory_still_critical():
@@ -1544,15 +1554,17 @@ def run_full_build(
                 )
                 display.skip_stage("UPLOAD")
 
-    if upload and display.stage_status.get("UPLOAD") not in ("skipped", "pending"):
+    if upload and display.stage_status.get("UPLOAD") == "pending":
         upload_handler = _add_stage_handler("upload")
-
-        upload_result = stage_upload(report_dir, display)
-        if upload_result:
-            upload_results_path = report_dir / "stages" / "upload" / "upload-results.json"
-
-        stage_timing_reports.append(_collect_stage_timing("UPLOAD"))
-        _remove_handler(upload_handler)
+        try:
+            stage_upload(report_dir, display)
+        except Exception:
+            pass  # stage_upload already called fail_stage and logged the exception
+        finally:
+            if display.stage_status.get("UPLOAD") == "completed":
+                upload_results_path = report_dir / "stages" / "upload" / "upload-results.json"
+            stage_timing_reports.append(_collect_stage_timing("UPLOAD"))
+            _remove_handler(upload_handler)
     elif not upload and display.stage_status.get("UPLOAD") == "pending":
         display.skip_stage("UPLOAD")
 
@@ -1587,9 +1599,8 @@ def run_full_build(
     # Some stages may still have run if memory recovered between stages.
     memory_aborted = perf.memory_critical_event.is_set()
     stages_skipped = [
-        s for s in ("MERGE", "RELEASE", "UPLOAD")
+        s for s in ("MERGE", "RELEASE")
         if display.stage_status.get(s) == "skipped"
-        and s not in ("UPLOAD",) or (s == "UPLOAD" and not upload)
     ]
     build_notes: list[str] = []
     if memory_aborted:
