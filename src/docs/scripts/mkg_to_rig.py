@@ -65,7 +65,7 @@ class EdgeData:
     """
     def __init__(self, knowledge_level: str, agent_type: str):
         """
-        Initializes data structures to capture processed meta knowledge graph edge data.
+        Initializes data structures to capture processed meta-knowledge graph edge data.
         Initializes the initial edge type to 'global'.
         """
         self.current_edge_type_id = 'global'
@@ -117,7 +117,7 @@ class EdgeData:
         """
         #
         # qualifiers: # (optional, multivalued, range = Qualifier)
-        #   - property:  # (required, range = URIorCURIE)
+        #   - property: # (required, range = URIorCURIE)
         #   # Choose one (or more) of the 'value' slots to describe the type of value hold by the qualifier
         #     value_range: # (optional, multivalued, range = URIorCURIE)
         #       -
@@ -125,7 +125,7 @@ class EdgeData:
         #       -
         #     value_id_prefixes: # (optional, multivalued, range = string)
         #       -
-        #     value_description:  # (optional, range = string)
+        #     value_description: # (optional, range = string)
         #
         qualifiers = edge.get('qualifiers', [])
         if not qualifiers:
@@ -147,7 +147,7 @@ class EdgeData:
             #
             # Sample meta_knowledge_graph.json edge qualifier data:
 
-            # "qualifiers":{
+            # "qualifiers": {
             #   "qualifier_type_id": "object_aspect_qualifier",
             #   "applicable_values": [
             #     "transport"
@@ -328,11 +328,11 @@ def process_nodes(field_name: str, edge: dict, kg_nodes: dict) -> tuple[str, str
     id_prefixes: set = set()
     node_properties: set = set()
     for category in category_list:
-        node_info = kg_nodes.get(category)
+        node_info = kg_nodes.get(category,{})
         if not node_info:
             raise RuntimeError(f"MKG missing node category '{category}' used in edge")
-        id_prefixes.update(node_info['id_prefixes'])
-        node_properties.update(node_info['node_properties'])
+        id_prefixes.update(node_info.get('id_prefixes',[]))
+        node_properties.update(node_info.get('node_properties',[]))
 
     return flatten(list(id_prefixes), rewrite=lambda x: x), flatten(list(node_properties), rewrite=lambda x: x)
 
@@ -393,13 +393,13 @@ def prepare_table_data(node_info, edge_info) -> list[dict]:
     return kg_data
 
 
-def prune_empty(x):
+def prune_empty_fields(x):
     if isinstance(x, dict):
-        return {k: prune_empty(v) for k, v in x.items()
-                if v not in (None, "", [], {}) and prune_empty(v) not in (None, "", [], {})}
+        return {k: prune_empty_fields(v) for k, v in x.items()
+                if v not in (None, "", [], {}) and prune_empty_fields(v) not in (None, "", [], {})}
     if isinstance(x, list):
-        return [prune_empty(v) for v in x
-                if v not in (None, "", [], {}) and prune_empty(v) not in (None, "", [], {})]
+        return [prune_empty_fields(v) for v in x
+                if v not in (None, "", [], {}) and prune_empty_fields(v) not in (None, "", [], {})]
     return x
 
 
@@ -435,20 +435,26 @@ def prune_empty(x):
     default='rig',
     help='Desired format of the output, i.e., "rig" or "csv" (default: "rig")'
 )
+@click.option(
+    '--prune-empty', '-p',
+    is_flag=True,
+    help='If given, this flag prunes empty fields from the output RIG file'
+)
 def main(
         ingest: str,
         rig: str,
         mkg: str,
         knowledge_level: str,
         agent_type: str,
-        output: str
+        output: str,
+        prune_empty: bool
 ):
     """
     Either populate the 'target_info' section of a given RIG YAML file or
-    create a comparable CSV formatted edge inventory file, using node and
+    create a comparable CSV-formatted edge inventory file, using node and
     edge information from a (TRAPI-generated) Meta Knowledge Graph JSON file.
 
-    :param ingest: str, Target ingest folder name of the target data source folder (e.g., icees)
+    :param ingest: Str, Target ingest folder name of the target data source folder (e.g., icees)
     :param rig: Reference-Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
             This switch is ignored if the output format is "table".
     :param mkg: Meta Knowledge Graph JSON file name source of details to be
@@ -456,7 +462,8 @@ def main(
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
     :param output: Desired format of the output, i.e., "rig" or "csv" (default: "rig")
-    :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
+    :param prune_empty: This flag ('True' if given) triggers pruning of empty fields from the output RIG file
+    :return: side effect is either a revised RIG file or a new CSV-formatted edge inventory file.
 
     Examples:
 
@@ -498,7 +505,7 @@ def main(
     print(f"Metadata: {mkg_path}")
 
     try:
-        kg_data_path: Optional[Path]
+        kg_data_path: Path
         if output == 'rig':
 
             # Default RIG file name, if not given
@@ -517,8 +524,8 @@ def main(
                 )
                 sys.exit(1)
 
-            with open(kg_data_path, 'r') as rig:
-                kg_data = yaml.safe_load(rig)
+            with open(kg_data_path, 'r') as rig_file:
+                kg_data = yaml.safe_load(rig_file)
 
             # conservative, in case target_info is already present
             target_info = kg_data.setdefault('target_info', {})
@@ -542,16 +549,19 @@ def main(
             )
             sys.exit(1)
 
-        with open(mkg_path, 'r') as mkg:
-            mkg_data = json.load(mkg)
+        with open(mkg_path, 'r') as mkg_file:
+            mkg_data = json.load(mkg_file)
             read_mkg_nodes(mkg_data['nodes'], node_info)
             read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type)
 
         if output == 'rig':
             rename(kg_data_path, str(kg_data_path)+".original")
-            with open(kg_data_path, 'w') as rig:
-                cleaned = prune_empty(kg_data)
-                yaml.safe_dump(cleaned, rig, sort_keys=False)
+            with open(kg_data_path, 'w') as rig_file:
+                if prune_empty:
+                    cleaned = prune_empty_fields(kg_data)
+                else:
+                    cleaned = kg_data
+                yaml.safe_dump(cleaned, rig_file, sort_keys=False)
         else:
             # Generate 'csv' output file
             kg_data = prepare_table_data(node_info, edge_info)
