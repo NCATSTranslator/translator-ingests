@@ -5,7 +5,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 ## hard-coded biolink predicates
 BIOLINK_RELATED_TO = "biolink:related_to"
-BIOLINK_PROMOTES = "biolink:promotes_condition"
+BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_INTERACTS = "biolink:interacts_with"
 BIOLINK_PHYS_INTERACTS = "biolink:physically_interacts_with"
 BIOLINK_NEG_CORRELATE = "biolink:negatively_correlated_with"
@@ -21,11 +21,10 @@ RELATION_MODELING = {
         "predicate": BIOLINK_RELATED_TO,
     },
     ## def: "A positive correlation...This type includes chemical-induced diseases and genetic diseases caused by variants."
-    ## currently only on Chemical - Disease, after excluding variant types (meeting pred + assoc's domain/range constraints)
+    ## currently only on Chemical - Disease, after excluding variant types
     ## HOWEVER, also used on Variant - Disease, Disease - Variant
     "cause": {
-        "predicate": BIOLINK_PROMOTES,
-        "association": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, 
+        "predicate": BIOLINK_CAUSES,
     },
     ## def: "A pharmacodynamic interaction between two chemicals that results in an array of side effects."
     ## currently only on Chemical - Chemical

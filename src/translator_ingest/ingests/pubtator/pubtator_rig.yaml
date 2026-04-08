@@ -99,7 +99,7 @@ target_info:
         - biolink:ChemicalEntity
       predicates:
       ## relation == "cause"
-        - biolink:promotes_condition
+        - biolink:causes
       object_categories:
         - biolink:DiseaseOrPhenotypicFeature
       agent_type:
@@ -110,7 +110,7 @@ target_info:
         - infores:pubtator
       edge_properties:
         - biolink:publications
-      ui_explanation: "The Pubtator-reported 'relation' was 'cause' for a Chemical - Disease pair. Based on the relation definition (chemical inducing the disease), we picked this predicate."
+      ui_explanation: "The Pubtator-reported 'relation' was 'cause'. Based on the relation definition, we picked this predicate."
       source_files:
         - relation2pubtator3.gz
       # additional_notes:  # (optional, range = string)
