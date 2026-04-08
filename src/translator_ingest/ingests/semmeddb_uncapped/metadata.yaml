@@ -1,0 +1,3 @@
+ingest_title: 'SemMedDB (uncapped publications)'
+description: 'Literature-derived semantic predications extracted by SemRep from PubMed, without publication cap'
+rights: 'https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html'
