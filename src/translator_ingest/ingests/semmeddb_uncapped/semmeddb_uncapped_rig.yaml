@@ -1,0 +1,16 @@
+name: SemMedDB Uncapped (no publication cap)
+
+source_info:
+  infores_id: infores:semmeddb
+  name: Semantic MEDLINE Database (SemMedDB) - Uncapped
+  description: "Uncapped version of the SemMedDB ingest (all PMIDs retained per edge). Same transform and normalization as production SemMedDB but without the publication cap. Produced for the Penn State PMID Checker project."
+  data_access_locations:
+    - >-
+      RTX-KG2 public SemMedDB edges slice (gzipped JSONL):
+      https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - jsonl
+  terms_of_use_info: "https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html"
+  data_versioning_and_releases: "Versioning inherited from RTX-KG2 snapshot (kg2.10.3, SemMedDB VER43)."
