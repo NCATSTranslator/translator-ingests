@@ -6,7 +6,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 ## hard-coded biolink predicates
 BIOLINK_RELATED_TO = "biolink:related_to"
 BIOLINK_CAUSES = "biolink:causes"
-BIOLINK_INTERACTS = "biolink:interacts_with"
+BIOLINK_DRUG_INTERACT = "biolink:pharmacologically_interacts_with"
 BIOLINK_PHYS_INTERACTS = "biolink:physically_interacts_with"
 BIOLINK_NEG_CORRELATE = "biolink:negatively_correlated_with"
 BIOLINK_POS_CORRELATE = "biolink:positively_correlated_with"
@@ -29,7 +29,7 @@ RELATION_MODELING = {
     ## def: "A pharmacodynamic interaction between two chemicals that results in an array of side effects."
     ## currently only on Chemical - Chemical
     "drug_interact": {
-        "predicate": BIOLINK_INTERACTS,
+        "predicate": BIOLINK_DRUG_INTERACT,
         "association": ChemicalEntityToChemicalEntityAssociation, 
     },
     ## def: "A negative correlation exists when the status of the two entities tends to be opposite. This type includes disease-gene and chemical-variant"
