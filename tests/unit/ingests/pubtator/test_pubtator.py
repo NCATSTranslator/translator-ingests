@@ -97,3 +97,45 @@ def test_negcorrel_output(negcorrel_output):
     genes = [e for e in entities if isinstance(e, Gene)]
     assert genes
     assert set([i.id for i in genes]) == set(["NCBIGene:201633", "NCBIGene:3916"])
+
+
+## drug_interact
+@pytest.fixture
+def drug_interact_output():
+    writer = MockKozaWriter()
+    ## example of df row after parsing with prepare, from notebook
+    ## current webpage: https://www.ncbi.nlm.nih.gov/research/pubtator3/docsum?text=relations:drug_interact%7C@CHEMICAL_Everolimus%7C@CHEMICAL_Cyclosporine
+    record = {
+        "entity1_id": "MESH:D000068338",    ## Everolimus
+        "relation": "drug_interact",
+        "entity2_id": "MESH:D016572",  ## Cyclosporine
+        "pmid_set": ["PMID:14550821", "PMID:17543796"],
+        "entity1_type": "Chemical",
+        "entity2_type": "Chemical",
+    }
+    runner = KozaRunner(
+        data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[transform_row])
+    )
+    runner.run()
+    return writer.items
+
+
+def test_drug_interact_output(drug_interact_output):
+    ## check basic output
+    entities = drug_interact_output
+    assert entities
+    ## 1 edge/association, 2 nodes
+    assert len(entities) == 3
+
+    ## check association contents - Association type should match mapping
+    association = [e for e in entities if isinstance(e, RELATION_MODELING["drug_interact"]["association"])][0]
+    assert association
+    ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
+    assert association.predicate == RELATION_MODELING["drug_interact"]["predicate"]
+    assert association.publications
+    assert len(association.publications) == 2
+
+    ## check Node contents - code used to map entity type to biolink category
+    chems = [e for e in entities if isinstance(e, ChemicalEntity)]
+    assert chems
+    assert set([i.id for i in chems]) == set(["MESH:D000068338", "MESH:D016572"])
