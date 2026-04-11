@@ -39,6 +39,11 @@ DEFINE_EDGE_COLS = ["entity1_id", "relation", "entity2_id"]
 EXCLUDED_ENTITY_TYPES = ["DNAMutation", "ProteinMutation", "SNP", "Mutation"]
 ## not a useful relationship or no biolink-model mapping
 EXCLUDED_RELATIONS = ["compare", "cotreat"]
+EXCLUDED_ENTITIES = [
+    "MESH:C100843",  ## Lacteol: Pubtator classifies as Chemical, NodeNormed to OrganismTaxon
+    "MESH:C000598555",  ## 2,5-dihexyl-N,N'-dicyano-p-quinonediimine: Pubtator classifies as Chemical, NodeNormed to OrganismTaxon
+    "MESH:C000719328",  ## smoker's inclusion bodies: Pubtator classifies as Disease, NodeNormed CORRECTLY to CellularComponent
+]
 
 
 ## CUSTOM FUNCTIONS
@@ -102,6 +107,16 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     n_before = df.shape[0]    ## save for log: calculating change
     df = df.filter(~(pl.col("relation").is_in(EXCLUDED_RELATIONS)))
     koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out some relation values: {", ".join(EXCLUDED_RELATIONS)}")
+
+    ## log, filter out rows with EXCLUDED_ENTITIES
+    n_before = df.shape[0]    ## save for log: calculating change
+    df = df.filter(
+        ~(
+            pl.col("entity1_id").is_in(EXCLUDED_ENTITIES)
+            | pl.col("entity2_id").is_in(EXCLUDED_ENTITIES)
+        )
+    )
+    koza.log(f"{n_before - df.shape[0]} rows filtered out because these entity IDs have NodeNorm category issues: {", ".join(EXCLUDED_ENTITIES)}")
 
     ## group-by/merge rows by unique triple
     df = (
