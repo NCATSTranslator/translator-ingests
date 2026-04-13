@@ -92,6 +92,8 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         ## remove orig entity cols, split intermediate
         .select(SPLIT_COLS)
     )
+    ## log number of starting rows
+    koza.log(f"{df.shape[0]} rows at start.")
 
     ## log, filter out rows with EXCLUDED_ENTITY_TYPES
     n_before = df.shape[0]    ## save for log: calculating change
