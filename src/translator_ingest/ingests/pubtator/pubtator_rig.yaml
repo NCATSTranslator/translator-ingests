@@ -54,6 +54,16 @@ ingest_info:
       filtered_records: "relation value is 'cotreat'"
       rationale: >-
         Couldn't find a biolink-model predicate that represented this relationship well. The definition is "It is defined as the use of two or more chemical/drugs administered separately or in a fixed-dose combination" (https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Annotations", Table 2).
+    - file_name: relation2pubtator3.gz
+      filtered_records: "Entity ID maps to NodeNorm clique with unexpected category"
+      rationale: >-
+        Currently, 3 entity IDs map to unexpected main categories (not ChemicalEntity, DiseaseOrPheno, or Gene-related).
+        Filtering them out, just in case they produce odd edges. Could remove some IDs from filter if NodeNorm addresses their category issues
+        OrganismTaxon:
+        - MESH:C100843 (Lacteol): supplement with heat-killed Lactobacillus ([brand link](https://lacteolproducts.com/)). Pubtator classifies as Chemical, **should be a `biolink:Drug`?**
+        - MESH:C000598555 (2,5-dihexyl-N,N'-dicyano-p-quinonediimine): very little info, Pubtator classifies as Chemical. But the name looks like a chemical, so this appears to be a **NodeNorm error**
+        CellularComponent:
+        - MESH:C000719328 (smoker's inclusion bodies): Pubtator classifies as Disease. But Nodenorm is correct that it's a CellularComponent (see [wiki paragraph 3](https://en.wikipedia.org/wiki/Inclusion_bodies))
 
   future_considerations:
     - category: other
