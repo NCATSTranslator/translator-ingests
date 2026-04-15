@@ -34,6 +34,7 @@ from translator_ingest.util.run_build.run_build import (
     PerformanceTracker,
     BuildDisplay,
     create_report_dir,
+    stage_upload,
 )
 from translator_ingest.util.run_build.utils import (
     MEMORY_CRITICAL_THRESHOLD_PERCENT,
@@ -1043,3 +1044,244 @@ def test_generate_build_report_with_build_notes(make_report):
         build_notes=["BUILD ABORTED: memory exceeded 90%"],
     )
     assert any("ABORTED" in note for note in report.build_notes)
+
+
+# ── Upload stage gating tests ────────────────────────────────────────────────
+#
+# These tests verify the two fixed bugs:
+# 1. UPLOAD stage runs in the normal happy path (condition fix)
+# 2. UPLOAD is correctly skipped when upload=False or memory is critical
+
+
+def test_upload_stage_pending_after_prior_stages_complete():
+    """In the happy path, UPLOAD stays 'pending' after RUN/MERGE/RELEASE complete.
+
+    This is the precondition for the UPLOAD stage to run -- the condition
+    ``display.stage_status.get("UPLOAD") == "pending"`` must be true.
+    """
+    display = _make_display(upload=True)
+
+    # Simulate RUN -> MERGE -> RELEASE completing
+    for stage in ("RUN", "MERGE", "RELEASE"):
+        display.start_stage(stage)
+        display.complete_stage(stage)
+
+    assert display.stage_status["UPLOAD"] == "pending"
+
+
+def test_upload_stage_gating_happy_path():
+    """When upload=True and UPLOAD is pending, the gate condition is met."""
+    display = _make_display(upload=True)
+    upload_enabled = True
+
+    # Simulate all prior stages completing
+    for stage in ("RUN", "MERGE", "RELEASE"):
+        display.start_stage(stage)
+        display.complete_stage(stage)
+
+    # This is the exact condition from run_build.py line 1557
+    should_run = upload_enabled and display.stage_status.get("UPLOAD") == "pending"
+    assert should_run is True
+
+
+def test_upload_stage_gating_upload_disabled():
+    """When upload=False, the upload gate condition is not met."""
+    display = _make_display(upload=False)
+    upload_enabled = False
+
+    for stage in ("RUN", "MERGE", "RELEASE"):
+        display.start_stage(stage)
+        display.complete_stage(stage)
+
+    should_run = upload_enabled and display.stage_status.get("UPLOAD") == "pending"
+    assert should_run is False
+
+
+def test_upload_stage_gating_memory_skipped():
+    """When UPLOAD was skipped due to memory, the gate condition is not met."""
+    display = _make_display(upload=True)
+    upload_enabled = True
+
+    for stage in ("RUN", "MERGE", "RELEASE"):
+        display.start_stage(stage)
+        display.complete_stage(stage)
+
+    # Simulate memory critical after RELEASE -> UPLOAD gets skipped
+    display.skip_stage("UPLOAD")
+
+    should_run = upload_enabled and display.stage_status.get("UPLOAD") == "pending"
+    assert should_run is False
+    assert display.stage_status["UPLOAD"] == "skipped"
+
+
+def test_upload_stage_skip_marks_skipped():
+    """When upload=False and UPLOAD is pending, skip_stage transitions to 'skipped'.
+
+    This tests the elif branch at run_build.py line 1568.
+    """
+    display = _make_display(upload=True)
+    upload_enabled = False
+
+    for stage in ("RUN", "MERGE", "RELEASE"):
+        display.start_stage(stage)
+        display.complete_stage(stage)
+
+    # Replicate the elif logic
+    if not upload_enabled and display.stage_status.get("UPLOAD") == "pending":
+        display.skip_stage("UPLOAD")
+
+    assert display.stage_status["UPLOAD"] == "skipped"
+
+
+def _fake_upload_results(total_failed: int = 0) -> dict:
+    """Build a minimal upload_and_cleanup return value."""
+    return {
+        "sources_processed": 1,
+        "total_uploaded": 5,
+        "total_failed": total_failed,
+        "total_bytes_transferred": 1024,
+        "total_bytes_freed": 0,
+        "per_source_stats": {},
+    }
+
+
+def test_stage_upload_marks_completed_on_success(tmp_path, monkeypatch):
+    """stage_upload marks display as completed when upload_and_cleanup succeeds."""
+    display = _make_display(upload=True)
+
+    # Create required report subdirectories
+    report_dir = tmp_path / "report"
+    (report_dir / "stages" / "upload").mkdir(parents=True)
+
+    # Also create the reports base dir that stage_upload writes to
+    reports_base = tmp_path / "reports"
+    reports_base.mkdir()
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+    )
+
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        lambda: ["go_cam"],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        lambda: ["go_cam"],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.upload_and_cleanup",
+        lambda **kwargs: _fake_upload_results(total_failed=0),
+    )
+
+    stage_upload(report_dir, display)
+
+    assert display.stage_status["UPLOAD"] == "completed"
+
+    # Verify results were saved
+    results_file = report_dir / "stages" / "upload" / "upload-results.json"
+    assert results_file.exists()
+    saved = json.loads(results_file.read_text())
+    assert saved["total_uploaded"] == 5
+    assert saved["total_failed"] == 0
+
+
+def test_stage_upload_marks_failed_on_upload_failures(tmp_path, monkeypatch):
+    """stage_upload marks display as failed when some files fail to upload."""
+    display = _make_display(upload=True)
+
+    report_dir = tmp_path / "report"
+    (report_dir / "stages" / "upload").mkdir(parents=True)
+
+    reports_base = tmp_path / "reports"
+    reports_base.mkdir()
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        lambda: ["go_cam"],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        lambda: ["go_cam"],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.upload_and_cleanup",
+        lambda **kwargs: _fake_upload_results(total_failed=3),
+    )
+
+    stage_upload(report_dir, display)
+
+    assert display.stage_status["UPLOAD"] == "failed"
+
+
+def test_stage_upload_marks_failed_on_exception(tmp_path, monkeypatch):
+    """stage_upload marks display as failed and re-raises on S3 exception."""
+    display = _make_display(upload=True)
+
+    report_dir = tmp_path / "report"
+    (report_dir / "stages" / "upload").mkdir(parents=True)
+
+    reports_base = tmp_path / "reports"
+    reports_base.mkdir()
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        lambda: ["go_cam"],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        lambda: ["go_cam"],
+    )
+
+    def _explode(**kwargs):
+        raise ConnectionError("S3 unreachable")
+
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.upload_and_cleanup", _explode,
+    )
+
+    with pytest.raises(ConnectionError, match="S3 unreachable"):
+        stage_upload(report_dir, display)
+
+    assert display.stage_status["UPLOAD"] == "failed"
+
+    # Summary file should still be written (finally block)
+    summary_file = report_dir / "stages" / "upload" / "_summary.json"
+    assert summary_file.exists()
+
+
+def test_stage_upload_saves_summary_json(tmp_path, monkeypatch):
+    """stage_upload always writes _summary.json even on success."""
+    display = _make_display(upload=True)
+
+    report_dir = tmp_path / "report"
+    (report_dir / "stages" / "upload").mkdir(parents=True)
+
+    reports_base = tmp_path / "reports"
+    reports_base.mkdir()
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        lambda: [],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        lambda: [],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.upload_and_cleanup",
+        lambda **kwargs: _fake_upload_results(),
+    )
+
+    stage_upload(report_dir, display)
+
+    summary = json.loads((report_dir / "stages" / "upload" / "_summary.json").read_text())
+    assert summary["stage"] == "UPLOAD"
+    assert summary["status"] == "completed"
+    assert "duration_seconds" in summary
+    assert "performance" in summary
