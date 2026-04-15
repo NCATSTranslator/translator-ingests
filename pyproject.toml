@@ -85,4 +85,7 @@ packages = ["src/translator_ingest"]
 skip = [
     "./src/translator_ingest/ingests/drug_rep_hub/indications_config.json",
     "./src/translator_ingest/ingests/drug_rep_hub/target_config.json",
+    # Jupyter notebooks: JSON cell outputs embed base64 plot data (spurious "word" matches),
+    # and truncated pandas/HTML previews often break words mid-token (false typos). Same skip as Makefile CODESPELL_SKIP.
+    "**/*.ipynb",
 ]

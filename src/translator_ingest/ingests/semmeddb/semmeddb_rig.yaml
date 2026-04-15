@@ -5,7 +5,15 @@ source_info:
   name: Semantic MEDLINE Database (SemMedDB)
   description: "Literature-derived semantic predications extracted by SemRep from PubMed; this RIG documents a post-processed RTX-KG2 edges subset rather than a raw MySQL ingest."
   data_access_locations:
-    - "SemMedDB downloads: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/SemMedDB_download.html"
+    - >-
+      SemMedDB (original NLM source behind SemRep; not the file this ingest reads directly):
+      https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/SemMedDB_download.html
+    - >-
+      RTX-KG2 public SemMedDB edges slice (gzipped JSONL — this is what translator-ingests downloads):
+      https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
+      RTX-KG2 has already projected SemMedDB predications into Biolink-shaped edges (predicate, publications,
+      publications_info, kg2_ids, optional qualifiers, domain_range_exclusion). This pipeline transforms
+      that slice with Koza; it does not ingest raw SemMedDB MySQL dumps.
   data_provision_mechanisms:
     - file_download
   data_formats:
@@ -20,33 +28,87 @@ ingest_info:
 
   relevant_files:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
-      location: "internal graph build artifact"
-      description: "KGX-compatible edges with SemMedDB predicate CURIEs and literature evidence."
-    - file_name: "kg2.10.3-semmeddb-nodes.jsonl (RTX-KG2 SemMedDB slice)"
-      location: "internal graph build artifact"
-      description: "KGX-compatible nodes referenced by the edges subset."
+      location: >-
+        https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
+        (downloaded via semmeddb/download.yaml; decompressed JSONL is the Koza reader input)
+      description: "KGX-compatible edges with Biolink predicates, literature evidence, kg2_ids, and optional qualifiers."
+    - file_name: "kg2.10.3-semmeddb-nodes.jsonl (conceptual / transform output)"
+      location: >-
+        Not a separate download for this ingest; subject/object nodes are emitted by the transform from edge
+        endpoints (PREFIX_TO_CLASS). A full KG2 graph build may ship a companion nodes file elsewhere on rtx-kg2-public.
+      description: "Nodes correspond to CURIEs appearing on included edges after typing by prefix."
 
   included_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      included_records: "Edges whose source predicate is in the selected Biolink predicate set: biolink:treats_or_applied_or_studied_to_treat, biolink:affects, biolink:preventative_for_condition, biolink:coexists_with, biolink:causes, biolink:related_to, biolink:interacts_with, biolink:located_in, biolink:predisposes_to_condition, biolink:disrupts. These are mapped from SEMMEDDB:ADMINISTERED_TO, SEMMEDDB:AFFECTS, SEMMEDDB:ASSOCIATED_WITH, SEMMEDDB:AUGMENTS, SEMMEDDB:CAUSES, SEMMEDDB:COEXISTS_WITH, SEMMEDDB:COMPARED_WITH, SEMMEDDB:DISRUPTS, SEMMEDDB:HIGHER_THAN, SEMMEDDB:INHIBITS, SEMMEDDB:INTERACTS_WITH, SEMMEDDB:ISA, SEMMEDDB:LOCATION_OF (invert), SEMMEDDB:LOWER_THAN, SEMMEDDB:MEASURES, SEMMEDDB:PREDISPOSES, SEMMEDDB:PREVENTS, SEMMEDDB:STIMULATES, SEMMEDDB:TREATS, and SEMMEDDB:XREF. During transform, biolink:preventative_for_condition is remapped to biolink:treats_or_applied_or_studied_to_treat."
-      fields_used: "subject, predicate, object, publications, publications_info, negated, domain_range_exclusion, subject_novelty, object_novelty"
+      # AB: expanded from 10 to 20 Biolink predicates to align with BTE's predicate coverage.
+      # The 10 new predicates (has_part, occurs_in, produces, has_input, diagnoses, precedes,
+      # derives_from, exacerbates_condition, manifestation_of, close_match) were previously
+      # filtered out but are kept by BTE and have legitimate biomedical value.
+      included_records: >-
+        Edges whose Biolink predicate is in the selected set (20 predicates):
+        biolink:affects, biolink:causes, biolink:close_match, biolink:coexists_with,
+        biolink:derives_from, biolink:diagnoses, biolink:disrupts, biolink:exacerbates_condition,
+        biolink:has_input, biolink:has_part, biolink:interacts_with, biolink:located_in,
+        biolink:manifestation_of, biolink:occurs_in, biolink:precedes,
+        biolink:predisposes_to_condition, biolink:preventative_for_condition,
+        biolink:produces, biolink:related_to, biolink:treats_or_applied_or_studied_to_treat.
+        These are mapped by KG2 from original SEMMEDDB predicates:
+        ADMINISTERED_TO, AFFECTS, ASSOCIATED_WITH, AUGMENTS, CAUSES, COEXISTS_WITH,
+        COMPLICATES, CONVERTS_TO, DIAGNOSES, DISRUPTS, INHIBITS, INTERACTS_WITH,
+        LOCATION_OF (inverted), MANIFESTATION_OF, OCCURS_IN, PART_OF (inverted),
+        PRECEDES, PREDISPOSES, PREVENTS, PROCESS_OF, PRODUCES, SAME_AS,
+        STIMULATES, TREATS, USES, XREF.
+        During transform, biolink:preventative_for_condition is remapped to
+        biolink:treats_or_applied_or_studied_to_treat.
+      # AB: updated fields_used to reflect actual fields consumed after refactor.
+      # Removed negated, subject_novelty, object_novelty (not present in KG2 data; dead code removed).
+      # Added qualified_predicate, qualified_object_aspect, qualified_object_direction (qualifier pass-through).
+      # Added kg2_ids (used to filter BTE-excluded original predicates).
+      fields_used: >-
+        subject, predicate, object, publications, publications_info,
+        domain_range_exclusion, kg2_ids,
+        qualified_predicate, qualified_object_aspect, qualified_object_direction
     - file_name: "kg2.10.3-semmeddb-nodes.jsonl"
       included_records: "Only nodes referenced by included edges."
       fields_used: "id, name, category, xrefs (as available)"
 
   filtered_content:
+    # AB: BTE-excluded original predicates are now filtered via kg2_ids parsing.
+    # KG2 maps compared_with, isa, measures, higher_than, lower_than all to biolink:related_to,
+    # making them indistinguishable at the Biolink predicate level. We parse the kg2_ids field
+    # (format: SUBJECT---SEMMEDDB:predicate---OBJECT) to recover the original predicate and
+    # drop records BTE considers low-value. This removes ~1.1M noisy related_to records.
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges with predicates outside the selected set: biolink:exacerbates_condition, biolink:derives_from, biolink:diagnoses, biolink:produces, biolink:close_match, biolink:has_input, biolink:manifestation_of, biolink:occurs_in, biolink:has_part, biolink:precedes. These are mapped from the following source SEMMEDDB predicates: SEMMEDDB:COMPLICATES, SEMMEDDB:CONVERTS_TO (invert), SEMMEDDB:DIAGNOSES, SEMMEDDB:PRODUCES, SEMMEDDB:SAME_AS, SEMMEDDB:USES, SEMMEDDB:MANIFESTATION_OF, SEMMEDDB:OCCURS_IN, SEMMEDDB:PROCESS_OF, SEMMEDDB:PART_OF (invert), SEMMEDDB:PRECEDES. SEMMEDDB predicates dropped in the original RTX-KG2 ingest include: SEMMEDDB:MEASUREMENT_OF, SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, SEMMEDDB:VERB."
-      rationale: "Reduce predicate heterogeneity to a core set used operationally."
+      filtered_records: >-
+        Edges whose original SemMedDB predicate (extracted from kg2_ids) is in the
+        BTE-excluded set: COMPARED_WITH, ISA, MEASURES, HIGHER_THAN, LOWER_THAN.
+        All five map to biolink:related_to in KG2 but are removed because BTE
+        considers them non-informative for knowledge graph use.
+      rationale: "Align with BTE filtering of low-value predicates hidden inside biolink:related_to."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges lacking publication evidence payload"
-      rationale: "Ensure each edge has traceable literature support."
+      filtered_records: "Predicates dropped by the original RTX-KG2 ingest: SEMMEDDB:MEASUREMENT_OF, SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, SEMMEDDB:VERB."
+      rationale: "These predicates are removed upstream by KG2 before we receive the data."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Self-loops for specific relation types"
-      rationale: "Avoid trivial or uninformative self-relations."
+      filtered_records: "Edges with 3 or fewer publications"
+      rationale: "Ensure each edge has meaningful literature support; singleton text-mining extractions are noisy."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Domain/range violations per exclusion configuration when present"
-      rationale: "Improve semantic coherence against Biolink-like domain/range expectations."
+      filtered_records: "Edges where domain_range_exclusion is True"
+      rationale: "Remove semantically incoherent subject/object type combinations flagged by KG2."
+    # AB: Publication cap ported from semmeddb_pmid_cap branch (#342).
+    # Some SemMedDB edges have 60k+ PMIDs, producing massive output rows.
+    # Only triggers for edges with >200 PMIDs (rare extreme cases).
+    # We keep the union of the top-100-by-confidence and top-100-by-recency
+    # (at most ~200 total). Confidence = min(subject_score, object_score);
+    # recency = 4-digit publication year.
+    # Set env var SEMMEDDB_UNCAPPED=1 to produce an uncapped build.
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: >-
+        For edges with more than 200 publications, the publication list is trimmed
+        to the union of top-100 by confidence score (min of subject/object score) and
+        top-100 by recency (publication year), yielding at most ~200 PMIDs per edge.
+        This only affects rare extreme cases (some edges have 60k+ PMIDs).
+        Disabled when SEMMEDDB_UNCAPPED=1 environment variable is set.
+      rationale: "Prevent oversized edges while retaining the most informative publications by two orthogonal strategies. Configurable for uncapped builds."
 
   # KNOWN ISSUES AND WARNINGS (Manual QA 1 fixes)
   # We document stuff that might look weird but is expected behavior.
@@ -83,29 +145,61 @@ ingest_info:
       resolution: "Accepted as expected warnings. Data is kept because it has scientific value from literature."
 
     # Issue 2: original_json property in KGX summary
-    # The KGX summary tool shows original_json as an edge property but you won't
-    # find it in the actual normalized edges file. This is just how KGX works -
-    # it tracks some internal stuff that gets cleaned up during normalization.
-    # Nothing is wrong, it's just a display thing in the summary report.
     - issue: "KGX summary shows original_json property not in output"
       description: "The KGX summary report lists original_json as an edge property, but this property is not in the final normalized_edges.jsonl file. This is normal KGX behavior - the property exists in intermediate processing but gets stripped during normalization."
       resolution: "Expected behavior from KGX tooling. No action needed."
 
+    # AB: Issue 3: qualifier aspect mismatch with BTE.
+    # KG2 uses "activity" for stimulates/inhibits but BTE uses "activity_or_abundance" uniformly.
+    # Per DINGO call 2026-03-31, we pass KG2 qualifier values as-is rather than remapping.
+    - issue: "Qualifier object_aspect_qualifier differs from BTE for stimulates/inhibits"
+      description: >-
+        KG2 maps stimulates and inhibits to object_aspect_qualifier=activity, while BTE
+        maps all three (stimulates, inhibits, augments) to activity_or_abundance. Only
+        augments matches between KG2 and BTE. This is a known divergence accepted per
+        DINGO call decision (2026-03-31) to pass through KG2 qualifier values as-is.
+      resolution: "Accepted divergence. KG2 qualifiers passed through without remapping."
+
+    # AB: Issue 4: KG2 strips several SemMedDB fields we cannot recover.
+    # negated, subject_novelty, object_novelty, subject_semtype, object_semtype,
+    # subject_name, object_name are all absent from the KG2 pre-processed file.
+    # This means we cannot replicate BTE's per-metatriple publication thresholds
+    # (which require semantic types) or negation filtering.
+    - issue: "Missing fields in KG2 pre-processed data"
+      description: >-
+        The KG2 pre-processed file strips negated, subject_novelty, object_novelty,
+        subject_semtype, object_semtype, subject_name, and object_name. This prevents
+        us from filtering negated statements, applying novelty thresholds, or using
+        BTE's per-metatriple publication count thresholds (which require semantic types).
+        Resolving this would require a re-ingest from raw SemMedDB data.
+      resolution: "Known limitation of KG2-based approach. Documented for future consideration."
+
 target_info:
   infores_id: infores:translator-semmeddb-kgx
 
-  # Manual QA fixes
   edge_type_info:
     - predicates:
+        # AB: expanded to all 19 output predicates (20 YAML entries minus
+        # preventative_for_condition which gets remapped to treats_or_applied_or_studied_to_treat).
         - biolink:affects
-        - biolink:located_in
-        - biolink:related_to
-        - biolink:interacts_with
-        - biolink:coexists_with
-        - biolink:treats_or_applied_or_studied_to_treat
         - biolink:causes
+        - biolink:close_match
+        - biolink:coexists_with
+        - biolink:derives_from
+        - biolink:diagnoses
         - biolink:disrupts
+        - biolink:exacerbates_condition
+        - biolink:has_input
+        - biolink:has_part
+        - biolink:interacts_with
+        - biolink:located_in
+        - biolink:manifestation_of
+        - biolink:occurs_in
+        - biolink:precedes
         - biolink:predisposes_to_condition
+        - biolink:produces
+        - biolink:related_to
+        - biolink:treats_or_applied_or_studied_to_treat
       knowledge_level:
         - not_provided
       agent_type:
@@ -119,8 +213,28 @@ target_info:
         - original_subject
         - original_object
         - sources
+        # AB: qualifier fields now passed through from KG2 data.
+        # These appear on edges where the original SemMedDB predicate was
+        # stimulates, inhibits, or augments (all mapped to biolink:affects by KG2).
+        # The qualifier values preserve the original semantic distinction that would
+        # otherwise be lost in the collapse to biolink:affects.
+        - qualified_predicate
+        - object_aspect_qualifier
+        - object_direction_qualifier
+      # AB: updated association categories. Records with qualifiers route to specific
+      # Biolink Association subclasses based on subject/object entity types to ensure
+      # structured qualifier fields survive pydantic model_dump() serialization.
+      association_categories:
+        - biolink:Association
+        - biolink:CausalGeneToDiseaseAssociation
+        - biolink:GeneToPhenotypicFeatureAssociation
+        - biolink:ChemicalAffectsGeneAssociation
+        - biolink:GeneAffectsChemicalAssociation
+        - biolink:GeneRegulatesGeneAssociation
+        - biolink:ChemicalAffectsBiologicalEntityAssociation
       notes:
         - "Supporting text snippets are retained in has_supporting_studies -> has_study_results -> supporting_text; there is no top-level supporting_text edge property."
+        - "Qualifier fields (qualified_predicate, object_aspect_qualifier, object_direction_qualifier) appear only on biolink:affects edges derived from stimulates, inhibits, or augments."
       ui_explanation: "SemMedDB data are generated by an automated text-mining agent that extracts relationships from biomedical literature. The record represents text evidence that [SUBJECT] and [OBJECT] were reported with [RELATIONSHIP] in the source literature."
       source_files:
         - kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)
@@ -169,6 +283,10 @@ target_info:
 future_considerations:
   - category: edge_properties
     consideration: "Expand SemMedDB evidence payloads (supporting snippets, evidence counts, and confidence scores) after validating downstream UI and KG constraints."
+  # AB: if we ever move to a raw SemMedDB ingest, we could recover negated statements,
+  # novelty scores, semantic types (for per-metatriple thresholds), and node names.
+  - category: data_source
+    consideration: "Evaluate re-ingesting from raw SemMedDB to recover fields stripped by KG2 (negated, novelty, semantic types, node names) and enable full BTE-parity filtering."
 
 provenance_info:
   contributions:
