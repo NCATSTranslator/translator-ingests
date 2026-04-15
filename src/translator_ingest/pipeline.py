@@ -20,7 +20,7 @@ from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
 from orion.meta_kg import MetaKnowledgeGraphBuilder
-from orion.kgx_metadata import KGXGraphMetadata, analyze_graph
+from orion.kgx_metadata import KGXGraphMetadata, generate_schema
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
@@ -531,7 +531,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Generate test data and example edges
     test_data(pipeline_metadata)
 
-    # Get KGXSource metadata from the rig file
+    # Get KGXKnowledgeSource metadata from the rig file
     data_source_info = get_kgx_source_from_rig(pipeline_metadata.source)
     data_source_info.version = pipeline_metadata.source_version
 
@@ -550,7 +550,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         date_created=datetime.now().strftime("%Y_%m_%d"),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.node_norm_version,
-        kgx_sources=[data_source_info]
+        knowledge_sources=[data_source_info]
     )
 
     # get paths to the final nodes and edges files
@@ -563,15 +563,14 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     if max_edge_count == 0 and (graph_edges_file_path is None or not Path(graph_edges_file_path).exists()):
         logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, use the source_metadata as is without analysis
-        # TODO get analyze_graph working for nodes-only
+        # TODO get generate_schema working for nodes-only
         graph_metadata = asdict(source_metadata)
     else:
         # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
-        graph_metadata = analyze_graph(
-            nodes_file_path=graph_nodes_file_path,
-            edges_file_path=graph_edges_file_path,
-            graph_metadata=source_metadata,
-        )
+        source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
+                                                 edges_file_path=graph_edges_file_path,
+                                                 biolink_version=pipeline_metadata.biolink_version)
+        graph_metadata = source_metadata.to_json()
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)

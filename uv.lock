@@ -323,7 +323,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.35.2" },
     { name = "psycopg", extras = ["binary"] },
     { name = "requests" },
-    { name = "robokop-orion", specifier = "==0.1.15" },
+    { name = "robokop-orion", specifier = "==0.2.0" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
     { name = "xmltodict", specifier = ">=1.0.2" },
     { name = "zstandard", specifier = ">=0.25.0" },
@@ -2783,16 +2783,16 @@ wheels = [
 
 [[package]]
 name = "pydantic-settings"
-version = "2.12.0"
+version = "2.13.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/43/4b/ac7e0aae12027748076d72a8764ff1c9d82ca75a7a52622e67ed3f765c54/pydantic_settings-2.12.0.tar.gz", hash = "sha256:005538ef951e3c2a68e1c08b292b5f2e71490def8589d4221b95dab00dafcfd0", size = 194184, upload-time = "2025-11-10T14:25:47.013Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/6d/fffca34caecc4a3f97bda81b2098da5e8ab7efc9a66e819074a11955d87e/pydantic_settings-2.13.1.tar.gz", hash = "sha256:b4c11847b15237fb0171e1462bf540e294affb9b86db4d9aa5c01730bdbe4025", size = 223826, upload-time = "2026-02-19T13:45:08.055Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/60/5d4751ba3f4a40a6891f24eec885f51afd78d208498268c734e256fb13c4/pydantic_settings-2.12.0-py3-none-any.whl", hash = "sha256:fddb9fd99a5b18da837b29710391e945b1e30c135477f484084ee513adb93809", size = 51880, upload-time = "2025-11-10T14:25:45.546Z" },
+    { url = "https://files.pythonhosted.org/packages/00/4b/ccc026168948fec4f7555b9164c724cf4125eac006e176541483d2c959be/pydantic_settings-2.13.1-py3-none-any.whl", hash = "sha256:d56fd801823dbeae7f0975e1f8c8e25c258eb75d278ea7abb5d9cebb01b56237", size = 58929, upload-time = "2026-02-19T13:45:06.034Z" },
 ]
 
 [[package]]
@@ -3185,7 +3185,7 @@ wheels = [
 
 [[package]]
 name = "requests"
-version = "2.32.5"
+version = "2.33.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -3193,9 +3193,9 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/a4/98b9c7c6428a668bf7e42ebb7c79d576a1c3c1e3ae2d47e674b468388871/requests-2.33.1.tar.gz", hash = "sha256:18817f8c57c6263968bc123d237e3b8b08ac046f5456bd1e307ee8f4250d3517", size = 134120, upload-time = "2026-03-30T16:09:15.531Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/8e/7540e8a2036f79a125c1d2ebadf69ed7901608859186c856fa0388ef4197/requests-2.33.1-py3-none-any.whl", hash = "sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a", size = 64947, upload-time = "2026-03-30T16:09:13.83Z" },
 ]
 
 [package.optional-dependencies]
@@ -3288,27 +3288,27 @@ wheels = [
 
 [[package]]
 name = "robokop-genetics"
-version = "0.7.0"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bmt" },
     { name = "redis" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/41/a6/75b9edf1186d3dbfb485910b40570ea9c7452ffce195934de2a40d17167f/robokop_genetics-0.7.0.tar.gz", hash = "sha256:87eb12250867c18f7e149d869fe9173f664f83e90d6c7b910303fd9ba9efc931", size = 18837, upload-time = "2025-10-07T07:18:29.144Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/17/063c21735ef3ce7fb5abb3d3c7bae122db37e45185ecec510bcab3dfb2b2/robokop_genetics-0.8.0.tar.gz", hash = "sha256:4aeb333e5b373b7e2d72f4d56329748a559f4196d0360e7b7d23d4c1a58a1985", size = 18669, upload-time = "2026-04-07T04:08:32.127Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/96/7e941b2ad392429aac56b0826965534e79edff20784eb767c702cab8fbef/robokop_genetics-0.7.0-py3-none-any.whl", hash = "sha256:fe33f004138f5feb5c43157411b146411bf249b97a1a6900348607f874dd8494", size = 18695, upload-time = "2025-10-07T07:18:27.895Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/e8/dd70c2cc4e0e076d31a0266aaeb710620d987016eddc65c84f2dee08d07f/robokop_genetics-0.8.0-py3-none-any.whl", hash = "sha256:3ea16f1c72d8c0f3a4f73f9e5c7122347c304b425aafc3d67906ebc68d56fefe", size = 18313, upload-time = "2026-04-07T04:08:30.278Z" },
 ]
 
 [[package]]
 name = "robokop-orion"
-version = "0.1.15"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bmt" },
     { name = "jsonlines" },
     { name = "orjson" },
-    { name = "python-dotenv" },
+    { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-toolbelt" },
@@ -3316,9 +3316,9 @@ dependencies = [
     { name = "uuid-utils" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/75/b5/f3901786b6f8edff27fb2481d61621ef7edc37d7367bd59387f18daf906a/robokop_orion-0.1.15.tar.gz", hash = "sha256:ae93685024a4636fc7c03eef973d433f858b117021ba346e659adfdeed86bfaa", size = 84823, upload-time = "2026-03-19T03:34:56.168Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/93/8c73a982a004b986257dcb42dd37d081319d37e04d2846602698775dcdf8/robokop_orion-0.2.0.tar.gz", hash = "sha256:1e1a5225fa9f30fd107446e27ffb12aa2d0e41b94ea4e3267786cdc2e8ae69f8", size = 94192, upload-time = "2026-04-15T21:20:44.493Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/35/b4/6a2b45a7c8fc22c7be8439c33812f7dfb05c15b1ac1d7c7325bdeae547c6/robokop_orion-0.1.15-py3-none-any.whl", hash = "sha256:41a5367af7fda52eb172d8a3fdb26dcdd984d64ed48bbcd8e45770e4628aad2d", size = 97865, upload-time = "2026-03-19T03:34:57.283Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/e2/9991091ef7bacf090f62f90d0f2ad5be6a97211adc71083f80327cd72642/robokop_orion-0.2.0-py3-none-any.whl", hash = "sha256:537ff044fa7fd383b2e7d3aee38cf8f0e8141967179b95a0ee1fc2d516ea404b", size = 109934, upload-time = "2026-04-15T21:20:43.436Z" },
 ]
 
 [[package]]

@@ -2,7 +2,7 @@ import yaml
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict
 
-from orion.kgx_metadata import KGXSource
+from orion.kgx_metadata import KGXKnowledgeSource
 
 from translator_ingest import INGESTS_PARSER_PATH
 
@@ -34,7 +34,7 @@ class PipelineMetadata:
         del(pipeline_metadata_dict['koza_config'])
         return pipeline_metadata_dict
 
-def get_kgx_source_from_rig(source: str) -> KGXSource:
+def get_kgx_source_from_rig(source: str) -> KGXKnowledgeSource:
     """Read a source's rig YAML file and create a KGXSource instance."""
     rig_yaml_file = INGESTS_PARSER_PATH / source / f"{source}_rig.yaml"
     if not rig_yaml_file.exists():
@@ -45,8 +45,8 @@ def get_kgx_source_from_rig(source: str) -> KGXSource:
         rig_name = rig_data.get("name", source)
         rig_source_info = rig_data["source_info"]
 
-    return KGXSource(
-        id=source,
+    return KGXKnowledgeSource(
+        identifier=source,
         name=rig_name if rig_name else source,
         description=rig_source_info.get("description", ""),
         license=rig_source_info.get("terms_of_use_info", ""),

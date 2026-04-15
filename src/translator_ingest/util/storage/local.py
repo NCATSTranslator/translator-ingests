@@ -141,5 +141,7 @@ def write_ingest_file(file_type: IngestFileType,
     output_file_path = get_versioned_file_paths(
         file_type=file_type, pipeline_metadata=pipeline_metadata
     )
+    if not isinstance(data, str):
+        data = json.dumps(data, indent=2)
     with output_file_path.open("w") as output_file:
-        output_file.write(json.dumps(data, indent=2))
+        output_file.write(data)

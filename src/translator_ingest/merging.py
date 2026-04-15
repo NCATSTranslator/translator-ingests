@@ -6,7 +6,7 @@ from pathlib import Path
 
 from orion.kgx_file_merger import KGXFileMerger, DONT_MERGE
 from orion.kgxmodel import GraphSpec, SubGraphSource
-from orion.kgx_metadata import KGXGraphMetadata, KGXSource, analyze_graph
+from orion.kgx_metadata import KGXGraphMetadata, KGXKnowledgeSource, generate_schema
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, atomic_copy_directory
@@ -57,6 +57,7 @@ def merge_single(
         graph_output_format="jsonl",
         add_edge_id=True,
         edge_id_type="uuid",
+        overwrite_edge_ids=False,
         sources=[
             SubGraphSource(
                 id=source_id,
@@ -166,7 +167,7 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
     logger.info(f"Release generated for merged graph {merged_graph_metadata.source}... ")
 
 
-def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[PipelineMetadata, list[KGXSource]]:
+def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[PipelineMetadata, list[KGXKnowledgeSource]]:
     """Use ORION to merge multiple sources together into a single KGX output.
     Note that this process skips writing files to the data/storage directory and immediately generates a release,
     unlike single_merge and single-ingest merges done by the pipeline.
@@ -208,7 +209,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         biolink_versions.add(pipeline_metadata.biolink_version)
         babel_versions.add(pipeline_metadata.node_norm_version)
 
-        # Get KGXSource metadata from the rig file
+        # Get KGXKnowledgeSource metadata from the rig file
         data_source_info = get_kgx_source_from_rig(source)
         data_source_info.version = pipeline_metadata.source_version
         kgx_sources.append(data_source_info)
@@ -304,12 +305,12 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
 
     return merged_graph_metadata, kgx_sources
 
-def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[KGXSource], overwrite: bool = False):
+def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[KGXKnowledgeSource], overwrite: bool = False):
     """Generate graph metadata for a merged graph.
 
     Args:
         pipeline_metadata: PipelineMetadata instance for the merged graph
-        kgx_sources: List of KGXSource metadata instances for each source in the merge
+        kgx_sources: List of KGXKnowledgeSource metadata instances for each source in the merge
         overwrite: Whether to overwrite existing metadata
     """
     graph_id = pipeline_metadata.source
@@ -342,16 +343,14 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[
         date_created=datetime.datetime.now().strftime("%Y_%m_%d"),
         biolink_version=biolink_version,
         babel_version=babel_version,
-        kgx_sources=kgx_sources
+        knowledge_sources=kgx_sources,
     )
+    source_metadata.schema = generate_schema(nodes_file_path=str(merged_graph_nodes),
+                                             edges_file_path=str(merged_graph_edges),
+                                             biolink_version=biolink_version)
 
-    graph_metadata = analyze_graph(
-        nodes_file_path=str(merged_graph_nodes),
-        edges_file_path=str(merged_graph_edges),
-        graph_metadata=source_metadata
-    )
     with graph_metadata_file_path.open("w") as output_file:
-        output_file.write(json.dumps(graph_metadata, indent=2))
+        output_file.write(source_metadata.to_json())
     logger.info(f"Graph metadata complete for {graph_id} ({release_version}).")
 
 

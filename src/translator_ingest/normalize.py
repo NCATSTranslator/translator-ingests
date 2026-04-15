@@ -66,6 +66,7 @@ def normalize_kgx_files(
         "edges_output_file_path": str(edges_output_file_path),
         "edge_norm_predicate_map_file_path": str(predicate_map_file_path),
         "preserve_unconnected_nodes": max_edge_count == 0,  # True for nodes-only
+        "predicates_pre_normalized": True,
     })
 
     file_normalizer = KGXFileNormalizer(**normalizer_kwargs)
