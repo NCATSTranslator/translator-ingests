@@ -389,7 +389,6 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     predicate = record.get("predicate")
     object_id = record.get("object")
     relation = record.get("relation")
-    edge_id = record.get("id")
 
     if not all([subject_id, predicate, object_id]):
         return None
@@ -415,7 +414,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 
     # Build association kwargs with all fields
     assoc_kwargs = {
-        "id": edge_id,
+        "id": entity_id(),
         "subject": subject_id,
         "predicate": predicate,
         "object": object_id,
