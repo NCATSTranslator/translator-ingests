@@ -4,9 +4,7 @@ import hashlib
 import datetime
 from pathlib import Path
 
-from orion.kgx_file_merger import KGXFileMerger, DONT_MERGE
-from orion.kgxmodel import GraphSpec, SubGraphSource
-from orion.kgx_metadata import KGXGraphMetadata, KGXKnowledgeSource, generate_schema
+from orion import KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, generate_schema, GraphSpec, SubGraphSource
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, atomic_copy_directory
@@ -228,7 +226,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         graph_spec_sources.append(SubGraphSource(id=source,
                                                  file_paths=files_to_merge,
                                                  graph_version=pipeline_metadata.source_version,
-                                                 merge_strategy=DONT_MERGE))
+                                                 merge_strategy=KGXFileMerger.DONT_MERGE))
         graph_source_versions.append(pipeline_metadata.build_version)
 
     # Validate that all sources have the same biolink and babel versions

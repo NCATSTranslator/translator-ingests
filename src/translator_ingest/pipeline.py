@@ -19,8 +19,7 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion.meta_kg import MetaKnowledgeGraphBuilder
-from orion.kgx_metadata import KGXGraphMetadata, generate_schema
+from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single

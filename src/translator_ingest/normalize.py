@@ -3,8 +3,7 @@ import tempfile
 
 from pathlib import Path
 
-from orion.kgx_file_normalizer import KGXFileNormalizer
-from orion.normalization import NodeNormalizer, NormalizationScheme
+from orion import KGXFileNormalizer, NodeNormalizer, NormalizationScheme
 
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.logging_utils import get_logger

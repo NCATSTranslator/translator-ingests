@@ -2,7 +2,7 @@ import yaml
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict
 
-from orion.kgx_metadata import KGXKnowledgeSource
+from orion import KGXKnowledgeSource
 
 from translator_ingest import INGESTS_PARSER_PATH
 
