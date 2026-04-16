@@ -1,7 +1,7 @@
 from typing import Dict
+from unittest.mock import patch, Mock
 
 from src.translator_ingest.util.http_utils import post_query
-from orion.normalization import NODE_NORMALIZATION_URL
 
 
 def test_post_invalid_url_query():
@@ -10,5 +10,19 @@ def test_post_invalid_url_query():
 
 
 def test_post_query():
-    returned: Dict = post_query(url=NODE_NORMALIZATION_URL + "get_normalized_nodes", query={"curies": ["HGNC:12791"]})
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "HGNC:12791": {
+            "id": {"identifier": "HGNC:12791", "label": "TP53"},
+            "type": ["biolink:Gene"],
+        }
+    }
+
+    with patch("translator_ingest.util.http_utils.requests.post", return_value=mock_response):
+        returned: Dict = post_query(
+            url="https://mock-url.com/get_normalized_nodes",
+            query={"curies": ["HGNC:12791"]},
+        )
     assert "HGNC:12791" in returned.keys()
+    assert returned["HGNC:12791"]["id"]["identifier"] == "HGNC:12791"
