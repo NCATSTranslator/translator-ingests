@@ -1,7 +1,7 @@
 """
 HPOA processing utility methods
 """
-from typing import Optional, Union
+from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
