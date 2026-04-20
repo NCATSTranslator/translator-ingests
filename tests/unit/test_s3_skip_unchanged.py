@@ -416,6 +416,8 @@ def test_upload_and_cleanup_aggregates_total_skipped(tmp_path, monkeypatch):
         data_sources=["go_cam"],
         release_sources=[],
         cleanup=False,
+        upload_reports=False,  # tested separately, see test_upload_reports_* below
+        upload_logs=False,     # tested separately, see test_upload_logs_* below
     )
 
     assert results["total_uploaded"] == 1  # edges.jsonl
@@ -424,3 +426,256 @@ def test_upload_and_cleanup_aggregates_total_skipped(tmp_path, monkeypatch):
     per_source = results["per_source_stats"]["go_cam"]["data_upload"]
     assert per_source["uploaded"] == 1
     assert per_source["skipped"] == 1
+
+
+# ── Reports upload ───────────────────────────────────────────────────────────
+
+
+def test_upload_reports_missing_dir_returns_zero_stats(uploader, tmp_path, monkeypatch):
+    """upload_reports handles a missing reports directory gracefully."""
+    monkeypatch.setattr(
+        "translator_ingest.util.storage.s3.REPORTS_BASE", tmp_path / "does-not-exist",
+    )
+
+    stats = uploader.upload_reports()
+
+    assert stats["uploaded"] == 0
+    assert stats["skipped"] == 0
+    assert stats["failed"] == 0
+    assert uploader.s3_client.upload_calls == []
+
+
+def test_upload_reports_uploads_all_files_under_reports_prefix(uploader, tmp_path, monkeypatch):
+    """upload_reports uploads every file in /reports/ to s3://bucket/reports/."""
+    reports_dir = tmp_path / "reports"
+    _write(reports_dir / "2026_04_15" / "build-report.json", b'{"status": "ok"}')
+    _write(reports_dir / "2026_04_15" / "stages" / "run" / "_summary.json", b'{"stage": "RUN"}')
+    _write(reports_dir / "upload-results-latest.json", b'{"latest": true}')
+    monkeypatch.setattr("translator_ingest.util.storage.s3.REPORTS_BASE", reports_dir)
+
+    stats = uploader.upload_reports()
+
+    assert stats["uploaded"] == 3
+    assert stats["skipped"] == 0
+    assert stats["failed"] == 0
+    # All S3 keys are prefixed with "reports/"
+    assert all(k.startswith("reports/") for k in uploader.s3_client.upload_calls)
+    assert "reports/2026_04_15/build-report.json" in uploader.s3_client.upload_calls
+    assert "reports/2026_04_15/stages/run/_summary.json" in uploader.s3_client.upload_calls
+    assert "reports/upload-results-latest.json" in uploader.s3_client.upload_calls
+
+
+def test_upload_reports_skips_unchanged_files(uploader, tmp_path, monkeypatch):
+    """On second call, identical report files are skipped (no LastModified reset)."""
+    reports_dir = tmp_path / "reports"
+    _write(reports_dir / "2026_04_15" / "report.json", b'{"unchanged": true}')
+    monkeypatch.setattr("translator_ingest.util.storage.s3.REPORTS_BASE", reports_dir)
+
+    # First upload
+    first = uploader.upload_reports()
+    assert first["uploaded"] == 1
+    assert first["skipped"] == 0
+
+    uploader.s3_client.upload_calls.clear()
+
+    # Second upload: same content -> skip
+    second = uploader.upload_reports()
+    assert second["uploaded"] == 0
+    assert second["skipped"] == 1
+    assert uploader.s3_client.upload_calls == []
+
+
+def test_upload_and_cleanup_includes_reports_upload_by_default(tmp_path, monkeypatch):
+    """upload_and_cleanup uploads /reports/ when upload_reports=True (the default)."""
+    data_dir = tmp_path / "data"
+    releases_dir = tmp_path / "releases"
+    reports_dir = tmp_path / "reports"
+    data_dir.mkdir()
+    releases_dir.mkdir()
+    _write(reports_dir / "2026_04_15" / "report.json", b'{"build": 1}')
+
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_DATA_PATH", str(data_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_RELEASES_PATH", str(releases_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.REPORTS_BASE", reports_dir)
+
+    fake_client = FakeS3Client()
+    monkeypatch.setattr(
+        "translator_ingest.util.storage.s3.boto3.client",
+        lambda *_, **__: fake_client,
+    )
+
+    results = upload_and_cleanup(
+        data_sources=[],
+        release_sources=[],
+        cleanup=False,
+        upload_logs=False,  # logs upload tested separately
+    )
+
+    assert results["reports_upload"] is not None
+    assert results["reports_upload"]["uploaded"] == 1
+    assert results["total_uploaded"] == 1
+    # The report file ends up under the reports/ prefix on S3
+    assert "reports/2026_04_15/report.json" in fake_client.upload_calls
+
+
+def test_upload_and_cleanup_skips_reports_when_disabled(tmp_path, monkeypatch):
+    """upload_reports=False leaves /reports/ alone (None in results, no upload)."""
+    data_dir = tmp_path / "data"
+    releases_dir = tmp_path / "releases"
+    reports_dir = tmp_path / "reports"
+    data_dir.mkdir()
+    releases_dir.mkdir()
+    _write(reports_dir / "2026_04_15" / "report.json", b'{"build": 1}')
+
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_DATA_PATH", str(data_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_RELEASES_PATH", str(releases_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.REPORTS_BASE", reports_dir)
+
+    fake_client = FakeS3Client()
+    monkeypatch.setattr(
+        "translator_ingest.util.storage.s3.boto3.client",
+        lambda *_, **__: fake_client,
+    )
+
+    results = upload_and_cleanup(
+        data_sources=[],
+        release_sources=[],
+        cleanup=False,
+        upload_reports=False,
+        upload_logs=False,
+    )
+
+    assert results["reports_upload"] is None
+    assert fake_client.upload_calls == []
+
+
+# ── Logs upload ──────────────────────────────────────────────────────────────
+
+
+def test_upload_logs_missing_dir_returns_zero_stats(uploader, tmp_path, monkeypatch):
+    """upload_logs handles a missing logs directory gracefully."""
+    monkeypatch.setattr(
+        "translator_ingest.util.storage.s3.INGESTS_LOGS_PATH", tmp_path / "does-not-exist",
+    )
+
+    stats = uploader.upload_logs()
+
+    assert stats["uploaded"] == 0
+    assert stats["skipped"] == 0
+    assert stats["failed"] == 0
+    assert uploader.s3_client.upload_calls == []
+
+
+def test_upload_logs_uploads_all_files_under_logs_prefix(uploader, tmp_path, monkeypatch):
+    """upload_logs uploads every file in /logs/ to s3://bucket/logs/ preserving the tree."""
+    logs_dir = tmp_path / "logs"
+    _write(logs_dir / "run" / "2026_04_15_070744" / "run.log", b"run log content")
+    _write(logs_dir / "merge" / "2026_04_15_070744" / "merge.log", b"merge log content")
+    _write(logs_dir / "errors" / "2026_04_15_070744" / "errors.log", b"")
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_LOGS_PATH", logs_dir)
+
+    stats = uploader.upload_logs()
+
+    assert stats["uploaded"] == 3
+    assert stats["skipped"] == 0
+    assert stats["failed"] == 0
+    # All S3 keys are prefixed with "logs/" and preserve the stage/timestamp tree
+    assert all(k.startswith("logs/") for k in uploader.s3_client.upload_calls)
+    assert "logs/run/2026_04_15_070744/run.log" in uploader.s3_client.upload_calls
+    assert "logs/merge/2026_04_15_070744/merge.log" in uploader.s3_client.upload_calls
+    assert "logs/errors/2026_04_15_070744/errors.log" in uploader.s3_client.upload_calls
+
+
+def test_upload_logs_skips_unchanged_timestamped_dirs(uploader, tmp_path, monkeypatch):
+    """Timestamped log dirs from prior builds skip on subsequent uploads.
+
+    This is what preserves LastModified on old log directories so they keep
+    their historical timestamps instead of getting overwritten each build.
+    """
+    logs_dir = tmp_path / "logs"
+    _write(logs_dir / "run" / "2026_04_15_070744" / "run.log", b"older build log")
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_LOGS_PATH", logs_dir)
+
+    # First build uploads the log
+    first = uploader.upload_logs()
+    assert first["uploaded"] == 1
+    assert first["skipped"] == 0
+
+    uploader.s3_client.upload_calls.clear()
+
+    # Second build: same old log dir still present, plus a new timestamped dir
+    _write(logs_dir / "run" / "2026_04_16_020700" / "run.log", b"new build log")
+    second = uploader.upload_logs()
+
+    # Only the new log is uploaded; old one is skipped -> LastModified preserved
+    assert second["uploaded"] == 1
+    assert second["skipped"] == 1
+    assert uploader.s3_client.upload_calls == ["logs/run/2026_04_16_020700/run.log"]
+
+
+def test_upload_and_cleanup_includes_logs_upload_by_default(tmp_path, monkeypatch):
+    """upload_and_cleanup uploads /logs/ when upload_logs=True (the default)."""
+    data_dir = tmp_path / "data"
+    releases_dir = tmp_path / "releases"
+    reports_dir = tmp_path / "reports"
+    logs_dir = tmp_path / "logs"
+    data_dir.mkdir()
+    releases_dir.mkdir()
+    reports_dir.mkdir()
+    _write(logs_dir / "run" / "2026_04_15_070744" / "run.log", b"log content")
+
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_DATA_PATH", str(data_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_RELEASES_PATH", str(releases_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.REPORTS_BASE", reports_dir)
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_LOGS_PATH", logs_dir)
+
+    fake_client = FakeS3Client()
+    monkeypatch.setattr(
+        "translator_ingest.util.storage.s3.boto3.client",
+        lambda *_, **__: fake_client,
+    )
+
+    results = upload_and_cleanup(
+        data_sources=[],
+        release_sources=[],
+        cleanup=False,
+        upload_reports=False,  # focus on logs only
+    )
+
+    assert results["logs_upload"] is not None
+    assert results["logs_upload"]["uploaded"] == 1
+    assert "logs/run/2026_04_15_070744/run.log" in fake_client.upload_calls
+
+
+def test_upload_and_cleanup_skips_logs_when_disabled(tmp_path, monkeypatch):
+    """upload_logs=False leaves /logs/ alone (None in results, no upload)."""
+    data_dir = tmp_path / "data"
+    releases_dir = tmp_path / "releases"
+    reports_dir = tmp_path / "reports"
+    logs_dir = tmp_path / "logs"
+    data_dir.mkdir()
+    releases_dir.mkdir()
+    reports_dir.mkdir()
+    _write(logs_dir / "run" / "2026_04_15_070744" / "run.log", b"log content")
+
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_DATA_PATH", str(data_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_RELEASES_PATH", str(releases_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.REPORTS_BASE", reports_dir)
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_LOGS_PATH", logs_dir)
+
+    fake_client = FakeS3Client()
+    monkeypatch.setattr(
+        "translator_ingest.util.storage.s3.boto3.client",
+        lambda *_, **__: fake_client,
+    )
+
+    results = upload_and_cleanup(
+        data_sources=[],
+        release_sources=[],
+        cleanup=False,
+        upload_reports=False,
+        upload_logs=False,
+    )
+
+    assert results["logs_upload"] is None
+    assert fake_client.upload_calls == []

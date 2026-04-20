@@ -35,7 +35,8 @@ from typing import Literal
 import boto3
 from botocore.exceptions import ClientError
 
-from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
+from translator_ingest import INGESTS_DATA_PATH, INGESTS_LOGS_PATH, INGESTS_RELEASES_PATH
+from translator_ingest.util.run_build import REPORTS_BASE
 from translator_ingest.util.logging_utils import get_logger
 from translator_ingest.util.storage.local import IngestFileName
 
@@ -339,6 +340,70 @@ class S3Uploader:
         self.logger.info("Uploading release summary...")
         return self.upload_file(local_path, s3_key)
 
+    def upload_reports(self) -> dict:
+        """Upload the entire /reports/ directory to s3://{bucket}/reports/.
+
+        Reports are build-wide (not per-source) and contain timestamped build
+        summaries, stage breakdowns, and the latest-build symlink/pointer. This
+        makes them visible on the public web view alongside data and releases.
+
+        The ``latest`` symlink is followed during upload (zipfile-style), so
+        its target files appear under ``reports/latest/`` on S3 as a usable copy.
+
+        Returns:
+            Upload statistics dict (same shape as upload_directory()).
+        """
+        local_dir = Path(REPORTS_BASE)
+        s3_prefix = "reports"
+
+        if not local_dir.exists():
+            self.logger.warning(f"Reports directory not found: {local_dir}")
+            return {
+                'uploaded': 0,
+                'skipped': 0,
+                'failed': 0,
+                'bytes_transferred': 0,
+                'uploaded_files': [],
+                'skipped_files': [],
+                'failed_files': [],
+            }
+
+        self.logger.info(f"Uploading reports directory: {local_dir}")
+        return self.upload_directory(local_dir, s3_prefix)
+
+    def upload_logs(self) -> dict:
+        """Upload the entire /logs/ directory to s3://{bucket}/logs/.
+
+        Logs are build-wide and contain per-stage subdirectories
+        (run/, merge/, release/, upload/, errors/), each with timestamped
+        directories plus a ``latest`` symlink. Uploading them to S3 makes
+        them accessible from the public web view alongside reports.
+
+        Skip-if-unchanged applies per-file, so old timestamped log directories
+        with unchanged content are skipped on every upload (their LastModified
+        is preserved). Only log files from the current/new build are uploaded.
+
+        Returns:
+            Upload statistics dict (same shape as upload_directory()).
+        """
+        local_dir = Path(INGESTS_LOGS_PATH)
+        s3_prefix = "logs"
+
+        if not local_dir.exists():
+            self.logger.warning(f"Logs directory not found: {local_dir}")
+            return {
+                'uploaded': 0,
+                'skipped': 0,
+                'failed': 0,
+                'bytes_transferred': 0,
+                'uploaded_files': [],
+                'skipped_files': [],
+                'failed_files': [],
+            }
+
+        self.logger.info(f"Uploading logs directory: {local_dir}")
+        return self.upload_directory(local_dir, s3_prefix)
+
 
 def cleanup_old_source_versions(source: str, keep_latest: bool = True) -> dict:
     """Delete old /data/{source}/{old_versions}/ directories from EBS.
@@ -492,6 +557,8 @@ def upload_and_cleanup(
     data_sources: list[str] | None = None,
     release_sources: list[str] | None = None,
     cleanup: bool = True,
+    upload_reports: bool = True,
+    upload_logs: bool = True,
 ) -> dict:
     """Upload sources to S3 and cleanup EBS, handling data and releases separately.
 
@@ -499,6 +566,10 @@ def upload_and_cleanup(
         data_sources: List of source names to upload from /data (None = skip data uploads)
         release_sources: List of source names to upload from /releases (None = skip release uploads)
         cleanup: If True, cleanup old versions from EBS after successful upload (default: True)
+        upload_reports: If True, also upload the /reports/ directory so build
+            reports are visible on the public web view (default: True)
+        upload_logs: If True, also upload the /logs/ directory so per-stage log
+            files are visible on the public web view (default: True)
 
     Returns:
         Aggregate statistics dictionary:
@@ -509,7 +580,9 @@ def upload_and_cleanup(
                 'total_failed': int,
                 'total_bytes_transferred': int,
                 'total_bytes_freed': int,
-                'per_source_stats': dict
+                'per_source_stats': dict,
+                'reports_upload': dict | None,  # upload_directory stats, or None if skipped
+                'logs_upload': dict | None      # upload_directory stats, or None if skipped
             }
     """
     uploader = S3Uploader()
@@ -596,6 +669,32 @@ def upload_and_cleanup(
         logger.info("Uploading release summary...")
         uploader.upload_release_summary()
 
+    # Upload build reports so they are visible on the public web view
+    reports_stats: dict | None = None
+    if upload_reports:
+        try:
+            reports_stats = uploader.upload_reports()
+            total_uploaded += reports_stats['uploaded']
+            total_skipped += reports_stats.get('skipped', 0)
+            total_failed += reports_stats['failed']
+            total_bytes_transferred += reports_stats['bytes_transferred']
+        except ClientError as e:
+            logger.error(f"Failed to upload reports: {e}")
+            reports_stats = {'error': str(e)}
+
+    # Upload build logs so they are visible on the public web view
+    logs_stats: dict | None = None
+    if upload_logs:
+        try:
+            logs_stats = uploader.upload_logs()
+            total_uploaded += logs_stats['uploaded']
+            total_skipped += logs_stats.get('skipped', 0)
+            total_failed += logs_stats['failed']
+            total_bytes_transferred += logs_stats['bytes_transferred']
+        except ClientError as e:
+            logger.error(f"Failed to upload logs: {e}")
+            logs_stats = {'error': str(e)}
+
     logger.info(
         f"Upload and cleanup complete: {sources_processed} sources processed, "
         f"{total_uploaded} files uploaded, {total_skipped} skipped (unchanged), "
@@ -612,6 +711,8 @@ def upload_and_cleanup(
         'total_bytes_transferred': total_bytes_transferred,
         'total_bytes_freed': total_bytes_freed,
         'per_source_stats': per_source_stats,
+        'reports_upload': reports_stats,
+        'logs_upload': logs_stats,
     }
 
 

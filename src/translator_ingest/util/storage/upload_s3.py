@@ -132,6 +132,30 @@ def print_upload_summary(results: dict[str, Any]) -> None:
             print(f"  Releases cleanup: {releases_cleanup.get('deleted', 0)} releases deleted, "
                   f"{releases_cleanup.get('bytes_freed', 0) / BYTES_PER_GB:.2f} GB freed")
 
+    # Reports upload (build-wide, not per-source)
+    reports_upload = results.get('reports_upload')
+    if reports_upload is not None:
+        print("\nReports upload:")
+        print("-" * 80)
+        if 'error' in reports_upload:
+            print(f"  ERROR - {reports_upload['error']}")
+        else:
+            print(f"  {reports_upload.get('uploaded', 0)} uploaded, "
+                  f"{reports_upload.get('skipped', 0)} skipped, "
+                  f"{reports_upload.get('bytes_transferred', 0) / BYTES_PER_MB:.2f} MB")
+
+    # Logs upload (build-wide, not per-source)
+    logs_upload = results.get('logs_upload')
+    if logs_upload is not None:
+        print("\nLogs upload:")
+        print("-" * 80)
+        if 'error' in logs_upload:
+            print(f"  ERROR - {logs_upload['error']}")
+        else:
+            print(f"  {logs_upload.get('uploaded', 0)} uploaded, "
+                  f"{logs_upload.get('skipped', 0)} skipped, "
+                  f"{logs_upload.get('bytes_transferred', 0) / BYTES_PER_MB:.2f} MB")
+
     print("\n" + "=" * 80 + "\n")
 
 
@@ -146,7 +170,9 @@ def print_upload_summary(results: dict[str, Any]) -> None:
     help="Space-separated list of sources to upload from /releases (e.g., 'translator_kg ctd go_cam')"
 )
 @click.option("--no-cleanup", is_flag=True, help="Skip EBS cleanup after upload")
-def main(sources, data_sources, release_sources, no_cleanup):
+@click.option("--no-reports", is_flag=True, help="Skip uploading /reports/ directory")
+@click.option("--no-logs", is_flag=True, help="Skip uploading /logs/ directory")
+def main(sources, data_sources, release_sources, no_cleanup, no_reports, no_logs):
     """Upload translator-ingests data and releases to S3.
 
     If no sources are specified, automatically discovers sources from /data
@@ -215,12 +241,16 @@ def main(sources, data_sources, release_sources, no_cleanup):
     logger.info("Data sources: %s", data_source_list if data_source_list else "none")
     logger.info("Release sources: %s", release_source_list if release_source_list else "none")
     logger.info("Cleanup: %s", not no_cleanup)
+    logger.info("Upload reports: %s", not no_reports)
+    logger.info("Upload logs: %s", not no_logs)
 
     # Execute upload and cleanup
     results = upload_and_cleanup(
         data_sources=data_source_list,
         release_sources=release_source_list,
-        cleanup=not no_cleanup
+        cleanup=not no_cleanup,
+        upload_reports=not no_reports,
+        upload_logs=not no_logs,
     )
 
     # Print summary
