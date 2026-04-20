@@ -293,6 +293,21 @@ def transform_gene_to_disease_record(
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
+# Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
+# If implemented, they will be called at the beginning and/or end of the transform process.
+@koza.on_data_begin(tag="gene_to_phenotype")
+def on_gene_to_phenotype_data_begin(koza_transform: koza.KozaTransform) -> None:
+    # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.
+    koza_transform.state["example_counter"] = 0
+
+    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
+    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
+    koza_transform.transform_metadata["gene_to_phenotype_ingest"] = {
+        "total_input_records": 0,
+        "missing_hpo_id": 0,
+        "total_edges": 0,
+    }
+
 
 @koza.prepare_data(tag="gene_to_phenotype")
 def prepare_gene_to_phenotype_data(
@@ -360,12 +375,15 @@ def transform_gene_to_phenotype_record(
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing)
              and edges (Association) or None if the data is incomplete
     """
+    koza_transform.transform_metadata["gene_to_phenotype_ingest"]["total_input_records"] += 1
+
     gene_id = "NCBIGene:" + str(record["ncbi_gene_id"])
     gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
     hpo_id = record["hpo_id"]
     if not hpo_id:
         # incomplete data?
+        koza_transform.transform_metadata["gene_to_phenotype_ingest"]["missing_hpo_id"] += 1
         return None
 
     phenotype = PhenotypicFeature(id=hpo_id, **{})
@@ -412,5 +430,7 @@ def transform_gene_to_phenotype_record(
         agent_type=AgentTypeEnum.automated_agent,
         **{},
     )
+
+    koza_transform.transform_metadata["gene_to_phenotype_ingest"]["total_edges"] += 1
 
     return KnowledgeGraph(nodes=[gene, phenotype], edges=[association])
