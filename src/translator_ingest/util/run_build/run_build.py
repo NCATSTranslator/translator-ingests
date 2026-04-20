@@ -156,16 +156,23 @@ def _get_cpu_percent() -> float:
 
 
 def _get_disk_usage_gb() -> dict[str, float]:
-    """Get disk usage for the data partition."""
-    data_path = Path(INGESTS_DATA_PATH)
-    if data_path.exists():
-        usage = psutil.disk_usage(str(data_path))
-        return {
-            "total_gb": usage.total / BYTES_PER_GB,
-            "used_gb": usage.used / BYTES_PER_GB,
-            "free_gb": usage.free / BYTES_PER_GB,
-            "percent": usage.percent,
-        }
+    """Get disk usage for the data partition.
+
+    Walks up from INGESTS_DATA_PATH to the first existing ancestor so disk
+    stats are reported even on a fresh checkout where /data/ has not been
+    created yet. psutil.disk_usage() reports the filesystem containing the
+    given path, so any ancestor on the same filesystem gives the same result.
+    """
+    path = Path(INGESTS_DATA_PATH)
+    for candidate in (path, *path.parents):
+        if candidate.exists():
+            usage = psutil.disk_usage(str(candidate))
+            return {
+                "total_gb": usage.total / BYTES_PER_GB,
+                "used_gb": usage.used / BYTES_PER_GB,
+                "free_gb": usage.free / BYTES_PER_GB,
+                "percent": usage.percent,
+            }
     return {"total_gb": 0, "used_gb": 0, "free_gb": 0, "percent": 0}
 
 
