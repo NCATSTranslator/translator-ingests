@@ -3,7 +3,7 @@ import tarfile
 import tempfile
 
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Optional, Any, Iterable
 
 import koza
 import requests
@@ -46,8 +46,10 @@ def get_latest_version() -> str:
     return version
 
 
-def extract_value(value):
+def extract_value(value) -> Optional[str]:
     """Extract a single value from either a string or a list containing one string."""
+    if not value:
+        return None
     if isinstance(value, list):
         return value[0] if value else None
     return value
@@ -107,8 +109,10 @@ def normalize_id(node_id: str) -> str:
     return node_id
 
 
-def map_causal_predicate_to_biolink(causal_predicate: str) -> str:
+def map_causal_predicate_to_biolink(causal_predicate: Optional[str]) -> str:
     """Map RO causal predicates to Biolink predicates."""
+    if not causal_predicate:
+        return "biolink:related_to"
     # Handle OBO URIs - convert to CURIEs
     if causal_predicate.startswith("obo:") and "#" in causal_predicate:
         # Extract RO ID from URI like obo:RO#RO_0002629
@@ -296,6 +300,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         edges = []
 
         # Process edges with linked validation
+        edge: dict
         for edge in model_data.get("edges", []):
             # Extract values that might be strings or lists
             source_id = extract_value(edge.get("source"))
