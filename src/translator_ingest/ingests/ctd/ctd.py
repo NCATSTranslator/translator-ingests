@@ -50,7 +50,7 @@ EXPOSURE_EVENTS_PREDICATES = {
 # !!! !!! README !!! !!!
 # CTD implemented a CAPTCHA (ALTCHA) on ctdbase.org, which broke dependable programmatic access for determining
 # the version they publish from their website https://ctdbase.org/about/dataStatus.go. Here is a workaround which
-# accesses a path that is not currently blocked by the CAPTCHA. If this stops working that's probably why.
+# accesses a path that is not currently blocked by the CAPTCHA.
 def get_latest_version() -> str:
     """Return the CTD data release label used as ``source_version`` in the pipeline.
 
