@@ -61,7 +61,7 @@ from translator_ingest.util.run_build.utils import (
     update_latest_copy,
 )
 from translator_ingest.util.storage.upload_s3 import discover_data_sources, discover_release_sources
-from translator_ingest.util.storage.s3 import upload_and_cleanup
+from translator_ingest.util.storage.s3 import S3Uploader, upload_and_cleanup
 
 logger = get_logger(__name__)
 
@@ -1645,6 +1645,31 @@ def run_full_build(
     )
 
     text_path, summary_path, json_path = save_report(report, report_dir)
+
+    # ── POST-UPLOAD: re-upload reports and logs so the final files are on S3 ──
+    # The main UPLOAD stage runs before save_report, so build-report.{txt,json},
+    # build-summary.txt, and performance.json (written just above) haven't been
+    # uploaded yet. The upload stage's log file is also still being written at
+    # that point. This final pass catches those files. Skip-if-unchanged makes
+    # it cheap: only the newly-written files actually upload.
+    if upload and display.stage_status.get("UPLOAD") == "completed":
+        logger.info("Uploading final build report and logs to S3...")
+        try:
+            s3_uploader = S3Uploader()
+            reports_final = s3_uploader.upload_reports()
+            logs_final = s3_uploader.upload_logs()
+            logger.info(
+                "Final reports upload: %d uploaded, %d skipped",
+                reports_final.get("uploaded", 0),
+                reports_final.get("skipped", 0),
+            )
+            logger.info(
+                "Final logs upload:    %d uploaded, %d skipped",
+                logs_final.get("uploaded", 0),
+                logs_final.get("skipped", 0),
+            )
+        except Exception:
+            logger.exception("Post-upload of final reports/logs failed (non-fatal)")
 
     logs_dir = LOGS_BASE
     stage_dirs = "stages/run/ stages/merge/ stages/release/"
