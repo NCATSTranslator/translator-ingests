@@ -678,7 +678,12 @@ def test_json_report_roundtrips():
 
 def test_create_report_dir(tmp_path, monkeypatch):
     """create_report_dir creates a timestamped dir with stage subdirectories,
-    plus a 'latest' directory copy (real directory, not a symlink).
+    but does NOT create 'latest' here.
+
+    'latest' is refreshed at the END of the build by finalize_latest_copies(),
+    after all stage summaries and the final build report are written. Creating
+    'latest' at build start would produce an empty shell that never reflects
+    the actual build content.
     """
     monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
     report_dir = create_report_dir()
@@ -689,41 +694,66 @@ def test_create_report_dir(tmp_path, monkeypatch):
     assert (report_dir / "stages" / "release").exists()
     assert (report_dir / "stages" / "upload").exists()
 
+    # 'latest' is populated later, not at build start.
     latest = tmp_path / "latest"
-    # 'latest' is now a real directory copy (matches the releases pattern),
-    # not a symlink, so downstream tools do not need symlink-aware handling.
-    assert latest.is_dir()
-    assert not latest.is_symlink()
-    assert (latest / "stages" / "run").exists()
+    assert not latest.exists()
 
 
-def test_create_report_dir_updates_latest(tmp_path, monkeypatch):
-    """Creating a second report dir refreshes the 'latest' directory to match
-    the new timestamp's contents (prior timestamp dir is kept intact).
+def test_finalize_latest_copies_refreshes_latest_after_build(tmp_path, monkeypatch):
+    """finalize_latest_copies() copies the populated timestamped dir to 'latest'.
 
-    Uses explicit timestamps because the default format has second precision
-    and the test would otherwise be flaky when both calls land in the same second.
+    This simulates what happens at the end of a real build: the timestamped
+    directory has been fully populated with stage summaries and the final
+    build report, and then 'latest' is copied from it.
     """
-    from translator_ingest.util.run_build.utils import update_latest_copy
+    from translator_ingest.util.run_build.run_build import finalize_latest_copies
+
     monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.LOGS_BASE", tmp_path / "logs",
+    )
+    (tmp_path / "logs").mkdir()
 
+    # Build 1: create and populate
     first = create_report_dir(timestamp="2026_04_21_100000")
-    (first / "marker-first.txt").write_text("first")
-
-    second = create_report_dir(timestamp="2026_04_21_100005")
-    (second / "marker-second.txt").write_text("second")
-    # Refresh 'latest' after populating stages, matching what a real build does.
-    update_latest_copy(tmp_path, second.name)
+    (first / "build-report.json").write_text('{"build": 1}')
+    (first / "stages" / "run" / "_summary.json").write_text('{"stage": "RUN"}')
+    finalize_latest_copies("2026_04_21_100000")
 
     latest = tmp_path / "latest"
     assert latest.is_dir()
     assert not latest.is_symlink()
-    # Latest reflects the newest build, not the first one
-    assert (latest / "marker-second.txt").exists()
-    assert not (latest / "marker-first.txt").exists()
-    # First timestamped dir is preserved on disk
+    assert (latest / "build-report.json").read_bytes() == b'{"build": 1}'
+    assert (latest / "stages" / "run" / "_summary.json").exists()
+
+    # Build 2: create, populate, refresh -> latest updates, build 1 dir is preserved
+    second = create_report_dir(timestamp="2026_04_21_100005")
+    (second / "build-report.json").write_text('{"build": 2}')
+    finalize_latest_copies("2026_04_21_100005")
+
+    assert (latest / "build-report.json").read_bytes() == b'{"build": 2}'
     assert first.exists()
-    assert (first / "marker-first.txt").exists()
+    assert (first / "build-report.json").read_bytes() == b'{"build": 1}'
+
+
+def test_finalize_latest_copies_handles_missing_logs_stage_dir(tmp_path, monkeypatch):
+    """finalize_latest_copies() skips log stage dirs that don't exist.
+
+    Guards against attempting to copy from a non-existent timestamped log dir
+    (e.g. if a stage was skipped due to memory pressure and never created
+    its log file).
+    """
+    from translator_ingest.util.run_build.run_build import finalize_latest_copies
+
+    monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.LOGS_BASE", tmp_path / "logs",
+    )
+    (tmp_path / "logs").mkdir()
+
+    create_report_dir(timestamp="2026_04_21_100000")
+    # No logs/{stage}/2026_04_21_100000 dirs exist
+    finalize_latest_copies("2026_04_21_100000")  # should not raise
 
 
 def test_save_report_creates_files(tmp_path):

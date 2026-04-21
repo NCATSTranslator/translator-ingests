@@ -100,15 +100,22 @@ def create_log_dirs(timestamp: str) -> tuple[dict[str, Path], Path]:
     errors_dir.mkdir(parents=True, exist_ok=True)
     error_log_path = errors_dir / "errors.log"
 
-    # Update latest symlinks
-    for stage in (*STAGE_NAMES_LOWER, "errors"):
-        update_latest_copy(LOGS_BASE / stage, timestamp)
+    # NOTE: 'latest' copies for logs are refreshed at the END of the build
+    # (see finalize_latest_copies()), not here. At build start the log files
+    # are empty, so copying them now would leave reports/logs/{stage}/latest/
+    # as empty shells that never get populated with actual content.
 
     return stage_log_paths, error_log_path
 
 
 def create_report_dir(timestamp: str | None = None) -> Path:
-    """Create a timestamped report directory with stage subdirectories and a 'latest' symlink.
+    """Create a timestamped report directory with stage subdirectories.
+
+    The 'latest' copy is NOT created here. At build start these directories
+    are empty shells, so copying them now would produce an empty
+    reports/latest/ that never gets the actual content (stage summaries,
+    build report, performance.json). 'latest' is refreshed at the end of
+    the build instead, via finalize_latest_copies().
 
     Args:
         timestamp: Optional timestamp string (default: generate from current time)
@@ -125,9 +132,25 @@ def create_report_dir(timestamp: str | None = None) -> Path:
     for stage in STAGE_NAMES_LOWER:
         (report_dir / "stages" / stage).mkdir(parents=True, exist_ok=True)
 
-    update_latest_copy(REPORTS_BASE, report_dir.name)
-
     return report_dir
+
+
+def finalize_latest_copies(timestamp: str) -> None:
+    """Refresh reports/latest and logs/{stage}/latest from the current build.
+
+    Call this at the END of the build, after all stage summaries, log files,
+    and the final build report have been written. Matches the pattern used
+    by release.atomic_copy_directory: 'latest' gets copied once from the
+    fully-populated timestamped directory, not at build start.
+
+    Args:
+        timestamp: Shared timestamp string identifying the current build
+    """
+    update_latest_copy(REPORTS_BASE, timestamp)
+    for stage in (*STAGE_NAMES_LOWER, "errors"):
+        stage_base = LOGS_BASE / stage
+        if (stage_base / timestamp).exists():
+            update_latest_copy(stage_base, timestamp)
 
 
 # ── Performance tracking ─────────────────────────────────────────────────────
@@ -1646,12 +1669,18 @@ def run_full_build(
 
     text_path, summary_path, json_path = save_report(report, report_dir)
 
+    # ── Refresh 'latest' copies now that all files are written ──
+    # Doing this here (not at build start) ensures reports/latest/ and
+    # logs/{stage}/latest/ contain the final populated content instead of
+    # empty shells created before any files existed.
+    finalize_latest_copies(timestamp)
+
     # ── POST-UPLOAD: re-upload reports and logs so the final files are on S3 ──
     # The main UPLOAD stage runs before save_report, so build-report.{txt,json},
-    # build-summary.txt, and performance.json (written just above) haven't been
-    # uploaded yet. The upload stage's log file is also still being written at
-    # that point. This final pass catches those files. Skip-if-unchanged makes
-    # it cheap: only the newly-written files actually upload.
+    # build-summary.txt, performance.json, and the refreshed 'latest' copies
+    # haven't been uploaded yet. The upload stage's log file is also still
+    # being written at that point. This final pass catches those files.
+    # Skip-if-unchanged makes it cheap: only the newly-written files upload.
     if upload and display.stage_status.get("UPLOAD") == "completed":
         logger.info("Uploading final build report and logs to S3...")
         try:
