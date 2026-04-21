@@ -36,14 +36,21 @@ def format_duration(seconds: float, precise: bool = False) -> str:
     return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m"
 
 
-def update_latest_symlink(parent_dir: Path, target_name: str) -> None:
-    """Create or update a 'latest' symlink in parent_dir pointing to target_name.
+def update_latest_copy(parent_dir: Path, target_name: str) -> None:
+    """Create or update a 'latest' directory in parent_dir as a copy of target_name.
 
-    If a 'latest' symlink or directory already exists, it is removed first.
+    This mirrors the pattern used by ``release.atomic_copy_directory``: the
+    'latest' entry is a real directory tree, not a symlink. This keeps the
+    layout consistent across /data, /releases, /reports, and /logs so
+    downstream tools (S3 upload, web UI, directory walkers) do not need any
+    symlink-aware handling.
+
+    Uses a temp directory + atomic rename so 'latest' is always valid (either
+    the old copy or the new one), never half-updated.
 
     Args:
-        parent_dir: Directory containing the symlink
-        target_name: Name of the subdirectory to point to (relative, not absolute)
+        parent_dir: Directory containing the 'latest' entry
+        target_name: Name of the sibling subdirectory whose contents to copy
 
     Examples:
         >>> import tempfile
@@ -51,18 +58,33 @@ def update_latest_symlink(parent_dir: Path, target_name: str) -> None:
         >>> with tempfile.TemporaryDirectory() as d:
         ...     p = Path(d)
         ...     (p / "2026_03_16").mkdir()
-        ...     update_latest_symlink(p, "2026_03_16")
-        ...     (p / "latest").is_symlink()
+        ...     (p / "2026_03_16" / "report.json").write_text("{}")
+        ...     update_latest_copy(p, "2026_03_16")
+        ...     (p / "latest").is_dir() and not (p / "latest").is_symlink()
+        2
         True
     """
+    source = parent_dir / target_name
+    if not source.exists():
+        return
+
     latest = parent_dir / "latest"
+    latest_tmp = parent_dir / "latest_new"
+
+    # Clear any leftover state so copytree's destination-must-not-exist rule holds
+    if latest_tmp.exists() or latest_tmp.is_symlink():
+        if latest_tmp.is_symlink():
+            latest_tmp.unlink()
+        else:
+            shutil.rmtree(latest_tmp)
+
+    # Copy into temp location, then atomic swap onto the real name
+    shutil.copytree(source, latest_tmp, symlinks=False)
     if latest.is_symlink():
         latest.unlink()
     elif latest.exists():
-        # Remove a real directory that was created instead of a symlink
-        # (e.g. by a tool that doesn't preserve symlinks).
         shutil.rmtree(latest)
-    latest.symlink_to(target_name)
+    latest_tmp.rename(latest)
 
 
 # Stage names used throughout the pipeline

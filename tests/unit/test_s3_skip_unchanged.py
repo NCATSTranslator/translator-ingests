@@ -367,6 +367,43 @@ def test_second_build_preserves_lastmodified_on_unchanged_files(uploader, tmp_pa
     assert len(uploader.s3_client.head_calls) == 2
 
 
+def test_upload_directory_handles_directory_copy_of_latest(uploader, tmp_path):
+    """Reports/logs use a real directory copy for 'latest' (see update_latest_copy),
+    matching the pattern releases already uses. upload_directory should walk both
+    the timestamped dir and latest/ as regular directories, uploading each file.
+    """
+    reports_dir = tmp_path / "reports"
+    _write(reports_dir / "2026_04_21" / "build-report.json", b'{"build": 1}')
+    # Simulate what update_latest_copy does: a real directory copy, not a symlink
+    _write(reports_dir / "latest" / "build-report.json", b'{"build": 1}')
+
+    stats = uploader.upload_directory(reports_dir, "reports")
+
+    assert stats["uploaded"] == 2
+    assert stats["failed"] == 0
+    assert "reports/2026_04_21/build-report.json" in uploader.s3_client.upload_calls
+    assert "reports/latest/build-report.json" in uploader.s3_client.upload_calls
+
+
+def test_upload_directory_skips_broken_symlink(uploader, tmp_path):
+    """A dangling symlink must be skipped, not counted as uploaded or failed.
+
+    This exercises the ``is_file()`` defensive guard in upload_directory.
+    The pipeline itself no longer produces symlinks (see update_latest_copy),
+    but the guard keeps upload robust against unexpected filesystem state.
+    """
+    src_dir = tmp_path / "dir"
+    src_dir.mkdir()
+    _write(src_dir / "real.txt", b"content")
+    (src_dir / "broken").symlink_to(tmp_path / "does-not-exist")
+
+    stats = uploader.upload_directory(src_dir, "data/dir")
+
+    assert stats["uploaded"] == 1
+    assert stats["failed"] == 0
+    assert uploader.s3_client.upload_calls == ["data/dir/real.txt"]
+
+
 def test_mixed_new_and_existing_files_handled_correctly(uploader, tmp_path):
     """A release dir with a mix of new and already-uploaded files handles each
     correctly: new files upload, existing unchanged files skip."""

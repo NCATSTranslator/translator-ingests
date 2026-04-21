@@ -217,10 +217,21 @@ class S3Uploader:
 
         self.logger.info(f"Uploading directory: {local_dir} -> s3://{self.bucket_name}/{s3_prefix}")
 
-        # Walk through all files in directory
+        # Walk through all files in directory. All local paths under /data,
+        # /releases, /reports, and /logs are real directories (the 'latest'
+        # entry is a directory copy, see update_latest_copy), so the default
+        # follow_symlinks=False is correct.
         for root, _, files in sorted(local_dir.walk()):
             for file in sorted(files):
                 local_path = root / file
+
+                # Defensive: skip anything that is not a regular file (broken
+                # symlinks, FIFOs, sockets). Cheap guard that keeps
+                # upload_directory robust against unexpected filesystem state.
+                if not local_path.is_file():
+                    self.logger.debug(f"Skipping non-regular file: {local_path}")
+                    continue
+
                 # Calculate relative path from local_dir
                 relative_path = local_path.relative_to(local_dir)
                 s3_key = f"{s3_prefix}/{relative_path}".replace("\\", "/")  # Handle Windows paths

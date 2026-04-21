@@ -677,7 +677,9 @@ def test_json_report_roundtrips():
 
 
 def test_create_report_dir(tmp_path, monkeypatch):
-    """create_report_dir creates directory with stage subdirectories and latest symlink."""
+    """create_report_dir creates a timestamped dir with stage subdirectories,
+    plus a 'latest' directory copy (real directory, not a symlink).
+    """
     monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
     report_dir = create_report_dir()
 
@@ -688,21 +690,40 @@ def test_create_report_dir(tmp_path, monkeypatch):
     assert (report_dir / "stages" / "upload").exists()
 
     latest = tmp_path / "latest"
-    assert latest.is_symlink()
-    assert latest.resolve() == report_dir.resolve()
+    # 'latest' is now a real directory copy (matches the releases pattern),
+    # not a symlink, so downstream tools do not need symlink-aware handling.
+    assert latest.is_dir()
+    assert not latest.is_symlink()
+    assert (latest / "stages" / "run").exists()
 
 
-def test_create_report_dir_updates_latest_symlink(tmp_path, monkeypatch):
-    """Creating a second report dir updates the latest symlink."""
+def test_create_report_dir_updates_latest(tmp_path, monkeypatch):
+    """Creating a second report dir refreshes the 'latest' directory to match
+    the new timestamp's contents (prior timestamp dir is kept intact).
+
+    Uses explicit timestamps because the default format has second precision
+    and the test would otherwise be flaky when both calls land in the same second.
+    """
+    from translator_ingest.util.run_build.utils import update_latest_copy
     monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
-    first = create_report_dir()
-    time.sleep(0.01)  # ensure different timestamp
-    second = create_report_dir()
+
+    first = create_report_dir(timestamp="2026_04_21_100000")
+    (first / "marker-first.txt").write_text("first")
+
+    second = create_report_dir(timestamp="2026_04_21_100005")
+    (second / "marker-second.txt").write_text("second")
+    # Refresh 'latest' after populating stages, matching what a real build does.
+    update_latest_copy(tmp_path, second.name)
 
     latest = tmp_path / "latest"
-    assert latest.is_symlink()
-    assert latest.resolve() == second.resolve()
-    assert first.exists()  # first dir still exists
+    assert latest.is_dir()
+    assert not latest.is_symlink()
+    # Latest reflects the newest build, not the first one
+    assert (latest / "marker-second.txt").exists()
+    assert not (latest / "marker-first.txt").exists()
+    # First timestamped dir is preserved on disk
+    assert first.exists()
+    assert (first / "marker-first.txt").exists()
 
 
 def test_save_report_creates_files(tmp_path):

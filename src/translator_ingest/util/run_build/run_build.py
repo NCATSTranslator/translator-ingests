@@ -58,7 +58,7 @@ from translator_ingest.util.run_build.utils import (
     STAGE_NAMES,
     STAGE_NAMES_LOWER,
     format_duration,
-    update_latest_symlink,
+    update_latest_copy,
 )
 from translator_ingest.util.storage.upload_s3 import discover_data_sources, discover_release_sources
 from translator_ingest.util.storage.s3 import upload_and_cleanup
@@ -102,7 +102,7 @@ def create_log_dirs(timestamp: str) -> tuple[dict[str, Path], Path]:
 
     # Update latest symlinks
     for stage in (*STAGE_NAMES_LOWER, "errors"):
-        update_latest_symlink(LOGS_BASE / stage, timestamp)
+        update_latest_copy(LOGS_BASE / stage, timestamp)
 
     return stage_log_paths, error_log_path
 
@@ -125,7 +125,7 @@ def create_report_dir(timestamp: str | None = None) -> Path:
     for stage in STAGE_NAMES_LOWER:
         (report_dir / "stages" / stage).mkdir(parents=True, exist_ok=True)
 
-    update_latest_symlink(REPORTS_BASE, report_dir.name)
+    update_latest_copy(REPORTS_BASE, report_dir.name)
 
     return report_dir
 

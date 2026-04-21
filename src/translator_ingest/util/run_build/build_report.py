@@ -42,7 +42,7 @@ from translator_ingest.util.storage.local import (
 )
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 from translator_ingest.util.run_build import REPORTS_BASE
-from translator_ingest.util.run_build.utils import BYTES_PER_GB, format_duration, update_latest_symlink
+from translator_ingest.util.run_build.utils import BYTES_PER_GB, format_duration, update_latest_copy
 
 logger = get_logger(__name__)
 
@@ -851,7 +851,7 @@ def main(sources, graph_id, node_properties, upload_results, output_format, outp
     logger.info("Report saved to: %s", report_dir)
 
     # Also save as "latest" symlink
-    update_latest_symlink(REPORTS_BASE, report_dir.name)
+    update_latest_copy(REPORTS_BASE, report_dir.name)
 
     # Write to user-specified output file
     if output:
