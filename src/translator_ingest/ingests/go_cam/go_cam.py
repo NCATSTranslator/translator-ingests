@@ -356,12 +356,27 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                     if isinstance(pub, str) and pub.startswith("PMID:")
                 ]
 
+            # Capture GO terms for statement subject and object Gene nodes
+            # molecular activity, biological process and cellular compartmentalization
+            source_gene_molecular_function = edge.get("source_gene_molecular_function")
+            source_gene_biological_process = edge.get("source_gene_biological_process")
+            source_gene_occurs_in = edge.get("source_gene_occurs_in")
+            target_gene_molecular_function = edge.get("target_gene_molecular_function")
+            target_gene_biological_process = edge.get("target_gene_biological_process")
+            target_gene_occurs_in = edge.get("target_gene_occurs_in")
+
             # Create the gene-to-gene association
             association = GeneToGeneAssociation(
                 id=entity_id(),
                 subject=normalized_source_id,
+                subject_aspect_qualifier=source_gene_molecular_function,
+                subject_process_qualifier=source_gene_biological_process,
+                subject_context_qualifier=source_gene_occurs_in,
                 predicate=biolink_predicate,
                 object=normalized_target_id,
+                object_aspect_qualifier=target_gene_molecular_function,
+                object_process_qualifier=target_gene_biological_process,
+                object_context_qualifier=target_gene_occurs_in,
                 original_subject=source_id,
                 original_predicate=causal_predicate,
                 original_object=target_id,
