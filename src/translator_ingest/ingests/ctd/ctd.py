@@ -61,7 +61,7 @@ def get_latest_version() -> str:
     Former implementation fetched ``dataStatus.go`` and parsed ``#pgheading``; that no longer works site-wide due
     to CAPTCHA. Update the literal when you adopt a newer CTD export.
     """
-    return "January_2026"
+    return "April_2026"
 
     # --- Previous scrape (broken behind CAPTCHA; kept for reference) ---
     # html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
