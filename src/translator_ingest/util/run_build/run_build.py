@@ -146,11 +146,23 @@ def finalize_latest_copies(timestamp: str) -> None:
     Args:
         timestamp: Shared timestamp string identifying the current build
     """
-    update_latest_copy(REPORTS_BASE, timestamp)
+    logger.info("Finalizing 'latest' copies for reports and logs...")
+
+    reports_src = REPORTS_BASE / timestamp
+    if reports_src.exists():
+        update_latest_copy(REPORTS_BASE, timestamp)
+        logger.info("  reports/latest refreshed from %s", reports_src)
+    else:
+        logger.warning("  reports/%s does not exist, skipping reports/latest refresh", timestamp)
+
     for stage in (*STAGE_NAMES_LOWER, "errors"):
         stage_base = LOGS_BASE / stage
-        if (stage_base / timestamp).exists():
+        stage_src = stage_base / timestamp
+        if stage_src.exists():
             update_latest_copy(stage_base, timestamp)
+            logger.info("  logs/%s/latest refreshed from %s", stage, stage_src)
+        else:
+            logger.debug("  logs/%s/%s does not exist, skipping", stage, timestamp)
 
 
 # ── Performance tracking ─────────────────────────────────────────────────────
@@ -1672,30 +1684,41 @@ def run_full_build(
     # ── Refresh 'latest' copies now that all files are written ──
     # Doing this here (not at build start) ensures reports/latest/ and
     # logs/{stage}/latest/ contain the final populated content instead of
-    # empty shells created before any files existed.
-    finalize_latest_copies(timestamp)
+    # empty shells created before any files existed. Wrapped in try/except
+    # so a single failure (e.g. permissions on one log stage) does not
+    # block the rest of the finalization or post-upload.
+    try:
+        finalize_latest_copies(timestamp)
+    except Exception:
+        logger.exception("finalize_latest_copies failed (non-fatal)")
 
     # ── POST-UPLOAD: re-upload reports and logs so the final files are on S3 ──
     # The main UPLOAD stage runs before save_report, so build-report.{txt,json},
     # build-summary.txt, performance.json, and the refreshed 'latest' copies
     # haven't been uploaded yet. The upload stage's log file is also still
     # being written at that point. This final pass catches those files.
-    # Skip-if-unchanged makes it cheap: only the newly-written files upload.
-    if upload and display.stage_status.get("UPLOAD") == "completed":
+    #
+    # Gated only on the upload flag -- NOT on UPLOAD stage status. The main
+    # UPLOAD stage is marked 'failed' if any single file failed (common with
+    # transient S3 hiccups), but that should not prevent uploading the final
+    # reports/logs and 'latest' copies. Skip-if-unchanged keeps this cheap.
+    if upload:
         logger.info("Uploading final build report and logs to S3...")
         try:
             s3_uploader = S3Uploader()
             reports_final = s3_uploader.upload_reports()
             logs_final = s3_uploader.upload_logs()
             logger.info(
-                "Final reports upload: %d uploaded, %d skipped",
+                "Final reports upload: %d uploaded, %d skipped, %d failed",
                 reports_final.get("uploaded", 0),
                 reports_final.get("skipped", 0),
+                reports_final.get("failed", 0),
             )
             logger.info(
-                "Final logs upload:    %d uploaded, %d skipped",
+                "Final logs upload:    %d uploaded, %d skipped, %d failed",
                 logs_final.get("uploaded", 0),
                 logs_final.get("skipped", 0),
+                logs_final.get("failed", 0),
             )
         except Exception:
             logger.exception("Post-upload of final reports/logs failed (non-fatal)")
