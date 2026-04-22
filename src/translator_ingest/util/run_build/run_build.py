@@ -1133,7 +1133,12 @@ def stage_run(
                         cancelled_count += 1
                         if source in display.run_running:
                             display.run_running.remove(source)
-                        results[source] = _make_cancelled_result(source, "memory")
+                        result = _make_cancelled_result(source, "memory")
+                        results[source] = result
+                        # Record result so per-source JSON is written and
+                        # display.run_failed is updated, consistent with the
+                        # upfront cancel path at the top of Phase 2.
+                        _log_and_record_result(result, source, display, report_dir)
 
                 logger.error(
                     "BUILD ABORTED: Memory usage at %.0f MB / %.0f MB (%.0f%% threshold). "
@@ -1575,6 +1580,11 @@ def run_full_build(
         display.skip_stage("MERGE")
         display.skip_stage("RELEASE")
         display.skip_stage("UPLOAD")
+        # Record timing entries for skipped stages so build_report.generate_build_report
+        # sees their 'skipped' status via stage_timings and does not fall back to
+        # artifact inference (which might mark them 'completed' from stale artifacts).
+        for _skipped in ("MERGE", "RELEASE", "UPLOAD"):
+            stage_timing_reports.append(_collect_stage_timing(_skipped))
     else:
         # ── STAGE 2: MERGE ──
         merge_handler = _add_stage_handler("merge")
@@ -1596,6 +1606,8 @@ def run_full_build(
             )
             display.skip_stage("RELEASE")
             display.skip_stage("UPLOAD")
+            for _skipped in ("RELEASE", "UPLOAD"):
+                stage_timing_reports.append(_collect_stage_timing(_skipped))
         else:
             release_handler = _add_stage_handler("release")
             try:
@@ -1613,6 +1625,7 @@ def run_full_build(
                     psutil.virtual_memory().percent,
                 )
                 display.skip_stage("UPLOAD")
+                stage_timing_reports.append(_collect_stage_timing("UPLOAD"))
 
     if upload and display.stage_status.get("UPLOAD") == "pending":
         upload_handler = _add_stage_handler("upload")
@@ -1627,6 +1640,9 @@ def run_full_build(
             _remove_handler(upload_handler)
     elif not upload and display.stage_status.get("UPLOAD") == "pending":
         display.skip_stage("UPLOAD")
+        # Record the skipped UPLOAD so the report does not fall back to
+        # inferring 'completed' from a stale upload-results-latest.json.
+        stage_timing_reports.append(_collect_stage_timing("UPLOAD"))
 
     total_duration = time.time() - build_start
 
