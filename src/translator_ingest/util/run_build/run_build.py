@@ -1630,10 +1630,11 @@ def run_full_build(
 
     total_duration = time.time() - build_start
 
-    # Clean up logging handlers
-    root_logger.removeHandler(error_handler)
-    error_handler.close()
-    root_logger.removeHandler(console_handler)
+    # NOTE: console_handler and error_handler are intentionally left attached
+    # here. They are removed at the very end of this function (after the
+    # final summary, report generation, finalize_latest_copies, and the
+    # post-upload pass) so any log messages from those phases are still
+    # captured in errors.log and visible on the terminal.
 
     # Stop performance tracker
     perf.stop()
@@ -1759,6 +1760,14 @@ def run_full_build(
 
     # Print summary report to stdout for easy piping/sharing
     print(format_summary_report(report))
+
+    # Clean up logging handlers now that all final work is done. Deferred
+    # from before print_final_summary() so the summary, report generation,
+    # finalize_latest_copies, and post-upload log output is still captured
+    # in errors.log and on the terminal.
+    root_logger.removeHandler(error_handler)
+    error_handler.close()
+    root_logger.removeHandler(console_handler)
 
     return report_dir, error_log_path, memory_aborted
 

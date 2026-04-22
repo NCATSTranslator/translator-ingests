@@ -1185,9 +1185,29 @@ def test_stage_timings_completed_status_marks_completed(make_report):
         ],
     )
 
+    assert any("run" in s for s in report.pipeline_stages_completed)
     assert "merge" in report.pipeline_stages_completed
     assert "release" in report.pipeline_stages_completed
     assert "upload" in report.pipeline_stages_completed
+
+
+def test_run_failed_in_timings_not_marked_completed_despite_artifact(make_report):
+    """A failed RUN stage is reported as failed even when all sources have
+    latest-build.json on disk from a previous run."""
+    # The make_report fixture writes latest-build.json for every source, so
+    # the artifact-based inference would say RUN completed. Override with a
+    # stage_timings that records a failed RUN and confirm that wins.
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "failed"),
+            _timing("MERGE", "skipped"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+
+    assert not any("run" in s for s in report.pipeline_stages_completed)
+    assert any("run:" in f for f in report.pipeline_stages_failed)
 
 
 def test_no_stage_timings_falls_back_to_artifact_inference(make_report):

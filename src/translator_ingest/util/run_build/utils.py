@@ -45,8 +45,10 @@ def update_latest_copy(parent_dir: Path, target_name: str) -> None:
     downstream tools (S3 upload, web UI, directory walkers) do not need any
     symlink-aware handling.
 
-    Uses a temp directory + atomic rename so 'latest' is always valid (either
-    the old copy or the new one), never half-updated.
+    Copies into a temp directory first, then renames it into place. This
+    avoids exposing a partially copied 'latest' tree, but there is a brief
+    window where 'latest' does not exist while the old directory is removed
+    before the new copy is renamed into place.
 
     Args:
         parent_dir: Directory containing the 'latest' entry

@@ -438,11 +438,29 @@ def generate_build_report(
         if s.status != "no_build"
     )
 
-    if all_built:
-        report.pipeline_stages_completed.append("run (download, transform, normalize, merge, validate)")
+    # Prefer stage_timings for RUN so the report reflects what happened in
+    # this orchestrated build, not whatever latest-build.json files happen
+    # to exist on disk from a previous run. Fall back to artifact inference
+    # only when no timing data is available (e.g. report generated outside
+    # the orchestrator).
+    run_status = _stage_status_from_timings("RUN", stage_timings)
+    run_label = "run (download, transform, normalize, merge, validate)"
+    no_build_sources = [s.source for s in report.source_reports if s.status == "no_build"]
+    if run_status is None:
+        if all_built:
+            report.pipeline_stages_completed.append(run_label)
+        else:
+            report.pipeline_stages_failed.append(
+                f"run: {len(no_build_sources)} sources failed: {', '.join(no_build_sources)}"
+            )
+    elif run_status == "completed":
+        report.pipeline_stages_completed.append(run_label)
+    elif no_build_sources:
+        report.pipeline_stages_failed.append(
+            f"run: {len(no_build_sources)} sources failed: {', '.join(no_build_sources)}"
+        )
     else:
-        no_build_sources = [s.source for s in report.source_reports if s.status == "no_build"]
-        report.pipeline_stages_failed.append(f"run: {len(no_build_sources)} sources failed: {', '.join(no_build_sources)}")
+        report.pipeline_stages_failed.append(f"run: {run_status}")
 
     if any_validation_failed:
         failed_val = [s.source for s in report.source_reports if s.status == "validation_failed"]
