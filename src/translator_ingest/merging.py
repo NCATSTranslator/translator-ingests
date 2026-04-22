@@ -103,7 +103,7 @@ def is_merged_graph_release_current(merged_graph_metadata: PipelineMetadata) -> 
     if not release_metadata_path.exists():
         return False
     with release_metadata_path.open("r") as latest_release_file:
-        latest_release_metadata = PipelineMetadata(**json.load(latest_release_file))
+        latest_release_metadata = PipelineMetadata.from_dict(json.load(latest_release_file))
     return merged_graph_metadata.build_version == latest_release_metadata.build_version
 
 
@@ -187,25 +187,24 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
             raise IOError(f"Could not find latest release metadata for {source}")
 
         with latest_path.open() as latest_pipeline_metadata_file:
-            latest_pipeline_metadata = json.load(latest_pipeline_metadata_file)
-            pipeline_metadata = PipelineMetadata(**latest_pipeline_metadata)
+            pipeline_metadata = PipelineMetadata.from_dict(json.load(latest_pipeline_metadata_file))
 
         # Validate that this source has all required version information
         if pipeline_metadata.biolink_version is None:
             logger.error(f"Source {source} has None for biolink_version")
             raise ValueError(f"Source {source} must have a valid biolink_version in release metadata.")
 
-        if pipeline_metadata.node_norm_version is None:
-            logger.error(f"Source {source} has None for node_norm_version")
-            raise ValueError(f"Source {source} must have a valid node_norm_version in release metadata.")
+        if pipeline_metadata.babel_version is None:
+            logger.error(f"Source {source} has None for babel_version")
+            raise ValueError(f"Source {source} must have a valid babel_version in release metadata.")
 
         if pipeline_metadata.transform_version is None:
             logger.error(f"Source {source} has None for transform_version")
             raise ValueError(f"Source {source} must have a valid transform_version in release metadata.")
 
-        # Collect versions for validation
+        # Collect versions for validation. Sources must share biolink_version and babel_version to merge.
         biolink_versions.add(pipeline_metadata.biolink_version)
-        babel_versions.add(pipeline_metadata.node_norm_version)
+        babel_versions.add(pipeline_metadata.babel_version)
 
         # Get KGXKnowledgeSource metadata from the rig file
         data_source_info = get_kgx_source_from_rig(source)
@@ -246,16 +245,16 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     release_version = datetime.datetime.now().strftime("%Y_%m_%d")
     data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
 
-    # Create PipelineMetadata for the merged graph
+    # TODO - this should probably use a different kind of Metadata object, PipelineMetadata is designed for one ingest
+    # Create PipelineMetadata for the merged graph.
+    # other PipelineMetadata attributes like conflation / strict are per-source and don't apply to a merge.
     merged_graph_metadata = PipelineMetadata(
         source=graph_id,
-        source_version=None,  # Merged graphs don't have a single source version
-        transform_version=None,  # or transform version
-        node_norm_version=babel_version,
+        babel_version=babel_version,
         biolink_version=biolink_version,
         build_version=build_version,
         release_version=release_version,
-        data=data_path
+        data=data_path,
     )
 
     # Check if the latest release already has this build version
@@ -314,7 +313,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[
     graph_id = pipeline_metadata.source
     release_version = pipeline_metadata.release_version
     biolink_version = pipeline_metadata.biolink_version
-    babel_version = pipeline_metadata.node_norm_version
+    babel_version = pipeline_metadata.babel_version
 
     logger.info(f"Generating graph metadata for {graph_id} ({release_version})...")
     merged_graph_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version

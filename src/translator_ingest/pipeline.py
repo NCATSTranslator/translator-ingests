@@ -19,11 +19,11 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder
+from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, NormalizationScheme
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
-from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
+from translator_ingest.normalize import normalize_kgx_files
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import (
     get_output_directory,
@@ -54,12 +54,8 @@ def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
-    strict_normalization = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
-    if not strict_normalization:
-        logger.info(f"Using lenient normalization for {source} (strict_normalization=False)")
     pipeline_metadata.koza_config = {
         "max_edge_count": config.writer.max_edge_count if config.writer else None,
-        "strict_normalization": strict_normalization,
     }
 
 
@@ -287,7 +283,6 @@ def transform(pipeline_metadata: PipelineMetadata):
                 source=pipeline_metadata.source,
                 source_version=actual_version,
                 transform_version=pipeline_metadata.transform_version,
-                node_norm_version=pipeline_metadata.node_norm_version,
                 biolink_version=pipeline_metadata.biolink_version,
                 release_version=pipeline_metadata.release_version
             )
@@ -352,9 +347,6 @@ def normalize(pipeline_metadata: PipelineMetadata):
     node_norm_map_path = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
-    predicate_map_path = get_versioned_file_paths(
-        file_type=IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
-    )
 
     # Call normalize_kgx_files with pipeline_metadata to handle nodes-only ingests
     normalize_kgx_files(
@@ -364,7 +356,6 @@ def normalize(pipeline_metadata: PipelineMetadata):
         node_norm_map_file_path=str(node_norm_map_path),
         node_norm_failures_file_path=str(norm_failures_path),
         edges_output_file_path=str(norm_edge_path),
-        predicate_map_file_path=str(predicate_map_path),
         normalization_metadata_file_path=str(norm_metadata_path),
         pipeline_metadata=pipeline_metadata,
     )
@@ -536,7 +527,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
 
     storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
                    f"transform_{pipeline_metadata.transform_version}/"
-                   f"normalization_{pipeline_metadata.node_norm_version}/")
+                   f"normalization_{pipeline_metadata.get_composite_normalization_version()}/")
     pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
         id=storage_url,
@@ -548,7 +539,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         version=pipeline_metadata.build_version,
         date_created=datetime.now().strftime("%Y_%m_%d"),
         biolink_version=pipeline_metadata.biolink_version,
-        babel_version=pipeline_metadata.node_norm_version,
+        babel_version=pipeline_metadata.babel_version,
         knowledge_sources=[data_source_info]
     )
 
@@ -621,7 +612,7 @@ def is_latest_build_metadata_current(pipeline_metadata: PipelineMetadata):
     if not build_metadata_path.exists():
         return False
     with build_metadata_path.open("r") as latest_build_file:
-        latest_build_metadata = PipelineMetadata(**json.load(latest_build_file))
+        latest_build_metadata = PipelineMetadata.from_dict(json.load(latest_build_file))
     return pipeline_metadata.build_version == latest_build_metadata.build_version
 
 
@@ -662,11 +653,35 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         return
 
     # Normalize the post-transform KGX files
-    pipeline_metadata.node_norm_version = get_current_node_norm_version()
+    # Note - ORION can use the biolink model to map predicates during normalization, but we decided not to do that.
+    # Here we still need the biolink model version to set as the "edge_normalization_version" so metadata outputs are 
+    # consistent, even though it doesn't actually do anything anymore. In the future we'll remove this field from
+    # NormalizationScheme but ORION needs more work first.
+    current_biolink_version = get_current_biolink_version()
+    pipeline_metadata.biolink_version = current_biolink_version
+    # Initializing a NormalizationScheme automatically resolves babel_version, node_normalization_version, 
+    # and normalization_code_version to their current versions as determined by ORION. Specifically, ORION retrieves
+    # the Babel version and the Node Normalizer version from the server specified in its config. The desired Node Norm
+    # service can be configured with the environment variable NODE_NORMALIZATION_URL (current default is 
+    # "https://nodenormalization-sri.renci.org"). The normalization code version is determined by ORION.
+    # Here we only set the other attributes of NormalizationScheme, ones we want translator-ingests to control.
+    normalization_scheme = NormalizationScheme(
+        edge_normalization_version=current_biolink_version,
+        conflation=True,
+        strict=NORMALIZATION_STRICT_OVERRIDES.get(source, True),
+    )
+    # After the NormalizationScheme is populated with current versions, use it to set the pipeline_metadata.
+    pipeline_metadata.babel_version = normalization_scheme.babel_version
+    pipeline_metadata.node_normalizer_version = normalization_scheme.node_normalization_version
+    pipeline_metadata.normalization_code_version = normalization_scheme.normalization_code_version
+    pipeline_metadata.normalization_conflation = normalization_scheme.conflation
+    pipeline_metadata.normalization_strict = normalization_scheme.strict
+    # Now pipeline_metadata has everything it needs to check if the currently desired normalization is done already,
+    # and settings to provide to the normalization stage.
     if is_normalization_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Normalization already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"normalization: {pipeline_metadata.node_norm_version}"
+            f"normalization: {pipeline_metadata.get_composite_normalization_version()}"
         )
     else:
         normalize(pipeline_metadata)
@@ -678,8 +693,6 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         merge(pipeline_metadata)
 
     # Validate the post-normalization files
-    # First retrieve and set the current biolink version to make sure validation is run using that version
-    pipeline_metadata.biolink_version = get_current_biolink_version()
     if is_validation_complete(pipeline_metadata) and not overwrite:
         logger.info(f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
                     f"biolink: {pipeline_metadata.biolink_version}")

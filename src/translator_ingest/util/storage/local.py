@@ -15,7 +15,6 @@ class IngestFileType(Enum):
     NORMALIZATION_METADATA_FILE = 6
     NORMALIZATION_MAP_FILE = 7
     NORMALIZATION_FAILURES_FILE = 8
-    PREDICATE_NORMALIZATION_MAP_FILE = 9
     MERGED_KGX_FILES = 10
     MERGE_METADATA_FILE = 11
     TEST_DATA_FILE = 12
@@ -35,7 +34,6 @@ class IngestFileName(StrEnum):
     NORMALIZATION_METADATA = "normalization-metadata.json"
     NORMALIZATION_MAP = "normalization_map.json"
     NORMALIZATION_FAILURES = "normalization_failures.txt"
-    PREDICATE_NORMALIZATION_MAP = "predicate_map.json"
     MERGED_NODES = "merged_nodes.jsonl"
     MERGED_EDGES = "merged_edges.jsonl"
     MERGE_METADATA_FILE = "merge_metadata.json"
@@ -64,10 +62,6 @@ FILE_PATH_LOOKUP = {
     / IngestFileName.NORMALIZATION_MAP,
     IngestFileType.NORMALIZATION_FAILURES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
     / IngestFileName.NORMALIZATION_FAILURES,
-    IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE: lambda pipeline_metadata: get_normalization_directory(
-        pipeline_metadata
-    )
-    / IngestFileName.PREDICATE_NORMALIZATION_MAP,
     IngestFileType.MERGED_KGX_FILES: lambda pipeline_metadata: (
         get_normalization_directory(pipeline_metadata) / IngestFileName.MERGED_NODES,
         get_normalization_directory(pipeline_metadata) / IngestFileName.MERGED_EDGES,
@@ -105,7 +99,8 @@ def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / f"transform_{pipeline_metadata.transform_version}"
 
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
-    return get_transform_directory(pipeline_metadata) / f"normalization_{pipeline_metadata.node_norm_version}"
+    return (get_transform_directory(pipeline_metadata) /
+            f"normalization_{pipeline_metadata.get_composite_normalization_version()}")
 
 def get_validation_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_normalization_directory(pipeline_metadata) / f"validation_{pipeline_metadata.biolink_version}"
