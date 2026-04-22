@@ -63,18 +63,18 @@ FILE_PATH_LOOKUP = {
     IngestFileType.NORMALIZATION_FAILURES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
     / IngestFileName.NORMALIZATION_FAILURES,
     IngestFileType.MERGED_KGX_FILES: lambda pipeline_metadata: (
-        get_normalization_directory(pipeline_metadata) / IngestFileName.MERGED_NODES,
-        get_normalization_directory(pipeline_metadata) / IngestFileName.MERGED_EDGES,
+        get_merge_directory(pipeline_metadata) / IngestFileName.MERGED_NODES,
+        get_merge_directory(pipeline_metadata) / IngestFileName.MERGED_EDGES,
     ),
     IngestFileType.MERGE_METADATA_FILE: lambda pipeline_metadata:
-        get_normalization_directory(pipeline_metadata) / IngestFileName.MERGE_METADATA_FILE,
-    IngestFileType.TEST_DATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+        get_merge_directory(pipeline_metadata) / IngestFileName.MERGE_METADATA_FILE,
+    IngestFileType.TEST_DATA_FILE: lambda pipeline_metadata: get_merge_directory(pipeline_metadata)
     / IngestFileName.TEST_DATA_FILENAME,
-    IngestFileType.EXAMPLE_EDGES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    IngestFileType.EXAMPLE_EDGES_FILE: lambda pipeline_metadata: get_merge_directory(pipeline_metadata)
     / IngestFileName.EXAMPLE_EDGES_FILENAME,
-    IngestFileType.INGEST_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    IngestFileType.INGEST_METADATA_FILE: lambda pipeline_metadata: get_merge_directory(pipeline_metadata)
     / IngestFileName.INGEST_METADATA_FILE,
-    IngestFileType.GRAPH_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    IngestFileType.GRAPH_METADATA_FILE: lambda pipeline_metadata: get_merge_directory(pipeline_metadata)
     / IngestFileName.GRAPH_METADATA_FILE,
     IngestFileType.VALIDATION_REPORT_FILE: lambda pipeline_metadata: get_validation_directory(pipeline_metadata)
     / IngestFileName.VALIDATION_REPORT_FILE,
@@ -102,8 +102,11 @@ def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return (get_transform_directory(pipeline_metadata) /
             f"normalization_{pipeline_metadata.get_composite_normalization_version()}")
 
+def get_merge_directory(pipeline_metadata: PipelineMetadata) -> Path:
+    return get_normalization_directory(pipeline_metadata) / f"merge_{pipeline_metadata.merging_code_version}"
+
 def get_validation_directory(pipeline_metadata: PipelineMetadata) -> Path:
-    return get_normalization_directory(pipeline_metadata) / f"validation_{pipeline_metadata.biolink_version}"
+    return get_merge_directory(pipeline_metadata) / f"validation_{pipeline_metadata.biolink_version}"
 
 # Find the KGX files in a given directory
 def __find_transform_kgx_files(directory: Path) -> (str, str):

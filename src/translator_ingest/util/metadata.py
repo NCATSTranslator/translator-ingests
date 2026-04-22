@@ -29,6 +29,8 @@ class PipelineMetadata:
     normalization_conflation: bool = True
     # normalization_strict: enforce node normalization strictly and discard nodes that don't normalize and their edges
     normalization_strict: bool = True
+    # merging_code_version: version of the ORION code that performs the merging process.
+    merging_code_version: str | None = None
     biolink_version: str | None = None
     # build_version: a composite version representing all the dependencies which should be considered when determining
     # whether the pipeline needs to be run, or if an ingest was already fully completed
@@ -66,6 +68,7 @@ class PipelineMetadata:
             self.source_version,
             self.transform_version,
             self.get_composite_normalization_version(),
+            self.merging_code_version,
             self.biolink_version,
         ]
         return "_".join(versions)

@@ -19,7 +19,7 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, NormalizationScheme
+from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, NormalizationScheme, MERGING_CODE_VERSION
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
@@ -687,6 +687,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         normalize(pipeline_metadata)
 
     # Merge entities in post-normalization KGX files
+    pipeline_metadata.merging_code_version = MERGING_CODE_VERSION
     if is_merge_complete(pipeline_metadata) and not overwrite:
         logger.info(f"Merge already done for {pipeline_metadata.source}...")
     else:
