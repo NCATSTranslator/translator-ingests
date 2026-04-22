@@ -1097,6 +1097,111 @@ def test_generate_build_report_with_build_notes(make_report):
     assert any("ABORTED" in note for note in report.build_notes)
 
 
+# ── Stage-timings-driven pipeline_stages inference ──────────────────────────
+#
+# Regression tests: when stage_timings is provided (from the orchestrator),
+# MERGE/RELEASE/UPLOAD completion must be inferred from what actually ran
+# this build, not from on-disk artifacts that may be stale from a previous
+# build. Otherwise a skipped stage can falsely appear "completed" just
+# because an old artifact is still on disk.
+
+
+def _timing(stage: str, status: str) -> StageTimingReport:
+    """Helper: make a minimal StageTimingReport for tests."""
+    return StageTimingReport(
+        stage=stage, duration_seconds=0.0, peak_memory_mb=0.0, avg_memory_mb=0.0,
+        min_memory_mb=0.0, avg_cpu_percent=0.0, status=status,
+    )
+
+
+def test_merge_skipped_in_timings_not_marked_completed_despite_artifact(make_report):
+    """A skipped MERGE stage must appear in pipeline_stages_failed even if
+    an old merged graph is still on disk from a previous build.
+    """
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "skipped"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+
+    assert "merge" not in report.pipeline_stages_completed
+    assert any("merge: skipped" in f for f in report.pipeline_stages_failed)
+
+
+def test_release_skipped_in_timings_not_marked_completed_despite_artifact(make_report):
+    """A skipped RELEASE stage is reported as failed/skipped even when the
+    on-disk release state looks complete.
+    """
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "completed"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+
+    assert "release" not in report.pipeline_stages_completed
+    assert any("release: skipped" in f for f in report.pipeline_stages_failed)
+
+
+def test_upload_failed_in_timings_overrides_disk_upload_results(make_report, tmp_path):
+    """A failed UPLOAD stage is reported as failed even when an old
+    upload-results-latest.json on disk shows a previous clean upload.
+    """
+    # Seed a "successful" upload results file from a previous build
+    upload_path = tmp_path / "upload-results-latest.json"
+    upload_path.write_text(
+        '{"sources_processed": 1, "total_uploaded": 5, "total_skipped": 0, '
+        '"total_failed": 0, "total_bytes_transferred": 0, "total_bytes_freed": 0, '
+        '"per_source_stats": {}}'
+    )
+
+    report = make_report(
+        upload_results_path=upload_path,
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "completed"),
+            _timing("RELEASE", "completed"),
+            _timing("UPLOAD", "failed"),
+        ],
+    )
+
+    assert "upload" not in report.pipeline_stages_completed
+    assert any("upload: failed" in f for f in report.pipeline_stages_failed)
+
+
+def test_stage_timings_completed_status_marks_completed(make_report):
+    """The happy path: when stage_timings says completed, so does the report."""
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "completed"),
+            _timing("RELEASE", "completed"),
+            _timing("UPLOAD", "completed"),
+        ],
+    )
+
+    assert "merge" in report.pipeline_stages_completed
+    assert "release" in report.pipeline_stages_completed
+    assert "upload" in report.pipeline_stages_completed
+
+
+def test_no_stage_timings_falls_back_to_artifact_inference(make_report):
+    """When stage_timings is None (e.g. report generated outside a build run),
+    MERGE/RELEASE/UPLOAD completion falls back to on-disk artifact checks."""
+    report = make_report(stage_timings=None)
+
+    # Artifacts written by the make_report fixture show a merged graph and
+    # released sources, so the artifact-based path should mark merge + release
+    # as completed.
+    assert "merge" in report.pipeline_stages_completed
+    assert "release" in report.pipeline_stages_completed
+
+
 # ── Upload stage gating tests ────────────────────────────────────────────────
 #
 # These tests verify the two fixed bugs:

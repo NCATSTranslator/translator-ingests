@@ -310,6 +310,35 @@ def load_upload_results(upload_results_path: Path | None) -> UploadReport | None
     return report
 
 
+def _stage_status_from_timings(
+    stage: str,
+    timings: list[StageTimingReport] | None,
+) -> str | None:
+    """Return the status this build recorded for ``stage``, or None if unknown.
+
+    Used to prefer the orchestrator's authoritative per-stage status
+    ("completed", "failed", "skipped", "pending") over artifact-based
+    inference, so the build report reflects what actually ran this build
+    instead of whatever happens to be on disk.
+
+    Args:
+        stage: Uppercase stage name as used by StageTimingReport.stage
+            (e.g. "MERGE", "RELEASE", "UPLOAD").
+        timings: Stage timing reports from the orchestrator, or None when
+            the report is generated outside a build run.
+
+    Returns:
+        The status string for the stage, or None if timings is missing or
+        the stage is not present in timings.
+    """
+    if not timings:
+        return None
+    for st in timings:
+        if st.stage == stage:
+            return st.status
+    return None
+
+
 def generate_build_report(
     sources: list[str],
     graph_id: str,
@@ -422,29 +451,53 @@ def generate_build_report(
     # Collect merged graph report
     releasable_sources = [s for s in sources if s not in node_properties]
     report.merged_graph = collect_merged_graph_report(graph_id, releasable_sources)
-    if report.merged_graph.status == "merged":
+
+    # For MERGE/RELEASE/UPLOAD, prefer stage_timings (what actually ran this
+    # build) over on-disk artifacts (which may be stale from a previous build).
+    # Without this, a skipped MERGE this run would still appear "completed"
+    # in the report just because an old merged graph is still on disk.
+    merge_status = _stage_status_from_timings("MERGE", stage_timings)
+    if merge_status is None:
+        # Report generated outside the orchestrator; fall back to artifact check.
+        if report.merged_graph.status == "merged":
+            report.pipeline_stages_completed.append("merge")
+        else:
+            report.pipeline_stages_failed.append(f"merge: {', '.join(report.merged_graph.errors)}")
+    elif merge_status == "completed":
         report.pipeline_stages_completed.append("merge")
     else:
-        report.pipeline_stages_failed.append(f"merge: {', '.join(report.merged_graph.errors)}")
+        report.pipeline_stages_failed.append(f"merge: {merge_status}")
 
-    if all_released:
+    release_status = _stage_status_from_timings("RELEASE", stage_timings)
+    if release_status is None:
+        if all_released:
+            report.pipeline_stages_completed.append("release")
+        else:
+            unreleased = [
+                s.source
+                for s in report.source_reports
+                if s.status not in ("released", "no_build") and s.source not in node_properties
+            ]
+            if unreleased:
+                report.pipeline_stages_failed.append(f"release: {len(unreleased)} sources not released")
+    elif release_status == "completed":
         report.pipeline_stages_completed.append("release")
     else:
-        unreleased = [
-            s.source
-            for s in report.source_reports
-            if s.status not in ("released", "no_build") and s.source not in node_properties
-        ]
-        if unreleased:
-            report.pipeline_stages_failed.append(f"release: {len(unreleased)} sources not released")
+        report.pipeline_stages_failed.append(f"release: {release_status}")
 
     # Load upload results
     report.upload = load_upload_results(upload_results_path)
-    if report.upload:
-        if report.upload.files_failed == 0 and report.upload.files_uploaded > 0:
-            report.pipeline_stages_completed.append("upload")
-        elif report.upload.files_failed > 0:
-            report.pipeline_stages_failed.append(f"upload: {report.upload.files_failed} files failed")
+    upload_status = _stage_status_from_timings("UPLOAD", stage_timings)
+    if upload_status is None:
+        if report.upload:
+            if report.upload.files_failed == 0 and report.upload.files_uploaded > 0:
+                report.pipeline_stages_completed.append("upload")
+            elif report.upload.files_failed > 0:
+                report.pipeline_stages_failed.append(f"upload: {report.upload.files_failed} files failed")
+    elif upload_status == "completed":
+        report.pipeline_stages_completed.append("upload")
+    else:
+        report.pipeline_stages_failed.append(f"upload: {upload_status}")
 
     # Detect noteworthy per-source conditions
     failed_set = set(failed_sources) if failed_sources else set()
