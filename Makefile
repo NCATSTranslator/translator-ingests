@@ -27,7 +27,9 @@ endif
 # (truncation can leave a substring that looks like a misspelling of a longer word),
 # (3) acronyms and external vocabulary tokens in analysis cells add more noise.
 # Prefer spell-checking .py, .yaml, and prose docs instead.
-CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
+# uv.lock is a generated artifact and contains PyPI package names that
+# codespell treats as typos. Exclude lockfiles entirely.
+CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb,uv.lock
 
 # Graph ID for merge target (default: translator_kg)
 GRAPH_ID ?= translator_kg
