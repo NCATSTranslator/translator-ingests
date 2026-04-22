@@ -221,7 +221,13 @@ class S3Uploader:
         # /releases, /reports, and /logs are real directories (the 'latest'
         # entry is a directory copy, see update_latest_copy), so the default
         # follow_symlinks=False is correct.
-        for root, _, files in sorted(local_dir.walk()):
+        #
+        # Iterate the walk lazily (don't materialize sorted(local_dir.walk())
+        # which holds the entire tree in memory — /data and /releases can be
+        # many GB with thousands of files). Sort dirs in-place per iteration
+        # so descent is deterministic; files are already sorted below.
+        for root, dirs, files in local_dir.walk():
+            dirs.sort()
             for file in sorted(files):
                 local_path = root / file
 
@@ -355,11 +361,14 @@ class S3Uploader:
         """Upload the entire /reports/ directory to s3://{bucket}/reports/.
 
         Reports are build-wide (not per-source) and contain timestamped build
-        summaries, stage breakdowns, and the latest-build symlink/pointer. This
-        makes them visible on the public web view alongside data and releases.
+        summaries, stage breakdowns, and a ``latest/`` directory with a copy
+        of the most recent build's artifacts. This makes them visible on the
+        public web view alongside data and releases.
 
-        The ``latest`` symlink is followed during upload (zipfile-style), so
-        its target files appear under ``reports/latest/`` on S3 as a usable copy.
+        ``reports/latest/`` is a real directory copy (see update_latest_copy
+        in run_build/utils.py), not a symlink, so it is walked and uploaded
+        like any other directory under ``reports/`` -- its files appear under
+        ``reports/latest/`` on S3 as a usable copy of the most recent build.
 
         Returns:
             Upload statistics dict (same shape as upload_directory()).
@@ -387,12 +396,15 @@ class S3Uploader:
 
         Logs are build-wide and contain per-stage subdirectories
         (run/, merge/, release/, upload/, errors/), each with timestamped
-        directories plus a ``latest`` symlink. Uploading them to S3 makes
-        them accessible from the public web view alongside reports.
+        directories plus a ``latest/`` directory copy of the most recent
+        build's logs for that stage. Uploading them to S3 makes them
+        accessible from the public web view alongside reports.
 
-        Skip-if-unchanged applies per-file, so old timestamped log directories
-        with unchanged content are skipped on every upload (their LastModified
-        is preserved). Only log files from the current/new build are uploaded.
+        ``logs/{stage}/latest/`` is a real directory copy (see update_latest_copy
+        in run_build/utils.py), not a symlink. Skip-if-unchanged applies
+        per-file, so old timestamped log directories with unchanged content
+        are skipped on every upload (their LastModified is preserved). Only
+        log files from the current/new build are uploaded.
 
         Returns:
             Upload statistics dict (same shape as upload_directory()).

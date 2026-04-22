@@ -8,7 +8,7 @@ Key modules:
 
 - `run_build.py` — Orchestrates all 4 pipeline stages sequentially
 - `build_report.py` — Generates reports from pipeline artifacts with zero manual data entry
-- `utils.py` — Shared helpers (duration formatting, symlink management, constants)
+- `utils.py` — Shared helpers (duration formatting, `latest/` directory copy management, constants)
 
 ## Pipeline Stages
 
@@ -120,8 +120,10 @@ The `PerformanceTracker` also acts as a memory guardian to prevent the OS OOM-ki
 
 | Threshold | Default | Behavior |
 |-----------|---------|----------|
-| Warning   | 80%     | Logs a warning once; resets if memory drops back down |
-| Critical  | 90%     | After 3 consecutive samples (~6 s sustained), triggers graceful abort |
+| Warning   | 85%     | Logs a warning once; resets if memory drops back down |
+| Critical  | 95%     | After 3 consecutive samples (~6 s sustained), triggers graceful abort |
+
+Defaults are defined in `utils.py` as `MEMORY_WARNING_THRESHOLD_PERCENT` and `MEMORY_CRITICAL_THRESHOLD_PERCENT`.
 
 The consecutive-sample requirement avoids false positives from transient GC or allocation spikes.
 
@@ -137,30 +139,35 @@ Override the threshold via `--memory-threshold` (CLI) or `MEMORY_THRESHOLD` (Mak
 
 ## Log Directory Structure
 
-Each build creates per-stage log directories sharing the same timestamp, with `latest` symlinks:
+Each build creates per-stage log directories sharing the same timestamp, with a `latest/` directory (a real directory copy of the most recent timestamped dir, refreshed at build end by `finalize_latest_copies()`):
 
 ```
 logs/
 ├── run/
-│   ├── latest -> 2026_03_16_143000
+│   ├── latest/                 # directory copy of the most recent 2026_03_16_143000/
+│   │   └── run.log
 │   └── 2026_03_16_143000/
-│       └── run.log            # Complete live log for RUN stage (all sources interleaved)
+│       └── run.log             # Complete live log for RUN stage (all sources interleaved)
 ├── merge/
-│   ├── latest -> 2026_03_16_143000
+│   ├── latest/
+│   │   └── merge.log
 │   └── 2026_03_16_143000/
 │       └── merge.log
 ├── release/
-│   ├── latest -> 2026_03_16_143000
+│   ├── latest/
+│   │   └── release.log
 │   └── 2026_03_16_143000/
 │       └── release.log
 ├── upload/
-│   ├── latest -> 2026_03_16_143000
+│   ├── latest/
+│   │   └── upload.log
 │   └── 2026_03_16_143000/
 │       └── upload.log
 └── errors/
-    ├── latest -> 2026_03_16_143000
+    ├── latest/
+    │   └── errors.log
     └── 2026_03_16_143000/
-        └── errors.log         # All errors and warnings across all stages
+        └── errors.log          # All errors and warnings across all stages
 ```
 
 During parallel source execution in the RUN stage, each source prefixes its log lines with `[source_name]` so interleaved output can be traced back to individual sources.
@@ -173,7 +180,9 @@ Each build creates a timestamped report directory (same timestamp as logs) for J
 
 ```
 reports/
-├── latest -> 2026_03_16_143000
+├── latest/                     # directory copy of the most recent 2026_03_16_143000/
+│   ├── build-report.txt
+│   └── ... (mirrors 2026_03_16_143000/)
 └── 2026_03_16_143000/
     ├── build-report.txt       # Human-readable report
     ├── build-report.json      # Machine-readable report

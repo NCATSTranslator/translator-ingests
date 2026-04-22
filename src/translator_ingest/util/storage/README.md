@@ -75,7 +75,7 @@ uv run python -m translator_ingest.util.storage.upload_s3 --release-sources "tra
 
 ## Upload Workflow
 
-When you run upload, the entire data and releases directories for each source are uploaded to S3. The upload always overwrites existing files (rsync-like behavior), so it is safe to re-run multiple times.
+When you run upload, the entire data and releases directories for each source are uploaded to S3. The upload is safe to re-run multiple times: files already on S3 with identical size and content hash (ETag) are skipped, so their `LastModified` is preserved. Only new or changed files are actually transferred. `/reports/` and `/logs/` trees are uploaded with the same semantics.
 
 After a successful upload, old versions are automatically removed from EBS to free up disk space. Only the latest version is kept locally. If any upload fails, cleanup is skipped for safety.
 
@@ -98,7 +98,7 @@ Before deletion, the system displays the bucket name, prefix being deleted, numb
 
 - Upload failures are logged but don't stop other sources from being processed
 - EBS cleanup is automatically skipped if any upload errors occurred
-- Failed uploads can be retried safely since the upload always overwrites
+- Failed uploads can be retried safely since skip-if-unchanged will no-op on the files that already made it, and re-upload only what's new or changed
 
 ## Troubleshooting
 

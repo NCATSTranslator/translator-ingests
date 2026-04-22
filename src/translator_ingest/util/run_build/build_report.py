@@ -736,16 +736,18 @@ def format_json_report(report: BuildReport) -> str:
     return json.dumps(data, indent=2)
 
 
-def load_errors_log(report_dir: Path) -> list[str]:
-    """Load error lines from errors.log in the report directory.
+def load_errors_log(errors_path: Path) -> list[str]:
+    """Load error lines from an errors.log file.
 
     Args:
-        report_dir: Report directory containing errors.log
+        errors_path: Direct path to the errors.log file (typically
+            logs/errors/{timestamp}/errors.log). The prior signature
+            accepted a directory and looked for ``errors.log`` inside
+            it, which never matched the orchestrator's actual layout.
 
     Returns:
         List of non-header error lines
     """
-    errors_path = report_dir / "errors.log"
     if not errors_path.exists():
         return []
 
@@ -759,24 +761,33 @@ def load_errors_log(report_dir: Path) -> list[str]:
     return lines
 
 
-def save_report(report: BuildReport, report_dir: Path) -> tuple[Path, Path, Path]:
+def save_report(
+    report: BuildReport,
+    report_dir: Path,
+    errors_log_path: Path | None = None,
+) -> tuple[Path, Path, Path]:
     """Save report to a directory as detailed text, summary text, and JSON.
 
-    Also loads errors from errors.log (if present) into report.errors_log
-    before generating the text reports.
+    If ``errors_log_path`` is provided and ``report.errors_log`` is empty,
+    loads error lines from that file into the report before generating the
+    text reports.
 
     Args:
         report: The BuildReport to save
         report_dir: Directory to save reports into
+        errors_log_path: Optional explicit path to the build's errors.log
+            (typically ``logs/errors/{timestamp}/errors.log``). Passing this
+            populates ``report.errors_log`` so errors appear in the text
+            and JSON outputs.
 
     Returns:
         Tuple of (detailed_path, summary_path, json_path)
     """
     report_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load errors from errors.log into the report
-    if not report.errors_log:
-        report.errors_log = load_errors_log(report_dir)
+    # Load errors from the real errors.log path into the report
+    if not report.errors_log and errors_log_path is not None:
+        report.errors_log = load_errors_log(errors_log_path)
 
     json_path = report_dir / "build-report.json"
     with json_path.open("w") as f:

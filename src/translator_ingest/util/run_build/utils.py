@@ -58,10 +58,9 @@ def update_latest_copy(parent_dir: Path, target_name: str) -> None:
         >>> with tempfile.TemporaryDirectory() as d:
         ...     p = Path(d)
         ...     (p / "2026_03_16").mkdir()
-        ...     (p / "2026_03_16" / "report.json").write_text("{}")
+        ...     _ = (p / "2026_03_16" / "report.json").write_text("{}")
         ...     update_latest_copy(p, "2026_03_16")
         ...     (p / "latest").is_dir() and not (p / "latest").is_symlink()
-        2
         True
     """
     source = parent_dir / target_name

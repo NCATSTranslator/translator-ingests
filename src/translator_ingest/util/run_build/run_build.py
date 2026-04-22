@@ -1055,7 +1055,12 @@ def stage_run(
                     break
                 if display.perf.memory_critical_event.is_set():
                     memory_aborted = True
-                    # Give the running source up to 5 min to finish cleanly.
+                    # Stop polling after 5 min. This is a soft budget, not a
+                    # hard timeout: the `with ProcessPoolExecutor` context
+                    # manager will still block on exit until the worker
+                    # subprocess finishes. A true hard timeout would require
+                    # SIGTERM-ing the worker PID, which is platform-dependent
+                    # and out of scope here.
                     wait([future], timeout=300)
                     break
 
@@ -1137,7 +1142,12 @@ def stage_run(
                     mem_info["threshold_percent"], cancelled_count,
                 )
 
-                # Wait for already-running futures to finish (up to 5 min timeout)
+                # Wait for already-running futures to finish (soft 5 min
+                # deadline). Note that the ProcessPoolExecutor context manager
+                # will still block on exit until each worker subprocess
+                # actually returns -- wait() timing out only stops us polling.
+                # Workers respond to cancellation between tasks, not mid-task,
+                # so this is a best-effort budget, not a hard timeout.
                 still_running = {f for f in pending if not f.cancelled()}
                 if still_running:
                     done_remaining, timed_out = wait(still_running, timeout=300)
@@ -1148,15 +1158,28 @@ def stage_run(
                         result = _collect_future_result(future, source)
                         results[source] = result
                         _log_and_record_result(result, source, display, report_dir)
+                    # Timed-out futures: still write per-source JSON and
+                    # update display.run_done/run_failed so the stage summary
+                    # and build report reflect these sources.
                     for future in timed_out:
                         source = future_to_source[future]
                         if source in display.run_running:
                             display.run_running.remove(source)
-                        results[source] = _make_cancelled_result(source, "timeout_after_memory")
+                        result = _make_cancelled_result(source, "timeout_after_memory")
+                        results[source] = result
+                        _log_and_record_result(result, source, display, report_dir)
 
     # Stop the periodic refresh thread
     stop_refresh.set()
     refresh_thread.join(timeout=2)
+
+    # Mark stage complete/failed BEFORE building the summary so that
+    # display.stage_durations['RUN'] is populated and the persisted
+    # duration_seconds matches what the display and final report show.
+    if memory_aborted or display.run_failed:
+        display.fail_stage("RUN")
+    else:
+        display.complete_stage("RUN")
 
     # Save stage summary
     stage_summary: dict[str, Any] = {
@@ -1174,11 +1197,6 @@ def stage_run(
     }
     with (report_dir / "stages" / "run" / "_summary.json").open("w") as f:
         json.dump(stage_summary, f, indent=2)
-
-    if memory_aborted or display.run_failed:
-        display.fail_stage("RUN")
-    else:
-        display.complete_stage("RUN")
 
     return results
 
@@ -1679,7 +1697,9 @@ def run_full_build(
         build_notes=build_notes if build_notes else None,
     )
 
-    text_path, summary_path, json_path = save_report(report, report_dir)
+    text_path, summary_path, json_path = save_report(
+        report, report_dir, errors_log_path=error_log_path,
+    )
 
     # ── Refresh 'latest' copies now that all files are written ──
     # Doing this here (not at build start) ensures reports/latest/ and
