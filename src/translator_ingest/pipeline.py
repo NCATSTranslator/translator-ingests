@@ -19,7 +19,8 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, NormalizationScheme, MERGING_CODE_VERSION
+from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION
+from orion.normalization import get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
@@ -654,28 +655,14 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Normalize the post-transform KGX files
     # Note - ORION can use the biolink model to map predicates during normalization, but we decided not to do that.
-    # Here we still need the biolink model version to set as the "edge_normalization_version" so metadata outputs are 
-    # consistent, even though it doesn't actually do anything anymore. In the future we'll remove this field from
-    # NormalizationScheme but ORION needs more work first.
-    current_biolink_version = get_current_biolink_version()
-    pipeline_metadata.biolink_version = current_biolink_version
-    # Initializing a NormalizationScheme automatically resolves babel_version, node_normalization_version, 
-    # and normalization_code_version to their current versions as determined by ORION. Specifically, ORION retrieves
-    # the Babel version and the Node Normalizer version from the server specified in its config. The desired Node Norm
-    # service can be configured with the environment variable NODE_NORMALIZATION_URL (current default is 
-    # "https://nodenormalization-sri.renci.org"). The normalization code version is determined by ORION.
-    # Here we only set the other attributes of NormalizationScheme, ones we want translator-ingests to control.
-    normalization_scheme = NormalizationScheme(
-        edge_normalization_version=current_biolink_version,
-        conflation=True,
-        strict=NORMALIZATION_STRICT_OVERRIDES.get(source, True),
-    )
-    # After the NormalizationScheme is populated with current versions, use it to set the pipeline_metadata.
-    pipeline_metadata.babel_version = normalization_scheme.babel_version
-    pipeline_metadata.node_normalizer_version = normalization_scheme.node_normalization_version
-    pipeline_metadata.normalization_code_version = normalization_scheme.normalization_code_version
-    pipeline_metadata.normalization_conflation = normalization_scheme.conflation
-    pipeline_metadata.normalization_strict = normalization_scheme.strict
+    # Here we still need the biolink model version populated before normalization so metadata outputs are
+    # consistent.
+    pipeline_metadata.biolink_version = get_current_biolink_version()
+    pipeline_metadata.babel_version = get_current_babel_version()
+    pipeline_metadata.node_normalizer_version = get_current_node_norm_version()
+    pipeline_metadata.normalization_code_version = NORMALIZATION_CODE_VERSION
+    pipeline_metadata.normalization_conflation = True
+    pipeline_metadata.normalization_strict = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
     # Now pipeline_metadata has everything it needs to check if the currently desired normalization is done already,
     # and settings to provide to the normalization stage.
     if is_normalization_complete(pipeline_metadata) and not overwrite:
