@@ -116,7 +116,7 @@ def transform_gene_to_gene_orthology(
         predicate="biolink:member_of",
         sources=build_association_knowledge_sources(primary="infores:panther"),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+        agent_type=AgentTypeEnum.automated_agent
     )
     gene_b_family_relationship = GeneToGeneFamilyAssociation(
         id=entity_id(),
@@ -125,7 +125,7 @@ def transform_gene_to_gene_orthology(
         predicate="biolink:member_of",
         sources=build_association_knowledge_sources(primary="infores:panther"),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+        agent_type=AgentTypeEnum.automated_agent
     )
     return KnowledgeGraph(
         nodes=[
