@@ -393,6 +393,8 @@ def merge(pipeline_metadata: PipelineMetadata):
     if max_edge_count == 0:
         logger.info(f"Skipping merge for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, just copy the normalized files
+        # make sure the merged directory exists because for nodes-only ingests it might not
+        output_nodes_file.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(normalized_nodes_file, output_nodes_file)
         # Write empty merge metadata
         with open(output_metadata_file, 'w') as f:
