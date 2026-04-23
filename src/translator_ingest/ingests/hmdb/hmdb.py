@@ -45,13 +45,13 @@ def get_latest_version(self) -> str:
 
     :return: str, version
     """
-    # this grabs the html from the downloads page and searches for the Current Version on it
+    # this grabs the html from the download page and searches for the Current Version on it
     html_page: requests.Response = requests.get('https://hmdb.ca/downloads')
     html_page.raise_for_status()
 
     resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
     search_text = 'Current Version '
-    div_tag = resp.find('a', string=re.compile('Current Version'))
+    div_tag = resp.find(name='a', string=re.compile('Current Version'))
     if div_tag:
         latest_version = div_tag.text.split(search_text)[1].strip('() ')
         return latest_version
