@@ -77,7 +77,7 @@ def prepare_bindingdb_data(
     """
     Given that HMDB is a zip archive wrapping an XML file,
     we do some pre-processing here to coerce the data into
-    manageable records for processing by the ingest.
+    manageable records for processing by the ingest task.
     """
     if koza_transform.input_files_dir is None:
         raise ValueError("input_files_dir must be set for HMDB ingest")
@@ -104,7 +104,7 @@ def prepare_bindingdb_data(
                 # did we get a good value?
                 if metabolite_accession is not None and metabolite_accession.text is not None:
                     # create a valid curie for the metabolite id
-                    metabolite_id = f'{HMDB}:' + metabolite_accession.text
+                    metabolite_id = f"HMDB:{metabolite_accession.text}"
 
                     # get the metabolite name element
                     metabolite_name: E_Tree.Element = el.find('name')
@@ -120,10 +120,14 @@ def prepare_bindingdb_data(
                         # get the nodes and edges for genes
                         gene_success: bool = get_genes(el, metabolite_id)
 
-                        # did we get something created
+                        # did we get something created?
                         if pathway_success or disease_success or gene_success:
                             # create a metabolite node and add it to the list
-                            metabolite_node = kgxnode(metabolite_id, name=metabolite_name.text.encode('ascii',errors='ignore').decode(encoding="utf-8"))
+                            metabolite_node = kgxnode(
+                                metabolite_id,
+                                name=metabolite_name.text
+                                        .encode('ascii',errors='ignore').decode(encoding="utf-8")
+                            )
                             yield metabolite_node()
                         else:
                             count_skipped(

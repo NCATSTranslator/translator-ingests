@@ -268,10 +268,10 @@ def get_diseases(koza_transform, el, metabolite_id) -> bool:
             # get the omim id
             object_id: E_Tree.Element = d.find('omim_id')
 
-            # did we get a value
+            # did we get a value?
             if object_id is not None and object_id.text is not None:
 
-                # get the name
+                # did we get the name?
                 name: E_Tree.Element = d.find('name')
 
                 # was the name found (optional)
@@ -319,6 +319,7 @@ def get_diseases(koza_transform, el, metabolite_id) -> bool:
                                        primary_knowledge_source=self.provenance_id,
                                        edgeprops=edge_props)
                     self.output_file_writer.write_kgx_edge(new_edge)
+
                     ret_val = True
             else:
                 koza_transform.log(
