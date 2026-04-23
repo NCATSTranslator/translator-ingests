@@ -1,14 +1,18 @@
-# Storage Component - S3 Upload and EBS Management
+# Storage — S3 Upload and EBS Management
 
 ## Overview
 
-The storage component handles uploading translator-ingests data and releases to an S3 bucket, with automatic cleanup of old versions from EBS to save local storage space. Data sources and release sources are handled as separate, independent lists to provide explicit control over which sources get data uploads vs releases.
+The storage component handles uploading translator-ingests data and releases to S3, managing local EBS versions, and providing path utilities for the versioned directory layout. Data is served publicly via `https://kgx-storage.rtx.ai`.
+
+Key modules:
+
+- `s3.py` — S3Uploader class, upload and cleanup functions
+- `local.py` — Local path management, file type enums, versioned directory layout
+- `upload_s3.py` — CLI entry point for standalone upload
 
 ## EC2 Instance Requirements
 
-**Recommended instance:** t3.2xlarge with 200 GiB EBS storage
-
-Smaller instances have resulted in crashes when running all ingests due to memory and storage constraints. The current number of ingests requires significant resources for parallel processing.
+**Recommended instance:** t3.2xlarge with 400 GiB EBS storage
 
 This code must run on an EC2 instance with an IAM role that grants S3 permissions. It will not work from local development machines or EC2 instances without proper IAM roles.
 
@@ -18,6 +22,15 @@ The IAM role needs the following permissions on the translator-ingests bucket:
 - s3:ListBucket
 - s3:DeleteObject
 
+## Public Access
+
+Uploaded data is served publicly via `https://kgx-storage.rtx.ai`. The base URLs are configurable via environment variables:
+
+- `INGESTS_STORAGE_URL` — defaults to `https://kgx-storage.rtx.ai/data`
+- `INGESTS_RELEASES_URL` — defaults to `https://kgx-storage.rtx.ai/releases`
+
+The kgx-webserver that serves these files runs on a separate t3.medium EC2 instance.
+
 ## S3 Directory Structure
 
 The S3 bucket mirrors the local directory structure with two main directories:
@@ -26,57 +39,45 @@ The S3 bucket mirrors the local directory structure with two main directories:
 
 **releases/** contains compressed release archives (tar.zst files), the latest directory for each source, and release metadata files.
 
-## Upload Workflow
+## Upload Commands
 
-The full upload pipeline consists of three steps:
+**make upload-all** — Auto-discover and upload all sources (data and releases separately)
 
-```bash
-make run        # Run the full ingest pipeline (download, transform, normalize, validate)
-make release    # Generate release archives for each source
-make upload     # Upload to S3 and cleanup old EBS versions
-```
+**make upload SOURCES="go_cam ctd"** — Upload specified sources to S3 with EBS cleanup
 
-When you run upload, the entire data and releases directories for each source are uploaded to S3. The upload always overwrites existing files (rsync-like behavior), so it's safe to re-run multiple times.
+**make upload-go_cam** — Upload a single source (pattern: upload-{source})
 
-After a successful upload, old versions are automatically removed from EBS to free up disk space. Only the latest version is kept locally. If any upload fails, cleanup is skipped for safety.
+**make cleanup-ebs** — Clean up old versions from EBS without uploading
 
-## Makefile Commands
+**make cleanup-s3** — Delete all objects from S3 bucket (dangerous, requires confirmation)
 
-**make upload-all** - Auto-discover and upload all sources (data and releases separately, no combining)
+**make cleanup-s3-source SOURCES="go_cam"** — Delete specific source from S3 (dangerous, requires confirmation)
 
-**make upload SOURCES="go_cam ctd"** - Upload specified sources to S3 with EBS cleanup (Note: currently uses old interface)
-
-**make upload-go_cam** - Upload a single source (pattern: upload-{source})
-
-**make cleanup-ebs** - Clean up old versions from EBS without uploading
-
-**make cleanup-s3** - Delete all objects from S3 bucket (dangerous, requires confirmation)
-
-**make cleanup-s3-source SOURCES="go_cam"** - Delete specific source from S3 (dangerous, requires confirmation)
-
-## Direct Python Usage (Advanced)
+## Direct Python Upload (Advanced)
 
 For explicit control over separate data vs release source lists:
 
 ```bash
 # auto-discover data and release sources separately (same as make upload-all)
-uv run python src/translator_ingest/upload_s3.py
+uv run python -m translator_ingest.util.storage.upload_s3
 
 # specify different lists for data and releases
-uv run python src/translator_ingest/upload_s3.py \
+uv run python -m translator_ingest.util.storage.upload_s3 \
     --data-sources "ctd go_cam ncbigene" \
     --release-sources "translator_kg ctd go_cam"
 
 # upload only data for specific sources
-uv run python src/translator_ingest/upload_s3.py --data-sources "ncbigene"
+uv run python -m translator_ingest.util.storage.upload_s3 --data-sources "ncbigene"
 
 # upload only releases for specific sources
-uv run python src/translator_ingest/upload_s3.py --release-sources "translator_kg"
+uv run python -m translator_ingest.util.storage.upload_s3 --release-sources "translator_kg"
 ```
 
-## Logging
+## Upload Workflow
 
-Each pipeline run creates logs in `/logs/{source}/{timestamp}/run.log`. This allows tracking what happened for each source over time. The logs directory is gitignored.
+When you run upload, the entire data and releases directories for each source are uploaded to S3. The upload is safe to re-run multiple times: files already on S3 with identical size and content hash (ETag) are skipped, so their `LastModified` is preserved. Only new or changed files are actually transferred. `/reports/` and `/logs/` trees are uploaded with the same semantics.
+
+After a successful upload, old versions are automatically removed from EBS to free up disk space. Only the latest version is kept locally. If any upload fails, cleanup is skipped for safety.
 
 ## EBS Cleanup Strategy
 
@@ -93,19 +94,11 @@ The S3 cleanup functions permanently delete data from the S3 bucket. These opera
 
 Before deletion, the system displays the bucket name, prefix being deleted, number of objects, total size in GB, and a sample of files that will be deleted.
 
-## Reproducibility
-
-This setup is portable and not tied to any specific AWS account. To run on a new EC2 instance:
-
-1. Launch a t3.2xlarge instance with 200 GiB EBS storage
-2. Create an S3 bucket for storing outputs
-3. Create an IAM role with the required S3 permissions
-4. Attach the IAM role to the EC2 instance
-5. Clone the repository and run `make install`
-
 ## Error Handling
 
-Upload failures are logged but don't stop other sources from being processed. EBS cleanup is automatically skipped if any upload errors occurred. Failed uploads can be retried safely since the upload always overwrites.
+- Upload failures are logged but don't stop other sources from being processed
+- EBS cleanup is automatically skipped if any upload errors occurred
+- Failed uploads can be retried safely since skip-if-unchanged will no-op on the files that already made it, and re-upload only what's new or changed
 
 ## Troubleshooting
 
