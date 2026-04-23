@@ -4,13 +4,15 @@ Derived from https://github.com/RobokopU24/ORION/blob/master/parsers/hmdb/src/lo
 with modifications as required from other KPs identified by the Phase 2 ingest survey
 """
 from typing import Any, Iterable
+from pathlib import Path
 import re
 
 import uuid
 import requests
 
 from bs4 import BeautifulSoup
-import pandas as pd
+from zipfile import ZipFile
+import xml.etree.cElementTree as E_Tree
 
 import koza
 
@@ -23,20 +25,18 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association,
 )
+
 from koza.model.graphs import KnowledgeGraph
 from bmt.pydantic import entity_id, build_association_knowledge_sources
+
+from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
+    read_xml_file,
+    smpdb_to_curie,
+    get_genes,
+    get_diseases,
+    get_pathways
+)
 from translator_ingest.util.biolink import INFORES_CTD
-
-# !!! README First !!!
-#
-# This module provides a template with example code and instructions for implementing an ingest. Replace the body
-# of function examples below with ingest specific code and delete all template comments or unused functions.
-#
-# Note about ingest tags: for the ingests with multiple different input files and/or different transformation processes,
-# ingests can be divided into multiple sections using tags. Examples from this template are "ingest_by_record",
-# "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
-# yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
-
 
 def get_latest_version(self) -> str:
     """
@@ -58,30 +58,89 @@ def get_latest_version(self) -> str:
     else:
         raise Exception("Version could not be determined from html parsing for HMDB.")
 
+@koza.on_data_begin()
+def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
 
-@koza.prepare_data(tag="ingest_by_record")
-def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
+    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
+    koza_transform.transform_metadata["ingest_by_record"] = {"skipped_record_counter": 0}
 
-    # do pandas stuff
-    df = pd.DataFrame(data)
-    return df.dropna().drop_duplicates().to_dict(orient="records")
+def count_skipped(koza_transform: koza.KozaTransform, msg: str):
+    koza_transform.transform_metadata["ingest_by_record"]["skipped_record_counter"] += 1
+    koza_transform.log(msg=msg, level="DEBUG")
 
-    # do database stuff:
-    # import sqlite3
-    # con = sqlite3.connect("example.db")
-    # con.row_factory = sqlite3.Row
-    # cur = con.cursor()
-    # cur.execute("SELECT * FROM example_table")
-    # records = cursor.fetchall()
-    # for record in records:
-    #     yield record
-    # con.close()
+@koza.prepare_data()
+def prepare_bindingdb_data(
+        koza_transform: koza.KozaTransform,
+        data: Iterable[dict[str, Any]]
+) -> Iterable[dict[str, Any]] | None:
+    """
+    Given that HMDB is a zip archive wrapping an XML file,
+    we do some pre-processing here to coerce the data into
+    manageable records for processing by the ingest.
+    """
+    if koza_transform.input_files_dir is None:
+        raise ValueError("input_files_dir must be set for HMDB ingest")
 
-    # merge stuff in a custom way
-    # koza.state['nodes'] = defaultdict(dict)
-    # for record in data:
-    #    koza.state['nodes'][record['node_id']] # store some merged node properties or something like that
+    hmdb_data_archive_path: Path = koza_transform.input_files_dir / "hmdb_metabolites.zip"
 
+    # init the record counters
+    record_counter: int = 0
+    skipped_record_counter: int = 0
+
+    with ZipFile(hmdb_data_archive_path) as zf:
+        # open the hmdb xml file
+        with zf.open('hmdb_metabolites.xml', 'r') as fp:
+            # loop through, filtering for relevant elements
+            for record in read_xml_file(koza_transform, fp, 'metabolite'):
+                # increment the counter
+                record_counter += 1
+                # convert the xml text into an object
+                el: E_Tree.Element = E_Tree.fromstring(record)
+
+                # get the metabolite element
+                metabolite_accession: E_Tree.Element = el.find('accession')
+
+                # did we get a good value?
+                if metabolite_accession is not None and metabolite_accession.text is not None:
+                    # create a valid curie for the metabolite id
+                    metabolite_id = f'{HMDB}:' + metabolite_accession.text
+
+                    # get the metabolite name element
+                    metabolite_name: E_Tree.Element = el.find('name')
+
+                    # did we get a good value
+                    if metabolite_name is not None and metabolite_name.text is not None:
+                        # get the nodes and edges for the pathways
+                        pathway_success: bool = get_pathways(el, metabolite_id)
+
+                        # get nodes and edges for the diseases
+                        disease_success: bool = get_diseases(el, metabolite_id)
+
+                        # get the nodes and edges for genes
+                        gene_success: bool = get_genes(el, metabolite_id)
+
+                        # did we get something created
+                        if pathway_success or disease_success or gene_success:
+                            # create a metabolite node and add it to the list
+                            metabolite_node = kgxnode(metabolite_id, name=metabolite_name.text.encode('ascii',errors='ignore').decode(encoding="utf-8"))
+                            yield metabolite_node()
+                        else:
+                            count_skipped(
+                                koza_transform,
+                                msg=f'Metabolite {metabolite_id} record skipped '+
+                                    'due to no pathway, disease or gene data.'
+                            )
+                    else:
+                        count_skipped(
+                            koza_transform,
+                            msg=f'Metabolite {metabolite_id} record skipped due to invalid metabolite name.'
+                        )
+                else:
+                    count_skipped(
+                        koza_transform,
+                        msg=f'Record skipped due to invalid metabolite id: {record}'
+                    )
 
 # Ingests must implement a function decorated with @koza.transform() OR @koza.transform_record() (not both).
 # These functions should contain the core data transformation logic generating and returning KnowledgeGraph objects
