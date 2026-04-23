@@ -528,7 +528,8 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
 
     storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
                    f"transform_{pipeline_metadata.transform_version}/"
-                   f"normalization_{pipeline_metadata.get_composite_normalization_version()}/")
+                   f"normalization_{pipeline_metadata.get_composite_normalization_version()}/"
+                   f"merge_{MERGING_CODE_VERSION}/")
     pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
         id=storage_url,
