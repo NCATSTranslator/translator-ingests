@@ -1,7 +1,7 @@
 from typing import Dict
 from unittest.mock import patch, Mock
 
-from src.translator_ingest.util.http_utils import post_query
+from translator_ingest.util.http_utils import post_query
 
 
 def test_post_invalid_url_query():
