@@ -98,7 +98,7 @@ target_info:
     source_files:
       - BindingDB_All_{version}_tsv.zip
     additional_notes: >-
-      BindingDB provides generates chemical-protein interaction statements based on
+      BindingDB provides chemical-protein interaction statements based on
       manual curation from the literature, or import from external knowledgebases.
       Records include details about experiment supporting each interaction,
       including binding/affinity metrics. The source tsv may therefore include >1 row
