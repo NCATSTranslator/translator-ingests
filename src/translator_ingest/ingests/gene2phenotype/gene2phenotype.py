@@ -14,11 +14,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-
 ## ADDED packages for this ingest
 from datetime import datetime
 import pandas as pd
 import requests
+
+
 ## HARD-CODED VALUES
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CAUSES = "biolink:causes"
@@ -35,6 +36,8 @@ ALLELIC_REQ_TO_MAP = [
     "monoallelic_X_hemizygous",
     "monoallelic_X_heterozygous",
 ]
+## confidence values to filter out
+CONFIDENCE_TO_FILTER = ["limited", "disputed", "refuted"]
 ## hard-coded mapping of EBI G2P's "molecular mechanism" values to biolink's `form_or_variant_qualifier` values
 ## uses `genetic_variant_form` or its descendants
 FORM_OR_VARIANT_QUALIFIER_MAPPINGS = {
@@ -71,58 +74,35 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin()
 def on_begin(koza: koza.KozaTransform) -> None:
-    ## save in state for later use
-    ## dynamically create allelic req mappings - dictionary comprehension
+    ## generate allelic req mappings
     koza.transform_metadata["allelicreq_mappings"] = {i: build_allelic_req_mappings(i) for i in ALLELIC_REQ_TO_MAP}
 
 
 @koza.prepare_data()
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-    ## remove rows we don't want to process, using pandas
-    ## set up counts for removed rows, save in state for later use
-    koza.state["no_diseaseID_stats"] = {
-        "n_rows": 0,
-        "n_names": 0,
-    }
-    koza.state["other_row_counts"] = {
-        "no_gene_IDs": 0,  ## just in case
-        "duplicate_rows": 0,  ## just in case
-    }
-
     df = pd.DataFrame.from_records(data)
     ## data was loaded with empty values = "". Replace these empty strings with None, so isna() methods will work
     df.replace(to_replace="", value=None, inplace=True)
-    ## for debugging
-    # print(df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape)
-    # print(df[df["gene mim"].isna()].shape)
+    ## check that there's NAs, isna() methods work
+    koza.log(f"{df[df["disease mim"].isna() & df["disease MONDO"].isna()].shape[0]} rows are missing disease IDs (NA)")
+    koza.log(f"{df[df["publications"].isna()].shape[0]} rows are missing publications (NA).")
 
-    ## temp? filter out rows where "disease mim" == 188400
-    ## NodeNorm incorrectly categorizes this ID/entity as a Gene when it's actually a Disease
-    df = df[~ (df["disease mim"] == "188400")]
+    ## check for orphanet IDs, duplicates just in case (currently not in data, so not handled)
+    koza.log(f"{df["disease mim"].str.contains("orpha", case=False, na=False).sum()} rows with orphanet ID in 'disease mim' column")
+    koza.log(f"{df.duplicated(keep=False).sum()} duplicate rows")
 
-    ## currently, there are rows where both disease ID columns have no value. Check, count, remove
-    temp_no_disease = df[df["disease mim"].isna() & df["disease MONDO"].isna()]
-    if temp_no_disease.shape[0] > 0:  ## number of rows
-        ## add to counts
-        koza.state["no_diseaseID_stats"]["n_rows"] = temp_no_disease.shape[0]
-        koza.state["no_diseaseID_stats"]["n_names"] = len(temp_no_disease["disease name"].unique())
-        ## remove rows when BOTH disease ID columns have no value
-        df.dropna(how="all", subset=["disease mim", "disease MONDO"], inplace=True, ignore_index=True)
-
-    ## just in case, check for rows with no gene HGNC ID (not in data currently). Count, remove if they're there
-    if df[df["hgnc id"].isna()].shape[0] > 0:
-        ## add to counts
-        koza.state["other_row_counts"]["no_gene_IDs"] = df[df["hgnc id"].isna()].shape[0]
-        ## remove
-        df.dropna(subset=["hgnc id"], inplace=True, ignore_index=True)
-
-    ## Check for duplicate rows just in case (not in data currently). Count, remove if they're there
-    temp_duplicates = df[df.duplicated()]  ## will count all except first occurrence (default)
-    if temp_duplicates.shape[0] > 0:
-        ## add to counts
-        koza.state["other_row_counts"]["duplicate_rows"] = temp_duplicates.shape[0]
-        ## remove
-        df.drop_duplicates(inplace=True, ignore_index=True)
+    ## FILTERING
+    ## remove rows with specific confidence values: negated or likely-no relationship
+    df = df[~ df["confidence"].isin(CONFIDENCE_TO_FILTER)]
+    koza.log(f"{df.shape[0]} rows after removing confidence values: {", ".join(CONFIDENCE_TO_FILTER)}")
+    ## remove rows that don't have a disease ID
+    df.dropna(how="all", subset=["disease mim", "disease MONDO"], inplace=True, ignore_index=True)
+    koza.log(f"{df.shape[0]} rows after removing rows with no disease ID")
+    ## TEMPORARY filter for OMIM:188400
+    ## NodeNorm incorrectly assigns this to a Gene when it's actually a Disease, causing an incorrect edge to be made
+    TEMP_OMIM_FILTER = ["188400"]
+    df = df[~ df["disease mim"].isin(TEMP_OMIM_FILTER)]
+    koza.log(f"{df.shape[0]} rows after removing disease OMIM: {", ".join(TEMP_OMIM_FILTER)}") 
 
     ## return updated dataset
     return df.to_dict(orient="records")
@@ -131,17 +111,19 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 @koza.transform_record()
 def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## processing `publications` field
-    publications = ["PMID:" + i.strip() for i in record["publications"].split(";")] if record["publications"] else None
+    if pd.notna(record["publications"]):
+        publications = ["PMID:" + i.strip() for i in record["publications"].split(";")]
+    else:
+        publications = None
     ## creating url
     url = "https://www.ebi.ac.uk/gene2phenotype/lgd/" + record["g2p id"]
     ## truncating date to only YYYY-MM-DD. Entire date is hitting pydantic date_from_datetime_inexact error
     date = record["date of last review"][0:10]
 
-    gene = Gene(id="HGNC:" + record["hgnc id"])
+    gene = Gene(id=f"HGNC:{record["hgnc id"]}")
     ## picking disease ID: prefer "disease mim" over "disease MONDO"
-    if record["disease mim"]:
-        ## assuming value is a string OMIM ID without a prefix
-        disease = Disease(id="OMIM:" + record["disease mim"])
+    if pd.notna(record["disease mim"]):
+        disease = Disease(id=f"OMIM:{record["disease mim"]}")
     else:  ## use "disease MONDO" column, which already has the correct prefix/format for Translator
         disease = Disease(id=record["disease MONDO"])
 
@@ -172,22 +154,3 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
-
-
-@koza.on_data_end()
-def on_end(koza: koza.KozaTransform) -> None:
-    ## add logs based on counts
-    if koza.state["no_diseaseID_stats"]["n_rows"] > 0:
-        koza.log(
-            f"{koza.state["no_diseaseID_stats"]["n_rows"]} rows (with {koza.state["no_diseaseID_stats"]["n_names"]} unique disease names) were discarded for having no disease ID.",
-            level="INFO",
-        )
-    if koza.state["other_row_counts"]["no_gene_IDs"] > 0:
-        koza.log(
-            f"{koza.state["other_row_counts"]["no_gene_IDs"]} rows were discarded for having no gene ID.", level="INFO"
-        )
-    if koza.state["other_row_counts"]["duplicate_rows"] > 0:
-        koza.log(
-            f"{koza.state["other_row_counts"]["duplicate_rows"]} rows were discarded for being duplicates.",
-            level="INFO",
-        )

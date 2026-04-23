@@ -41,12 +41,9 @@ from translator_ingest.util.download_utils import substitute_version_in_download
 
 logger = get_logger(__name__)
 
-# Short-term source-specific normalization overrides.
-# PathBank emits many valid source-local identifiers that NodeNorm does not currently resolve.
-# Running lenient normalization preserves those nodes/edges until broader identifier support lands.
-NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {
-    "pathbank": False,
-}
+# Source-specific normalization overrides.
+# All sources default to strict normalization (True).
+NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {}
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
