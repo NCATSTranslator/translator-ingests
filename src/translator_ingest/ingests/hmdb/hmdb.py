@@ -59,11 +59,6 @@ def get_latest_version(self) -> str:
         raise Exception("Version could not be determined from html parsing for HMDB.")
 
 
-# Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
-# They take an Iterable of dictionaries, typically representing the rows of a source data file, and return an Iterable
-# of dictionaries which will be the data passed to subsequent transform functions. This allows for operations like
-# nontrivial merging or transforming of complex source data on a source wide level, even if the transform will occur
-# with a per record transform function.
 @koza.prepare_data(tag="ingest_by_record")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
 
