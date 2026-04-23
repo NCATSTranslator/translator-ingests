@@ -194,18 +194,19 @@ def _match_edge(
 
             # We only pass things through if *both* of the returned and the
             # expected the lists of slot values are or are not empty (namely not XOR).
-            if isinstance(expected_edge[association_slot], list):
-                if bool(expected_edge[association_slot]) ^ bool(reasv):
-                    return f"Unexpected return values '{reasv}' for slot '{association_slot}' in edge"
+            expected_slot_value = expected_edge[association_slot]
+            if isinstance(expected_slot_value, list):
+                if bool(expected_slot_value) ^ bool(reasv):
+                    return f"Unexpected return values '{reasv!r}' for slot '{association_slot}' in edge"
                 # ...but we only specifically validate non-empty expectations
-                if expected_edge[association_slot]:
-                    for entry in expected_edge[association_slot]:
+                if expected_slot_value:
+                    for entry in expected_slot_value:
                         if isinstance(entry, str):
                             # Simple Membership value test.
                             if entry not in reasv:
                                 return (
                                     f"Value '{entry}' for slot '{association_slot}' "
-                                    + f"is missing in returned edge values '{reasv}?'"
+                                    + f"is missing in returned edge values '{reasv!r}?'"
                                 )
                         elif isinstance(entry, dict):
                             # Validate that at least one Pydantic model instance
@@ -213,19 +214,25 @@ def _match_edge(
                             if not _validate_pydantic_collection(entry, reasv):
                                 return (
                                     f"Expected fields {entry!r} not found in any returned "
-                                    f"'{association_slot}' entry in '{reasv}'"
+                                    f"'{association_slot}' entry in '{reasv!r}'"
                                 )
                         else:
                             return (
                                 "Unexpected value type for "
-                                + f"{str(expected_edge[association_slot])} for slot '{association_slot}'"
+                                + f"{expected_slot_value!r} for slot '{association_slot}'"
                             )
+            elif isinstance(expected_slot_value, dict):
+                if not _validate_pydantic_collection(expected_slot_value, reasv):
+                    return (
+                        f"Expected fields {expected_slot_value!r} not found in any returned "
+                        f"'{association_slot}' entry in '{reasv!r}'"
+                    )
             else:
                 # Scalar value test
-                if reasv != expected_edge[association_slot]:
+                if reasv != expected_slot_value:
                     return (
-                        f"Value '{expected_edge[association_slot]}' "
-                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv}'?"
+                        f"Value '{expected_slot_value!r}' "
+                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
                     )
 
     # If we got to here, then success!
