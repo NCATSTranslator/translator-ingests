@@ -1,11 +1,16 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
-# Configure which sources to process (default: all available sources)
-# Allow lowercase 'sources' as an alias for SOURCES
+
+# Graph ID for multisource graph target (default: translator_kg).
+# Graph definitions live in graphs.yaml; see src/translator_ingest/graphs.py.
+GRAPH_ID ?= translator_kg
+
+# Configure which sources to process. If SOURCES is not set, resolve it from graphs.yaml using GRAPH_ID.
 ifdef sources
 SOURCES := $(sources)
-else
-SOURCES ?= alliance bgee bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub drugcentral gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther pathbank semmeddb sider signor tmkp ttd ubergraph
+endif
+ifeq ($(origin SOURCES), undefined)
+SOURCES := $(shell $(RUN) python -m translator_ingest.graphs sources $(GRAPH_ID))
 endif
 
 NODE_PROPERTIES ?= ncbi_gene
@@ -28,9 +33,6 @@ endif
 # (3) acronyms and external vocabulary tokens in analysis cells add more noise.
 # Prefer spell-checking .py, .yaml, and prose docs instead.
 CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
-
-# Graph ID for merge target (default: translator_kg)
-GRAPH_ID ?= translator_kg
 
 # Include additional makefiles
 include rig.Makefile
@@ -64,6 +66,7 @@ define HELP
 │     validate-single     Validate only specified sources                      │
 │     release             Generate releases for the specified sources          │
 │     merge               Merge specified sources into one KG                  │
+│     merge-all           Merge every graph declared in graphs.yaml            │
 │                                                                              │
 │     test                Run all tests                                        │
 │                                                                              │
@@ -85,10 +88,10 @@ define HELP
 │     docs-clean          Clean documentation build                            │
 │                                                                              │
 │ Configuration:                                                               │
-│     SOURCES             Space-separated list of sources                      │
-│                         Default: all available sources                       │
-│     GRAPH_ID            Graph ID for merged graphs                           │
+│     GRAPH_ID            Graph ID for multisource graphs (see graphs.yaml)    │
 │                         Default: translator_kg                               │
+│     SOURCES             Space-separated list of sources                      │
+│                         Default: resolved from graphs.yaml using GRAPH_ID    │
 │                                                                              │
 │ Examples:                                                                    │
 │     # Run pipeline for all sources                                           │
@@ -106,10 +109,14 @@ define HELP
 │     # Make releases only for specified sources                               │
 │     make release SOURCES="ctd go_cam goa"                                    │
 │                                                                              │
-│     # Merge all sources into one graph named translator_kg                   │
+│     # Build and release the default multisource KG (translator_kg)           │
 │     make merge                                                               │
-│     # Merge specified sources into a graph named example_custom_graph        │
-│     make merge GRAPH_ID=example_custom_graph SOURCES="ctd go_cam goa"        │
+│     # Build and release the KG translator_kg_open (declared in graphs.yaml)  │
+│     make merge GRAPH_ID=translator_kg_open                                   │
+│     # Build and release every KG declared in graphs.yaml                     │
+│     make merge-all                                                           │
+│     # Build and release a custom KG that is not defined in graphs.yaml       │
+│     make merge GRAPH_ID=example_custom_kg SOURCES="ctd go_cam goa"           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 endef
 export HELP
@@ -186,6 +193,14 @@ validate-%:
 merge:
 	@echo "Merging sources and building $(GRAPH_ID)..."
 	$(RUN) python src/translator_ingest/merging.py $(GRAPH_ID) $(SOURCES) $(if $(OVERWRITE),--overwrite)
+
+.PHONY: merge-all
+merge-all:
+	@for gid in $$($(RUN) python -m translator_ingest.graphs list); do \
+		echo "Building graph: $$gid..."; \
+		srcs=$$($(RUN) python -m translator_ingest.graphs sources $$gid) || exit $$?; \
+		$(RUN) python src/translator_ingest/merging.py $$gid $$srcs $(if $(OVERWRITE),--overwrite) || exit $$?; \
+	done
 
 .PHONY: release
 release:
