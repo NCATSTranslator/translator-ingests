@@ -26,12 +26,12 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
     get_pathways
 )
 
-def get_latest_version(self) -> str:
+def get_latest_version() -> str:
     """
     Gets the version of the HMDB data.
     Adapted from RENCI Orion code "get_latest_source_version" method.
 
-    :return: str, version
+    :return: Str, version
     """
     # this grabs the html from the download page and searches for the Current Version on it
     html_page: requests.Response = requests.get('https://hmdb.ca/downloads')
