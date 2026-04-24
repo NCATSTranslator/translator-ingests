@@ -99,8 +99,14 @@ def test_gocam_entities(gocam_output):
 
     association = associations[0]
     assert association.subject == "UniProtKB:P12345"
-    assert association.object == "UniProtKB:Q67890"
+    assert association.subject_activity_qualifier == "GO:0005515"
+    assert association.subject_process_qualifier == "GO:0003700"
+    assert association.subject_context_qualifier == "GO:0005634"
     assert association.predicate == "biolink:regulates"
+    assert association.object == "UniProtKB:Q67890"
+    assert association.object_activity_qualifier == "GO:0043565"
+    assert association.object_process_qualifier == "GO:0003700"
+    assert association.object_context_qualifier == "GO:0005634"
     assert association.original_predicate == "RO:0002629"
     assert association.publications == ["PMID:12345678"]
     # Check that sources are properly set
