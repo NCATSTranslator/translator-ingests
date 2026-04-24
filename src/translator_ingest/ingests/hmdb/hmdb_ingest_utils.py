@@ -1,7 +1,7 @@
 """
 HMDB ingest utils adapted from the Orion HMDB parsing code base.
 """
-from typing import Tuple, Iterable, Literal
+from typing import Iterable, Literal
 
 import koza
 
@@ -23,8 +23,6 @@ from bmt.pydantic import (
     entity_id,
     build_association_knowledge_sources
 )
-
-from koza.model.graphs import KnowledgeGraph
 
 
 def read_xml_file(
@@ -122,7 +120,7 @@ def get_genes(
         koza_transform,
         el,
         metabolite_id
-) -> list[Tuple[Protein, GeneAffectsChemicalAssociation]]:
+) -> list[tuple[Protein, GeneAffectsChemicalAssociation]]:
     """
     This method creates the gene nodes and gene-to-metabolite edges.
 
@@ -145,11 +143,11 @@ def get_genes(
         "publications": []
 
     :param koza_transform: The koza transform ingest context object.
-    :param el: The root of this XML fragment
+    :param el: Is the root of this XML fragment
     :param metabolite_id: the metabolite id
-    :return: list[Tuple[Protein, GeneAffectsChemicalAssociation]]
+    :return: list[Tuple[Protein, GeneAffectsChemicalAssociation]] 2-tuple of gene node and gene-to-metabolite edge
     """
-    gene_list: list[Tuple[Protein, GeneAffectsChemicalAssociation]] = []
+    gene_list: list[tuple[Protein, GeneAffectsChemicalAssociation]] = []
 
     # get all the proteins
     proteins: list = el.find('protein_associations').findall('protein')
@@ -237,7 +235,7 @@ def get_diseases(
         koza_transform,
         el,
         metabolite_id
-) -> list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]]:
+) -> list[tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]]:
     """
     This method creates disease nodes and disease to metabolite edges.
 
@@ -265,7 +263,7 @@ def get_diseases(
     :return: list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]]
     """
 
-    disease_list: list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]] = []
+    disease_list: list[tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]] = []
 
     # get all the diseases
     diseases: list = el.find('diseases').findall('disease')
@@ -340,7 +338,7 @@ def get_pathways(
         koza_transform,
         el,
         metabolite_id
-) -> list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]:
+) -> list[tuple[Pathway, ChemicalEntityToPathwayAssociation]]:
     """
     This method creates pathway nodes and pathway to metabolite edges.
 
@@ -356,7 +354,7 @@ def get_pathways(
     :param metabolite_id: the metabolite id (edge subject)
     :return: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]
     """
-    pathway_list: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
+    pathway_list: list[tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
 
     # get the pathways
     pathways: list = el.find('biological_properties').find('pathways').findall('pathway')

@@ -72,25 +72,13 @@ def transform_ingest_all_streaming(
         koza_transform: koza.KozaTransform,
         data: Iterable[dict[str, Any]]
 ) -> Iterable[KnowledgeGraph]:
-    # for record in data:
-    #     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-    #     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-    #     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-    #         id=str(uuid.uuid4()),
-    #         subject=chemical.id,
-    #         predicate="biolink:related_to",
-    #         object=disease.id,
-    #         primary_knowledge_source=INFORES_CTD,
-    #         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-    #         agent_type=AgentTypeEnum.manual_agent,
-    #     )
-    #     yield KnowledgeGraph(nodes=[chemical, disease], edges=[association])
     """
-    Given that HMDB is a zip archive wrapping an XML file,
-    through which we iterate over metabolites,
-    we rather might well as to treat this with
-    the streaming knowledge source design pattern.
+    Given that HMDB is a zip archive wrapping an XML file, through which we iterate over metabolites,
+    we rather might sd well process this a streaming knowledge source design pattern.
     """
+    # We actually ignore the input data Iterable,
+    # assuming that Koza didn't bother pre-processing
+    # the downloaded HMDB file, leaving it to us here
     if koza_transform.input_files_dir is None:
         raise ValueError("input_files_dir must be set for HMDB ingest")
 
@@ -135,16 +123,24 @@ def transform_ingest_all_streaming(
                             nodes: list = []
                             edges: list = []
 
-                            # TODO: aggregate the pathways, diseases and/or genes nodes and edges here
+                            nodes.extend([entry[0] for entry in pathways])
+                            edges.extend([entry[1] for entry in pathways])
+                            nodes.extend([entry[0] for entry in diseases])
+                            edges.extend([entry[1] for entry in diseases])
+                            nodes.extend([entry[0] for entry in genes])
+                            edges.extend([entry[1] for entry in genes])
 
-                            # create a metabolite node and add it to the list
-                            metabolite_node = MolecularEntity(
-                                id=metabolite_id,
-                                name=metabolite_name.text
-                                        .encode('ascii',errors='ignore')
-                                        .decode(encoding="utf-8")
+                            # create the common metabolite node and add it to the list
+                            nodes.append(
+                                MolecularEntity(
+                                    id=metabolite_id,
+                                    name=metabolite_name.text
+                                            .encode('ascii',errors='ignore')
+                                            .decode(encoding="utf-8")
+                                )
                             )
-                            yield KnowledgeGraph(nodes=nodes,edges=edges)
+                            # send the metabolite-specific subgraph out to the data ingest stream
+                            yield KnowledgeGraph(nodes=nodes, edges=edges)
 
                         else:
                             count_skipped(
