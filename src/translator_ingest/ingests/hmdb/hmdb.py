@@ -29,22 +29,27 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
 def get_latest_version() -> str:
     """
     Gets the version of the HMDB data.
-    Adapted from RENCI Orion code "get_latest_source_version" method.
-
-    :return: Str, version
+    :return: Str, version in format yyyy-mm-dd
     """
+    # Original version code from RENCI Orion code "get_latest_source_version" method.
+    # Needs to be updated to use the new HMDB download page.
+    #
     # this grabs the html from the download page and searches for the Current Version on it
-    html_page: requests.Response = requests.get('https://hmdb.ca/downloads')
-    html_page.raise_for_status()
+    # html_page: requests.Response = requests.get('https://hmdb.ca/downloads')
+    # html_page.raise_for_status()
+    #
+    # resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    # search_text = 'Current Version '
+    # div_tag = resp.find(name='a', string=re.compile('Current Version'))
+    # if div_tag:
+    #     latest_version = div_tag.text.split(search_text)[1].strip('() ')
+    #     return latest_version
+    # else:
+    #     raise Exception("Version could not be determined from html parsing for HMDB.")
 
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
-    search_text = 'Current Version '
-    div_tag = resp.find(name='a', string=re.compile('Current Version'))
-    if div_tag:
-        latest_version = div_tag.text.split(search_text)[1].strip('() ')
-        return latest_version
-    else:
-        raise Exception("Version could not be determined from html parsing for HMDB.")
+    # Returning hard coded version for now,
+    # pending repair of the above dynamic version discovery code.
+    return "2021-11-17"
 
 @koza.on_data_begin()
 def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:

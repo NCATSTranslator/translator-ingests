@@ -1,4 +1,4 @@
-# Specify the file that needs to be downloaded for this ingest
+# Specify the file that needs to be downloaded for this data ingest
 # The download.yaml file format is defined and used by the KGHub Downloader to download files.
 # https://monarch-initiative.github.io/kghub-downloader/
 #
