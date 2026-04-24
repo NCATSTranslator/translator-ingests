@@ -38,6 +38,7 @@ INFORES_DRUGCENTRAL = "infores:drugcentral"
 INFORES_DRUGMATRIX = "infores:drugmatrix"
 INFORES_PDSP_KI = "infores:pdsp-ki"
 INFORES_WOMBAT_PK = "infores:wombat-pk"
+INFORES_PUBTATOR = "infores:pubtator"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
 INFORES_CIVIC = "infores:civic"
