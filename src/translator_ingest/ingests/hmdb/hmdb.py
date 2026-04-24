@@ -132,15 +132,19 @@ def transform_ingest_all_streaming(
 
                         # did we get something created?
                         if pathways or diseases or genes:
-                            # create a metabolite node and add it to the list
+                            nodes: list = []
+                            edges: list = []
 
+                            # TODO: aggregate the pathways, diseases and/or genes nodes and edges here
+
+                            # create a metabolite node and add it to the list
                             metabolite_node = MolecularEntity(
                                 id=metabolite_id,
                                 name=metabolite_name.text
                                         .encode('ascii',errors='ignore')
                                         .decode(encoding="utf-8")
                             )
-                            yield KnowledgeGraph()
+                            yield KnowledgeGraph(nodes=nodes,edges=edges)
 
                         else:
                             count_skipped(

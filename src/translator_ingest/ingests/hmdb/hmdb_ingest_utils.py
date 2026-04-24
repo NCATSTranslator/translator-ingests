@@ -14,6 +14,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     GeneAffectsChemicalAssociation,
     DiseaseAssociatedWithResponseToChemicalEntityAssociation,
+    ChemicalEntityToPathwayAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -24,7 +25,6 @@ from bmt.pydantic import (
 )
 
 from koza.model.graphs import KnowledgeGraph
-from pyasn1_modules.rfc4357 import GostR3410_2001_CertificateSignature
 
 
 def read_xml_file(
@@ -147,7 +147,7 @@ def get_genes(
     :param koza_transform: The koza transform ingest context object.
     :param el: The root of this XML fragment
     :param metabolite_id: the metabolite id
-    :return: found flag
+    :return: list[Tuple[Protein, GeneAffectsChemicalAssociation]]
     """
     gene_list: list[Tuple[Protein, GeneAffectsChemicalAssociation]] = []
 
@@ -199,7 +199,7 @@ def get_genes(
 
                     edge = GeneAffectsChemicalAssociation(
                         id=entity_id(),
-                        subject=protein_node.id,
+                        subject=protein_id,
                         predicate=predicate,
                         object=metabolite_id,
                         object_aspect_qualifier=object_aspect_qualifier,
@@ -262,7 +262,7 @@ def get_diseases(
     :param koza_transform: The koza transform context
     :param el: the root of this XML fragment
     :param metabolite_id: the metabolite id (edge subject)
-    :return: found flag
+    :return: list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]]
     """
 
     disease_list: list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]] = []
@@ -309,7 +309,7 @@ def get_diseases(
 
                     edge = DiseaseAssociatedWithResponseToChemicalEntityAssociation(
                         id=entity_id(),
-                        subject=disease_node.id,
+                        subject=disease_id,
 
                         # replaces original 'RO:0002610' - correlated_with
                         predicate="biolink:associated_with_response_to",
@@ -336,7 +336,11 @@ def get_diseases(
     return disease_list
 
 
-def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:
+def get_pathways(
+        koza_transform,
+        el,
+        metabolite_id
+) -> list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]:
     """
     This method creates pathway nodes and pathway to metabolite edges.
 
@@ -350,8 +354,10 @@ def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:
     :param koza_transform: The koza transform context
     :param el: the root of this XML fragment
     :param metabolite_id: the metabolite id (edge subject)
-    :return: found flag
+    :return: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]
     """
+    pathway_list: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
+
     # get the pathways
     pathways: list = el.find('biological_properties').find('pathways').findall('pathway')
 
@@ -365,10 +371,10 @@ def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:
             # did we get a good value?
             if id is not None and smpdb_id.text is not None:
                 # get the pathway curie ID
-                object_id: str = smpdb_to_curie(smpdb_id.text)
+                pathway_id: str = smpdb_to_curie(smpdb_id.text)
 
                 # did we get an id. a valid curie here is 16 characters long (SMPDB:SMP1234567)
-                if len(object_id) == 16:
+                if len(pathway_id) == 16:
 
                     # get the name
                     name_el: E_Tree.Element = p.find('name')
@@ -379,24 +385,25 @@ def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:
                     else:
                         name: str = ''
 
-                    # # create a node and add it to the list
-                    # new_node = kgxnode(object_id, name=name)
-                    # self.output_file_writer.write_kgx_node(new_node)
-                    #
-                    # edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
-                    #               AGENT_TYPE: MANUAL_AGENT}
-                    #
-                    # # create an edge and add it to the list
-                    # new_edge = kgxedge(metabolite_id,
-                    #                    object_id,
-                    #                    predicate='RO:0000056',
-                    #                    primary_knowledge_source=self.provenance_id,
-                    #                    edgeprops=edge_props)
-                    # self.output_file_writer.write_kgx_edge(new_edge)
-                    return KnowledgeGraph()  # TODO: return the graph
+                    pathway_node = Pathway(id=pathway_id, name=name)
+
+                    edge = ChemicalEntityToPathwayAssociation(
+                        id=entity_id(),
+                        subject=pathway_id,
+
+                        # replaces original 'RO:0000056' - correlated_with
+                        predicate="biolink:participates_in",
+
+                        object=metabolite_id,
+                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent
+                    )
+
+                    pathway_list.append( (pathway_node, edge) )
                 else:
                     koza_transform.log(
-                        msg='invalid smpdb for {metabolite_id}',
+                        msg=f"invalid smpdb for {metabolite_id}",
                         level="DEBUG"
                     )
             else:
@@ -410,5 +417,4 @@ def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:
             level="DEBUG"
         )
 
-    # return empty graph if you get here
-    return KnowledgeGraph()
+    return pathway_list
