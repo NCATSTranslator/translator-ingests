@@ -1,43 +1,31 @@
 """
 HMDB ingest utils adapted from the Orion HMDB parsing code base.
 """
-from typing import Iterable
+from typing import Tuple, Iterable, Literal
+
 import koza
 
 import xml.etree.cElementTree as E_Tree
 
-from koza.model.graphs import KnowledgeGraph
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    Protein,
+    Disease,
+    Pathway,
+    GeneOrGeneProductOrChemicalEntityAspectEnum,
+    GeneAffectsChemicalAssociation,
+    DiseaseAssociatedWithResponseToChemicalEntityAssociation,
+    KnowledgeLevelEnum,
+    AgentTypeEnum
+)
 
-#
-# from orion.kgxmodel import kgxnode, kgxedge
-# class kgxnode:
-#     def __init__(self,
-#                  identifier,
-#                  name='',
-#                  categories=None,
-#                  nodeprops=None):
-#         self.identifier = identifier
-#         self.name = name
-#         self.categories = categories if categories else [NAMED_THING]
-#         self.properties = nodeprops if nodeprops else {}
-#
-# class kgxedge:
-#     def __init__(self,
-#                  subject_id,
-#                  object_id,
-#                  predicate=None,
-#                  primary_knowledge_source=None,
-#                  aggregator_knowledge_sources: list = None,
-#                  edgeprops=None):
-#         self.subjectid = subject_id
-#         self.objectid = object_id
-#         self.predicate = predicate
-#         self.primary_knowledge_source = primary_knowledge_source
-#         self.aggregator_knowledge_sources = aggregator_knowledge_sources
-#         if edgeprops:
-#             self.properties = edgeprops
-#         else:
-#             self.properties = {}
+from bmt.pydantic import (
+    entity_id,
+    build_association_knowledge_sources
+)
+
+from koza.model.graphs import KnowledgeGraph
+from pyasn1_modules.rfc4357 import GostR3410_2001_CertificateSignature
+
 
 def read_xml_file(
         koza_transform: koza.KozaTransform,
@@ -120,13 +108,28 @@ def smpdb_to_curie(smp_id: str) -> str:
     # return to the caller
     return ret_val
 
+G2C_PREDICATE = Literal[
+    "biolink:affects",
+    "biolink:ameliorates_condition",
+    "biolink:disrupts",
+    "biolink:exacerbates_condition",
+    "biolink:has_adverse_event",
+    "biolink:has_side_effect",
+    "biolink:regulates"
+]
 
-def get_genes(koza_transform, el, metabolite_id) -> KnowledgeGraph:
+def get_genes(
+        koza_transform,
+        el,
+        metabolite_id
+) -> list[Tuple[Protein, GeneAffectsChemicalAssociation]]:
     """
     This method creates the gene nodes and gene-to-metabolite edges.
 
     Note that there are 2 potential edge directions (legacy records shown):
-         It is unknown (to me) why these would have different provided_by's as the subject/object types are the same.
+         It is unknown (to me) why these would have different
+         provided_by's, as the subject/object types are the same.
+
       - Metabolite to enzyme
         "provided_by": "hmdb.metabolite_to_enzyme",
         "subject": "CHEBI:16040", (chemical compound, i.e., metabolite)
@@ -141,11 +144,13 @@ def get_genes(koza_transform, el, metabolite_id) -> KnowledgeGraph:
         "predicate": "RO:0002434",
         "publications": []
 
-    :param koza_transform: The koza transform object
+    :param koza_transform: The koza transform ingest context object.
     :param el: The root of this XML fragment
     :param metabolite_id: the metabolite id
     :return: found flag
     """
+    gene_list: list[Tuple[Protein, GeneAffectsChemicalAssociation]] = []
+
     # get all the proteins
     proteins: list = el.find('protein_associations').findall('protein')
 
@@ -156,7 +161,6 @@ def get_genes(koza_transform, el, metabolite_id) -> KnowledgeGraph:
             # get the protein id (gene)
             protein: E_Tree.Element = p.find('uniprot_id')
 
-            # did we get a value?
             if protein is not None and protein.text is not None:
                 # get the type of protein (gene type)
                 protein_type: E_Tree.Element = p.find('protein_type')
@@ -164,51 +168,47 @@ def get_genes(koza_transform, el, metabolite_id) -> KnowledgeGraph:
                 # was the protein type found?
                 if protein_type is not None and protein_type.text is not None:
 
-                    # create the gene id
-                    protein_id = f"UniProtKB:{protein.text}"
-
-                    # what type of protein is this?
-                    if protein_type.text.startswith('Enzyme'):
-                        #Enzymes affect the rate of reactions that either produce or consume metabolites.
-                        # create the edge data
-                        subject_id: str = protein_id
-                        object_id: str = metabolite_id
-                        predicate: str = 'CTD:affects_abundance_of'
-                    # else it must be a transport protein?
-                    elif protein_type.text.startswith('Transport'):
-                        # create the edge data
-                        subject_id: str = protein_id
-                        object_id: str = metabolite_id
-                        predicate: str = 'CTD:increases_transport_of'
-                    else: # this should be a protein type of Unknown function
-                        # create the edge data
-                        subject_id: str = metabolite_id
-                        object_id: str = protein_id
-                        predicate: str = 'CTD:related_to'
-
-                    # get the name element
                     el_name: E_Tree.Element = p.find('name')
 
-                    # was the name found (optional)
+                    # was the name found (optional)?
                     if el_name is not None and el_name.text is not None:
                         name: str = el_name.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
                     else:
                         name: str = ''
 
-                    # # create a node and add it to the list
-                    # new_node = kgxnode(protein_id, name=name)
-                    # self.output_file_writer.write_kgx_node(new_node)
-                    #
-                    # edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
-                    #               AGENT_TYPE: MANUAL_AGENT}
-                    # # create an edge and add it to the list
-                    # new_edge = kgxedge(subject_id,
-                    #                    object_id,
-                    #                    predicate=predicate,
-                    #                    primary_knowledge_source=self.provenance_id,
-                    #                    edgeprops=edge_props)
-                    # self.output_file_writer.write_kgx_edge(new_edge)
-                    return KnowledgeGraph()  # TODO: return the graph
+                    protein_id = f"UniProtKB:{protein.text}"
+
+                    predicate: G2C_PREDICATE
+
+                    # what type of protein is this?
+                    if protein_type.text.startswith('Enzyme'):
+                        # Enzymes affect the rate of reactions that
+                        # either produce or consume metabolites.
+                        predicate = "biolink:regulates"  # "CTD:affects_abundance_of"
+                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+                    elif protein_type.text.startswith('Transport'):
+                        # else it must be a transport protein?
+                        predicate = "biolink:regulates"  # "CTD:increases_transport_of"
+                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.transport
+                    else:
+                        # this is a protein type of unknown function
+                        predicate = "biolink:affects"
+                        object_aspect_qualifier = None
+
+                    protein_node = Protein(id=protein_id, name=name)
+
+                    edge = GeneAffectsChemicalAssociation(
+                        id=entity_id(),
+                        subject=protein_node.id,
+                        predicate=predicate,
+                        object=metabolite_id,
+                        object_aspect_qualifier=object_aspect_qualifier,
+                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent
+                    )
+
+                    gene_list.append( (protein_node, edge) )
                 else:
                     koza_transform.log(
                         msg=f'no protein type for {metabolite_id}',
@@ -225,15 +225,25 @@ def get_genes(koza_transform, el, metabolite_id) -> KnowledgeGraph:
             level="DEBUG"
         )
 
-    # return empty graph
-    return KnowledgeGraph()
+    return gene_list
 
-def get_diseases(koza_transform, el, metabolite_id) -> KnowledgeGraph:
+D2C_PREDICATE = Literal[
+    "biolink:associated_with_resistance_to",
+    "biolink:associated_with_response_to",
+    "biolink:associated_with_sensitivity_to"
+]
+
+def get_diseases(
+        koza_transform,
+        el,
+        metabolite_id
+) -> list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]]:
     """
     This method creates disease nodes and disease to metabolite edges.
 
     note: that there are 2 potential edge directions (modified legacy records shown below)
-          It is unknown (to me) why these would have different provided_by's as the subject/object types are the same.
+          It is unknown (to me) why these would have different
+           provided_by's as the subject/object types are the same.
 
      - hmdb.metabolite_to_disease
           "provided_by": "hmdb.metabolite_to_disease",
@@ -254,6 +264,9 @@ def get_diseases(koza_transform, el, metabolite_id) -> KnowledgeGraph:
     :param metabolite_id: the metabolite id (edge subject)
     :return: found flag
     """
+
+    disease_list: list[Tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]] = []
+
     # get all the diseases
     diseases: list = el.find('diseases').findall('disease')
 
@@ -270,7 +283,7 @@ def get_diseases(koza_transform, el, metabolite_id) -> KnowledgeGraph:
                 # did we get the name?
                 name: E_Tree.Element = d.find('name')
 
-                # was the name found (optional)
+                # was the name found (optional)?
                 if name is not None and name.text is not None:
                     name: str = name.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
                 else:
@@ -286,36 +299,29 @@ def get_diseases(koza_transform, el, metabolite_id) -> KnowledgeGraph:
 
                     # for each reference get the pubmed id
                     for r in references:
-                        # get the pubmed id
                         pmid: E_Tree.Element = r.find('pubmed_id')
-
-                        # was it found?
                         if pmid is not None and pmid.text is not None:
-                            # save it in the list
                             pmids.append('PMID:' + pmid.text)
-
-                    # # create the edge property data
-                    # edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
-                    #               AGENT_TYPE: MANUAL_AGENT}
-
-                    # if we found any pubmed ids, add them to the properties (optional)
-                    # if len(pmids) > 0:
-                    #     edge_props["publications"] = pmids
 
                     disease_id = f"OMIM:{object_id.text}"
 
-                    # # create a node and add it to the list
-                    # new_node = kgxnode(disease_id, name=name)
-                    # self.output_file_writer.write_kgx_node(new_node)
-                    #
-                    # # create an edge and add it to the list
-                    # new_edge = kgxedge(metabolite_id,
-                    #                    disease_id,
-                    #                    predicate='RO:0002610',
-                    #                    primary_knowledge_source=self.provenance_id,
-                    #                    edgeprops=edge_props)
-                    # self.output_file_writer.write_kgx_edge(new_edge)
-                    return KnowledgeGraph()  # TODO: return the graph
+                    disease_node = Disease(id=disease_id, name=name)
+
+                    edge = DiseaseAssociatedWithResponseToChemicalEntityAssociation(
+                        id=entity_id(),
+                        subject=disease_node.id,
+
+                        # replaces original 'RO:0002610' - correlated_with
+                        predicate="biolink:associated_with_response_to",
+
+                        object=metabolite_id,
+                        publications=pmids if len(pmids) > 0 else None,
+                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent
+                    )
+
+                    disease_list.append( (disease_node, edge) )
             else:
                 koza_transform.log(
                     msg=f'No OMIM id for {metabolite_id}',
@@ -327,8 +333,7 @@ def get_diseases(koza_transform, el, metabolite_id) -> KnowledgeGraph:
             level="DEBUG"
         )
 
-    # returns empty graph
-    return KnowledgeGraph()
+    return disease_list
 
 
 def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:

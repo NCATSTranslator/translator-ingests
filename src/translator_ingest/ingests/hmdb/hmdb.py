@@ -1,5 +1,5 @@
 """
-Human Metabolome Database (HMDB) ingest script.
+Human Metabolome Database (HMDB) data ingest script.
 Derived from https://github.com/RobokopU24/ORION/blob/master/parsers/hmdb/src/loadHMDB.py
 with modifications as required from other KPs identified by the Phase 2 ingest survey
 """
@@ -7,7 +7,6 @@ from typing import Any, Iterable
 from pathlib import Path
 import re
 
-import uuid
 import requests
 
 from bs4 import BeautifulSoup
@@ -16,27 +15,16 @@ import xml.etree.cElementTree as E_Tree
 
 import koza
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    ChemicalEntity,
-    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    Disease,
-    NamedThing,
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
-    Association,
-)
+from biolink_model.datamodel.pydanticmodel_v2 import MolecularEntity
 
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
 
 from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
     read_xml_file,
-    smpdb_to_curie,
     get_genes,
     get_diseases,
     get_pathways
 )
-from translator_ingest.util.biolink import INFORES_CTD
 
 def get_latest_version(self) -> str:
     """
@@ -134,24 +122,24 @@ def transform_ingest_all_streaming(
                     if metabolite_name is not None and metabolite_name.text is not None:
 
                         # get the nodes and edges for the pathways
-                        pathways: KnowledgeGraph = get_pathways(koza_transform, el, metabolite_id)
+                        pathways = get_pathways(koza_transform, el, metabolite_id)
 
                         # get nodes and edges for the diseases
-                        diseases: KnowledgeGraph = get_diseases(koza_transform, el, metabolite_id)
+                        diseases = get_diseases(koza_transform, el, metabolite_id)
 
                         # get the nodes and edges for genes
-                        genes: KnowledgeGraph = get_genes(koza_transform, el, metabolite_id)
+                        genes = get_genes(koza_transform, el, metabolite_id)
 
                         # did we get something created?
                         if pathways or diseases or genes:
-                            # # create a metabolite node and add it to the list
-                            #
-                            # metabolite_node = kgxnode(
-                            #     metabolite_id,
-                            #     name=metabolite_name.text
-                            #             .encode('ascii',errors='ignore')
-                            #             .decode(encoding="utf-8")
-                            # )
+                            # create a metabolite node and add it to the list
+
+                            metabolite_node = MolecularEntity(
+                                id=metabolite_id,
+                                name=metabolite_name.text
+                                        .encode('ascii',errors='ignore')
+                                        .decode(encoding="utf-8")
+                            )
                             yield KnowledgeGraph()
 
                         else:
