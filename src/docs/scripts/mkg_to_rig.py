@@ -7,7 +7,7 @@ The script now provides two complementary output formats:
 1. A human-readable spreadsheet table (i.e. "Translator Phase 2 Ingest Inventory" style).
 2. Population of a Reference Ingest Guide ("RIG") YAML file 'target_info' section.
 """
-from typing import Optional
+from typing import Optional, Any
 from os import path, rename
 from pathlib import Path
 import sys
@@ -15,9 +15,10 @@ import yaml
 import json
 import csv
 import click
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
-from translator_ingest import INGESTS_PARSER_PATH
 
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+
+from translator_ingest import INGESTS_PARSER_PATH
 
 def read_mkg_nodes(nodes, node_info):
     """
@@ -52,11 +53,192 @@ def read_mkg_nodes(nodes, node_info):
 
         node_info.append(node_data)
 
+
+class EdgeData:
+    """
+    This class is a container for processed RIG edge data, organized by 'edge type'.
+    At any point in time, instances of this class will be in a mode to capture one 'edge type.'
+    An 'edge type' is defined by a distinct combination of qualifiers and/or attributes,
+    which are used to construct a unique index key string label.
+    One default index key string label is 'global' which simply targets the edge type
+    that does not have any discriminating qualifiers or attributes.
+    """
+    def __init__(self, knowledge_level: str, agent_type: str):
+        """
+        Initializes data structures to capture processed meta-knowledge graph edge data.
+        Initializes the initial edge type to 'global'.
+        """
+        self.current_edge_type_id = 'global'
+        self.edge_data: dict[str, dict[str, Any]] = {'global': dict()}
+        self.knowledge_level = knowledge_level
+        self.agent_type = agent_type
+
+    def set_current_id(self, identifier: str):
+        self.current_edge_type_id = identifier
+
+    def get_current_id(self) -> str:
+        return self.current_edge_type_id
+
+    def add_identifier(self, identifier: str):
+        """
+        Appends an identifier to the current edge identifier, then moves
+        any current edge data under that revised current identifier. As a side effect,
+        the edge_data dictionary is created for empty or current identifiers without data.
+        """
+        current_id = self.get_current_id()
+        if current_id and current_id in self.edge_data:
+            current_data = self.edge_data.pop(current_id)
+        else:
+            current_data = dict()
+        # appends the new identifier to the current identifier string
+        current_id = f"{current_id},{identifier}" if current_id else identifier
+        # re-adds the current edge data under the new identifier string
+        self.edge_data[current_id] = current_data
+        self.set_current_id(current_id)
+
+    def get_current_edge_data(self) -> dict[str, Any]:
+        current_id = self.get_current_id()
+        if current_id not in self.edge_data:
+            self.edge_data[current_id] = dict()
+        return self.edge_data[current_id]
+
+    def add_value(self, key: str, value: str):
+        edge_data = self.get_current_edge_data()
+        if key not in edge_data:
+            edge_data[key] = set()
+        else:
+            assert isinstance(edge_data[key], set)
+        edge_data[key].add(value)
+
+    def process_qualifiers(self, edge: dict[str, Any]):
+        """
+        Capture any qualifiers and set the current edge type identifier.
+        If no qualifiers are present, the edge type is set to 'global'.
+        """
+        #
+        # qualifiers: # (optional, multivalued, range = Qualifier)
+        #   - property: # (required, range = URIorCURIE)
+        #   # Choose one (or more) of the 'value' slots to describe the type of value hold by the qualifier
+        #     value_range: # (optional, multivalued, range = URIorCURIE)
+        #       -
+        #     value_enumeration: # (optional, multivalued, range = string)
+        #       -
+        #     value_id_prefixes: # (optional, multivalued, range = string)
+        #       -
+        #     value_description: # (optional, range = string)
+        #
+        qualifiers = edge.get('qualifiers', [])
+        if not qualifiers:
+            # No qualifiers are observed on this edge,
+            # thus no further processing is needed,
+            # plus the current id is set to 'global'
+            self.set_current_id('global')
+            return
+
+        # Otherwise, any encountered qualifiers and discriminating attributes are used
+        # to construct and reset the EdgeData instance to a unique current identifier
+
+        # recreating the current identifier here, thus starting with an empty string
+        self.set_current_id("")
+
+        # collect the list of qualifiers for this edge type
+        qualifier_list: list[dict[str, Any]] = []
+        for qualifier in qualifiers:
+            #
+            # Sample meta_knowledge_graph.json edge qualifier data:
+
+            # "qualifiers": {
+            #   "qualifier_type_id": "object_aspect_qualifier",
+            #   "applicable_values": [
+            #     "transport"
+            #   ]
+            # }
+            qualifier_type_id = qualifier["qualifier_type_id"]
+            applicable_values = qualifier["applicable_values"]
+
+            self.add_identifier(f"{str(qualifier_type_id)}={str(applicable_values)}")
+
+            rig_qualifier = dict()
+            rig_qualifier["property"] = qualifier_type_id
+            rig_qualifier["value_enumeration"] = applicable_values
+            qualifier_list.append(rig_qualifier)
+
+        # Capture the qualifiers for this edge type, setting up
+        # edge_data dictionary, if not already created
+        current_id = self.get_current_id()
+
+        # Sanity check: create the qualifier-specified
+        # edge_data dictionary if not already created
+        if current_id not in self.edge_data:
+            self.edge_data[current_id] = dict()
+
+        if 'qualifiers' not in self.edge_data[current_id]:
+            # Record the qualifiers for this edge type
+            self.edge_data[current_id]['qualifiers'] = qualifier_list
+
+    def sets_to_lists(self) -> list[dict[str, Any]]:
+        # Each edge_data dictionary entry is an indexed collection
+        # of SPOQ values plus edge properties for one edge type.
+        converted: list[dict[str, Any]] = []
+        for entry in self.edge_data.values():
+            # Converts all dictionary set() values to list() values
+            for key, value in entry.items():
+                if isinstance(value, set):
+                    entry[key] = list(value)
+                else:
+                    entry[key] = value
+
+            # enforce expected ordering of the entry fields
+            ordered_entry: dict[str,Any] = dict()
+            for key in [
+                'subject', 'predicates', 'object', 'qualifiers',
+                'knowledge_level', 'agent_type', 'edge_properties'
+            ]:
+                if key in entry:
+                    ordered_entry[key] = entry[key]
+
+            converted.append(ordered_entry)
+
+        return converted
+
+    def add_edge(self, edge: dict[str, Any]):
+        #       subject_categories:
+        #       - "biolink:Disease"
+        self.add_value('subject', edge['subject'])
+
+        #       predicates:
+        #         - "biolink:has_phenotype"
+        self.add_value('predicates', edge['predicate'])
+
+        #       object_categories:
+        #       - "biolink:PhenotypicFeature"
+        self.add_value('object', edge['object'])
+
+        #       knowledge_level:
+        #       - knowledge_assertion
+        self.add_value('knowledge_level', self.knowledge_level)
+
+        #       agent_type:
+        #       - manual_agent
+        self.add_value('agent_type', self.agent_type)
+
+        # Collect the list of attributes (ignoring knowledge_level and agent type)
+        # that discriminate for this edge type if any are encountered
+        attributes = edge.get('attributes', [])
+        for attribute in attributes:
+            if attribute['attribute_type_id'] in ["biolink:knowledge_level","biolink:agent_type"]:
+                continue  # these are now dedicated RIG fields, not 'edge_properties'
+            else:
+                attribute_type_id = attribute['attribute_type_id']
+                # add the discriminating attribute type id to the current identifier string
+                self.add_value(key='edge_properties', value=attribute_type_id)
+
+
 def read_mkg_edges(
         edges,
         edge_info,
-        knowledge_level,
-        agent_type
+        knowledge_level: str,
+        agent_type: str
 ):
     """
     Convert the input MKG edge data into an output list of edges.
@@ -67,45 +249,26 @@ def read_mkg_edges(
     :param agent_type: Agent type for the edge.
     :return: Modified edge_info list.
     """
+    # Edge data partitions edges by qualifiers and/or attributes;
+    # 'global' if no qualifiers or discriminating attributes
+    edge_data = EdgeData(knowledge_level=knowledge_level, agent_type=agent_type)
+
     for edge in edges:
-        edge_data = dict()
 
-        #       subject_categories:
-        #       - "biolink:Disease"
-        edge_data['subject'] = [edge['subject']]
+        # Edge qualifiers and attributes discriminate an association type.
+        # Along the way, a unique edge_type_info entry identifier is computed,
+        # then set as current internally in the edge_data instance...
+        edge_data.process_qualifiers(edge)
 
-        #       predicates:
-        #         - "biolink:has_phenotype"
-        edge_data['predicates'] = [edge['predicate']]
+        # ...Edge data is now set in data structures
+        # tagged by the edge_type_info identifier.
+        edge_data.add_edge(edge)
 
-        #       object_categories:
-        #       - "biolink:PhenotypicFeature"
-        edge_data['object'] = [edge['object']]
+    edge_info.extend(edge_data.sets_to_lists())
 
-        # TODO: Not really sure how best to capture qualifiers yet, if they are available
-        edge_data['qualifiers'] = edge.get('qualifiers',[])
-
-        #       knowledge_level:
-        #       - knowledge_assertion
-        edge_data['knowledge_level'] = knowledge_level
-
-        #       agent_type:
-        #       - manual_agent
-        edge_data['agent_type'] = agent_type
-
-        edge_data['edge_properties'] = []
-        attributes = edge.get('attributes',[])
-        for attribute in attributes:
-            attribute_type_id = attribute['attribute_type_id']
-            edge_data['edge_properties'].append(attribute_type_id)
-
-            # TODO: unsure if or how to really record this at the moment,
-            #       let alone, other associated properties?
-            # original_attribute_names = attribute['original_attribute_names']
-
-        edge_info.append(edge_data)
 
 CSV_TABLE_HEADERS:list[str] = [
+    "Columns / Fields Used",
     "MetaEdge Subject Category",
     "MetaEdge Predicate",
     "MetaEdge Object Category",
@@ -113,114 +276,194 @@ CSV_TABLE_HEADERS:list[str] = [
     "KL",
     "AT",
     "Other Edge Attributes",
-    "Subject Node Properties",
     "Subject Identifier Prefixes",
-    "Object Node Properties",
-    "Object Identifier Prefixes"
+    "Subject Node Properties",
+    "Object Identifier Prefixes",
+    "Object Node Properties"
 ]
+
+COLUMNS_FIELDS_USED = "'- subject, \n- predicate, \n- object, \n- attributes"
+
+def flatten(data:list[str], rewrite) -> str:
+    if data:
+        output = "'- "
+        output += "\n- ".join(
+            [rewrite(entry) for entry in data]
+        )
+    else:
+        output = ""
+    return output
+
+def flatten_field(field_name: str, edge: dict, rewrite) -> str:
+    field_value = edge.get(field_name, [])
+    return flatten(field_value, rewrite)
+
+def flatten_biolink(field_name: str, edge: dict) -> str:
+    return flatten_field(field_name, edge, rewrite=lambda x: x.replace("biolink:", ""))
+
+def flatten_qualifiers(edge: dict) -> str:
+    return flatten_field('qualifiers', edge, rewrite=lambda x: x['property'])
+
+def flatten_values(field_name: str, data: dict) -> str:
+    return flatten_field(field_name, data, rewrite=lambda x: x)
+
+def flatten_id_prefixes(node: dict) -> str:
+    return flatten_field('id_prefixes', node, rewrite=lambda x: x)
+
+def flatten_node_properties(node: dict) -> str:
+    return flatten_field('node_properties', node, rewrite=lambda x: x)
+
+def process_nodes(field_name: str, edge: dict, kg_nodes: dict) -> tuple[str, str]:
+    # 'field_name' is one of 'subject' or 'object';
+    # absent data will trigger a RuntimeError
+    categories: Optional[list[str]] = edge.get(field_name)
+    if not categories:
+        raise RuntimeError(f"Edge Missing '{field_name}' categories")
+
+    # else: categories is a list of node categories
+    # First, remove the biolink: prefix from each category
+    category_list: list[str] = [x.replace("biolink:", "") for x in categories]
+
+    # using sets to remove duplicates, for flattening to a string
+    id_prefixes: set = set()
+    node_properties: set = set()
+    for category in category_list:
+        node_info = kg_nodes.get(category,{})
+        if not node_info:
+            raise RuntimeError(f"MKG missing node category '{category}' used in edge")
+        id_prefixes.update(node_info.get('id_prefixes',[]))
+        node_properties.update(node_info.get('node_properties',[]))
+
+    return flatten(list(id_prefixes), rewrite=lambda x: x), flatten(list(node_properties), rewrite=lambda x: x)
+
 def prepare_table_data(node_info, edge_info) -> list[dict]:
     """
     Prepare data for use in a Translator Phase 2 Ingest Inventory style spreadsheet.
     :param node_info: List of node information.
     :param edge_info: List of edge information.
-    :return: A list[dict] of merged, flattened and renamed
+    :return: A list[dict] of merged, flattened, and renamed
              node and edge information, one dictionary per edge, per list row.
     """
     kg_nodes: dict = dict()
     for node in node_info:
         node_category = node['node_category'].replace("biolink:","")
-        id_prefixes = node.get('source_identifier_types', [])
-        node_properties = node.get('node_properties', [])
-
         kg_nodes[node_category] = {
-            "id_prefixes": ",".join(id_prefixes),
-            "node_properties": ",".join(node_properties)
+            "id_prefixes": node.get('source_identifier_types', []),
+            "node_properties": node.get('node_properties', [])
         }
 
     kg_data: list[dict] = list()
     for edge in edge_info:
         try:
-            subject_category = edge['subject'][0]
-            subject_category = subject_category.replace("biolink:", "")
-            subject_metadata: Optional[dict] = kg_nodes.get(subject_category, None)
-            object_category = edge['object'][0]
-            object_category = object_category.replace("biolink:", "")
-            object_metadata: Optional[dict] = kg_nodes.get(object_category, None)
-            # Sanity check: skip edges with missing subject or object nodes
-            if subject_metadata is None or object_metadata is None:
-                continue
-            predicate = edge['predicates'][0].replace("biolink:","")
-            qualifiers = edge.get('qualifiers',[])
-            qualifiers = ",".join(qualifiers) if qualifiers else ""
-            edge_properties = edge.get('edge_properties',[])
-            edge_properties = ",".join(edge_properties) if edge_properties else ""
-        except Exception:
+            subject_categories = flatten_biolink('subject', edge)
+            subject_id_prefixes, subject_node_properties = process_nodes('subject', edge, kg_nodes)
+
+            predicates = flatten_biolink('predicates', edge)
+
+            object_categories = flatten_biolink('object', edge)
+            object_id_prefixes, object_node_properties = process_nodes('object', edge, kg_nodes)
+
+            qualifiers = flatten_qualifiers(edge)
+
+            # Note: edge properties keep the biolink: prefix
+            edge_properties = flatten_values('edge_properties', edge)
+
+            knowledge_level = flatten_values('knowledge_level', edge)
+            agent_type = flatten_values('agent_type', edge)
+
+        except (RuntimeError, KeyError):
             continue  # just ignore faulty or missing data
 
         kg_data.append(
             {
-                "MetaEdge Subject Category": subject_category,
-                "MetaEdge Predicate": predicate,
-                "MetaEdge Object Category": object_category,
+                "Columns / Fields Used": COLUMNS_FIELDS_USED,
+                "MetaEdge Subject Category": subject_categories,
+                "MetaEdge Predicate": predicates,
+                "MetaEdge Object Category": object_categories,
                 "MetaEdge Qualifiers": qualifiers,
-                "KL": edge['knowledge_level'],
-                "AT": edge['agent_type'],
+                "KL": knowledge_level,
+                "AT": agent_type,
                 "Other Edge Attributes": edge_properties,
-                "Subject Node Properties": subject_metadata['node_properties'],
-                "Subject Identifier Prefixes": subject_metadata['id_prefixes'],
-                "Object Node Properties": object_metadata['node_properties'],
-                "Object Identifier Prefixes": object_metadata['id_prefixes']
+                "Subject Identifier Prefixes": subject_id_prefixes,
+                "Subject Node Properties": subject_node_properties,
+                "Object Identifier Prefixes": object_id_prefixes,
+                "Object Node Properties": object_node_properties
             }
         )
     return kg_data
 
+
+def prune_empty_fields(x):
+    if isinstance(x, dict):
+        return {k: prune_empty_fields(v) for k, v in x.items()
+                if v not in (None, "", [], {}) and prune_empty_fields(v) not in (None, "", [], {})}
+    if isinstance(x, list):
+        return [prune_empty_fields(v) for v in x
+                if v not in (None, "", [], {}) and prune_empty_fields(v) not in (None, "", [], {})]
+    return x
+
+
 @click.command()
 @click.option(
-    '--ingest',
+    '--ingest', '-i',
     required=True,
     help='Target ingest folder name of the target data source folder (e.g., icees)'
 )
 @click.option(
-    '--rig',
+    '--rig', '-r',
     default=None,
     help='Target RIG file (default: <ingest folder name>_rig.yaml)'
 )
 @click.option(
-    '--mkg',
+    '--mkg', '-m',
     default='meta_knowledge_graph.json',
     help='Meta Knowledge Graph JSON file source of details to be loaded into the RIG ' +
          '(default: "meta_knowledge_graph.json",  assumed co-located with RIG in the ingest folder)'
 )
 @click.option(
-    '--knowledge_level',
+    '--knowledge_level', '-k',
     default='not_provided',
     help='Biolink Edge Knowledge Level (default: "not_provided")'
 )
 @click.option(
-    '--agent_type',
+    '--agent_type', '-a',
     default='not_provided',
     help='Biolink Edge Agent Type (default: "not_provided")'
 )
 @click.option(
-    '--output',
+    '--output', '-o',
     default='rig',
     help='Desired format of the output, i.e., "rig" or "csv" (default: "rig")'
 )
-def main(ingest, mkg, rig, knowledge_level, agent_type, output):
+@click.option(
+    '--prune-empty', '-p',
+    is_flag=True,
+    help='If given, this flag prunes empty fields from the output RIG file'
+)
+def main(
+        ingest: str,
+        rig: str,
+        mkg: str,
+        knowledge_level: str,
+        agent_type: str,
+        output: str,
+        prune_empty: bool
+):
     """
     Either populate the 'target_info' section of a given RIG YAML file or
-    create a comparable CSV formatted edge inventory file, using node and
+    create a comparable CSV-formatted edge inventory file, using node and
     edge information from a (TRAPI-generated) Meta Knowledge Graph JSON file.
 
-    :param ingest: Target ingest folder name of the target data source folder (e.g., icees)
-    :param mkg: Meta Knowledge Graph JSON file source of details to be
-                loaded into the RIG (assumed co-located with RIG in the ingest task folder
+    :param ingest: Str, Target ingest folder name of the target data source folder (e.g., icees)
     :param rig: Reference-Ingest Guide ("RIG") file (default: <ingest folder name>_rig.yaml);
-                This switch is ignored if the output format is "table".
+            This switch is ignored if the output format is "table".
+    :param mkg: Meta Knowledge Graph JSON file name source of details to be
+                loaded into the RIG (assumed co-located with RIG in the ingest task folder)
     :param knowledge_level: Biolink Model compliant edge knowledge level specification
     :param agent_type: Biolink edge agent type specification
     :param output: Desired format of the output, i.e., "rig" or "csv" (default: "rig")
-    :return: side effect is either a revised RIG file or a new CSV formatted edge inventory file.
+    :param prune_empty: This flag ('True' if given) triggers pruning of empty fields from the output RIG file
+    :return: side effect is either a revised RIG file or a new CSV-formatted edge inventory file.
 
     Examples:
 
@@ -262,7 +505,7 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
     print(f"Metadata: {mkg_path}")
 
     try:
-        kg_data_path: Optional[Path]
+        kg_data_path: Path
         if output == 'rig':
 
             # Default RIG file name, if not given
@@ -281,8 +524,8 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
                 )
                 sys.exit(1)
 
-            with open(kg_data_path, 'r') as rig:
-                kg_data = yaml.safe_load(rig)
+            with open(kg_data_path, 'r') as rig_file:
+                kg_data = yaml.safe_load(rig_file)
 
             # conservative, in case target_info is already present
             target_info = kg_data.setdefault('target_info', {})
@@ -306,20 +549,24 @@ def main(ingest, mkg, rig, knowledge_level, agent_type, output):
             )
             sys.exit(1)
 
-        with open(mkg_path, 'r') as mkg:
-            mkg_data = json.load(mkg)
+        with open(mkg_path, 'r') as mkg_file:
+            mkg_data = json.load(mkg_file)
             read_mkg_nodes(mkg_data['nodes'], node_info)
             read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type)
 
         if output == 'rig':
             rename(kg_data_path, str(kg_data_path)+".original")
-            with open(kg_data_path, 'w') as rig:
-                yaml.safe_dump(kg_data, rig, sort_keys=False)
+            with open(kg_data_path, 'w') as rig_file:
+                if prune_empty:
+                    cleaned = prune_empty_fields(kg_data)
+                else:
+                    cleaned = kg_data
+                yaml.safe_dump(cleaned, rig_file, sort_keys=False)
         else:
             # Generate 'csv' output file
             kg_data = prepare_table_data(node_info, edge_info)
             with open(kg_data_path, mode="w", newline="", encoding="utf-8") as table_file:
-                writer = csv.DictWriter(table_file, fieldnames=CSV_TABLE_HEADERS)
+                writer = csv.DictWriter(table_file, fieldnames=CSV_TABLE_HEADERS, quoting=0) # quoting=csv.QUOTE_ALL
                 writer.writeheader()
                 writer.writerows(kg_data)
 
