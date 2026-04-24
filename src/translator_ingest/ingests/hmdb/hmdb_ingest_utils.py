@@ -1,10 +1,12 @@
 """
-HMDB ingest utils adapted from the Orion code base.
+HMDB ingest utils adapted from the Orion HMDB parsing code base.
 """
 from typing import Iterable
 import koza
 
 import xml.etree.cElementTree as E_Tree
+
+from koza.model.graphs import KnowledgeGraph
 
 #
 # from orion.kgxmodel import kgxnode, kgxedge
@@ -43,7 +45,7 @@ def read_xml_file(
         element
 ) -> Iterable[str]:
     """
-    Read the xml file and capture the metabolite elements.
+    Read the XML file and capture the metabolite elements.
 
     TODO filter out more items that arent used
 
@@ -119,33 +121,31 @@ def smpdb_to_curie(smp_id: str) -> str:
     return ret_val
 
 
-def get_genes(koza_transform, el, metabolite_id) -> bool:
+def get_genes(koza_transform, el, metabolite_id) -> KnowledgeGraph:
     """
     This method creates the gene nodes and gene-to-metabolite edges.
 
     Note that there are 2 potential edge directions (legacy records shown):
          It is unknown (to me) why these would have different provided_by's as the subject/object types are the same.
-      - metabolite to enzyme
+      - Metabolite to enzyme
         "provided_by": "hmdb.metabolite_to_enzyme",
-        "subject": "CHEBI:16040", (chemical compound, ie. metabolite)
-        "object": "NCBIGene:29974", (protein, ie. gene)
+        "subject": "CHEBI:16040", (chemical compound, i.e., metabolite)
+        "object": "NCBIGene:29974", (protein, i.e., gene)
         "predicate": "RO:0002434",
         "publications": []
 
-      - enzyme to metabolite
+      - Enzyme to metabolite
         "provided_by": "hmdb.enzyme_to_metabolite",
         "subject": "CHEBI:84764", (chemical compound, i.e., metabolite)
         "object": "NCBIGene:53947", (protein, i.e., gene)
         "predicate": "RO:0002434",
         "publications": []
 
-    :param el: the root of this xml fragment
+    :param koza_transform: The koza transform object
+    :param el: The root of this XML fragment
     :param metabolite_id: the metabolite id
     :return: found flag
     """
-    # init the return
-    ret_val: bool = False
-
     # get all the proteins
     proteins: list = el.find('protein_associations').findall('protein')
 
@@ -156,33 +156,31 @@ def get_genes(koza_transform, el, metabolite_id) -> bool:
             # get the protein id (gene)
             protein: E_Tree.Element = p.find('uniprot_id')
 
-            # did we get a value
+            # did we get a value?
             if protein is not None and protein.text is not None:
                 # get the type of protein (gene type)
                 protein_type: E_Tree.Element = p.find('protein_type')
 
-                # was the protein type found
+                # was the protein type found?
                 if protein_type is not None and protein_type.text is not None:
-                    # we got at least something
-                    ret_val = True
 
                     # create the gene id
-                    protein_id = UNIPROTKB + ':' + protein.text
+                    protein_id = f"UniProtKB:{protein.text}"
 
-                    # what type of protein is this
+                    # what type of protein is this?
                     if protein_type.text.startswith('Enzyme'):
                         #Enzymes affect the rate of reactions that either produce or consume metabolites.
                         # create the edge data
                         subject_id: str = protein_id
                         object_id: str = metabolite_id
                         predicate: str = 'CTD:affects_abundance_of'
-                    # else it must be a transport?
+                    # else it must be a transport protein?
                     elif protein_type.text.startswith('Transport'):
                         # create the edge data
                         subject_id: str = protein_id
                         object_id: str = metabolite_id
                         predicate: str = 'CTD:increases_transport_of'
-                    else: # this should be a protein type of Unknown
+                    else: # this should be a protein type of Unknown function
                         # create the edge data
                         subject_id: str = metabolite_id
                         object_id: str = protein_id
@@ -197,20 +195,20 @@ def get_genes(koza_transform, el, metabolite_id) -> bool:
                     else:
                         name: str = ''
 
-                    # create a node and add it to the list
-                    new_node = kgxnode(protein_id, name=name)
-                    self.output_file_writer.write_kgx_node(new_node)
-
-                    edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
-                                  AGENT_TYPE: MANUAL_AGENT}
-                    # create an edge and add it to the list
-                    new_edge = kgxedge(subject_id,
-                                       object_id,
-                                       predicate=predicate,
-                                       primary_knowledge_source=self.provenance_id,
-                                       edgeprops=edge_props)
-                    self.output_file_writer.write_kgx_edge(new_edge)
-
+                    # # create a node and add it to the list
+                    # new_node = kgxnode(protein_id, name=name)
+                    # self.output_file_writer.write_kgx_node(new_node)
+                    #
+                    # edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
+                    #               AGENT_TYPE: MANUAL_AGENT}
+                    # # create an edge and add it to the list
+                    # new_edge = kgxedge(subject_id,
+                    #                    object_id,
+                    #                    predicate=predicate,
+                    #                    primary_knowledge_source=self.provenance_id,
+                    #                    edgeprops=edge_props)
+                    # self.output_file_writer.write_kgx_edge(new_edge)
+                    return KnowledgeGraph()  # TODO: return the graph
                 else:
                     koza_transform.log(
                         msg=f'no protein type for {metabolite_id}',
@@ -227,10 +225,10 @@ def get_genes(koza_transform, el, metabolite_id) -> bool:
             level="DEBUG"
         )
 
-    # return pass or fail
-    return ret_val
+    # return empty graph
+    return KnowledgeGraph()
 
-def get_diseases(koza_transform, el, metabolite_id) -> bool:
+def get_diseases(koza_transform, el, metabolite_id) -> KnowledgeGraph:
     """
     This method creates disease nodes and disease to metabolite edges.
 
@@ -239,25 +237,23 @@ def get_diseases(koza_transform, el, metabolite_id) -> bool:
 
      - hmdb.metabolite_to_disease
           "provided_by": "hmdb.metabolite_to_disease",
-          "subject": "CHEBI:16742", (chemical compound, ie. the metabolite)
-          "object": "UMLS:C4324375", (disease, ie. the OMIM value)
+          "subject": "CHEBI:16742", (chemical compound, i.e., the metabolite)
+          "object": "UMLS:C4324375", (disease, i.e., the OMIM value)
           "predicate": "SEMMEDDB:ASSOCIATED_WITH",
           "publications": []
 
      - disease_to_hmdb.metabolite
           "provided_by": "hmdb.disease_to_metabolite",
-          "subject": "CHEBI:16742", (chemical compound, ie. the metabolite)
-          "object": "MONDO:0005335", (disease, ie. the OMIM value)
+          "subject": "CHEBI:16742", (chemical compound, i.e., the metabolite)
+          "object": "MONDO:0005335", (disease, i.e., the OMIM value)
           "predicate": "SEMMEDDB:ASSOCIATED_WITH",
           "publications": []
 
-    :param el: the root of this xml fragment
+    :param koza_transform: The koza transform context
+    :param el: the root of this XML fragment
     :param metabolite_id: the metabolite id (edge subject)
     :return: found flag
     """
-    # init the return
-    ret_val: bool = False
-
     # get all the diseases
     diseases: list = el.find('diseases').findall('disease')
 
@@ -283,7 +279,7 @@ def get_diseases(koza_transform, el, metabolite_id) -> bool:
                 # get all the pubmed ids
                 references: list = d.find('references').findall('reference')
 
-                # did we get some good data
+                # did we get some good data?
                 if references is not None and len(references) > 0:
                     # storage for the pubmed ids
                     pmids: list = []
@@ -293,37 +289,36 @@ def get_diseases(koza_transform, el, metabolite_id) -> bool:
                         # get the pubmed id
                         pmid: E_Tree.Element = r.find('pubmed_id')
 
-                        # was it found
+                        # was it found?
                         if pmid is not None and pmid.text is not None:
                             # save it in the list
                             pmids.append('PMID:' + pmid.text)
 
-                    # create the edge property data
-                    edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
-                                  AGENT_TYPE: MANUAL_AGENT}
+                    # # create the edge property data
+                    # edge_props = {KNOWLEDGE_LEVEL: KNOWLEDGE_ASSERTION,
+                    #               AGENT_TYPE: MANUAL_AGENT}
 
-                    # if we found any pubmed ids add them to the properties (optional)
-                    if len(pmids) > 0:
-                        edge_props[PUBLICATIONS] = pmids
+                    # if we found any pubmed ids, add them to the properties (optional)
+                    # if len(pmids) > 0:
+                    #     edge_props["publications"] = pmids
 
-                    disease_id = f'{OMIM}:{object_id.text}'
+                    disease_id = f"OMIM:{object_id.text}"
 
-                    # create a node and add it to the list
-                    new_node = kgxnode(disease_id, name=name)
-                    self.output_file_writer.write_kgx_node(new_node)
-
-                    # create an edge and add it to the list
-                    new_edge = kgxedge(metabolite_id,
-                                       disease_id,
-                                       predicate='RO:0002610',
-                                       primary_knowledge_source=self.provenance_id,
-                                       edgeprops=edge_props)
-                    self.output_file_writer.write_kgx_edge(new_edge)
-
-                    ret_val = True
+                    # # create a node and add it to the list
+                    # new_node = kgxnode(disease_id, name=name)
+                    # self.output_file_writer.write_kgx_node(new_node)
+                    #
+                    # # create an edge and add it to the list
+                    # new_edge = kgxedge(metabolite_id,
+                    #                    disease_id,
+                    #                    predicate='RO:0002610',
+                    #                    primary_knowledge_source=self.provenance_id,
+                    #                    edgeprops=edge_props)
+                    # self.output_file_writer.write_kgx_edge(new_edge)
+                    return KnowledgeGraph()  # TODO: return the graph
             else:
                 koza_transform.log(
-                    msg=f'no omim id for {metabolite_id}',
+                    msg=f'No OMIM id for {metabolite_id}',
                     level="DEBUG"
                 )
     else:
@@ -332,27 +327,26 @@ def get_diseases(koza_transform, el, metabolite_id) -> bool:
             level="DEBUG"
         )
 
-    # return pass or fail
-    return ret_val
+    # returns empty graph
+    return KnowledgeGraph()
 
-def get_pathways(koza_transform, el, metabolite_id) -> bool:
+
+def get_pathways(koza_transform, el, metabolite_id) -> KnowledgeGraph:
     """
     This method creates pathway nodes and pathway to metabolite edges.
 
     Note that there is one edge direction (modified legacy record shown below):
           "provided_by": "hmdb.metabolite_to_pathway",
-          "subject": "CHEBI:80603", (chemical compound, ie. the metabolite)
+          "subject": "CHEBI:80603", (chemical compound, i.e., the metabolite)
           "object": "SMPDB:SMP0000627", (SMP pathway)
           "predicate": "RO:0000056",
           "publications": []
 
-    :param el: the root of this xml fragment
+    :param koza_transform: The koza transform context
+    :param el: the root of this XML fragment
     :param metabolite_id: the metabolite id (edge subject)
     :return: found flag
     """
-    # init the return
-    ret_val: bool = False
-    
     # get the pathways
     pathways: list = el.find('biological_properties').find('pathways').findall('pathway')
 
@@ -394,6 +388,7 @@ def get_pathways(koza_transform, el, metabolite_id) -> bool:
                     #                    primary_knowledge_source=self.provenance_id,
                     #                    edgeprops=edge_props)
                     # self.output_file_writer.write_kgx_edge(new_edge)
+                    return KnowledgeGraph()  # TODO: return the graph
                 else:
                     koza_transform.log(
                         msg='invalid smpdb for {metabolite_id}',
@@ -410,5 +405,5 @@ def get_pathways(koza_transform, el, metabolite_id) -> bool:
             level="DEBUG"
         )
 
-    # return pass or fail
-    return ret_val
+    # return empty graph if you get here
+    return KnowledgeGraph()

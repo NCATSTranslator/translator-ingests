@@ -63,38 +63,59 @@ def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
 
     # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
     # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
-    koza_transform.transform_metadata["ingest_by_record"] = {"skipped_record_counter": 0}
+    koza_transform.transform_metadata["ingest_by_record"] = {
+        "records_input": 0,
+        "records_skipped": 0,
+    }
+
+def count(koza_transform: koza.KozaTransform, tag: str):
+    koza_transform.transform_metadata["ingest_by_record"][tag] += 1
+
+def count_record(koza_transform: koza.KozaTransform):
+    count(koza_transform, "records_input")
 
 def count_skipped(koza_transform: koza.KozaTransform, msg: str):
-    koza_transform.transform_metadata["ingest_by_record"]["skipped_record_counter"] += 1
+    count(koza_transform, "records_skipped")
     koza_transform.log(msg=msg, level="DEBUG")
 
-@koza.prepare_data()
-def prepare_bindingdb_data(
+
+@koza.transform()
+def transform_ingest_all_streaming(
         koza_transform: koza.KozaTransform,
         data: Iterable[dict[str, Any]]
-) -> Iterable[dict[str, Any]] | None:
+) -> Iterable[KnowledgeGraph]:
+    # for record in data:
+    #     chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
+    #     disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
+    #     association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
+    #         id=str(uuid.uuid4()),
+    #         subject=chemical.id,
+    #         predicate="biolink:related_to",
+    #         object=disease.id,
+    #         primary_knowledge_source=INFORES_CTD,
+    #         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+    #         agent_type=AgentTypeEnum.manual_agent,
+    #     )
+    #     yield KnowledgeGraph(nodes=[chemical, disease], edges=[association])
     """
     Given that HMDB is a zip archive wrapping an XML file,
-    we do some pre-processing here to coerce the data into
-    manageable records for processing by the ingest task.
+    through which we iterate over metabolites,
+    we rather might well as to treat this with
+    the streaming knowledge source design pattern.
     """
     if koza_transform.input_files_dir is None:
         raise ValueError("input_files_dir must be set for HMDB ingest")
 
     hmdb_data_archive_path: Path = koza_transform.input_files_dir / "hmdb_metabolites.zip"
 
-    # init the record counters
-    record_counter: int = 0
-    skipped_record_counter: int = 0
-
     with ZipFile(hmdb_data_archive_path) as zf:
         # open the hmdb xml file
         with zf.open('hmdb_metabolites.xml', 'r') as fp:
             # loop through, filtering for relevant elements
             for record in read_xml_file(koza_transform, fp, 'metabolite'):
-                # increment the counter
-                record_counter += 1
+
+                count_record(koza_transform)
+
                 # convert the xml text into an object
                 el: E_Tree.Element = E_Tree.fromstring(record)
 
@@ -109,26 +130,30 @@ def prepare_bindingdb_data(
                     # get the metabolite name element
                     metabolite_name: E_Tree.Element = el.find('name')
 
-                    # did we get a good value
+                    # did we get a good value?
                     if metabolite_name is not None and metabolite_name.text is not None:
+
                         # get the nodes and edges for the pathways
-                        pathway_success: bool = get_pathways(el, metabolite_id)
+                        pathways: KnowledgeGraph = get_pathways(koza_transform, el, metabolite_id)
 
                         # get nodes and edges for the diseases
-                        disease_success: bool = get_diseases(el, metabolite_id)
+                        diseases: KnowledgeGraph = get_diseases(koza_transform, el, metabolite_id)
 
                         # get the nodes and edges for genes
-                        gene_success: bool = get_genes(el, metabolite_id)
+                        genes: KnowledgeGraph = get_genes(koza_transform, el, metabolite_id)
 
                         # did we get something created?
-                        if pathway_success or disease_success or gene_success:
-                            # create a metabolite node and add it to the list
-                            metabolite_node = kgxnode(
-                                metabolite_id,
-                                name=metabolite_name.text
-                                        .encode('ascii',errors='ignore').decode(encoding="utf-8")
-                            )
-                            yield metabolite_node()
+                        if pathways or diseases or genes:
+                            # # create a metabolite node and add it to the list
+                            #
+                            # metabolite_node = kgxnode(
+                            #     metabolite_id,
+                            #     name=metabolite_name.text
+                            #             .encode('ascii',errors='ignore')
+                            #             .decode(encoding="utf-8")
+                            # )
+                            yield KnowledgeGraph()
+
                         else:
                             count_skipped(
                                 koza_transform,
@@ -145,81 +170,3 @@ def prepare_bindingdb_data(
                         koza_transform,
                         msg=f'Record skipped due to invalid metabolite id: {record}'
                     )
-
-# Ingests must implement a function decorated with @koza.transform() OR @koza.transform_record() (not both).
-# These functions should contain the core data transformation logic generating and returning KnowledgeGraph objects
-# with NamedThing (nodes) and Association (edges) from source data.
-#
-# The transform_record function takes the KozaTransform and a single record, a dictionary typically corresponding to a
-# row in a source data file, and returns a KnowledgeGraph with any number of nodes and/or edges.
-@koza.transform_record(tag="ingest_by_record")
-def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-
-    # here is an example of skipping a record based off of some condition
-    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-    if not publications:
-        koza.log(f"No pubmed IDs found for {record['PubMedIDs']}")
-        koza.state["example_counter"] += 1
-        return None
-    else:
-        koza.log(f" pubmed IDs found for {record['PubMedIDs']}")
-
-    chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-    disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
-        subject=chemical.id,
-        predicate="biolink:related_to",
-        object=disease.id,
-        publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-    )
-    return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
-
-
-# As an alternative to transform_record, functions decorated with @koza.transform() take a KozaTransform and an Iterable
-# of dictionaries, typically corresponding to all the rows in a source data file, and return an iterable of
-# KnowledgeGraph, each containing any number of nodes and/or edges. Any number of KnowledgeGraphs can be returned:
-# all at once, in batches, or using a generator for streaming.
-@koza.transform(tag="ingest_all")
-def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    nodes: list[NamedThing] = []
-    edges: list[Association] = []
-    for record in data:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
-            subject=chemical.id,
-            predicate="biolink:related_to",
-            object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        nodes.append(chemical)
-        nodes.append(disease)
-        edges.append(association)
-    return [KnowledgeGraph(nodes=nodes, edges=edges)]
-
-
-# Here is an example using a generator to stream results
-@koza.transform(tag="ingest_all_streaming")
-def transform_ingest_all_streaming(
-    koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
-) -> Iterable[KnowledgeGraph]:
-    for record in data:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
-            subject=chemical.id,
-            predicate="biolink:related_to",
-            object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        yield KnowledgeGraph(nodes=[chemical, disease], edges=[association])
