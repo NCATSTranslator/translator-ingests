@@ -5,11 +5,11 @@ with modifications as required from other KPs identified by the Phase 2 ingest s
 """
 from typing import Any, Iterable
 from pathlib import Path
-import re
 
-import requests
+# import re
+# import requests
+# from bs4 import BeautifulSoup
 
-from bs4 import BeautifulSoup
 from zipfile import ZipFile
 import xml.etree.cElementTree as E_Tree
 
@@ -52,7 +52,7 @@ def get_latest_version() -> str:
     return "2021-11-17"
 
 @koza.on_data_begin()
-def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
+def on_begin_hmdb_ingest(koza_transform: koza.KozaTransform) -> None:
 
     # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
     # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
@@ -61,19 +61,19 @@ def on_begin_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
         "records_skipped": 0,
     }
 
-def count(koza_transform: koza.KozaTransform, tag: str):
+def _count(koza_transform: koza.KozaTransform, tag: str):
     koza_transform.transform_metadata["ingest_by_record"][tag] += 1
 
-def count_record(koza_transform: koza.KozaTransform):
-    count(koza_transform, "records_input")
+def _count_record(koza_transform: koza.KozaTransform):
+    _count(koza_transform, "records_input")
 
-def count_skipped(koza_transform: koza.KozaTransform, msg: str):
-    count(koza_transform, "records_skipped")
+def _count_skipped(koza_transform: koza.KozaTransform, msg: str):
+    _count(koza_transform, "records_skipped")
     koza_transform.log(msg=msg, level="DEBUG")
 
 
 @koza.transform()
-def transform_ingest_all_streaming(
+def transform_hmdb_ingest(
         koza_transform: koza.KozaTransform,
         data: Iterable[dict[str, Any]]
 ) -> Iterable[KnowledgeGraph]:
@@ -95,7 +95,7 @@ def transform_ingest_all_streaming(
             # loop through, filtering for relevant elements
             for record in read_xml_file(koza_transform, fp, 'metabolite'):
 
-                count_record(koza_transform)
+                _count_record(koza_transform)
 
                 # convert the xml text into an object
                 el: E_Tree.Element = E_Tree.fromstring(record)
@@ -148,18 +148,18 @@ def transform_ingest_all_streaming(
                             yield KnowledgeGraph(nodes=nodes, edges=edges)
 
                         else:
-                            count_skipped(
+                            _count_skipped(
                                 koza_transform,
                                 msg=f'Metabolite {metabolite_id} record skipped '+
                                     'due to no pathway, disease or gene data.'
                             )
                     else:
-                        count_skipped(
+                        _count_skipped(
                             koza_transform,
                             msg=f'Metabolite {metabolite_id} record skipped due to invalid metabolite name.'
                         )
                 else:
-                    count_skipped(
+                    _count_skipped(
                         koza_transform,
                         msg=f'Record skipped due to invalid metabolite id: {record}'
                     )
