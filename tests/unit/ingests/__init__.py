@@ -305,7 +305,7 @@ def validate_transform_result(
             "Unexpected number of edges returned by record transformation!"
 
     # if we get this far, we're only interested in testing a non-empty list of nodes
-    if nodes and node_test_slots is not None:
+    if nodes and expected_nodes is not None and node_test_slots is not None:
 
         # Convert the 'nodes' Iterable NamedThing content into
         # a list of Python dictionaries by comprehension
