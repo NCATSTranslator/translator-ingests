@@ -272,7 +272,10 @@ def get_diseases(
     if len(diseases) > 0:
         # for each disease
         for d in diseases:
-            # get the omim id
+            # We are only interested here in metabolite-associated
+            # diseases mapped to a non-empty OMIM identifier
+            # TODO: are we here missing other non-OMIM registered but
+            #       significant disease mappings with publication support?
             object_id: E_Tree.Element = d.find('omim_id')
 
             # did we get a value?

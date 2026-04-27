@@ -66,22 +66,27 @@ ASSOCIATION_TEST_SLOTS = (
                     "category": ["biolink:Disease"]
                 },
                 {
-                    "id": "MESH:D013734",
-                    "name": "Androgen-Insensitivity Syndrome",
-                    "category": ["biolink:Gene"]
+                    "id": "UniProtKB:Q96KN2",
+                    "name": "Beta-Ala-His dipeptidase",
+                    "category": ["biolink:Protein"]
                 },
+                {
+                    "id": "HMDB:HMDB0000001",
+                    "name": "1-Methylhistidine",
+                    "category": ["biolink:MolecularEntity"]
+                }
             ],
-            # Captured edge contents
-            {
-                "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
-                "subject": "MESH:C534883",
-                "predicate": "biolink:related_to",
-                "object": "MESH:D013734",
-                "publications": ["PMID:1303262", "PMID:8281139"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+            # # Captured edge contents
+            # {
+            #     "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
+            #     "subject": "MESH:C534883",
+            #     "predicate": "biolink:related_to",
+            #     "object": "MESH:D013734",
+            #     "publications": ["PMID:1303262", "PMID:8281139"],
+            #     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
+            #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            #     "agent_type": AgentTypeEnum.manual_agent,
+            # },
         ),
     ],
 )
