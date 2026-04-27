@@ -304,8 +304,8 @@ def validate_transform_result(
     # if we get this far, we're only interested in testing a non-empty list of nodes
     if nodes and expected_nodes is not None and node_test_slots is not None:
 
-        # Convert the 'nodes' Iterable NamedThing content into
-        # a list of Python dictionaries by comprehension
+        # Convert the 'nodes' Iterable NamedThing content
+        # into a list of Python dictionaries by comprehension
         node: NamedThing
         transformed_nodes: list[dict[str, Any]] = [dict(node) for node in nodes]
 
@@ -350,14 +350,15 @@ def validate_transform_result(
     if edges and expected_edges is not None and edge_test_slots is not None:
 
         # Convert the 'edges' Iterable Association content
-        # into a list by comprehension
-        transformed_edges = [dict(edge) for edge in edges]
+        # into a list of Python dictionaries by comprehension
+        edge: Association
+        transformed_edges: list[dict[str, Any]] = [dict(edge) for edge in edges]
 
         # Check contents of edge(s) returned.
         # Only 'expected_no_of_edges' is expected to be returned?
         assert len(transformed_edges) == expected_no_of_edges
 
-        expected_edge_list: list[dict] = list()
+        expected_edge_list: list[dict[str, Any]] = list()
         if isinstance(expected_edges, list):
             # Blissfully assume that a list of edge slot=value dictionaries was specified
             expected_edge_list.extend(expected_edges)
