@@ -158,10 +158,7 @@ def _validate_pydantic_collection(
             # matching a list of expected instances?
             found: list[bool] = []
             for entry in expected:
-                for item in items:
-                    if _item_matches_expected(item, entry):
-                        found.append(True)
-                found.append(False)
+                found.append(any(_item_matches_expected(item, entry) for item in items))
 
             # since I'm matching all expected against
             # returned, then I need to match all of them?
@@ -305,7 +302,7 @@ def validate_transform_result(
             "Unexpected number of edges returned by record transformation!"
 
     # if we get this far, we're only interested in testing a non-empty list of nodes
-    if nodes and node_test_slots is not None:
+    if nodes and expected_nodes is not None and node_test_slots is not None:
 
         # Convert the 'nodes' Iterable NamedThing content into
         # a list of Python dictionaries by comprehension
@@ -319,8 +316,11 @@ def validate_transform_result(
         expected_nodes_list: list[dict[str, Any]] = list()
         for node in expected_nodes:
             if isinstance(node, str):
+                # might alone be checking for the node identifiers (simplest check)
                 expected_nodes_list.append({"id": node})
             elif isinstance(node, dict):
+                # otherwise we're expecting a dictionary
+                # of node property=value pairs to match
                 expected_nodes_list.append(node)
             else:
                 assert False, f"Unexpected value type in the list of expected nodes: '{str(node)}'"
@@ -328,8 +328,13 @@ def validate_transform_result(
         for node_property in node_test_slots:
             for expected_node in expected_nodes_list:
                 if node_property not in expected_node:
+                    # We decided not to check this node
+                    # property, even if it is returned
                     continue
                 expected_node_value = expected_node[node_property]
+                # Here we are happy simply to find at least one transformed node matching
+                # at least one entry in the expected nodes. This kind of logic allows us
+                # to do a lightweight sampling of results, to call the transform successful.
                 assert any(
                     [
                         _compare_slot_values(returned_node[node_property], expected_node_value)
@@ -342,7 +347,7 @@ def validate_transform_result(
                 )
 
     # if we get this far, we're only interested in testing a non-empty list of edges
-    if edges and edge_test_slots is not None:
+    if edges and expected_edges is not None and edge_test_slots is not None:
 
         # Convert the 'edges' Iterable Association content
         # into a list by comprehension
@@ -364,4 +369,4 @@ def validate_transform_result(
             found: bool
             error_messages: Optional[list[str]]
             found, error_messages = _found_edge(returned_edge, expected_edge_list, edge_test_slots)
-            assert found, "\n".join(error_messages)
+            assert found, "\n".join(list(error_messages)) if error_messages else "No edges matched expected values?"
