@@ -41,42 +41,41 @@ ASSOCIATION_TEST_SLOTS = (
     "category",
     "subject",
     "predicate",
-    "negated",
     "object",
+    "object_aspect_qualifier",
     "publications",
     "sources",
     "knowledge_level",
-    "agent_type",
+    "agent_type"
 )
 
-# TODO: these are the _template test values -- revise them HMDB, if and as necessary
-# @pytest.mark.parametrize(
-#     "result_nodes,result_edge",
-#     [
-#         (  # Query 0 -
-#             # Captured node contents
-#             [
-#                 {"id": "MESH:C534883", "name": "10074-G5", "category": ["biolink:ChemicalEntity"]},
-#                 {"id": "MESH:D013734", "name": "Androgen-Insensitivity Syndrome", "category": ["biolink:Disease"]},
-#             ],
-#             # Captured edge contents
-#             {
-#                 "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
-#                 "subject": "MESH:C534883",
-#                 "predicate": "biolink:related_to",
-#                 "object": "MESH:D013734",
-#                 "publications": ["PMID:1303262", "PMID:8281139"],
-#                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
-#                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-#                 "agent_type": AgentTypeEnum.manual_agent,
-#             },
-#         ),
-#     ],
-# )
+@pytest.mark.parametrize(
+    "result_nodes,result_edge",
+    [
+        (  # Query 0 -
+            # Captured node contents
+            [
+                {"id": "MESH:C534883", "name": "10074-G5", "category": ["biolink:ChemicalEntity"]},
+                {"id": "MESH:D013734", "name": "Androgen-Insensitivity Syndrome", "category": ["biolink:Disease"]},
+            ],
+            # Captured edge contents
+            {
+                "category": ["biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation"],
+                "subject": "MESH:C534883",
+                "predicate": "biolink:related_to",
+                "object": "MESH:D013734",
+                "publications": ["PMID:1303262", "PMID:8281139"],
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
+        ),
+    ],
+)
 def test_ingest_transform(
     mock_koza_transform: koza.KozaTransform,
-    # result_nodes: Optional[list],
-    # result_edge: Optional[dict],
+    result_nodes: Optional[list],
+    result_edge: Optional[dict]
 ):
     on_begin_hmdb_ingest(mock_koza_transform)
 
@@ -86,15 +85,13 @@ def test_ingest_transform(
     # An iterable derived list of KnowledgeGraph objects is returned (a bit challenging to test but...)
     knowledge_graphs = list(transform_hmdb_ingest(mock_koza_transform, []))
 
-    for graph in knowledge_graphs:
-        print(graph)
+    assert len(knowledge_graphs) == 1
 
-        # TODO: Rather tricky to use the usual shared test
-        #       method, with a streaming transform datasource...
-        # validate_transform_result(
-        #     result=graph,
-        #     expected_nodes=result_nodes,
-        #     expected_edges=result_edge,
-        #     node_test_slots=NODE_TEST_SLOTS,
-        #     edge_test_slots=ASSOCIATION_TEST_SLOTS,
-        # )
+    validate_transform_result(
+        result=knowledge_graphs[0],
+        expected_nodes=result_nodes,
+        expected_edges=result_edge,
+        expected_no_of_edges = 11,
+        node_test_slots=NODE_TEST_SLOTS,
+        edge_test_slots=ASSOCIATION_TEST_SLOTS
+    )
