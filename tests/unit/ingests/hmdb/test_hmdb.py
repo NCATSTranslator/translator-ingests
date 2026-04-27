@@ -53,10 +53,23 @@ ASSOCIATION_TEST_SLOTS = (
     "result_nodes,result_edge",
     [
         (  # Query 0 -
-            # Captured node contents
+            # Contents of some nodes expected in the results
             [
-                {"id": "MESH:C534883", "name": "10074-G5", "category": ["biolink:ChemicalEntity"]},
-                {"id": "MESH:D013734", "name": "Androgen-Insensitivity Syndrome", "category": ["biolink:Disease"]},
+                {
+                    "id": "SMPDB:SMP0124716",
+                    "name": "1-Methylhistidine Metabolism",
+                    "category": ["biolink:Pathway"]
+                },
+                {
+                    "id": "OMIM:125853",
+                    "name": "Diabetes mellitus type 2",
+                    "category": ["biolink:Disease"]
+                },
+                {
+                    "id": "MESH:D013734",
+                    "name": "Androgen-Insensitivity Syndrome",
+                    "category": ["biolink:Gene"]
+                },
             ],
             # Captured edge contents
             {
