@@ -18,11 +18,13 @@ dependencies = [
     "hatchling",
     "kghub-downloader==0.4.3",
     "koza>=2.1.1",
+    "loguru>=0.7.0",  # transitive via koza; imported directly in logging_utils
     "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
     "pandas==2.3.3",    # also installs numpy, used by some ingests
     "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
+    "psutil>=5.9.0",
     "requests",    ## needed for specific ingest
     "robokop-orion",
     "uv-dynamic-versioning>=0.11.2",
@@ -49,6 +51,10 @@ dev = [
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
     "biolink-model",
+    "mypy>=1.19.1",
+    "pylint>=4.0.5",
+    "vulture>=2.16",
+    "types-psutil>=7.2.2.20260130",
 ]
 
 [tool.pytest.ini_options]
