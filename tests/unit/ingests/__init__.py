@@ -158,10 +158,7 @@ def _validate_pydantic_collection(
             # matching a list of expected instances?
             found: list[bool] = []
             for entry in expected:
-                for item in items:
-                    if _item_matches_expected(item, entry):
-                        found.append(True)
-                found.append(False)
+                found.append(any(_item_matches_expected(item, entry) for item in items))
 
             # since I'm matching all expected against
             # returned, then I need to match all of them?
