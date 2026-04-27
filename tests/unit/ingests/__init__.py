@@ -362,9 +362,11 @@ def validate_transform_result(
         if isinstance(expected_edges, list):
             # Blissfully assume that a list of edge slot=value dictionaries was specified
             expected_edge_list.extend(expected_edges)
-        else:
+        elif isinstance(expected_edges, dict):
             # Blissfully assume just a single edge slot=value dictionary was specified
             expected_edge_list.append(expected_edges)
+        else:
+            assert False, f"Unexpected value type in the list of expected edges: '{str(expected_edges)}'"
 
         for returned_edge in transformed_edges:
             found: bool
