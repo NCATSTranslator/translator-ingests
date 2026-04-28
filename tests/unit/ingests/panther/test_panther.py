@@ -123,7 +123,7 @@ def test_prepare_panther_data_filters_excluded_species():
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (   # Query 3 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog
+        (   # Query 0 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog
             {
                 GENE_A_ID_COL: "HGNC:11477",
                 GENE_B_ID_COL: "RGD:1564893",
@@ -179,7 +179,7 @@ def test_prepare_panther_data_filters_excluded_species():
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                    "agent_type": AgentTypeEnum.automated_agent
                 },
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
@@ -193,11 +193,11 @@ def test_prepare_panther_data_filters_excluded_species():
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                    "agent_type": AgentTypeEnum.automated_agent
                 }
             ]
         ),
-        (   # Query 4 - HUMAN Ensembl (version-stripped) to MOUSE MGI
+        (   # Query 1 - HUMAN Ensembl (version-stripped) to MOUSE MGI
             {
                 GENE_A_ID_COL: "ENSEMBL:ENSG00000275949",
                 GENE_B_ID_COL: "MGI:99431",
@@ -253,7 +253,7 @@ def test_prepare_panther_data_filters_excluded_species():
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                    "agent_type": AgentTypeEnum.automated_agent
                 },
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
@@ -267,11 +267,11 @@ def test_prepare_panther_data_filters_excluded_species():
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                    "agent_type": AgentTypeEnum.automated_agent
                 }
             ]
         ),
-        (   # Query 5 - HUMAN non-canonical (UniProtKB fallback) to RAT RGD
+        (   # Query 2 - HUMAN non-canonical (UniProtKB fallback) to RAT RGD
             {
                 GENE_A_ID_COL: "UniProtKB:A6NNC1",
                 GENE_B_ID_COL: "RGD:7561849",
@@ -327,7 +327,7 @@ def test_prepare_panther_data_filters_excluded_species():
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                    "agent_type": AgentTypeEnum.automated_agent
                 },
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
@@ -341,7 +341,7 @@ def test_prepare_panther_data_filters_excluded_species():
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                    "agent_type": AgentTypeEnum.manual_validation_of_automated_agent
+                    "agent_type": AgentTypeEnum.automated_agent
                 }
             ]
         )
