@@ -352,12 +352,46 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[
 
 
 
+def _warn_if_sources_diverge_from_declaration(graph_id: str, sources: list[str]) -> None:
+    """Warn when ``graph_id`` is declared in graphs.yaml but sources don't match.
+
+    Protects against ``make merge GRAPH_ID=translator_kg_open SOURCES="ctd"``
+    silently producing a build labeled ``translator_kg_open`` whose contents
+    contradict the yaml declaration. Missing or unreadable graphs.yaml is
+    non-fatal — ad-hoc graph_ids remain allowed.
+    """
+    try:
+        # Imported lazily so merging.py has no hard dependency on graphs.yaml
+        # for ad-hoc graph_ids that aren't declared there.
+        from translator_ingest.graphs import GraphConfigError, resolve_sources
+    except ImportError:
+        return
+
+    try:
+        declared = resolve_sources(graph_id)
+    except GraphConfigError:
+        return  # graph_id is not declared; ad-hoc builds are fine
+
+    if set(declared) != set(sources):
+        extra = sorted(set(sources) - set(declared))
+        missing = sorted(set(declared) - set(sources))
+        logger.warning(
+            "!!! Sources passed on the command line do not match the graphs.yaml "
+            "declaration for %r. Proceeding anyway, but the resulting build "
+            "will be labeled %r despite not matching its declared source set. "
+            "Extra: %s. Missing: %s. !!!",
+            graph_id, graph_id, extra or "(none)", missing or "(none)",
+        )
+
+
 @click.command()
 @click.argument("graph_id", required=True)
 @click.argument("sources", nargs=-1, required=True)
 @click.option("--overwrite", is_flag=True, help="Start fresh and overwrite previously generated files.")
 def main(graph_id, sources, overwrite):
     setup_logging()
+
+    _warn_if_sources_diverge_from_declaration(graph_id, list(sources))
 
     # Merge the sources into one KGX and generate metadata
     merged_graph_metadata, kgx_sources = merge(

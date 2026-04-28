@@ -1,0 +1,59 @@
+---
+# Declarative list of multi-source knowledge graphs.
+#
+# Each entry must have a unique `graph_id` and either:
+#   - `sources`: an explicit list of source ingest names, OR
+#   - `base`: another graph_id to inherit sources from (may then be adjusted
+#             with `includes` and/or `excludes`).
+#
+# `includes` and `excludes` are only valid when `base` is set.
+#
+# Resolution is:  start = base_sources or sources
+#                 result = (start - excludes) | includes
+#
+# Adding a new source to translator_kg is an explicit change: add the source
+# name to the `sources` list below.
+
+graphs:
+  - graph_id: translator_kg  # Our main multisource KG used for Translator Tier 0
+    sources:
+      - alliance
+      - bgee
+      - bindingdb
+      - chembl
+      - cohd
+      - ctd
+      - ctkp
+      - dakp
+      - dgidb
+      - diseases
+      - drug_rep_hub
+      - drugcentral
+      - gene2phenotype
+      - geneticskp
+      - go_cam
+      - goa
+      - gtopdb
+      - hpoa
+      - icees
+      - intact
+      - ncbi_gene
+      - panther
+      - pathbank
+      - semmeddb
+      - sider
+      - signor
+      - tmkp
+      - ttd
+      - ubergraph
+
+  - graph_id: translator_kg_open  # A version of translator_kg excluding sources with restrictive licenses
+    base: translator_kg
+    excludes:
+      - ctd
+      - dgidb
+      - hpoa
+      - tmkp
+      - pathbank
+      - semmeddb
+      - ttd   # provisional, remove if determined open
