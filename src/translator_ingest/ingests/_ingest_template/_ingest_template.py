@@ -1,4 +1,3 @@
-import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
@@ -130,11 +129,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=chemical.id,
             predicate="biolink:related_to",
             object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
+            sources=build_association_knowledge_sources(primary=INFORES_CTD),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
@@ -153,11 +152,11 @@ def transform_ingest_all_streaming(
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=chemical.id,
             predicate="biolink:related_to",
             object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
+            sources=build_association_knowledge_sources(primary=INFORES_CTD),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )

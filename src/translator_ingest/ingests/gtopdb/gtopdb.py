@@ -1,4 +1,3 @@
-import uuid
 import koza
 import pandas as pd
 import requests
@@ -254,7 +253,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 ## Five edge attributes in order
@@ -899,7 +898,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 causal_mechanism_qualifier = CausalMechanismQualifierEnum.feedback_inhibition
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 ## Five edge attributes in order
@@ -989,7 +988,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = current_direction_mapping[0]
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 ## Five edge attributes in order
@@ -1073,7 +1072,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = current_direction_mapping[0]
 
             association = ChemicalAffectsGeneAssociation(
-                id=str(uuid.uuid4()),
+                id=entity_id(),
                 subject=subject.id,
                 object=object.id,
                 ## Five edge attributes in order
