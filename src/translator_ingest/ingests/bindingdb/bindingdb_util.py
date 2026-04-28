@@ -163,7 +163,7 @@ def extract_bindingdb_columns_polars(
         )
 
     koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    koza_transform.log(df.columns)
+    koza_transform.log(str(df.columns))
 
     return df
 
@@ -276,8 +276,8 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
             else:
                 has_binary_relation = bre.equal_to
 
-            # Adjust BindingDb nominal nanomolar values to actual float values then transform
-            # to a linearized negative base 10 logarithm ("pK") value in which a higher
+            # Adjust BindingDb nominal nanomolar values to the actual float value, then transform
+            # it to a linearized negative base 10 logarithm ("pK") value in which a higher
             # real value represents higher binding affinity at lower ligand concentrations
             affinity = -log10(float(value)*nM)
 
