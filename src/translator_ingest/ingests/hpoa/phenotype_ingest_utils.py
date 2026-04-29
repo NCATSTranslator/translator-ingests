@@ -14,6 +14,11 @@ from translator_ingest.util.biolink import  (
     INFORES_HPOA
 )
 
+HPOA_MEDGEN_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
+HPOA_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
+HPOA_ORPHANET_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
+HPOA_DECIPHER_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
+
 
 def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
     """
@@ -25,16 +30,16 @@ def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
     :return: Union[list[RetrievalSource], list[str]] of source infores identifiers
     """
     if "medgen" in source_id:
-        return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
+        return HPOA_MEDGEN_OMIM_SOURCES
 
     elif source_id.startswith("OMIM"):
-        return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
+        return HPOA_OMIM_SOURCES
 
     elif "orphadata" in source_id or source_id.startswith("ORPHA") or "orpha" in source_id.lower():
-        return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
+        return HPOA_ORPHANET_SOURCES
 
     elif source_id.startswith("DECIPHER"):
-        return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
+        return HPOA_DECIPHER_SOURCES
 
     else:
         raise ValueError(f"Unknown source '{source_id}' value, can't set the primary knowledge source")
