@@ -27,8 +27,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
     TextMiningStudyResult,
 )
-from bmt.pydantic import build_association_knowledge_sources, entity_id
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_SEMMEDDB
+
+SEMMEDDB_SOURCES = build_association_knowledge_sources(primary=INFORES_SEMMEDDB)
 
 PREFIX_TO_CLASS: dict[str, type[NamedThing]] = {
     "NCBIGene": Gene,
@@ -437,9 +440,7 @@ def transform_semmeddb_edge(
         "predicate": predicate,
         "object": object_id,
         "publications": publications,
-        "sources": build_association_knowledge_sources(
-            primary=INFORES_SEMMEDDB,
-        ),
+        "sources": SEMMEDDB_SOURCES,
         "knowledge_level": KnowledgeLevelEnum.not_provided,
         "agent_type": AgentTypeEnum.text_mining_agent,
     }
