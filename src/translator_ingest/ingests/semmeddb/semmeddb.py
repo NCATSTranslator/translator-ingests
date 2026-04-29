@@ -1,7 +1,7 @@
 """SemMedDB ingest: KG2 pre-processed edges -> Biolink Model associations."""
 
 import os
-from typing import Any
+from typing import Optional, Any
 
 import koza
 from koza.model.graphs import KnowledgeGraph
@@ -283,11 +283,12 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
 def _pick_affects_class(
     subject_id: str,
     object_id: str,
-) -> type[Association]:
-    """Choose the narrowest Association subclass for ``biolink:affects`` edges.
+) -> tuple[type[Association], Optional[str]]:
+    """Choose the narrowest Association subclass for `biolink:affects` edges.
 
-    All returned classes support ``qualified_predicate``,
-    ``object_aspect_qualifier``, and ``object_direction_qualifier``.
+    All returned classes support `qualified_predicate`,
+    `object_aspect_qualifier`, and `object_direction_qualifier`.
+    Returns (Association subclass, Optional[predicate string]).
     """
     sub_is_gene = _is_gene_or_protein(subject_id)
     sub_is_chem = _is_chemical(subject_id)
@@ -295,12 +296,12 @@ def _pick_affects_class(
     obj_is_chem = _is_chemical(object_id)
 
     if sub_is_chem and obj_is_gene:
-        return ChemicalAffectsGeneAssociation
+        return ChemicalAffectsGeneAssociation, None
     if sub_is_gene and obj_is_chem:
-        return GeneAffectsChemicalAssociation
+        return GeneAffectsChemicalAssociation, None
     if sub_is_gene and obj_is_gene:
-        return GeneRegulatesGeneAssociation
-    return ChemicalAffectsBiologicalEntityAssociation
+        return GeneRegulatesGeneAssociation, "biolink:regulates"
+    return ChemicalAffectsBiologicalEntityAssociation, None
 
 
 def _apply_filters(
@@ -366,7 +367,9 @@ def _build_association(
         if direction is not None:
             qualifier_kwargs["object_direction_qualifier"] = direction
 
-        cls = _pick_affects_class(subject_id, object_id)
+        cls, preferred_predicate = _pick_affects_class(subject_id, object_id)
+        if preferred_predicate is not None:
+            association_kwargs["predicate"] = preferred_predicate
         return cls(**association_kwargs, **qualifier_kwargs)
 
     if predicate == "biolink:causes" and _is_gene_or_protein(subject_id):
@@ -403,7 +406,10 @@ def transform_semmeddb_edge(
 
     subject_id: str | None = record.get("subject")
     object_id: str | None = record.get("object")
-    predicate: str | None = record.get("predicate")
+
+    # The predicate should never be None, but the
+    # get() method doesn't strictly warranty that
+    predicate: str = record.get("predicate", "biolink:related_to")
 
     if not all([subject_id, object_id, predicate]):
         koza.state["invalid_edges"] += 1
