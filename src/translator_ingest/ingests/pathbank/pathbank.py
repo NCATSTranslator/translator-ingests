@@ -26,10 +26,13 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.ingests.pathbank.interaction_mapping import map_interaction_edge
 from translator_ingest.util.biolink import INFORES_PATHBANK
 from translator_ingest.util.http_utils import get_modify_date
+
+PATHBANK_SOURCES = build_association_knowledge_sources(primary=INFORES_PATHBANK)
 
 EXCLUDED_OCCURS_IN_GO_TERMS = {
     # This GO ID currently normalizes to BiologicalProcess, which violates the expected
@@ -249,9 +252,7 @@ def _create_compound_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -342,9 +343,7 @@ def _create_protein_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -423,9 +422,7 @@ def _create_protein_complex_node_and_edges(
             subject=pwp_curie,
             predicate="biolink:has_part",
             object=protein_id,
-            sources=build_association_knowledge_sources(
-                primary=INFORES_PATHBANK,
-            ),
+            sources=PATHBANK_SOURCES,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
@@ -438,9 +435,7 @@ def _create_protein_complex_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=pwp_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -517,9 +512,7 @@ def _create_nucleic_acid_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -623,9 +616,7 @@ def _create_reaction_node_and_edges(
                 subject=primary_curie,
                 predicate="biolink:has_input",
                 object=object_curie,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                ),
+                sources=PATHBANK_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -657,9 +648,7 @@ def _create_reaction_node_and_edges(
                 subject=primary_curie,
                 predicate="biolink:has_output",
                 object=object_curie,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                ),
+                sources=PATHBANK_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -689,9 +678,7 @@ def _create_reaction_node_and_edges(
                 subject=subject_curie,
                 predicate="biolink:catalyzes",
                 object=primary_curie,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                ),
+                sources=PATHBANK_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -704,9 +691,7 @@ def _create_reaction_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -776,9 +761,7 @@ def _create_bound_node_and_edges(
                 subject=pwb_curie,
                 predicate="biolink:has_part",
                 object=object_curie,
-                sources=build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                ),
+                sources=PATHBANK_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -791,9 +774,7 @@ def _create_bound_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=pwb_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -882,9 +863,7 @@ def _create_element_collection_node_and_edges(
         subject=pathway_curie,
         predicate="biolink:has_participant",
         object=primary_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -999,9 +978,7 @@ def _create_interaction_edges(
                 "subject": left_curie,
                 "predicate": predicate,
                 "object": right_curie,
-                "sources": build_association_knowledge_sources(
-                    primary=INFORES_PATHBANK,
-                ),
+                "sources": PATHBANK_SOURCES,
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
             }
@@ -1062,9 +1039,7 @@ def _create_subcellular_location_nodes_and_edges(
         subject=pathway_curie,
         predicate="biolink:occurs_in",
         object=location_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -1115,9 +1090,7 @@ def _create_tissue_nodes_and_edges(
         subject=pathway_curie,
         predicate="biolink:occurs_in",
         object=tissue_curie,
-        sources=build_association_knowledge_sources(
-            primary=INFORES_PATHBANK,
-        ),
+        sources=PATHBANK_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
