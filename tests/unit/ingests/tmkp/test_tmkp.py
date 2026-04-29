@@ -615,7 +615,8 @@ class TestTransformTmkpEdge:
     def test_gene_disease_contributes_to_gets_epc_pattern(self):
         """Gene-disease 'contributes_to' is transformed to canonical EPC pattern.
 
-        Primary predicate becomes 'affects', qualified_predicate becomes 'contributes_to',
+        Primary predicate becomes 'positively_correlates_with',
+        qualified_predicate becomes 'contributes_to',
         and subject_form_or_variant_qualifier is set to 'modified_form'.
         """
         record = {
@@ -631,7 +632,7 @@ class TestTransformTmkpEdge:
 
         assoc = associations[0]
         assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:affects"
+        assert assoc.predicate == "biolink:positively_correlated_with"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == MODIFIED_FORM
 

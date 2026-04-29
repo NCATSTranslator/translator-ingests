@@ -88,13 +88,13 @@ BIOLINK_CLASS_MAP = {
 # Map edge types to association classes
 ASSOCIATION_AND_PREDICATE_MAP = {
     "biolink:ChemicalToGeneAssociation":
-        (ChemicalAffectsGeneAssociation, "biolink:ameliorates_condition"),
+        (ChemicalAffectsGeneAssociation, "biolink:affects"),
 
     "biolink:GeneToDiseaseAssociation":
         (CorrelatedGeneToDiseaseAssociation, "biolink:positively_correlated_with"),
 
     "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation":
-        (ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, "biolink:ameliorates_condition"),
+        (ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, None),
 
     "biolink:GeneRegulatoryRelationship":
         (GeneRegulatesGeneAssociation, "biolink:regulates"),
@@ -451,13 +451,9 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
-    # For GeneRegulatesGeneAssociation, default qualified_predicate to the predicate if not set
-    if assoc_class == GeneRegulatesGeneAssociation and "qualified_predicate" not in assoc_kwargs:
-        assoc_kwargs["qualified_predicate"] = predicate
-
-    # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
     if assoc_class == GeneRegulatesGeneAssociation:
-        # If either qualifier is missing, skip the edge to avoid semantic errors.
+        # GeneRegulatesGeneAssociation requires an object_aspect_qualifier and object_direction_qualifier,
+        # so if either qualifier is missing, skip the edge to avoid semantic errors.
         if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
             logger.warning(
                 "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
@@ -466,6 +462,10 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
                 "These qualifiers are required for semantic correctness."
             )
             return None
+
+        if "qualified_predicate" not in assoc_kwargs:
+            # Constrained 'qualified_predicate' value as of Biolink 4.4.0rc1
+            assoc_kwargs["qualified_predicate"] = "biolink:causes"
 
     # Create association with all fields
     association = assoc_class(**assoc_kwargs)
