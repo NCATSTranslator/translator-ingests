@@ -11,7 +11,7 @@ Data comes as tar.gz archives containing:
 
 import json
 from functools import lru_cache
-from typing import Any, Dict, List, Set, Tuple
+from typing import Optional, Any, Dict, List, Set, Tuple
 from loguru import logger
 from bmt.utils import parse_name
 import koza
@@ -391,13 +391,14 @@ def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, An
 @koza.transform_record(tag="edges")
 def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP-edge records with attribute parsing."""
-    subject_id = record.get("subject")
-    predicate = record.get("predicate")
-    object_id = record.get("object")
-    relation = record.get("relation")
+    subject_id: Optional[str] = record.get("subject")
+    predicate: Optional[str] = record.get("predicate")
+    object_id: Optional[str] = record.get("object")
+    relation: str = record.get("relation","")
 
     if not all([subject_id, predicate, object_id]):
         return None
+    assert subject_id and predicate and object_id
 
     # Validate subject/object prefixes match predicate domain/range constraints
     if not _validate_edge_prefixes(subject_id, object_id, predicate):
