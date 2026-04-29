@@ -16,9 +16,11 @@ from translator_ingest.util.biolink import INFORES_BGEE
 
 from koza.model.graphs import KnowledgeGraph
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 BIOLINK_EXPRESSED_IN = "biolink:expressed_in"
+BGEE_SOURCES = build_association_knowledge_sources(primary=INFORES_BGEE)
 
 def get_latest_version() -> str:
     """Get version from the manifest file"""
@@ -80,7 +82,7 @@ def transform_bgee_expressed_in(
         subject=gene_id,
         predicate=BIOLINK_EXPRESSED_IN,
         object=anatomical_id,
-        sources=build_association_knowledge_sources(primary=INFORES_BGEE),
+        sources=BGEE_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent,
     )
