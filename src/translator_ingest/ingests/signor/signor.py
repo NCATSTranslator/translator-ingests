@@ -30,6 +30,8 @@ from translator_ingest.util.biolink import (
     INFORES_SIGNOR
 )
 
+SIGNOR_SOURCES = build_association_knowledge_sources(primary=INFORES_SIGNOR)
+
 # adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
@@ -321,7 +323,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -340,7 +342,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
@@ -374,7 +376,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -410,7 +412,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes
@@ -447,7 +449,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -466,7 +468,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
@@ -500,7 +502,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -539,7 +541,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -558,7 +560,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
@@ -592,7 +594,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -633,7 +635,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = current_predicate_mapping,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
@@ -649,7 +651,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -677,7 +679,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = current_predicate_mapping,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## additional species and anatomical_context qualifiers if existing in the current association type

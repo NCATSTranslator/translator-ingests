@@ -31,6 +31,7 @@ from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.logging_utils import get_logger
 
 INFORES_DAKP = "infores:multiomics-drugapprovals"
+DAKP_SOURCES = build_association_knowledge_sources(primary=INFORES_DAKP)
 
 logger = get_logger(__name__)
 
@@ -199,7 +200,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         edge_props["sources"] = sources
     else:
         # Default to standard source if not provided
-        edge_props["sources"] = build_association_knowledge_sources(primary=INFORES_DAKP)
+        edge_props["sources"] = DAKP_SOURCES
 
     # Determine which association class to use based on category
     categories = record.get("category", ["biolink:Association"])

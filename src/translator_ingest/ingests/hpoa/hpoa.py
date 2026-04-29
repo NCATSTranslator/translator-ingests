@@ -48,6 +48,8 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     hpo_to_mode_of_inheritance,
 )
 
+HPOA_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA)
+
 
 def get_latest_version() -> str:
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
@@ -408,7 +410,7 @@ def transform_gene_to_phenotype_record(
         has_total=frequency.has_total,
         disease_context_qualifier=dis_id,
         publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_HPOA),
+        sources=HPOA_SOURCES,
         knowledge_level=KnowledgeLevelEnum.logical_entailment,
         agent_type=AgentTypeEnum.automated_agent,
         **{},

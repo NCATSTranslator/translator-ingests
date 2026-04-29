@@ -29,6 +29,8 @@ from translator_ingest.util.biolink import (
     INFORES_GTOPDB
 )
 
+GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
+
 # adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
@@ -211,7 +213,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = current_direction_mapping[0],
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -221,7 +223,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -264,7 +266,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = object_direction_qualifier,
                 causal_mechanism_qualifier = causal_mechanism_qualifier,
                 ## other edge attributes
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -322,7 +324,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -332,7 +334,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -466,7 +468,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -476,7 +478,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -561,7 +563,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -571,7 +573,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -626,7 +628,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier= causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -636,7 +638,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -683,7 +685,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -693,7 +695,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -739,7 +741,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier= object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -749,7 +751,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -804,7 +806,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -814,7 +816,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -863,7 +865,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -873,7 +875,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -909,7 +911,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = object_direction_qualifier,
                 causal_mechanism_qualifier = causal_mechanism_qualifier,
                 ## other edge attributes
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -947,7 +949,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -957,7 +959,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -999,7 +1001,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = object_direction_qualifier,
                 causal_mechanism_qualifier = causal_mechanism_qualifier,
                 ## other edge attributes
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
 
@@ -1033,7 +1035,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = causal_mechanism_qualifier,
                     ## other edge attributes
-                    sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                    sources=GTOPDB_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -1043,7 +1045,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 subject=subject.id,
                 object=object.id,
                 predicate = "biolink:directly_physically_interacts_with",
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
@@ -1083,7 +1085,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 object_direction_qualifier = object_direction_qualifier,
                 causal_mechanism_qualifier = causal_mechanism_qualifier,
                 ## other edge attributes
-                sources=build_association_knowledge_sources(primary=INFORES_GTOPDB),
+                sources=GTOPDB_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )

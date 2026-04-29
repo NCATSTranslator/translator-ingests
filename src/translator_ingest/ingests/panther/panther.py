@@ -28,6 +28,8 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     GENE_FAMILY_ID_COL,
 )
 
+PANTHER_SOURCES = build_association_knowledge_sources(primary="infores:panther")
+
 
 def get_latest_version() -> str:
     try:
@@ -106,7 +108,7 @@ def transform_gene_to_gene_orthology(
         object=gene_b.id,
         predicate="biolink:orthologous_to",
         has_evidence=orthology_evidence,
-        sources=build_association_knowledge_sources(primary="infores:panther"),
+        sources=PANTHER_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_validation_of_automated_agent
     )
@@ -115,7 +117,7 @@ def transform_gene_to_gene_orthology(
         subject=gene_a.id,
         object=gene_family.id,
         predicate="biolink:member_of",
-        sources=build_association_knowledge_sources(primary="infores:panther"),
+        sources=PANTHER_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent
     )
@@ -124,7 +126,7 @@ def transform_gene_to_gene_orthology(
         subject=gene_b.id,
         object=gene_family.id,
         predicate="biolink:member_of",
-        sources=build_association_knowledge_sources(primary="infores:panther"),
+        sources=PANTHER_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent
     )

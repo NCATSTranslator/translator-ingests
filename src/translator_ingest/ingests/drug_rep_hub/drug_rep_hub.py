@@ -24,6 +24,7 @@ from translator_ingest.util.transform_utils import entity_id
 inchikey_regex = re.compile('^[A-Z]{14}-[A-Z]{10}-[A-Z]$')
 
 INFORES_DRUG_REP_HUB = "infores:drug-repurposing-hub"
+DRUG_REP_HUB_SOURCES = build_association_knowledge_sources(primary=INFORES_DRUG_REP_HUB)
 PUBCHEM_PREFIX = "PUBCHEM.COMPOUND:"
 INCHIKEY_PREFIX = "INCHIKEY:"
 SMILES_PREFIX = "SMILES:"
@@ -132,7 +133,7 @@ def create_disease_association(chemical, indication, indication_info, predicate,
         predicate=predicate,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
+        sources=DRUG_REP_HUB_SOURCES,
         original_object = indication,
         #TODO: clinical_approval_status=clinical_approval_status,
         #TODO: max_research_phase=max_research_phase,
@@ -153,7 +154,7 @@ def create_chemical_role_association(chemical, indication, indication_info, pred
         object=chemical_role.id,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
+        sources=DRUG_REP_HUB_SOURCES,
         original_object = indication
     )
     return chemical_role, association
@@ -175,7 +176,7 @@ def create_target_association(chemical, target_gene_symbol, moa):
         object=target.id,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        sources=build_association_knowledge_sources(INFORES_DRUG_REP_HUB),
+        sources=DRUG_REP_HUB_SOURCES,
         description = moa
     )
     return target, association

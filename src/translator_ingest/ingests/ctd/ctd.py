@@ -29,13 +29,14 @@ from translator_ingest.util.biolink import INFORES_CTD
 from koza.model.graphs import KnowledgeGraph
 
 
+CTD_SOURCES = build_association_knowledge_sources(primary=INFORES_CTD)
+
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
 BIOLINK_POSITIVELY_CORRELATED = "biolink:positively_correlated_with"
 BIOLINK_NEGATIVELY_CORRELATED = "biolink:negatively_correlated_with"
-
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 
 CHEM_TO_DISEASE_PREDICATES = {
@@ -106,7 +107,7 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
         subject=chemical.id,
         predicate=predicate,
         object=disease.id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent
     )
@@ -147,7 +148,7 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=disease_id,
-                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                sources=CTD_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.statistical_association,
                 agent_type=AgentTypeEnum.manual_agent
         )
@@ -164,7 +165,7 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=phenotype_id,
-                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                sources=CTD_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.statistical_association,
                 agent_type=AgentTypeEnum.manual_agent
         )
@@ -322,7 +323,7 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         predicate=predicate,
         object=gene_id,
         qualified_predicate=qualified_predicate,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
@@ -356,7 +357,7 @@ def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any])
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=go_term,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -383,7 +384,7 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=pathway_id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -439,7 +440,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         subject=chemical_id,
         predicate=BIOLINK_AFFECTS,
         object=phenotype_id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,

@@ -38,6 +38,7 @@ from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.logging_utils import get_logger
 
 INFORES_GENETICSKP = "infores:geneticskp"
+GENETICSKP_SOURCES = build_association_knowledge_sources(primary=INFORES_GENETICSKP)
 
 logger = get_logger(__name__)
 
@@ -225,7 +226,7 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
     if "sources" in record:
         edge_props["sources"] = record["sources"]
     else:
-        edge_props["sources"] = build_association_knowledge_sources(primary=INFORES_GENETICSKP)
+        edge_props["sources"] = GENETICSKP_SOURCES
 
     # Determine association type based on predicate and node types
     categories = record.get("category", ["biolink:Association"])

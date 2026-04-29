@@ -28,6 +28,7 @@ QUALIFIER_CONFIG_PATH = INGESTS_PARSER_PATH / "chembl" / "chembl_qualifiers.json
 LATEST_VERSION = "36"
 
 INFORES_CHEMBL = "infores:chembl"
+CHEMBL_SOURCES = build_association_knowledge_sources(primary=INFORES_CHEMBL)
 
 MOA_QUERY = """
         SELECT
@@ -549,7 +550,7 @@ def get_association(koza, record, action_type_map):
                 object=target.id,
                 species_context_qualifier = species_context_qualifier,
                 object_form_or_variant_qualifier = mutation_qualifier,
-                sources=build_association_knowledge_sources(INFORES_CHEMBL),
+                sources=CHEMBL_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 publications=publications,
@@ -580,7 +581,7 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
         object=target.id,
         species_context_qualifier = species_context_qualifier,
         anatomical_context_qualifier = [anatomical_context_qualifier] if anatomical_context_qualifier else None,
-        sources=build_association_knowledge_sources(INFORES_CHEMBL),
+        sources=CHEMBL_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent if record["curated_by"] == "Autocuration" else AgentTypeEnum.manual_agent,
         publications=publications,
@@ -604,7 +605,7 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
         object=metabolite.id,
         species_context_qualifier = species_context_qualifier,
         # TODO: context_qualifier = context_qualifier,
-        sources=build_association_knowledge_sources(INFORES_CHEMBL),
+        sources=CHEMBL_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=references if len(references) > 0 else None,
@@ -623,7 +624,7 @@ def get_has_part_association(koza: koza.KozaTransform, component, target, record
         predicate="biolink:has_part",
         object=component.id,
         # TODO: species_context_qualifier = species_context_qualifier,
-        sources=build_association_knowledge_sources(INFORES_CHEMBL),
+        sources=CHEMBL_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )

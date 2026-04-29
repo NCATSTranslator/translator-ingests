@@ -41,6 +41,11 @@ from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP, get_biolink_model_toolkit
 
+TMKP_DEFAULT_SOURCES = build_association_knowledge_sources(
+    primary=INFORES_TEXT_MINING_KP,
+    supporting=["infores:pubmed"],
+)
+
 
 # Remap predicates from source to canonical Biolink form.
 # Text-mined 'treats' edges should use the broader 'treats_or_applied_or_studied_to_treat'
@@ -466,10 +471,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         parse_attributes(attributes, association)
     else:
         # No attributes - set default sources
-        association.sources = build_association_knowledge_sources(
-            primary=INFORES_TEXT_MINING_KP,
-            supporting=["infores:pubmed"]
-        )
+        association.sources = TMKP_DEFAULT_SOURCES
 
     # Create nodes for subject and object
     nodes = []

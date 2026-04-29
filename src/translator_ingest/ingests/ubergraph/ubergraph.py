@@ -18,6 +18,7 @@ from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
 INFORES_UBERGRAPH = "infores:ubergraph"
+UBERGRAPH_SOURCES = build_association_knowledge_sources(primary=INFORES_UBERGRAPH)
 
 EXTRACTED_ONTOLOGY_PREFIXES = [
     "UBERON",
@@ -204,8 +205,7 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
     nodes_seen = set()
     nodes_batch = []
     edges_batch = []
-    sources = build_association_knowledge_sources(primary=INFORES_UBERGRAPH)
-    
+
     batch_count = 0
     
     for record in data:
@@ -243,7 +243,7 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
             subject=subject_curie,
             predicate=predicate_curie,
             object=object_curie,
-            sources=sources,
+            sources=UBERGRAPH_SOURCES,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         ))
