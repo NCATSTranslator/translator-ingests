@@ -26,7 +26,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.ingests.pathbank.interaction_mapping import map_interaction_edge
 from translator_ingest.util.biolink import INFORES_PATHBANK
 from translator_ingest.util.http_utils import get_modify_date

@@ -5,7 +5,7 @@ from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
-from bmt.pydantic import build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
     INFORES_OMIM,

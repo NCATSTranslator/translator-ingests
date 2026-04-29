@@ -7,7 +7,7 @@ from typing import Any, Iterable
 import koza
 import requests
 
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     KnowledgeLevelEnum,

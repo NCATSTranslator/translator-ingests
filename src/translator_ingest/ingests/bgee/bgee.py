@@ -16,7 +16,8 @@ from translator_ingest.util.biolink import INFORES_BGEE
 
 from koza.model.graphs import KnowledgeGraph
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 BIOLINK_EXPRESSED_IN = "biolink:expressed_in"
 

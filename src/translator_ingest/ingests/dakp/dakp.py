@@ -25,7 +25,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ClinicalApprovalStatusEnum
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import build_association_knowledge_sources, entity_id
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
 
