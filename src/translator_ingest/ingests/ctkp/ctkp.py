@@ -230,7 +230,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         sources = []
         for source in record["sources"]:
             retrieval_source = RetrievalSource(
-                id=entity_id(),  # Generate unique ID
+                id=source.get("resource_id"),  # Generate unique ID
                 resource_id=source.get("resource_id"),
                 resource_role=source.get("resource_role", "primary_knowledge_source"),
                 upstream_resource_ids=source.get("upstream_resource_ids"),
