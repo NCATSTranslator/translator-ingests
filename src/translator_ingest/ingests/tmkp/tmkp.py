@@ -86,11 +86,18 @@ BIOLINK_CLASS_MAP = {
 }
 
 # Map edge types to association classes
-ASSOCIATION_MAP = {
-    "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
-    "biolink:GeneToDiseaseAssociation": CorrelatedGeneToDiseaseAssociation,
-    "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    "biolink:GeneRegulatoryRelationship": GeneRegulatesGeneAssociation,
+ASSOCIATION_AND_PREDICATE_MAP = {
+    "biolink:ChemicalToGeneAssociation":
+        (ChemicalAffectsGeneAssociation, "biolink:ameliorates_condition"),
+
+    "biolink:GeneToDiseaseAssociation":
+        (CorrelatedGeneToDiseaseAssociation, "biolink:positively_correlated_with"),
+
+    "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation":
+        (ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, "biolink:ameliorates_condition"),
+
+    "biolink:GeneRegulatoryRelationship":
+        (GeneRegulatesGeneAssociation, "biolink:regulates"),
 }
 
 # Track edges skipped due to invalid subject/object prefixes (for reporting)
@@ -408,8 +415,9 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # Remap predicates from source to canonical Biolink form
     predicate = PREDICATE_REMAP.get(predicate, predicate)
 
-    # Get association class
-    assoc_class = ASSOCIATION_MAP.get(relation, Association)
+    # Get association class and preferred_predicate (if specified)
+    assoc_class, preferred_predicate = ASSOCIATION_AND_PREDICATE_MAP.get(relation, (Association, None))
+    predicate = preferred_predicate if preferred_predicate is not None else predicate
 
     # Knowledge level: 'treats_or_applied_or_studied_to_treat' is broad enough to warrant
     # 'knowledge_assertion' (the predicate semantics already account for uncertainty).
@@ -439,11 +447,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
     # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
     # by the source data (which may provide e.g. 'loss_of_function_variant_form').
-    if (
-        assoc_class == CorrelatedGeneToDiseaseAssociation
-        and predicate == "biolink:contributes_to"
-    ):
-        assoc_kwargs["predicate"] = "biolink:affects"
+    if assoc_class == CorrelatedGeneToDiseaseAssociation:
         assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
@@ -467,7 +471,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     association = assoc_class(**assoc_kwargs)
 
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
-    if attributes_json := record.get("_attributes"):
+    if attributes_json := record.get("_attributes",{}):
         attributes = json.loads(attributes_json)
         parse_attributes(attributes, association)
     else:
