@@ -135,8 +135,8 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     )
     koza.log(f"{df.shape[0]} rows after merging by unique triple")
 
-    ## DONE - output to transform step
-    return df.to_dicts()
+    ## koza accepts iterator/yield
+    return df.iter_rows(named=True)  ## named=True returns each row as dict rather than tuple
 
 encountered_node_ids = set()
 
