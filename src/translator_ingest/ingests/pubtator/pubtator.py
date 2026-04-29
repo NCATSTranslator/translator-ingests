@@ -2,9 +2,9 @@
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 ## DRAFT: UPDATE THIS for transform
-from translator_ingest.util.biolink import INFORES_PUBTATOR
+from translator_ingest.util.biolink import INFORES_PUBTATOR, build_association_knowledge_sources
 from translator_ingest.util.http_utils import get_modify_date
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -138,12 +138,21 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## DONE - output to transform step
     return df.to_dicts()
 
+encountered_node_ids = set()
 
 @koza.transform_record()
 def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     ## Nodes
-    entity1 = get_node(record["entity1_type"], record["entity1_id"])
-    entity2 = get_node(record["entity2_type"], record["entity2_id"])
+    entity1_id = record["entity1_id"]
+    entity2_id = record["entity2_id"]
+    nodes=[]
+    if entity1_id not in encountered_node_ids:
+        nodes.append(get_node(record["entity1_type"], entity1_id))
+        encountered_node_ids.add(entity1_id)
+    if entity2_id not in encountered_node_ids:
+        nodes.append(get_node(record["entity2_type"], entity2_id))
+        encountered_node_ids.add(entity2_id)
+
     ## DRAFT - ANOTHER IDEA: don't include typing at all
     # entity1 = NamedThing(id=record["entity1_id"])
     # entity2 = NamedThing(id=record["entity2_id"])
@@ -157,27 +166,27 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     if data_modeling.get("association"):
         association = data_modeling["association"](
             id=entity_id(),
-            subject=entity1.id,
+            subject=entity1_id,
             predicate=data_modeling["predicate"],
-            object=entity2.id,
+            object=entity2_id,
             ## for text-mining
             knowledge_level=KnowledgeLevelEnum.not_provided,
             agent_type=AgentTypeEnum.text_mining_agent,
             sources=PUBTATOR_SOURCES,
             publications=record["pmid_set"],
         )
-        return KnowledgeGraph(nodes=[entity1, entity2], edges=[association])
+        return KnowledgeGraph(nodes=nodes, edges=[association])
     else:
     ## use general Association
         association = Association(
             id=entity_id(),
-            subject=entity1.id,
+            subject=entity1_id,
             predicate=data_modeling["predicate"],
-            object=entity2.id,
+            object=entity2_id,
             ## for text-mining
             knowledge_level=KnowledgeLevelEnum.not_provided,
             agent_type=AgentTypeEnum.text_mining_agent,
             sources=PUBTATOR_SOURCES,
             publications=record["pmid_set"],
         )
-        return KnowledgeGraph(nodes=[entity1, entity2], edges=[association])
+        return KnowledgeGraph(nodes=nodes, edges=[association])
