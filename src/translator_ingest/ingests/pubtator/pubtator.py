@@ -44,6 +44,8 @@ EXCLUDED_ENTITIES = [
     "MESH:C000598555",  ## 2,5-dihexyl-N,N'-dicyano-p-quinonediimine: Pubtator classifies as Chemical, NodeNormed to OrganismTaxon
     "MESH:C000719328",  ## smoker's inclusion bodies: Pubtator classifies as Disease, NodeNormed CORRECTLY to CellularComponent
 ]
+# Build the sources property for use on edges
+PUBTATOR_SOURCES = build_association_knowledge_sources(primary=INFORES_PUBTATOR)
 
 
 ## CUSTOM FUNCTIONS
@@ -78,7 +80,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         .with_columns(
             ## add PMID prefix
             pl.concat_str([pl.lit("PMID:"), pl.col("pmid").cast(pl.Utf8)]).alias("pmid"),
-        ## entity cols are "Type|ID", split 
+        ## entity cols are "Type|ID", split
             pl.col("entity1").str.split_exact("|", 1).alias("entity1_parts"),
             pl.col("entity2").str.split_exact("|", 1).alias("entity2_parts"),
         )
@@ -150,7 +152,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     ## just in case - if there isn't a mapping, skip the record
     if not data_modeling:
         return None
-    
+
     ## some mappings include a specific Association-type. If absent, use general Association (default)
     if data_modeling.get("association"):
         association = data_modeling["association"](
@@ -161,7 +163,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             ## for text-mining
             knowledge_level=KnowledgeLevelEnum.not_provided,
             agent_type=AgentTypeEnum.text_mining_agent,
-            sources=build_association_knowledge_sources(primary=INFORES_PUBTATOR),
+            sources=PUBTATOR_SOURCES,
             publications=record["pmid_set"],
         )
         return KnowledgeGraph(nodes=[entity1, entity2], edges=[association])
@@ -175,7 +177,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             ## for text-mining
             knowledge_level=KnowledgeLevelEnum.not_provided,
             agent_type=AgentTypeEnum.text_mining_agent,
-            sources=build_association_knowledge_sources(primary=INFORES_PUBTATOR),
+            sources=PUBTATOR_SOURCES,
             publications=record["pmid_set"],
         )
         return KnowledgeGraph(nodes=[entity1, entity2], edges=[association])
