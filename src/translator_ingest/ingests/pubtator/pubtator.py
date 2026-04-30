@@ -35,10 +35,7 @@ SPLIT_COLS = [
     "entity2_id",
 ]
 DEFINE_EDGE_COLS = ["entity1_id", "relation", "entity2_id"]
-## NodeNorm currently doesn't include variant namespaces, so filtering out
-EXCLUDED_ENTITY_TYPES = ["DNAMutation", "ProteinMutation", "SNP", "Mutation"]
-## not a useful relationship or no biolink-model mapping
-EXCLUDED_RELATIONS = ["compare", "cotreat"]
+INCLUDED_ENTITY_TYPES = {"Chemical", "Disease", "Gene"}  ## set because using set operations on it
 EXCLUDED_ENTITIES = [
     "MESH:C100843",  ## Lacteol: Pubtator classifies as Chemical, NodeNormed to OrganismTaxon
     "MESH:C000598555",  ## 2,5-dihexyl-N,N'-dicyano-p-quinonediimine: Pubtator classifies as Chemical, NodeNormed to OrganismTaxon
@@ -97,20 +94,32 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## log number of starting rows
     koza.log(f"{df.shape[0]} rows at start.")
 
-    ## log, filter out rows with EXCLUDED_ENTITY_TYPES
+    ## log, only keep rows with known, supported ENTITY TYPES
+    ## currently the other entity types are variants/mutations, and NodeNorm doesn't support any variant namespaces
+    ##   ["DNAMutation", "ProteinMutation", "SNP", "Mutation"]
     n_before = df.shape[0]    ## save for log: calculating change
+    ## save for logs: types not used
+    entity_types = set(df["entity1_type"].unique()) | set(df["entity2_type"].unique())  ## just in case, use both cols to get set of types
+    excluded_types = sorted(entity_types - INCLUDED_ENTITY_TYPES)    ## save for log
+    koza.transform_metadata["dropped_entity_types"] = excluded_types
     df = df.filter(
-        ~(
-            pl.col("entity1_type").is_in(EXCLUDED_ENTITY_TYPES)
-            | pl.col("entity2_type").is_in(EXCLUDED_ENTITY_TYPES)
+        (
+            pl.col("entity1_type").is_in(INCLUDED_ENTITY_TYPES) &
+            pl.col("entity2_type").is_in(INCLUDED_ENTITY_TYPES)
         )
     )
-    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out entity types that can't be NodeNormed: {", ".join(EXCLUDED_ENTITY_TYPES)}")
+    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out non-supported entity types: {", ".join(excluded_types)}")
 
-    ## log, filter out rows with EXCLUDED_RELATIONS
+    ## log, only keep rows with known, supported RELATIONS
+    ## currently, the excluded relations are either not a useful relationship or have no biolink-model mapping
+    ##   ["compare", "cotreat"]
     n_before = df.shape[0]    ## save for log: calculating change
-    df = df.filter(~(pl.col("relation").is_in(EXCLUDED_RELATIONS)))
-    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out some relation values: {", ".join(EXCLUDED_RELATIONS)}")
+    ## save for logs: types not used
+    INCLUDED_RELATIONS = set(RELATION_MODELING.keys())
+    excluded_relations = sorted(set(df["relation"].unique()) - INCLUDED_RELATIONS)
+    koza.transform_metadata["dropped_relations"] = excluded_relations
+    df = df.filter(pl.col("relation").is_in(INCLUDED_RELATIONS))
+    koza.log(f"{df.shape[0]} rows ({df.shape[0] / n_before:.1%}) after filtering out non-supported relation values: {", ".join(excluded_relations)}")
 
     ## log, filter out rows with EXCLUDED_ENTITIES
     n_before = df.shape[0]    ## save for log: calculating change
