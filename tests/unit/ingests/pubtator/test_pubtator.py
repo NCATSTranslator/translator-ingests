@@ -64,9 +64,9 @@ def negcorrel_output():
     ## example of df row after parsing with prepare, from notebook
     ## current webpage: https://www.ncbi.nlm.nih.gov/research/pubtator3/docsum?text=relations:negative_correlate%7C@GENE_TIGIT%7C@GENE_LAMP1
     record = {
-        "entity1_id": "201633",  ## TIGIT
+        "entity1_id": "NCBIGene:201633",  ## TIGIT
         "relation": "negative_correlate",
-        "entity2_id": "3916",  ## LAMP1/CD107a
+        "entity2_id": "NCBIGene:3916",  ## LAMP1/CD107a
         "pmid_set": ["PMID:32903786", "PMID:33767694"],
         "entity1_type": "Gene",
         "entity2_type": "Gene",
