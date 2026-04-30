@@ -24,7 +24,7 @@ dependencies = [
     "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
     "requests",    ## needed for specific ingest
-    "robokop-orion",
+    "robokop-orion==1.3.3",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
     "zstandard>=0.25.0"

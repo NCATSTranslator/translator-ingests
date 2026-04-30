@@ -1,13 +1,13 @@
 """Biolink Model support for Translator Ingests"""
-from typing import Optional
+from typing import Optional, Union
 from functools import lru_cache
 from importlib.resources import files
 
 from linkml_runtime.utils.schemaview import SchemaView
 
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, ResourceRoleEnum
+
 from bmt import Toolkit
-from bmt.pydantic import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
 logger = get_logger(__name__)
@@ -126,10 +126,119 @@ def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional
         source: dict
         for source in source_list:
             rs = RetrievalSource(
-                id=entity_id(),
+                id=source["resource_id"],
                 resource_id=source["resource_id"],
                 resource_role=source["resource_role"],
                 upstream_resource_ids=source.get("upstream_resource_ids", None)
             )
             sources.append(rs)
         return sources
+
+
+def _build_retrieval_source(
+        source_spec: Union[str,tuple[str, list[str]]],
+        resource_role: Optional[ResourceRoleEnum]
+) -> RetrievalSource:
+    if isinstance(source_spec, tuple):
+        assert len(source_spec) == 2, f"Invalid supporting data source tuple: {source_spec}"
+        resource_id = str(source_spec[0])
+        source_record_urls = source_spec[1] if len(source_spec[1]) > 0 else None
+    else:
+        resource_id = source_spec
+        source_record_urls = None
+    return RetrievalSource(
+        id=resource_id,
+        resource_id=resource_id,
+        resource_role=resource_role,
+        source_record_urls=source_record_urls,
+        **{},
+    )
+
+def build_association_knowledge_sources(
+        primary: Union[str,tuple[str, list[str]]],
+        supporting: Optional[list[Union[str,tuple[str, list[str]]]]] = None,
+        aggregating: Optional[Union[str,tuple[str, list[str]]]] = None
+) -> list[RetrievalSource]:
+    """
+    This function attempts to build a list of a well-formed RetrievalSource list
+    for an Association **sources** slot, using given knowledge source parameters
+    for primary, supporting and aggregating knowledge sources.
+
+    The use case for 'aggregating knowledge source' represents the limited use case where
+    only one primary knowledge source is specified, as a single upstream knowledge source.
+    This is, of course, not the general case for all aggregating knowledge sources;
+    however, the use case of aggregating knowledge sources with multiple upstream ('primary')
+    knowledge sources is not yet supported.
+
+    This method is lenient in that it allows for strings that are not explicitly encoded
+    as infores identifiers, converting these to infores identifiers by prefixing with
+    the 'infores:' namespace (but the method doesn't validate these coerced infores identifiers
+    against the public infores inventory at https://github.com/biolink/information-resource-registry).
+
+    There are optional 'extended form' provisions for the addition of associated **source_record_urls**
+    to the instances of **resource_id** provided for primary, aggregating and supporting knowledge sources.
+
+    Parameters
+    ----------
+    primary:
+        **Simple form:** Infores 'resource_id' for the primary knowledge source of an Association.
+        **Extended form:** 2-tuple of (resource_id, list[source_record_urls])
+        for the primary knowledge source of an Association.
+
+    supporting:
+        **Simple form:** List of supporting datasource infores 'resource_id' instances. Supporting
+        data sources are automatically assumed to be upstream of the primary knowledge source and
+        mapped accordingly.
+        **Extended form:** List of 2-tuples with form (resource_id, list[source_record_urls]).
+
+    aggregating:
+        **Simple form:** With the infores 'resource_id' of the aggregating knowledge source.
+        The primary knowledge source given to the method is automatically assumed to be upstream
+        of the aggregating knowledge source and mapped accordingly.
+        **Extended form:** 2-tuple of (resource_id, list[source_record_urls])
+        for the aggregating knowledge source of an Association.
+
+    Returns
+    -------
+    list[RetrievalSource]:
+        List of RetrievalSource entries that are not guaranteed in any given order,
+        except that the first entry will usually be the primary knowledge source.
+
+    """
+    primary_knowledge_source: Optional[RetrievalSource] = \
+        _build_retrieval_source(
+            primary,
+            ResourceRoleEnum.primary_knowledge_source
+        )
+    sources: list[RetrievalSource] =[primary_knowledge_source]
+
+    if supporting:
+        for supporting_source_id in supporting:
+            supporting_knowledge_source = \
+                _build_retrieval_source(
+                    supporting_source_id,
+                    ResourceRoleEnum.supporting_data_source
+            )
+            sources.append(supporting_knowledge_source)
+            if primary_knowledge_source.upstream_resource_ids is None:
+                primary_knowledge_source.upstream_resource_ids = []
+            primary_knowledge_source.upstream_resource_ids.append(
+                supporting_knowledge_source.resource_id
+            )
+
+    if aggregating:
+        aggregating_knowledge_source = \
+            _build_retrieval_source(
+                aggregating,
+                ResourceRoleEnum.aggregator_knowledge_source
+            )
+
+        # The use case for 'aggregating knowledge source' represents the
+        # limited use case where only one primary knowledge source is specified
+        aggregating_knowledge_source.upstream_resource_ids = [
+            primary_knowledge_source.resource_id
+        ]
+
+        sources.append(aggregating_knowledge_source)
+
+    return sources

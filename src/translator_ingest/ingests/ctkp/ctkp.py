@@ -3,7 +3,6 @@ import gzip
 import urllib.request
 from pathlib import Path
 from typing import Any
-import uuid
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -28,11 +27,13 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
 
 INFORES_CTKP = "infores:multiomics-clinicaltrials"
+CTKP_SOURCES = build_association_knowledge_sources(primary=INFORES_CTKP)
 
 logger = get_logger(__name__)
 
@@ -183,7 +184,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     qualifiers = record.get("qualifiers", [])
 
     edge_props = {
-        "id": record.get("id", str(uuid.uuid4())),
+        "id": record.get("id", entity_id()),
         "subject": subject_id,
         "predicate": predicate,
         "object": object_id,
@@ -229,7 +230,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         sources = []
         for source in record["sources"]:
             retrieval_source = RetrievalSource(
-                id=str(uuid.uuid4()),  # Generate unique ID
+                id=source.get("resource_id"),  # Generate unique ID
                 resource_id=source.get("resource_id"),
                 resource_role=source.get("resource_role", "primary_knowledge_source"),
                 upstream_resource_ids=source.get("upstream_resource_ids"),
@@ -239,7 +240,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         edge_props["sources"] = sources
     else:
         # Default to standard source if not provided
-        edge_props["sources"] = build_association_knowledge_sources(primary=INFORES_CTKP)
+        edge_props["sources"] = CTKP_SOURCES
 
     # Determine which association class to use based on category
     categories = record.get("category", ["biolink:Association"])
