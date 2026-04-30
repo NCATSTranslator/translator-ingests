@@ -1,7 +1,7 @@
 """SemMedDB ingest: KG2 pre-processed edges -> Biolink Model associations."""
 
 import os
-from typing import Optional, Any
+from typing import Any
 
 import koza
 from koza.model.graphs import KnowledgeGraph
@@ -283,12 +283,14 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
 def _pick_affects_class(
     subject_id: str,
     object_id: str,
-) -> tuple[type[Association], Optional[str]]:
+) -> tuple[type[Association], str | None]:
     """Choose the narrowest Association subclass for `biolink:affects` edges.
 
     All returned classes support `qualified_predicate`,
     `object_aspect_qualifier`, and `object_direction_qualifier`.
-    Returns (Association subclass, Optional[predicate string]).
+    GeneRegulatesGeneAssociation is needs to be handled separately,
+    specifying the preferred predicate as "biolink:regulates.
+    Returns (Association subclass, predicate string|None).
     """
     sub_is_gene = _is_gene_or_protein(subject_id)
     sub_is_chem = _is_chemical(subject_id)
