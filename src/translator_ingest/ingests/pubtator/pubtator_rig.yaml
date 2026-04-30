@@ -37,15 +37,16 @@ ingest_info:
   included_content:
     - file_name: relation2pubtator3.gz
       included_records: >-
-        (1) Entity types aren't a variant (currently "DNAMutation", "ProteinMutation", "SNP", "Mutation")
+        (1) Entity types are "Chemical", "Disease", or "Gene"
         (2) "relation" value is mapped (didn't include "compare", "cotreat")
       # fields_used:  # (optional, range = string)
 
   filtered_content:
     - file_name: relation2pubtator3.gz
       filtered_records: >-
-        Entity types are a variant (currently "DNAMutation", "ProteinMutation", "SNP", "Mutation")
-      rationale: "NodeNorm currently doesn't include any variant namespaces, so it cannot resolve the IDs for these entities."
+        At least 1 entity type isn't "Chemical", "Disease", or "Gene". Currently, the other
+        entity types are for variants ("DNAMutation", "ProteinMutation", "SNP", "Mutation")
+      rationale: "NodeNorm currently doesn't support any variant namespaces, so it cannot resolve the IDs for these entities."
     - file_name: relation2pubtator3.gz
       filtered_records: "relation value is 'compare'"
       rationale: >-
