@@ -306,7 +306,6 @@ def validate_transform_result(
 
         # Convert the 'nodes' Iterable NamedThing content
         # into a list of Python dictionaries by comprehension
-        node: NamedThing
         transformed_nodes: list[dict[str, Any]] = [dict(node) for node in nodes]
 
         # if nodes are returned, then are they the expected ones?
@@ -351,7 +350,6 @@ def validate_transform_result(
 
         # Convert the 'edges' Iterable Association content
         # into a list of Python dictionaries by comprehension
-        edge: Association
         transformed_edges: list[dict[str, Any]] = [dict(edge) for edge in edges]
 
         # Check contents of edge(s) returned.
