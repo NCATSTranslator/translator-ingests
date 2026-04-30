@@ -417,12 +417,13 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 
     # Get association class and preferred_predicate (if specified)
     assoc_class, preferred_predicate = ASSOCIATION_AND_PREDICATE_MAP.get(relation, (Association, None))
-    predicate = preferred_predicate if preferred_predicate is not None else predicate
+    if preferred_predicate is None:
+        preferred_predicate = predicate
 
     # Knowledge level: 'treats_or_applied_or_studied_to_treat' is broad enough to warrant
     # 'knowledge_assertion' (the predicate semantics already account for uncertainty).
     # All other text-mined predicates use 'not_provided'.
-    if predicate == "biolink:treats_or_applied_or_studied_to_treat":
+    if preferred_predicate == "biolink:treats_or_applied_or_studied_to_treat":
         knowledge_level = KnowledgeLevelEnum.knowledge_assertion
     else:
         knowledge_level = KnowledgeLevelEnum.not_provided
@@ -431,7 +432,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     assoc_kwargs = {
         "id": entity_id(),
         "subject": subject_id,
-        "predicate": predicate,
+        "predicate": preferred_predicate,
         "object": object_id,
         "knowledge_level": knowledge_level,
         "agent_type": AgentTypeEnum.text_mining_agent,
@@ -444,11 +445,14 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
             assoc_kwargs[key] = value
 
     # For gene-disease 'contributes_to' edges, apply the canonical Biolink EPC pattern
-    # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
-    # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
+    # as defaults: primary predicate 'positively_correlated_with', qualified predicate 'contributes_to',
+    # with 'subject_form_or_variant_qualifier' defaulting to 'modified_form' if not already set
     # by the source data (which may provide e.g. 'loss_of_function_variant_form').
     if assoc_class == CorrelatedGeneToDiseaseAssociation:
-        assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
+        if predicate == "biolink:contributes_to":
+            assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
+        else:
+            assoc_kwargs.setdefault("qualified_predicate")  # None
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
     if assoc_class == GeneRegulatesGeneAssociation:

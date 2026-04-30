@@ -657,7 +657,7 @@ class TestTransformTmkpEdge:
 
         assoc = associations[0]
         assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:affects"
+        assert assoc.predicate == "biolink:positively_correlated_with"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
 
@@ -686,6 +686,7 @@ class TestTransformTmkpEdge:
             "object": "MONDO:0008315",
             "relation": "biolink:GeneToDiseaseAssociation",
         }
+
         items = _run_edge_transform(record)
 
         associations = [i for i in items if isinstance(i, Association)]
@@ -693,13 +694,13 @@ class TestTransformTmkpEdge:
 
         assoc = associations[0]
         assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:affects"
+        assert assoc.predicate == "biolink:positively_correlated_with"
         assert not hasattr(assoc, "qualified_predicate") or assoc.qualified_predicate is None
 
     def test_gene_disease_pre_qualified_preserves_subject_form_or_variant_qualifier(self):
-        """Source edges with predicate=affects + qp=contributes_to + sfvq pass through sfvq.
+        """Source edges with predicate == affects + qp == contributes_to + sfvq pass through sfvq.
 
-        Reproduces a bug where 13,135 source edges arrived with all three fields set
+        Reproduces a bug where 13,135 source edges arrived with all three fields set,
         but subject_form_or_variant_qualifier was silently dropped.
         """
         record = {
@@ -717,12 +718,12 @@ class TestTransformTmkpEdge:
 
         assoc = associations[0]
         assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:affects"
+        assert assoc.predicate == "biolink:positively_correlated_with"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
 
     def test_chemical_gene_anatomical_context_qualifier_passthrough(self):
-        """anatomical_context_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        """anatomical_context_qualifier from the source passes through to ChemicalAffectsGeneAssociation."""
         record = {
             "subject": "DRUGBANK:DB01248",
             "predicate": "biolink:affects",
