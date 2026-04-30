@@ -53,7 +53,7 @@ def get_node(pubtator_type: str, input_id: str):
         return DiseaseOrPhenotypicFeature(id=input_id)
     ## using elif just in case
     elif pubtator_type == "Gene":
-        return Gene(id=f"NCBIGene:{input_id}")
+        return Gene(id=input_id)
 
 
 ## PIPELINE MAIN FUNCTIONS
@@ -143,6 +143,21 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         )
     )
     koza.log(f"{df.shape[0]} rows after merging by unique triple")
+
+    ## add NCBIGene prefix to rows where type == Gene
+    ## should be that namespace based on paper's normalization section https://academic.oup.com/nar/article/52/W1/W540/7640526#469437536
+    df = df.with_columns(
+        pl.when(pl.col("entity1_type") == "Gene")
+        .then("NCBIGene:" + pl.col("entity1_id"))
+        .otherwise(pl.col("entity1_id"))
+        .alias("entity1_id")
+    )
+    df = df.with_columns(
+        pl.when(pl.col("entity2_type") == "Gene")
+        .then("NCBIGene:" + pl.col("entity2_id"))
+        .otherwise(pl.col("entity2_id"))
+        .alias("entity2_id")
+    )
 
     ## koza accepts iterator/yield
     return df.iter_rows(named=True)  ## named=True returns each row as dict rather than tuple
