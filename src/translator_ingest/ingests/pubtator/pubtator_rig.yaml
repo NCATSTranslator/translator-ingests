@@ -253,7 +253,7 @@ target_info:
   additional_notes: >-
     (1) Relation name can be specific, but def is usually very general (starts with positive/negative correlation…). And the relation-assignment can be incorrect, so using weaker/general predicates may be better?
     (2) A few MESH (chem/disease) and OMIM (disease) IDs are NodeNormed to NCBIGene, which can be seen in the normalization-metadata file, field normalized_to. This seems like an issue with the data or NodeNorm that should be investigated at some point.
-    (3) When running the ingest, there are some validation warnings that other categories are encountered when ChemicalOrDrugOrTreatment was expected. CX expects something is going on with the MESH IDs - either issues with the data, issues with NodeNorm, or understandable issues resolving proteins vs drugs. 
+    (3) When running the ingest, there are some validation warnings that other categories are encountered when Chemical was expected. CX expects something is going on with the MESH IDs - either issues with the data, issues with NodeNorm, or understandable issues resolving proteins vs drugs. 
     (4) Can't create links to Pubtator webpages (source_record_urls) because they include entity names/labels, which aren't in the relation file (ref: https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Search").
     (5) Using relation definitions in tutorial https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ("Relation Annotations", Table 2), which seem to make more sense and match the current data better than the paper's supplementary table 2.
     (6) Paper Supplementary Table 7 summarizes each tool within Pubtator (what it does, citation, all public domain license) 
