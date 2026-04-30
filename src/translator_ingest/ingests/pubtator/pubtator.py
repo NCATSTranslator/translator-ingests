@@ -3,7 +3,6 @@ import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.transform_utils import entity_id
-## DRAFT: UPDATE THIS for transform
 from translator_ingest.util.biolink import INFORES_PUBTATOR, build_association_knowledge_sources
 from translator_ingest.util.http_utils import get_modify_date
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -14,7 +13,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-## DRAFT: UPDATE THIS after doing mapping
 ## import from mapping file
 from translator_ingest.ingests.pubtator.mappings import (
     RELATION_MODELING
@@ -176,8 +174,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     if entity2_id not in encountered_node_ids:
         nodes.append(get_node(record["entity2_type"], entity2_id))
         encountered_node_ids.add(entity2_id)
-
-    ## DRAFT - ANOTHER IDEA: don't include typing at all
+    ## ANOTHER IDEA: don't include typing at all - will be rewritten during NodeNorming and validation runs after
     # entity1 = NamedThing(id=record["entity1_id"])
     # entity2 = NamedThing(id=record["entity2_id"])
 
