@@ -39,12 +39,12 @@ NODE_TEST_SLOTS = ("id", "name", "category")
 # to be checked in a result edge
 ASSOCIATION_TEST_SLOTS = (
     "category",
-    # "subject",
-    # "predicate",
-    # "object",
-    # "object_aspect_qualifier",
-    # "publications",
-    # "sources",
+    "subject",
+    "predicate",
+    "object",
+    "object_aspect_qualifier",
+    "publications",
+    "sources",
     "knowledge_level",
     "agent_type"
 )
@@ -81,34 +81,33 @@ ASSOCIATION_TEST_SLOTS = (
                 {
                     "category": ["biolink:ChemicalEntityToPathwayAssociation"],
                     # "subject": "MESH:C534883",
-                    # "predicate": "biolink:related_to",
+                    "predicate": "biolink:participates_in",
                     # "object": "MESH:D013734",
                     # "publications": ["PMID:1303262", "PMID:8281139"],
-                    # "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
-                # {
-                #     "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
-                #     # "subject": "MESH:C534883",
-                #     # "predicate": "biolink:related_to",
-                #     # "object": "MESH:D013734",
-                #     # "publications": ["PMID:1303262", "PMID:8281139"],
-                #     # "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
-                #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                #     "agent_type": AgentTypeEnum.manual_agent,
-                # },
-                #
-                # {
-                #     "category": ["biolink:GeneAffectsChemicalAssociation"],
-                #     # "subject": "MESH:C534883",
-                #     # "predicate": "biolink:related_to",
-                #     # "object": "MESH:D013734",
-                #     # "publications": ["PMID:1303262", "PMID:8281139"],
-                #     # "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:ctd"}],
-                #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                #     "agent_type": AgentTypeEnum.manual_agent,
-                # }
+                {
+                    "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
+                    # "subject": "MESH:C534883",
+                    "predicate": "biolink:associated_with_response_to",
+                    # "object": "MESH:D013734",
+                    # "publications": ["PMID:15899597", "PMID:30018457"],
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                },
+
+                {
+                    "category": ["biolink:GeneAffectsChemicalAssociation"],
+                    "subject": "UniProtKB:Q96KN2",
+                    "predicate": "biolink:affects",
+                    "object": "HMDB:HMDB0000001",
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                }
             ],
         ),
     ],

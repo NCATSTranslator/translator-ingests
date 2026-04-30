@@ -235,31 +235,6 @@ def _match_edge_slot(returned_edge: dict, slot: str, expected_value: Any) -> Opt
 
     return None
 
-
-def _match_edge(
-        returned_edge: dict,
-        expected_edge: dict,
-        target_slots: tuple[str, ...]
-) -> Optional[str]:
-    """
-    Checks all *target_slots* on *returned_edge* against *expected_edge*.
-
-    Returns ``None`` if every slot passes, or the first error message string
-    encountered.
-
-    :param returned_edge: a dict representation of an Association edge
-    :param expected_edge: a dict of expected slot name → value pairs
-    :param target_slots: the slots to check
-    :return: None on success, or an error message string on first failure
-    """
-    for slot in target_slots:
-        if slot in returned_edge and slot in expected_edge:
-            error = _match_edge_slot(returned_edge, slot, expected_edge[slot])
-            if error:
-                return error
-    return None
-
-
 def validate_transform_result(
     result: KnowledgeGraph | None,
     expected_nodes: Optional[list],
@@ -357,13 +332,13 @@ def validate_transform_result(
         # Only 'expected_no_of_edges' is expected to be returned?
         assert len(transformed_edges) == expected_no_of_edges
 
-        expected_edge_list: list[dict[str, Any]] = list()
+        expected_edge_list: list[dict[str, Any]]
         if isinstance(expected_edges, list):
             # Blissfully assume that a list of edge slot=value dictionaries was specified
-            expected_edge_list.extend(expected_edges)
+            expected_edge_list = expected_edges
         elif isinstance(expected_edges, dict):
             # Blissfully assume just a single edge slot=value dictionary was specified
-            expected_edge_list.append(expected_edges)
+            expected_edge_list = [expected_edges]
         else:
             assert False, f"Unexpected value type in the list of expected edges: '{str(expected_edges)}'"
 
