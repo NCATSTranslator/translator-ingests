@@ -52,9 +52,13 @@ ingest_info:
     filtered_records: null
     rationale: null
   future_considerations:
-  - category: null
-    consideration: null
-    relevant_files: null
+  - category: edge_content
+    consideration:  >-
+      Diseases lacking OMIM identifiers are not included in the ingest,
+      but do have other identifying information, like their human readable
+      names.  Perhaps these name strings can be used to look up MONDO 
+      identifiers which can be used in place of the OMIM identifiers?
+    relevant_files: hmdb_metabolites.xml
   additional_notes: null
 target_info:
   infores_id: infores:hmdb
