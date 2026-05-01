@@ -140,7 +140,7 @@ target_info:
     - subject_categories:
         - "biolink:Protein"
       predicates:
-        - "biolink:affects"
+        - "biolink:regulates"
       object_categories:
         - "biolink:Protein"
       qualifiers:
@@ -251,7 +251,7 @@ target_info:
     - subject_categories:
         - "biolink:Protein"
       predicates:
-        - "biolink:affects"
+        - "biolink:positively_correlated_with"
       object_categories:
         - "biolink:Disease"
         - "biolink:PhenotypicFeature"

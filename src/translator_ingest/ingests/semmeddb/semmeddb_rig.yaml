@@ -181,6 +181,7 @@ target_info:
     - predicates:
         # AB: expanded to all 19 output predicates (20 YAML entries minus
         # preventative_for_condition which gets remapped to treats_or_applied_or_studied_to_treat).
+        - biolink:related_to
         - biolink:affects
         - biolink:causes
         - biolink:close_match
@@ -198,8 +199,8 @@ target_info:
         - biolink:precedes
         - biolink:predisposes_to_condition
         - biolink:produces
-        - biolink:related_to
         - biolink:treats_or_applied_or_studied_to_treat
+        - biolink:regulates
       knowledge_level:
         - not_provided
       agent_type:
@@ -214,24 +215,13 @@ target_info:
         - original_object
         - sources
         # AB: qualifier fields now passed through from KG2 data.
-        # These appear on edges where the original SemMedDB predicate was
+        # These appear on edges where the original SemMedDB predicate
         # stimulates, inhibits, or augments (all mapped to biolink:affects by KG2).
         # The qualifier values preserve the original semantic distinction that would
         # otherwise be lost in the collapse to biolink:affects.
         - qualified_predicate
         - object_aspect_qualifier
         - object_direction_qualifier
-      # AB: updated association categories. Records with qualifiers route to specific
-      # Biolink Association subclasses based on subject/object entity types to ensure
-      # structured qualifier fields survive pydantic model_dump() serialization.
-      association_categories:
-        - biolink:Association
-        - biolink:CausalGeneToDiseaseAssociation
-        - biolink:GeneToPhenotypicFeatureAssociation
-        - biolink:ChemicalAffectsGeneAssociation
-        - biolink:GeneAffectsChemicalAssociation
-        - biolink:GeneRegulatesGeneAssociation
-        - biolink:ChemicalAffectsBiologicalEntityAssociation
       notes:
         - "Supporting text snippets are retained in has_supporting_studies -> has_study_results -> supporting_text; there is no top-level supporting_text edge property."
         - "Qualifier fields (qualified_predicate, object_aspect_qualifier, object_direction_qualifier) appear only on biolink:affects edges derived from stimulates, inhibits, or augments."
