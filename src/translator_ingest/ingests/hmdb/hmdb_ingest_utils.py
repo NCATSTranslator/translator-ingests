@@ -25,6 +25,16 @@ from bmt.pydantic import (
 )
 
 
+def initialize_counts(koza_transform: koza.KozaTransform):
+    koza_transform.transform_metadata["ingest_by_record"] = dict()
+
+
+def count(koza_transform: koza.KozaTransform, tag: str):
+    if tag not in koza_transform.transform_metadata["ingest_by_record"]:
+        koza_transform.transform_metadata["ingest_by_record"][tag] = 0
+    koza_transform.transform_metadata["ingest_by_record"][tag] += 1
+
+
 def read_xml_file(
         koza_transform: koza.KozaTransform,
         fp,
@@ -106,6 +116,7 @@ def smpdb_to_curie(smp_id: str) -> str:
     # return to the caller
     return ret_val
 
+
 G2C_PREDICATE = Literal[
     "biolink:affects",
     "biolink:ameliorates_condition",
@@ -115,6 +126,7 @@ G2C_PREDICATE = Literal[
     "biolink:has_side_effect",
     "biolink:regulates"
 ]
+
 
 def get_genes(
         koza_transform,
@@ -182,14 +194,17 @@ def get_genes(
                     if protein_type.text.startswith('Enzyme'):
                         # Enzymes affect the rate of reactions that
                         # either produce or consume metabolites.
+                        count(koza_transform, tag="Enzymes")
                         predicate = "biolink:regulates"  # "CTD:affects_abundance_of"
                         object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
                     elif protein_type.text.startswith('Transport'):
                         # else it must be a transport protein?
+                        count(koza_transform, tag="Transport proteins")
                         predicate = "biolink:regulates"  # "CTD:increases_transport_of"
                         object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.transport
                     else:
                         # this is a protein type of unknown function
+                        count(koza_transform, tag="Proteins of unknown function")
                         predicate = "biolink:affects"
                         object_aspect_qualifier = None
 
@@ -208,20 +223,11 @@ def get_genes(
 
                     gene_list.append( (protein_node, edge) )
                 else:
-                    koza_transform.log(
-                        msg=f'no protein type for {metabolite_id}',
-                        level="DEBUG"
-                    )
+                    count(koza_transform, tag="Missing protein type")
             else:
-                koza_transform.log(
-                    msg=f'no proteins for {metabolite_id}',
-                    level="DEBUG"
-                )
+                count(koza_transform, tag='Missing UniProtKB ID')
     else:
-        koza_transform.log(
-            msg=f'No proteins for {metabolite_id}',
-            level="DEBUG"
-        )
+        count(koza_transform, tag='Missing proteins')
 
     return gene_list
 
@@ -324,15 +330,9 @@ def get_diseases(
 
                     disease_list.append( (disease_node, edge) )
             else:
-                koza_transform.log(
-                    msg=f'No OMIM id for {metabolite_id}',
-                    level="DEBUG"
-                )
+                count(koza_transform, tag="Missing disease OMIM ID")
     else:
-        koza_transform.log(
-            msg=f'No diseases for {metabolite_id}',
-            level="DEBUG"
-        )
+        count(koza_transform, tag="Missing diseases")
 
     return disease_list
 
@@ -403,19 +403,10 @@ def get_pathways(
 
                     pathway_list.append( (pathway_node, edge) )
                 else:
-                    koza_transform.log(
-                        msg=f"invalid smpdb for {metabolite_id}",
-                        level="DEBUG"
-                    )
+                    count(koza_transform, "Invalid pathway SMPDB ID")
             else:
-                koza_transform.log(
-                    msg=f'no smpdb for {metabolite_id}',
-                    level="DEBUG"
-                )
+                count(koza_transform, "Missing pathway SMPDB ID")
     else:
-        koza_transform.log(
-            msg=f'No pathways for {metabolite_id}',
-            level="DEBUG"
-        )
+        count(koza_transform, "Missing pathway data")
 
     return pathway_list

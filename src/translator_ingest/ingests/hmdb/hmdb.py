@@ -23,7 +23,9 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
     read_xml_file,
     get_genes,
     get_diseases,
-    get_pathways
+    get_pathways,
+    initialize_counts,
+    count
 )
 
 def get_latest_version() -> str:
@@ -53,24 +55,13 @@ def get_latest_version() -> str:
 
 @koza.on_data_begin()
 def on_begin_hmdb_ingest(koza_transform: koza.KozaTransform) -> None:
+    initialize_counts(koza_transform)
 
-    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
-    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
-    koza_transform.transform_metadata["ingest_by_record"] = {
-        "records_input": 0,
-        "records_skipped": 0,
-    }
+def count_input(koza_transform: koza.KozaTransform):
+    count(koza_transform, "records_input")
 
-def _count(koza_transform: koza.KozaTransform, tag: str):
-    koza_transform.transform_metadata["ingest_by_record"][tag] += 1
-
-def _count_record(koza_transform: koza.KozaTransform):
-    _count(koza_transform, "records_input")
-
-def _count_skipped(koza_transform: koza.KozaTransform, msg: str):
-    _count(koza_transform, "records_skipped")
-    koza_transform.log(msg=msg, level="DEBUG")
-
+def count_skipped(koza_transform: koza.KozaTransform, tag: str):
+    count(koza_transform, tag)
 
 @koza.transform()
 def transform_hmdb_ingest(
@@ -95,7 +86,7 @@ def transform_hmdb_ingest(
             # loop through, filtering for relevant elements
             for record in read_xml_file(koza_transform, fp, 'metabolite'):
 
-                _count_record(koza_transform)
+                count_input(koza_transform)
 
                 # convert the xml text into an object
                 el: E_Tree.Element = E_Tree.fromstring(record)
@@ -148,18 +139,17 @@ def transform_hmdb_ingest(
                             yield KnowledgeGraph(nodes=nodes, edges=edges)
 
                         else:
-                            _count_skipped(
+                            count_skipped(
                                 koza_transform,
-                                msg=f'Metabolite {metabolite_id} record skipped '+
-                                    'due to no pathway, disease or gene data.'
+                                tag='Missing pathway, disease and gene data'
                             )
                     else:
-                        _count_skipped(
+                        count_skipped(
                             koza_transform,
-                            msg=f'Metabolite {metabolite_id} record skipped due to invalid metabolite name.'
+                            tag='Invalid metabolite name'
                         )
                 else:
-                    _count_skipped(
+                    count_skipped(
                         koza_transform,
-                        msg=f'Record skipped due to invalid metabolite id: {record}'
+                        tag='Invalid metabolite ID'
                     )
