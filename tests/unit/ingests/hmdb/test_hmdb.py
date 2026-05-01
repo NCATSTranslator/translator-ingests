@@ -1,0 +1,137 @@
+import pytest
+
+from typing import Optional
+from pathlib import Path
+from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+
+import koza
+from koza.transform import Mappings
+from koza.io.writer.writer import KozaWriter
+
+from translator_ingest.ingests.hmdb.hmdb import (
+    on_begin_hmdb_ingest,
+    transform_hmdb_ingest,
+)
+
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
+
+
+@pytest.fixture(scope="package")
+def mock_koza_transform() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = dict()
+    return MockKozaTransform(
+        extra_fields=dict(),
+        writer=writer,
+        mappings=mappings,
+        transform_metadata={},
+        # Swap in the following code for temporary debugging using the real data file
+        # input_files_dir=INGESTS_DATA_PATH / "hmdb_metabolites.zip"  # Path(__file__).resolve().parent
+        input_files_dir = Path(__file__).resolve().parent
+    )
+
+
+# list of slots whose values are
+# to be checked in a result node
+NODE_TEST_SLOTS = ("id", "name", "category")
+
+# list of slots whose values are
+# to be checked in a result edge
+ASSOCIATION_TEST_SLOTS = (
+    "category",
+    "subject",
+    "predicate",
+    "object",
+    "object_aspect_qualifier",
+    "publications",
+    "sources",
+    "knowledge_level",
+    "agent_type"
+)
+
+@pytest.mark.parametrize(
+    "result_nodes,result_edge",
+    [
+        (  # Query 0 -
+            # Contents of some nodes expected in the results
+            [
+                {
+                    "id": "SMPDB:SMP0124716",
+                    "name": "1-Methylhistidine Metabolism",
+                    "category": ["biolink:Pathway"]
+                },
+                {
+                    "id": "OMIM:125853",
+                    "name": "Diabetes mellitus type 2",
+                    "category": ["biolink:Disease"]
+                },
+                {
+                    "id": "UniProtKB:Q96KN2",
+                    "name": "Beta-Ala-His dipeptidase",
+                    "category": ["biolink:Protein"]
+                },
+                {
+                    "id": "HMDB:HMDB0000001",
+                    "name": "1-Methylhistidine",
+                    "category": ["biolink:MolecularEntity"]
+                }
+            ],
+            # Captured edge contents, TODO: need to put full HMDB edge data contents here
+            [
+                {
+                    "category": ["biolink:ChemicalEntityToPathwayAssociation"],
+                    "subject": "SMPDB:SMP0124716",
+                    "predicate": "biolink:participates_in",
+                    "object": "HMDB:HMDB0000001",
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                },
+                {
+                    "category": ["biolink:DiseaseAssociatedWithResponseToChemicalEntityAssociation"],
+                    "subject": "OMIM:104300",
+                    "predicate": "biolink:associated_with_response_to",
+                    "object": "HMDB:HMDB0000001",
+                    "publications": ["PMID:17031479", "PMID:11959400"],
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                },
+
+                {
+                    "category": ["biolink:GeneAffectsChemicalAssociation"],
+                    "subject": "UniProtKB:Q96KN2",
+                    "predicate": "biolink:regulates",
+                    "object": "HMDB:HMDB0000001",
+                    "object_aspect_qualifier": "abundance",
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                }
+            ],
+        ),
+    ],
+)
+def test_ingest_transform(
+    mock_koza_transform: koza.KozaTransform,
+    result_nodes: Optional[list],
+    result_edge: Optional[dict]
+):
+    on_begin_hmdb_ingest(mock_koza_transform)
+
+    # the data argument is ignored internally (i.e., the HMDB data file is directly read.)
+    # hence we pass an empty list as data. The mock KozaTransform object points to the
+    # sample HMDB data file located in the tests/unit/ingests/hmdb folder itself.
+    # An iterable derived list of KnowledgeGraph objects is returned (a bit challenging to test but...)
+    knowledge_graphs = list(transform_hmdb_ingest(mock_koza_transform, []))
+
+    assert len(knowledge_graphs) == 1
+
+    validate_transform_result(
+        result=knowledge_graphs[0],
+        expected_nodes=result_nodes,
+        expected_edges=result_edge, # result_edge,
+        expected_no_of_edges = 11, # 11,
+        node_test_slots=NODE_TEST_SLOTS,
+        edge_test_slots=ASSOCIATION_TEST_SLOTS
+    )

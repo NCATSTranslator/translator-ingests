@@ -1,0 +1,213 @@
+name: Human Metabolome Database
+supporting_data_source_info:
+- infores_id: null
+  name: null
+  description: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license_name: null
+    license_url: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+source_info:
+  infores_id: infores:hmdb
+  name: Human Metabolome DataBase (HMDB)
+  description: The Human Metabolome DataBase (HMDB) is an openly accessible database
+    containing detailed information about small molecule metabolites found in the
+    human body, with links between chemical data, clinical data, and molecular biology/biochemistry
+    data, including protein sequences (enzymes and transporters).
+  citations:
+  - https://doi.org/10.1093/nar/gkl923
+  - https://doi.org/10.1093/nar/gkab1062
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations:
+  - HMDB Download - https://hmdb.ca/system/downloads/current/hmdb_metabolites.zip
+  data_provision_mechanisms:
+  - file_download
+  data_formats:
+  - xml
+  data_versioning_and_releases: Current version parsed out of index HTML page at https://hmdb.ca/downloads
+ingest_info:
+  ingest_categories:
+  - null
+  utility: null
+  scope: null
+  relevant_files:
+  - file_name: null
+    location: null
+    description: null
+  included_content:
+  - file_name: null
+    included_records: null
+    fields_used: null
+  filtered_content:
+  - file_name: null
+    filtered_records: null
+    rationale: null
+  future_considerations:
+  - category: edge_content
+    consideration:  >-
+      Diseases lacking OMIM identifiers are not included in the ingest,
+      but do have other identifying information, like their human readable
+      names.  Perhaps these name strings can be used to look up MONDO 
+      identifiers which can be used in place of the OMIM identifiers?
+    relevant_files: hmdb_metabolites.xml
+  additional_notes: null
+target_info:
+  infores_id: infores:hmdb
+  edge_type_info:
+  - subject:
+    - biolink:Disease
+    - biolink:SmallMolecule
+    - biolink:Pathway
+    - biolink:PhenotypicFeature
+    - biolink:ChemicalMixture
+    - biolink:Gene
+    - biolink:MolecularMixture
+    - biolink:ChemicalEntity
+    - biolink:Protein
+    predicates:
+    - biolink:subclass_of
+    - biolink:has_participant
+    - biolink:correlated_with
+    object:
+    - biolink:Disease
+    - biolink:Protein
+    - biolink:PhenotypicFeature
+    - biolink:ChemicalMixture
+    - biolink:Gene
+    - biolink:MolecularMixture
+    - biolink:ChemicalEntity
+    - biolink:SmallMolecule
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_agent
+    edge_properties:
+    - biolink:publications
+  - subject:
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:Protein
+    qualifiers:
+    - property: object_aspect_qualifier
+      value_enumeration:
+      - abundance
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_agent
+  - subject:
+    - biolink:Protein
+    predicates:
+    - biolink:affects
+    object:
+    - biolink:MolecularMixture
+    qualifiers:
+    - property: object_aspect_qualifier
+      value_enumeration:
+      - transport
+    - property: object_direction_qualifier
+      value_enumeration:
+      - increased
+    - property: qualified_predicate
+      value_enumeration:
+      - biolink:causes
+    knowledge_level:
+    - knowledge_assertion
+    agent_type:
+    - manual_agent
+  node_type_info:
+  - node_category: biolink:Pathway
+    source_identifier_types:
+    - SMPDB
+    node_properties:
+    - biolink:same_as
+  - node_category: biolink:Disease
+    source_identifier_types:
+    - UMLS
+    - NCIT
+    - OMIM
+    - MONDO
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:Protein
+    source_identifier_types:
+    - UniProtKB
+    - PR
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - GTOPDB
+    - CHEBI
+    - UNII
+    - PUBCHEM.COMPOUND
+    - CHEMBL.COMPOUND
+    - HMDB
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:Gene
+    source_identifier_types:
+    - NCBIGene
+    node_properties:
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - UNII
+    - HMDB
+    - CHEBI
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - CHEBI
+    - CHEMBL.COMPOUND
+    - UNII
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:PhenotypicFeature
+    source_identifier_types:
+    - NCIT
+    - HP
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  - node_category: biolink:ChemicalMixture
+    source_identifier_types:
+    - CHEBI
+    node_properties:
+    - dct:description
+    - biolink:Attribute
+    - biolink:same_as
+  future_considerations:
+  - category: null
+    consideration: null
+  additional_notes: null
+provenance_info:
+  contributions:
+  - null
+  artifacts:
+  - null

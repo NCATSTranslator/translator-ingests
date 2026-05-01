@@ -11,7 +11,7 @@ Data comes as tar.gz archives containing:
 
 import json
 from functools import lru_cache
-from typing import Any, Dict, List, Set, Tuple
+from typing import Optional, Any, Dict, List, Set, Tuple
 from loguru import logger
 from bmt.utils import parse_name
 import koza
@@ -86,11 +86,18 @@ BIOLINK_CLASS_MAP = {
 }
 
 # Map edge types to association classes
-ASSOCIATION_MAP = {
-    "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
-    "biolink:GeneToDiseaseAssociation": CorrelatedGeneToDiseaseAssociation,
-    "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    "biolink:GeneRegulatoryRelationship": GeneRegulatesGeneAssociation,
+ASSOCIATION_AND_PREDICATE_MAP = {
+    "biolink:ChemicalToGeneAssociation":
+        (ChemicalAffectsGeneAssociation, "biolink:affects"),
+
+    "biolink:GeneToDiseaseAssociation":
+        (CorrelatedGeneToDiseaseAssociation, "biolink:positively_correlated_with"),
+
+    "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation":
+        (ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, None),
+
+    "biolink:GeneRegulatoryRelationship":
+        (GeneRegulatesGeneAssociation, "biolink:regulates"),
 }
 
 # Track edges skipped due to invalid subject/object prefixes (for reporting)
@@ -391,13 +398,14 @@ def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, An
 @koza.transform_record(tag="edges")
 def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP-edge records with attribute parsing."""
-    subject_id = record.get("subject")
-    predicate = record.get("predicate")
-    object_id = record.get("object")
-    relation = record.get("relation")
+    subject_id: Optional[str] = record.get("subject")
+    predicate: Optional[str] = record.get("predicate")
+    object_id: Optional[str] = record.get("object")
+    relation: str = record.get("relation","")
 
     if not all([subject_id, predicate, object_id]):
         return None
+    assert subject_id and predicate and object_id
 
     # Validate subject/object prefixes match predicate domain/range constraints
     if not _validate_edge_prefixes(subject_id, object_id, predicate):
@@ -407,13 +415,15 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # Remap predicates from source to canonical Biolink form
     predicate = PREDICATE_REMAP.get(predicate, predicate)
 
-    # Get association class
-    assoc_class = ASSOCIATION_MAP.get(relation, Association)
+    # Get association class and preferred_predicate (if specified)
+    assoc_class, preferred_predicate = ASSOCIATION_AND_PREDICATE_MAP.get(relation, (Association, None))
+    if preferred_predicate is None:
+        preferred_predicate = predicate
 
     # Knowledge level: 'treats_or_applied_or_studied_to_treat' is broad enough to warrant
     # 'knowledge_assertion' (the predicate semantics already account for uncertainty).
     # All other text-mined predicates use 'not_provided'.
-    if predicate == "biolink:treats_or_applied_or_studied_to_treat":
+    if preferred_predicate == "biolink:treats_or_applied_or_studied_to_treat":
         knowledge_level = KnowledgeLevelEnum.knowledge_assertion
     else:
         knowledge_level = KnowledgeLevelEnum.not_provided
@@ -422,7 +432,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     assoc_kwargs = {
         "id": entity_id(),
         "subject": subject_id,
-        "predicate": predicate,
+        "predicate": preferred_predicate,
         "object": object_id,
         "knowledge_level": knowledge_level,
         "agent_type": AgentTypeEnum.text_mining_agent,
@@ -435,24 +445,19 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
             assoc_kwargs[key] = value
 
     # For gene-disease 'contributes_to' edges, apply the canonical Biolink EPC pattern
-    # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
-    # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
+    # as defaults: primary predicate 'positively_correlated_with', qualified predicate 'contributes_to',
+    # with 'subject_form_or_variant_qualifier' defaulting to 'modified_form' if not already set
     # by the source data (which may provide e.g. 'loss_of_function_variant_form').
-    if (
-        assoc_class == CorrelatedGeneToDiseaseAssociation
-        and predicate == "biolink:contributes_to"
-    ):
-        assoc_kwargs["predicate"] = "biolink:affects"
-        assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
+    if assoc_class == CorrelatedGeneToDiseaseAssociation:
+        if predicate == "biolink:contributes_to":
+            assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
+        else:
+            assoc_kwargs.setdefault("qualified_predicate")  # None
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
-    # For GeneRegulatesGeneAssociation, default qualified_predicate to the predicate if not set
-    if assoc_class == GeneRegulatesGeneAssociation and "qualified_predicate" not in assoc_kwargs:
-        assoc_kwargs["qualified_predicate"] = predicate
-
-    # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
     if assoc_class == GeneRegulatesGeneAssociation:
-        # If either qualifier is missing, skip the edge to avoid semantic errors.
+        # GeneRegulatesGeneAssociation requires an object_aspect_qualifier and object_direction_qualifier,
+        # so if either qualifier is missing, skip the edge to avoid semantic errors.
         if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
             logger.warning(
                 "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
@@ -462,11 +467,15 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
             )
             return None
 
+        if "qualified_predicate" not in assoc_kwargs:
+            # Constrained 'qualified_predicate' value as of Biolink 4.4.0rc1
+            assoc_kwargs["qualified_predicate"] = "biolink:causes"
+
     # Create association with all fields
     association = assoc_class(**assoc_kwargs)
 
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
-    if attributes_json := record.get("_attributes"):
+    if attributes_json := record.get("_attributes",{}):
         attributes = json.loads(attributes_json)
         parse_attributes(attributes, association)
     else:
