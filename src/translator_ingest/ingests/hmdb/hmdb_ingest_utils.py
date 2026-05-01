@@ -33,7 +33,7 @@ def read_xml_file(
     """
     Read the XML file and capture the metabolite elements.
 
-    TODO filter out more items that arent used
+    TODO filter out more items that aren't used
 
     """
     # create the target xml fragment search tag
