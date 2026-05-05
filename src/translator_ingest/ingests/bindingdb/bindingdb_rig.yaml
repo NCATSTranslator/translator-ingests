@@ -54,7 +54,7 @@ ingest_info:
     - file_name:  BindingDB_All_{version}_tsv.zip
       filtered_records: >-
         The records are currently filtered out based upon:
-        'Ki','IC50','Kd' and 'EC50' having values below 1 micromolar.
+        'Ki','IC50','Kd' and 'EC50' having values below 10 micromolar.
       rationale:  >-
         The units of these kinetic parameters are nM. 
         Lower values imply stronger binding affinity
@@ -109,7 +109,7 @@ target_info:
       across contributing BindingDB records).  Vlado indicated that BindingDB does
       some QA/filtering of binding assay records it imports to ensure that it only
       includes those with affinity metrics suggesting a bona fide physical interaction
-      is occurring - which is why we use the biolink:physically_interacts_with predicate.
+      is occurring - which is why we use the 'biolink:physically_interacts_with' predicate.
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
