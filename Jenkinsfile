@@ -78,26 +78,10 @@ pipeline {
                                       'panther', 'pathbank', 'semmeddb', 'sider', 'signor', 
                                       'tmkp', 'ttd', 'ubergraph']
                         
-                        // Run each source that needs updating
+                        // Run each source - pipeline will internally skip steps that don't need updating
                         def results = [:]
                         for (source in sources) {
                             try {
-                                // Check if source needs update (unless OVERWRITE is set)
-                                def needsUpdate = true
-                                if (!params.OVERWRITE) {
-                                    def checkResult = sh(
-                                        script: "uv run python check_source_needs_update.py ${source}",
-                                        returnStatus: true
-                                    )
-                                    needsUpdate = (checkResult == 0)
-                                    
-                                    if (!needsUpdate) {
-                                        echo "Skipping ${source} - already up to date"
-                                        results[source] = 'SKIPPED'
-                                        continue
-                                    }
-                                }
-                                
                                 echo "Processing ${source}..."
                                 sh "make run SOURCES=${source} ${overwriteFlag}"
                                 sh "make upload SOURCES=${source}"
@@ -126,84 +110,9 @@ pipeline {
                         env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
                     } else {
                         // Run and upload specific source
-                        // Check if source needs update (unless OVERWRITE is set)
-                        def needsUpdate = true
-                        if (!params.OVERWRITE) {
-                            def checkResult = sh(
-                                script: "uv run python check_source_needs_update.py ${params.SOURCE}",
-                                returnStatus: true
-                            )
-                            needsUpdate = (checkResult == 0)
-                            
-                            if (!needsUpdate) {
-                                echo "Source ${params.SOURCE} is already up to date. Skipping."
-                                echo "Use OVERWRITE=true to force reprocessing."
-                                return
-                            }
-                        }
-                        
                         echo "Processing ${params.SOURCE}..."
                         sh "make run SOURCES=${params.SOURCE} ${overwriteFlag}"
-                    }
-                }
-            }
-        }
-        
-        stage('Download Skipped Sources from S3') {
-            when {
-                expression { params.SOURCE == 'all' && !params.OVERWRITE }
-            }
-            steps {
-                script {
-                    // Parse results from previous stage
-                    if (env.PIPELINE_RESULTS) {
-                        def results = [:]
-                        env.PIPELINE_RESULTS.split(',').each { entry ->
-                            def parts = entry.split(':')
-                            results[parts[0]] = parts[1]
-                        }
-                        
-                        def skippedSources = results.findAll { it.value == 'SKIPPED' }.keySet()
-                        def downloadFailed = []
-                        
-                        if (skippedSources) {
-                            echo "Downloading ${skippedSources.size()} skipped source(s) from S3 for merge: ${skippedSources}"
-                            
-                            skippedSources.each { source ->
-                                try {
-                                    echo "Downloading ${source} from S3..."
-                                    def downloadResult = sh(
-                                        script: """
-                                            mkdir -p data/${source}
-                                            aws s3 sync s3://${env.S3_BUCKET_NAME}/data/${source}/ data/${source}/ --exclude "*.tar.gz"
-                                            # Check if any files were downloaded
-                                            if [ -z "\$(ls -A data/${source})" ]; then
-                                                echo "ERROR: No files downloaded for ${source}"
-                                                exit 1
-                                            fi
-                                        """,
-                                        returnStatus: true
-                                    )
-                                    if (downloadResult != 0) {
-                                        downloadFailed.add(source)
-                                        echo "WARNING: Failed to download ${source} from S3 - will exclude from merge"
-                                    }
-                                } catch (Exception e) {
-                                    downloadFailed.add(source)
-                                    echo "WARNING: Failed to download ${source} from S3: ${e.message} - will exclude from merge"
-                                }
-                            }
-                            
-                            // Update PIPELINE_RESULTS to mark download failures as FAILED
-                            if (downloadFailed) {
-                                downloadFailed.each { source ->
-                                    results[source] = 'FAILED'
-                                }
-                                env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
-                            }
-                        } else {
-                            echo "No skipped sources to download from S3"
-                        }
+                        sh "make upload SOURCES=${params.SOURCE}"
                     }
                 }
             }
@@ -217,7 +126,7 @@ pipeline {
                 script {
                     def overwriteFlag = params.OVERWRITE ? 'OVERWRITE=true' : ''
                     
-                    // Parse results to get successful and skipped sources only (exclude failed)
+                    // Parse results to get successful sources only (exclude failed)
                     def sourcesToMerge = []
                     if (env.PIPELINE_RESULTS) {
                         def results = [:]
@@ -226,8 +135,8 @@ pipeline {
                             results[parts[0]] = parts[1]
                         }
                         
-                        // Only merge sources that succeeded or were skipped
-                        sourcesToMerge = results.findAll { it.value in ['SUCCESS', 'SKIPPED'] }.keySet().join(' ')
+                        // Only merge sources that succeeded
+                        sourcesToMerge = results.findAll { it.value == 'SUCCESS' }.keySet().join(' ')
                         
                         def failedSources = results.findAll { it.value == 'FAILED' }.keySet()
                         if (failedSources) {
