@@ -206,7 +206,7 @@ def build_association_knowledge_sources(
         except that the first entry will usually be the primary knowledge source.
 
     """
-    primary_knowledge_source: Optional[RetrievalSource] = \
+    primary_knowledge_source: RetrievalSource = \
         _build_retrieval_source(
             primary,
             ResourceRoleEnum.primary_knowledge_source
