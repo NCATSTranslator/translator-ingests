@@ -51,7 +51,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                cleanWs()
                 checkout scm
             }
         }
@@ -269,12 +268,6 @@ pipeline {
                     }
                 }
             }
-        }
-    }
-    
-    post {
-        cleanup {
-            cleanWs()
         }
     }
 }
