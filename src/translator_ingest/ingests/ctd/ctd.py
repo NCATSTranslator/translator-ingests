@@ -1,6 +1,10 @@
+import re
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
-import requests # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
+import requests
+import yaml
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -18,12 +22,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_CTD
 
-from bs4 import BeautifulSoup # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
 from koza.model.graphs import KnowledgeGraph
 
+
+CTD_SOURCES = build_association_knowledge_sources(primary=INFORES_CTD)
 
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
@@ -31,7 +37,6 @@ BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
 BIOLINK_POSITIVELY_CORRELATED = "biolink:positively_correlated_with"
 BIOLINK_NEGATIVELY_CORRELATED = "biolink:negatively_correlated_with"
-
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
 
 CHEM_TO_DISEASE_PREDICATES = {
@@ -44,32 +49,45 @@ EXPOSURE_EVENTS_PREDICATES = {
     "negative correlation": BIOLINK_NEGATIVELY_CORRELATED
 }
 
-
 # !!! !!! README !!! !!!
-# CTD implemented a CAPTCHA (ALTCHA) on ctdbase.org, which breaks dependable programmatic access for determining
-# the version and for automated downloads. If possible, open a browser, pass the CAPTCHA, and download manually.
-# When version discovery fails, the pipeline can fall back to a previously successful build: copy a prior CTD
-# tree under data/ including latest-build.json so the pipeline uses that source_version.
-#
-# We no longer scrape https://ctdbase.org/about/dataStatus.go for "Data Status: <Month> <Year>" because the HTML
-# is behind CAPTCHA and returns a bot wall instead of the real page. Bump the hardcoded return below when CTD
-# releases a new public data drop you intend to track (string must match how you name data/<ctd>/<version>/).
-
+# CTD implemented a CAPTCHA (ALTCHA) on ctdbase.org, which broke dependable programmatic access for determining
+# the version they publish from their website https://ctdbase.org/about/dataStatus.go. Here is a workaround which
+# accesses a path that is not currently blocked by the CAPTCHA.
 def get_latest_version() -> str:
     """Return the CTD data release label used as ``source_version`` in the pipeline.
 
-    Former implementation fetched ``dataStatus.go`` and parsed ``#pgheading``; that no longer works site-wide due
-    to CAPTCHA. Update the literal when you adopt a newer CTD export.
+    Scrapes the html at https://ctdbase.org/reports/ (which is not behind CAPTCHA currently)
+    and returns the latest modify date for the files included in this ingest,
+    formatted as ``Month_Year`` (e.g. ``March_2026``).
     """
-    return "January_2026"
 
-    # --- Previous scrape (broken behind CAPTCHA; kept for reference) ---
-    # html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
-    # resp: BeautifulSoup = BeautifulSoup(html_page.content, "html.parser")
-    # version_header: BeautifulSoup.Tag = resp.find(id="pgheading")
-    # if version_header is not None:
-    #     return version_header.text.split(":")[1].strip().replace(" ", "_")
-    # raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
+    # The /reports/ page is formatted like an apache autoindex, we can use this regex to extract the file date
+    # Apache autoindex row: <a href="FILE">label</a>   DD-Mon-YYYY HH:MM   SIZE
+    reports_regex = re.compile(r'<a href="([^"]+)">[^<]+</a>\s+(\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2})')
+
+    # Get the file names for the files we download
+    with open(Path(__file__).parent / "download.yaml") as f:
+        entries = yaml.safe_load(f) or []
+        download_file_names = {e["url"].split('/')[-1] for e in entries}
+
+    # parse the /reports/ page and find all the dates associated with the relevant files
+    response = requests.get("https://ctdbase.org/reports/")
+    response.raise_for_status()
+    dates = [
+        datetime.strptime(date_str, "%d-%b-%Y %H:%M")
+        for href, date_str in reports_regex.findall(response.text)
+        if href in download_file_names
+    ]
+    if not dates:
+        raise RuntimeError("Could not determine latest CTD version from https://ctdbase.org/reports/")
+
+    # error if any are missing
+    missing = download_file_names - {href for href, _ in reports_regex.findall(response.text)}
+    if missing:
+        raise RuntimeError(f"CTD /reports/ missing expected files: {missing}")
+
+    # return the most recently updated date as the version
+    return max(dates).strftime("%B_%Y")
 
 @koza.transform_record(tag="chemicals_diseases")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
@@ -89,7 +107,7 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
         subject=chemical.id,
         predicate=predicate,
         object=disease.id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent
     )
@@ -130,7 +148,7 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=disease_id,
-                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                sources=CTD_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.statistical_association,
                 agent_type=AgentTypeEnum.manual_agent
         )
@@ -147,7 +165,7 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=phenotype_id,
-                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                sources=CTD_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.statistical_association,
                 agent_type=AgentTypeEnum.manual_agent
         )
@@ -305,7 +323,7 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         predicate=predicate,
         object=gene_id,
         qualified_predicate=qualified_predicate,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
@@ -339,7 +357,7 @@ def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any])
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=go_term,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -366,7 +384,7 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=pathway_id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -422,7 +440,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         subject=chemical_id,
         predicate=BIOLINK_AFFECTS,
         object=phenotype_id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
