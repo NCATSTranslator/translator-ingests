@@ -138,7 +138,7 @@ def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional
 
 def _build_retrieval_source(
         source_spec: Union[str,tuple[str, list[str]]],
-        resource_role: Optional[ResourceRoleEnum]
+        resource_role: ResourceRoleEnum
 ) -> RetrievalSource:
     if isinstance(source_spec, tuple):
         assert len(source_spec) == 2, f"Invalid supporting data source tuple: {source_spec}"
