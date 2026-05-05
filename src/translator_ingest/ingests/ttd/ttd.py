@@ -3,7 +3,7 @@ import koza
 import pandas as pd
 from typing import Any, Iterable, Dict, Union
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_TTD
 from translator_ingest.util.http_utils import get_modify_date
 from biolink_model.datamodel.pydanticmodel_v2 import (

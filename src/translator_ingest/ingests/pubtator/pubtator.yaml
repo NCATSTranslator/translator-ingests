@@ -1,0 +1,7 @@
+name: pubtator
+## PubTator relation data is in a large gzipped, headerless TSV file with
+##   4 columns: PMID, relation, entity1, and entity2.
+## Because of its size, we aren't using koza reader spec - putting a placeholder format here. 
+## Instead, we directly access the file in @koza.prepare_data() and read it using polars.
+reader:
+  format: csv

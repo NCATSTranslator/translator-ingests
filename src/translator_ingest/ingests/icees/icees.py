@@ -13,11 +13,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from bmt.pydantic import (
-    entity_id,
-    get_node_class,
-    build_association_knowledge_sources
-)
+from bmt.pydantic import get_node_class
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.biolink import get_biolink_model_toolkit

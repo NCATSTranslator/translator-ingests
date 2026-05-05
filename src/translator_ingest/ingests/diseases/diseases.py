@@ -1,4 +1,4 @@
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
