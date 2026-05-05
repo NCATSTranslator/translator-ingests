@@ -223,6 +223,7 @@ def build_association_knowledge_sources(
             sources.append(supporting_knowledge_source)
             if primary_knowledge_source.upstream_resource_ids is None:
                 primary_knowledge_source.upstream_resource_ids = []
+            # noinspection PyUnresolvedReferences
             primary_knowledge_source.upstream_resource_ids.append(
                 supporting_knowledge_source.resource_id
             )
