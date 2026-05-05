@@ -2,8 +2,8 @@ pipeline {
     agent { label 'transltr-ci-build-node-03-24.04' }
     
     triggers {
-        // Run weekly on Sundays at 2 AM EST
-        cron('0 2 * * 0')
+        // Run bi-weekly (every 2 weeks) on 1st and 3rd Sunday at 2 AM EST
+        cron('0 2 1-7,15-21 * 0')
     }
     
     parameters {
@@ -165,6 +165,7 @@ pipeline {
                         }
                         
                         def skippedSources = results.findAll { it.value == 'SKIPPED' }.keySet()
+                        def downloadFailed = []
                         
                         if (skippedSources) {
                             echo "Downloading ${skippedSources.size()} skipped source(s) from S3 for merge: ${skippedSources}"
@@ -172,13 +173,34 @@ pipeline {
                             skippedSources.each { source ->
                                 try {
                                     echo "Downloading ${source} from S3..."
-                                    sh """
-                                        mkdir -p data/${source}
-                                        aws s3 sync s3://${env.S3_BUCKET_NAME}/data/${source}/ data/${source}/ --exclude "*.tar.gz"
-                                    """
+                                    def downloadResult = sh(
+                                        script: """
+                                            mkdir -p data/${source}
+                                            aws s3 sync s3://${env.S3_BUCKET_NAME}/data/${source}/ data/${source}/ --exclude "*.tar.gz"
+                                            # Check if any files were downloaded
+                                            if [ -z "\$(ls -A data/${source})" ]; then
+                                                echo "ERROR: No files downloaded for ${source}"
+                                                exit 1
+                                            fi
+                                        """,
+                                        returnStatus: true
+                                    )
+                                    if (downloadResult != 0) {
+                                        downloadFailed.add(source)
+                                        echo "WARNING: Failed to download ${source} from S3 - will exclude from merge"
+                                    }
                                 } catch (Exception e) {
-                                    echo "WARNING: Failed to download ${source} from S3: ${e.message}"
+                                    downloadFailed.add(source)
+                                    echo "WARNING: Failed to download ${source} from S3: ${e.message} - will exclude from merge"
                                 }
+                            }
+                            
+                            // Update PIPELINE_RESULTS to mark download failures as FAILED
+                            if (downloadFailed) {
+                                downloadFailed.each { source ->
+                                    results[source] = 'FAILED'
+                                }
+                                env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
                             }
                         } else {
                             echo "No skipped sources to download from S3"
@@ -218,7 +240,7 @@ pipeline {
                     }
                     
                     echo "Merging sources into translator_kg: ${sourcesToMerge}"
-                    sh "make merge SOURCES='${sourcesToMerge}' ${overwriteFlag}"
+                    sh "make merge-all SOURCES='${sourcesToMerge}' ${overwriteFlag}"
                 }
             }
         }
