@@ -34,11 +34,12 @@ AFFINITY_PARAMETERS = {
     ape.pEC50: "EC50 (nM)",
 }
 
-# An upper filter threshold of 1.0e-6 (1 micromole)
-# (equal to a negative base 10 logarithm value of 6)
-# is specified, which is 1,000 (1.0e+3) times the recorded
-# 1.0e-9 (nanoMolar) units of the BindingDb dataset values
-AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
+# The specified upper filter threshold is 10 micromoles
+# (that is, 1.0e-5, equal to 10.0 x 1.0e-6) which has a
+# negative base 10 logarithm value of 5. Since BindingDb
+# values are recorded in nanoMolar (1.0e-9) units, then
+# 10,000 (1.0e+4) nanomolar is the upper bound threshold.
+AFFINITY_FILTER_UPPER_BOUND = 1.0e+4
 
 ROWS_MISSING_AFFINITY = "rows_missing_affinity"
 
@@ -228,7 +229,7 @@ def filter_affinity_values(
     """
     initial_count = df.height
 
-    # Stage 1: null out individual values outside bounds
+    # Stage 1: null out individual BindingDb nanoMolar values outside bounds
     bound_exprs = []
     for col_name in AFFINITY_PARAMETERS.values():
         parsed = (
@@ -236,6 +237,7 @@ def filter_affinity_values(
             .str.strip_chars("<> ")
             .cast(pl.Float64, strict=False)
         )
+        # BindingDb values smaller than the AFFINITY_FILTER_UPPER_BOUND are kept
         in_range = parsed.gt(0.0) & parsed.le(AFFINITY_FILTER_UPPER_BOUND)
         bound_exprs.append(
             pl.when(in_range)
