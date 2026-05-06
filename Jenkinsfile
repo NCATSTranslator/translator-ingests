@@ -73,11 +73,18 @@ pipeline {
                     }
 
                     // Log warning if any source failed, but continue to merge/release
-                    def failedSources = results.findAll { it.value == 'FAILED' }
+                    def failedSources = results.findAll { it.value == 'FAILED' }.keySet()
+                    def succeededCount = results.size() - failedSources.size()
                     if (failedSources) {
-                        echo "\nWARNING: ${failedSources.size()} source(s) failed: ${failedSources.keySet()}"
+                        currentBuild.result = 'UNSTABLE'
+                        echo "\nWARNING: ${failedSources.size()} source(s) failed: ${failedSources}"
                         echo "Continuing with merge/release for successful sources..."
                     }
+
+                    // Surface per-source results on the build summary page
+                    currentBuild.description = failedSources ?
+                        "${succeededCount}/${results.size()} ok — failed: ${failedSources.join(', ')}" :
+                        "${results.size()}/${results.size()} ok"
 
                     // Store results for next stage
                     env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
