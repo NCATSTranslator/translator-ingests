@@ -218,12 +218,12 @@ release-%:
 .PHONY: upload
 upload:
 	@echo "Uploading sources to S3: $(SOURCES)"
-	@$(RUN) python src/translator_ingest/upload_s3.py --data-sources "$(SOURCES)"
+	@$(RUN) python src/translator_ingest/upload_s3.py $(SOURCES)
 
 .PHONY: upload-%
 upload-%:
 	@echo "Uploading $* to S3..."
-	@$(RUN) python src/translator_ingest/upload_s3.py --data-sources "$*"
+	@$(RUN) python src/translator_ingest/upload_s3.py $*
 
 .PHONY: upload-all
 upload-all:
