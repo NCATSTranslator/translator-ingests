@@ -38,49 +38,50 @@ pipeline {
                     // Store results at pipeline level so other stages can access
                     env.PIPELINE_RESULTS = ''
 
+                    def sources
                     if (params.SOURCE == 'all') {
-                        // Retrieve the complete list of sources
+                        // If "all" sources requested retrieve the complete list of sources
                         def sourcesLine = sh(
                             returnStdout: true,
                             script: 'uv run python -m translator_ingest.graphs sources'
                         ).trim()
                         // Split the list into an array
-                        def sources = sourcesLine.split(/\s+/)
-
-                        // Run each source - pipeline will internally skip steps that don't need updating
-                        def results = [:]
-                        for (source in sources) {
-                            try {
-                                echo "Processing ${source}..."
-                                sh "make run SOURCES=${source} ${overwriteFlag}"
-                                results[source] = 'SUCCESS'
-                            } catch (Exception e) {
-                                echo "ERROR: ${source} failed: ${e.message}"
-                                results[source] = 'FAILED'
-                                // Continue to next source instead of failing the build
-                            }
-                        }
-
-                        // Report results
-                        echo "\n=== Pipeline Results ==="
-                        results.each { source, status ->
-                            echo "${source}: ${status}"
-                        }
-
-                        // Log warning if any source failed, but continue to merge/release
-                        def failedSources = results.findAll { it.value == 'FAILED' }
-                        if (failedSources) {
-                            echo "\nWARNING: ${failedSources.size()} source(s) failed: ${failedSources.keySet()}"
-                            echo "Continuing with merge/release for successful sources..."
-                        }
-
-                        // Store results for next stage
-                        env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
+                        sources = sourcesLine.split(/\s+/)
                     } else {
-                        // Run specific source
-                        echo "Processing ${params.SOURCE}..."
-                        sh "make run SOURCES=${params.SOURCE} ${overwriteFlag}"
+                        // Otherwise set sources to the one source requested
+                        sources = [params.SOURCE]
                     }
+
+                    // Run each source - pipeline will internally skip steps that don't need updating
+                    def results = [:]
+                    for (source in sources) {
+                        try {
+                            echo "Processing ${source}..."
+                            sh "make run SOURCES=${source} ${overwriteFlag}"
+                            results[source] = 'SUCCESS'
+                        } catch (Exception e) {
+                            echo "ERROR: ${source} failed: ${e.message}"
+                            results[source] = 'FAILED'
+                            // Continue to next source instead of failing the build
+                        }
+                    }
+
+                    // Report results
+                    echo "\n=== Pipeline Results ==="
+                    results.each { source, status ->
+                        echo "${source}: ${status}"
+                    }
+
+                    // Log warning if any source failed, but continue to merge/release
+                    def failedSources = results.findAll { it.value == 'FAILED' }
+                    if (failedSources) {
+                        echo "\nWARNING: ${failedSources.size()} source(s) failed: ${failedSources.keySet()}"
+                        echo "Continuing with merge/release for successful sources..."
+                    }
+
+                    // Store results for next stage
+                    env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
+
                 }
             }
         }
@@ -95,7 +96,7 @@ pipeline {
 
                     // Run merge-all to merge sources into multisource KGs ie translator_kg
                     echo "Merging all multisource KGs"
-                    sh "make merge-all ' ${overwriteFlag}"
+                    sh "make merge-all ${overwriteFlag}"
                 }
             }
         }
