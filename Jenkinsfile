@@ -30,7 +30,7 @@ pipeline {
             }
         }
 
-        stage('Run Pipeline and Upload') {
+        stage('Run Pipeline') {
             steps {
                 script {
                     def overwriteFlag = params.OVERWRITE ? 'OVERWRITE=true' : ''
@@ -39,7 +39,7 @@ pipeline {
                     env.PIPELINE_RESULTS = ''
 
                     if (params.SOURCE == 'all') {
-                        // Retrieve the complete list of sources 
+                        // Retrieve the complete list of sources
                         def sourcesLine = sh(
                             returnStdout: true,
                             script: 'uv run python -m translator_ingest.graphs sources'
@@ -53,7 +53,6 @@ pipeline {
                             try {
                                 echo "Processing ${source}..."
                                 sh "make run SOURCES=${source} ${overwriteFlag}"
-                                sh "make upload SOURCES=${source}"
                                 results[source] = 'SUCCESS'
                             } catch (Exception e) {
                                 echo "ERROR: ${source} failed: ${e.message}"
@@ -78,10 +77,9 @@ pipeline {
                         // Store results for next stage
                         env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
                     } else {
-                        // Run and upload specific source
+                        // Run specific source
                         echo "Processing ${params.SOURCE}..."
                         sh "make run SOURCES=${params.SOURCE} ${overwriteFlag}"
-                        sh "make upload SOURCES=${params.SOURCE}"
                     }
                 }
             }
