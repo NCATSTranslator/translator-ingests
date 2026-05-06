@@ -43,7 +43,7 @@ pipeline {
                         // If "all" sources requested retrieve the complete list of sources
                         def sourcesLine = sh(
                             returnStdout: true,
-                            script: 'uv run python -m translator_ingest.graphs sources'
+                            script: 'uv run python -m translator_ingest.graphs all-sources'
                         ).trim()
                         // Split the list into an array
                         sources = sourcesLine.split(/\s+/)
@@ -87,24 +87,18 @@ pipeline {
         }
 
         stage('Merge Sources') {
-            when {
-                expression { params.SOURCE == 'all' }
-            }
             steps {
                 script {
                     def overwriteFlag = params.OVERWRITE ? 'OVERWRITE=true' : ''
 
                     // Run merge-all to merge sources into multisource KGs ie translator_kg
-                    echo "Merging all multisource KGs"
+                    echo "Merging and releasing all multisource KGs"
                     sh "make merge-all ${overwriteFlag}"
                 }
             }
         }
 
         stage('Create Releases') {
-            when {
-                expression { params.SOURCE == 'all' }
-            }
             steps {
                 script {
                     echo "Creating release packages..."
@@ -116,13 +110,8 @@ pipeline {
         stage('Upload to S3') {
             steps {
                 script {
-                    if (params.SOURCE == 'all') {
-                        echo "Uploading all data and releases to S3..."
-                        sh "make upload-all"
-                    } else {
-                        echo "Uploading ${params.SOURCE} to S3..."
-                        sh "make upload SOURCES=${params.SOURCE}"
-                    }
+                    echo "Uploading all data and releases to S3..."
+                    sh "make upload-all"
                 }
             }
         }
