@@ -11,7 +11,7 @@ Data comes as tar.gz archives containing:
 
 import json
 from functools import lru_cache
-from typing import Any, Dict, List, Set, Tuple, Type, get_args
+from typing import Any, Dict, List, Set, Tuple
 from loguru import logger
 from bmt.utils import parse_name
 import koza
