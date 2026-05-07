@@ -1,3 +1,5 @@
+sources = []
+
 pipeline {
     agent { label 'transltr-ci-build-node-03-24.04' }
 
@@ -38,7 +40,6 @@ pipeline {
                     // Store results at pipeline level so other stages can access
                     env.PIPELINE_RESULTS = ''
 
-                    def sources
                     if (params.SOURCE == 'all') {
                         // If "all" sources requested retrieve the complete list of sources
                         def sourcesLine = sh(
@@ -109,7 +110,7 @@ pipeline {
             steps {
                 script {
                     echo "Creating release packages..."
-                    sh "make release"
+                    sh "make release SOURCES='${sources.join(' ')}'"
                 }
             }
         }
