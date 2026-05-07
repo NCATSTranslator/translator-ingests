@@ -18,8 +18,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Disease,
     Gene,
     GeneAffectsChemicalAssociation,
+    GeneToGeneAssociation,
     GeneToPhenotypicFeatureAssociation,
-    GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
     NamedThing,
     PhenotypicFeature,
@@ -299,7 +299,7 @@ def _pick_affects_class(
     if sub_is_gene and obj_is_chem:
         return GeneAffectsChemicalAssociation
     if sub_is_gene and obj_is_gene:
-        return GeneRegulatesGeneAssociation
+        return GeneToGeneAssociation
     return ChemicalAffectsBiologicalEntityAssociation
 
 
