@@ -254,6 +254,9 @@ target_info:
   additional_notes: null
 provenance_info:
   contributions:
-  - null
+  - "Kenneth Huellas-Bruskiewicz - code author"
+  - "Richard Bruskiewich - data modeling, code co-author"
   artifacts:
-  - null
+  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1y88gd50Y_mfoblF5I2O1KrmhlRnrnWbrehPxXyW5FQA/edit?gid=0#gid=0)"
+  - "Ingest Ticket (https://github.com/NCATSTranslator/translator-ingests/issues/375)"
+
