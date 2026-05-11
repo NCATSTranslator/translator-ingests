@@ -53,10 +53,6 @@ ingest_info:
     - file_name: edges.tsv
       filtered_records: Edges where subject/object ID prefixes violate Biolink Model domain/range constraints. For example, edges like "MONDO:xxx biolink:treats DRUGBANK:yyy" are excluded because the association type expects chemicals as subjects and diseases as objects, not the reverse.
       rationale: "Validation uses BMT to dynamically determine valid ID prefixes for each predicate's domain/range constraints, filtering out semantically invalid edges such as reversed ChemicalToDiseaseOrPhenotypicFeatureAssociation edges where diseases/phenotypes (MONDO, HP prefixes) are incorrectly positioned as subjects."
-    - file_name: edges.tsv
-      filtered_records: GeneRegulatesGeneAssociation edges that lack required qualifiers (object_aspect_qualifier or object_direction_qualifier).
-      rationale: "These qualifiers are required for semantic correctness of regulatory relationships. Edges without them would have ambiguous meaning."
-
   transformed_content:
     - file_name: edges.tsv
       transformation: "Predicate remap: 'biolink:treats' → 'biolink:treats_or_applied_or_studied_to_treat'"
@@ -168,15 +164,15 @@ target_info:
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
-        Targeted text mining identified gene regulatory relationships where one protein causes
-        changes in another protein's activity or abundance. These edges include required qualifiers
-        indicating the direction and magnitude of the regulatory effect.
+        Targeted text mining identified gene regulatory relationships where one protein affects
+        another protein's activity or abundance. When present, qualifiers indicate the causal
+        direction and the aspect/direction of the regulatory effect.
       source_files:
         - edges.tsv
       additional_notes: |
-        Association type: GeneRegulatesGeneAssociation. Requires object_aspect_qualifier and
-        object_direction_qualifier for semantic correctness. Edges lacking these qualifiers are
-        filtered out during processing. All source edges provide qualified_predicate='biolink:causes'.
+        Association type: GeneToGeneAssociation. Predicate is 'biolink:affects' with optional
+        qualified_predicate='biolink:causes' and object_aspect_qualifier/object_direction_qualifier
+        passed through from the source data when provided.
 
     - subject_categories:
         - "biolink:SmallMolecule"
@@ -286,7 +282,7 @@ target_info:
       source_files:
         - edges.tsv
       additional_notes: |
-        Association type: CorrelatedGeneToDiseaseAssociation. Two code paths produce these edges:
+        Association type: GeneToDiseaseAssociation. Two code paths produce these edges:
         (1) Source predicate 'biolink:contributes_to' is transformed to the canonical EPC pattern
         with subject_form_or_variant_qualifier defaulting to 'modified_form'. (2) Source edges
         that already arrive with predicate='biolink:affects' and qualified_predicate=
@@ -319,11 +315,7 @@ target_info:
       source_files:
         - edges.tsv
       additional_notes: |
-        Association type: CorrelatedGeneToDiseaseAssociation. The code uses
-        CorrelatedGeneToDiseaseAssociation rather than GeneToDiseaseAssociation because
-        the base GeneToDiseaseAssociation constrains predicates to only 'contributes_to'
-        or 'associated_with', and does not support 'affects' which is used by TMKP
-        for gene-disease edges.
+        Association type: GeneToDiseaseAssociation.
 
   node_type_info:
     - node_category: "biolink:ChemicalEntity"

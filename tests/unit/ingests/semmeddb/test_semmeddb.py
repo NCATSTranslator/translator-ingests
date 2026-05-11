@@ -9,8 +9,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Disease,
     Gene,
     GeneAffectsChemicalAssociation,
+    GeneToGeneAssociation,
     GeneToPhenotypicFeatureAssociation,
-    GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
     NamedThing,
     Protein,
@@ -226,7 +226,7 @@ def test_qualifier_gene_affects_chemical():
 
 
 def test_qualifier_gene_affects_gene():
-    """Gene subject + Gene object with qualifiers -> GeneRegulatesGeneAssociation."""
+    """Gene subject + Gene object with qualifiers -> GeneToGeneAssociation."""
     record = _base_record(
         subject="NCBIGene:100",
         object="HGNC:200",
@@ -237,8 +237,11 @@ def test_qualifier_gene_affects_gene():
     )
     entities = _create_test_runner(record)
     assoc = [e for e in entities if isinstance(e, Association)][0]
-    assert isinstance(assoc, GeneRegulatesGeneAssociation)
+    assert isinstance(assoc, GeneToGeneAssociation)
+    assert assoc.predicate == "biolink:affects"
+    assert assoc.qualified_predicate == "biolink:causes"
     assert assoc.object_aspect_qualifier == "activity_or_abundance"
+    assert assoc.object_direction_qualifier == "increased"
 
 
 def test_qualifier_fallback_named_thing():
