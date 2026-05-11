@@ -1,3 +1,8 @@
+"""
+Starting point for the Pharos Phase 3 ingest is the RoboKOP code at:
+https://github.com/RobokopU24/ORION/blob/master/parsers/PHAROS/src/loadPHAROS.py
+"""
+
 import koza
 import pandas as pd
 from typing import Any, Iterable
