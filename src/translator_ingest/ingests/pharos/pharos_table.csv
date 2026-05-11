@@ -1,0 +1,88 @@
+Columns / Fields Used,MetaEdge Subject Category,MetaEdge Predicate,MetaEdge Object Category,MetaEdge Qualifiers,KL,AT,Other Edge Attributes,Subject Identifier Prefixes,Subject Node Properties,Object Identifier Prefixes,Object Node Properties
+"'- subject, 
+- predicate, 
+- object, 
+- attributes","'- Behavior
+- BiologicalEntity
+- PhysiologicalProcess
+- OrganismAttribute
+- AnatomicalEntity
+- Cell
+- MolecularMixture
+- Disease
+- GrossAnatomicalStructure
+- Gene
+- PhenotypicFeature
+- ClinicalAttribute
+- ChemicalEntity
+- SmallMolecule","'- subclass_of
+- related_to
+- physically_interacts_with
+- directly_physically_interacts_with
+- genetically_associated_with","'- Behavior
+- BiologicalEntity
+- PhysiologicalProcess
+- OrganismAttribute
+- AnatomicalEntity
+- Cell
+- MolecularMixture
+- Disease
+- ChemicalMixture
+- GrossAnatomicalStructure
+- Gene
+- PhenotypicFeature
+- ClinicalAttribute
+- ChemicalEntity
+- SmallMolecule
+- Protein",,'- not_provided,'- not_provided,"'- biolink:Attribute
+- biolink:publications","'- PUBCHEM.COMPOUND
+- NCIT
+- CHEMBL.COMPOUND
+- DOID
+- OMIM
+- DRUGBANK
+- MESH
+- HGNC
+- UMLS
+- UNII
+- MONDO
+- orphanet
+- HP
+- NCBIGene
+- CHEBI
+- UBERON
+- GTOPDB","'- dct:description
+- biolink:same_as
+- biolink:Attribute","'- PUBCHEM.COMPOUND
+- NCIT
+- CHEMBL.COMPOUND
+- DOID
+- OMIM
+- DRUGBANK
+- MESH
+- HGNC
+- UMLS
+- UNII
+- PR
+- MONDO
+- orphanet
+- HP
+- NCBIGene
+- CHEBI
+- UBERON
+- GTOPDB","'- dct:description
+- biolink:same_as
+- biolink:Attribute"
+"'- subject, 
+- predicate, 
+- object, 
+- attributes",'- ChemicalEntity,'- affects,'- Gene,"'- object_aspect_qualifier
+- object_direction_qualifier
+- qualified_predicate",'- not_provided,'- not_provided,"'- biolink:Attribute
+- biolink:publications","'- UNII
+- CHEMBL.COMPOUND
+- CHEBI","'- dct:description
+- biolink:same_as
+- biolink:Attribute","'- HGNC
+- NCBIGene","'- biolink:same_as
+- biolink:Attribute"

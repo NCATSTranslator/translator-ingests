@@ -1,0 +1,2068 @@
+{
+  "nodes": {
+    "biolink:Disease": {
+      "id_prefixes": [
+        "orphanet",
+        "MESH",
+        "NCIT",
+        "DOID",
+        "UMLS",
+        "OMIM",
+        "MONDO"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:Gene": {
+      "id_prefixes": [
+        "HGNC",
+        "NCBIGene"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:PhenotypicFeature": {
+      "id_prefixes": [
+        "NCIT",
+        "HP",
+        "MESH",
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:GrossAnatomicalStructure": {
+      "id_prefixes": [
+        "UBERON"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:BiologicalEntity": {
+      "id_prefixes": [
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:PhysiologicalProcess": {
+      "id_prefixes": [
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:OrganismAttribute": {
+      "id_prefixes": [
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:AnatomicalEntity": {
+      "id_prefixes": [
+        "NCIT",
+        "UBERON",
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:Behavior": {
+      "id_prefixes": [
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:ClinicalAttribute": {
+      "id_prefixes": [
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:SmallMolecule": {
+      "id_prefixes": [
+        "GTOPDB",
+        "DRUGBANK",
+        "CHEBI",
+        "PUBCHEM.COMPOUND",
+        "CHEMBL.COMPOUND"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:MolecularMixture": {
+      "id_prefixes": [
+        "PUBCHEM.COMPOUND",
+        "CHEBI",
+        "CHEMBL.COMPOUND"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:ChemicalEntity": {
+      "id_prefixes": [
+        "UNII",
+        "CHEMBL.COMPOUND",
+        "CHEBI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:Protein": {
+      "id_prefixes": [
+        "PR"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:Cell": {
+      "id_prefixes": [
+        "UMLS"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:ChemicalMixture": {
+      "id_prefixes": [
+        "CHEBI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    }
+  },
+  "edges": [
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:PhenotypicFeature",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:GrossAnatomicalStructure",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:BiologicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:PhysiologicalProcess",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:OrganismAttribute",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:AnatomicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Behavior",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:ClinicalAttribute",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:related_to",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:directly_physically_interacts_with",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:physically_interacts_with",
+      "object": "biolink:SmallMolecule",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:related_to",
+      "object": "biolink:SmallMolecule",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:directly_physically_interacts_with",
+      "object": "biolink:SmallMolecule",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:related_to",
+      "object": "biolink:MolecularMixture",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Gene",
+      "predicate": "biolink:directly_physically_interacts_with",
+      "object": "biolink:MolecularMixture",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:PhenotypicFeature",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:Cell",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Disease",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:AnatomicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:PhenotypicFeature",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:PhenotypicFeature",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:PhenotypicFeature",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:PhenotypicFeature",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:GrossAnatomicalStructure",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:GrossAnatomicalStructure",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:AnatomicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:GrossAnatomicalStructure",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:GrossAnatomicalStructure",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:BiologicalEntity",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:PhysiologicalProcess",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:OrganismAttribute",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:AnatomicalEntity",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Behavior",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ClinicalAttribute",
+      "predicate": "biolink:genetically_associated_with",
+      "object": "biolink:Gene",
+      "attributes": [],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:physically_interacts_with",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:affects",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "object_aspect_qualifier",
+          "applicable_values": [
+            "activity"
+          ]
+        },
+        {
+          "qualifier_type_id": "object_direction_qualifier",
+          "applicable_values": [
+            "increased",
+            "decreased"
+          ]
+        },
+        {
+          "qualifier_type_id": "qualified_predicate",
+          "applicable_values": [
+            "biolink:causes"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:directly_physically_interacts_with",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:related_to",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:SmallMolecule",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:MolecularMixture",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:SmallMolecule",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalMixture",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:related_to",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:affects",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "object_aspect_qualifier",
+          "applicable_values": [
+            "activity"
+          ]
+        },
+        {
+          "qualifier_type_id": "object_direction_qualifier",
+          "applicable_values": [
+            "increased",
+            "decreased"
+          ]
+        },
+        {
+          "qualifier_type_id": "qualified_predicate",
+          "applicable_values": [
+            "biolink:causes"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:directly_physically_interacts_with",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:SmallMolecule",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:MolecularMixture",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalMixture",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:MolecularMixture",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:Protein",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:related_to",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:directly_physically_interacts_with",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:affects",
+      "object": "biolink:Gene",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "affinity_parameter"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:publications",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "publications"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "object_aspect_qualifier",
+          "applicable_values": [
+            "activity"
+          ]
+        },
+        {
+          "qualifier_type_id": "object_direction_qualifier",
+          "applicable_values": [
+            "increased",
+            "decreased"
+          ]
+        },
+        {
+          "qualifier_type_id": "qualified_predicate",
+          "applicable_values": [
+            "biolink:causes"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:SmallMolecule",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:MolecularMixture",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:ChemicalEntity",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalMixture",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Cell",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:Disease",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    }
+  ]
+}
