@@ -6,12 +6,6 @@
 ---
 
 - url: https://opendata.ncats.nih.gov/public/pharos/pharos319.sql.gz
-  local_name: pharos319.sql.gz
+  local_name: pharos.sql.gz
 - url: https://opendata.ncats.nih.gov/public/pharos/pharos400_TDLs.csv
-  local_name: pharos400_TDLs.csv
-# - url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data.tsv.gz
-#   local_name: example_data.tsv.gz
-# - url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data_2.tsv.gz
-#   local_name: example_data_2.tsv.gz
-# - url: https://stars.renci.org/var/data_services/translator-ingests/ingest_template/example_data_3.tsv.gz
-#   local_name: example_data_3.tsv.gz
+  local_name: pharos_tdls.csv
