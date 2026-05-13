@@ -8,7 +8,7 @@ expected content in node and edge slots, with test expectations defined by const
 """
 
 import pytest
-from typing import Optional, Iterable, Any, Iterator
+from typing import Optional, Iterable, Any, Union, Iterator
 
 import koza
 from koza.transform import Mappings
@@ -74,13 +74,53 @@ def _compare_slot_values(returned_value, expected_value):
     )
 
 
+def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
+    """
+    Returns True if *item* (a Pydantic model instance) satisfies all field
+    constraints in *expected*.
+
+    For each ``(field, value)`` pair:
+
+    * If *value* is a non-empty list of dicts, each sub-dict must be satisfied
+      by at least one element in the item's corresponding sub-collection
+      (recursive via :func:`_validate_pydantic_collection`).
+    * Otherwise a direct equality check is used.
+
+    :param item: a Pydantic model instance to inspect
+    :param expected: mapping of field-name → expected-value
+    :return: True if all constraints are satisfied
+    """
+    for field, value in expected.items():
+        if not hasattr(item, field):
+            return False
+        actual = getattr(item, field)
+        if isinstance(value
+                , list) and value and isinstance(value[0], dict):
+            # Nested Pydantic collection: each expected sub-dict must be
+            # satisfied by at least one element in the actual sub-collection.
+            if not actual:
+                return False
+            for sub in value:
+                if not _validate_pydantic_collection(sub, actual):
+                    return False
+        else:
+            if actual != value:
+                return False
+    return True
+
+
 def _validate_pydantic_collection(
-    expected: dict[str, Any],
+    expected: Union[dict[str, Any],list[dict[str, Any]]],
     returned: list | dict,
 ) -> bool:
     """
-    Returns True if at least one Pydantic model instance in *returned* has all
-    fields matching those specified in *expected*.
+    Returns True if at least one Pydantic model instance in *returned* satisfies
+    all field constraints in *expected*.
+
+    Field values in *expected* may be nested: if a value is a non-empty list of
+    dicts, each sub-dict is matched recursively against the corresponding
+    sub-collection on the candidate item, enabling deep validation such as
+    ``Association.has_supporting_studies.has_study_results``.
 
     Works for both list collections (e.g. ``has_affinity: list[AffinityMeasurement]``)
     and dict collections (e.g. ``has_supporting_studies: dict[str, Study]``),
@@ -91,12 +131,49 @@ def _validate_pydantic_collection(
                      are Pydantic model instances
     :return: True if at least one instance satisfies all expected field values
     """
-    items = returned.values() if isinstance(returned, dict) else returned
-    return any(
-        all(hasattr(item, field) and getattr(item, field) == value
-            for field, value in expected.items())
-        for item in items
-    )
+    # check if two dictionary collections are being matched...
+    if isinstance(expected, dict) and isinstance(returned, dict):
+        # better iterate, if more than one expected item
+        found: list[bool] = []
+        for key, value in expected.items():
+            if key not in returned.keys():
+                # All expected keys must be somewhere
+                # in the returned dictionary, which essentially
+                # tests if expected.key == returned.key ...
+                return False
+            returned_item = returned[key]
+            expected_item = expected[key]
+
+            # ...then one-on-one match attempted of the body of the items
+            found.append(_item_matches_expected(returned_item, expected_item))
+
+        # since I'm matching all expected against
+        # returned, then I need to match all of them?
+        return all(found)
+
+    elif isinstance(returned, list):
+
+        items = returned
+        if isinstance(expected, list):
+            # matching a list of expected instances?
+            found: list[bool] = []
+            for entry in expected:
+                found.append(any(_item_matches_expected(item, entry) for item in items))
+
+            # since I'm matching all expected against
+            # returned, then I need to match all of them?
+            return all(found)
+
+        else:
+            # perhaps just one expected (dictionary) entry
+            # to match against a simple list of return values?
+            for item in items:
+                if _item_matches_expected(item, expected):
+                    return True
+            return False
+    else:
+        # just comparing a simple returned item against simple expected value
+        return _item_matches_expected(returned, expected)
 
 
 def _match_edge(
@@ -114,18 +191,19 @@ def _match_edge(
 
             # We only pass things through if *both* of the returned and the
             # expected the lists of slot values are or are not empty (namely not XOR).
-            if isinstance(expected_edge[association_slot], list):
-                if bool(expected_edge[association_slot]) ^ bool(reasv):
-                    return f"Unexpected return values '{reasv}' for slot '{association_slot}' in edge"
+            expected_slot_value = expected_edge[association_slot]
+            if isinstance(expected_slot_value, list):
+                if bool(expected_slot_value) ^ bool(reasv):
+                    return f"Unexpected return values '{reasv!r}' for slot '{association_slot}' in edge"
                 # ...but we only specifically validate non-empty expectations
-                if expected_edge[association_slot]:
-                    for entry in expected_edge[association_slot]:
+                if expected_slot_value:
+                    for entry in expected_slot_value:
                         if isinstance(entry, str):
                             # Simple Membership value test.
                             if entry not in reasv:
                                 return (
                                     f"Value '{entry}' for slot '{association_slot}' "
-                                    + f"is missing in returned edge values '{reasv}?'"
+                                    + f"is missing in returned edge values '{reasv!r}?'"
                                 )
                         elif isinstance(entry, dict):
                             # Validate that at least one Pydantic model instance
@@ -133,19 +211,25 @@ def _match_edge(
                             if not _validate_pydantic_collection(entry, reasv):
                                 return (
                                     f"Expected fields {entry!r} not found in any returned "
-                                    f"'{association_slot}' entry in '{reasv}'"
+                                    f"'{association_slot}' entry in '{reasv!r}'"
                                 )
                         else:
                             return (
                                 "Unexpected value type for "
-                                + f"{str(expected_edge[association_slot])} for slot '{association_slot}'"
+                                + f"{expected_slot_value!r} for slot '{association_slot}'"
                             )
+            elif isinstance(expected_slot_value, dict):
+                if not _validate_pydantic_collection(expected_slot_value, reasv):
+                    return (
+                        f"Expected fields {expected_slot_value!r} not found in any returned "
+                        f"'{association_slot}' entry in '{reasv!r}'"
+                    )
             else:
                 # Scalar value test
-                if reasv != expected_edge[association_slot]:
+                if reasv != expected_slot_value:
                     return (
-                        f"Value '{expected_edge[association_slot]}' "
-                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv}'?"
+                        f"Value '{expected_slot_value!r}' "
+                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
                     )
 
     # If we got to here, then success!
@@ -218,7 +302,7 @@ def validate_transform_result(
             "Unexpected number of edges returned by record transformation!"
 
     # if we get this far, we're only interested in testing a non-empty list of nodes
-    if nodes and node_test_slots is not None:
+    if nodes and expected_nodes is not None and node_test_slots is not None:
 
         # Convert the 'nodes' Iterable NamedThing content into
         # a list of Python dictionaries by comprehension
@@ -232,8 +316,11 @@ def validate_transform_result(
         expected_nodes_list: list[dict[str, Any]] = list()
         for node in expected_nodes:
             if isinstance(node, str):
+                # might alone be checking for the node identifiers (simplest check)
                 expected_nodes_list.append({"id": node})
             elif isinstance(node, dict):
+                # otherwise we're expecting a dictionary
+                # of node property=value pairs to match
                 expected_nodes_list.append(node)
             else:
                 assert False, f"Unexpected value type in the list of expected nodes: '{str(node)}'"
@@ -241,8 +328,13 @@ def validate_transform_result(
         for node_property in node_test_slots:
             for expected_node in expected_nodes_list:
                 if node_property not in expected_node:
+                    # We decided not to check this node
+                    # property, even if it is returned
                     continue
                 expected_node_value = expected_node[node_property]
+                # Here we are happy simply to find at least one transformed node matching
+                # at least one entry in the expected nodes. This kind of logic allows us
+                # to do a lightweight sampling of results, to call the transform successful.
                 assert any(
                     [
                         _compare_slot_values(returned_node[node_property], expected_node_value)
@@ -255,7 +347,7 @@ def validate_transform_result(
                 )
 
     # if we get this far, we're only interested in testing a non-empty list of edges
-    if edges and edge_test_slots is not None:
+    if edges and expected_edges is not None and edge_test_slots is not None:
 
         # Convert the 'edges' Iterable Association content
         # into a list by comprehension
@@ -277,4 +369,4 @@ def validate_transform_result(
             found: bool
             error_messages: Optional[list[str]]
             found, error_messages = _found_edge(returned_edge, expected_edge_list, edge_test_slots)
-            assert found, "\n".join(error_messages)
+            assert found, "\n".join(list(error_messages)) if error_messages else "No edges matched expected values?"

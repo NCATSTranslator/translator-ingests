@@ -9,10 +9,10 @@ A general discussion of the Translator Data Ingest architecture is provided [her
 
 The project uses the [**uv**](https://docs.astral.sh/uv/) Python package and project manager You will need to [install **uv** onto your system](https://docs.astral.sh/uv/getting-started/installation/), along with a suitable Python (Release 3.12) interpreter.
 
-The project initially (mid-June 2025) uses a conventional unix-style **make** file to execute tasks. For this reason, working within a command line interface terminal.  A MacOSX, Ubuntu or Windows WSL2 (with Ubuntu) is recommended. See the [Developers' README](DEVELOPERS_README.md) for tips on configuring your development environment.
+The project initially (mid-June 2025) uses a conventional unix-style **make** file to execute tasks. For this reason, working within a command line interface terminal.  A MacOSX, Ubuntu or Windows WSL2 (with Ubuntu) is recommended. See the [Developers' README](https://github.com/NCATSTranslator/translator-ingests/blob/main/DEVELOPERS_README.md) for tips on configuring your development environment.
 
 ## Ingest Processes and Artifacts
-To ensure that ingests are performed rigorously, consistently, and reproducibly, we have defined an [Standard Operating Procedure (SOP)](https://github.com/NCATSTranslator/translator-ingests/blob/main/source-ingest-sop.md) to guide the source ingest process.  
+To ensure that ingests are performed rigorously, consistently, and reproducibly, we have defined a [Standard Operating Procedure (SOP)](https://github.com/NCATSTranslator/translator-ingests/blob/main/source-ingest-sop.md) to guide the source ingest process.  
 
 The SOP is initially tailored to guide re-ingest of current sources to create a "functional replacement" of the Phase 2 knowledge provider sources, but it can be adapted to guide the ingest tasks of new sources as well. 
 

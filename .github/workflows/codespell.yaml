@@ -25,6 +25,8 @@ jobs:
       - name: Codespell
         uses: codespell-project/actions-codespell@v2
         with:
-          skip: ./data/*
+          # Match Makefile CODESPELL_SKIP. **/*.ipynb: notebook outputs use base64 blobs and
+          # truncated HTML/table strings that split words mid-token—high false-positive rate for codespell.
+          skip: ./data/*,**/site-packages,**/*.ipynb
           ignore_words_file: .codespellignore
 

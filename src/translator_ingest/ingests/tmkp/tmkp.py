@@ -28,17 +28,23 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
     ChemicalAffectsGeneAssociation,
-    CorrelatedGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    GeneRegulatesGeneAssociation,
+    GeneToGeneAssociation,
     Study,
     TextMiningStudyResult,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     ChemicalOrGeneOrGeneProductFormOrVariantEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP, get_biolink_model_toolkit
+
+TMKP_DEFAULT_SOURCES = build_association_knowledge_sources(
+    primary=INFORES_TEXT_MINING_KP,
+    supporting=["infores:pubmed"],
+)
 
 
 # Remap predicates from source to canonical Biolink form.
@@ -82,9 +88,9 @@ BIOLINK_CLASS_MAP = {
 # Map edge types to association classes
 ASSOCIATION_MAP = {
     "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
-    "biolink:GeneToDiseaseAssociation": CorrelatedGeneToDiseaseAssociation,
+    "biolink:GeneToDiseaseAssociation": GeneToDiseaseAssociation,
     "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    "biolink:GeneRegulatoryRelationship": GeneRegulatesGeneAssociation,
+    "biolink:GeneRegulatoryRelationship": GeneToGeneAssociation,
 }
 
 # Track edges skipped due to invalid subject/object prefixes (for reporting)
@@ -432,31 +438,11 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
     # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
     # by the source data (which may provide e.g. 'loss_of_function_variant_form').
-    if (
-        assoc_class == CorrelatedGeneToDiseaseAssociation
-        and predicate == "biolink:contributes_to"
-    ):
+    if assoc_class == GeneToDiseaseAssociation and predicate == "biolink:contributes_to":
         assoc_kwargs["predicate"] = "biolink:affects"
         assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
-    # For GeneRegulatesGeneAssociation, default qualified_predicate to the predicate if not set
-    if assoc_class == GeneRegulatesGeneAssociation and "qualified_predicate" not in assoc_kwargs:
-        assoc_kwargs["qualified_predicate"] = predicate
-
-    # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
-    if assoc_class == GeneRegulatesGeneAssociation:
-        # If either qualifier is missing, skip the edge to avoid semantic errors.
-        if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
-            logger.warning(
-                "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
-                f"object_aspect_qualifier={assoc_kwargs.get('object_aspect_qualifier')}, "
-                f"object_direction_qualifier={assoc_kwargs.get('object_direction_qualifier')}. "
-                "These qualifiers are required for semantic correctness."
-            )
-            return None
-
-    # Create association with all fields
     association = assoc_class(**assoc_kwargs)
 
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
@@ -465,10 +451,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         parse_attributes(attributes, association)
     else:
         # No attributes - set default sources
-        association.sources = build_association_knowledge_sources(
-            primary=INFORES_TEXT_MINING_KP,
-            supporting=["infores:pubmed"]
-        )
+        association.sources = TMKP_DEFAULT_SOURCES
 
     # Create nodes for subject and object
     nodes = []

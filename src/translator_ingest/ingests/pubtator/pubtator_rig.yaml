@@ -1,0 +1,269 @@
+name: Pubtator Reference Ingest Guide
+
+
+# Information about the Source of the data ingest
+source_info:
+  infores_id: infores:pubtator
+  name: Pubtator
+  ## from https://doi.org/10.1093/nar/gkae235
+  description: "PubTator 3.0 (https://www.ncbi.nlm.nih.gov/research/pubtator3/) is a biomedical literature resource using state-of-the-art AI techniques to offer semantic and relation searches for key concepts like proteins, genetic variants, diseases and chemicals."
+  citations:
+    - https://doi.org/10.1093/nar/gkae235
+  terms_of_use_info:
+    terms_of_use_url: https://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator3/README.txt
+    terms_of_use_description: "Pubtator3, as a resource created by NCBI/NLM, is in the public domain (ref: FTP README and https://www.ncbi.nlm.nih.gov/home/about/policies/). They do request that NLM be given appropriate acknowledgment. The Pubtator tutorial webpage https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ('About Pubtator3') says 'PubTator3 is freely accessible to the research community'."
+  data_access_locations:
+    - https://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator3/    ## FTP site
+  data_provision_mechanisms:
+    - file_download
+  data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+    - tsv  ## gzipped
+    - other  ## tar.gz + BioC-XML format
+  data_versioning_and_releases: "The FTP files are expected to be updated monthly, according to the FTP README. There isn't a formal version, so we use the last-modified date."
+  # additional_notes:  # (optional, range = string)
+
+
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: "Pubtator is a large, text-mined resource with a variety of entity relations. It could be used to augment or replace other text-mined resources that we use and are no longer being maintained/updated. It could be used in MVP1 (may treat disease X), MVP2 (drug Y may increase/decrease gene Z's activity), or Pathfinder queries."
+  # scope:  # (optional, range = string)
+
+  relevant_files:
+    - file_name: relation2pubtator3.gz
+      location: https://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator3/
+      description: "whole set of relations extracted by BioREx"
+  included_content:
+    - file_name: relation2pubtator3.gz
+      included_records: >-
+        (1) Entity types are "Chemical", "Disease", or "Gene"
+        (2) "relation" value is mapped (didn't include "compare", "cotreat")
+      # fields_used:  # (optional, range = string)
+
+  filtered_content:
+    - file_name: relation2pubtator3.gz
+      filtered_records: >-
+        At least 1 entity type isn't "Chemical", "Disease", or "Gene". Currently, the other
+        entity types are for variants ("DNAMutation", "ProteinMutation", "SNP", "Mutation")
+      rationale: "NodeNorm currently doesn't support any variant namespaces, so it cannot resolve the IDs for these entities."
+    - file_name: relation2pubtator3.gz
+      filtered_records: "relation value is 'compare'"
+      rationale: >-
+        This seems like too vague to be a meaningful relationship. The definition is "The effect comparison of two chemicals/drugs" (https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Annotations", Table 2)
+    - file_name: relation2pubtator3.gz
+      filtered_records: "relation value is 'cotreat'"
+      rationale: >-
+        Couldn't find a biolink-model predicate that represented this relationship well. The definition is "It is defined as the use of two or more chemical/drugs administered separately or in a fixed-dose combination" (https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Annotations", Table 2).
+    - file_name: relation2pubtator3.gz
+      filtered_records: "Entity ID maps to NodeNorm clique with unexpected category"
+      rationale: >-
+        Currently, 3 entity IDs map to unexpected main categories (not ChemicalEntity, DiseaseOrPheno, or Gene-related).
+        Filtering them out, just in case they produce odd edges. Could remove some IDs from filter if NodeNorm addresses their category issues
+        OrganismTaxon:
+        - MESH:C100843 (Lacteol): supplement with heat-killed Lactobacillus ([brand link](https://lacteolproducts.com/)). Pubtator classifies as Chemical, **should be a `biolink:Drug`?**
+        - MESH:C000598555 (2,5-dihexyl-N,N'-dicyano-p-quinonediimine): very little info, Pubtator classifies as Chemical. But the name looks like a chemical, so this appears to be a **NodeNorm error**
+        CellularComponent:
+        - MESH:C000719328 (smoker's inclusion bodies): Pubtator classifies as Disease. But Nodenorm is correct that it's a CellularComponent (see [wiki paragraph 3](https://en.wikipedia.org/wiki/Inclusion_bodies))
+
+  future_considerations:
+    - category: other
+      consideration: "NodeNorm could add the variant rs# (dbSNP) namespace. Then some of the variant data would have IDs that can be NodeNormed and we could ingest it."
+      relevant_files: relation2pubtator3.gz
+    - category: edge_property_content
+      consideration: "See if we can add text snippet information for relations using other files."
+      relevant_files: "entity files or BioC-XML files"
+
+  # additional_notes:  # (optional, range = string)
+
+
+# Information about the Graph Output by the ingest
+target_info:
+  infores_id: "infores:translator-pubtator"
+
+  edge_type_info:
+    ## 1 per biolink predicate
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:DiseaseOrPhenotypicFeature
+        - biolink:Gene
+      predicates:
+      ## relation == "associate"
+        - biolink:related_to
+      object_categories:
+        - biolink:ChemicalEntity
+        - biolink:DiseaseOrPhenotypicFeature
+        - biolink:Gene
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'associate', which corresponds to a very general predicate."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+      ## relation == "cause"
+        - biolink:causes
+      object_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'cause'. Based on the relation definition, we picked this predicate."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+      ## relation == "drug_interact"
+        - biolink:pharmacologically_interacts_with
+      object_categories:
+        - biolink:ChemicalEntity
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'drug_interact'. For a potential drug-drug interaction, we picked this predicate."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:Gene
+      predicates:
+      ## relation == "interact"
+        - biolink:physically_interacts_with
+      object_categories:
+        - biolink:ChemicalEntity
+        - biolink:Gene
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'interact'. Based on the relation definition (physical interaction), we picked this predicate."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+    - subject_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+        - biolink:ChemicalEntity
+        - biolink:Gene
+      predicates:
+      ## relation == "inhibit", "negative_correlate"
+      ##   and "prevent" but that's not in the data after excluding variant types
+        - biolink:negatively_correlated_with
+      object_categories:
+        - biolink:ChemicalEntity
+        - biolink:Gene
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'inhibit' and 'negative_correlate'. Based on the relation definitions (negative correlation), we picked this predicate."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+    - subject_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+        - biolink:ChemicalEntity
+        - biolink:Gene
+      predicates:
+      ## relation == "positive_correlate", "stimulate"
+        - biolink:positively_correlated_with
+      object_categories:
+        - biolink:ChemicalEntity
+        - biolink:Gene
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'stimulate' and 'positive_correlate'. Based on the relation definitions (positive correlation), we picked this predicate."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+      ## relation == "treat"
+        - biolink:treats_or_applied_or_studied_to_treat
+      object_categories:
+        - biolink:DiseaseOrPhenotypicFeature
+      agent_type:
+        - text_mining_agent
+      knowledge_level:
+        - not_provided
+      primary_knowledge_sources:
+        - infores:pubtator
+      edge_properties:
+        - biolink:publications
+      ui_explanation: "The Pubtator-reported 'relation' was 'treat' for a Chemical - Disease pair. We use a more general predicate because this is a text-mined assertion."
+      source_files:
+        - relation2pubtator3.gz
+      # additional_notes:  # (optional, range = string)
+
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - MESH
+      # node_properties:  # (optional, multivalued, range = URIorCURIE)
+      #   -
+      # additional_notes:  # (optional, range = string)
+    - node_category: biolink:DiseaseOrPhenotypicFeature
+      source_identifier_types:
+        - MESH
+        - OMIM
+    - node_category: biolink:Gene
+      source_identifier_types:
+      ## no prefix in data, but should be NCBIGene based on paper normalization section https://academic.oup.com/nar/article/52/W1/W540/7640526#469437536 and supplementary table 7.
+        - NCBIGene
+
+  future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
+    - category: predicates
+      consideration: "Add a biolink predicate for relation value 'cotreat', so we can ingest that data?"
+
+  additional_notes: >-
+    (1) Relation name can be specific, but def is usually very general (starts with positive/negative correlation…). And the relation-assignment can be incorrect, so using weaker/general predicates may be better?
+    (2) A few MESH (chem/disease) and OMIM (disease) IDs are NodeNormed to NCBIGene, which can be seen in the normalization-metadata file, field normalized_to. This seems like an issue with the data or NodeNorm that should be investigated at some point.
+    (3) When running the ingest, there are some validation warnings that other categories are encountered when Chemical was expected. CX expects something is going on with the MESH IDs - either issues with the data, issues with NodeNorm, or understandable issues resolving proteins vs drugs. 
+    (4) Can't create links to Pubtator webpages (source_record_urls) because they include entity names/labels, which aren't in the relation file (ref: https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Search").
+    (5) Using relation definitions in tutorial https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ("Relation Annotations", Table 2), which seem to make more sense and match the current data better than the paper's supplementary table 2.
+    (6) Paper Supplementary Table 7 summarizes each tool within Pubtator (what it does, citation, all public domain license) 
+
+
+# Information about how the ingest was specified and performed
+provenance_info:
+  contributions:
+    - "Colleen Xu - code author, data modeling"
+    - "Andrew Su: domain expertise"
+  artifacts:
+    - "Analyzing Pubtator MetaTriples and comparing it to semmeddb/TMKP: https://docs.google.com/spreadsheets/d/1O096szXwAkjJRYf3MxlRyhUeNkRvtZ6Gxk96v__mXgU/edit?gid=2045242875#gid=2045242875"
+    - "notebooks for development work currently in parser code directory"

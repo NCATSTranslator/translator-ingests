@@ -1,11 +1,11 @@
 """
 HPOA processing utility methods
 """
-from typing import Optional, Union
+from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
-from bmt.pydantic import build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
     INFORES_OMIM,
@@ -14,41 +14,32 @@ from translator_ingest.util.biolink import  (
     INFORES_HPOA
 )
 
+HPOA_MEDGEN_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
+HPOA_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
+HPOA_ORPHANET_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
+HPOA_DECIPHER_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
 
-def get_hpoa_association_sources(source_id: str, as_list: bool = False) -> Union[list[RetrievalSource], list[str]]:
+
+def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
     """
     The primary knowledge source may either be inferred from the 'source' string
     matching a characteristic port of a HPOA-coded record['source'] encoded URI
     or from the CURIE namespace of a 'source' string, which is a disease identifier.
 
     :param source_id: HPOA data field value encoding the primary knowledge source
-    :param as_list: boolean if True (default: False), returns the sources as a simple flat list of
-                    infores strings (for use as a 'provided_by' node property value)
     :return: Union[list[RetrievalSource], list[str]] of source infores identifiers
     """
     if "medgen" in source_id:
-        if as_list:
-            return [INFORES_HPOA, INFORES_MEDGEN, INFORES_OMIM]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
+        return HPOA_MEDGEN_OMIM_SOURCES
 
     elif source_id.startswith("OMIM"):
-        if as_list:
-            return [INFORES_HPOA, INFORES_OMIM]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
+        return HPOA_OMIM_SOURCES
 
     elif "orphadata" in source_id or source_id.startswith("ORPHA") or "orpha" in source_id.lower():
-        if as_list:
-            return [INFORES_HPOA, INFORES_ORPHANET]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
+        return HPOA_ORPHANET_SOURCES
 
     elif source_id.startswith("DECIPHER"):
-        if as_list:
-            return [INFORES_HPOA, INFORES_DECIFER]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
+        return HPOA_DECIPHER_SOURCES
 
     else:
         raise ValueError(f"Unknown source '{source_id}' value, can't set the primary knowledge source")

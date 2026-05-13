@@ -11,20 +11,20 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
     "biolink-model", # need to pull 'master' for now, until dust settles on ingest-related model revisions
-    "bmt", # need to pull 'master' for now, until a fresh release past 1.4.6
+    "bmt>=1.4.8",
     "click>=8.0.0",
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
     "hatchling",
-    "kghub-downloader==0.4.3",
-    "koza>=2.1.1",
+    "kghub-downloader>=0.4.5",
+    "koza>=2.4.0",
     "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
     "pandas==2.3.3",    # also installs numpy, used by some ingests
     "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
     "requests",    ## needed for specific ingest
-    "robokop-orion",
+    "robokop-orion==1.3.3",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
     "zstandard>=0.25.0"
@@ -68,7 +68,6 @@ package = true
 
 [tool.uv.sources]
 biolink-model = { git = "https://github.com/biolink/biolink-model.git", rev = "master" }
-bmt = { git = "https://github.com/biolink/biolink-model-toolkit.git", rev = "master" }
 
 [tool.uv-dynamic-versioning]
 vcs = "git"
@@ -85,4 +84,7 @@ packages = ["src/translator_ingest"]
 skip = [
     "./src/translator_ingest/ingests/drug_rep_hub/indications_config.json",
     "./src/translator_ingest/ingests/drug_rep_hub/target_config.json",
+    # Jupyter notebooks: JSON cell outputs embed base64 plot data (spurious "word" matches),
+    # and truncated pandas/HTML previews often break words mid-token (false typos). Same skip as Makefile CODESPELL_SKIP.
+    "**/*.ipynb",
 ]

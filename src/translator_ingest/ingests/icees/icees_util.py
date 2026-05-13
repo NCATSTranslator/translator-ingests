@@ -60,7 +60,7 @@ def get_icees_supporting_study(
     :param edge_id: String identifier for the edge
     :param study_id: String identifier for the study
     :param result: List of Study Results consisting of slot-indexed values, like result statistics.
-    :return:
+    :return: Study
     """
     result_data = {attribute['attribute_type_id']: attribute['value'] for attribute in result}
     result = IceesStudyResult(id=edge_id, **result_data)

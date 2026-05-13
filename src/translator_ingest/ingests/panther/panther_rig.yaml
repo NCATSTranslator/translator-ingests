@@ -48,7 +48,8 @@ ingest_info:
     fields_used: "Gene, Ortholog, Type of ortholog, Panther Ortholog ID"
   filtered_content:
   - file_name: "RefGenomeOrthologs.tar.gz, PTHR<Panther-version>_<taxon_name>"
-    filtered_records: "All records with Gene and Ortholog pairwise annotated with taxon name as 'HUMAN', 'MOUSE' or 'RAT' specific."
+    filtered_records: >-
+      All records with Gene and Ortholog pairwise annotated with taxon name as 'HUMAN', 'MOUSE' or 'RAT' specific.
     rationale: >-
       Panther contains a huge number of records covering orthologs across 144 diverse species
       (as of September 2025), but our core interest in Translator focuses on genes in taxa close
@@ -62,7 +63,19 @@ ingest_info:
   future_considerations:
   - category: other
     consideration: "Additional model species may be included in the future."
-#  additional_notes: null
+  - category: edge_property
+    consideration: >-
+      Are there any useful edge properties / EPC metrics that could be collected
+      on orthology edges (e.g. data items output from the sequence alignment /
+      phylogenetic analysis) that could be used to score these edges?
+  - category: edge_property
+    consideration: >-
+      Do we want to capture the ortholog type (e.g. "least diverged ortholog",
+      "paralog", etc.) or consider additional / more granular predicates 
+      (RO has several under 'orthologous to', Biolink has 'xenologous to', 'paralogous to').
+  - category: node_property
+    consideration: >-
+      Family node properties we might capture: HMM length, member count, others?
 target_info:
   infores_id: infores:translator-panther-kgx
   edge_type_info:
@@ -76,9 +89,17 @@ target_info:
     - knowledge_assertion
     agent_type:
     - manual_validation_of_automated_agent
+    primary_knowledge_sources:
+    - infores:panther
     edge_properties:
     - has_evidence
     ui_explanation: "Panther gene orthology"
+    source_files:
+    - RefGenomeOrthologs.tar.gz
+    additional_notes: >-
+      To determine when two genes are orthologous, Panther uses advanced automated algorithms
+      that rely only on sequence similarity, evolutionary tree topology, and evolutionary event labeling.
+      Curators will manually review the data underlying orthology calls to improve accuracy.
   - subject_categories:
     - "biolink:Gene"
     predicates:
@@ -88,8 +109,16 @@ target_info:
     knowledge_level:
     - knowledge_assertion
     agent_type:
-    - manual_validation_of_automated_agent
+    - automated_agent
+    primary_knowledge_sources:
+      - infores:panther
     ui_explanation: "Gene membership in Panther orthology family"
+    source_files:
+    - RefGenomeOrthologs.tar.gz
+    additional_notes: >-
+      Panther defines protein families using a statistical Hidden Markov Model (HMM) that
+      represents its sequence signature. Individual protein sequences are compared to and
+      scored against these signatures, with those passing a membership threshold being assigned to a family.
   node_type_info:
   - node_category: "biolink:Gene"
     source_identifier_types:
