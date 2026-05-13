@@ -1,0 +1,3 @@
+# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+- url: https://opendata.ncats.nih.gov/public/cureid/cureid_data.tsv
+  local_name: cureid_data.tsv
