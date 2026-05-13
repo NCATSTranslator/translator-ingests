@@ -51,7 +51,7 @@ def get_latest_version() -> str:
 
     # Returning hard coded version for now,
     # pending repair of the above dynamic version discovery code.
-    return "2021-11-17"
+    return "5.0"
 
 @koza.on_data_begin()
 def on_begin_hmdb_ingest(koza_transform: koza.KozaTransform) -> None:
