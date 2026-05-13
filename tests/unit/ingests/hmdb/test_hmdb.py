@@ -112,7 +112,7 @@ ASSOCIATION_TEST_SLOTS = (
         ),
     ],
 )
-def test_ingest_transform(
+def test_hmdb_ingest_transform(
     mock_koza_transform: koza.KozaTransform,
     result_nodes: Optional[list],
     result_edge: Optional[dict]
