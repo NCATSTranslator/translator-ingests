@@ -123,10 +123,7 @@ def _normalize_publication_id(pub_id: str) -> str:
     Normalize a publication identifier to a Biolink-resolvable CURIE.
 
     TMKP source data emits bare PMC identifiers like ``PMC6211782`` without
-    a CURIE prefix. The Biolink prefix map registers ``PMC`` as a prefix,
-    so consumers (e.g., NodeNormalization) expect the form ``PMC:PMC6211782``.
-    Already-prefixed identifiers (``PMID:...``, ``PMC:...``) are returned
-    unchanged.
+    a CURIE prefix.
 
     >>> _normalize_publication_id("PMC6211782")
     'PMC:PMC6211782'
