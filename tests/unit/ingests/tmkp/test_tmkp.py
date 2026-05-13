@@ -278,7 +278,7 @@ class TestParseAttributes:
         """Full nested attribute parsing produces a Study with TextMiningStudyResult."""
         attributes = [
             {
-                "attribute_type_id": "biolink:supporting_study_result",
+                "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:result_1",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "Drug X treats disease Y."},
@@ -313,7 +313,7 @@ class TestParseAttributes:
         """'42|50' parses to [42, 50]."""
         attributes = [
             {
-                "attribute_type_id": "biolink:supporting_study_result",
+                "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:loc_test",
                 "attributes": [
                     {"attribute_type_id": "biolink:subject_location_in_text", "value": "42|50"},
@@ -364,7 +364,7 @@ class TestParseAttributes:
         """Bare PMC identifier in a nested supporting_document is normalized in xref."""
         attributes = [
             {
-                "attribute_type_id": "biolink:supporting_study_result",
+                "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:result_pmc",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_document", "value": "PMC6211782"},
@@ -416,14 +416,14 @@ class TestParseAttributes:
         """Two supporting_study_result attrs create two results under one Study."""
         attributes = [
             {
-                "attribute_type_id": "biolink:supporting_study_result",
+                "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:r1",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "First sentence."},
                 ],
             },
             {
-                "attribute_type_id": "biolink:supporting_study_result",
+                "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:r2",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "Second sentence."},
@@ -476,7 +476,7 @@ class TestTransformTmkpEdge:
         """
         attributes = [
             {
-                "attribute_type_id": "biolink:supporting_study_result",
+                "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:result_1",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "Drug treats disease."},
