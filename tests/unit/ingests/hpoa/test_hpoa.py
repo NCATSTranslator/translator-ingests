@@ -354,7 +354,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
             ],
             # Captured edge contents
             {
-                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "category": ["biolink:GeneToDiseaseAssociation"],
                 "subject": "NCBIGene:6505",
                 "predicate": "biolink:correlated_with",
                 "object": "OMIM:615232",

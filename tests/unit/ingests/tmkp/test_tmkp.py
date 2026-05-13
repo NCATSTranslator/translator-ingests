@@ -8,8 +8,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    CorrelatedGeneToDiseaseAssociation,
-    GeneRegulatesGeneAssociation,
+    GeneToDiseaseAssociation,
+    GeneToGeneAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
@@ -505,8 +505,8 @@ class TestTransformTmkpEdge:
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 0
 
-    def test_gene_regulates_gene_without_qualifiers_is_skipped(self):
-        """GeneRegulatesGeneAssociation without required qualifiers is skipped."""
+    def test_gene_to_gene_without_qualifiers(self):
+        """GeneToGeneAssociation is emitted even without typed qualifiers (qualifiers are optional)."""
         record = {
             "subject": "NCBIGene:100",
             "predicate": "biolink:affects",
@@ -516,15 +516,21 @@ class TestTransformTmkpEdge:
         items = _run_edge_transform(record)
 
         associations = [i for i in items if isinstance(i, Association)]
-        assert len(associations) == 0
+        assert len(associations) == 1
+        assert isinstance(associations[0], GeneToGeneAssociation)
+        assert associations[0].predicate == "biolink:affects"
+        assert associations[0].qualified_predicate is None
+        assert associations[0].object_aspect_qualifier is None
+        assert associations[0].object_direction_qualifier is None
 
-    def test_gene_regulates_gene_with_qualifiers(self):
-        """GeneRegulatesGeneAssociation succeeds when required qualifiers are present."""
+    def test_gene_to_gene_with_qualifiers(self):
+        """GeneToGeneAssociation passes through source qualifiers without altering predicate."""
         record = {
             "subject": "NCBIGene:100",
             "predicate": "biolink:affects",
             "object": "NCBIGene:200",
             "relation": "biolink:GeneRegulatoryRelationship",
+            "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity_or_abundance",
             "object_direction_qualifier": "increased",
         }
@@ -532,26 +538,54 @@ class TestTransformTmkpEdge:
 
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 1
-        assert isinstance(associations[0], GeneRegulatesGeneAssociation)
+        assert isinstance(associations[0], GeneToGeneAssociation)
+        assert associations[0].predicate == "biolink:affects"
+        assert associations[0].qualified_predicate == "biolink:causes"
         assert associations[0].object_aspect_qualifier == "activity_or_abundance"
         assert associations[0].object_direction_qualifier == "increased"
 
     @pytest.mark.parametrize(
-        "relation,expected_class",
+        "record,expected_class",
         [
-            ("biolink:ChemicalToGeneAssociation", ChemicalAffectsGeneAssociation),
-            ("biolink:GeneToDiseaseAssociation", CorrelatedGeneToDiseaseAssociation),
-            ("biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation", ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation),
+            (
+                {
+                    "subject": "DRUGBANK:DB01248",
+                    "predicate": "biolink:affects",
+                    "object": "UniProtKB:P12345",
+                    "relation": "biolink:ChemicalToGeneAssociation",
+                    "object_aspect_qualifier": "activity_or_abundance",
+                    "object_direction_qualifier": "increased",
+                },
+                ChemicalAffectsGeneAssociation,
+            ),
+            (
+                {
+                    "subject": "HGNC:11477",
+                    "predicate": "biolink:associated_with",
+                    "object": "MONDO:0005148",
+                    "relation": "biolink:GeneToDiseaseAssociation",
+                },
+                GeneToDiseaseAssociation,
+            ),
+            (
+                {
+                    "subject": "DRUGBANK:DB01248",
+                    "predicate": "biolink:treats",
+                    "object": "MONDO:0008315",
+                    "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+                },
+                ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+            ),
         ],
     )
-    def test_association_class_mapping(self, relation: str, expected_class: type):
-        """Relation maps to the correct Association subclass."""
-        record = {
-            "subject": "DRUGBANK:DB01248",
-            "predicate": "biolink:treats",
-            "object": "MONDO:0008315",
-            "relation": relation,
-        }
+    def test_association_class_mapping(self, record: dict, expected_class: type):
+        """Relation maps to the correct Association subclass.
+
+        Each row uses a subject/predicate/object combination that is consistent
+        with both the declared `relation` and the source data shape. The
+        ChemicalToGene case includes the qualifiers required by
+        ChemicalAffectsGeneAssociation in the Biolink Model.
+        """
         items = _run_edge_transform(record)
 
         associations = [i for i in items if isinstance(i, Association)]
