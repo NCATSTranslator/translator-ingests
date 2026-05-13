@@ -137,8 +137,6 @@ def _normalize_publication_id(pub_id: str) -> str:
     >>> _normalize_publication_id("")
     ''
     """
-    if not pub_id:
-        return pub_id
     if ":" in pub_id:
         return pub_id
     if pub_id.startswith("PMC"):
