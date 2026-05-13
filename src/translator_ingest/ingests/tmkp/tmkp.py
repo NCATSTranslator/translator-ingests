@@ -353,9 +353,6 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         elif slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
-                # publications field expects a list, but TMKP sends pipe-separated strings
-                # Multiple attributes (supporting_publications, supporting_document) may map here.
-                # Bare PMC identifiers from source data are normalized to CURIE form.
                 if biolink_slot == "publications":
                     raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
                     new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
