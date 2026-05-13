@@ -25,7 +25,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     PhenotypicFeature,
     DiseaseToPhenotypicFeatureAssociation,
     CausalGeneToDiseaseAssociation,
-    CorrelatedGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
     ChemicalOrGeneOrGeneProductFormOrVariantEnum as VE,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
@@ -278,7 +278,7 @@ def transform_gene_to_disease_record(
             **{},
         )
     elif qualified_predicate == "biolink:contributes_to":
-        association = CorrelatedGeneToDiseaseAssociation(
+        association = GeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
             predicate="biolink:associated_with",

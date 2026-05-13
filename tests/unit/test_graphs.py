@@ -10,6 +10,7 @@ from translator_ingest.graphs import (
     GraphConfigError,
     list_graph_ids,
     load_graphs,
+    resolve_all_sources,
     resolve_sources,
 )
 
@@ -89,6 +90,24 @@ def test_list_graph_ids_preserves_declaration_order():
     ids = list_graph_ids(DEFAULT_GRAPHS_YAML)
     assert ids[0] == "translator_kg"
     assert "translator_kg_open" in ids
+
+
+def test_resolve_all_sources_unions_across_graphs(graphs_file):
+    path = graphs_file([
+        {"graph_id": "g1", "sources": ["a", "b"]},
+        {"graph_id": "g2", "sources": ["b", "c"]},
+        {"graph_id": "g3", "base": "g1", "includes": ["d"]},
+    ])
+    assert resolve_all_sources(path) == ["a", "b", "c", "d"]
+
+
+def test_resolve_all_sources_against_real_graphs_yaml():
+    all_sources = resolve_all_sources(DEFAULT_GRAPHS_YAML)
+    parent = resolve_sources("translator_kg", DEFAULT_GRAPHS_YAML)
+    # translator_kg is the broadest graph today; its sources should be a subset of the union.
+    assert set(parent).issubset(set(all_sources))
+    # Result is sorted and deduplicated.
+    assert all_sources == sorted(set(all_sources))
 
 
 # ── validation errors ────────────────────────────────────────────────────────

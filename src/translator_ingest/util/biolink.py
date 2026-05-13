@@ -138,7 +138,7 @@ def knowledge_sources_from_trapi(source_list: Optional[list[dict]] ) -> Optional
 
 def _build_retrieval_source(
         source_spec: Union[str,tuple[str, list[str]]],
-        resource_role: Optional[ResourceRoleEnum]
+        resource_role: ResourceRoleEnum
 ) -> RetrievalSource:
     if isinstance(source_spec, tuple):
         assert len(source_spec) == 2, f"Invalid supporting data source tuple: {source_spec}"
@@ -206,7 +206,7 @@ def build_association_knowledge_sources(
         except that the first entry will usually be the primary knowledge source.
 
     """
-    primary_knowledge_source: Optional[RetrievalSource] = \
+    primary_knowledge_source: RetrievalSource = \
         _build_retrieval_source(
             primary,
             ResourceRoleEnum.primary_knowledge_source
@@ -223,6 +223,7 @@ def build_association_knowledge_sources(
             sources.append(supporting_knowledge_source)
             if primary_knowledge_source.upstream_resource_ids is None:
                 primary_knowledge_source.upstream_resource_ids = []
+            # noinspection PyUnresolvedReferences
             primary_knowledge_source.upstream_resource_ids.append(
                 supporting_knowledge_source.resource_id
             )
