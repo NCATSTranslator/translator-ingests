@@ -2,10 +2,9 @@
 TMKP (Text Mining Knowledge Provider) ingest.
 
 This ingest processes text-mined assertions from the Translator Text Mining Provider.
-Data comes as tar.gz archives containing:
-- nodes.tsv: Entity information
-- edges.tsv: Relationships between entities
-- content_metadata.json: Biolink class and slot mappings
+Data is provided as individual gzipped KGX files:
+- nodes.tsv.gz: Entity information
+- edges.tsv.gz: Relationships between entities
 
 """
 
@@ -117,6 +116,34 @@ def _get_id_prefix(curie: str) -> str:
     if ":" in curie:
         return curie.split(":")[0]
     return ""
+
+
+def _normalize_publication_id(pub_id: str) -> str:
+    """
+    Normalize a publication identifier to a Biolink-resolvable CURIE.
+
+    TMKP source data emits bare PMC identifiers like ``PMC6211782`` without
+    a CURIE prefix. The Biolink prefix map registers ``PMC`` as a prefix,
+    so consumers (e.g., NodeNormalization) expect the form ``PMC:PMC6211782``.
+    Already-prefixed identifiers (``PMID:...``, ``PMC:...``) are returned
+    unchanged.
+
+    >>> _normalize_publication_id("PMC6211782")
+    'PMC:PMC6211782'
+    >>> _normalize_publication_id("PMID:31388901")
+    'PMID:31388901'
+    >>> _normalize_publication_id("PMC:PMC6211782")
+    'PMC:PMC6211782'
+    >>> _normalize_publication_id("")
+    ''
+    """
+    if not pub_id:
+        return pub_id
+    if ":" in pub_id:
+        return pub_id
+    if pub_id.startswith("PMC"):
+        return f"PMC:{pub_id}"
+    return pub_id
 
 
 @lru_cache(maxsize=128)
@@ -252,7 +279,7 @@ def get_skipped_edges_summary() -> Dict[str, int]:
 
 def get_latest_version() -> str:
     """Return the latest version identifier for TMKP data."""
-    return "tmkp-2023-03-05"
+    return "tmkp-2024-09-07"
 
 
 def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> None:
@@ -278,7 +305,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         # Strip "biolink:" prefix if present to get the actual slot name
         slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
 
-        if slot_name == "supporting_study_result":
+        if slot_name == "has_supporting_study_result":
             # Create TextMiningStudyResult object
             tm_result = TextMiningStudyResult(
                 id=value,
@@ -294,7 +321,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                 if nested_type == "biolink:supporting_text":
                     tm_result.supporting_text = [nested_value] if nested_value else []
                 elif nested_type == "biolink:supporting_document":
-                    tm_result.xref = [nested_value] if nested_value else []
+                    tm_result.xref = [_normalize_publication_id(nested_value)] if nested_value else []
                 elif nested_type == "biolink:supporting_text_located_in":
                     tm_result.supporting_text_section_type = nested_value
                 elif nested_type == "biolink:extraction_confidence_score":
@@ -332,9 +359,11 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
                 # publications field expects a list, but TMKP sends pipe-separated strings
-                # Multiple attributes (supporting_publications, supporting_document) may map here
+                # Multiple attributes (supporting_publications, supporting_document) may map here.
+                # Bare PMC identifiers from source data are normalized to CURIE form.
                 if biolink_slot == "publications":
-                    new_pubs = value.split("|") if isinstance(value, str) else (value or [])
+                    raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
+                    new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
                     existing = getattr(association, biolink_slot) or []
                     setattr(association, biolink_slot, existing + new_pubs)
                 else:

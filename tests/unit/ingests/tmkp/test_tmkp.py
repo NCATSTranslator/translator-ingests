@@ -24,6 +24,7 @@ from translator_ingest.ingests.tmkp.tmkp import (
     _get_id_prefix,
     _get_valid_prefixes_for_class,
     _get_predicate_domain_range_prefixes,
+    _normalize_publication_id,
     _validate_edge_prefixes,
     _reset_module_state,
     _warned_unmapped_attrs,
@@ -69,6 +70,28 @@ class TestGetIdPrefix:
     )
     def test_returns_empty_string_for_invalid_curie(self, curie: str):
         assert _get_id_prefix(curie) == ""
+
+
+class TestNormalizePublicationId:
+    """Tests for _normalize_publication_id function."""
+
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            # Bare PMC IDs gain the "PMC:" CURIE prefix
+            ("PMC6211782", "PMC:PMC6211782"),
+            ("PMC8208096", "PMC:PMC8208096"),
+            # Already-prefixed IDs are passed through unchanged
+            ("PMC:PMC6211782", "PMC:PMC6211782"),
+            ("PMID:31388901", "PMID:31388901"),
+            # Empty / None-like values pass through unchanged
+            ("", ""),
+            # Non-PMC, non-prefixed values pass through unchanged
+            ("foo", "foo"),
+        ],
+    )
+    def test_normalize(self, raw: str, expected: str):
+        assert _normalize_publication_id(raw) == expected
 
 
 class TestGetValidPrefixesForClass:
@@ -324,6 +347,35 @@ class TestParseAttributes:
 
         assert "PMID:111" in assoc.publications
         assert "PMID:222" in assoc.publications
+
+    def test_bare_pmc_ids_in_publications_are_prefixed(self):
+        """Bare PMC identifiers from source data are normalized to CURIE form."""
+        attributes = [
+            {"attribute_type_id": "supporting_publications", "value": "PMC6211782|PMID:31388901|PMC8208096"},
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert "PMC:PMC6211782" in assoc.publications
+        assert "PMID:31388901" in assoc.publications
+        assert "PMC:PMC8208096" in assoc.publications
+
+    def test_bare_pmc_id_in_supporting_document_is_prefixed(self):
+        """Bare PMC identifier in a nested supporting_document is normalized in xref."""
+        attributes = [
+            {
+                "attribute_type_id": "biolink:supporting_study_result",
+                "value": "tmkp:result_pmc",
+                "attributes": [
+                    {"attribute_type_id": "biolink:supporting_document", "value": "PMC6211782"},
+                ],
+            }
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        result = list(assoc.has_supporting_studies.values())[0].has_study_results[0]
+        assert result.xref == ["PMC:PMC6211782"]
 
     def test_knowledge_source_extraction(self):
         """Primary + supporting sources from attributes populate association.sources."""
