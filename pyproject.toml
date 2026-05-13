@@ -16,8 +16,8 @@ dependencies = [
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
     "hatchling",
-    "kghub-downloader==0.4.3",
-    "koza>=2.1.1",
+    "kghub-downloader>=0.4.5",
+    "koza>=2.4.0",
     "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
     "pandas==2.3.3",    # also installs numpy, used by some ingests
