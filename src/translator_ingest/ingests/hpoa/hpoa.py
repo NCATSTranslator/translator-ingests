@@ -281,7 +281,7 @@ def transform_gene_to_disease_record(
         association = GeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:correlated_with",
+            predicate="biolink:associated_with",
             object=disease_id,
             qualified_predicate="biolink:contributes_to",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
