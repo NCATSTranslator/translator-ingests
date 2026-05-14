@@ -12,6 +12,9 @@ CLI ::
     
     get the list of sources for a particular graph_id
     uv run python -m translator_ingest.graphs sources <graph_id>
+
+    get the union of sources across every declared graph
+    uv run python -m translator_ingest.graphs all-sources
 """
 
 from __future__ import annotations
@@ -117,6 +120,15 @@ def list_graph_ids(path: Path = DEFAULT_GRAPHS_YAML) -> list[str]:
     return list(load_graphs(path).keys())
 
 
+def resolve_all_sources(path: Path = DEFAULT_GRAPHS_YAML) -> list[str]:
+    """Return the sorted, deduplicated union of sources across every declared graph."""
+    by_id = load_graphs(path)
+    union: set[str] = set()
+    for gid in by_id:
+        union.update(_resolve(gid, by_id))
+    return sorted(union)
+
+
 @click.group()
 def cli() -> None:
     """Inspect graph definitions declared in graphs.yaml."""
@@ -139,6 +151,18 @@ def _sources(graph_id: str, path: Path) -> None:
     """Print the space-separated list of sources for GRAPH_ID."""
     try:
         click.echo(" ".join(resolve_sources(graph_id, path)))
+    except GraphConfigError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command("all-sources")
+@click.option("--path", type=click.Path(path_type=Path), default=DEFAULT_GRAPHS_YAML,
+              help="Path to graphs.yaml")
+def _all_sources(path: Path) -> None:
+    """Print the space-separated union of sources across every declared graph."""
+    try:
+        click.echo(" ".join(resolve_all_sources(path)))
     except GraphConfigError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
