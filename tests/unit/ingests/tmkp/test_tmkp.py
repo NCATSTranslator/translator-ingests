@@ -8,10 +8,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    CorrelatedGeneToDiseaseAssociation,
     GeneToDiseaseAssociation,
     GeneToGeneAssociation,
-    GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
@@ -540,7 +538,7 @@ class TestTransformTmkpEdge:
 
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 1
-        assert isinstance(associations[0], GeneRegulatesGeneAssociation)
+        assert isinstance(associations[0], GeneToGeneAssociation)
         assert associations[0].predicate == "biolink:affects"
         assert associations[0].qualified_predicate == "biolink:causes"
         assert associations[0].object_aspect_qualifier == "activity_or_abundance"
@@ -565,7 +563,7 @@ class TestTransformTmkpEdge:
                     "subject": "HGNC:11477",
                     "predicate": "biolink:associated_with",
                     "object": "MONDO:0005148",
-                    "relation": "biolink:CorrelatedGeneToDiseaseAssociation",
+                    "relation": "biolink:GeneToDiseaseAssociation",
                 },
                 GeneToDiseaseAssociation,
             ),
@@ -651,8 +649,7 @@ class TestTransformTmkpEdge:
     def test_gene_disease_contributes_to_gets_epc_pattern(self):
         """Gene-disease 'contributes_to' is transformed to canonical EPC pattern.
 
-        Primary predicate becomes 'positively_correlates_with',
-        qualified_predicate becomes 'contributes_to',
+        Primary predicate becomes 'affects', qualified_predicate becomes 'contributes_to',
         and subject_form_or_variant_qualifier is set to 'modified_form'.
         """
         record = {
@@ -667,8 +664,8 @@ class TestTransformTmkpEdge:
         assert len(associations) == 1
 
         assoc = associations[0]
-        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:positively_correlated_with"
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == MODIFIED_FORM
 
@@ -692,8 +689,8 @@ class TestTransformTmkpEdge:
         assert len(associations) == 1
 
         assoc = associations[0]
-        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:positively_correlated_with"
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
 
@@ -722,21 +719,20 @@ class TestTransformTmkpEdge:
             "object": "MONDO:0008315",
             "relation": "biolink:GeneToDiseaseAssociation",
         }
-
         items = _run_edge_transform(record)
 
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 1
 
         assoc = associations[0]
-        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:positively_correlated_with"
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
         assert not hasattr(assoc, "qualified_predicate") or assoc.qualified_predicate is None
 
     def test_gene_disease_pre_qualified_preserves_subject_form_or_variant_qualifier(self):
-        """Source edges with predicate == affects + qp == contributes_to + sfvq pass through sfvq.
+        """Source edges with predicate=affects + qp=contributes_to + sfvq pass through sfvq.
 
-        Reproduces a bug where 13,135 source edges arrived with all three fields set,
+        Reproduces a bug where 13,135 source edges arrived with all three fields set
         but subject_form_or_variant_qualifier was silently dropped.
         """
         record = {
@@ -753,13 +749,13 @@ class TestTransformTmkpEdge:
         assert len(associations) == 1
 
         assoc = associations[0]
-        assert isinstance(assoc, CorrelatedGeneToDiseaseAssociation)
-        assert assoc.predicate == "biolink:positively_correlated_with"
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
 
     def test_chemical_gene_anatomical_context_qualifier_passthrough(self):
-        """anatomical_context_qualifier from the source passes through to ChemicalAffectsGeneAssociation."""
+        """anatomical_context_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
         record = {
             "subject": "DRUGBANK:DB01248",
             "predicate": "biolink:affects",
