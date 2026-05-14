@@ -1,3 +1,9 @@
+"""
+STRING data ingest. Possible sources of code inspiration:
+   * https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
+   * https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
+"""
+
 import koza
 import pandas as pd
 from typing import Any, Iterable
