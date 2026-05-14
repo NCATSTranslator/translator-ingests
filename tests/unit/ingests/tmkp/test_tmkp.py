@@ -8,8 +8,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    CorrelatedGeneToDiseaseAssociation,
     GeneToDiseaseAssociation,
     GeneToGeneAssociation,
+    GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
@@ -538,7 +540,7 @@ class TestTransformTmkpEdge:
 
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 1
-        assert isinstance(associations[0], GeneToGeneAssociation)
+        assert isinstance(associations[0], GeneRegulatesGeneAssociation)
         assert associations[0].predicate == "biolink:affects"
         assert associations[0].qualified_predicate == "biolink:causes"
         assert associations[0].object_aspect_qualifier == "activity_or_abundance"
@@ -563,7 +565,7 @@ class TestTransformTmkpEdge:
                     "subject": "HGNC:11477",
                     "predicate": "biolink:associated_with",
                     "object": "MONDO:0005148",
-                    "relation": "biolink:GeneToDiseaseAssociation",
+                    "relation": "biolink:CorrelatedGeneToDiseaseAssociation",
                 },
                 GeneToDiseaseAssociation,
             ),
