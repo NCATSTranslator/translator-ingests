@@ -67,6 +67,24 @@ BTE_EXCLUDED_ORIGINAL_PREDICATES: frozenset[str] = frozenset({
     "lower_than",
 })
 
+# Qualifier aspects that semantically require both endpoints to be activity-
+# or abundance-bearing entities (i.e., Gene, Protein, or ChemicalEntity).
+# Tied to NCATSTranslator/Feedback#1213: KG2 emits chemical -> phenotype/
+# disease/anatomy edges qualified as "causes activity_or_abundance increased",
+# which Aragorn then chains on to produce nonsensical "X has increased
+# activity caused by Y" inferences.
+ACTIVITY_LIKE_ASPECTS: frozenset[str] = frozenset({
+    "activity",
+    "activity_or_abundance",
+    "abundance",
+})
+
+_ACTIVITY_BEARING_CLASSES: frozenset[type[NamedThing]] = frozenset({
+    Gene,
+    Protein,
+    ChemicalEntity,
+})
+
 
 def get_latest_version() -> str:
     """Return the current SemMedDB ingest version identifier."""
@@ -98,6 +116,39 @@ def _is_disease(curie: str) -> bool:
 def _is_phenotypic_feature(curie: str) -> bool:
     """Check whether a CURIE maps to PhenotypicFeature."""
     return _get_node_class(curie) is PhenotypicFeature
+
+
+def _aspect_target_is_valid(
+    subject_id: str,
+    object_id: str,
+    aspect: str | None,
+) -> bool:
+    """Return True if the qualifier aspect is semantically applicable to both endpoints.
+
+    Activity-like aspects (see ``ACTIVITY_LIKE_ASPECTS``) require both subject
+    and object to be Gene, Protein, or ChemicalEntity. Other aspect values
+    (or no aspect) are unconstrained here.
+
+    Per NCATSTranslator/Feedback#1213, KG2 emits some chemical -> non-activity-
+    bearing edges with activity qualifiers (e.g., glucose -> "injury"). Those
+    qualifiers must be stripped so downstream rules cannot treat them as
+    measurable activity changes.
+
+    >>> _aspect_target_is_valid("CHEBI:1", "NCBIGene:1", "activity")
+    True
+    >>> _aspect_target_is_valid("CHEBI:1", "UMLS:C0012345", "activity_or_abundance")
+    False
+    >>> _aspect_target_is_valid("CHEBI:1", "MONDO:1", "activity")
+    False
+    >>> _aspect_target_is_valid("CHEBI:1", "MONDO:1", None)
+    True
+    """
+    if aspect not in ACTIVITY_LIKE_ASPECTS:
+        return True
+    return (
+        _get_node_class(subject_id) in _ACTIVITY_BEARING_CLASSES
+        and _get_node_class(object_id) in _ACTIVITY_BEARING_CLASSES
+    )
 
 
 def _has_bte_excluded_predicate(kg2_ids: list[str]) -> bool:
@@ -244,6 +295,7 @@ _STATE_DEFAULTS: dict[str, int] = {
     "low_publication_count_skipped": 0,
     "bte_excluded_predicate_skipped": 0,
     "publications_capped": 0,
+    "qualifier_stripped_invalid_domain_range": 0,
 }
 
 
@@ -275,6 +327,11 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
         ("low_publication_count_skipped", "Low publication count skipped", "INFO"),
         ("bte_excluded_predicate_skipped", "BTE-excluded predicate skipped", "INFO"),
         ("publications_capped", "Publications capped to top-N by score+recency", "INFO"),
+        (
+            "qualifier_stripped_invalid_domain_range",
+            "Qualifier stripped (aspect/endpoint mismatch, see Feedback#1213)",
+            "INFO",
+        ),
     ]
     for key, label, level in _warn_if:
         if s[key] > 0:
@@ -350,16 +407,28 @@ def _build_association(
     subject_id: str,
     object_id: str,
     predicate: str,
+    state: dict[str, Any],
 ) -> Association:
-    """Route to the correct Association subclass and attach qualifiers."""
-    # KG2 field -> Biolink field mapping for qualifiers
+    """Route to the correct Association subclass and attach qualifiers.
+
+    For qualifier triples expressing activity- or abundance-like semantics
+    (``aspect in ACTIVITY_LIKE_ASPECTS``), Biolink-style domain/range applies:
+    both subject and object must be Gene, Protein, or ChemicalEntity. When the
+    check fails, qualifiers are stripped and the edge is emitted as a plain
+    ``biolink:affects`` Association (literature evidence is preserved). See
+    NCATSTranslator/Feedback#1213.
+    """
     qualified_predicate: str | None = record.get("qualified_predicate")
 
     if qualified_predicate:
+        aspect = record.get("qualified_object_aspect")
+        if not _aspect_target_is_valid(subject_id, object_id, aspect):
+            state["qualifier_stripped_invalid_domain_range"] += 1
+            return Association(**association_kwargs)
+
         qualifier_kwargs: dict[str, Any] = {
             "qualified_predicate": qualified_predicate,
         }
-        aspect = record.get("qualified_object_aspect")
         if aspect is not None:
             qualifier_kwargs["object_aspect_qualifier"] = aspect
         direction = record.get("qualified_object_direction")
@@ -449,7 +518,7 @@ def transform_semmeddb_edge(
         koza.state["edges_with_qualifiers"] += 1
 
     association = _build_association(
-        association_kwargs, record, subject_id, object_id, predicate,
+        association_kwargs, record, subject_id, object_id, predicate, koza.state,
     )
 
     supporting_studies = _extract_supporting_studies(publications_info)
