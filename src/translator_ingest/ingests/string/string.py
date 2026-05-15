@@ -9,40 +9,41 @@ import pandas as pd
 from typing import Any, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    ChemicalEntity,
-    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    Disease,
-    NamedThing,
+    PairwiseGeneToGeneInteraction,
+    Gene,
     KnowledgeLevelEnum,
     AgentTypeEnum,
-    Association,
 )
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
-from translator_ingest.util.biolink import INFORES_CTD
+from translator_ingest.util.biolink import INFORES_STRING
 
-# !!! README First !!!
-#
-# This module provides a template with example code and instructions for implementing an ingest. Replace the body
-# of function examples below with ingest specific code and delete all template comments or unused functions.
-#
-# Note about ingest tags: for the ingests with multiple different input files and/or different transformation processes,
-# ingests can be divided into multiple sections using tags. Examples from this template are "ingest_by_record",
-# "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
-# yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
+# Mapping of STRING evidence type score fields to ECO codes
+EVIDENCE_CODE_MAPPINGS = {
+    "neighborhood": "ECO:0000044",
+    "fusion": "ECO:0000124",
+    "cooccurence": "ECO:0000080",
+    "coexpression": "ECO:0000075",
+    "experimental": "ECO:0000006",
+    "database": "ECO:0007636",
+    "textmining": "ECO:0007833",
+}
 
-# It is good practice to generate the "sources" property for Associations (edges) just once if it will not vary from
-# edge to edge. You can use a constant like this, specific to your ingest, and apply it to edges (see usage below).
-# Here build_association_knowledge_sources is used, a helper function that properly instantiates "sources" with
-# RetrievalSource objects for simple use cases.
-INGEST_TEMPLATE_SOURCES = build_association_knowledge_sources(primary=INFORES_CTD)
 
-# Always implement a function that returns a string representing the latest version of the source data.
-# Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
-# If a source does not implement versioning, we need to do it. For static datasets, assign a version string
-# corresponding to the current version. For sources that are updated regularly, use file modification dates if
-# possible, or the current date. Versions should (ideally) be sortable (ie YYYY-MM-DD) and should contain no spaces.
+def map_evidence_codes(row: dict) -> list[str]:
+    eco_mappings: list[str] = list()
+    for evidence_type in EVIDENCE_CODE_MAPPINGS.keys():
+        if int(row[evidence_type]) > 0:
+            eco_mappings.append(EVIDENCE_CODE_MAPPINGS[evidence_type])
+    return eco_mappings
+
+
+def sorted_id_pair(row) -> str:
+    return tuple(sorted([row['protein1'], row['protein2']]))
+
+INGEST_TEMPLATE_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
+
 def get_latest_version() -> str:
     return "v1"
 
