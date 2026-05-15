@@ -140,6 +140,7 @@ def test_prepare_bindingdb_data(
     # an iterable sequence of records, where duplication in the
     # original assay records is removed, merging into a single edge...
     merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+    assert merged_records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
 
     for test_record in merged_records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
@@ -461,7 +462,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"Ki (nM)": ">2000000"}],
             0, 1,
-            "Ki=2000000 nM (2000 micromolar) far exceeds the 10,000 nM (10, micromolar) threshold"
+            "Ki=2000000 nM (2000 micromolar) far exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Kd (nM)": "0"}],
