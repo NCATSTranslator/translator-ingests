@@ -140,6 +140,7 @@ def test_prepare_bindingdb_data(
     # an iterable sequence of records, where duplication in the
     # original assay records is removed, merging into a single edge...
     merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+    assert merged_records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
 
     for test_record in merged_records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
@@ -181,7 +182,7 @@ def test_prepare_bindingdb_data(
 
         elif test_record[REACTANT_SET_ID] == 9:
             # Row 9 has Ki=90 (in range) and IC50=50000 
-            # (out of range for 1000 nM (1 micromolar) threshold);
+            # (out of range for 10,000 nM (10 micromolar) threshold);
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
             assert test_record["IC50 (nM)"] is None
@@ -446,7 +447,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"IC50 (nM)": "50000"}],
             0, 1,
-            "IC50=50000 nM (50 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
+            "IC50=50000 nM (50 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
@@ -461,7 +462,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
         (
             [{"Ki (nM)": ">2000000"}],
             0, 1,
-            "Ki=2000000 nM (2000 micromolar) far exceeds the 1000 nM (1 micromolar) threshold"
+            "Ki=2000000 nM (2000 micromolar) far exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Kd (nM)": "0"}],
@@ -469,10 +470,10 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
             "Kd=0 excluded by exclusive lower bound"
         ),
         (
-            [{"Kd (nM)": "1000"}, {"Kd (nM)": "2000"}],
+            [{"Kd (nM)": "1000"}, {"Kd (nM)": "11000"}],
             1, 1,
             "Kd=1000 nM (1 micromolar) at upper bound passes; "+
-            "Kd=2000 nM (2 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
+            "Kd=11000 nM (11 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
         ),
     ]
 )
