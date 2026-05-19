@@ -1,102 +1,151 @@
-name: Search Tool for the Retrieval of Interacting Genes/Proteins ("STRING")
+name: STRING Reference Ingest Guide
+
+# Information about the Source of the ingest
 source_info:
-  infores_id: infores:string
-  name: null
-  description: null
-  citations:
-  - null
-  terms_of_use_info:
-    terms_of_use_url: null
-    terms_of_use_description: null
-    license name: null
-    license url: null
-  data_access_locations:
-  - null
-  data_provision_mechanisms:
-  - null
-  data_formats:
-  - null
-  data_versioning_and_releases: null
-  additional_notes: null
+    infores_id: infores:string
+    description: >-
+      STRING (Search Tool for the Retrieval of Interacting Genes/Proteins) is a database of known and predicted
+      protein–protein interactions hosted by SIB / EMBL / CPR. STRING aggregates evidence from seven channels —
+      genomic neighborhood, gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, and text
+      mining — plus curated databases, and combines them into a single ``combined_score`` per interaction pair.
+    citations:
+      - Szklarczyk D, Kirsch R, Koutrouli M, et al. The STRING database in 2023. Nucleic Acids Res. 2023;51(D1):D638–D646. doi:10.1093/nar/gkac1000
+    terms_of_use: >-
+      STRING data is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0):
+      https://string-db.org/cgi/access.
+    data_access_locations:
+      - STRING downloads: https://stringdb-downloads.org/
+      - STRING main site: https://string-db.org/
+    data_provision_mechanisms:
+      - file_download
+      - web_interface
+      - web_service_api
+    data_formats:
+      - TSV (gzip), space-delimited
+    data_versioning_and_releases: >-
+      STRING uses dotted version numbers (currently v12.0). The version is published at
+      https://string-db.org/api/json/version and is embedded in download URLs (e.g. ``protein.links.v12.0/``).
+      ``get_latest_version()`` resolves the version dynamically from this endpoint.
+
+# Information about Ingested Content
 ingest_info:
-  ingest_categories:
-  - null
-  utility: null
-  scope: null
-  relevant_files:
-  - file_name: null
-    location: null
-    description: null
-  included_content:
-  - file_name: null
-    included_records: null
-    fields_used: null
-  filtered_content:
-  - file_name: null
-    filtered_records: null
-    rationale: null
-  future_considerations:
-  - category: null
-    consideration: null
-    relevant_files: null
-  additional_notes: null
+    ingest_categories:
+      - Primary Knowledge Provider
+    utility: >-
+      STRING provides a broad protein–protein interaction graph derived from multiple evidence channels. The combined
+      score reflects an aggregate confidence across these channels and supports Translator reasoning that benefits from
+      a generic "these proteins interact" signal between human proteins.
+    scope: >-
+      Human protein–protein interactions only. STRING protein identifiers are kept in their native ENSEMBL protein form
+      (no mapping to gene-level identifiers). All channel-level evidence is collapsed into a single edge per pair using
+      STRING's pre-computed ``combined_score``; per-channel subscores are not surfaced in this iteration. Future
+      iterations may extend to additional model organisms, STITCH protein–chemical interactions, and per-channel
+      predicate/qualifier modeling — see ``future_considerations`` below.
+    relevant_files:
+      - file_name: 9606.protein.links.v12.0.txt.gz
+        location: https://stringdb-downloads.org/download/protein.links.v12.0/
+        description: >-
+          Human protein–protein interaction file. Three space-delimited columns: protein1, protein2, combined_score.
+          One row per directed pair (each unordered pair appears twice).
+    included_content:
+      - file_name: 9606.protein.links.v12.0.txt.gz
+        included_records: >-
+          Rows where combined_score > 500 (STRING's medium-confidence cutoff). Symmetric duplicates (each unordered pair
+          appears in both p1→p2 and p2→p1 form) are deduplicated on the sorted-pair key so each pair is emitted once.
+        fields_used: >-
+          protein1, protein2 (parsed into ENSEMBL protein CURIEs after stripping the ``9606.`` taxon prefix),
+          combined_score (used only for the row-inclusion filter; not attached to the output edge).
+    filtered_content:
+      - file_name: 9606.protein.links.v12.0.txt.gz
+        filtered_records: >-
+          Rows with combined_score <= 500 are excluded.
+        rationale: >-
+          Below medium confidence, STRING's predictions are too noisy for Translator reasoning. Matches the default
+          confidence cutoff offered on the STRING web interface.
+      - file_name: 9606.protein.links.v12.0.txt.gz
+        filtered_records: >-
+          Symmetric duplicate rows (the second occurrence of any unordered protein pair).
+        rationale: >-
+          STRING lists each interaction in both directions. We emit one undirected edge per pair.
+    future_considerations:
+      - category: edge_content
+        consideration: >-
+          Extend to additional Translator-relevant organisms (mouse, rat, zebrafish, fly, worm, yeast) by ingesting the
+          corresponding per-taxon files from STRING.
+        relevant_files: "{taxon}.protein.links.v12.0.txt.gz"
+      - category: edge_property_content
+        consideration: >-
+          Switch to ``protein.links.detailed.v12.0.txt.gz`` (or ``protein.links.full.v12.0.txt.gz``) to surface the
+          per-channel subscores as edge properties: NEIGHBORHOOD, FUSION, COOCCURENCE, COEXPRESSION, EXPERIMENTS,
+          DATABASE, TEXTMINING (plus HOMOLOGY and the ``*_transferred`` orthology-projected variants in the ``full``
+          file). This enables downstream filtering by evidence type without requiring re-ingestion.
+        relevant_files: 9606.protein.links.detailed.v12.0.txt.gz, 9606.protein.links.full.v12.0.txt.gz
+      - category: predicate_mapping
+        consideration: >-
+          Once per-channel subscores are surfaced, consider emitting channel-specific predicates such as
+          ``biolink:coexpressed_with`` (COEXPRESSION-dominant), ``biolink:homologous_to`` (HOMOLOGY), and the generic
+          ``biolink:related_to`` (text-mined / phylogenetic-only) — matching the predicate vocabulary used by RENCI's
+          Automat STRING-DB knowledge provider.
+        relevant_files: 9606.protein.links.full.v12.0.txt.gz
+      - category: edge_content
+        consideration: >-
+          Ingest STITCH (``{taxon}.protein_chemical.links.v5.0.tsv.gz``) to add protein–chemical interactions, mapping
+          STITCH ``CIDm``/``CIDs`` identifiers to ``PUBCHEM.COMPOUND`` CURIEs.
+        relevant_files: "{taxon}.protein_chemical.links.v5.0.tsv.gz"
+      - category: node_content
+        consideration: >-
+          Ingest ``protein.aliases.v12.0.txt.gz`` to populate node ``name`` and ``synonym`` properties. Currently nodes
+          carry only the ENSEMBL ID as their name.
+        relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
+    additional_notes: >-
+      This is a deliberately reduced first iteration: human-only, single predicate, no subscores, no STITCH. The
+      ``future_considerations`` section lists the principal axes along which the ingest is expected to grow. Each
+      extension is independent and can be added without revisiting the core transform.
+
+# Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:string
-  edge_type_info:
-  - subject:
-    - biolink:Protein
-    predicates:
-    - biolink:subclass_of
-    object:
-    - biolink:Protein
-    - biolink:ChemicalEntity
-    knowledge_level:
-    - not_provided
-    agent_type:
-    - not_provided
-  - subject:
-    - biolink:Protein
-    predicates:
-    - biolink:related_to
-    object:
-    - biolink:Protein
-    qualifiers:
-    - property: species_context_qualifier
-      value_enumeration:
-      - NCBITaxon:9606
-    knowledge_level:
-    - not_provided
-    agent_type:
-    - not_provided
-    edge_properties:
-    - biolink:Attribute
-  node_type_info:
-  - node_category: biolink:Protein
-    source_identifier_types:
-    - ENSEMBL
-    - UniProtKB
-    - PR
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
-  - node_category: biolink:ChemicalEntity
-    source_identifier_types:
-    - CHEBI
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
-  future_considerations:
-  - category: null
-    consideration: null
-  additional_notes: null
+    infores_id: infores:string
+    edge_type_info:
+      - subject_categories:
+          - biolink:Protein
+        predicates:
+          - biolink:physically_interacts_with
+        object_categories:
+          - biolink:Protein
+        qualifiers:
+          - property: species_context_qualifier
+            value_enumeration:
+              - NCBITaxon:9606
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - not_provided
+        primary_knowledge_sources:
+          - infores:string
+        ui_explanation: >-
+          STRING aggregates evidence from seven channels into a single ``combined_score`` per protein pair. An edge with
+          this predicate is emitted for any human protein pair whose combined_score exceeds 500. The specific channel(s)
+          contributing to the score are not currently surfaced on the edge — see ``future_considerations`` for the
+          per-channel modeling roadmap.
+        source_files:
+          - 9606.protein.links.v12.0.txt.gz
+
+    node_type_info:
+      - node_category: biolink:Protein
+        source_identifier_types: ensembl
+        additional_notes: >-
+          Protein nodes use STRING's native identifiers, which are ENSEMBL protein IDs (e.g. ENSP00000000233). The
+          leading ``9606.`` taxon prefix is stripped and the result is prefixed with ``ENSEMBL:``. Each node carries
+          ``in_taxon = NCBITaxon:9606``.
+
+# Information about how the ingest was specified and performed
 provenance_info:
-  contributions:
-  - "Kenneth Huellas-Bruskiewicz - code author"
-  - "Richard Bruskiewich - data modeling, code co-author"
-  artifacts:
-  - "Ingest Survey (https://docs.google.com/spreadsheets/d/13Q4uJ90UFCXyXZMuhgtm1nREGtIIMsfDEgb4jpkgRIA/edit?gid=0#gid=0)"
-  - "Ingest Ticket (https://github.com/NCATSTranslator/translator-ingests/issues/377)"
-
-
+    contributions:
+      - Kenneth Huellas-Bruskiewicz: ingest owner, code author
+      - Richard Bruskiewich: data modeling, code co-author
+    artifacts:
+      - Ingest Survey: https://docs.google.com/spreadsheets/d/13Q4uJ90UFCXyXZMuhgtm1nREGtIIMsfDEgb4jpkgRIA/edit?gid=0#gid=0
+      - Ingest Ticket: https://github.com/NCATSTranslator/translator-ingests/issues/377
+      - Monarch STRING reference: https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
+      - ORION STRING reference: https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
+      - Automat STRING-DB knowledge provider (RENCI): https://automat.renci.org/string-db/
