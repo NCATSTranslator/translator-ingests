@@ -12,8 +12,19 @@ from translator_ingest.ingests._ingest_template._ingest_template import (
     on_begin_ingest_by_record,
     transform_ingest_by_record,
 )
+from translator_ingest.ingests.string.string import get_latest_version
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
+
+
+# Network-dependent: hits https://string-db.org/api/json/version.
+# Skipped to keep CI hermetic, matching the convention in test_panther.py.
+@pytest.mark.skip(reason="hits string-db.org; run manually to verify the version endpoint")
+def test_get_latest_version_live():
+    version = get_latest_version()
+    assert version.startswith("v")
+    major, _, minor = version[1:].partition(".")
+    assert major.isdigit() and minor.isdigit()
 
 
 @pytest.fixture(scope="package")
