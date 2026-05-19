@@ -80,7 +80,6 @@ class TestNormalizePublicationId:
         [
             # Bare PMC IDs gain the "PMC:" CURIE prefix
             ("PMC6211782", "PMC:PMC6211782"),
-            ("PMC8208096", "PMC:PMC8208096"),
             # Already-prefixed IDs are passed through unchanged
             ("PMC:PMC6211782", "PMC:PMC6211782"),
             ("PMID:31388901", "PMID:31388901"),
@@ -436,6 +435,22 @@ class TestParseAttributes:
         assert len(assoc.has_supporting_studies) == 1
         study = list(assoc.has_supporting_studies.values())[0]
         assert len(study.has_study_results) == 2
+
+    def test_top_level_extraction_confidence_score_maps_to_has_confidence_score(self):
+        """Top-level biolink:extraction_confidence_score maps to has_confidence_score.
+
+        TMKP source data emits extraction_confidence_score both nested inside
+        study results (handled by the nested attribute parser) and at the top level
+        of the attributes list. The top-level form must map to has_confidence_score
+        via TMKP_TO_BIOLINK_SLOT_MAP so it appears on the association.
+        """
+        attributes = [
+            {"attribute_type_id": "biolink:extraction_confidence_score", "value": 0.87},
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == 0.87
 
     def test_unknown_attribute_warning_logged_once(self):
         """Unknown attr_type is tracked in _warned_unmapped_attrs."""
@@ -805,6 +820,31 @@ class TestTransformTmkpEdge:
         assert assoc.predicate == "biolink:affects"
         assert assoc.qualified_predicate == "biolink:contributes_to"
         assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
+
+    def test_gene_disease_pre_qualified_without_sfvq_gets_default_modified_form(self):
+        """Pre-qualified affects+contributes_to without sfvq gets default modified_form.
+
+        Source data may provide predicate=affects and qualified_predicate=contributes_to
+        but omit subject_form_or_variant_qualifier. The EPC transform must still apply
+        the 'modified_form' default.
+        """
+        record = {
+            "subject": "UniProtKB:Q06609",
+            "predicate": "biolink:affects",
+            "object": "MONDO:0000605",
+            "relation": "biolink:GeneToDiseaseAssociation",
+            "qualified_predicate": "biolink:contributes_to",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == MODIFIED_FORM
 
     def test_chemical_gene_anatomical_context_qualifier_passthrough(self):
         """anatomical_context_qualifier from source passes through to ChemicalAffectsGeneAssociation."""

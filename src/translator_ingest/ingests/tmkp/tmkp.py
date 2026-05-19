@@ -65,6 +65,7 @@ TMKP_TO_BIOLINK_SLOT_MAP = {
     "supporting_publications": "publications",
     "supporting_document": "publications",
     "tmkp_confidence_score": "has_confidence_score",
+    "extraction_confidence_score": "has_confidence_score",
     "semmed_agreement_count": "semmed_agreement_count",  # TMKP-specific, no Biolink equivalent
 }
 
@@ -459,7 +460,14 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
     # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
     # by the source data (which may provide e.g. 'loss_of_function_variant_form').
-    if assoc_class == GeneToDiseaseAssociation and predicate == "biolink:contributes_to":
+    # This handles two source shapes:
+    #   1. predicate=contributes_to (needs full EPC transform)
+    #   2. predicate=affects + qualified_predicate=contributes_to (pre-qualified, needs default sfvq)
+    if assoc_class == GeneToDiseaseAssociation and (
+        predicate == "biolink:contributes_to"
+        or (predicate == "biolink:affects"
+            and assoc_kwargs.get("qualified_predicate") == "biolink:contributes_to")
+    ):
         assoc_kwargs["predicate"] = "biolink:affects"
         assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
