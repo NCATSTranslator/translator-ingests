@@ -1,13 +1,30 @@
-"""Unit tests for STRING ingest pure helpers."""
+"""Unit tests for STRING ingest helpers and transform."""
 
 import pytest
+
+import koza
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
+    KnowledgeLevelEnum,
+)
+
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.string.string import (
     get_latest_version,
     parse_string_protein_id,
     passes_combined_score,
     sorted_pair_key,
+    transform_record,
 )
+
+
+@pytest.fixture
+def mock_koza() -> koza.KozaTransform:
+    """Fresh MockKozaTransform with empty state for each test."""
+    mk = MockKozaTransform(extra_fields={}, writer=MockKozaWriter(), mappings={})
+    mk.state = {}
+    return mk
 
 
 @pytest.mark.parametrize(
@@ -100,3 +117,84 @@ def test_get_latest_version_live():
     assert version.startswith("v")
     major, _, minor = version[1:].partition(".")
     assert major.isdigit() and minor.isdigit()
+
+
+# Realistic ENSP IDs sampled from RENCI's Automat STRING graph (human, v12.0).
+P1 = "9606.ENSP00000478725"
+P2 = "9606.ENSP00000478289"
+P3 = "9606.ENSP00000481152"
+
+
+def test_transform_emits_protein_pair_above_threshold(mock_koza):
+    result = transform_record(
+        mock_koza,
+        {"protein1": P1, "protein2": P2, "combined_score": "540"},
+    )
+    assert result is not None
+    assert len(result.nodes) == 2
+    assert len(result.edges) == 1
+
+    node_ids = {n.id for n in result.nodes}
+    assert node_ids == {"ENSEMBL:ENSP00000478725", "ENSEMBL:ENSP00000478289"}
+    for node in result.nodes:
+        assert node.category == ["biolink:Protein"]
+        assert node.in_taxon == ["NCBITaxon:9606"]
+
+    edge = result.edges[0]
+    assert edge.subject == "ENSEMBL:ENSP00000478725"
+    assert edge.object == "ENSEMBL:ENSP00000478289"
+    assert edge.predicate == "biolink:physically_interacts_with"
+    assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+    assert edge.agent_type == AgentTypeEnum.not_provided
+    # Sources is built via build_association_knowledge_sources(primary=INFORES_STRING)
+    primary = next(
+        s for s in edge.sources if s.resource_role == "primary_knowledge_source"
+    )
+    assert primary.resource_id == "infores:string"
+
+
+@pytest.mark.parametrize("score", ["500", "499", "0"])
+def test_transform_drops_rows_at_or_below_threshold(mock_koza, score):
+    result = transform_record(
+        mock_koza,
+        {"protein1": P1, "protein2": P2, "combined_score": score},
+    )
+    assert result is None
+
+
+def test_transform_dedupes_symmetric_duplicate(mock_koza):
+    """STRING lists each pair twice (p1→p2 and p2→p1). Emit only once."""
+    first = transform_record(
+        mock_koza,
+        {"protein1": P1, "protein2": P2, "combined_score": "952"},
+    )
+    second = transform_record(
+        mock_koza,
+        {"protein1": P2, "protein2": P1, "combined_score": "952"},
+    )
+    assert first is not None
+    assert second is None
+
+
+def test_transform_keeps_distinct_pairs(mock_koza):
+    """Dedup is per-pair, not global."""
+    first = transform_record(
+        mock_koza,
+        {"protein1": P1, "protein2": P2, "combined_score": "952"},
+    )
+    second = transform_record(
+        mock_koza,
+        {"protein1": P1, "protein2": P3, "combined_score": "952"},
+    )
+    assert first is not None
+    assert second is not None
+    assert first.edges[0].subject != second.edges[0].object or first.edges[0].object != second.edges[0].subject
+
+
+def test_transform_rejects_non_human_taxon(mock_koza):
+    """A non-9606-prefixed protein ID should raise — defensive check."""
+    with pytest.raises(ValueError, match="Expected STRING ID prefixed"):
+        transform_record(
+            mock_koza,
+            {"protein1": "10090.ENSMUSP00000000001", "protein2": P2, "combined_score": "952"},
+        )

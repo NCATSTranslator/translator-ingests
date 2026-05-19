@@ -10,12 +10,23 @@ Reference implementations consulted:
   * RENCI Automat production graph: https://automat.renci.org/string-db/
 """
 
+from typing import Any
+
+import koza
 import requests
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
+    KnowledgeLevelEnum,
+    PairwiseMolecularInteraction,
+    Protein,
+)
+from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.biolink import (
     INFORES_STRING,
     build_association_knowledge_sources,
 )
+from translator_ingest.util.transform_utils import entity_id
 
 STRING_VERSION_API_URL = "https://string-db.org/api/json/version"
 
@@ -102,3 +113,50 @@ def sorted_pair_key(p1: str, p2: str) -> tuple[str, str]:
     ('ENSEMBL:A', 'ENSEMBL:B')
     """
     return tuple(sorted([p1, p2]))
+
+
+@koza.transform_record()
+def transform_record(
+    koza_transform: koza.KozaTransform, record: dict[str, Any]
+) -> KnowledgeGraph | None:
+    """
+    Transform one row of STRING's ``protein.links`` file into two ``Protein`` nodes
+    and one ``physically_interacts_with`` edge.
+
+    Rows with ``combined_score`` at or below ``COMBINED_SCORE_THRESHOLD`` are
+    dropped. Each unordered pair is emitted at most once: STRING lists ``p1 p2``
+    and ``p2 p1`` as separate rows, and the second occurrence is suppressed via
+    a ``seen_pairs`` set on ``koza_transform.state``.
+    """
+    if not passes_combined_score(record["combined_score"]):
+        return None
+
+    subject_id = parse_string_protein_id(record["protein1"])
+    object_id = parse_string_protein_id(record["protein2"])
+
+    seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
+    key = sorted_pair_key(subject_id, object_id)
+    if key in seen_pairs:
+        return None
+    seen_pairs.add(key)
+
+    subject_node = Protein(
+        id=subject_id,
+        category=["biolink:Protein"],
+        in_taxon=[HUMAN_TAXON_CURIE],
+    )
+    object_node = Protein(
+        id=object_id,
+        category=["biolink:Protein"],
+        in_taxon=[HUMAN_TAXON_CURIE],
+    )
+    edge = PairwiseMolecularInteraction(
+        id=entity_id(),
+        subject=subject_id,
+        predicate="biolink:physically_interacts_with",
+        object=object_id,
+        sources=STRING_SOURCES,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.not_provided,
+    )
+    return KnowledgeGraph(nodes=[subject_node, object_node], edges=[edge])
