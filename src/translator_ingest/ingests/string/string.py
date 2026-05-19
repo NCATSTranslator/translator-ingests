@@ -1,36 +1,31 @@
 """
-STRING data ingest. Possible sources of code inspiration:
-   * https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
-   * https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
+STRING protein–protein interaction ingest (human-only, first iteration).
+
+Scope, rationale, and the design alternatives we considered are documented in
+[CHANGELOG.md](./CHANGELOG.md) and [string_rig.yaml](./string_rig.yaml).
+
+Reference implementations consulted:
+  * https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
+  * https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
+  * RENCI Automat production graph: https://automat.renci.org/string-db/
 """
 
-import koza
-import pandas as pd
 import requests
-from typing import Any, Iterable
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    PairwiseGeneToGeneInteraction,
-    Gene,
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
+from translator_ingest.util.biolink import (
+    INFORES_STRING,
+    build_association_knowledge_sources,
 )
-from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.biolink import build_association_knowledge_sources
-from translator_ingest.util.transform_utils import entity_id
-from translator_ingest.util.biolink import INFORES_STRING
 
 STRING_VERSION_API_URL = "https://string-db.org/api/json/version"
 
-# !!! README First !!!
-#
-# This module provides a template with example code and instructions for implementing an ingest. Replace the body
-# of function examples below with ingest specific code and delete all template comments or unused functions.
-#
-# Note about ingest tags: for the ingests with multiple different input files and/or different transformation processes,
-# ingests can be divided into multiple sections using tags. Examples from this template are "ingest_by_record",
-# "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
-# yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
+HUMAN_TAXON_PREFIX = "9606"
+HUMAN_TAXON_CURIE = "NCBITaxon:9606"
+
+# STRING's medium-confidence cutoff; matches the default offered on the STRING web UI.
+COMBINED_SCORE_THRESHOLD = 500
+
+STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
 
 
 def get_latest_version() -> str:
@@ -40,7 +35,7 @@ def get_latest_version() -> str:
     STRING exposes a JSON version endpoint that returns
     ``[{"string_version": "12.0", "stable_address": "https://version-12-0.string-db.org"}]``.
     The ``v`` prefix is added to match the convention used in STRING's download URLs
-    (e.g. ``protein.links.full.v12.0/``).
+    (e.g. ``protein.links.v12.0/``).
 
     >>> v = get_latest_version()
     >>> v.startswith("v") and "." in v
@@ -48,133 +43,62 @@ def get_latest_version() -> str:
     """
     response = requests.get(STRING_VERSION_API_URL, timeout=30)
     response.raise_for_status()
-    payload = response.json()
-    return f"v{payload[0]['string_version']}"
+    return f"v{response.json()[0]['string_version']}"
 
 
-# Functions decorated with @koza.on_data_begin() or @koza.on_data_end() are optional.
-# If implemented they will be called at the beginning and/or end of the transform process.
-@koza.on_data_begin(tag="ingest_by_record")
-def on_begin_ingest_by_record(koza: koza.KozaTransform) -> None:
-    # koza.state is a dictionary that can be used for arbitrary data storage, persisting across an individual transform.
-    koza.state["example_counter"] = 0
+def parse_string_protein_id(string_id: str, taxon_prefix: str = HUMAN_TAXON_PREFIX) -> str:
+    """
+    Convert a STRING-prefixed protein identifier into an ENSEMBL CURIE.
 
-    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
-    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
-    koza.transform_metadata["ingest_by_record"] = {"rows_missing_publications": 0}
+    STRING ships protein IDs as ``{taxid}.{ENSEMBL_protein_id}`` (e.g.
+    ``9606.ENSP00000478725``). We strip the taxon prefix and emit a Biolink-style
+    ``ENSEMBL:`` CURIE.
 
-
-@koza.on_data_end(tag="ingest_by_record")
-def on_end_ingest_by_record(koza: koza.KozaTransform) -> None:
-    # for example koza.state could be used for logging
-    if koza.state["example_counter"] > 0:
-        koza.log(f"{koza.state['example_counter']} rows were discarded for having no publications.", level="INFO")
-        koza.transform_metadata["ingest_by_record"]["rows_missing_publications"] = koza.state["example_counter"]
-
-
-# Functions decorated with @koza.prepare_data() are optional. They are called after on_data_begin but before transform.
-# They take an Iterable of dictionaries, typically representing the rows of a source data file, and return an Iterable
-# of dictionaries which will be the data passed to subsequent transform functions. This allows for operations like
-# nontrivial merging or transforming of complex source data on a source wide level, even if the transform will occur
-# with a per record transform function.
-@koza.prepare_data(tag="ingest_by_record")
-def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-
-    # do pandas stuff
-    df = pd.DataFrame(data)
-    return df.dropna().drop_duplicates().to_dict(orient="records")
-
-    # do database stuff:
-    # import sqlite3
-    # con = sqlite3.connect("example.db")
-    # con.row_factory = sqlite3.Row
-    # cur = con.cursor()
-    # cur.execute("SELECT * FROM example_table")
-    # records = cursor.fetchall()
-    # for record in records:
-    #     yield record
-    # con.close()
-
-    # merge stuff in a custom way
-    # koza.state['nodes'] = defaultdict(dict)
-    # for record in data:
-    #    koza.state['nodes'][record['node_id']] # store some merged node properties or something like that
-
-
-# Ingests must implement a function decorated with @koza.transform() OR @koza.transform_record() (not both).
-# These functions should contain the core data transformation logic generating and returning KnowledgeGraph objects
-# with NamedThing (nodes) and Association (edges) from source data.
-#
-# The transform_record function takes the KozaTransform and a single record, a dictionary typically corresponding to a
-# row in a source data file, and returns a KnowledgeGraph with any number of nodes and/or edges.
-@koza.transform_record(tag="ingest_by_record")
-def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-
-    # here is an example of skipping a record based off of some condition
-    publications = [f"PMID:{p}" for p in record["PubMedIDs"].split("|")] if record["PubMedIDs"] else None
-    if not publications:
-        koza.log(f"No pubmed IDs found for {record['PubMedIDs']}")
-        koza.state["example_counter"] += 1
-        return None
-    else:
-        koza.log(f" pubmed IDs found for {record['PubMedIDs']}")
-
-    chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-    disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id=entity_id(),
-        subject=chemical.id,
-        predicate="biolink:related_to",
-        object=disease.id,
-        publications=publications,
-        sources=INGEST_TEMPLATE_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-    )
-    return KnowledgeGraph(nodes=[chemical, disease], edges=[association])
-
-
-# As an alternative to transform_record, functions decorated with @koza.transform() take a KozaTransform and an Iterable
-# of dictionaries, typically corresponding to all the rows in a source data file, and return an iterable of
-# KnowledgeGraph, each containing any number of nodes and/or edges. Any number of KnowledgeGraphs can be returned:
-# all at once, in batches, or using a generator for streaming.
-@koza.transform(tag="ingest_all")
-def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    nodes: list[NamedThing] = []
-    edges: list[Association] = []
-    for record in data:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=entity_id(),
-            subject=chemical.id,
-            predicate="biolink:related_to",
-            object=disease.id,
-            sources=INGEST_TEMPLATE_SOURCES,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
+    >>> parse_string_protein_id("9606.ENSP00000478725")
+    'ENSEMBL:ENSP00000478725'
+    >>> parse_string_protein_id("9606.ENSP00000000001", taxon_prefix="9606")
+    'ENSEMBL:ENSP00000000001'
+    """
+    prefix = f"{taxon_prefix}."
+    if not string_id.startswith(prefix):
+        raise ValueError(
+            f"Expected STRING ID prefixed with '{prefix}', got: {string_id!r}"
         )
-        nodes.append(chemical)
-        nodes.append(disease)
-        edges.append(association)
-    return [KnowledgeGraph(nodes=nodes, edges=edges)]
+    return f"ENSEMBL:{string_id[len(prefix):]}"
 
 
-# Here is an example using a generator to stream results
-@koza.transform(tag="ingest_all_streaming")
-def transform_ingest_all_streaming(
-    koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
-) -> Iterable[KnowledgeGraph]:
-    for record in data:
-        chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
-        disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
-        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=entity_id(),
-            subject=chemical.id,
-            predicate="biolink:related_to",
-            object=disease.id,
-            sources=INGEST_TEMPLATE_SOURCES,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
-        yield KnowledgeGraph(nodes=[chemical, disease], edges=[association])
+def passes_combined_score(
+    combined_score: str | int, threshold: int = COMBINED_SCORE_THRESHOLD
+) -> bool:
+    """
+    Whether a row's combined_score exceeds the inclusion threshold.
+
+    Uses strict greater-than (``>``), matching STRING's web-UI convention where
+    the slider value is the lower exclusive bound.
+
+    >>> passes_combined_score("540")
+    True
+    >>> passes_combined_score("500")
+    False
+    >>> passes_combined_score("499")
+    False
+    >>> passes_combined_score(999)
+    True
+    """
+    return int(combined_score) > threshold
+
+
+def sorted_pair_key(p1: str, p2: str) -> tuple[str, str]:
+    """
+    Order-independent key for deduping symmetric protein pairs.
+
+    STRING's ``protein.links`` file lists each unordered pair in both directions
+    (``p1 p2`` and ``p2 p1``). We emit one undirected edge per pair, so we need
+    a key that collapses the two rows together.
+
+    >>> sorted_pair_key("ENSEMBL:B", "ENSEMBL:A")
+    ('ENSEMBL:A', 'ENSEMBL:B')
+    >>> sorted_pair_key("ENSEMBL:A", "ENSEMBL:B")
+    ('ENSEMBL:A', 'ENSEMBL:B')
+    """
+    return tuple(sorted([p1, p2]))
