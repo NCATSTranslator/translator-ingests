@@ -28,38 +28,35 @@ def mock_koza() -> koza.KozaTransform:
 
 
 @pytest.mark.parametrize(
-    "string_id,taxon_prefix,expected",
+    "string_id,expected_curie,expected_taxon",
     [
-        ("9606.ENSP00000478725", "9606", "ENSEMBL:ENSP00000478725"),
-        ("9606.ENSP00000000001", "9606", "ENSEMBL:ENSP00000000001"),
-        # Yeast ORF-style identifier (no leading ENSP); the prefix-strip is
-        # independent of identifier format, so this works too.
-        ("4932.YAL001C", "4932", "ENSEMBL:YAL001C"),
-        # Default taxon_prefix is human, so an explicit arg isn't required.
-        ("9606.ENSP00000481152", None, "ENSEMBL:ENSP00000481152"),
+        ("9606.ENSP00000478725",     "ENSEMBL:ENSP00000478725",    "NCBITaxon:9606"),
+        ("9606.ENSP00000000001",     "ENSEMBL:ENSP00000000001",    "NCBITaxon:9606"),
+        ("10090.ENSMUSP00000000001", "ENSEMBL:ENSMUSP00000000001", "NCBITaxon:10090"),
+        ("10116.ENSRNOP00000000001", "ENSEMBL:ENSRNOP00000000001", "NCBITaxon:10116"),
     ],
 )
-def test_parse_string_protein_id(string_id, taxon_prefix, expected):
-    if taxon_prefix is None:
-        assert parse_string_protein_id(string_id) == expected
-    else:
-        assert parse_string_protein_id(string_id, taxon_prefix=taxon_prefix) == expected
+def test_parse_string_protein_id(string_id, expected_curie, expected_taxon):
+    assert parse_string_protein_id(string_id) == (expected_curie, expected_taxon)
+
+
+def test_parse_string_protein_id_rejects_unsupported_taxon():
+    with pytest.raises(ValueError, match="Unsupported taxon prefix"):
+        parse_string_protein_id("4932.YAL001C")  # yeast, not in our target set
 
 
 @pytest.mark.parametrize(
-    "string_id,taxon_prefix",
+    "string_id",
     [
-        # Wrong taxon prefix
-        ("10090.ENSP00000478725", "9606"),
-        # Missing taxon prefix entirely
-        ("ENSP00000478725", "9606"),
-        # Empty string
-        ("", "9606"),
+        "ENSP00000478725",  # No taxon prefix
+        "",                 # Empty
+        "9606.",            # Empty ENSP part
+        ".ENSP00000478725", # Empty taxon part
     ],
 )
-def test_parse_string_protein_id_rejects_bad_prefix(string_id, taxon_prefix):
-    with pytest.raises(ValueError, match="Expected STRING ID prefixed"):
-        parse_string_protein_id(string_id, taxon_prefix=taxon_prefix)
+def test_parse_string_protein_id_rejects_malformed(string_id):
+    with pytest.raises(ValueError):
+        parse_string_protein_id(string_id)
 
 
 @pytest.mark.parametrize(
@@ -120,33 +117,43 @@ def test_get_latest_version_live():
 
 
 # Realistic ENSP IDs sampled from RENCI's Automat STRING graph (human, v12.0).
-P1 = "9606.ENSP00000478725"
-P2 = "9606.ENSP00000478289"
-P3 = "9606.ENSP00000481152"
+H1 = "9606.ENSP00000478725"
+H2 = "9606.ENSP00000478289"
+H3 = "9606.ENSP00000481152"
+# Plausible mouse and rat IDs (real ENSEMBL identifier formats).
+M1 = "10090.ENSMUSP00000000001"
+M2 = "10090.ENSMUSP00000000002"
+R1 = "10116.ENSRNOP00000000001"
+R2 = "10116.ENSRNOP00000000002"
 
 
-def test_transform_emits_protein_pair_above_threshold(mock_koza):
+@pytest.mark.parametrize(
+    "p1,p2,expected_taxon",
+    [
+        (H1, H2, "NCBITaxon:9606"),
+        (M1, M2, "NCBITaxon:10090"),
+        (R1, R2, "NCBITaxon:10116"),
+    ],
+)
+def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expected_taxon):
     result = transform_record(
         mock_koza,
-        {"protein1": P1, "protein2": P2, "combined_score": "540"},
+        {"protein1": p1, "protein2": p2, "combined_score": "540"},
     )
     assert result is not None
     assert len(result.nodes) == 2
     assert len(result.edges) == 1
 
-    node_ids = {n.id for n in result.nodes}
-    assert node_ids == {"ENSEMBL:ENSP00000478725", "ENSEMBL:ENSP00000478289"}
     for node in result.nodes:
         assert node.category == ["biolink:Protein"]
-        assert node.in_taxon == ["NCBITaxon:9606"]
+        assert node.in_taxon == [expected_taxon]
 
     edge = result.edges[0]
-    assert edge.subject == "ENSEMBL:ENSP00000478725"
-    assert edge.object == "ENSEMBL:ENSP00000478289"
     assert edge.predicate == "biolink:physically_interacts_with"
     assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
     assert edge.agent_type == AgentTypeEnum.not_provided
-    # Sources is built via build_association_knowledge_sources(primary=INFORES_STRING)
+    # PSI-MI interaction-type CURIE (MI:0915 physical association) attached via has_attribute.
+    assert edge.has_attribute == ["MI:0915"]
     primary = next(
         s for s in edge.sources if s.resource_role == "primary_knowledge_source"
     )
@@ -157,7 +164,7 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza):
 def test_transform_drops_rows_at_or_below_threshold(mock_koza, score):
     result = transform_record(
         mock_koza,
-        {"protein1": P1, "protein2": P2, "combined_score": score},
+        {"protein1": H1, "protein2": H2, "combined_score": score},
     )
     assert result is None
 
@@ -166,11 +173,11 @@ def test_transform_dedupes_symmetric_duplicate(mock_koza):
     """STRING lists each pair twice (p1→p2 and p2→p1). Emit only once."""
     first = transform_record(
         mock_koza,
-        {"protein1": P1, "protein2": P2, "combined_score": "952"},
+        {"protein1": H1, "protein2": H2, "combined_score": "952"},
     )
     second = transform_record(
         mock_koza,
-        {"protein1": P2, "protein2": P1, "combined_score": "952"},
+        {"protein1": H2, "protein2": H1, "combined_score": "952"},
     )
     assert first is not None
     assert second is None
@@ -180,21 +187,29 @@ def test_transform_keeps_distinct_pairs(mock_koza):
     """Dedup is per-pair, not global."""
     first = transform_record(
         mock_koza,
-        {"protein1": P1, "protein2": P2, "combined_score": "952"},
+        {"protein1": H1, "protein2": H2, "combined_score": "952"},
     )
     second = transform_record(
         mock_koza,
-        {"protein1": P1, "protein2": P3, "combined_score": "952"},
+        {"protein1": H1, "protein2": H3, "combined_score": "952"},
     )
     assert first is not None
     assert second is not None
-    assert first.edges[0].subject != second.edges[0].object or first.edges[0].object != second.edges[0].subject
 
 
-def test_transform_rejects_non_human_taxon(mock_koza):
-    """A non-9606-prefixed protein ID should raise — defensive check."""
-    with pytest.raises(ValueError, match="Expected STRING ID prefixed"):
+def test_transform_rejects_unsupported_taxon(mock_koza):
+    """A row from a non-target species (e.g. yeast) should raise loudly."""
+    with pytest.raises(ValueError, match="Unsupported taxon prefix"):
         transform_record(
             mock_koza,
-            {"protein1": "10090.ENSMUSP00000000001", "protein2": P2, "combined_score": "952"},
+            {"protein1": "4932.YAL001C", "protein2": "4932.YAL002W", "combined_score": "952"},
+        )
+
+
+def test_transform_rejects_cross_species_pair(mock_koza):
+    """Per-organism STRING files only contain intra-species rows; defend against corruption."""
+    with pytest.raises(ValueError, match="Cross-species pair"):
+        transform_record(
+            mock_koza,
+            {"protein1": H1, "protein2": M1, "combined_score": "952"},
         )

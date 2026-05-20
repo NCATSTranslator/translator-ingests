@@ -1,5 +1,5 @@
 """
-STRING protein–protein interaction ingest (human-only, first iteration).
+STRING protein–protein interaction ingest (human, mouse, rat).
 
 Scope, rationale, and the design alternatives we considered are documented in
 [CHANGELOG.md](./CHANGELOG.md) and [string_rig.yaml](./string_rig.yaml).
@@ -30,11 +30,23 @@ from translator_ingest.util.transform_utils import entity_id
 
 STRING_VERSION_API_URL = "https://string-db.org/api/json/version"
 
-HUMAN_TAXON_PREFIX = "9606"
-HUMAN_TAXON_CURIE = "NCBITaxon:9606"
+# Target species for this ingest. STRING ships per-organism files and prefixes every
+# protein ID with the NCBI taxon (e.g. ``9606.ENSP00000478725``), so we identify the
+# species by parsing that prefix per row rather than configuring it per file.
+SUPPORTED_TAXA: dict[str, str] = {
+    "9606":  "NCBITaxon:9606",   # Homo sapiens
+    "10090": "NCBITaxon:10090",  # Mus musculus
+    "10116": "NCBITaxon:10116",  # Rattus norvegicus
+}
 
 # STRING's medium-confidence cutoff; matches the default offered on the STRING web UI.
 COMBINED_SCORE_THRESHOLD = 500
+
+# PSI-MI interaction type asserted by every STRING edge in this ingest. ``MI:0915``
+# is "physical association" — the same claim made by our biolink predicate. Attached
+# via ``has_attribute`` so downstream consumers that key off PSI-MI terms can pick
+# it up alongside the biolink predicate. See CHANGELOG.md for the slot/term rationale.
+STRING_INTERACTION_TYPE_PSI_MI = "MI:0915"
 
 STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
 
@@ -57,25 +69,36 @@ def get_latest_version() -> str:
     return f"v{response.json()[0]['string_version']}"
 
 
-def parse_string_protein_id(string_id: str, taxon_prefix: str = HUMAN_TAXON_PREFIX) -> str:
+def parse_string_protein_id(string_id: str) -> tuple[str, str]:
     """
-    Convert a STRING-prefixed protein identifier into an ENSEMBL CURIE.
+    Parse a STRING-prefixed protein identifier into an ``(ENSEMBL CURIE, NCBITaxon CURIE)`` pair.
 
     STRING ships protein IDs as ``{taxid}.{ENSEMBL_protein_id}`` (e.g.
-    ``9606.ENSP00000478725``). We strip the taxon prefix and emit a Biolink-style
-    ``ENSEMBL:`` CURIE.
+    ``9606.ENSP00000478725`` for human, ``10090.ENSMUSP...`` for mouse,
+    ``10116.ENSRNOP...`` for rat). The taxon is self-identifying in the row,
+    so we don't need any reader-side configuration to handle multiple species.
+
+    Raises ``ValueError`` for malformed IDs or unsupported taxa.
 
     >>> parse_string_protein_id("9606.ENSP00000478725")
-    'ENSEMBL:ENSP00000478725'
-    >>> parse_string_protein_id("9606.ENSP00000000001", taxon_prefix="9606")
-    'ENSEMBL:ENSP00000000001'
+    ('ENSEMBL:ENSP00000478725', 'NCBITaxon:9606')
+    >>> parse_string_protein_id("10090.ENSMUSP00000000001")
+    ('ENSEMBL:ENSMUSP00000000001', 'NCBITaxon:10090')
+    >>> parse_string_protein_id("10116.ENSRNOP00000000001")
+    ('ENSEMBL:ENSRNOP00000000001', 'NCBITaxon:10116')
     """
-    prefix = f"{taxon_prefix}."
-    if not string_id.startswith(prefix):
+    taxid, dot, ensp = string_id.partition(".")
+    if not dot or not ensp:
         raise ValueError(
-            f"Expected STRING ID prefixed with '{prefix}', got: {string_id!r}"
+            f"Expected STRING ID format '{{taxid}}.{{ensp}}', got: {string_id!r}"
         )
-    return f"ENSEMBL:{string_id[len(prefix):]}"
+    taxon_curie = SUPPORTED_TAXA.get(taxid)
+    if taxon_curie is None:
+        raise ValueError(
+            f"Unsupported taxon prefix {taxid!r} in {string_id!r}; "
+            f"expected one of {sorted(SUPPORTED_TAXA)}"
+        )
+    return f"ENSEMBL:{ensp}", taxon_curie
 
 
 def passes_combined_score(
@@ -131,8 +154,15 @@ def transform_record(
     if not passes_combined_score(record["combined_score"]):
         return None
 
-    subject_id = parse_string_protein_id(record["protein1"])
-    object_id = parse_string_protein_id(record["protein2"])
+    subject_id, subject_taxon = parse_string_protein_id(record["protein1"])
+    object_id, object_taxon = parse_string_protein_id(record["protein2"])
+
+    # STRING's per-organism link files only contain intra-species pairs.
+    # Catch corrupt or cross-species rows loudly.
+    if subject_taxon != object_taxon:
+        raise ValueError(
+            f"Cross-species pair in STRING row: {record['protein1']!r} vs {record['protein2']!r}"
+        )
 
     seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
     key = sorted_pair_key(subject_id, object_id)
@@ -143,12 +173,12 @@ def transform_record(
     subject_node = Protein(
         id=subject_id,
         category=["biolink:Protein"],
-        in_taxon=[HUMAN_TAXON_CURIE],
+        in_taxon=[subject_taxon],
     )
     object_node = Protein(
         id=object_id,
         category=["biolink:Protein"],
-        in_taxon=[HUMAN_TAXON_CURIE],
+        in_taxon=[object_taxon],
     )
     edge = PairwiseMolecularInteraction(
         id=entity_id(),
@@ -156,6 +186,7 @@ def transform_record(
         predicate="biolink:physically_interacts_with",
         object=object_id,
         sources=STRING_SOURCES,
+        has_attribute=[STRING_INTERACTION_TYPE_PSI_MI],
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.not_provided,
     )

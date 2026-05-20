@@ -97,6 +97,8 @@ def test_edge_shape(koza_output):
         assert edge["object"].startswith("ENSEMBL:ENSP")
         assert edge["knowledge_level"] == "knowledge_assertion"
         assert edge["agent_type"] == "not_provided"
+        # PSI-MI interaction-type CURIE attached via has_attribute.
+        assert edge["has_attribute"] == ["MI:0915"]
         sources = edge["sources"]
         primary = next(s for s in sources if s["resource_role"] == "primary_knowledge_source")
         assert primary["resource_id"] == "infores:string"
