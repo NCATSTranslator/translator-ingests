@@ -546,7 +546,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
                     predicate = current_predicate_mapping,
-                    qualified_predicate = BIOLINK_AFFECTS,
+                    qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = current_causal_mechanism_mapping,

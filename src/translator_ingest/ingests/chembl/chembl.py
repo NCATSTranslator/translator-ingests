@@ -13,7 +13,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
-    AnatomicalEntityHasPartAnatomicalEntityAssociation
+    AnatomicalEntityHasPartAnatomicalEntityAssociation,
+    ChemicalGeneInteractionAssociation,
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -515,6 +516,8 @@ def get_association_class(association_type: str):
         return ChemicalAffectsGeneAssociation
     if association_type == "GeneAffectsChemicalAssociation":
         return GeneAffectsChemicalAssociation
+    if association_type == "ChemicalGeneInteractionAssociation":
+        return ChemicalGeneInteractionAssociation
     return None
 
 

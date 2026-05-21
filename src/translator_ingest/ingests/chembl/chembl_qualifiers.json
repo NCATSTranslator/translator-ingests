@@ -50,7 +50,7 @@
         }
     },
     "BINDING AGENT": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "ChemicalGeneInteractionAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
             "causal_mechanism_qualifier": "binding"
@@ -67,14 +67,14 @@
         }
     },
     "CHELATING AGENT": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "ChemicalGeneInteractionAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
             "causal_mechanism_qualifier": "chelation"
         }
     },
     "CROSS-LINKING AGENT": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "ChemicalGeneInteractionAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
             "causal_mechanism_qualifier": "crosslinking"
@@ -272,7 +272,7 @@
         }
     },
     "SEQUESTERING AGENT": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "ChemicalGeneInteractionAssociation",
         "predicate": "biolink:directly_physically_interacts_with",
         "qualifiers": {
             "causal_mechanism_qualifier": "sequestration"
