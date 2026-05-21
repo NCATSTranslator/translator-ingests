@@ -11,12 +11,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ## necessary associations and interactions
     Association,
     GeneRegulatesGeneAssociation,
-    #PairwiseMolecularInteraction,
+    PairwiseGeneToGeneInteraction,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     ChemicalAffectsGeneAssociation,
-    #PairwiseGeneToGeneInteraction,
+    ChemicalGeneInteractionAssociation,
     ## necessary enums
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
@@ -337,7 +337,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     species_context_qualifier = species_context_qualifier,
                 )
 
-                association_2 = GeneRegulatesGeneAssociation(
+                association_2 = PairwiseGeneToGeneInteraction(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -348,8 +348,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -463,7 +462,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
-                association_2 = GeneAffectsChemicalAssociation(
+                association_2 = ChemicalGeneInteractionAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -474,8 +473,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -555,7 +553,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
-                association_2 = ChemicalAffectsGeneAssociation(
+                association_2 = ChemicalGeneInteractionAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
@@ -566,8 +564,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
