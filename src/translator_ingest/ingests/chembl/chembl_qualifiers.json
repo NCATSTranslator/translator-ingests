@@ -116,7 +116,7 @@
     },
     "HYDROLYTIC ENZYME": {
         "association": "GeneAffectsChemicalAssociation",
-        "predicate": "biolink:affected_by",
+        "predicate": "biolink:affects",
         "qualifiers": {
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "hydrolysis",
@@ -192,7 +192,7 @@
         }
     },
     "OTHER": {
-        "association": "ChemicalAffectsGeneAssociation",
+        "association": "ChemicalGeneInteractionAssociation",
         "predicate": "biolink:interacts_with",
         "qualifiers": {}
     },
@@ -289,7 +289,7 @@
         }
     },
     "SUBSTRATE": {
-        "association": "GeneAffectsChemicalAssociation",
+        "association": "MacromolecularMachineHasSubstrateAssociation",
         "predicate": "biolink:has_substrate",
         "qualifiers": {}
     },
