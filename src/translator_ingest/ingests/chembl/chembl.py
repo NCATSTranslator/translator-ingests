@@ -585,7 +585,7 @@ def get_association(koza, record, action_type_map):
     return nodes,edges
 
 
-def get_activity_association(koza: koza.KozaTransform, chemical, target, action_type_map, record: dict[str, Any]) -> ChemicalAffectsGeneAssociation | GeneAffectsChemicalAssociation | None:
+def get_activity_association(koza: koza.KozaTransform, chemical, target, action_type_map, record: dict[str, Any]) -> bm.Association | None:
     """Build an association for a ChEMBL activity record, respecting the
     direction implied by the association type in *action_type_map*."""
     species_context_qualifier = get_species_context_qualifier(record)
