@@ -182,12 +182,12 @@
 
       # MacromolecularMachineHasSubstrateAssociation: substrate relationships
       - subject_categories:
-          - ChemicalEntity
+          - Protein
+          - ProteinFamily
         predicates:
           - biolink:has_substrate
         object_categories:
-          - Protein
-          - ProteinFamily
+          - ChemicalEntity
         qualifiers:
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:

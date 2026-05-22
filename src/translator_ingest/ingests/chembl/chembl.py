@@ -549,9 +549,10 @@ def get_association(koza, record, action_type_map):
             koza.log(f" Unknown association class for action type {record['action_type']}", level="WARNING")
             return [], []
 
-        # For GeneAffectsChemicalAssociation the gene is the subject and
-        # the chemical is the object; the mutation qualifier describes the gene.
-        if association_type == "GeneAffectsChemicalAssociation":
+        # For GeneAffectsChemicalAssociation and MacromolecularMachineHasSubstrateAssociation
+        # the gene/protein is the subject and the chemical is the object;
+        # the mutation qualifier describes the gene.
+        if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation"):
             subject_id = target.id
             object_id = chemical.id
         else:
@@ -564,8 +565,8 @@ def get_association(koza, record, action_type_map):
                 predicate=predicate,
                 object=object_id,
                 species_context_qualifier = species_context_qualifier,
-                subject_form_or_variant_qualifier = mutation_qualifier if association_type == "GeneAffectsChemicalAssociation" else None,
-                object_form_or_variant_qualifier = mutation_qualifier if association_type != "GeneAffectsChemicalAssociation" else None,
+                subject_form_or_variant_qualifier = mutation_qualifier if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
+                object_form_or_variant_qualifier = mutation_qualifier if association_type not in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
                 sources=CHEMBL_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
@@ -599,7 +600,7 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
         koza.log(f" Unknown association class for action type {record['action_type']}", level="WARNING")
         return None
 
-    if association_type == "GeneAffectsChemicalAssociation":
+    if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation"):
         subject_id = target.id
         object_id = chemical.id
     else:

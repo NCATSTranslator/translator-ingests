@@ -187,8 +187,7 @@
             "qualified_predicate": "biolink:causes",
             "object_aspect_qualifier": "activity",
             "object_direction_qualifier": "increased",
-            "causal_mechanism_qualifier": "opening",
-            "TODO: causal_mechanism_qualifier": "molecular_channel_opening"
+            "causal_mechanism_qualifier": "opening"
         }
     },
     "OTHER": {
