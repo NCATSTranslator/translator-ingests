@@ -27,56 +27,50 @@
     scope: "Drugs and probes mechanisms, metabolism, bioactivity, gene targets"
 
     relevant_files:
-      - file_name: chembl_35_sqlite.tar.gz
+      - file_name: chembl_36_sqlite.tar.gz
         location: https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/
         description: "ChEMBL SQLite database"
 
-    included_content: 
-      - file_name: chembl_35_sqlite.tar.gz
+    included_content:
+      - file_name: chembl_36_sqlite.tar.gz
         included_records: "Drug mechanisms from the following tables: drug_mechanism, molecule_dictionary, target_dictionary, binding_sites, compound_records, docs, source, target_components, component_sequences, variant_sequences."
         fields_used: "drug_mechanism: mec_id, molregno, mechanism_of_action, action_type, direct_interaction, mechanism_comment, selectivity_comment, binding_site_comment, variant_id; molecule_dictionary: molregno, chembl_id; target_dictionary: tid, chembl_id (AS target_chembl_id), pref_name (AS target_name), target_type, organism (AS target_organism); binding_sites: site_id, site_name; compound_records: record_id, doc_id, src_id; docs: doc_id, chembl_id (AS document_chembl_id); source: src_id, src_description (AS source_description); target_components: tid, component_id; component_sequences: component_id, component_type, accession, description, tax_id, organism; variant_sequences: variant_id, mutation, accession (AS mutation_accession)"
-      - file_name: chembl_35_sqlite.tar.gz
-        included_records: "Gene targets - same as drug mechanisms with targets mapped to genets"
+      - file_name: chembl_36_sqlite.tar.gz
+        included_records: "Gene targets - same as drug mechanisms with targets mapped to genes"
         fields_used: "drug_mechanism: mec_id, molregno, mechanism_of_action, action_type, direct_interaction, mechanism_comment, selectivity_comment, binding_site_comment, variant_id; molecule_dictionary: molregno, chembl_id; target_dictionary: tid, chembl_id (AS target_chembl_id), pref_name (AS target_name), target_type, organism (AS target_organism); binding_sites: site_id, site_name; compound_records: record_id, doc_id, src_id; docs: doc_id, chembl_id (AS document_chembl_id); source: src_id, src_description (AS source_description); target_components: tid, component_id; component_sequences: component_id, component_type, accession, description, tax_id, organism; variant_sequences: variant_id, mutation, accession (AS mutation_accession)"
-      - file_name: chembl_35_sqlite.tar.gz
+      - file_name: chembl_36_sqlite.tar.gz
         included_records: "Metabolism information from the following tables: metabolism, molecule_dictionary, compound_records, compound_structures, target_dictionary, metabolism_refs"
         fields_used: "metabolism: drug_record_id, substrate_record_id, metabolite_record_id, met_id, enzyme_name, met_conversion, met_comment, organism, tax_id, enzyme_tid; molecule_dictionary: molregno, chembl_id, pref_name; compound_records: molregno, record_id, compound_name; target_dictionary: tid, target_type, chembl_id; compound_structures: molregno, standard_inchi, standard_inchi_key, canonical_smiles; metabolism_refs: met_id, ref_type, ref_id, ref_url"
-      - file_name: chembl_35_sqlite.tar.gz
+      - file_name: chembl_36_sqlite.tar.gz
         included_records: "Bioactivity and assay information from the following tables: activities, molecule_dictionary, assays, bioassay_ontology, target_dictionary, target_components, component_sequences, cell_dictionary, assay_type, tissue_dictionary, docs, source, ligand_eff, relationship_type, confidence_score_lookup, confidence_score_lookup"
         fields_used: "activities: activity_id, standard_type, standard_relation, standard_value, standard_units, pchembl_value, activity_comment, data_validity_comment, standard_text_value, standard_upper_value, uo_units, potential_duplicate, action_type, src_id, doc_id; molecule_dictionary: molregno, chembl_id; assays: assay_id, chembl_id, description, assay_organism, assay_cell_type, assay_subcellular_fraction, bao_format, assay_category, assay_tax_id, assay_tissue, relationship_type, confidence_score, curated_by, src_id, assay_type, cell_id, tissue_id, tid; bioassay_ontology: bao_id, label; target_dictionary: tid, chembl_id, pref_name, organism, target_type; target_components: tid, component_id; component_sequences: component_id, component_type, accession; cell_dictionary: cell_id, chembl_id, cell_name, cell_description, cell_source_tissue, cell_source_organism, cell_source_tax_id, clo_id, efo_id, cellosaurus_id, cl_lincs_id, cell_ontology_id; assay_type: assay_type, assay_desc; tissue_dictionary: tissue_id, chembl_id, pref_name; docs: doc_id, chembl_id, journal, title, year, authors, pubmed_id, doi; source: src_id, src_description; ligand_eff: activity_id, bei, le, lle, sei; relationship_type: relationship_type, relationship_desc; confidence_score_lookup: confidence_score, description, target_mapping; curation_lookup: curated_by, description"
 
     filtered_content:
-      - file_name: chembl_35_sqlite.tar.gz
+      - file_name: chembl_36_sqlite.tar.gz
         filtered_records: "Gene targets - removed targets that cannot be mapped to genes (like cell-lines)"
         rationale: "targets that cannot be mapped to genes"
 
-  target_info: 
+  target_info:
     infores_id: "infores:translator-chembl-kgx"
     edge_type_info:
 
-      # MHB:  Generally, the Edge Type descriptions don;t seem to be updated to refelct what data is actually in the KG - per the summary report here: https://docs.google.com/spreadsheets/d/1nt9s9NT_DloB6TMt_MpZDDvIVqtZeammLbxjPJvV6Xs/edit?.  gid=1712830697#gid=1712830697
-      # MHB: I made specific comments to this effect below - search for all "# MHB:" prefixed comments. 
+      # ChemicalAffectsGeneAssociation: chemical affects gene/protein target
       - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
           - ChemicalEntity
-          - Protein
-        predicates:               # MHB: I don't see disrupts or regulates in the data . . . . can we remove the others, or should they be getting created?  I do however see a has_substrate predicate in the data (and the mappings file)- so this should be added here.
+        predicates:
           - biolink:affects
-          - biolink:disrupts
-          - biolink:regulates
-        object_categories:        # MHB: The only categories I see in the data are Protein, ChemicalEntity, and SmallMolecule - can we remove the others?
-          - CellLine
-          - CellularComponent
-          - CellularOrganism
-          - MacromolecularComplex
-          - MolecularActivity
-          - MolecularEntity
-          - NucleicAcidEntity
+        object_categories:
           - Protein
           - ProteinFamily
+          - MacromolecularComplex
+          - NucleicAcidEntity
+          - MolecularEntity
+          - MolecularActivity
           - SmallMolecule
-        qualifiers:              # I also see some edges with subject_aspect and subject_direction qualifiers in the data, and anatomical_context and causal_mechanism statement-level qualifiers - can we add this to the list of possible qualifiers for this edge type?
+          - CellularComponent
+          - CellularOrganism
+          - CellLine
+        qualifiers:
           - property: "biolink:qualified_predicate"
             value_enumeration:
               - "biolink:causes"
@@ -95,271 +89,215 @@
           - property: "biolink:object_form_or_variant_qualifier"
             value_range:
               - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
+          - property: "biolink:anatomical_context_qualifier"
+            value_id_prefixes:
+              - "UBERON"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
-          - automated_agent        
-        edge_properties:           # MHB: I don't see a lot of the edge properties below in the data according to the summary report.  They could be getting created by the code, but removed after NN/validation because perhaps they are not in biolink?  Fix for this is to add them to 'attirbutes.yaml' ... but we should be sure that NN / validators are looking in this file for acceptable properties.
+          - automated_agent
+        edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-          - mechanism_of_action_description
-          - mechanism_of_action_comment
-          - mutation
-          - mutation_accession
-          - selectivity_comment
-        ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
-        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects'edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
+        ui_explanation: "Drug mechanisms and bioactivities where a chemical affects a gene or protein target"
+        additional_notes: "The 'mechanism' reported by ChEMBL determines the type of edge created. For mechanisms that imply an effect of the chemical on the target (e.g. 'agonist', 'inhibitor', 'stabiliser'), an 'affects' edge with appropriate qualifiers is created. A full mapping of ChEMBL mechanisms to Biolink predicate and qualifier combinations can be found in chembl_qualifiers.json."
 
-        # MHB: many of the same comments for this edge type as above, re: removing catogry values that don't show up in the data apply, 
+      # GeneAffectsChemicalAssociation: gene/protein target affects chemical
       - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
           - Protein
-        predicates: 
-          - biolink:directly_physically_interacts_with
-        object_categories:
-          - CellLine
-          - CellularComponent
-          - CellularOrganism
           - MacromolecularComplex
-          - MolecularActivity
-          - MolecularEntity
           - NucleicAcidEntity
-          - Protein
-          - ProteinFamily
+          - MolecularEntity
           - SmallMolecule
-        qualifiers:                  # MHB: Again, I see anatomical_context and cuasal_mechanism statement-level qualifiers in the data - can we add this to the list of possible qualifiers for this edge type?
+        predicates:
+          - biolink:affects
+        object_categories:
+          - ChemicalEntity
+        qualifiers:
+          - property: "biolink:qualified_predicate"
+            value_enumeration:
+              - "biolink:causes"
+          - property: "biolink:object_direction_qualifier"
+            value_range:
+              - "biolink:DirectionQualifierEnum"
+          - property: "biolink:object_aspect_qualifier"
+            value_range:
+              - "biolink:GeneOrGeneProductOrChemicalEntityAspectEnum"
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
               - "NCBITaxon"
-          - property: "biolink:object_form_or_variant_qualifier"
+          - property: "biolink:subject_form_or_variant_qualifier"
             value_range:
               - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
-        edge_properties:      # MHB: As above, most of these are not actually showing up in the final KG.. . .
+        edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-          - binding_site_name
-          - binding_site_comment
-          - mechanism_of_action_description
-          - mechanism_of_action_comment
-          - mutation
-          - mutation_accession
-          - selectivity_comment
-        ui_explanation: "Drug mechanisms, some mapped to genes, from ChEMBL"
-        additional_notes: "The 'mechanism' reported by Chembl determines that type of edge is created: (1) an 'affects' edge when the mechanism implies an effect of the subject on the object - e.g. 'stabilizer' implies that 'A causes increased stability of B'; a 'directly_physically_interacts_with' edge when the mechanism implies only that the subject interacts with B, but not an effect that results from this - e.g. 'cross-linking agent' implies only a physical interaction; (or (3) both 'affects' and 'directly_physically_interacts_with' edges, when the mechanism implies an effect that is necessarily mediated through a direct physical interaction - e.g. 'agonist' implies that 'A increases the activity of B' and that 'A directly physically interacts with B'. A full mapping of these chembl.mechanism to Biolink predicate and qualifier combinations can be found here: https://raw.githubusercontent.com/broadinstitute/molecular-data-provider/refs/heads/master/transformers/chembl/python-flask-server/conf/chembl_qualifiers.json."
+        ui_explanation: "Drug mechanisms where a gene or protein (e.g. enzyme) affects a chemical (e.g. hydrolysis, oxidation, reduction)"
+        additional_notes: "For mechanisms where the gene/protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'reducing agent'), the gene is the subject and the chemical is the object. The object_aspect_qualifier and object_direction_qualifier describe what happens to the chemical."
 
+      # ChemicalGeneInteractionAssociation: direct physical interactions and untyped interactions
       - subject_categories:
-          - MacromolecularComplex
-        predicates: 
-          - biolink:has_part 
+          - ChemicalEntity
+        predicates:
+          - biolink:directly_physically_interacts_with
+          - biolink:interacts_with
         object_categories:
-          - NucleicAcidEntity
           - Protein
+          - ProteinFamily
+          - MacromolecularComplex
+          - NucleicAcidEntity
+          - MolecularEntity
+          - MolecularActivity
+          - SmallMolecule
+          - CellularComponent
+          - CellularOrganism
+          - CellLine
         qualifiers:
+          - property: "biolink:causal_mechanism_qualifier"
+            value_range:
+              - "biolink:CausalMechanismQualifierEnum"
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
               - "NCBITaxon"
-            value_description: "species tax id"
-        knowledge_level:
-          - knowledge_assertion
-        agent_type:
-          - manual_agent
-        edge_properties:
-        ui_explanation: "Component information from ChEMBL"
-
-      - subject_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
-        predicates: 
-          - biolink:has_metabolite
-        object_categories:
-          - SmallMolecule
-          - MolecularMixture
-          - ChemicalEntity
-        qualifiers:
-          - property: "biolink:species_context_qualifier"
+          - property: "biolink:object_form_or_variant_qualifier"
+            value_range:
+              - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
+          - property: "biolink:anatomical_context_qualifier"
             value_id_prefixes:
-              - "NCBITaxon"
-            value_description: "species tax id"
-          - property: "biolink:context_qualifier"
-            value_id_prefixes:
-              - "UniProtKB"
-            value_description: "enzyme identifier"
+              - "UBERON"
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
         edge_properties:
           - biolink:publications
-          - metabolic conversion
-          - metabolic conversion comment
+          - biolink:has_confidence_score
+        ui_explanation: "Drug mechanisms where the mechanism implies a direct physical interaction (e.g. binding, chelation, crosslinking, sequestration)"
+        additional_notes: "For mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent'), a 'directly_physically_interacts_with' edge is created. Mechanisms classified as 'OTHER' produce an 'interacts_with' edge."
+
+      # MacromolecularMachineHasSubstrateAssociation: substrate relationships
+      - subject_categories:
+          - ChemicalEntity
+        predicates:
+          - biolink:has_substrate
+        object_categories:
+          - Protein
+          - ProteinFamily
+        qualifiers:
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+          - property: "biolink:anatomical_context_qualifier"
+            value_id_prefixes:
+              - "UBERON"
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+          - automated_agent
+        edge_properties:
+          - biolink:publications
+          - biolink:has_confidence_score
+        ui_explanation: "Substrate relationships from ChEMBL drug mechanisms and bioactivities"
+
+      # AnatomicalEntityHasPartAnatomicalEntityAssociation: complex/family composition
+      - subject_categories:
+          - MacromolecularComplex
+          - ProteinFamily
+          - MolecularActivity
+          - Protein
+        predicates:
+          - biolink:has_part
+        object_categories:
+          - Protein
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        ui_explanation: "Component information from ChEMBL"
+
+      # ChemicalEntityToChemicalEntityAssociation: metabolism
+      - subject_categories:
+          - ChemicalEntity
+        predicates:
+          - biolink:has_metabolite
+        object_categories:
+          - ChemicalEntity
+        qualifiers:
+          - property: "biolink:species_context_qualifier"
+            value_id_prefixes:
+              - "NCBITaxon"
+            value_description: "species tax id"
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        edge_properties:
+          - biolink:publications
         ui_explanation: "Metabolism information from ChEMBL"
 
     node_type_info:
 
-     # MHB: please remove any node types and node properties below that are not actually being created in the data. 
-      - node_category: AnatomicalEntity
-        source_identifier_types: 
-          - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
-
-      - node_category: BiologicalProcess
+      - node_category: CellLine
         source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
-
-      - node_category: Cell
-        source_identifier_types: 
-          - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
-
-      - node_category: CellLine
-        source_identifier_types: 
-          - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: CellularComponent
-        source_identifier_types: 
+        source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: CellularOrganism
         source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: ChemicalEntity
-        source_identifier_types: 
+        source_identifier_types:
           - ChEMBL
         node_properties:
-          - biolink:routes_of_delivery
           - biolink:synonym
           - biolink:xref
           - chembl_availability_type
           - chembl_black_box_warning
           - chembl_natural_product
           - chembl_prodrug
-
-      - node_category: Gene
-        source_identifier_types: 
-          - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: MacromolecularComplex
-        source_identifier_types: 
+        source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: MolecularActivity
-        source_identifier_types: 
+        source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
-      - node_category: MolecularMixture
-        source_identifier_types: 
+      - node_category: MolecularEntity
+        source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:routes_of_delivery
-          - biolink:synonym
-          - biolink:xref
-          - chembl_availability_type
-          - chembl_black_box_warning
-          - chembl_natural_product
-          - chembl_prodrug
-
 
       - node_category: NucleicAcidEntity
         source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
-
-      - node_category: PhenotypicFeature
-        source_identifier_types:
-          - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: Protein
         source_identifier_types:
           - ChEMBL
+          - UniProtKB
         node_properties:
-          - biolink:description
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
 
       - node_category: ProteinFamily
-        source_identifier_types: 
+        source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:description
-          - biolink:in_taxon
-          - biolink:synonym
-          - biolink:xref
 
       - node_category: SmallMolecule
-        source_identifier_types: 
+        source_identifier_types:
           - ChEMBL
-        node_properties:
-          - biolink:routes_of_delivery
-          - biolink:synonym
-          - biolink:xref
-          - chembl_availability_type
-          - chembl_black_box_warning
-          - chembl_natural_product
-          - chembl_prodrug
-
-  # MHB: I don't see any future considerations in the RIG - I recally serveal things we talked about doing next iteration - esp w.r.t. bringing in data from the experimental activity tables, and additional EPC metadata and edge and node properties, etc.  
 
   provenance_info:
     contributions:
