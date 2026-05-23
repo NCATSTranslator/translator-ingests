@@ -230,7 +230,7 @@ target_info:
         - biolink:GeneToPhenotypicFeatureAssociation
         - biolink:ChemicalAffectsGeneAssociation
         - biolink:GeneAffectsChemicalAssociation
-        - biolink:GeneRegulatesGeneAssociation
+        - biolink:GeneToGeneAssociation
         - biolink:ChemicalAffectsBiologicalEntityAssociation
       notes:
         - "Supporting text snippets are retained in has_supporting_studies -> has_study_results -> supporting_text; there is no top-level supporting_text edge property."

@@ -103,7 +103,7 @@ def release_ingest(source: str):
         logger.info(f"No latest build metadata found for {source}, can not make a release.")
         return
     with open(latest_build_metadata_file_path, 'r') as f:
-        latest_build_metadata = PipelineMetadata(**json.load(f))
+        latest_build_metadata = PipelineMetadata.from_dict(json.load(f))
         latest_build = latest_build_metadata.build_version
 
     # Locate and read the latest release metadata for the source
@@ -113,7 +113,7 @@ def release_ingest(source: str):
     )
     if latest_release_metadata_file_path.exists():
         with open(latest_release_metadata_file_path, 'r') as f:
-            latest_release_metadata = PipelineMetadata(**json.load(f))
+            latest_release_metadata = PipelineMetadata.from_dict(json.load(f))
             latest_released_build = latest_release_metadata.build_version
             # if the latest release is already of the latest build, no need to do anything
             if latest_released_build == latest_build:

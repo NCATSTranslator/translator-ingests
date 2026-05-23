@@ -5,9 +5,12 @@ This module provides simple, elegant S3 upload functionality for syncing
 local /data and /releases directories to S3 bucket with EBS cleanup.
 Data sources and release sources are handled as separate, independent lists.
 
+The S3 bucket name is sourced from the ``S3_BUCKET_NAME`` environment variable,
+falling back to ``translator-ingests``. Override per call by passing
+``bucket_name=...``.
+
 Requirements:
     - Must run on EC2 instance with IAM role granting S3 permissions
-    - S3 bucket: translator-ingests
     - Required permissions: s3:PutObject, s3:GetObject, s3:ListBucket, s3:DeleteObject
 
 Usage:
@@ -28,6 +31,7 @@ Usage:
 
 import hashlib
 import json
+import os
 import shutil
 from pathlib import Path
 from typing import Literal
@@ -41,6 +45,8 @@ from translator_ingest.util.logging_utils import get_logger
 from translator_ingest.util.storage.local import IngestFileName
 
 logger = get_logger(__name__)
+
+DEFAULT_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "translator-ingests")
 
 # Result of an upload_file call
 UploadStatus = Literal["uploaded", "skipped", "missing"]
@@ -67,11 +73,11 @@ class S3Uploader:
     on EC2 instance with IAM role permissions.
     """
 
-    def __init__(self, bucket_name: str = "translator-ingests"):
+    def __init__(self, bucket_name: str = DEFAULT_BUCKET_NAME):
         """Initialize S3 uploader with EC2 IAM role credentials.
 
         Args:
-            bucket_name: S3 bucket name (default: translator-ingests)
+            bucket_name: S3 bucket name (default: ``DEFAULT_BUCKET_NAME``)
         """
         self.bucket_name = bucket_name
         self.s3_client = boto3.client('s3')
@@ -743,7 +749,7 @@ def upload_and_cleanup(
 # S3 BUCKET CLEANUP (DANGEROUS - USE WITH CAUTION)
 # =============================================================================
 
-def get_s3_bucket_stats(bucket_name: str = "translator-ingests") -> dict:
+def get_s3_bucket_stats(bucket_name: str = DEFAULT_BUCKET_NAME) -> dict:
     """Get statistics about the S3 bucket contents.
 
     Args:
@@ -790,7 +796,7 @@ def get_s3_bucket_stats(bucket_name: str = "translator-ingests") -> dict:
 
 
 def list_s3_objects_for_deletion(
-    bucket_name: str = "translator-ingests",
+    bucket_name: str = DEFAULT_BUCKET_NAME,
     prefix: str = ""
 ) -> list[dict]:
     """List all objects in S3 bucket/prefix that would be deleted.
@@ -820,7 +826,7 @@ def list_s3_objects_for_deletion(
 
 
 def cleanup_s3_bucket(
-    bucket_name: str = "translator-ingests",
+    bucket_name: str = DEFAULT_BUCKET_NAME,
     prefix: str = "",
     require_confirmation: bool = True
 ) -> dict:
@@ -951,7 +957,7 @@ def cleanup_s3_source(
     source: str,
     cleanup_data: bool = True,
     cleanup_releases: bool = True,
-    bucket_name: str = "translator-ingests",
+    bucket_name: str = DEFAULT_BUCKET_NAME,
     require_confirmation: bool = True
 ) -> dict:
     """Delete a specific source from S3 bucket.

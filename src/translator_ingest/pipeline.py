@@ -1,7 +1,6 @@
 import click
 import hashlib
 import json
-import tarfile
 import time
 import shutil
 
@@ -19,12 +18,12 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion.meta_kg import MetaKnowledgeGraphBuilder
-from orion.kgx_metadata import KGXGraphMetadata, analyze_graph
+from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION
+from orion.normalization import get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
-from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
+from translator_ingest.normalize import normalize_kgx_files
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
 from translator_ingest.util.storage.local import (
     get_output_directory,
@@ -55,12 +54,8 @@ def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
-    strict_normalization = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
-    if not strict_normalization:
-        logger.info(f"Using lenient normalization for {source} (strict_normalization=False)")
     pipeline_metadata.koza_config = {
         "max_edge_count": config.writer.max_edge_count if config.writer else None,
-        "strict_normalization": strict_normalization,
     }
 
 
@@ -176,25 +171,6 @@ def download(pipeline_metadata: PipelineMetadata):
             download_yaml_with_version.unlink(missing_ok=True)
 
 
-def extract_tmkp_archive(pipeline_metadata: PipelineMetadata):
-    """Extract TMKP tar.gz archive after download."""
-    logger.info("Extracting TMKP archive...")
-    source_data_dir = get_source_data_directory(pipeline_metadata)
-
-    # Find the tar.gz file
-    tar_files = list(source_data_dir.glob("*.tar.gz"))
-    if not tar_files:
-        raise FileNotFoundError(f"No tar.gz file found in {source_data_dir}")
-
-    tar_path = tar_files[0]
-
-    # Extract to the same directory
-    with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(source_data_dir, filter='data')
-
-    logger.info(f"Extracted {tar_path.name} to {source_data_dir}")
-
-
 # Check if the transform stage was already completed
 def is_transform_complete(pipeline_metadata: PipelineMetadata):
     nodes_file_path, edges_file_path = get_versioned_file_paths(
@@ -288,7 +264,6 @@ def transform(pipeline_metadata: PipelineMetadata):
                 source=pipeline_metadata.source,
                 source_version=actual_version,
                 transform_version=pipeline_metadata.transform_version,
-                node_norm_version=pipeline_metadata.node_norm_version,
                 biolink_version=pipeline_metadata.biolink_version,
                 release_version=pipeline_metadata.release_version
             )
@@ -353,9 +328,6 @@ def normalize(pipeline_metadata: PipelineMetadata):
     node_norm_map_path = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
-    predicate_map_path = get_versioned_file_paths(
-        file_type=IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
-    )
 
     # Call normalize_kgx_files with pipeline_metadata to handle nodes-only ingests
     normalize_kgx_files(
@@ -365,7 +337,6 @@ def normalize(pipeline_metadata: PipelineMetadata):
         node_norm_map_file_path=str(node_norm_map_path),
         node_norm_failures_file_path=str(norm_failures_path),
         edges_output_file_path=str(norm_edge_path),
-        predicate_map_file_path=str(predicate_map_path),
         normalization_metadata_file_path=str(norm_metadata_path),
         pipeline_metadata=pipeline_metadata,
     )
@@ -402,6 +373,8 @@ def merge(pipeline_metadata: PipelineMetadata):
     if max_edge_count == 0:
         logger.info(f"Skipping merge for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, just copy the normalized files
+        # make sure the merged directory exists because for nodes-only ingests it might not
+        output_nodes_file.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(normalized_nodes_file, output_nodes_file)
         # Write empty merge metadata
         with open(output_metadata_file, 'w') as f:
@@ -531,13 +504,14 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Generate test data and example edges
     test_data(pipeline_metadata)
 
-    # Get KGXSource metadata from the rig file
+    # Get KGXKnowledgeSource metadata from the rig file
     data_source_info = get_kgx_source_from_rig(pipeline_metadata.source)
     data_source_info.version = pipeline_metadata.source_version
 
     storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
                    f"transform_{pipeline_metadata.transform_version}/"
-                   f"normalization_{pipeline_metadata.node_norm_version}/")
+                   f"normalization_{pipeline_metadata.get_composite_normalization_version()}/"
+                   f"merge_{MERGING_CODE_VERSION}/")
     pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
         id=storage_url,
@@ -549,8 +523,8 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         version=pipeline_metadata.build_version,
         date_created=datetime.now().strftime("%Y_%m_%d"),
         biolink_version=pipeline_metadata.biolink_version,
-        babel_version=pipeline_metadata.node_norm_version,
-        kgx_sources=[data_source_info]
+        babel_version=pipeline_metadata.babel_version,
+        knowledge_sources=[data_source_info]
     )
 
     # get paths to the final nodes and edges files
@@ -563,15 +537,14 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     if max_edge_count == 0 and (graph_edges_file_path is None or not Path(graph_edges_file_path).exists()):
         logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, use the source_metadata as is without analysis
-        # TODO get analyze_graph working for nodes-only
+        # TODO get generate_schema working for nodes-only
         graph_metadata = asdict(source_metadata)
     else:
         # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
-        graph_metadata = analyze_graph(
-            nodes_file_path=graph_nodes_file_path,
-            edges_file_path=graph_edges_file_path,
-            graph_metadata=source_metadata,
-        )
+        source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
+                                                 edges_file_path=graph_edges_file_path,
+                                                 biolink_version=pipeline_metadata.biolink_version)
+        graph_metadata = source_metadata.to_json()
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=graph_metadata)
@@ -623,7 +596,7 @@ def is_latest_build_metadata_current(pipeline_metadata: PipelineMetadata):
     if not build_metadata_path.exists():
         return False
     with build_metadata_path.open("r") as latest_build_file:
-        latest_build_metadata = PipelineMetadata(**json.load(latest_build_file))
+        latest_build_metadata = PipelineMetadata.from_dict(json.load(latest_build_file))
     return pipeline_metadata.build_version == latest_build_metadata.build_version
 
 
@@ -641,10 +614,6 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
-
-    # Special handling for tmkp: extract tar.gz after download
-    if source == "tmkp":
-        extract_tmkp_archive(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # Transform version is auto-computed as a content hash of the ingest's source files
@@ -664,24 +633,33 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         return
 
     # Normalize the post-transform KGX files
-    pipeline_metadata.node_norm_version = get_current_node_norm_version()
+    # Note - ORION can use the biolink model to map predicates during normalization, but we decided not to do that.
+    # Here we still need the biolink model version populated before normalization so metadata outputs are
+    # consistent.
+    pipeline_metadata.biolink_version = get_current_biolink_version()
+    pipeline_metadata.babel_version = get_current_babel_version()
+    pipeline_metadata.node_normalizer_version = get_current_node_norm_version()
+    pipeline_metadata.normalization_code_version = NORMALIZATION_CODE_VERSION
+    pipeline_metadata.normalization_conflation = True
+    pipeline_metadata.normalization_strict = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
+    # Now pipeline_metadata has everything it needs to check if the currently desired normalization is done already,
+    # and settings to provide to the normalization stage.
     if is_normalization_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Normalization already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"normalization: {pipeline_metadata.node_norm_version}"
+            f"normalization: {pipeline_metadata.get_composite_normalization_version()}"
         )
     else:
         normalize(pipeline_metadata)
 
     # Merge entities in post-normalization KGX files
+    pipeline_metadata.merging_code_version = MERGING_CODE_VERSION
     if is_merge_complete(pipeline_metadata) and not overwrite:
         logger.info(f"Merge already done for {pipeline_metadata.source}...")
     else:
         merge(pipeline_metadata)
 
     # Validate the post-normalization files
-    # First retrieve and set the current biolink version to make sure validation is run using that version
-    pipeline_metadata.biolink_version = get_current_biolink_version()
     if is_validation_complete(pipeline_metadata) and not overwrite:
         logger.info(f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
                     f"biolink: {pipeline_metadata.biolink_version}")
