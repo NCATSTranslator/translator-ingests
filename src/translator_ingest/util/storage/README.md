@@ -33,11 +33,15 @@ The kgx-webserver that serves these files runs on a separate t3.medium EC2 insta
 
 ## S3 Directory Structure
 
-The S3 bucket mirrors the local directory structure with two main directories:
+The S3 bucket mirrors the local directory structure with four main directories:
 
 **data/** contains all build artifacts for each source, including source versions, transform outputs (nodes and edges files), normalization outputs, validation reports, and metadata files.
 
 **releases/** contains compressed release archives (tar.zst files), the latest directory for each source, and release metadata files.
+
+**reports/** contains per-build timestamped build reports (`build-report.json`, `build-summary.txt`, per-stage summaries) plus a `latest/` directory copy of the most recent build. Visible on the KGX web view so operators can see what happened on each build without ssh access to the pipeline host.
+
+**logs/** contains per-stage timestamped log files (`run/`, `merge/`, `release/`, `upload/`, `errors/`) with a `latest/` directory copy per stage. Uploaded incrementally after each stage completes so logs remain visible even if a later stage crashes the orchestrator.
 
 ## Upload Commands
 

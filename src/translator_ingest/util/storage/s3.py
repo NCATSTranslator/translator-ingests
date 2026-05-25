@@ -736,10 +736,21 @@ def upload_and_cleanup(
         per_source_stats[source] = source_stats
         sources_processed += 1
 
-    # Upload release summary if any releases were uploaded
+    # Upload release summary if any releases were uploaded. Wrapped in try/except
+    # so a transient S3 error here does not abort the rest of the upload flow
+    # (reports/logs uploads below use the same defensive pattern).
     if release_sources:
         logger.info("Uploading release summary...")
-        uploader.upload_release_summary()
+        try:
+            summary_status = uploader.upload_release_summary()
+            if summary_status == "uploaded":
+                total_uploaded += 1
+            elif summary_status == "skipped":
+                total_skipped += 1
+            # "missing" is not a failure — there was simply nothing to upload
+        except ClientError as e:
+            logger.error(f"Failed to upload release summary: {e}")
+            total_failed += 1
 
     # Upload build reports so they are visible on the public web view
     reports_stats: dict | None = None
