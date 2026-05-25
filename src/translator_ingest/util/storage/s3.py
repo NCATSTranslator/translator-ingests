@@ -433,6 +433,49 @@ class S3Uploader:
         self.logger.info(f"Uploading logs directory: {local_dir}")
         return self.upload_directory(local_dir, s3_prefix)
 
+    def upload_stage_logs(self, stage: str, timestamp: str) -> dict:
+        """Upload one stage's timestamped log directory to S3.
+
+        Used by the orchestrator's per-stage incremental upload — calling this
+        in a try/finally after each stage means an operator can see RUN/MERGE
+        logs on KGX web storage even if a later stage crashes the orchestrator.
+
+        Local path: ``logs/{stage}/{timestamp}/``
+        S3 prefix:  ``logs/{stage}/{timestamp}/``
+
+        Matches the layout produced by ``upload_logs()`` (the build-wide post-
+        run pass) so the two helpers do not stomp each other — skip-if-unchanged
+        makes the final consolidated pass cheap on top of the per-stage uploads.
+
+        Returns a zero-counts dict (no S3 call) when the local directory does
+        not exist, which happens when a stage was skipped (memory-critical
+        abort, hard-stop on missing-fallback, etc.).
+        """
+        # the helper is local-path-aware: a skipped stage never creates its
+        # log dir, and we must not crash on that — the orchestrator calls us
+        # unconditionally in a finally block
+        local_dir = Path(INGESTS_LOGS_PATH) / stage / timestamp
+        if not local_dir.exists():
+            self.logger.debug(
+                "Stage log dir does not exist, nothing to upload: %s", local_dir
+            )
+            return {
+                "uploaded": 0,
+                "skipped": 0,
+                "failed": 0,
+                "bytes_transferred": 0,
+                "uploaded_files": [],
+                "skipped_files": [],
+                "failed_files": [],
+            }
+
+        s3_prefix = f"logs/{stage}/{timestamp}"
+        self.logger.info(
+            "Uploading %s stage logs incrementally: %s -> s3://%s/%s",
+            stage, local_dir, self.bucket_name, s3_prefix,
+        )
+        return self.upload_directory(local_dir, s3_prefix)
+
 
 def cleanup_old_source_versions(source: str, keep_latest: bool = True) -> dict:
     """Delete old /data/{source}/{old_versions}/ directories from EBS.
