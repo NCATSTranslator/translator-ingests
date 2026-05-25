@@ -55,7 +55,7 @@ class SourceReport:
     status: str = "unknown"
     source_version: str | None = None
     transform_version: str | None = None
-    node_norm_version: str | None = None
+    node_normalizer_version: str | None = None
     biolink_version: str | None = None
     build_version: str | None = None
     release_version: str | None = None
@@ -82,7 +82,7 @@ class MergedGraphReport:
     build_version: str | None = None
     release_version: str | None = None
     biolink_version: str | None = None
-    node_norm_version: str | None = None
+    node_normalizer_version: str | None = None
     sources_included: list[str] = field(default_factory=list)
     duration_seconds: float | None = None
     errors: list[str] = field(default_factory=list)
@@ -130,7 +130,7 @@ class BuildReport:
     pipeline_stages_failed: list[str] = field(default_factory=list)
     stage_timings: list[StageTimingReport] = field(default_factory=list)
     biolink_version: str | None = None
-    node_norm_version: str | None = None
+    node_normalizer_version: str | None = None
     release_version: str | None = None
     storage_url: str = "https://kgx-storage.rtx.ai"
     docs_url: str = "https://kgx-storage.rtx.ai/docs"
@@ -167,7 +167,7 @@ def collect_source_report(source: str, node_properties: list[str]) -> SourceRepo
     metadata = PipelineMetadata(**build_data)
     report.source_version = metadata.source_version
     report.transform_version = metadata.transform_version
-    report.node_norm_version = metadata.node_norm_version
+    report.node_normalizer_version = metadata.node_normalizer_version
     report.biolink_version = metadata.biolink_version
     report.build_version = metadata.build_version
 
@@ -244,7 +244,7 @@ def collect_merged_graph_report(graph_id: str, expected_sources: list[str]) -> M
     report.build_version = release_data.get("build_version")
     report.release_version = release_data.get("release_version")
     report.biolink_version = release_data.get("biolink_version")
-    report.node_norm_version = release_data.get("node_norm_version")
+    report.node_normalizer_version = release_data.get("node_normalizer_version")
 
     # Read graph-metadata.json to get included sources
     release_version = report.release_version
@@ -409,7 +409,7 @@ def generate_build_report(
     built_sources = [s for s in report.source_reports if s.status not in ("no_build", "unknown")]
     if built_sources:
         biolink_versions = {s.biolink_version for s in built_sources if s.biolink_version}
-        nodenorm_versions = {s.node_norm_version for s in built_sources if s.node_norm_version}
+        nodenorm_versions = {s.node_normalizer_version for s in built_sources if s.node_normalizer_version}
         release_versions = {s.release_version for s in built_sources if s.release_version}
 
         if len(biolink_versions) == 1:
@@ -419,11 +419,11 @@ def generate_build_report(
             report.build_notes.append(f"WARNING: Multiple biolink versions found: {report.biolink_version}")
 
         if len(nodenorm_versions) == 1:
-            report.node_norm_version = nodenorm_versions.pop()
+            report.node_normalizer_version = nodenorm_versions.pop()
         elif nodenorm_versions:
-            report.node_norm_version = ", ".join(sorted(nodenorm_versions))
+            report.node_normalizer_version = ", ".join(sorted(nodenorm_versions))
             report.build_notes.append(
-                f"WARNING: Multiple node normalization versions found: {report.node_norm_version}"
+                f"WARNING: Multiple node normalization versions found: {report.node_normalizer_version}"
             )
 
         if release_versions:
@@ -628,8 +628,8 @@ def _format_versions_section(report: BuildReport) -> list[str]:
     version_parts = []
     if report.biolink_version:
         version_parts.append(f"Biolink version: {report.biolink_version}")
-    if report.node_norm_version:
-        version_parts.append(f"Node normalization version: {report.node_norm_version}")
+    if report.node_normalizer_version:
+        version_parts.append(f"Node normalization version: {report.node_normalizer_version}")
     if report.release_version:
         version_parts.append(f"Release version: {report.release_version}")
     lines: list[str] = []

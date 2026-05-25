@@ -356,7 +356,7 @@ def _write_source_artifacts(data_path: Path, releases_path: Path, source: str) -
         "source": source,
         "source_version": _SOURCE_VERSION,
         "transform_version": _TRANSFORM_VERSION,
-        "node_norm_version": _NODE_NORM_VERSION,
+        "node_normalizer_version": _NODE_NORM_VERSION,
         "biolink_version": _BIOLINK_VERSION,
         "build_version": f"{source}_{_SOURCE_VERSION}_{_TRANSFORM_VERSION}_{_NODE_NORM_VERSION}_{_BIOLINK_VERSION}",
     }
@@ -395,7 +395,7 @@ def _write_merged_graph_artifacts(releases_path: Path) -> None:
         "build_version": "merged_build",
         "release_version": _RELEASE_VERSION,
         "biolink_version": _BIOLINK_VERSION,
-        "node_norm_version": _NODE_NORM_VERSION,
+        "node_normalizer_version": _NODE_NORM_VERSION,
     }))
     version_dir = graph_dir / _RELEASE_VERSION
     version_dir.mkdir(parents=True, exist_ok=True)
@@ -564,7 +564,7 @@ def _make_text_report() -> str:
         merged_graph=MergedGraphReport(graph_id="translator_kg", status="merged",
                                        sources_included=["ctd", "go_cam"]),
         biolink_version="4.2.0",
-        node_norm_version="1.0",
+        node_normalizer_version="1.0",
         release_version="2026_03_12",
     )
     return format_text_report(report)
