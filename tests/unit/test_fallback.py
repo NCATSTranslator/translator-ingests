@@ -16,8 +16,6 @@ Pins the contract:
 import json
 from pathlib import Path
 
-import pytest
-
 from translator_ingest.util.run_build.fallback import (
     SourcePartition,
     format_missing_sources_error,
