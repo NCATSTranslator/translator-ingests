@@ -30,12 +30,12 @@ from translator_ingest.util.run_build.build_report import (
     load_upload_results,
     save_report,
 )
-from translator_ingest.util.run_build.run_build import (
-    PerformanceTracker,
-    BuildDisplay,
-    create_report_dir,
-    stage_upload,
-)
+# after the run_build split each concern lives in its own module — import
+# from the canonical location rather than the legacy run_build shim
+from translator_ingest.util.run_build.display import BuildDisplay
+from translator_ingest.util.run_build.paths import create_report_dir
+from translator_ingest.util.run_build.stages import stage_upload
+from translator_ingest.util.run_build.tracking import PerformanceTracker
 from translator_ingest.util.run_build.utils import (
     MEMORY_CRITICAL_THRESHOLD_PERCENT,
     MEMORY_WARNING_THRESHOLD_PERCENT,
@@ -685,7 +685,8 @@ def test_create_report_dir(tmp_path, monkeypatch):
     'latest' at build start would produce an empty shell that never reflects
     the actual build content.
     """
-    monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
+    # create_report_dir reads REPORTS_BASE from paths.py after the split
+    monkeypatch.setattr("translator_ingest.util.run_build.paths.REPORTS_BASE", tmp_path)
     report_dir = create_report_dir()
 
     assert report_dir.exists()
@@ -706,11 +707,13 @@ def test_finalize_latest_copies_refreshes_latest_after_build(tmp_path, monkeypat
     directory has been fully populated with stage summaries and the final
     build report, and then 'latest' is copied from it.
     """
-    from translator_ingest.util.run_build.run_build import finalize_latest_copies
+    # finalize_latest_copies lives in paths.py after the split — patch the
+    # module that actually owns these bindings
+    from translator_ingest.util.run_build.paths import finalize_latest_copies
 
-    monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
+    monkeypatch.setattr("translator_ingest.util.run_build.paths.REPORTS_BASE", tmp_path)
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.LOGS_BASE", tmp_path / "logs",
+        "translator_ingest.util.run_build.paths.LOGS_BASE", tmp_path / "logs",
     )
     (tmp_path / "logs").mkdir()
 
@@ -743,11 +746,12 @@ def test_finalize_latest_copies_handles_missing_logs_stage_dir(tmp_path, monkeyp
     (e.g. if a stage was skipped due to memory pressure and never created
     its log file).
     """
-    from translator_ingest.util.run_build.run_build import finalize_latest_copies
+    # finalize_latest_copies and the *_BASE constants live in paths.py
+    from translator_ingest.util.run_build.paths import finalize_latest_copies
 
-    monkeypatch.setattr("translator_ingest.util.run_build.run_build.REPORTS_BASE", tmp_path)
+    monkeypatch.setattr("translator_ingest.util.run_build.paths.REPORTS_BASE", tmp_path)
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.LOGS_BASE", tmp_path / "logs",
+        "translator_ingest.util.run_build.paths.LOGS_BASE", tmp_path / "logs",
     )
     (tmp_path / "logs").mkdir()
 
@@ -945,7 +949,7 @@ def test_tracker_get_memory_critical_info_not_triggered():
 def test_tracker_warning_threshold_logs(monkeypatch, caplog):
     """Warning is logged once when memory exceeds warning threshold."""
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.psutil.virtual_memory",
+        "translator_ingest.util.run_build.tracking.psutil.virtual_memory",
         lambda: _fake_vmem(85.0),
     )
     tracker = PerformanceTracker(
@@ -971,7 +975,7 @@ def test_tracker_warning_threshold_logs(monkeypatch, caplog):
 def test_tracker_critical_threshold_consecutive_samples(monkeypatch):
     """Critical event fires after enough consecutive samples above threshold."""
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.psutil.virtual_memory",
+        "translator_ingest.util.run_build.tracking.psutil.virtual_memory",
         lambda: _fake_vmem(95.0),
     )
     tracker = PerformanceTracker(
@@ -1004,7 +1008,7 @@ def test_tracker_critical_threshold_transient_spike_does_not_trigger(monkeypatch
         return _fake_vmem(50.0)
 
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.psutil.virtual_memory",
+        "translator_ingest.util.run_build.tracking.psutil.virtual_memory",
         _alternating_vmem,
     )
     tracker = PerformanceTracker(
@@ -1034,7 +1038,7 @@ def test_tracker_warning_resets_below_threshold(monkeypatch, caplog):
         return _fake_vmem(85.0)
 
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.psutil.virtual_memory",
+        "translator_ingest.util.run_build.tracking.psutil.virtual_memory",
         _up_down_vmem,
     )
     tracker = PerformanceTracker(
@@ -1057,7 +1061,7 @@ def test_tracker_warning_resets_below_threshold(monkeypatch, caplog):
 def test_tracker_memory_critical_info_populated_on_trigger(monkeypatch):
     """get_memory_critical_info returns real values after critical event fires."""
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.psutil.virtual_memory",
+        "translator_ingest.util.run_build.tracking.psutil.virtual_memory",
         lambda: _fake_vmem(92.0),
     )
     tracker = PerformanceTracker(
@@ -1333,19 +1337,19 @@ def test_stage_upload_marks_completed_on_success(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
     )
 
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        "translator_ingest.util.run_build.stages.discover_data_sources",
         lambda: ["go_cam"],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        "translator_ingest.util.run_build.stages.discover_release_sources",
         lambda: ["go_cam"],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.upload_and_cleanup",
+        "translator_ingest.util.run_build.stages.upload_and_cleanup",
         lambda **kwargs: _fake_upload_results(total_failed=0),
     )
 
@@ -1371,18 +1375,18 @@ def test_stage_upload_marks_failed_on_upload_failures(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        "translator_ingest.util.run_build.stages.discover_data_sources",
         lambda: ["go_cam"],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        "translator_ingest.util.run_build.stages.discover_release_sources",
         lambda: ["go_cam"],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.upload_and_cleanup",
+        "translator_ingest.util.run_build.stages.upload_and_cleanup",
         lambda **kwargs: _fake_upload_results(total_failed=3),
     )
 
@@ -1401,14 +1405,14 @@ def test_stage_upload_marks_failed_on_exception(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        "translator_ingest.util.run_build.stages.discover_data_sources",
         lambda: ["go_cam"],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        "translator_ingest.util.run_build.stages.discover_release_sources",
         lambda: ["go_cam"],
     )
 
@@ -1416,7 +1420,7 @@ def test_stage_upload_marks_failed_on_exception(tmp_path, monkeypatch):
         raise ConnectionError("S3 unreachable")
 
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.upload_and_cleanup", _explode,
+        "translator_ingest.util.run_build.stages.upload_and_cleanup", _explode,
     )
 
     with pytest.raises(ConnectionError, match="S3 unreachable"):
@@ -1439,18 +1443,18 @@ def test_stage_upload_saves_summary_json(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_data_sources",
+        "translator_ingest.util.run_build.stages.discover_data_sources",
         lambda: [],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.discover_release_sources",
+        "translator_ingest.util.run_build.stages.discover_release_sources",
         lambda: [],
     )
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.run_build.upload_and_cleanup",
+        "translator_ingest.util.run_build.stages.upload_and_cleanup",
         lambda **kwargs: _fake_upload_results(),
     )
 
