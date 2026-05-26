@@ -1,13 +1,19 @@
 def sources = []
 
 pipeline {
-    agent { label 'transltr-ci-build-node-03-24.04' }
+    agent { 
+        node {
+            label 'transltr-ci-build-node-03-24.04'
+            customWorkspace '/home/deploy/jenkins/workspace/ci/KGX/kgx-ci-pipeline'
+        }
+    }
 
     options {
         // Disable concurrent builds to ensure workspace reuse
-        // This prevents @2, @3 workspace directories and ensures all builds
-        // use the main workspace where cached data (data/, releases/) lives
         disableConcurrentBuilds()
+        
+        // Skip default checkout in Declarative stage - we'll do explicit checkout
+        skipDefaultCheckout()
     }
 
     triggers {
