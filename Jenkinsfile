@@ -3,6 +3,13 @@ sources = []
 pipeline {
     agent { label 'transltr-ci-build-node-03-24.04' }
 
+    options {
+        // Disable concurrent builds to ensure workspace reuse
+        // This prevents @2, @3 workspace directories and ensures all builds
+        // use the main workspace where cached data (data/, releases/) lives
+        disableConcurrentBuilds()
+    }
+
     triggers {
         // Run bi-weekly (every 2 weeks) on 1st and 3rd Sunday at 2 AM EST
         cron('0 2 1-7,15-21 * 0')
