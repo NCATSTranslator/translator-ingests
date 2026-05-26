@@ -2,7 +2,14 @@ import pytest
 
 from typing import Optional, Any
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    CorrelatedGeneToDiseaseAssociation,
+    Association,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 
 import koza
 from koza.transform import Mappings
@@ -544,3 +551,55 @@ def test_transform_icees_edges(
         expected_edges=result_edge,
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS+qualifiers,
     )
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_ICEES_SOURCES = [
+    RetrievalSource(
+        id="infores:icees-kg",
+        resource_id="infores:icees-kg",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": CorrelatedGeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:icees-test-1",
+            "subject": "NCBIGene:3105",
+            "predicate": "biolink:positively_correlated_with",
+            "object": "MONDO:0007079",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.not_provided,
+            "sources": _ICEES_SOURCES,
+        },
+    },
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:icees-test-2",
+            "subject": "PUBCHEM.COMPOUND:2083",
+            "predicate": "biolink:positively_correlated_with",
+            "object": "MONDO:0007079",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.not_provided,
+            "sources": _ICEES_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

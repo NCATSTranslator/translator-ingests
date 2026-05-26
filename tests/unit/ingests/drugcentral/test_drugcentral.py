@@ -6,6 +6,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,    ## ONLY for affects
     ChemicalGeneInteractionAssociation,    ## ONLY for interacts_with
     MacromolecularMachineHasSubstrateAssociation,    ## ONLY for has_substrate
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
 )
 import translator_ingest.util.biolink as util
 
@@ -148,6 +152,82 @@ def test_substrate(substrate):
     assert aggregator.resource_id == util.INFORES_DRUGCENTRAL
     ## no publications
     assert association.publications is None
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_DC_SOURCES = [
+    RetrievalSource(
+        id="infores:drugcentral",
+        resource_id="infores:drugcentral",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:dc-test-1",
+            "subject": "DrugCentral:144",
+            "predicate": "biolink:treats",
+            "object": "UMLS:C0022336",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            "sources": _DC_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "uuid:dc-test-2",
+            "subject": "DrugCentral:296",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P11387",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _DC_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalGeneInteractionAssociation,
+        "params": {
+            "id": "uuid:dc-test-3",
+            "subject": "DrugCentral:4192",
+            "predicate": "biolink:interacts_with",
+            "object": "UniProtKB:P02766",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _DC_SOURCES,
+        },
+    },
+    {
+        "association_class": MacromolecularMachineHasSubstrateAssociation,
+        "params": {
+            "id": "uuid:dc-test-4",
+            "subject": "UniProtKB:P31645",
+            "predicate": "biolink:has_substrate",
+            "object": "DrugCentral:618",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _DC_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
 
 
 ## act_table_full

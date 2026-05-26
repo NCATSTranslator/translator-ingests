@@ -5,8 +5,11 @@ import polars as pl
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AffinityMeasurement,
+    ChemicalGeneInteractionAssociation,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
 )
 
 import koza
@@ -501,3 +504,43 @@ def test_filter_affinity_values_nulls_out_of_range_columns(
     row = result.to_dicts()[0]
     assert row["Ki (nM)"] == "90"
     assert row["IC50 (nM)"] is None
+
+
+# ===== PYDANTIC ROUNDTRIP TESTS =====
+
+BINDINGDB_TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:bindingdb",
+        resource_id="infores:bindingdb",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": ChemicalGeneInteractionAssociation,
+        "params": {
+            "id": "uuid:test-bindingdb-1",
+            "subject": "PUBCHEM.COMPOUND:5327301",
+            "predicate": "biolink:directly_physically_interacts_with",
+            "object": "UniProtKB:P42574",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": BINDINGDB_TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

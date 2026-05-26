@@ -2,7 +2,18 @@ import pytest
 
 from typing import Optional
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    ChemicalAffectsGeneAssociation,
+    GeneAffectsChemicalAssociation,
+    ChemicalEntityToChemicalEntityAssociation,
+    AnatomicalEntityHasPartAnatomicalEntityAssociation,
+    MacromolecularMachineHasSubstrateAssociation,
+    Association,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 
 import koza
 from koza.transform import Mappings
@@ -87,3 +98,103 @@ def test_ingest_transform(
             node_test_slots=NODE_TEST_SLOTS,
             edge_test_slots=ASSOCIATION_TEST_SLOTS,
         )
+
+
+# ===== PYDANTIC ROUNDTRIP TESTS =====
+
+CHEMBL_TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:chembl",
+        resource_id="infores:chembl",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "uuid:test-chembl-caga-1",
+            "subject": "CHEMBL.COMPOUND:CHEMBL25",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P00533",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneAffectsChemicalAssociation,
+        "params": {
+            "id": "uuid:test-chembl-gaca-1",
+            "subject": "UniProtKB:P00533",
+            "predicate": "biolink:affects",
+            "object": "CHEMBL.COMPOUND:CHEMBL25",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToChemicalEntityAssociation,
+        "params": {
+            "id": "uuid:test-chembl-cetce-1",
+            "subject": "CHEMBL.COMPOUND:CHEMBL1201087",
+            "predicate": "biolink:has_metabolite",
+            "object": "CHEMBL.COMPOUND:CHEMBL947",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": AnatomicalEntityHasPartAnatomicalEntityAssociation,
+        "params": {
+            "id": "uuid:test-chembl-aehp-1",
+            "subject": "CHEMBL.TARGET:CHEMBL612409",
+            "predicate": "biolink:has_part",
+            "object": "UniProtKB:Q15125",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": MacromolecularMachineHasSubstrateAssociation,
+        "params": {
+            "id": "uuid:test-chembl-mmhs-1",
+            "subject": "UniProtKB:P08684",
+            "predicate": "biolink:has_substrate",
+            "object": "CHEMBL.COMPOUND:CHEMBL25",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:test-chembl-assoc-1",
+            "subject": "CHEMBL.COMPOUND:CHEMBL25",
+            "predicate": "biolink:related_to",
+            "object": "UniProtKB:P00533",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

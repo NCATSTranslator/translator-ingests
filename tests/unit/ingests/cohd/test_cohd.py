@@ -5,8 +5,11 @@ from typing import Optional, Any
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
     ConceptCountAnalysisResult,
+    Association,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
 )
 
 import koza
@@ -885,4 +888,44 @@ def test_transform_cohd_edges(
         expected_edges=result_edge,
         edge_test_slots=CORE_ASSOCIATION_TEST_SLOTS
     )
+
+
+# ===== PYDANTIC ROUNDTRIP TESTS =====
+
+COHD_TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:cohd",
+        resource_id="infores:cohd",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:test-cohd-1",
+            "subject": "SNOMEDCT:60108003",
+            "predicate": "biolink:positively_correlated_with",
+            "object": "CPT:73540",
+            "knowledge_level": KnowledgeLevelEnum.statistical_association,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
+            "sources": COHD_TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
 

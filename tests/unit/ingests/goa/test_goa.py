@@ -3,6 +3,14 @@ from pathlib import Path
 import pytest
 import yaml
 
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    GeneToGoTermAssociation,
+    Association,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 from translator_ingest.ingests.goa.goa import (
     ASPECT_TO_PREDICATE,
     QUALIFIER_TO_PREDICATE,
@@ -74,3 +82,55 @@ def test_goa_assigned_by_to_supporting_source_mapping(
 ) -> None:
     """Ensure Assigned_By provenance is mapped to supporting sources when available."""
     assert get_supporting_data_sources(assigned_by) == expected_supporting
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_GOA_SOURCES = [
+    RetrievalSource(
+        id="infores:goa",
+        resource_id="infores:goa",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": GeneToGoTermAssociation,
+        "params": {
+            "id": "uuid:goa-test-1",
+            "subject": "MGI:101757",
+            "predicate": "biolink:enables",
+            "object": "GO:0005515",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _GOA_SOURCES,
+        },
+    },
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:goa-test-2",
+            "subject": "UniProtKB:A0A024RBG1",
+            "predicate": "biolink:enables",
+            "object": "GO:0003700",
+            "knowledge_level": KnowledgeLevelEnum.prediction,
+            "agent_type": AgentTypeEnum.automated_agent,
+            "sources": _GOA_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

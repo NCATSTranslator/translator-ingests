@@ -1,7 +1,14 @@
 import logging
 import pytest
 
-from biolink_model.datamodel.pydanticmodel_v2 import GeneToGeneAssociation, Gene
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    GeneToGeneAssociation,
+    Gene,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 from translator_ingest.ingests.go_cam.go_cam import transform_go_cam_models
 
 from tests.unit.ingests import MockKozaWriter
@@ -108,3 +115,43 @@ def test_gocam_entities(gocam_output):
     assert len(association.sources) >= 1
     primary_source = [s for s in association.sources if s.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == "infores:go-cam"
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_GO_CAM_SOURCES = [
+    RetrievalSource(
+        id="infores:go-cam",
+        resource_id="infores:go-cam",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": GeneToGeneAssociation,
+        "params": {
+            "id": "uuid:gocam-test-1",
+            "subject": "UniProtKB:P12345",
+            "predicate": "biolink:regulates",
+            "object": "UniProtKB:Q67890",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _GO_CAM_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
