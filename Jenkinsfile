@@ -15,7 +15,7 @@ def sources = []
 
 // Force specific workspace path
 node('transltr-ci-build-node-03-24.04') {
-    ws('/home/deploy/jenkins/workspace/ci/KGX/kgx-ci-pipeline') {
+    dir('/home/deploy/jenkins/workspace/ci/KGX/kgx-ci-pipeline') {
         try {
             env.S3_BUCKET_NAME = 'kgx-translator-ingests'
             
