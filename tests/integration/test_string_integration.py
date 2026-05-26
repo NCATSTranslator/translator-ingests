@@ -95,7 +95,7 @@ def test_edge_shape(koza_output):
         assert edge["predicate"] == "biolink:physically_interacts_with"
         assert edge["subject"].startswith("ENSEMBL:ENSP")
         assert edge["object"].startswith("ENSEMBL:ENSP")
-        assert edge["knowledge_level"] == "knowledge_assertion"
+        assert edge["knowledge_level"] == "not_provided"
         assert edge["agent_type"] == "not_provided"
         # PSI-MI interaction-type CURIE attached via has_attribute.
         assert edge["has_attribute"] == ["MI:0915"]

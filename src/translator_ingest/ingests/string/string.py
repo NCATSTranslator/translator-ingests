@@ -187,7 +187,11 @@ def transform_record(
         object=object_id,
         sources=STRING_SOURCES,
         has_attribute=[STRING_INTERACTION_TYPE_PSI_MI],
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        # STRING's combined_score is computationally aggregated across heterogeneous
+        # channels (experiments, databases, text mining, co-expression, neighborhood,
+        # fusion, co-occurrence). It isn't an explicit curator assertion of any single
+        # claim, so ``not_provided`` is honest. Matches the Automat STRING-DB KP.
+        knowledge_level=KnowledgeLevelEnum.not_provided,
         agent_type=AgentTypeEnum.not_provided,
     )
     return KnowledgeGraph(nodes=[subject_node, object_node], edges=[edge])

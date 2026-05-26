@@ -150,7 +150,7 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
 
     edge = result.edges[0]
     assert edge.predicate == "biolink:physically_interacts_with"
-    assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+    assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
     assert edge.agent_type == AgentTypeEnum.not_provided
     # PSI-MI interaction-type CURIE (MI:0915 physical association) attached via has_attribute.
     assert edge.has_attribute == ["MI:0915"]

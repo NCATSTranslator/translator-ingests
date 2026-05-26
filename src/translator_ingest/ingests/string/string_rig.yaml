@@ -3,6 +3,7 @@ name: STRING Reference Ingest Guide
 # Information about the Source of the ingest
 source_info:
     infores_id: infores:string
+    name: Search Tool for the Retrieval of Interacting Genes/Proteins (STRING)
     description: >-
       STRING (Search Tool for the Retrieval of Interacting Genes/Proteins) is a database of known and predicted
       protein–protein interactions hosted by SIB / EMBL / CPR. STRING aggregates evidence from seven channels —
@@ -10,9 +11,12 @@ source_info:
       mining — plus curated databases, and combines them into a single ``combined_score`` per interaction pair.
     citations:
       - Szklarczyk D, Kirsch R, Koutrouli M, et al. The STRING database in 2023. Nucleic Acids Res. 2023;51(D1):D638–D646. doi:10.1093/nar/gkac1000
-    terms_of_use: >-
-      STRING data is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0):
-      https://string-db.org/cgi/access.
+    terms_of_use_info:
+      terms_of_use_url: https://string-db.org/cgi/access
+      terms_of_use_description: >-
+        STRING data is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+      license_name: CC BY 4.0
+      license_url: https://creativecommons.org/licenses/by/4.0/
     data_access_locations:
       - STRING downloads: https://stringdb-downloads.org/
       - STRING main site: https://string-db.org/
@@ -71,7 +75,8 @@ ingest_info:
       - category: edge_content
         consideration: >-
           Extend to additional Translator-relevant organisms (mouse, rat, zebrafish, fly, worm, yeast) by ingesting the
-          corresponding per-taxon files from STRING.
+          corresponding per-taxon files from STRING. The transform code already accepts arbitrary taxa via the
+          ``SUPPORTED_TAXA`` dict in ``string.py``; only the reader yaml needs to point at the additional files.
         relevant_files: "{taxon}.protein.links.v12.0.txt.gz"
       - category: edge_property_content
         consideration: >-
@@ -89,13 +94,23 @@ ingest_info:
         relevant_files: 9606.protein.links.full.v12.0.txt.gz
       - category: edge_content
         consideration: >-
+          Restrict to the physical subnetwork via ``protein.physical.links.v12.0.txt.gz`` for edges that are
+          semantically defensible under the ``biolink:physically_interacts_with`` predicate. The current functional
+          network includes text-mining and co-expression evidence that does not, on its own, imply physical contact.
+          A dual-source design (physical → ``physically_interacts_with`` + MI:0915; functional → ``interacts_with`` +
+          MI:0190) is planned.
+        relevant_files: "{taxon}.protein.physical.links.v12.0.txt.gz"
+      - category: edge_content
+        consideration: >-
           Ingest STITCH (``{taxon}.protein_chemical.links.v5.0.tsv.gz``) to add protein–chemical interactions, mapping
-          STITCH ``CIDm``/``CIDs`` identifiers to ``PUBCHEM.COMPOUND`` CURIEs.
+          STITCH ``CIDm``/``CIDs`` identifiers to ``PUBCHEM.COMPOUND`` CURIEs. Will introduce a ``biolink:ChemicalEntity``
+          node type and protein → chemical edges.
         relevant_files: "{taxon}.protein_chemical.links.v5.0.tsv.gz"
       - category: node_content
         consideration: >-
           Ingest ``protein.aliases.v12.0.txt.gz`` to populate node ``name`` and ``synonym`` properties. Currently nodes
-          carry only the ENSEMBL ID as their name.
+          carry only the ENSEMBL ID as their identifier; biolink validation flags this with INFO-level "missing
+          recommended name" warnings on every node.
         relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
     additional_notes: >-
       This is a deliberately reduced first iteration: human-only, single predicate, no subscores, no STITCH. The
@@ -117,9 +132,24 @@ target_info:
             value_enumeration:
               - NCBITaxon:9606
         knowledge_level:
-          - knowledge_assertion
+          # STRING's combined_score is a computational aggregation across heterogeneous
+          # evidence channels rather than an explicit curator claim. ``not_provided``
+          # is the honest punt — matches Automat's STRING-DB KP. Reconsider only if
+          # we ingest the per-channel detailed file and emit channel-specific edges
+          # with stronger semantics (e.g. EXPERIMENTS-only edges could justify
+          # ``knowledge_assertion``).
+          - not_provided
         agent_type:
           - not_provided
+        edge_properties:
+          # PSI-MI interaction-type CURIE attached to every edge via the biolink
+          # ``has_attribute`` slot. MI:0915 is "physical association" — matches the
+          # claim made by ``biolink:physically_interacts_with``. When the functional
+          # source is added under ``biolink:interacts_with``, that edge type will
+          # carry MI:0190 (interaction) instead. See CHANGELOG.md for the slot/term
+          # rationale.
+          - has_attribute:
+              - MI:0915
         primary_knowledge_sources:
           - infores:string
         ui_explanation: >-
@@ -132,11 +162,35 @@ target_info:
 
     node_type_info:
       - node_category: biolink:Protein
-        source_identifier_types: ensembl
+        # Source identifier types reflect the canonical post-normalization identifier
+        # set on Protein nodes in the merged Translator graph (as seen on Automat's
+        # STRING-DB KP). Pre-normalization, this ingest emits only ``ENSEMBL`` —
+        # the Translator NodeNormalizer expands to ``UniProtKB`` and ``PR`` equivalents
+        # automatically (~98.5% of human ENSPs resolve; the remainder are retired
+        # ENSEMBL IDs that STRING v12.0 still ships).
+        source_identifier_types:
+          - ENSEMBL
+          - UniProtKB
+          - PR
+        node_properties:
+          - in_taxon
         additional_notes: >-
           Protein nodes use STRING's native identifiers, which are ENSEMBL protein IDs (e.g. ENSP00000000233). The
           leading ``9606.`` taxon prefix is stripped and the result is prefixed with ``ENSEMBL:``. Each node carries
-          ``in_taxon = NCBITaxon:9606``.
+          ``in_taxon = NCBITaxon:9606``. The ingest emits ENSEMBL only; UniProtKB and PR equivalents appear in the
+          downstream Translator graph via the NodeNormalizer.
+
+      - node_category: biolink:ChemicalEntity
+        # Declared as a canonical target node type, not currently emitted. STITCH
+        # protein–chemical edges (see ``ingest_info.future_considerations``) would
+        # populate this category. Automat ships STRING + STITCH as a merged KP, so
+        # ChemicalEntity is the natural co-resident node type for this graph.
+        source_identifier_types:
+          - PUBCHEM.COMPOUND
+        node_properties: []
+        additional_notes: >-
+          Not emitted by the current ingest. Reserved for the planned STITCH (``protein_chemical.links``) extension,
+          which will map STITCH ``CIDm`` / ``CIDs`` identifiers to ``PUBCHEM.COMPOUND`` CURIEs.
 
 # Information about how the ingest was specified and performed
 provenance_info:
