@@ -1,4 +1,4 @@
-sources = []
+def sources = []
 
 pipeline {
     agent { label 'transltr-ci-build-node-03-24.04' }
