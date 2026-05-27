@@ -3,7 +3,8 @@ import koza
 import pandas as pd
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     Gene,    ## because terms/IDs dgidb gives are for genes

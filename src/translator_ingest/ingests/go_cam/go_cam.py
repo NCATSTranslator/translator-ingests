@@ -1,13 +1,13 @@
 import json
 import tarfile
 import tempfile
-
 from pathlib import Path
 from typing import Optional, Any, Iterable
 
 import koza
 import requests
 
+from translator_ingest.util.transform_utils import entity_id
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     KnowledgeLevelEnum,

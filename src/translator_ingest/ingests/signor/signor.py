@@ -11,23 +11,26 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ## necessary associations and interactions
     Association,
     GeneRegulatesGeneAssociation,
-    #PairwiseMolecularInteraction,
+    PairwiseGeneToGeneInteraction,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     ChemicalAffectsGeneAssociation,
-    #PairwiseGeneToGeneInteraction,
+    ChemicalGeneInteractionAssociation,
     ## necessary enums
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import (
     INFORES_SIGNOR
 )
+
+SIGNOR_SOURCES = build_association_knowledge_sources(primary=INFORES_SIGNOR)
 
 # adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
@@ -320,7 +323,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -334,19 +337,18 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     species_context_qualifier = species_context_qualifier,
                 )
 
-                association_2 = GeneRegulatesGeneAssociation(
+                association_2 = PairwiseGeneToGeneInteraction(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -373,7 +375,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -409,7 +411,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes
@@ -446,7 +448,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -460,19 +462,18 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
-                association_2 = GeneAffectsChemicalAssociation(
+                association_2 = ChemicalGeneInteractionAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -499,7 +500,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -538,12 +539,12 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
                     predicate = current_predicate_mapping,
-                    qualified_predicate = BIOLINK_AFFECTS,
+                    qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
                     causal_mechanism_qualifier = current_causal_mechanism_mapping,
@@ -552,19 +553,18 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
-                association_2 = ChemicalAffectsGeneAssociation(
+                association_2 = ChemicalGeneInteractionAssociation(
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -591,7 +591,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -632,7 +632,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = current_predicate_mapping,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
@@ -648,7 +648,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -676,7 +676,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = current_predicate_mapping,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
