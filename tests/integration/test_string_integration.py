@@ -41,22 +41,32 @@ FIXTURE_DIR = (
 )
 LINK_FIXTURE = FIXTURE_DIR / "9606.protein.links.v12.0.txt.gz"
 ENTREZ_FIXTURE = FIXTURE_DIR / "all_organisms.entrez_2_string.tsv"
+STITCH_FIXTURE = FIXTURE_DIR / "9606.protein_chemical.links.v5.0.tsv.gz"
 
 
 @pytest.fixture(scope="module")
 def koza_output(tmp_path_factory) -> Path:
-    """Run koza transform once per module against the fixture and return the output dir."""
-    assert LINK_FIXTURE.exists(), f"Missing link fixture: {LINK_FIXTURE}"
-    assert ENTREZ_FIXTURE.exists(), f"Missing entrez mapping fixture: {ENTREZ_FIXTURE}"
+    """
+    Run the full Koza pipeline (both ``string_ppi`` and ``stitch_pcl`` tagged
+    readers) once per module against the checked-in fixtures and return the
+    output dir. Each tagged reader produces its own ``{tag}_nodes.jsonl`` and
+    ``{tag}_edges.jsonl`` output files.
+    """
+    for f in (LINK_FIXTURE, ENTREZ_FIXTURE, STITCH_FIXTURE):
+        assert f.exists(), f"Missing fixture: {f}"
     output_dir = tmp_path_factory.mktemp("string_output")
 
     config_yaml_path = get_ingest_config_yaml_path("string")
     assert config_yaml_path is not None, "string.yaml not found"
 
+    # Our fixture filenames match the yaml's `files:` declarations exactly, so
+    # we don't need to override `input_files` — Koza picks them up by name from
+    # the yaml and resolves them under input_files_dir. (Avoids a Koza bug in
+    # the dict form of input_files combined with input_files_dir, where the
+    # nested override shape is mis-applied.)
     _, runner = KozaRunner.from_config_file(
         str(config_yaml_path),
         output_dir=str(output_dir),
-        input_files=[LINK_FIXTURE.name],
         input_files_dir=str(FIXTURE_DIR),
         output_format="jsonl",
     )
@@ -64,55 +74,97 @@ def koza_output(tmp_path_factory) -> Path:
     return output_dir
 
 
+def _load_all(output_dir: Path) -> tuple[list[dict], list[dict]]:
+    """Load all nodes and edges from the merged output files.
+
+    Koza concatenates output from all tagged readers into one pair of files
+    (``string_nodes.jsonl`` / ``string_edges.jsonl``), so per-tag assertions
+    filter on node category / edge primary_knowledge_source.
+    """
+    nodes = _load_jsonl(output_dir / "string_nodes.jsonl")
+    edges = _load_jsonl(output_dir / "string_edges.jsonl")
+    return nodes, edges
+
+
+def _ppi_partition(nodes: list[dict], edges: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Filter the merged output to just the STRING PPI subset."""
+    ppi_edges = [
+        e for e in edges
+        if any(
+            s["resource_id"] == "infores:string" and s["resource_role"] == "primary_knowledge_source"
+            for s in e["sources"]
+        )
+    ]
+    ppi_node_ids = {e["subject"] for e in ppi_edges} | {e["object"] for e in ppi_edges}
+    ppi_nodes = [n for n in nodes if n["id"] in ppi_node_ids]
+    return ppi_nodes, ppi_edges
+
+
+def _stitch_partition(nodes: list[dict], edges: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Filter the merged output to just the STITCH PCL subset."""
+    stitch_edges = [
+        e for e in edges
+        if any(
+            s["resource_id"] == "infores:stitch" and s["resource_role"] == "primary_knowledge_source"
+            for s in e["sources"]
+        )
+    ]
+    stitch_node_ids = {e["subject"] for e in stitch_edges} | {e["object"] for e in stitch_edges}
+    stitch_nodes = [n for n in nodes if n["id"] in stitch_node_ids]
+    return stitch_nodes, stitch_edges
+
+
 def _load_jsonl(path: Path) -> list[dict]:
     with open(path) as fh:
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def test_fixture_row_count():
-    """Sanity-check the fixture itself: 200 rows including the header."""
+def test_fixture_row_counts():
+    """Sanity-check the fixtures themselves."""
     with gzip.open(LINK_FIXTURE, "rt") as fh:
-        lines = fh.readlines()
-    assert len(lines) == 200
-    assert lines[0].strip().split() == ["protein1", "protein2", "combined_score"]
+        ppi_lines = fh.readlines()
+    assert len(ppi_lines) == 200
+    assert ppi_lines[0].strip().split() == ["protein1", "protein2", "combined_score"]
+
+    with gzip.open(STITCH_FIXTURE, "rt") as fh:
+        stitch_lines = fh.readlines()
+    assert len(stitch_lines) == 5000
+    assert stitch_lines[0].strip().split("\t") == ["chemical", "protein", "combined_score"]
 
 
-def test_transform_produces_nodes_and_edges(koza_output):
-    nodes = _load_jsonl(koza_output / "string_nodes.jsonl")
-    edges = _load_jsonl(koza_output / "string_edges.jsonl")
-    # 199 data rows → some pass the >500 cutoff, some don't. The exact pass
-    # count depends on the real data; we assert plausibility rather than exact
-    # equality so this test doesn't get brittle if STRING reissues v12.0.
-    assert 5 < len(edges) < 100, f"unexpected edge count: {len(edges)}"
-    assert 5 < len(nodes) < 200, f"unexpected node count: {len(nodes)}"
+# ──── string_ppi tag: protein-protein interaction assertions ─────────────────
 
 
-def test_node_shape(koza_output):
-    nodes = _load_jsonl(koza_output / "string_nodes.jsonl")
+def test_ppi_produces_nodes_and_edges(koza_output):
+    nodes, edges = _ppi_partition(*_load_all(koza_output))
+    # 199 data rows → some pass the >500 cutoff. Range is loose so the test
+    # absorbs minor STRING reissues without becoming brittle.
+    assert 5 < len(edges) < 100, f"unexpected PPI edge count: {len(edges)}"
+    assert 5 < len(nodes) < 200, f"unexpected PPI node count: {len(nodes)}"
+
+
+def test_ppi_node_shape(koza_output):
+    nodes, _ = _ppi_partition(*_load_all(koza_output))
     for node in nodes:
         assert node["id"].startswith("ENSEMBL:ENSP"), node["id"]
         assert node["category"] == ["biolink:Protein"]
         assert node["in_taxon"] == ["NCBITaxon:9606"]
 
 
-def test_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
+def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
     """The fixture mapping covers 18 of 21 distinct proteins above threshold.
-    Verify most nodes carry NCBIGene equivalents, and at least one doesn't
-    (proving both code paths execute end-to-end)."""
-    nodes = _load_jsonl(koza_output / "string_nodes.jsonl")
+    Verify most PPI nodes carry NCBIGene equivalents (proves the on_data_begin
+    hook loaded the mapping end-to-end)."""
+    nodes, _ = _ppi_partition(*_load_all(koza_output))
     with_equivs = [n for n in nodes if n.get("equivalent_identifiers")]
-    without_equivs = [n for n in nodes if not n.get("equivalent_identifiers")]
     assert len(with_equivs) > 0, "no nodes got equivalent_identifiers — mapping load failed?"
-    # The fixture maps 18 of the 21 distinct above-threshold proteins; we expect
-    # most nodes to be in with_equivs. Not all nodes appear in every edge, so
-    # the exact count depends on which proteins participate in passing edges.
     for node in with_equivs:
         for eq in node["equivalent_identifiers"]:
             assert eq.startswith("NCBIGene:"), eq
 
 
-def test_edge_shape(koza_output):
-    edges = _load_jsonl(koza_output / "string_edges.jsonl")
+def test_ppi_edge_shape(koza_output):
+    _, edges = _ppi_partition(*_load_all(koza_output))
     for edge in edges:
         assert edge["category"] == ["biolink:PairwiseMolecularInteraction"]
         assert edge["predicate"] == "biolink:physically_interacts_with"
@@ -120,22 +172,66 @@ def test_edge_shape(koza_output):
         assert edge["object"].startswith("ENSEMBL:ENSP")
         assert edge["knowledge_level"] == "not_provided"
         assert edge["agent_type"] == "not_provided"
-        # PSI-MI interaction-type CURIE attached via has_attribute.
         assert edge["has_attribute"] == ["MI:0915"]
-        sources = edge["sources"]
-        primary = next(s for s in sources if s["resource_role"] == "primary_knowledge_source")
-        assert primary["resource_id"] == "infores:string"
 
 
-def test_no_duplicate_nodes(koza_output):
-    """Each protein appears as a node at most once across the output."""
-    nodes = _load_jsonl(koza_output / "string_nodes.jsonl")
-    ids = [n["id"] for n in nodes]
-    assert len(ids) == len(set(ids)), "duplicate node IDs in output"
-
-
-def test_no_duplicate_edges_by_unordered_pair(koza_output):
+def test_ppi_no_duplicate_edges_by_unordered_pair(koza_output):
     """Symmetric duplicate rows in STRING should be collapsed to one edge."""
-    edges = _load_jsonl(koza_output / "string_edges.jsonl")
+    _, edges = _ppi_partition(*_load_all(koza_output))
     pair_keys = {tuple(sorted([e["subject"], e["object"]])) for e in edges}
-    assert len(pair_keys) == len(edges), "symmetric duplicates leaked into output"
+    assert len(pair_keys) == len(edges), "symmetric duplicates leaked into PPI output"
+
+
+# ──── stitch_pcl tag: protein-chemical interaction assertions ────────────────
+
+
+def test_stitch_produces_nodes_and_edges(koza_output):
+    nodes, edges = _stitch_partition(*_load_all(koza_output))
+    # 4,999 data rows → ~31 pass the >500 cutoff (verified during fixture build).
+    assert 10 < len(edges) < 60, f"unexpected STITCH edge count: {len(edges)}"
+    assert 10 < len(nodes) < 120, f"unexpected STITCH node count: {len(nodes)}"
+
+
+def test_stitch_emits_chemical_and_protein_nodes(koza_output):
+    nodes, _ = _stitch_partition(*_load_all(koza_output))
+    chemicals = [n for n in nodes if n["category"] == ["biolink:ChemicalEntity"]]
+    proteins = [n for n in nodes if n["category"] == ["biolink:Protein"]]
+    assert len(chemicals) > 0, "no chemical nodes emitted"
+    assert len(proteins) > 0, "no protein nodes emitted"
+    assert len(chemicals) + len(proteins) == len(nodes), "unexpected category in STITCH output"
+
+    for chem in chemicals:
+        assert chem["id"].startswith("PUBCHEM.COMPOUND:"), chem["id"]
+    for prot in proteins:
+        assert prot["id"].startswith("ENSEMBL:ENSP"), prot["id"]
+        assert prot["in_taxon"] == ["NCBITaxon:9606"]
+
+
+def test_stitch_edge_shape(koza_output):
+    _, edges = _stitch_partition(*_load_all(koza_output))
+    for edge in edges:
+        assert edge["predicate"] == "biolink:interacts_with"
+        assert edge["subject"].startswith("PUBCHEM.COMPOUND:")
+        assert edge["object"].startswith("ENSEMBL:ENSP")
+        assert edge["knowledge_level"] == "not_provided"
+        assert edge["agent_type"] == "not_provided"
+        assert edge["has_attribute"] == ["MI:0190"]
+
+
+# ──── merged-output assertions (both tags) ───────────────────────────────────
+
+
+def test_merged_output_partition_covers_all(koza_output):
+    """Every emitted edge belongs to exactly one of the two source partitions."""
+    nodes, edges = _load_all(koza_output)
+    ppi_nodes, ppi_edges = _ppi_partition(nodes, edges)
+    stitch_nodes, stitch_edges = _stitch_partition(nodes, edges)
+    assert len(ppi_edges) + len(stitch_edges) == len(edges), \
+        "an edge falls outside both partitions"
+
+
+def test_no_duplicate_nodes_in_merged_output(koza_output):
+    """Each node id appears at most once across the combined output."""
+    nodes, _ = _load_all(koza_output)
+    ids = [n["id"] for n in nodes]
+    assert len(ids) == len(set(ids)), "duplicate node IDs in merged output"

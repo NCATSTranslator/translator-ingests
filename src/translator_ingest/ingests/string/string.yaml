@@ -3,16 +3,35 @@ name: string
 metadata:
   ingest_title: 'STRING'
   ingest_url: 'https://string-db.org/'
-  description: 'Search Tool for the Retrieval of Interacting Genes/Proteins — human protein-protein interactions.'
+  description: >-
+    Search Tool for the Retrieval of Interacting Genes/Proteins (STRING) and its sister database for protein-chemical
+    interactions, STITCH. Both share STRING's protein identifier scheme and combined_score model.
   rights: 'https://string-db.org/cgi/access'
 
-reader:
-  format: "csv"
-  delimiter: " "
-  header_mode: 0
-  files:
-    - '9606.protein.links.v12.0.txt.gz'
-  columns:
-    - protein1
-    - protein2
-    - combined_score
+readers:
+  # STRING protein–protein interactions. Each tag's transform function lives in
+  # string.py and is decorated with the matching @koza.transform_record(tag=...)
+  # so Koza routes rows to the right transform.
+  string_ppi:
+    format: "csv"
+    delimiter: " "
+    header_mode: 0
+    files:
+      - '9606.protein.links.v12.0.txt.gz'
+    columns:
+      - protein1
+      - protein2
+      - combined_score
+
+  # STITCH protein–chemical interactions. Tab-separated; rows look like
+  # ``CIDm91758680\t9606.ENSP00000257254\t279``.
+  stitch_pcl:
+    format: "csv"
+    delimiter: "\t"
+    header_mode: 0
+    files:
+      - '9606.protein_chemical.links.v5.0.tsv.gz'
+    columns:
+      - chemical
+      - protein
+      - combined_score

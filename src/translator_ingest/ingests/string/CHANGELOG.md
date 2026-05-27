@@ -5,6 +5,49 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-05-27 — Add STITCH protein–chemical edges under a `stitch_pcl` tag
+
+**Decision.** Extend the ingest with STITCH (`9606.protein_chemical.links.v5.0.tsv.gz`)
+as a second tagged reader inside the existing `string.yaml`:
+
+- New tag `stitch_pcl` reads STITCH; existing PPI is now tagged `string_ppi` (was untagged).
+- Edge type: `biolink:ChemicalEntity —interacts_with→ biolink:Protein`
+- PSI-MI attribute: `MI:0190` (interaction — root term) attached via `has_attribute`
+- `primary_knowledge_source: infores:stitch`; KL/AT both `not_provided`
+- Same `>500` combined_score cutoff as STRING
+- Chemical IDs: `CIDm{N}` / `CIDs{N}` → `PUBCHEM.COMPOUND:{int(N)}` (leading zeros stripped)
+
+**Considered and dropped:**
+
+| Idea | Why dropped now | Bring back when |
+|---|---|---|
+| New `stitch.yaml` + `stitch.py` + `stitch_rig.yaml` (separate ingest) | User picked tagged-readers-in-one-yaml to keep the two sister DBs co-located. Identifier schemes and scoring share too much to justify duplication. | Only if STITCH grows independent enough (different filtering, cadence, or team ownership) to warrant its own ingest cycle. |
+| Per-`CIDm` vs `CIDs` distinction in the output | STITCH itself collapses them in the protein_chemical scoring; preserving the distinction would create duplicate edges with no extra signal. | If we ever need stereo-aware downstream filtering — but PubChem CIDs alone don't carry that info anyway. |
+| Stronger predicate (e.g. `binds_to`, `affects`) | STITCH doesn't characterize the kind of interaction on a per-row basis. The combined_score aggregates binding assays, modulation, substrate relationships, etc. `interacts_with` is the honest umbrella. | When the `actions.v5.0.tsv` file (which DOES carry mode-of-action: `activation`, `inhibition`, `binding`, …) is added; predicates can then split by action. |
+| Same `physically_interacts_with` predicate as STRING | Many STITCH rows reflect biochemical affinity without direct physical contact (text-mined co-mentions, database curation). Would re-create the predicate-overclaim we already noted for STRING's functional file. | If we ever restrict STITCH to only the binding-assay-derived subset. |
+
+**Output sizes (5000-row integration fixture):** ~31 STITCH edges + 19 chemical nodes + ~14 additional protein nodes (some overlap with PPI proteins). Full human STITCH file is ~14.7M rows; estimated full-run output is ~200K-500K edges depending on the score distribution above 500.
+
+**Parked.** Multi-organism STITCH (mouse, rat) is the natural next step — the transform already handles arbitrary taxa via the same `SUPPORTED_TAXA` dict used by `string_ppi`. The STITCH `actions.v5.0.tsv` file (mode-of-action) and `detailed`/`full` per-channel subscores variants are documented in `future_considerations`.
+
+## 2026-05-26 — Hybrid: emit `equivalent_identifiers` on Protein nodes
+
+**Decision.** Stay protein-native at the node level (ENSEMBL CURIEs as PPI subject/object) but populate `equivalent_identifiers` on each Protein with NCBIGene CURIEs from STRING's `all_organisms.entrez_2_string.tsv` mapping file.
+
+**Why.** Kevin Schaper (Monarch, 2026-05) confirmed Monarch's pattern is to download the mapping file and emit gene-endpoint Gene nodes. Richard's earlier work was heading in the same direction. We chose the hybrid: keep our protein-endpoint output (still useful for protein-level reasoning) and add the gene equivalents as a node property so gene-centric consumers can pivot without the graph being reshaped. Lossless for both audiences.
+
+**Mechanism.** `@koza.on_data_begin(tag="string_ppi")` loads the 285 MB mapping file once per run into `koza.state["string_to_entrez"]`. The transform looks up each protein's NCBIGene equivalents and sets `equivalent_identifiers` on the Protein node. Missing entries yield `None` (downstream NodeNormalizer still resolves most via UniProtKB).
+
+**Rejected:** emitting separate `same_as` edges between Protein and Gene nodes. Would double node count for no informational gain — `equivalent_identifiers` is the conventional biolink slot for exactly this.
+
+## 2026-05-20 — Downgrade `knowledge_level` to `not_provided`; attach PSI-MI `MI:0915`
+
+**Decision.** STRING's `combined_score` is a computational aggregation across heterogeneous evidence channels — not an explicit curator claim. `knowledge_assertion` overclaims; use `not_provided`. Matches Automat's STRING-DB KP convention.
+
+Also attach `MI:0915` (PSI-MI: physical association) to every PPI edge via the `has_attribute` slot. Makes the PSI-MI claim explicit alongside the biolink predicate, useful for downstream consumers that key off PSI-MI terms.
+
+**Why this slot, not another:** `supporting_method_types` (referenced in IntAct's RIG) does not exist on `Association` / `PairwiseMolecularInteraction` in the current biolink_model. `has_attribute` was the cleanest available slot. A typed `biolink:Attribute` wrapper would be more canonical but requires a heavier code refactor; deferred.
+
 ## 2026-05-19 — Reduce scope to human-only, single predicate, no subscores
 
 **Decision.** First-iteration scope is the smallest defensible STRING ingest:

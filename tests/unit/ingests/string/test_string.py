@@ -13,10 +13,12 @@ from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 from translator_ingest.ingests.string.string import (
     get_latest_version,
     load_string_to_entrez_mapping,
+    parse_stitch_chemical_id,
     parse_string_protein_id,
     passes_combined_score,
     sorted_pair_key,
-    transform_record,
+    transform_stitch_pcl,
+    transform_string_ppi,
 )
 
 
@@ -153,7 +155,7 @@ R2 = "10116.ENSRNOP00000000002"
     ],
 )
 def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expected_taxon):
-    result = transform_record(
+    result = transform_string_ppi(
         mock_koza,
         {"protein1": p1, "protein2": p2, "combined_score": "540"},
     )
@@ -183,7 +185,7 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
 
 def test_transform_populates_equivalent_identifiers_from_mapping(mock_koza):
     """Each Protein node carries its NCBIGene equivalents from the mapping dict."""
-    result = transform_record(
+    result = transform_string_ppi(
         mock_koza,
         {"protein1": H1, "protein2": H2, "combined_score": "952"},
     )
@@ -194,7 +196,7 @@ def test_transform_populates_equivalent_identifiers_from_mapping(mock_koza):
 
 def test_transform_preserves_multimapping(mock_koza):
     """Proteins with multiple Entrez mappings carry the full list."""
-    result = transform_record(
+    result = transform_string_ppi(
         mock_koza,
         {"protein1": H1, "protein2": H3, "combined_score": "952"},
     )
@@ -210,7 +212,7 @@ def test_transform_handles_missing_mapping(mock_koza):
     """A protein with no Entrez mapping yields ``equivalent_identifiers=None``,
     not a crash or empty list."""
     # "9606.ENSP00000000001" is deliberately absent from FIXTURE_STRING_TO_ENTREZ.
-    result = transform_record(
+    result = transform_string_ppi(
         mock_koza,
         {"protein1": "9606.ENSP00000000001", "protein2": H2, "combined_score": "952"},
     )
@@ -248,7 +250,7 @@ def test_load_string_to_entrez_mapping(tmp_path):
 
 @pytest.mark.parametrize("score", ["500", "499", "0"])
 def test_transform_drops_rows_at_or_below_threshold(mock_koza, score):
-    result = transform_record(
+    result = transform_string_ppi(
         mock_koza,
         {"protein1": H1, "protein2": H2, "combined_score": score},
     )
@@ -257,11 +259,11 @@ def test_transform_drops_rows_at_or_below_threshold(mock_koza, score):
 
 def test_transform_dedupes_symmetric_duplicate(mock_koza):
     """STRING lists each pair twice (p1→p2 and p2→p1). Emit only once."""
-    first = transform_record(
+    first = transform_string_ppi(
         mock_koza,
         {"protein1": H1, "protein2": H2, "combined_score": "952"},
     )
-    second = transform_record(
+    second = transform_string_ppi(
         mock_koza,
         {"protein1": H2, "protein2": H1, "combined_score": "952"},
     )
@@ -271,11 +273,11 @@ def test_transform_dedupes_symmetric_duplicate(mock_koza):
 
 def test_transform_keeps_distinct_pairs(mock_koza):
     """Dedup is per-pair, not global."""
-    first = transform_record(
+    first = transform_string_ppi(
         mock_koza,
         {"protein1": H1, "protein2": H2, "combined_score": "952"},
     )
-    second = transform_record(
+    second = transform_string_ppi(
         mock_koza,
         {"protein1": H1, "protein2": H3, "combined_score": "952"},
     )
@@ -286,7 +288,7 @@ def test_transform_keeps_distinct_pairs(mock_koza):
 def test_transform_rejects_unsupported_taxon(mock_koza):
     """A row from a non-target species (e.g. yeast) should raise loudly."""
     with pytest.raises(ValueError, match="Unsupported taxon prefix"):
-        transform_record(
+        transform_string_ppi(
             mock_koza,
             {"protein1": "4932.YAL001C", "protein2": "4932.YAL002W", "combined_score": "952"},
         )
@@ -295,7 +297,92 @@ def test_transform_rejects_unsupported_taxon(mock_koza):
 def test_transform_rejects_cross_species_pair(mock_koza):
     """Per-organism STRING files only contain intra-species rows; defend against corruption."""
     with pytest.raises(ValueError, match="Cross-species pair"):
-        transform_record(
+        transform_string_ppi(
             mock_koza,
             {"protein1": H1, "protein2": M1, "combined_score": "952"},
+        )
+
+
+# ──── STITCH (protein-chemical interaction) tests ────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "stitch_id,expected",
+    [
+        ("CIDm00000234",   "PUBCHEM.COMPOUND:234"),       # leading zeros stripped
+        ("CIDm91758680",   "PUBCHEM.COMPOUND:91758680"),  # no leading zeros, big CID
+        ("CIDs00012345",   "PUBCHEM.COMPOUND:12345"),     # CIDs (stereo) prefix
+        ("CIDm00000001",   "PUBCHEM.COMPOUND:1"),         # smallest valid CID
+    ],
+)
+def test_parse_stitch_chemical_id(stitch_id, expected):
+    assert parse_stitch_chemical_id(stitch_id) == expected
+
+
+@pytest.mark.parametrize(
+    "bad_id",
+    [
+        "12345",          # no prefix
+        "CID00000234",    # wrong prefix (missing m/s)
+        "PUBCHEM:234",    # already a CURIE
+        "CIDmABCD",       # non-numeric body
+        "",               # empty
+    ],
+)
+def test_parse_stitch_chemical_id_rejects_bad_input(bad_id):
+    with pytest.raises(ValueError):
+        parse_stitch_chemical_id(bad_id)
+
+
+def test_transform_stitch_emits_chemical_protein_pair(mock_koza):
+    result = transform_stitch_pcl(
+        mock_koza,
+        {"chemical": "CIDm91758680", "protein": H1, "combined_score": "540"},
+    )
+    assert result is not None
+    assert len(result.nodes) == 2
+    assert len(result.edges) == 1
+
+    chem_node = next(n for n in result.nodes if n.id.startswith("PUBCHEM.COMPOUND:"))
+    prot_node = next(n for n in result.nodes if n.id.startswith("ENSEMBL:"))
+    assert chem_node.id == "PUBCHEM.COMPOUND:91758680"
+    assert chem_node.category == ["biolink:ChemicalEntity"]
+    assert prot_node.id == "ENSEMBL:ENSP00000478725"
+    assert prot_node.category == ["biolink:Protein"]
+    assert prot_node.in_taxon == ["NCBITaxon:9606"]
+
+    edge = result.edges[0]
+    assert edge.subject == "PUBCHEM.COMPOUND:91758680"
+    assert edge.object == "ENSEMBL:ENSP00000478725"
+    assert edge.predicate == "biolink:interacts_with"
+    assert edge.has_attribute == ["MI:0190"]
+    assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
+    assert edge.agent_type == AgentTypeEnum.not_provided
+    primary = next(s for s in edge.sources if s.resource_role == "primary_knowledge_source")
+    assert primary.resource_id == "infores:stitch"
+
+
+@pytest.mark.parametrize("score", ["500", "499", "0"])
+def test_transform_stitch_drops_rows_at_or_below_threshold(mock_koza, score):
+    result = transform_stitch_pcl(
+        mock_koza,
+        {"chemical": "CIDm91758680", "protein": H1, "combined_score": score},
+    )
+    assert result is None
+
+
+def test_transform_stitch_rejects_unsupported_protein_taxon(mock_koza):
+    """STITCH ships per-species, but defend against rows for non-target species."""
+    with pytest.raises(ValueError, match="Unsupported taxon prefix"):
+        transform_stitch_pcl(
+            mock_koza,
+            {"chemical": "CIDm00000234", "protein": "4932.YAL001C", "combined_score": "952"},
+        )
+
+
+def test_transform_stitch_rejects_bad_chemical_id(mock_koza):
+    with pytest.raises(ValueError, match="STITCH chemical ID"):
+        transform_stitch_pcl(
+            mock_koza,
+            {"chemical": "BADCHEM123", "protein": H1, "combined_score": "952"},
         )
