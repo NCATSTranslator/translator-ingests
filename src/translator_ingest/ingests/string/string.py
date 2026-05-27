@@ -10,7 +10,8 @@ Reference implementations consulted:
   * RENCI Automat production graph: https://automat.renci.org/string-db/
 """
 
-from typing import Any
+from pathlib import Path
+from typing import Any, Iterable
 
 import koza
 import requests
@@ -47,6 +48,11 @@ COMBINED_SCORE_THRESHOLD = 500
 # via ``has_attribute`` so downstream consumers that key off PSI-MI terms can pick
 # it up alongside the biolink predicate. See CHANGELOG.md for the slot/term rationale.
 STRING_INTERACTION_TYPE_PSI_MI = "MI:0915"
+
+# Filename of the STRING ↔ Entrez gene-ID mapping (universal across species).
+# Downloaded by download.yaml into ``koza.input_files_dir``. Loaded once at
+# transform start to populate ``equivalent_identifiers`` on Protein nodes.
+ENTREZ_MAPPING_FILENAME = "all_organisms.entrez_2_string.tsv"
 
 STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
 
@@ -122,6 +128,55 @@ def passes_combined_score(
     return int(combined_score) > threshold
 
 
+def load_string_to_entrez_mapping(
+    mapping_path: Path | str,
+    supported_taxa: Iterable[str] = SUPPORTED_TAXA,
+) -> dict[str, list[str]]:
+    """
+    Load the STRING ↔ Entrez gene-ID mapping into a dict keyed by raw STRING ID.
+
+    The file is a tab-separated table with one header line (``# NCBI taxid / entrez
+    / STRING``) and three columns per data row: ``taxid``, ``entrez_id``, ``string_id``.
+    Multiple Entrez genes can map to the same STRING protein (paralogs / overlapping
+    annotations), so values are lists of ``NCBIGene:`` CURIEs preserving STRING's
+    order. Rows for taxa outside ``supported_taxa`` are skipped to keep the
+    in-memory dict small.
+
+    >>> import io
+    >>> sample = io.StringIO(
+    ...     "# NCBI taxid / entrez / STRING\\n"
+    ...     "9606\\t381\\t9606.ENSP00000000233\\n"
+    ...     "9606\\t9606\\t9606.ENSP00000000412\\n"
+    ...     "4932\\t850001\\t4932.YAL001C\\n"
+    ... )
+    >>> # Helper to exercise the parser without touching disk:
+    >>> from io import StringIO
+    >>> def _parse(stream, taxa):
+    ...     m = {}
+    ...     next(stream)
+    ...     for line in stream:
+    ...         taxid, entrez, sid = line.rstrip().split("\\t")
+    ...         if taxid in taxa:
+    ...             m.setdefault(sid, []).append(f"NCBIGene:{entrez}")
+    ...     return m
+    >>> _parse(sample, {"9606"})
+    {'9606.ENSP00000000233': ['NCBIGene:381'], '9606.ENSP00000000412': ['NCBIGene:9606']}
+    """
+    supported = set(supported_taxa)
+    mapping: dict[str, list[str]] = {}
+    with open(mapping_path) as fh:
+        next(fh)  # discard header
+        for line in fh:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) != 3:
+                continue
+            taxid, entrez_id, string_id = parts
+            if taxid not in supported:
+                continue
+            mapping.setdefault(string_id, []).append(f"NCBIGene:{entrez_id}")
+    return mapping
+
+
 def sorted_pair_key(p1: str, p2: str) -> tuple[str, str]:
     """
     Order-independent key for deduping symmetric protein pairs.
@@ -136,6 +191,20 @@ def sorted_pair_key(p1: str, p2: str) -> tuple[str, str]:
     ('ENSEMBL:A', 'ENSEMBL:B')
     """
     return tuple(sorted([p1, p2]))
+
+
+@koza.on_data_begin()
+def on_data_begin(koza_transform: koza.KozaTransform) -> None:
+    """
+    Load the STRING ↔ Entrez mapping into ``koza_transform.state["string_to_entrez"]``
+    once per transform run. Used by ``transform_record`` to populate
+    ``equivalent_identifiers`` on Protein nodes with their NCBIGene equivalents.
+
+    Tests bypass this hook by setting ``koza_transform.state["string_to_entrez"]``
+    directly to a small fixture dict.
+    """
+    mapping_path = Path(koza_transform.input_files_dir) / ENTREZ_MAPPING_FILENAME
+    koza_transform.state["string_to_entrez"] = load_string_to_entrez_mapping(mapping_path)
 
 
 @koza.transform_record()
@@ -170,15 +239,25 @@ def transform_record(
         return None
     seen_pairs.add(key)
 
+    # Look up NCBIGene equivalents from the entrez_2_string mapping. Loaded
+    # at transform start by on_data_begin; tests may inject a fixture dict.
+    # Missing entries are normal (some STRING proteins have no Entrez mapping;
+    # downstream NodeNormalizer still resolves most of them via UniProtKB).
+    entrez_map: dict[str, list[str]] = koza_transform.state.get("string_to_entrez", {})
+    subject_equivalents = entrez_map.get(record["protein1"]) or None
+    object_equivalents = entrez_map.get(record["protein2"]) or None
+
     subject_node = Protein(
         id=subject_id,
         category=["biolink:Protein"],
         in_taxon=[subject_taxon],
+        equivalent_identifiers=subject_equivalents,
     )
     object_node = Protein(
         id=object_id,
         category=["biolink:Protein"],
         in_taxon=[object_taxon],
+        equivalent_identifiers=object_equivalents,
     )
     edge = PairwiseMolecularInteraction(
         id=entity_id(),

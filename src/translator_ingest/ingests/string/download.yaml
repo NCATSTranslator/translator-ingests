@@ -1,6 +1,14 @@
-# STRING human protein-protein links file.
+# STRING source files for the ingest.
 # See the kghub-downloader format: https://monarch-initiative.github.io/kghub-downloader/
-# local_name must match the file referenced in string.yaml.
+# local_name must match the file referenced in string.yaml (for reader inputs) or
+# loaded directly in string.py via koza.input_files_dir (for auxiliary lookup files).
 ---
 - url: https://stringdb-downloads.org/download/protein.links.v12.0/9606.protein.links.v12.0.txt.gz
   local_name: 9606.protein.links.v12.0.txt.gz
+
+# Universal STRING ↔ Entrez gene-ID mapping (all species, ~285 MB uncompressed).
+# Not iterated by the reader; loaded once at transform start via on_data_begin
+# to populate the ``equivalent_identifiers`` slot on Protein nodes with their
+# NCBIGene equivalents. Matches the pattern used by Monarch's STRING ingest.
+- url: https://string-db.org/mapping_files/entrez/all_organisms.entrez_2_string.tsv
+  local_name: all_organisms.entrez_2_string.tsv

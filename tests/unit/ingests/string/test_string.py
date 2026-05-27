@@ -12,6 +12,7 @@ from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.string.string import (
     get_latest_version,
+    load_string_to_entrez_mapping,
     parse_string_protein_id,
     passes_combined_score,
     sorted_pair_key,
@@ -19,11 +20,27 @@ from translator_ingest.ingests.string.string import (
 )
 
 
+# Fixture mapping for tests: covers the canonical pairs used in the transform
+# tests below. Real ingest loads this via on_data_begin from the 285 MB
+# all_organisms.entrez_2_string.tsv file; tests inject this small dict directly.
+FIXTURE_STRING_TO_ENTREZ: dict[str, list[str]] = {
+    "9606.ENSP00000478725":     ["NCBIGene:7157"],   # plausible TP53-like
+    "9606.ENSP00000478289":     ["NCBIGene:4193"],   # plausible MDM2-like
+    "9606.ENSP00000481152":     ["NCBIGene:1234", "NCBIGene:5678"],  # multi-mapping example
+    "10090.ENSMUSP00000000001": ["NCBIGene:11428"],
+    "10090.ENSMUSP00000000002": ["NCBIGene:11429"],
+    "10116.ENSRNOP00000000001": ["NCBIGene:24152"],
+    "10116.ENSRNOP00000000002": ["NCBIGene:24153"],
+    # NOTE: H3 ("9606.ENSP00000000001" used in some tests) deliberately absent
+    # to exercise the no-mapping code path.
+}
+
+
 @pytest.fixture
 def mock_koza() -> koza.KozaTransform:
-    """Fresh MockKozaTransform with empty state for each test."""
+    """Fresh MockKozaTransform with empty state + fixture mapping for each test."""
     mk = MockKozaTransform(extra_fields={}, writer=MockKozaWriter(), mappings={})
-    mk.state = {}
+    mk.state = {"string_to_entrez": FIXTURE_STRING_TO_ENTREZ}
     return mk
 
 
@@ -147,6 +164,10 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
     for node in result.nodes:
         assert node.category == ["biolink:Protein"]
         assert node.in_taxon == [expected_taxon]
+        # All fixture-mapped proteins resolve to at least one NCBIGene equivalent.
+        assert node.equivalent_identifiers
+        for eq in node.equivalent_identifiers:
+            assert eq.startswith("NCBIGene:")
 
     edge = result.edges[0]
     assert edge.predicate == "biolink:physically_interacts_with"
@@ -158,6 +179,71 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
         s for s in edge.sources if s.resource_role == "primary_knowledge_source"
     )
     assert primary.resource_id == "infores:string"
+
+
+def test_transform_populates_equivalent_identifiers_from_mapping(mock_koza):
+    """Each Protein node carries its NCBIGene equivalents from the mapping dict."""
+    result = transform_record(
+        mock_koza,
+        {"protein1": H1, "protein2": H2, "combined_score": "952"},
+    )
+    by_id = {n.id: n for n in result.nodes}
+    assert by_id["ENSEMBL:ENSP00000478725"].equivalent_identifiers == ["NCBIGene:7157"]
+    assert by_id["ENSEMBL:ENSP00000478289"].equivalent_identifiers == ["NCBIGene:4193"]
+
+
+def test_transform_preserves_multimapping(mock_koza):
+    """Proteins with multiple Entrez mappings carry the full list."""
+    result = transform_record(
+        mock_koza,
+        {"protein1": H1, "protein2": H3, "combined_score": "952"},
+    )
+    by_id = {n.id: n for n in result.nodes}
+    # H3 (ENSP00000481152) maps to two genes in the fixture.
+    assert by_id["ENSEMBL:ENSP00000481152"].equivalent_identifiers == [
+        "NCBIGene:1234",
+        "NCBIGene:5678",
+    ]
+
+
+def test_transform_handles_missing_mapping(mock_koza):
+    """A protein with no Entrez mapping yields ``equivalent_identifiers=None``,
+    not a crash or empty list."""
+    # "9606.ENSP00000000001" is deliberately absent from FIXTURE_STRING_TO_ENTREZ.
+    result = transform_record(
+        mock_koza,
+        {"protein1": "9606.ENSP00000000001", "protein2": H2, "combined_score": "952"},
+    )
+    by_id = {n.id: n for n in result.nodes}
+    assert by_id["ENSEMBL:ENSP00000000001"].equivalent_identifiers is None
+    # The other protein still gets its mapping populated.
+    assert by_id["ENSEMBL:ENSP00000478289"].equivalent_identifiers == ["NCBIGene:4193"]
+
+
+def test_load_string_to_entrez_mapping(tmp_path):
+    """Parser produces a dict[str, list[str]] of CURIEs, skips unsupported taxa,
+    preserves order on multi-mapping rows, and tolerates blank/short lines."""
+    p = tmp_path / "all_organisms.entrez_2_string.tsv"
+    p.write_text(
+        "# NCBI taxid / entrez / STRING\n"
+        "9606\t381\t9606.ENSP00000000233\n"
+        "9606\t9606\t9606.ENSP00000000412\n"
+        "9606\t1234\t9606.ENSP00000481152\n"   # first of a multi-map
+        "9606\t5678\t9606.ENSP00000481152\n"   # second of the same protein
+        "10090\t11428\t10090.ENSMUSP00000000001\n"
+        "4932\t850001\t4932.YAL001C\n"          # unsupported taxon, must be skipped
+        "\n"                                     # blank line, must be tolerated
+        "9606\tmalformed\n"                      # short line, must be skipped
+    )
+    mapping = load_string_to_entrez_mapping(p)
+    assert mapping == {
+        "9606.ENSP00000000233": ["NCBIGene:381"],
+        "9606.ENSP00000000412": ["NCBIGene:9606"],
+        "9606.ENSP00000481152": ["NCBIGene:1234", "NCBIGene:5678"],
+        "10090.ENSMUSP00000000001": ["NCBIGene:11428"],
+    }
+    # Yeast (4932) row was filtered out.
+    assert "4932.YAL001C" not in mapping
 
 
 @pytest.mark.parametrize("score", ["500", "499", "0"])

@@ -51,6 +51,14 @@ ingest_info:
         description: >-
           Human protein–protein interaction file. Three space-delimited columns: protein1, protein2, combined_score.
           One row per directed pair (each unordered pair appears twice).
+      - file_name: all_organisms.entrez_2_string.tsv
+        location: https://string-db.org/mapping_files/entrez/
+        description: >-
+          Universal STRING ↔ Entrez gene-ID mapping (~285 MB uncompressed, all species in one file).
+          Three tab-separated columns: NCBI taxid, Entrez gene ID, STRING protein ID. Loaded once at transform start
+          via ``on_data_begin`` and used to populate ``equivalent_identifiers`` on Protein nodes with their NCBIGene
+          equivalents. Not iterated by the reader; loaded as an auxiliary lookup file via
+          ``koza.input_files_dir``. Same source file used by Monarch's STRING ingest.
     included_content:
       - file_name: 9606.protein.links.v12.0.txt.gz
         included_records: >-
@@ -164,21 +172,25 @@ target_info:
       - node_category: biolink:Protein
         # Source identifier types reflect the canonical post-normalization identifier
         # set on Protein nodes in the merged Translator graph (as seen on Automat's
-        # STRING-DB KP). Pre-normalization, this ingest emits only ``ENSEMBL`` —
-        # the Translator NodeNormalizer expands to ``UniProtKB`` and ``PR`` equivalents
-        # automatically (~98.5% of human ENSPs resolve; the remainder are retired
-        # ENSEMBL IDs that STRING v12.0 still ships).
+        # STRING-DB KP). The ingest itself emits ``ENSEMBL`` as the node id and
+        # populates ``equivalent_identifiers`` with ``NCBIGene`` CURIEs from the
+        # entrez_2_string mapping file. UniProtKB and PR equivalents are filled in
+        # downstream by the Translator NodeNormalizer (~98.5% of human ENSPs resolve;
+        # the remainder are retired ENSEMBL IDs that STRING v12.0 still ships).
         source_identifier_types:
           - ENSEMBL
           - UniProtKB
           - PR
         node_properties:
           - in_taxon
+          - equivalent_identifiers
         additional_notes: >-
           Protein nodes use STRING's native identifiers, which are ENSEMBL protein IDs (e.g. ENSP00000000233). The
           leading ``9606.`` taxon prefix is stripped and the result is prefixed with ``ENSEMBL:``. Each node carries
-          ``in_taxon = NCBITaxon:9606``. The ingest emits ENSEMBL only; UniProtKB and PR equivalents appear in the
-          downstream Translator graph via the NodeNormalizer.
+          ``in_taxon = NCBITaxon:9606`` and (when a STRING ↔ Entrez mapping exists) ``equivalent_identifiers``
+          listing one or more ``NCBIGene:`` CURIEs. This explicit equivalence is the hybrid design choice that
+          aligns with both Monarch's gene-endpoint ingest pattern (Kevin Schaper, 2026-05) and the Translator
+          NodeNormalizer's expectations, without forcing a gene-centric reshape of the graph.
 
       - node_category: biolink:ChemicalEntity
         # Declared as a canonical target node type, not currently emitted. STITCH
