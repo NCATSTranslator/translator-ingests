@@ -894,20 +894,38 @@ def test_transform_cohd_edges(
 
 COHD_TEST_SOURCES = [
     RetrievalSource(
+        id="infores:columbia-cdw-ehr-data",
+        resource_id="infores:columbia-cdw-ehr-data",
+        resource_role=ResourceRoleEnum.supporting_data_source,
+    ),
+    RetrievalSource(
         id="infores:cohd",
         resource_id="infores:cohd",
         resource_role=ResourceRoleEnum.primary_knowledge_source,
-    )
+        upstream_resource_ids=["infores:columbia-cdw-ehr-data"],
+    ),
 ]
 
 EDGE_FIXTURES = [
     {
         "association_class": Association,
         "params": {
-            "id": "uuid:test-cohd-1",
-            "subject": "SNOMEDCT:60108003",
+            "id": "01dea5b9-eb36-4fdc-8c94-882fe12b2a15",
+            "subject": "DOID:0111252",
             "predicate": "biolink:positively_correlated_with",
-            "object": "CPT:73540",
+            "object": "CHEBI:41879",
+            "knowledge_level": KnowledgeLevelEnum.statistical_association,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
+            "sources": COHD_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": Association,
+        "params": {
+            "id": "c9cc9b4a-b778-4002-80d8-0c62501a93b2",
+            "subject": "CHEBI:9150",
+            "predicate": "biolink:negatively_correlated_with",
+            "object": "MONDO:0008487",
             "knowledge_level": KnowledgeLevelEnum.statistical_association,
             "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": COHD_TEST_SOURCES,
@@ -919,7 +937,7 @@ EDGE_FIXTURES = [
 @pytest.mark.parametrize(
     "fixture",
     EDGE_FIXTURES,
-    ids=lambda f: f["association_class"].__name__,
+    ids=lambda f: f"{f['association_class'].__name__}_{f['params']['predicate'].split(':')[-1]}",
 )
 def test_pydantic_roundtrip(fixture):
     """Instantiate the association and round-trip through Pydantic serialization."""
@@ -928,4 +946,3 @@ def test_pydantic_roundtrip(fixture):
     dumped = obj.model_dump()
     restored = cls.model_validate(dumped)
     assert restored == obj
-

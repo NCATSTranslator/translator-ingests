@@ -2,8 +2,6 @@ import pytest
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
-    GeneToDiseaseAssociation,
-    GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     RetrievalSource,
@@ -19,41 +17,42 @@ GENETICSKP_SOURCES = [
     )
 ]
 
-# ── Fixtures: one per edge type declared in geneticskp_rig.yaml / geneticskp.py
+# ── Fixtures: one per predicate from merged edges output.
+# All edges are generic Associations with agent_type data_analysis_pipeline.
 EDGE_FIXTURES = [
     {
-        "association_class": GeneToDiseaseAssociation,
+        "association_class": Association,
         "params": {
-            "id": "uuid:geneticskp-gene-disease",
-            "subject": "NCBIGene:672",
-            "predicate": "biolink:associated_with",
-            "object": "MONDO:0007254",
+            "id": "magma_NCBIGene:8726_MONDO:0005300NCBIGene:8726MONDO:0005300",
+            "subject": "NCBIGene:8726",
+            "predicate": "biolink:gene_associated_with_condition",
+            "object": "MONDO:0005300",
             "knowledge_level": KnowledgeLevelEnum.statistical_association,
-            "agent_type": AgentTypeEnum.computational_model,
-            "sources": GENETICSKP_SOURCES,
-        },
-    },
-    {
-        "association_class": GeneToPhenotypicFeatureAssociation,
-        "params": {
-            "id": "uuid:geneticskp-gene-phenotype",
-            "subject": "NCBIGene:672",
-            "predicate": "biolink:has_phenotype",
-            "object": "HP:0000729",
-            "knowledge_level": KnowledgeLevelEnum.statistical_association,
-            "agent_type": AgentTypeEnum.computational_model,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": GENETICSKP_SOURCES,
         },
     },
     {
         "association_class": Association,
         "params": {
-            "id": "uuid:geneticskp-generic",
-            "subject": "NCBIGene:672",
-            "predicate": "biolink:genetically_associated_with",
-            "object": "GO:0006915",
+            "id": "magma_EFO:0004980_NCBIGene:152485EFO:0004980NCBIGene:152485",
+            "subject": "EFO:0004980",
+            "predicate": "biolink:condition_associated_with_gene",
+            "object": "NCBIGene:152485",
             "knowledge_level": KnowledgeLevelEnum.statistical_association,
-            "agent_type": AgentTypeEnum.computational_model,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
+            "sources": GENETICSKP_SOURCES,
+        },
+    },
+    {
+        "association_class": Association,
+        "params": {
+            "id": "magma_GO:0035878_EFO:0004995GO:0035878EFO:0004995",
+            "subject": "GO:0035878",
+            "predicate": "biolink:genetic_association",
+            "object": "EFO:0004995",
+            "knowledge_level": KnowledgeLevelEnum.statistical_association,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": GENETICSKP_SOURCES,
         },
     },

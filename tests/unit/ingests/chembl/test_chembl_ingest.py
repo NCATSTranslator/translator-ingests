@@ -3,16 +3,16 @@ import pytest
 from typing import Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    KnowledgeLevelEnum,
     AgentTypeEnum,
-    ChemicalAffectsGeneAssociation,
-    GeneAffectsChemicalAssociation,
-    ChemicalEntityToChemicalEntityAssociation,
     AnatomicalEntityHasPartAnatomicalEntityAssociation,
+    ChemicalAffectsGeneAssociation,
+    ChemicalEntityToChemicalEntityAssociation,
+    ChemicalGeneInteractionAssociation,
+    GeneAffectsChemicalAssociation,
+    KnowledgeLevelEnum,
     MacromolecularMachineHasSubstrateAssociation,
-    Association,
-    RetrievalSource,
     ResourceRoleEnum,
+    RetrievalSource,
 )
 
 import koza
@@ -114,22 +114,22 @@ EDGE_FIXTURES = [
     {
         "association_class": ChemicalAffectsGeneAssociation,
         "params": {
-            "id": "uuid:test-chembl-caga-1",
-            "subject": "CHEMBL.COMPOUND:CHEMBL25",
+            "id": "144fee80-1645-46f9-ad7f-ac9531159eb2",
+            "subject": "PUBCHEM.COMPOUND:166630898",
             "predicate": "biolink:affects",
-            "object": "UniProtKB:P00533",
+            "object": "NCBIGene:6789",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            "agent_type": AgentTypeEnum.manual_agent,
+            "agent_type": AgentTypeEnum.automated_agent,
             "sources": CHEMBL_TEST_SOURCES,
         },
     },
     {
-        "association_class": GeneAffectsChemicalAssociation,
+        "association_class": ChemicalAffectsGeneAssociation,
         "params": {
-            "id": "uuid:test-chembl-gaca-1",
-            "subject": "UniProtKB:P00533",
+            "id": "e84d3baf-ebe1-41e6-a386-2957644161ec",
+            "subject": "PUBCHEM.COMPOUND:44337123",
             "predicate": "biolink:affects",
-            "object": "CHEMBL.COMPOUND:CHEMBL25",
+            "object": "NCBIGene:4987",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
             "agent_type": AgentTypeEnum.manual_agent,
             "sources": CHEMBL_TEST_SOURCES,
@@ -138,22 +138,58 @@ EDGE_FIXTURES = [
     {
         "association_class": ChemicalEntityToChemicalEntityAssociation,
         "params": {
-            "id": "uuid:test-chembl-cetce-1",
-            "subject": "CHEMBL.COMPOUND:CHEMBL1201087",
+            "id": "29037cf2-dae5-4f2a-a374-c08ab9cc6142",
+            "subject": "PUBCHEM.COMPOUND:63023",
             "predicate": "biolink:has_metabolite",
-            "object": "CHEMBL.COMPOUND:CHEMBL947",
+            "object": "UNII:7YHT3131XK",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
             "agent_type": AgentTypeEnum.manual_agent,
             "sources": CHEMBL_TEST_SOURCES,
         },
     },
     {
-        "association_class": AnatomicalEntityHasPartAnatomicalEntityAssociation,
+        "association_class": ChemicalGeneInteractionAssociation,
         "params": {
-            "id": "uuid:test-chembl-aehp-1",
-            "subject": "CHEMBL.TARGET:CHEMBL612409",
-            "predicate": "biolink:has_part",
-            "object": "UniProtKB:Q15125",
+            "id": "6ab88901-4676-469d-a8b6-1b22af1ae5ad",
+            "subject": "CHEBI:156442",
+            "predicate": "biolink:directly_physically_interacts_with",
+            "object": "NCBIGene:23012",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.automated_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalGeneInteractionAssociation,
+        "params": {
+            "id": "3b4c34ec-0dea-4326-8356-7b4da1a31f21",
+            "subject": "CHEBI:107736",
+            "predicate": "biolink:directly_physically_interacts_with",
+            "object": "NCBIGene:3360",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalGeneInteractionAssociation,
+        "params": {
+            "id": "15b0d105-9138-4737-ab60-a3c91f240e80",
+            "subject": "CHEMBL.COMPOUND:CHEMBL1743077",
+            "predicate": "biolink:interacts_with",
+            "object": "NCBIGene:3371",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": CHEMBL_TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneAffectsChemicalAssociation,
+        "params": {
+            "id": "4a1c943e-d7dd-414a-b8a8-b42bd58cf7de",
+            "subject": "NCBIGene:183",
+            "predicate": "biolink:affects",
+            "object": "CHEMBL.COMPOUND:CHEMBL4297887",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
             "agent_type": AgentTypeEnum.manual_agent,
             "sources": CHEMBL_TEST_SOURCES,
@@ -162,22 +198,22 @@ EDGE_FIXTURES = [
     {
         "association_class": MacromolecularMachineHasSubstrateAssociation,
         "params": {
-            "id": "uuid:test-chembl-mmhs-1",
-            "subject": "UniProtKB:P08684",
+            "id": "3ee985e8-a944-4804-9037-9bfcd2cfac85",
+            "subject": "NCBIGene:5243",
             "predicate": "biolink:has_substrate",
-            "object": "CHEMBL.COMPOUND:CHEMBL25",
+            "object": "PUBCHEM.COMPOUND:25245532",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            "agent_type": AgentTypeEnum.manual_agent,
+            "agent_type": AgentTypeEnum.automated_agent,
             "sources": CHEMBL_TEST_SOURCES,
         },
     },
     {
-        "association_class": Association,
+        "association_class": MacromolecularMachineHasSubstrateAssociation,
         "params": {
-            "id": "uuid:test-chembl-assoc-1",
-            "subject": "CHEMBL.COMPOUND:CHEMBL25",
-            "predicate": "biolink:related_to",
-            "object": "UniProtKB:P00533",
+            "id": "75f6d81a-dd69-4409-8dc5-0c480ed61475",
+            "subject": "NCBIGene:146802",
+            "predicate": "biolink:has_substrate",
+            "object": "CHEBI:44296",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
             "agent_type": AgentTypeEnum.manual_agent,
             "sources": CHEMBL_TEST_SOURCES,
@@ -189,7 +225,7 @@ EDGE_FIXTURES = [
 @pytest.mark.parametrize(
     "fixture",
     EDGE_FIXTURES,
-    ids=lambda f: f["association_class"].__name__,
+    ids=lambda f: f"{f['association_class'].__name__}_{f['params']['predicate'].split(':')[-1]}",
 )
 def test_pydantic_roundtrip(fixture):
     """Instantiate the association and round-trip through Pydantic serialization."""
