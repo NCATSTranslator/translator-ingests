@@ -39,20 +39,30 @@ FIXTURE_DIR = (
     / "string"
     / "sample_data"
 )
-LINK_FIXTURE = FIXTURE_DIR / "9606.protein.links.v12.0.txt.gz"
 ENTREZ_FIXTURE = FIXTURE_DIR / "all_organisms.entrez_2_string.tsv"
-STITCH_FIXTURE = FIXTURE_DIR / "9606.protein_chemical.links.v5.0.tsv.gz"
+# Per-taxon fixture filenames (must match string.yaml's reader configuration).
+PPI_FIXTURES = [
+    FIXTURE_DIR / "9606.protein.links.v12.0.txt.gz",
+    FIXTURE_DIR / "10090.protein.links.v12.0.txt.gz",
+    FIXTURE_DIR / "10116.protein.links.v12.0.txt.gz",
+]
+STITCH_FIXTURES = [
+    FIXTURE_DIR / "9606.protein_chemical.links.v5.0.tsv.gz",
+    FIXTURE_DIR / "10090.protein_chemical.links.v5.0.tsv.gz",
+    FIXTURE_DIR / "10116.protein_chemical.links.v5.0.tsv.gz",
+]
 
 
 @pytest.fixture(scope="module")
 def koza_output(tmp_path_factory) -> Path:
     """
     Run the full Koza pipeline (both ``string_ppi`` and ``stitch_pcl`` tagged
-    readers) once per module against the checked-in fixtures and return the
-    output dir. Each tagged reader produces its own ``{tag}_nodes.jsonl`` and
-    ``{tag}_edges.jsonl`` output files.
+    readers, all three taxa) once per module against the checked-in fixtures
+    and return the output dir. Both tags write to the same
+    ``string_nodes.jsonl`` / ``string_edges.jsonl`` files; per-tag assertions
+    partition on edge primary source.
     """
-    for f in (LINK_FIXTURE, ENTREZ_FIXTURE, STITCH_FIXTURE):
+    for f in [ENTREZ_FIXTURE, *PPI_FIXTURES, *STITCH_FIXTURES]:
         assert f.exists(), f"Missing fixture: {f}"
     output_dir = tmp_path_factory.mktemp("string_output")
 
@@ -119,36 +129,54 @@ def _load_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def test_fixture_row_counts():
-    """Sanity-check the fixtures themselves."""
-    with gzip.open(LINK_FIXTURE, "rt") as fh:
-        ppi_lines = fh.readlines()
-    assert len(ppi_lines) == 200
-    assert ppi_lines[0].strip().split() == ["protein1", "protein2", "combined_score"]
-
-    with gzip.open(STITCH_FIXTURE, "rt") as fh:
-        stitch_lines = fh.readlines()
-    assert len(stitch_lines) == 5000
-    assert stitch_lines[0].strip().split("\t") == ["chemical", "protein", "combined_score"]
+@pytest.mark.parametrize(
+    "fixture_name,expected_rows,expected_header,delimiter",
+    [
+        ("9606.protein.links.v12.0.txt.gz",          200,  ["protein1", "protein2", "combined_score"], None),
+        ("10090.protein.links.v12.0.txt.gz",         200,  ["protein1", "protein2", "combined_score"], None),
+        ("10116.protein.links.v12.0.txt.gz",         200,  ["protein1", "protein2", "combined_score"], None),
+        ("9606.protein_chemical.links.v5.0.tsv.gz",  5000, ["chemical", "protein", "combined_score"],  "\t"),
+        ("10090.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"],  "\t"),
+        ("10116.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"],  "\t"),
+    ],
+)
+def test_fixture_row_counts(fixture_name, expected_rows, expected_header, delimiter):
+    """Sanity-check each fixture: row count and header."""
+    path = FIXTURE_DIR / fixture_name
+    with gzip.open(path, "rt") as fh:
+        lines = fh.readlines()
+    assert len(lines) == expected_rows, f"{fixture_name}: expected {expected_rows} rows, got {len(lines)}"
+    actual_header = lines[0].strip().split(delimiter) if delimiter else lines[0].strip().split()
+    assert actual_header == expected_header, f"{fixture_name}: header mismatch"
 
 
 # ──── string_ppi tag: protein-protein interaction assertions ─────────────────
 
 
+# All three target taxa appear in the multi-organism fixtures.
+EXPECTED_TAXA = {"NCBITaxon:9606", "NCBITaxon:10090", "NCBITaxon:10116"}
+# ENSEMBL protein prefixes vary by species: ENSP (human), ENSMUSP (mouse), ENSRNOP (rat).
+ENSEMBL_PROTEIN_PREFIXES = ("ENSEMBL:ENSP", "ENSEMBL:ENSMUSP", "ENSEMBL:ENSRNOP")
+
+
 def test_ppi_produces_nodes_and_edges(koza_output):
     nodes, edges = _ppi_partition(*_load_all(koza_output))
-    # 199 data rows → some pass the >500 cutoff. Range is loose so the test
-    # absorbs minor STRING reissues without becoming brittle.
-    assert 5 < len(edges) < 100, f"unexpected PPI edge count: {len(edges)}"
-    assert 5 < len(nodes) < 200, f"unexpected PPI node count: {len(nodes)}"
+    # 199 rows × 3 species → roughly 30-100 above-threshold pairs per species.
+    # Range is loose so the test absorbs minor STRING reissues.
+    assert 30 < len(edges) < 300, f"unexpected PPI edge count: {len(edges)}"
+    assert 30 < len(nodes) < 500, f"unexpected PPI node count: {len(nodes)}"
 
 
 def test_ppi_node_shape(koza_output):
     nodes, _ = _ppi_partition(*_load_all(koza_output))
+    seen_taxa = set()
     for node in nodes:
-        assert node["id"].startswith("ENSEMBL:ENSP"), node["id"]
+        assert node["id"].startswith(ENSEMBL_PROTEIN_PREFIXES), node["id"]
         assert node["category"] == ["biolink:Protein"]
-        assert node["in_taxon"] == ["NCBITaxon:9606"]
+        assert len(node["in_taxon"]) == 1 and node["in_taxon"][0] in EXPECTED_TAXA, node["in_taxon"]
+        seen_taxa.add(node["in_taxon"][0])
+    # All three taxa should appear at least once in the output.
+    assert seen_taxa == EXPECTED_TAXA, f"missing taxa: {EXPECTED_TAXA - seen_taxa}"
 
 
 def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
@@ -168,8 +196,8 @@ def test_ppi_edge_shape(koza_output):
     for edge in edges:
         assert edge["category"] == ["biolink:PairwiseMolecularInteraction"]
         assert edge["predicate"] == "biolink:physically_interacts_with"
-        assert edge["subject"].startswith("ENSEMBL:ENSP")
-        assert edge["object"].startswith("ENSEMBL:ENSP")
+        assert edge["subject"].startswith(ENSEMBL_PROTEIN_PREFIXES)
+        assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["knowledge_level"] == "not_provided"
         assert edge["agent_type"] == "not_provided"
         assert edge["has_attribute"] == ["MI:0915"]
@@ -187,9 +215,9 @@ def test_ppi_no_duplicate_edges_by_unordered_pair(koza_output):
 
 def test_stitch_produces_nodes_and_edges(koza_output):
     nodes, edges = _stitch_partition(*_load_all(koza_output))
-    # 4,999 data rows → ~31 pass the >500 cutoff (verified during fixture build).
-    assert 10 < len(edges) < 60, f"unexpected STITCH edge count: {len(edges)}"
-    assert 10 < len(nodes) < 120, f"unexpected STITCH node count: {len(nodes)}"
+    # 4,999 data rows × 3 species → roughly 25-50 above-threshold pairs per species.
+    assert 30 < len(edges) < 200, f"unexpected STITCH edge count: {len(edges)}"
+    assert 30 < len(nodes) < 400, f"unexpected STITCH node count: {len(nodes)}"
 
 
 def test_stitch_emits_chemical_and_protein_nodes(koza_output):
@@ -202,9 +230,12 @@ def test_stitch_emits_chemical_and_protein_nodes(koza_output):
 
     for chem in chemicals:
         assert chem["id"].startswith("PUBCHEM.COMPOUND:"), chem["id"]
+    seen_taxa = set()
     for prot in proteins:
-        assert prot["id"].startswith("ENSEMBL:ENSP"), prot["id"]
-        assert prot["in_taxon"] == ["NCBITaxon:9606"]
+        assert prot["id"].startswith(ENSEMBL_PROTEIN_PREFIXES), prot["id"]
+        assert len(prot["in_taxon"]) == 1 and prot["in_taxon"][0] in EXPECTED_TAXA
+        seen_taxa.add(prot["in_taxon"][0])
+    assert seen_taxa == EXPECTED_TAXA, f"STITCH missing taxa: {EXPECTED_TAXA - seen_taxa}"
 
 
 def test_stitch_edge_shape(koza_output):
@@ -212,7 +243,7 @@ def test_stitch_edge_shape(koza_output):
     for edge in edges:
         assert edge["predicate"] == "biolink:interacts_with"
         assert edge["subject"].startswith("PUBCHEM.COMPOUND:")
-        assert edge["object"].startswith("ENSEMBL:ENSP")
+        assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["knowledge_level"] == "not_provided"
         assert edge["agent_type"] == "not_provided"
         assert edge["has_attribute"] == ["MI:0190"]

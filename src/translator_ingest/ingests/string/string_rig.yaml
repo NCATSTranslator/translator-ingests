@@ -45,74 +45,105 @@ ingest_info:
       a protein–chemical layer using the same scoring framework. Together they supply Translator reasoning with
       generic "these proteins interact" and "this chemical interacts with this protein" signals at human-scale.
     scope: >-
-      Human protein–protein interactions (STRING) and protein–chemical interactions (STITCH). Protein identifiers
-      are kept in their native ENSEMBL form (no mapping to gene-level identifiers as canonical IDs; NCBIGene equivalents
-      are attached via ``equivalent_identifiers``). Chemical identifiers from STITCH are normalized to
-      ``PUBCHEM.COMPOUND`` CURIEs (both ``CIDm`` and ``CIDs`` are collapsed to the underlying PubChem CID). All
-      channel-level evidence is collapsed into a single edge per pair using each source's pre-computed
-      ``combined_score``; per-channel subscores are not surfaced in this iteration. Future iterations may extend to
-      additional model organisms and per-channel predicate/qualifier modeling — see ``future_considerations`` below.
+      Protein–protein interactions (STRING) and protein–chemical interactions (STITCH) for three
+      Translator-target species: human (NCBITaxon:9606), mouse (NCBITaxon:10090), and rat (NCBITaxon:10116).
+      Protein identifiers are kept in their native ENSEMBL form (ENSP / ENSMUSP / ENSRNOP) — no mapping to
+      gene-level identifiers as canonical IDs; NCBIGene equivalents are attached via ``equivalent_identifiers``.
+      Chemical identifiers from STITCH are normalized to ``PUBCHEM.COMPOUND`` CURIEs (both ``CIDm`` and ``CIDs``
+      are collapsed to the underlying PubChem CID). All channel-level evidence is collapsed into a single edge
+      per pair using each source's pre-computed ``combined_score``; per-channel subscores are not surfaced in
+      this iteration. Future iterations may extend to additional species and per-channel predicate/qualifier
+      modeling — see ``future_considerations`` below.
     relevant_files:
       - file_name: 9606.protein.links.v12.0.txt.gz
         location: https://stringdb-downloads.org/download/protein.links.v12.0/
         description: >-
-          Human protein–protein interaction file. Three space-delimited columns: protein1, protein2, combined_score.
-          One row per directed pair (each unordered pair appears twice). Drives the ``string_ppi`` tagged reader.
+          Human protein–protein interaction file (~79 MB gzipped). Three space-delimited columns:
+          protein1, protein2, combined_score. One row per directed pair (each unordered pair appears twice).
+      - file_name: 10090.protein.links.v12.0.txt.gz
+        location: https://stringdb-downloads.org/download/protein.links.v12.0/
+        description: >-
+          Mouse (Mus musculus) protein–protein interaction file (~72 MB gzipped). Same shape as human.
+      - file_name: 10116.protein.links.v12.0.txt.gz
+        location: https://stringdb-downloads.org/download/protein.links.v12.0/
+        description: >-
+          Rat (Rattus norvegicus) protein–protein interaction file (~75 MB gzipped). Same shape as human.
+          All three PPI files drive the ``string_ppi`` tagged reader.
       - file_name: all_organisms.entrez_2_string.tsv
         location: https://string-db.org/mapping_files/entrez/
         description: >-
           Universal STRING ↔ Entrez gene-ID mapping (~285 MB uncompressed, all species in one file).
           Three tab-separated columns: NCBI taxid, Entrez gene ID, STRING protein ID. Loaded once at transform start
           via ``on_data_begin`` and used to populate ``equivalent_identifiers`` on Protein nodes with their NCBIGene
-          equivalents. Not iterated by the reader; loaded as an auxiliary lookup file via
-          ``koza.input_files_dir``. Same source file used by Monarch's STRING ingest.
+          equivalents. Filtered to ``SUPPORTED_TAXA`` at load time so resident memory stays bounded.
+          Not iterated by the reader; loaded as an auxiliary lookup file via ``koza.input_files_dir``.
+          Same source file used by Monarch's STRING ingest.
       - file_name: 9606.protein_chemical.links.v5.0.tsv.gz
         location: http://stitch.embl.de/download/protein_chemical.links.v5.0/
         description: >-
           STITCH human protein–chemical interaction file (~70 MB gzipped, ~14.7M rows). Three tab-separated columns:
           chemical, protein, combined_score. Chemical IDs are ``CIDm{N}`` (merged/flat) or ``CIDs{N}`` (stereo-specific)
           encoding a PubChem CID with leading zero padding; we strip the prefix and emit ``PUBCHEM.COMPOUND`` CURIEs.
-          Drives the ``stitch_pcl`` tagged reader. Same source files used by ORION's STITCH parser.
+      - file_name: 10090.protein_chemical.links.v5.0.tsv.gz
+        location: http://stitch.embl.de/download/protein_chemical.links.v5.0/
+        description: >-
+          STITCH mouse protein–chemical interaction file (~154 MB gzipped). Same shape as human STITCH; larger
+          because orthology-projected scores inflate the row count.
+      - file_name: 10116.protein_chemical.links.v5.0.tsv.gz
+        location: http://stitch.embl.de/download/protein_chemical.links.v5.0/
+        description: >-
+          STITCH rat protein–chemical interaction file (~145 MB gzipped). Same shape as human STITCH.
+          All three STITCH files drive the ``stitch_pcl`` tagged reader. Same source files used by ORION's
+          STITCH parser.
     included_content:
-      - file_name: 9606.protein.links.v12.0.txt.gz
+      - file_name: "{taxid}.protein.links.v12.0.txt.gz  (9606 / 10090 / 10116)"
         included_records: >-
           Rows where combined_score > 500 (STRING's medium-confidence cutoff). Symmetric duplicates (each unordered pair
           appears in both p1→p2 and p2→p1 form) are deduplicated on the sorted-pair key so each pair is emitted once.
+          Same logic applies uniformly across all three per-organism files.
         fields_used: >-
-          protein1, protein2 (parsed into ENSEMBL protein CURIEs after stripping the ``9606.`` taxon prefix),
-          combined_score (used only for the row-inclusion filter; not attached to the output edge).
-      - file_name: 9606.protein_chemical.links.v5.0.tsv.gz
+          protein1, protein2 (parsed into ENSEMBL protein CURIEs — ENSP for human, ENSMUSP for mouse, ENSRNOP for rat —
+          after stripping the ``{taxid}.`` taxon prefix), combined_score (used only for the row-inclusion filter;
+          not attached to the output edge).
+      - file_name: "{taxid}.protein_chemical.links.v5.0.tsv.gz  (9606 / 10090 / 10116)"
         included_records: >-
           Rows where combined_score > 500 (same medium-confidence cutoff as STRING). STITCH rows are directed
-          (chemical → protein) and not symmetric, so no dedup is needed.
+          (chemical → protein) and not symmetric, so no dedup is needed. Same logic applies uniformly across
+          all three per-organism files.
         fields_used: >-
           chemical (``CIDm``/``CIDs`` → ``PUBCHEM.COMPOUND`` CURIE), protein (parsed into ENSEMBL protein CURIE
           via the same helper as STRING), combined_score (used only for the row-inclusion filter; not attached
           to the output edge).
     filtered_content:
-      - file_name: 9606.protein.links.v12.0.txt.gz
+      - file_name: "{taxid}.protein.links.v12.0.txt.gz  (all three taxa)"
         filtered_records: >-
           Rows with combined_score <= 500 are excluded.
         rationale: >-
           Below medium confidence, STRING's predictions are too noisy for Translator reasoning. Matches the default
           confidence cutoff offered on the STRING web interface.
-      - file_name: 9606.protein.links.v12.0.txt.gz
+      - file_name: "{taxid}.protein.links.v12.0.txt.gz  (all three taxa)"
         filtered_records: >-
           Symmetric duplicate rows (the second occurrence of any unordered protein pair).
         rationale: >-
           STRING lists each interaction in both directions. We emit one undirected edge per pair.
-      - file_name: 9606.protein_chemical.links.v5.0.tsv.gz
+      - file_name: "{taxid}.protein_chemical.links.v5.0.tsv.gz  (all three taxa)"
         filtered_records: >-
           Rows with combined_score <= 500 are excluded.
         rationale: >-
           Same medium-confidence cutoff applied to STRING; consistent threshold across both ingest tags.
     future_considerations:
+      # NOTE: Mouse + rat STRING + STITCH have shipped (covered by SUPPORTED_TAXA
+      # 9606/10090/10116 in string.py and per-taxon files in download.yaml).
+      # Remaining: extend to additional Translator-relevant organisms below.
       - category: edge_content
         consideration: >-
-          Extend to additional Translator-relevant organisms (mouse, rat, zebrafish, fly, worm, yeast) by ingesting the
-          corresponding per-taxon files from STRING. The transform code already accepts arbitrary taxa via the
-          ``SUPPORTED_TAXA`` dict in ``string.py``; only the reader yaml needs to point at the additional files.
-        relevant_files: "{taxon}.protein.links.v12.0.txt.gz"
+          Extend to additional Translator-relevant organisms beyond human/mouse/rat (zebrafish, fly, worm, yeast)
+          by ingesting their per-taxon STRING and STITCH files. The transform code accepts arbitrary taxa via the
+          ``SUPPORTED_TAXA`` dict in ``string.py``; adding a species is a one-line code change plus 2 download URLs
+          (PPI + STITCH) and 2 reader file entries per species. Note that non-vertebrate species may use protein ID
+          schemes other than ENSEMBL (e.g. yeast uses ORF names like ``YAL001C``); the parser would accept them but
+          downstream NodeNormalizer coverage should be probed first.
+        relevant_files: "{taxon}.protein.links.v12.0.txt.gz, {taxon}.protein_chemical.links.v5.0.tsv.gz"
       - category: edge_property_content
         consideration: >-
           Switch to ``protein.links.detailed.v12.0.txt.gz`` (or ``protein.links.full.v12.0.txt.gz``) to surface the
@@ -135,16 +166,17 @@ ingest_info:
           A dual-source design (physical → ``physically_interacts_with`` + MI:0915; functional → ``interacts_with`` +
           MI:0190) is planned.
         relevant_files: "{taxon}.protein.physical.links.v12.0.txt.gz"
-      # NOTE: STITCH integration has shipped (the ``stitch_pcl`` tag); originally
-      # listed here as future work. Remaining STITCH work for future iterations:
-      # extend to mouse/rat STITCH files; surface STITCH's per-channel subscores
-      # if/when the ``protein_chemical.links.detailed.v5.0.tsv.gz`` file is ingested.
-      - category: edge_content
+      # NOTE: STITCH integration has shipped (the ``stitch_pcl`` tag) for human,
+      # mouse, and rat. Remaining STITCH work: surface per-channel subscores via
+      # ``protein_chemical.links.detailed.v5.0.tsv.gz``; add mode-of-action from
+      # ``actions.v5.0.tsv`` (would split STITCH's generic ``interacts_with`` into
+      # specific predicates: ``activation``, ``inhibition``, ``binding``, etc.).
+      - category: edge_property_content
         consideration: >-
-          Extend STITCH to additional Translator-relevant organisms (mouse, rat). The ``stitch_pcl`` tagged
-          transform already handles arbitrary taxa via the same ``SUPPORTED_TAXA`` dict used by ``string_ppi``;
-          only the reader yaml needs the additional files.
-        relevant_files: "{taxon}.protein_chemical.links.v5.0.tsv.gz"
+          Ingest STITCH's ``actions.v5.0.tsv`` file (mode-of-action: activation, inhibition, binding, catalysis,
+          reaction, expression, pred_bind). Would let STITCH emit specific predicates instead of the generic
+          ``biolink:interacts_with``, materially sharpening the protein-chemical edges.
+        relevant_files: "{taxon}.actions.v5.0.tsv.gz"
       - category: node_content
         consideration: >-
           Ingest ``protein.aliases.v12.0.txt.gz`` to populate node ``name`` and ``synonym`` properties. Currently nodes
@@ -169,7 +201,9 @@ target_info:
         qualifiers:
           - property: species_context_qualifier
             value_enumeration:
-              - NCBITaxon:9606
+              - NCBITaxon:9606    # Homo sapiens
+              - NCBITaxon:10090   # Mus musculus
+              - NCBITaxon:10116   # Rattus norvegicus
         knowledge_level:
           # STRING's combined_score is a computational aggregation across heterogeneous
           # evidence channels rather than an explicit curator claim. ``not_provided``
@@ -198,6 +232,8 @@ target_info:
           per-channel modeling roadmap.
         source_files:
           - 9606.protein.links.v12.0.txt.gz
+          - 10090.protein.links.v12.0.txt.gz
+          - 10116.protein.links.v12.0.txt.gz
 
       # STITCH protein–chemical interactions (``stitch_pcl`` tag).
       - subject_categories:
@@ -209,7 +245,9 @@ target_info:
         qualifiers:
           - property: species_context_qualifier
             value_enumeration:
-              - NCBITaxon:9606
+              - NCBITaxon:9606    # Homo sapiens
+              - NCBITaxon:10090   # Mus musculus
+              - NCBITaxon:10116   # Rattus norvegicus
         knowledge_level:
           # STITCH's combined_score aggregates across binding assays, manual
           # curation, text mining, and database co-occurrence. Same rationale
@@ -234,6 +272,8 @@ target_info:
           basis, so we use the loose ``biolink:interacts_with`` predicate.
         source_files:
           - 9606.protein_chemical.links.v5.0.tsv.gz
+          - 10090.protein_chemical.links.v5.0.tsv.gz
+          - 10116.protein_chemical.links.v5.0.tsv.gz
 
     node_type_info:
       - node_category: biolink:Protein
@@ -252,12 +292,14 @@ target_info:
           - in_taxon
           - equivalent_identifiers
         additional_notes: >-
-          Protein nodes use STRING's native identifiers, which are ENSEMBL protein IDs (e.g. ENSP00000000233). The
-          leading ``9606.`` taxon prefix is stripped and the result is prefixed with ``ENSEMBL:``. Each node carries
-          ``in_taxon = NCBITaxon:9606`` and (when a STRING ↔ Entrez mapping exists) ``equivalent_identifiers``
-          listing one or more ``NCBIGene:`` CURIEs. This explicit equivalence is the hybrid design choice that
-          aligns with both Monarch's gene-endpoint ingest pattern (Kevin Schaper, 2026-05) and the Translator
-          NodeNormalizer's expectations, without forcing a gene-centric reshape of the graph.
+          Protein nodes use STRING's native identifiers — ENSEMBL protein IDs that vary by species: ENSP (human),
+          ENSMUSP (mouse), ENSRNOP (rat). The leading ``{taxid}.`` prefix is stripped and the result is prefixed
+          with ``ENSEMBL:``. Each node carries ``in_taxon`` derived from the row's taxon prefix, and (when a
+          STRING ↔ Entrez mapping exists) ``equivalent_identifiers`` listing one or more ``NCBIGene:`` CURIEs.
+          This explicit equivalence is the hybrid design choice that aligns with both Monarch's gene-endpoint
+          ingest pattern (Kevin Schaper, 2026-05) and the Translator NodeNormalizer's expectations, without
+          forcing a gene-centric reshape of the graph. NodeNormalizer resolution verified at 98.5% (human),
+          100% (mouse), 98% (rat) on sample probes.
 
       - node_category: biolink:ChemicalEntity
         # Emitted by the ``stitch_pcl`` tagged transform. STITCH chemical IDs

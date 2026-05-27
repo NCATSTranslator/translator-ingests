@@ -16,8 +16,12 @@ readers:
     format: "csv"
     delimiter: " "
     header_mode: 0
+    # One file per Translator-target taxon. Koza concatenates them under this
+    # tag; the transform identifies the taxon per-row from the STRING ID prefix.
     files:
       - '9606.protein.links.v12.0.txt.gz'
+      - '10090.protein.links.v12.0.txt.gz'
+      - '10116.protein.links.v12.0.txt.gz'
     columns:
       - protein1
       - protein2
@@ -31,6 +35,8 @@ readers:
     header_mode: 0
     files:
       - '9606.protein_chemical.links.v5.0.tsv.gz'
+      - '10090.protein_chemical.links.v5.0.tsv.gz'
+      - '10116.protein_chemical.links.v5.0.tsv.gz'
     columns:
       - chemical
       - protein

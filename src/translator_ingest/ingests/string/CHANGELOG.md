@@ -5,6 +5,34 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-05-27 — Wire mouse + rat for STRING + STITCH (multi-organism)
+
+**Decision.** Extend both tagged readers (`string_ppi` and `stitch_pcl`) to the three
+Translator-target mammals: human (9606), mouse (10090), rat (10116). No transform code
+changes needed — `parse_string_protein_id` was already taxon-aware and `SUPPORTED_TAXA`
+already enumerated all three. This was purely a yaml-wiring chunk plus fixture +
+RIG/CHANGELOG updates.
+
+**Pre-flight sanity probes confirmed:**
+
+- All 9 file URLs (3 taxa × {STRING functional, STRING physical, STITCH}) return 200
+- Mouse uses `ENSMUSP*`, rat uses `ENSRNOP*` ENSEMBL prefixes — parser handles both unchanged
+- STITCH chemical format is identical across species (`CIDm`/`CIDs` + same per-species protein prefix)
+- NodeNormalizer resolution: 100% (mouse, 50/50), 98% (rat, 49/50) — comparable to or better than human's 98.5%
+- entrez_2_string mapping covers mouse + rat (existing file, no new download)
+
+**Considered and dropped:**
+
+| Idea | Why dropped now | Bring back when |
+|---|---|---|
+| Push threshold from `>500` to `>700` for the multi-organism full run | Adds a config drift between dev (small fixture, threshold 500) and prod (full file, threshold 700) — easy to confuse. | When disk is the binding constraint on a particular run; can be done via a single constant change for a one-off. |
+| Add zebrafish / fly / worm / yeast in the same chunk | Beyond the three target Translator species; non-vertebrate species may use non-ENSEMBL protein IDs (e.g. yeast `YAL001C`), and NodeNormalizer coverage hasn't been probed for them. | When there's a specific Translator need for non-mammalian PPI. |
+| Per-species tagged readers (`string_ppi_9606`, `string_ppi_10090`, …) | Would multiply the reader/transform count for no semantic gain; STRING ships per-species files with identical schema, and the per-row taxon parsing handles them uniformly. | Never; the current shape scales linearly with species count via reader's `files:` list. |
+
+**Output sizes (multi-organism integration fixture run):** 105 PPI edges + ~92 STITCH edges across all three taxa; nodes count similarly. Full-file multi-organism run would be ~5–10 GB JSONL — same disk concern as the human-only full run, mitigated the same way (push threshold up, run on a server with proper disk, or use `--row-limit` for development).
+
+**Parked.** Adding additional species (zebrafish, fly, worm, yeast) is now a one-line `SUPPORTED_TAXA` change + 2 URLs per species. Beyond that, the open work items are dual physical/functional STRING sources (split predicate by source) and STITCH `actions.v5.0.tsv` (mode-of-action qualifiers).
+
 ## 2026-05-27 — Add STITCH protein–chemical edges under a `stitch_pcl` tag
 
 **Decision.** Extend the ingest with STITCH (`9606.protein_chemical.links.v5.0.tsv.gz`)
