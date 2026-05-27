@@ -4,7 +4,6 @@ from typing import Optional
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
-    AnatomicalEntityHasPartAnatomicalEntityAssociation,
     ChemicalAffectsGeneAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     ChemicalGeneInteractionAssociation,
