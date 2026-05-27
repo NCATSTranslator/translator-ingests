@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
-    "biolink-model==4.4.0rc3",
+    "biolink-model==4.4.2",
     "bmt>=1.4.8",
     "click>=8.0.0",
     "codespell>=2.4.1",
@@ -50,7 +50,7 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
-    "biolink-model==4.4.0rc3",
+    "biolink-model==4.4.2",
     "mypy>=1.19.1",
     "pylint>=4.0.5",
     "vulture>=2.16",

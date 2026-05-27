@@ -208,7 +208,7 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.4.0rc3"
+version = "4.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -222,9 +222,9 @@ dependencies = [
     { name = "requests" },
     { name = "stringcase" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/01/19bbba4c34cdc6123fc475d5ab6e614e82572f79f88eaab8881bb9354cca/biolink_model-4.4.0rc3.tar.gz", hash = "sha256:42af338b432677c8b0d8ee03c00050678b538e00d341c6655df7a3c74c8d90a2", size = 3818297, upload-time = "2026-05-07T22:33:28.095Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/51/c1911e3c34f53eefd6939083fbfba0ee02d070b6a261461f814f2ba644bd/biolink_model-4.4.2.tar.gz", hash = "sha256:c69ccb9fd8cbd9935b36a4aec578a4c5ee8a3c39d75eb4d9495ded6cf205c39b", size = 3784369, upload-time = "2026-05-22T19:09:21.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/48/e90c6449a745323a50068d841a9620af8c7fc53986f0b101d2cd22e1bff0/biolink_model-4.4.0rc3-py3-none-any.whl", hash = "sha256:6b81ee317ceb41bc4d8d9c060c2ed40ec2ed82fd5c173658d5530c358a3565ab", size = 334223, upload-time = "2026-05-07T22:33:26.658Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/63/545021b6c7162e2b6711d71f267cbab618598c1730e5de95a9d8c302adc1/biolink_model-4.4.2-py3-none-any.whl", hash = "sha256:939083a7f9c9ebe0fe580e6e02a9d01642825a85041be804e0e39a33fabc98d4", size = 336628, upload-time = "2026-05-22T19:09:18.783Z" },
 ]
 
 [[package]]
@@ -363,7 +363,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "biolink-model", specifier = "==4.4.0rc3" },
+    { name = "biolink-model", specifier = "==4.4.2" },
     { name = "bmt", specifier = ">=1.4.8" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "codespell", specifier = ">=2.4.1" },
@@ -387,7 +387,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "biolink-model", specifier = "==4.4.0rc3" },
+    { name = "biolink-model", specifier = "==4.4.2" },
     { name = "black", specifier = ">=24.1.0" },
     { name = "codespell", specifier = ">=2.2.0" },
     { name = "jsonlines" },
