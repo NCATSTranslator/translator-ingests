@@ -18,13 +18,28 @@ readers:
     header_mode: 0
     # One file per Translator-target taxon. Koza concatenates them under this
     # tag; the transform identifies the taxon per-row from the STRING ID prefix.
+    # Uses the ``.full.`` variant (16 columns) so per-channel subscores drive
+    # per-channel predicate emission. See string.py CHANNEL_PREDICATES.
     files:
-      - '9606.protein.links.v12.0.txt.gz'
-      - '10090.protein.links.v12.0.txt.gz'
-      - '10116.protein.links.v12.0.txt.gz'
+      - '9606.protein.links.full.v12.0.txt.gz'
+      - '10090.protein.links.full.v12.0.txt.gz'
+      - '10116.protein.links.full.v12.0.txt.gz'
     columns:
       - protein1
       - protein2
+      - neighborhood
+      - neighborhood_transferred
+      - fusion
+      - cooccurence
+      - homology
+      - coexpression
+      - coexpression_transferred
+      - experiments
+      - experiments_transferred
+      - database
+      - database_transferred
+      - textmining
+      - textmining_transferred
       - combined_score
 
   # STITCH protein–chemical interactions. Tab-separated; rows look like

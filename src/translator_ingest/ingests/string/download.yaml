@@ -5,12 +5,19 @@
 ---
 # STRING protein-protein interaction files (one per Translator-target taxon).
 # Loaded by the ``string_ppi`` tagged reader in string.yaml.
-- url: https://stringdb-downloads.org/download/protein.links.v12.0/9606.protein.links.v12.0.txt.gz
-  local_name: 9606.protein.links.v12.0.txt.gz
-- url: https://stringdb-downloads.org/download/protein.links.v12.0/10090.protein.links.v12.0.txt.gz
-  local_name: 10090.protein.links.v12.0.txt.gz
-- url: https://stringdb-downloads.org/download/protein.links.v12.0/10116.protein.links.v12.0.txt.gz
-  local_name: 10116.protein.links.v12.0.txt.gz
+#
+# We use the ``.full.`` variant (16 columns: 7 evidence channels + 6
+# orthology-transferred variants + combined_score) rather than the 3-column
+# ``.links.`` variant, because the per-channel subscores drive per-channel
+# predicate emission. See string.py CHANNEL_PREDICATES for the channel→
+# predicate mapping (matches ORION's STRING parser). File size is ~2x the
+# 3-column variant.
+- url: https://stringdb-downloads.org/download/protein.links.full.v12.0/9606.protein.links.full.v12.0.txt.gz
+  local_name: 9606.protein.links.full.v12.0.txt.gz
+- url: https://stringdb-downloads.org/download/protein.links.full.v12.0/10090.protein.links.full.v12.0.txt.gz
+  local_name: 10090.protein.links.full.v12.0.txt.gz
+- url: https://stringdb-downloads.org/download/protein.links.full.v12.0/10116.protein.links.full.v12.0.txt.gz
+  local_name: 10116.protein.links.full.v12.0.txt.gz
 
 # Universal STRING ↔ Entrez gene-ID mapping (all species, ~285 MB uncompressed).
 # Not iterated by the reader; loaded once at transform start via on_data_begin

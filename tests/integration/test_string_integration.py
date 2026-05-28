@@ -41,15 +41,26 @@ FIXTURE_DIR = (
 )
 ENTREZ_FIXTURE = FIXTURE_DIR / "all_organisms.entrez_2_string.tsv"
 # Per-taxon fixture filenames (must match string.yaml's reader configuration).
+# PPI uses the ``.full.`` 16-column variant for per-channel predicate selection.
 PPI_FIXTURES = [
-    FIXTURE_DIR / "9606.protein.links.v12.0.txt.gz",
-    FIXTURE_DIR / "10090.protein.links.v12.0.txt.gz",
-    FIXTURE_DIR / "10116.protein.links.v12.0.txt.gz",
+    FIXTURE_DIR / "9606.protein.links.full.v12.0.txt.gz",
+    FIXTURE_DIR / "10090.protein.links.full.v12.0.txt.gz",
+    FIXTURE_DIR / "10116.protein.links.full.v12.0.txt.gz",
 ]
 STITCH_FIXTURES = [
     FIXTURE_DIR / "9606.protein_chemical.links.v5.0.tsv.gz",
     FIXTURE_DIR / "10090.protein_chemical.links.v5.0.tsv.gz",
     FIXTURE_DIR / "10116.protein_chemical.links.v5.0.tsv.gz",
+]
+PPI_HEADER = [
+    "protein1", "protein2",
+    "neighborhood", "neighborhood_transferred",
+    "fusion", "cooccurence", "homology",
+    "coexpression", "coexpression_transferred",
+    "experiments", "experiments_transferred",
+    "database", "database_transferred",
+    "textmining", "textmining_transferred",
+    "combined_score",
 ]
 
 
@@ -132,12 +143,12 @@ def _load_jsonl(path: Path) -> list[dict]:
 @pytest.mark.parametrize(
     "fixture_name,expected_rows,expected_header,delimiter",
     [
-        ("9606.protein.links.v12.0.txt.gz",          200,  ["protein1", "protein2", "combined_score"], None),
-        ("10090.protein.links.v12.0.txt.gz",         200,  ["protein1", "protein2", "combined_score"], None),
-        ("10116.protein.links.v12.0.txt.gz",         200,  ["protein1", "protein2", "combined_score"], None),
-        ("9606.protein_chemical.links.v5.0.tsv.gz",  5000, ["chemical", "protein", "combined_score"],  "\t"),
-        ("10090.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"],  "\t"),
-        ("10116.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"],  "\t"),
+        ("9606.protein.links.full.v12.0.txt.gz",     200,  PPI_HEADER, None),
+        ("10090.protein.links.full.v12.0.txt.gz",    200,  PPI_HEADER, None),
+        ("10116.protein.links.full.v12.0.txt.gz",    200,  PPI_HEADER, None),
+        ("9606.protein_chemical.links.v5.0.tsv.gz",  5000, ["chemical", "protein", "combined_score"], "\t"),
+        ("10090.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"], "\t"),
+        ("10116.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"], "\t"),
     ],
 )
 def test_fixture_row_counts(fixture_name, expected_rows, expected_header, delimiter):
@@ -191,16 +202,53 @@ def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
             assert eq.startswith("NCBIGene:"), eq
 
 
+# Per-channel predicates emitted by string_ppi (matches CHANNEL_PREDICATES +
+# FALLBACK_PREDICATE in string.py).
+PPI_PREDICATES = {
+    "biolink:physically_interacts_with",  # experiments channel + fallback
+    "biolink:coexpressed_with",           # coexpression channel
+    "biolink:interacts_with",             # textmining channel
+    "biolink:gene_fusion_with",           # fusion channel
+    "biolink:genetic_neighborhood_of",    # neighborhood channel
+    "biolink:genetically_interacts_with", # cooccurence channel
+}
+# Edge classes that may appear in PPI output. PairwiseMolecularInteraction
+# covers most predicates; GeneToGeneCoexpressionAssociation is the canonical
+# class for coexpressed_with.
+PPI_CATEGORIES = {
+    "biolink:PairwiseMolecularInteraction",
+    "biolink:GeneToGeneCoexpressionAssociation",
+}
+
+
 def test_ppi_edge_shape(koza_output):
     _, edges = _ppi_partition(*_load_all(koza_output))
     for edge in edges:
-        assert edge["category"] == ["biolink:PairwiseMolecularInteraction"]
-        assert edge["predicate"] == "biolink:physically_interacts_with"
+        assert edge["category"][0] in PPI_CATEGORIES, edge["category"]
+        assert edge["predicate"] in PPI_PREDICATES, edge["predicate"]
         assert edge["subject"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["knowledge_level"] == "not_provided"
         assert edge["agent_type"] == "not_provided"
-        assert edge["has_attribute"] == ["MI:0915"]
+        # MI:0915 only attaches to physically_interacts_with edges; omitted for others.
+        if edge["predicate"] == "biolink:physically_interacts_with":
+            assert edge.get("has_attribute") == ["MI:0915"]
+        else:
+            assert not edge.get("has_attribute")
+
+
+def test_ppi_emits_multiple_predicates(koza_output):
+    """At least the fallback predicate is always emitted; high-confidence
+    channels in fixture data should yield additional predicate variety."""
+    _, edges = _ppi_partition(*_load_all(koza_output))
+    predicates_seen = {e["predicate"] for e in edges}
+    assert "biolink:physically_interacts_with" in predicates_seen, \
+        "fallback predicate should always appear for above-threshold rows"
+    # Mouse fixture has ~15 high-conf rows; rat ~3; human ~2 — expect at least
+    # one non-fallback predicate to fire across the combined output.
+    non_fallback = predicates_seen - {"biolink:physically_interacts_with"}
+    assert len(non_fallback) >= 1, \
+        f"expected at least one non-fallback predicate, got: {predicates_seen}"
 
 
 def test_ppi_no_duplicate_edges_by_unordered_pair(koza_output):

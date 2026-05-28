@@ -5,6 +5,65 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-05-27 — Per-channel STRING predicates (6 edge types) matching ORION
+
+**Decision.** Switch the STRING PPI source from the 3-column `protein.links.v12.0.txt.gz`
+to the 16-column `protein.links.full.v12.0.txt.gz`, and emit per-channel predicates
+based on which evidence channels exceed a high-confidence threshold. Matches
+ORION's STRING parser exactly on the predicate-mapping side; uniform KL/AT on our
+side (defers ORION's per-channel KL/AT for a later iteration).
+
+**Why now.** Probing Automat's STRING-DB MKG (the canonical Translator-hosted
+STRING graph that RoboKOP and other ARAs query) revealed that production emits
+multiple PPI predicates per pair (physically_interacts_with, coexpressed_with,
+homologous_to, related_to). Our single-predicate output would have been a
+**downstream compatibility cliff** — queries for the other 3 predicates would
+silently return zero results once our ingest replaces what's currently in
+production. Per-channel emission closes that gap.
+
+**Channel → predicate map (matches ORION):**
+
+| Channel | Predicate | Biolink class |
+|---|---|---|
+| `experiments` | `biolink:physically_interacts_with` | `PairwiseMolecularInteraction` |
+| `coexpression` | `biolink:coexpressed_with` | `GeneToGeneCoexpressionAssociation` |
+| `textmining` | `biolink:interacts_with` | `PairwiseMolecularInteraction` |
+| `neighborhood` | `biolink:genetic_neighborhood_of` | `PairwiseMolecularInteraction` |
+| `fusion` | `biolink:gene_fusion_with` | `PairwiseMolecularInteraction` |
+| `cooccurence` | `biolink:genetically_interacts_with` | `PairwiseMolecularInteraction` |
+
+**Rules:**
+- Row gate: `combined_score > 500` (unchanged from prior iterations).
+- Per-channel high-confidence threshold: `> 750` (ORION's `high_conf_threshold`).
+- Emit one edge per channel above threshold. Up to 6 edges per pair; typically 1–2.
+- Fallback: if no channel exceeds 750 but the row passes the combined-score gate, emit one `biolink:physically_interacts_with` edge (matches ORION).
+- Dedup key is `(sorted_pair, predicate)`, so multiple predicates can coexist on the same pair without colliding.
+- MI:0915 (PSI-MI "physical association") attached only to `physically_interacts_with` edges — semantically misleading on the others.
+
+**Considered and dropped:**
+
+| Idea | Why dropped now | Bring back when |
+|---|---|---|
+| Include HOMOLOGY → `biolink:homologous_to` as a predicate | STRING's HOMOLOGY score means "interaction inferred via orthologs in another species", not "A is homologous to B" (per STRING docs and ORION's comment). Using it as `homologous_to` would be a semantic misread. | If STRING ever surfaces direct homology scores in a separate channel. |
+| Include DATABASE as a predicate | ORION doesn't map it; DATABASE contributes to combined_score but doesn't drive its own channel-specific predicate beyond EXPERIMENTS-driven `physically_interacts_with`. | If there's evidence that downstream Translator queries depend on a database-specific predicate. |
+| Implement ORION's per-channel KL/AT logic (channel-dependent knowledge_level/agent_type with multi-channel override) | Adds non-trivial plumbing (per-row class state) for a benefit that's mostly downstream-filter convenience. Kept uniform `not_provided` for this iteration. | If a Translator consumer explicitly wants to filter by KL=knowledge_assertion to get only experimentally-grounded edges. |
+| Use the `_transferred` (orthology-projected) channel variants in the predicate-selection logic | ORION ignores them for predicate selection (uses only native channel columns); we follow suit. They're available in `.full` but unused by our rule. | If we ever want to give "this evidence is borrowed from orthologs in another species" its own qualifier. |
+| Use the `.detailed.` variant instead of `.full.` (10 columns vs 16) | The `_transferred` columns aren't used for predicate selection, so `.detailed` would suffice — but the size difference is small (~10%) and `.full` keeps the option open for future per-channel-attribute work. | If disk really becomes the binding constraint at scale. |
+| Per-channel `biolink:Attribute` instances (subscores attached to edges) | Heavier wire format; not directly needed for predicate emission; ORION doesn't do it. | Added to `future_considerations` for the next iteration. |
+| Restrict to physical subnetwork (`protein.physical.links`) as a separate source | Largely redundant once per-channel predicates fire: physical evidence (`experiments` channel) already gets its own `physically_interacts_with` edges from the `.full` file. | The dual-physical/functional source idea has been removed from `future_considerations` as superseded by this change. |
+
+**Two biolink class subtleties hit during implementation:**
+
+- `PairwiseMolecularInteraction` accepts a restricted predicate set that does NOT include `coexpressed_with` (biolink considers coexpression a non-physical association). Coexpression edges must use `GeneToGeneCoexpressionAssociation` instead. The transform now maps predicate → Association class via `PREDICATE_TO_ASSOCIATION_CLASS`.
+- `Association.category` is constrained to `["biolink:Association"]` literally; you can't override it to a more-specific class name. The category comes from whichever Pydantic class you instantiate.
+
+**Output sizes (integration fixture run, 200-row .full slices per taxon):**
+
+- ~80 above-threshold rows across 3 taxa → ~95 edges (mostly fallback `physically_interacts_with`; ~12 non-fallback from high-conf channels)
+- 65 unit tests + 17 integration tests + 7 doctests pass
+
+**Parked.** Per-channel KL/AT and per-channel subscore attributes (both in `future_considerations`). Mode-of-action splitting for STITCH (`actions.v5.0.tsv`) is unaffected by this change. Switching the chemical-entity ID prefix from PUBCHEM.COMPOUND to CHEBI (to match Automat's MKG) remains an open coordination question.
+
 ## 2026-05-27 — Wire mouse + rat for STRING + STITCH (multi-organism)
 
 **Decision.** Extend both tagged readers (`string_ppi` and `stitch_pcl`) to the three

@@ -32,6 +32,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association,
     ChemicalEntity,
+    GeneToGeneCoexpressionAssociation,
     KnowledgeLevelEnum,
     PairwiseMolecularInteraction,
     Protein,
@@ -56,14 +57,67 @@ SUPPORTED_TAXA: dict[str, str] = {
     "10116": "NCBITaxon:10116",  # Rattus norvegicus
 }
 
-# STRING's medium-confidence cutoff; matches the default offered on the STRING web UI.
+# Row-inclusion threshold (STRING's medium-confidence cutoff). A row is processed
+# only if combined_score exceeds this; matches the default offered on the STRING
+# web UI and ORION's STRING parser.
 COMBINED_SCORE_THRESHOLD = 500
 
-# PSI-MI interaction type asserted by every STRING edge in this ingest. ``MI:0915``
-# is "physical association" — the same claim made by our biolink predicate. Attached
-# via ``has_attribute`` so downstream consumers that key off PSI-MI terms can pick
-# it up alongside the biolink predicate. See CHANGELOG.md for the slot/term rationale.
-STRING_INTERACTION_TYPE_PSI_MI = "MI:0915"
+# Per-channel high-confidence threshold. A predicate is emitted for a row only
+# if the contributing channel's individual score exceeds this. ORION uses 750
+# (their "high_conf_threshold"); we follow suit so that downstream consumers
+# expecting ORION-equivalent predicate semantics see the same per-channel signal.
+CHANNEL_HIGH_CONF_THRESHOLD = 750
+
+# Channel → biolink predicate map. Mirrors ORION's STRING parser. Two channels
+# are deliberately omitted:
+#
+#   * ``homology`` — STRING's HOMOLOGY channel does NOT mean "A is homologous
+#     to B"; per STRING docs, it means "the interaction between A and B is
+#     inferred via homologous proteins in another species." Using it for
+#     ``biolink:homologous_to`` would be a semantic misread. (ORION's comment.)
+#   * ``database`` — ORION doesn't map it either; DATABASE evidence contributes
+#     to combined_score but doesn't drive an additional channel-specific
+#     predicate beyond the EXPERIMENTS-driven physically_interacts_with.
+#
+# The ``_transferred`` variants (orthology-projected evidence) similarly don't
+# get their own predicates — only the native channel score is consulted, again
+# matching ORION's behavior.
+CHANNEL_PREDICATES: dict[str, str] = {
+    "neighborhood": "biolink:genetic_neighborhood_of",
+    "fusion":       "biolink:gene_fusion_with",
+    "cooccurence":  "biolink:genetically_interacts_with",  # STRING's spelling (sic)
+    "coexpression": "biolink:coexpressed_with",
+    "experiments":  "biolink:physically_interacts_with",
+    "textmining":   "biolink:interacts_with",
+}
+
+# Fallback predicate emitted when ``combined_score`` clears the row gate but no
+# individual channel exceeds CHANNEL_HIGH_CONF_THRESHOLD. ORION uses the same
+# fallback — the implicit assumption is that an above-medium-confidence pair
+# without specific channel signal is most likely a physical interaction.
+FALLBACK_PREDICATE = "biolink:physically_interacts_with"
+
+# Biolink Association class to instantiate per predicate. Most of our per-channel
+# predicates fit ``PairwiseMolecularInteraction``'s permitted predicate set, but
+# ``biolink:coexpressed_with`` is not a molecular-interaction predicate in
+# biolink — it belongs to ``GeneToGeneCoexpressionAssociation``. The mapping
+# keeps each edge in its most-specific canonical class.
+PREDICATE_TO_ASSOCIATION_CLASS = {
+    "biolink:physically_interacts_with":  PairwiseMolecularInteraction,
+    "biolink:interacts_with":             PairwiseMolecularInteraction,
+    "biolink:gene_fusion_with":           PairwiseMolecularInteraction,
+    "biolink:genetic_neighborhood_of":    PairwiseMolecularInteraction,
+    "biolink:genetically_interacts_with": PairwiseMolecularInteraction,
+    "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
+}
+
+# PSI-MI interaction type attached only to ``physically_interacts_with`` edges.
+# ``MI:0915`` is "physical association" — semantically aligned with the
+# physical-interaction predicate only. Other predicates (coexpressed_with,
+# genetic_neighborhood_of, etc.) describe different evidence types that
+# don't correspond to PSI-MI physical-association semantics; for those we
+# omit the slot rather than attaching a misleading term.
+PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915"
 
 # Filename of the STRING ↔ Entrez gene-ID mapping (universal across species).
 # Downloaded by download.yaml into ``koza.input_files_dir``. Loaded once at
@@ -153,6 +207,66 @@ def passes_combined_score(
     return int(combined_score) > threshold
 
 
+def predicates_for_row(
+    record: dict[str, Any],
+    channel_threshold: int = CHANNEL_HIGH_CONF_THRESHOLD,
+) -> list[str]:
+    """
+    Return the list of biolink predicates that should be emitted for one
+    STRING ``.full`` row, based on which channels exceed the high-confidence
+    threshold. If no channel fires, return a single-element list with the
+    fallback predicate (matches ORION's behavior).
+
+    The returned list is order-stable (follows ``CHANNEL_PREDICATES`` insertion
+    order) and deduplicated — multiple channels mapping to the same predicate
+    only fire once. Channels with non-numeric or missing scores are silently
+    skipped; STRING guarantees integer scores so this is a defensive guard.
+
+    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "coexpression": "0", "experiments": "800", "textmining": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> predicates_for_row(row)
+    ['biolink:physically_interacts_with']
+
+    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "coexpression": "780", "experiments": "0", "textmining": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> predicates_for_row(row)
+    ['biolink:coexpressed_with']
+
+    Multi-channel: experiments + coexpression both fire above 750, emit both.
+
+    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "coexpression": "780", "experiments": "780", "textmining": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> predicates_for_row(row)
+    ['biolink:coexpressed_with', 'biolink:physically_interacts_with']
+
+    No channel above 750 → fallback (assumes the row passed combined_score
+    gate elsewhere).
+
+    >>> row = {"neighborhood": "200", "fusion": "0", "cooccurence": "0",
+    ...        "coexpression": "300", "experiments": "200", "textmining": "100",
+    ...        "homology": "0", "database": "0"}
+    >>> predicates_for_row(row)
+    ['biolink:physically_interacts_with']
+    """
+    fired: list[str] = []
+    seen: set[str] = set()
+    for channel, predicate in CHANNEL_PREDICATES.items():
+        raw = record.get(channel)
+        if raw is None:
+            continue
+        try:
+            score = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if score > channel_threshold and predicate not in seen:
+            fired.append(predicate)
+            seen.add(predicate)
+    return fired if fired else [FALLBACK_PREDICATE]
+
+
 def parse_stitch_chemical_id(stitch_id: str) -> str:
     """
     Convert a STITCH-prefixed chemical identifier into a ``PUBCHEM.COMPOUND`` CURIE.
@@ -234,20 +348,24 @@ def load_string_to_entrez_mapping(
     return mapping
 
 
-def sorted_pair_key(p1: str, p2: str) -> tuple[str, str]:
+def sorted_pair_key(p1: str, p2: str, predicate: str = "") -> tuple[str, str, str]:
     """
-    Order-independent key for deduping symmetric protein pairs.
+    Order-independent dedup key for symmetric STRING protein pairs.
 
     STRING's ``protein.links`` file lists each unordered pair in both directions
-    (``p1 p2`` and ``p2 p1``). We emit one undirected edge per pair, so we need
-    a key that collapses the two rows together.
+    (``p1 p2`` and ``p2 p1``); we emit one undirected edge per pair *per predicate*.
+    The predicate component is part of the key so that multiple per-channel
+    predicates can fire for the same pair without colliding in the dedup set.
 
     >>> sorted_pair_key("ENSEMBL:B", "ENSEMBL:A")
-    ('ENSEMBL:A', 'ENSEMBL:B')
+    ('ENSEMBL:A', 'ENSEMBL:B', '')
     >>> sorted_pair_key("ENSEMBL:A", "ENSEMBL:B")
-    ('ENSEMBL:A', 'ENSEMBL:B')
+    ('ENSEMBL:A', 'ENSEMBL:B', '')
+    >>> sorted_pair_key("ENSEMBL:A", "ENSEMBL:B", "biolink:coexpressed_with")
+    ('ENSEMBL:A', 'ENSEMBL:B', 'biolink:coexpressed_with')
     """
-    return tuple(sorted([p1, p2]))
+    a, b = sorted([p1, p2])
+    return (a, b, predicate)
 
 
 @koza.on_data_begin(tag="string_ppi")
@@ -270,13 +388,18 @@ def transform_string_ppi(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Transform one row of STRING's ``protein.links`` file into two ``Protein`` nodes
-    and one ``physically_interacts_with`` edge.
+    Transform one row of STRING's ``protein.links.full.v12.0.txt.gz`` file into two
+    ``Protein`` nodes and one or more per-channel edges.
 
-    Rows with ``combined_score`` at or below ``COMBINED_SCORE_THRESHOLD`` are
-    dropped. Each unordered pair is emitted at most once: STRING lists ``p1 p2``
-    and ``p2 p1`` as separate rows, and the second occurrence is suppressed via
-    a ``seen_pairs`` set on ``koza_transform.state``.
+    Predicate selection follows ORION's STRING parser: any evidence channel whose
+    score exceeds ``CHANNEL_HIGH_CONF_THRESHOLD`` (750) fires the channel's
+    corresponding predicate (see ``CHANNEL_PREDICATES``). If no channel exceeds
+    the high-confidence threshold but the row passes the combined_score gate
+    (>500), a single fallback ``physically_interacts_with`` edge is emitted.
+    Up to 6 edges per pair (one per fired predicate); typically 1–2.
+
+    Dedup is per (sorted_pair, predicate) so multiple predicates can fire for the
+    same pair without colliding, while symmetric duplicate rows still collapse.
     """
     if not passes_combined_score(record["combined_score"]):
         return None
@@ -291,11 +414,18 @@ def transform_string_ppi(
             f"Cross-species pair in STRING row: {record['protein1']!r} vs {record['protein2']!r}"
         )
 
+    predicates = predicates_for_row(record)
     seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
-    key = sorted_pair_key(subject_id, object_id)
-    if key in seen_pairs:
+
+    # Filter to predicates we haven't already emitted for this unordered pair.
+    new_predicates = [
+        p for p in predicates
+        if sorted_pair_key(subject_id, object_id, p) not in seen_pairs
+    ]
+    if not new_predicates:
         return None
-    seen_pairs.add(key)
+    for p in new_predicates:
+        seen_pairs.add(sorted_pair_key(subject_id, object_id, p))
 
     # Look up NCBIGene equivalents from the entrez_2_string mapping. Loaded
     # at transform start by on_data_begin; tests may inject a fixture dict.
@@ -317,21 +447,33 @@ def transform_string_ppi(
         in_taxon=[object_taxon],
         equivalent_identifiers=object_equivalents,
     )
-    edge = PairwiseMolecularInteraction(
-        id=entity_id(),
-        subject=subject_id,
-        predicate="biolink:physically_interacts_with",
-        object=object_id,
-        sources=STRING_SOURCES,
-        has_attribute=[STRING_INTERACTION_TYPE_PSI_MI],
-        # STRING's combined_score is computationally aggregated across heterogeneous
-        # channels (experiments, databases, text mining, co-expression, neighborhood,
-        # fusion, co-occurrence). It isn't an explicit curator assertion of any single
-        # claim, so ``not_provided`` is honest. Matches the Automat STRING-DB KP.
-        knowledge_level=KnowledgeLevelEnum.not_provided,
-        agent_type=AgentTypeEnum.not_provided,
-    )
-    return KnowledgeGraph(nodes=[subject_node, object_node], edges=[edge])
+
+    edges = []
+    for predicate in new_predicates:
+        # MI:0915 (physical association) attaches only to the physical predicate.
+        # Other predicates describe non-physical evidence types — coexpression,
+        # genetic context, text-mining co-mentions — for which the physical
+        # association attribute would be a semantic misread.
+        has_attribute = (
+            [PSI_MI_PHYSICAL_ASSOCIATION]
+            if predicate == "biolink:physically_interacts_with"
+            else None
+        )
+        association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]
+        edges.append(association_cls(
+            id=entity_id(),
+            subject=subject_id,
+            predicate=predicate,
+            object=object_id,
+            sources=STRING_SOURCES,
+            has_attribute=has_attribute,
+            # Uniform KL/AT per session decision: STRING's combined_score is a
+            # computational aggregate, and we don't propagate per-channel KL/AT
+            # nuance in this iteration. See CHANGELOG for the trade-off.
+            knowledge_level=KnowledgeLevelEnum.not_provided,
+            agent_type=AgentTypeEnum.not_provided,
+        ))
+    return KnowledgeGraph(nodes=[subject_node, object_node], edges=edges)
 
 
 @koza.transform_record(tag="stitch_pcl")

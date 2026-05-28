@@ -55,20 +55,25 @@ ingest_info:
       this iteration. Future iterations may extend to additional species and per-channel predicate/qualifier
       modeling — see ``future_considerations`` below.
     relevant_files:
-      - file_name: 9606.protein.links.v12.0.txt.gz
-        location: https://stringdb-downloads.org/download/protein.links.v12.0/
+      - file_name: 9606.protein.links.full.v12.0.txt.gz
+        location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
         description: >-
-          Human protein–protein interaction file (~79 MB gzipped). Three space-delimited columns:
-          protein1, protein2, combined_score. One row per directed pair (each unordered pair appears twice).
-      - file_name: 10090.protein.links.v12.0.txt.gz
-        location: https://stringdb-downloads.org/download/protein.links.v12.0/
+          Human protein–protein interaction file, full variant (~154 MB gzipped, ~2x the 3-column .links file).
+          16 space-delimited columns: protein1, protein2, 7 evidence channels (neighborhood, fusion, cooccurence,
+          homology, coexpression, experiments, database, textmining), 6 orthology-transferred variants of those
+          channels, and combined_score. One row per directed pair (each unordered pair appears twice). We use
+          the .full variant rather than the 3-column .links variant because per-channel subscores drive
+          per-channel predicate emission (see edge_type_info below).
+      - file_name: 10090.protein.links.full.v12.0.txt.gz
+        location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
         description: >-
-          Mouse (Mus musculus) protein–protein interaction file (~72 MB gzipped). Same shape as human.
-      - file_name: 10116.protein.links.v12.0.txt.gz
-        location: https://stringdb-downloads.org/download/protein.links.v12.0/
+          Mouse (Mus musculus) protein–protein interaction file, full variant (~140 MB gzipped). Same 16-column
+          shape as human.
+      - file_name: 10116.protein.links.full.v12.0.txt.gz
+        location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
         description: >-
-          Rat (Rattus norvegicus) protein–protein interaction file (~75 MB gzipped). Same shape as human.
-          All three PPI files drive the ``string_ppi`` tagged reader.
+          Rat (Rattus norvegicus) protein–protein interaction file, full variant (~139 MB gzipped). Same
+          16-column shape as human. All three PPI files drive the ``string_ppi`` tagged reader.
       - file_name: all_organisms.entrez_2_string.tsv
         location: https://string-db.org/mapping_files/entrez/
         description: >-
@@ -96,7 +101,7 @@ ingest_info:
           All three STITCH files drive the ``stitch_pcl`` tagged reader. Same source files used by ORION's
           STITCH parser.
     included_content:
-      - file_name: "{taxid}.protein.links.v12.0.txt.gz  (9606 / 10090 / 10116)"
+      - file_name: "{taxid}.protein.links.full.v12.0.txt.gz  (9606 / 10090 / 10116)"
         included_records: >-
           Rows where combined_score > 500 (STRING's medium-confidence cutoff). Symmetric duplicates (each unordered pair
           appears in both p1→p2 and p2→p1 form) are deduplicated on the sorted-pair key so each pair is emitted once.
@@ -115,13 +120,13 @@ ingest_info:
           via the same helper as STRING), combined_score (used only for the row-inclusion filter; not attached
           to the output edge).
     filtered_content:
-      - file_name: "{taxid}.protein.links.v12.0.txt.gz  (all three taxa)"
+      - file_name: "{taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)"
         filtered_records: >-
           Rows with combined_score <= 500 are excluded.
         rationale: >-
           Below medium confidence, STRING's predictions are too noisy for Translator reasoning. Matches the default
           confidence cutoff offered on the STRING web interface.
-      - file_name: "{taxid}.protein.links.v12.0.txt.gz  (all three taxa)"
+      - file_name: "{taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)"
         filtered_records: >-
           Symmetric duplicate rows (the second occurrence of any unordered protein pair).
         rationale: >-
@@ -144,28 +149,26 @@ ingest_info:
           schemes other than ENSEMBL (e.g. yeast uses ORF names like ``YAL001C``); the parser would accept them but
           downstream NodeNormalizer coverage should be probed first.
         relevant_files: "{taxon}.protein.links.v12.0.txt.gz, {taxon}.protein_chemical.links.v5.0.tsv.gz"
+      # NOTE: Per-channel predicate emission has shipped — the transform reads
+      # ``.full.v12.0`` and fires one of 6 channel-specific predicates plus a
+      # fallback when channel scores exceed 750. See edge_type_info above.
       - category: edge_property_content
         consideration: >-
-          Switch to ``protein.links.detailed.v12.0.txt.gz`` (or ``protein.links.full.v12.0.txt.gz``) to surface the
-          per-channel subscores as edge properties: NEIGHBORHOOD, FUSION, COOCCURENCE, COEXPRESSION, EXPERIMENTS,
-          DATABASE, TEXTMINING (plus HOMOLOGY and the ``*_transferred`` orthology-projected variants in the ``full``
-          file). This enables downstream filtering by evidence type without requiring re-ingestion.
-        relevant_files: 9606.protein.links.detailed.v12.0.txt.gz, 9606.protein.links.full.v12.0.txt.gz
-      - category: predicate_mapping
+          Surface per-channel subscores as edge properties (not just predicate-driving signals). Currently the
+          channel scores are consumed by the predicate-selection rule and discarded; downstream consumers don't
+          see the actual COEXPRESSION/EXPERIMENTS/TEXTMINING numbers on the edge. Attach them as
+          ``biolink:Attribute`` instances on each edge, named after the channel. The data is already in the
+          ``.full`` file we read; this is a transform-only change.
+        relevant_files: "{taxid}.protein.links.full.v12.0.txt.gz (already ingested)"
+      - category: edge_property_content
         consideration: >-
-          Once per-channel subscores are surfaced, consider emitting channel-specific predicates such as
-          ``biolink:coexpressed_with`` (COEXPRESSION-dominant), ``biolink:homologous_to`` (HOMOLOGY), and the generic
-          ``biolink:related_to`` (text-mined / phylogenetic-only) — matching the predicate vocabulary used by RENCI's
-          Automat STRING-DB knowledge provider.
-        relevant_files: 9606.protein.links.full.v12.0.txt.gz
-      - category: edge_content
-        consideration: >-
-          Restrict to the physical subnetwork via ``protein.physical.links.v12.0.txt.gz`` for edges that are
-          semantically defensible under the ``biolink:physically_interacts_with`` predicate. The current functional
-          network includes text-mining and co-expression evidence that does not, on its own, imply physical contact.
-          A dual-source design (physical → ``physically_interacts_with`` + MI:0915; functional → ``interacts_with`` +
-          MI:0190) is planned.
-        relevant_files: "{taxon}.protein.physical.links.v12.0.txt.gz"
+          Per-channel KL/AT instead of uniform ``not_provided``. Matches ORION's behavior: each channel maps to
+          a specific KnowledgeLevel/AgentType (e.g. EXPERIMENTS → knowledge_assertion+manual_agent; TEXTMINING →
+          not_provided+text_mining_agent), with overrides when multiple channels are high-confidence. Defers
+          to ORION's choices in the absence of a Translator-wide convention. We elected uniform
+          ``not_provided`` for this iteration to keep the plumbing simple; the per-channel KL/AT logic adds
+          real semantic value.
+        relevant_files: "{taxid}.protein.links.full.v12.0.txt.gz (already ingested)"
       # NOTE: STITCH integration has shipped (the ``stitch_pcl`` tag) for human,
       # mouse, and rat. Remaining STITCH work: surface per-channel subscores via
       # ``protein_chemical.links.detailed.v5.0.tsv.gz``; add mode-of-action from
@@ -184,14 +187,47 @@ ingest_info:
           recommended name" warnings on every node.
         relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
     additional_notes: >-
-      This is a deliberately reduced first iteration: human-only, single predicate, no subscores, no STITCH. The
-      ``future_considerations`` section lists the principal axes along which the ingest is expected to grow. Each
-      extension is independent and can be added without revisiting the core transform.
+      Current scope: STRING + STITCH for human, mouse, and rat. STRING emits 6 per-channel predicates
+      (physically_interacts_with, coexpressed_with, interacts_with, genetic_neighborhood_of, gene_fusion_with,
+      genetically_interacts_with) plus a fallback ``physically_interacts_with`` for rows that pass the
+      combined-score gate without any high-confidence channel. The predicate-selection rule matches ORION's
+      STRING parser to maintain downstream compatibility with the existing Translator KP ecosystem (Automat
+      STRING-DB, RoboKOP). HOMOLOGY channel is deliberately excluded from predicate emission because STRING's
+      HOMOLOGY score means "inferred via orthologs in another species" not "A is homologous to B."
+
+      The ``future_considerations`` section lists the principal axes along which the ingest could continue to
+      grow: per-channel subscores as edge properties, per-channel KL/AT (currently uniform ``not_provided``),
+      mode-of-action splitting for STITCH, additional non-mammalian species, node names from
+      protein.aliases, and physical-subnetwork filtering.
 
 # Information about the Graph Output by the ingest
 target_info:
     infores_id: infores:string
     edge_type_info:
+      # STRING per-channel edges (``string_ppi`` tag).
+      #
+      # The transform reads STRING's ``protein.links.full.v12.0.txt.gz`` (16
+      # columns: 7 channels + 6 _transferred variants + combined_score) and
+      # emits one edge per evidence channel whose score exceeds the
+      # high-confidence per-channel threshold (>750). Rows are gated by
+      # ``combined_score > 500``. If no channel exceeds 750 but the row
+      # passes the combined-score gate, a single fallback
+      # ``physically_interacts_with`` edge is emitted (matches ORION's
+      # behavior). Up to 6 edges per pair; typically 1–2.
+      #
+      # The HOMOLOGY channel is intentionally excluded from predicate
+      # emission: STRING's HOMOLOGY score means "interaction inferred via
+      # orthologs in another species", not "A is homologous to B" — so
+      # mapping it to ``biolink:homologous_to`` would be a semantic
+      # misread (per ORION's comment). DATABASE is similarly excluded.
+      #
+      # Common attributes across all 6 edge types: subject/object categories
+      # = biolink:Protein; species_context_qualifier ∈ {9606, 10090, 10116};
+      # knowledge_level = not_provided; agent_type = not_provided;
+      # primary_knowledge_source = infores:string.
+      #
+      # Per-edge differences: predicate, biolink class, and has_attribute
+      # (only physically_interacts_with carries MI:0915).
       - subject_categories:
           - biolink:Protein
         predicates:
@@ -201,39 +237,144 @@ target_info:
         qualifiers:
           - property: species_context_qualifier
             value_enumeration:
-              - NCBITaxon:9606    # Homo sapiens
-              - NCBITaxon:10090   # Mus musculus
-              - NCBITaxon:10116   # Rattus norvegicus
-        knowledge_level:
-          # STRING's combined_score is a computational aggregation across heterogeneous
-          # evidence channels rather than an explicit curator claim. ``not_provided``
-          # is the honest punt — matches Automat's STRING-DB KP. Reconsider only if
-          # we ingest the per-channel detailed file and emit channel-specific edges
-          # with stronger semantics (e.g. EXPERIMENTS-only edges could justify
-          # ``knowledge_assertion``).
-          - not_provided
-        agent_type:
-          - not_provided
+              - NCBITaxon:9606
+              - NCBITaxon:10090
+              - NCBITaxon:10116
+        knowledge_level: [not_provided]
+        agent_type: [not_provided]
         edge_properties:
-          # PSI-MI interaction-type CURIE attached to every edge via the biolink
-          # ``has_attribute`` slot. MI:0915 is "physical association" — matches the
-          # claim made by ``biolink:physically_interacts_with``. When the functional
-          # source is added under ``biolink:interacts_with``, that edge type will
-          # carry MI:0190 (interaction) instead. See CHANGELOG.md for the slot/term
-          # rationale.
-          - has_attribute:
-              - MI:0915
-        primary_knowledge_sources:
-          - infores:string
+          # PSI-MI MI:0915 (physical association) attached only here — the
+          # semantically matched predicate. Other per-channel edges below
+          # omit has_attribute.
+          - has_attribute: [MI:0915]
+        primary_knowledge_sources: [infores:string]
         ui_explanation: >-
-          STRING aggregates evidence from seven channels into a single ``combined_score`` per protein pair. An edge with
-          this predicate is emitted for any human protein pair whose combined_score exceeds 500. The specific channel(s)
-          contributing to the score are not currently surfaced on the edge — see ``future_considerations`` for the
-          per-channel modeling roadmap.
+          Driven by the EXPERIMENTS channel (when score > 750) and as the fallback predicate when no channel
+          exceeds 750. Represents direct experimental evidence of physical binding between two proteins.
         source_files:
-          - 9606.protein.links.v12.0.txt.gz
-          - 10090.protein.links.v12.0.txt.gz
-          - 10116.protein.links.v12.0.txt.gz
+          - 9606.protein.links.full.v12.0.txt.gz
+          - 10090.protein.links.full.v12.0.txt.gz
+          - 10116.protein.links.full.v12.0.txt.gz
+
+      - subject_categories:
+          - biolink:Protein
+        predicates:
+          - biolink:coexpressed_with
+        object_categories:
+          - biolink:Protein
+        qualifiers:
+          - property: species_context_qualifier
+            value_enumeration:
+              - NCBITaxon:9606
+              - NCBITaxon:10090
+              - NCBITaxon:10116
+        knowledge_level: [not_provided]
+        agent_type: [not_provided]
+        primary_knowledge_sources: [infores:string]
+        ui_explanation: >-
+          Driven by the COEXPRESSION channel (score > 750). Indicates that the two proteins' coding genes are
+          transcriptionally co-expressed across conditions. Emitted as a ``biolink:GeneToGeneCoexpressionAssociation``
+          rather than ``biolink:PairwiseMolecularInteraction`` because biolink does not classify coexpression
+          as a molecular interaction.
+        source_files:
+          - 9606.protein.links.full.v12.0.txt.gz
+          - 10090.protein.links.full.v12.0.txt.gz
+          - 10116.protein.links.full.v12.0.txt.gz
+
+      - subject_categories:
+          - biolink:Protein
+        predicates:
+          - biolink:interacts_with
+        object_categories:
+          - biolink:Protein
+        qualifiers:
+          - property: species_context_qualifier
+            value_enumeration:
+              - NCBITaxon:9606
+              - NCBITaxon:10090
+              - NCBITaxon:10116
+        knowledge_level: [not_provided]
+        agent_type: [not_provided]
+        primary_knowledge_sources: [infores:string]
+        ui_explanation: >-
+          Driven by the TEXTMINING channel (score > 750). Text-mining co-mention evidence is loose semantically
+          (the proteins co-occur in literature) so the predicate is the generic ``biolink:interacts_with``
+          rather than something stronger.
+        source_files:
+          - 9606.protein.links.full.v12.0.txt.gz
+          - 10090.protein.links.full.v12.0.txt.gz
+          - 10116.protein.links.full.v12.0.txt.gz
+
+      - subject_categories:
+          - biolink:Protein
+        predicates:
+          - biolink:genetic_neighborhood_of
+        object_categories:
+          - biolink:Protein
+        qualifiers:
+          - property: species_context_qualifier
+            value_enumeration:
+              - NCBITaxon:9606
+              - NCBITaxon:10090
+              - NCBITaxon:10116
+        knowledge_level: [not_provided]
+        agent_type: [not_provided]
+        primary_knowledge_sources: [infores:string]
+        ui_explanation: >-
+          Driven by the NEIGHBORHOOD channel (score > 750). Indicates that the coding genes of the two proteins
+          are genomic neighbors (commonly co-located in prokaryotic operons or conserved gene clusters across
+          species).
+        source_files:
+          - 9606.protein.links.full.v12.0.txt.gz
+          - 10090.protein.links.full.v12.0.txt.gz
+          - 10116.protein.links.full.v12.0.txt.gz
+
+      - subject_categories:
+          - biolink:Protein
+        predicates:
+          - biolink:gene_fusion_with
+        object_categories:
+          - biolink:Protein
+        qualifiers:
+          - property: species_context_qualifier
+            value_enumeration:
+              - NCBITaxon:9606
+              - NCBITaxon:10090
+              - NCBITaxon:10116
+        knowledge_level: [not_provided]
+        agent_type: [not_provided]
+        primary_knowledge_sources: [infores:string]
+        ui_explanation: >-
+          Driven by the FUSION channel (score > 750). Indicates that the two proteins' coding genes appear as a
+          single fused gene in at least one other genome — a strong indicator of functional association.
+        source_files:
+          - 9606.protein.links.full.v12.0.txt.gz
+          - 10090.protein.links.full.v12.0.txt.gz
+          - 10116.protein.links.full.v12.0.txt.gz
+
+      - subject_categories:
+          - biolink:Protein
+        predicates:
+          - biolink:genetically_interacts_with
+        object_categories:
+          - biolink:Protein
+        qualifiers:
+          - property: species_context_qualifier
+            value_enumeration:
+              - NCBITaxon:9606
+              - NCBITaxon:10090
+              - NCBITaxon:10116
+        knowledge_level: [not_provided]
+        agent_type: [not_provided]
+        primary_knowledge_sources: [infores:string]
+        ui_explanation: >-
+          Driven by the COOCCURRENCE channel (score > 750). Indicates that the two proteins' coding genes show
+          a similar phylogenetic distribution across organisms — present together or absent together — a
+          phylogenetic-profile signal of functional coupling.
+        source_files:
+          - 9606.protein.links.full.v12.0.txt.gz
+          - 10090.protein.links.full.v12.0.txt.gz
+          - 10116.protein.links.full.v12.0.txt.gz
 
       # STITCH protein–chemical interactions (``stitch_pcl`` tag).
       - subject_categories:
