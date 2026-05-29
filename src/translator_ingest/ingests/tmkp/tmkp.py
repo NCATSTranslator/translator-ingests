@@ -122,14 +122,16 @@ def _normalize_publication_id(pub_id: str) -> str:
     """
     Normalize a publication identifier to a Biolink-resolvable CURIE.
 
-    TMKP source data emits bare PMC identifiers like ``PMC6211782`` without
-    a CURIE prefix.
+    Current TMKP source data emits already-prefixed identifiers like
+    ``PMID:31388901`` and ``PMC:6211782`` and these pass through unchanged.
+    Older releases emitted bare PMC identifiers like ``PMC6211782``; for
+    backward compatibility these are still normalized to ``PMC:PMC6211782``.
 
-    >>> _normalize_publication_id("PMC6211782")
-    'PMC:PMC6211782'
+    >>> _normalize_publication_id("PMC:6211782")
+    'PMC:6211782'
     >>> _normalize_publication_id("PMID:31388901")
     'PMID:31388901'
-    >>> _normalize_publication_id("PMC:PMC6211782")
+    >>> _normalize_publication_id("PMC6211782")
     'PMC:PMC6211782'
     >>> _normalize_publication_id("")
     ''
@@ -315,10 +317,22 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
 
                 if nested_type == "biolink:supporting_text":
                     tm_result.supporting_text = [nested_value] if nested_value else []
-                elif nested_type == "biolink:supporting_document":
-                    tm_result.xref = [_normalize_publication_id(nested_value)] if nested_value else []
+                elif nested_type in ("biolink:publications", "biolink:supporting_document"):
+                    # Current TMKP data uses biolink:publications to link a study
+                    # result to its publication; older releases used biolink:supporting_document.
+                    # Accept both so each TextMiningStudyResult carries its publication ID
+                    # in `xref` (consumed by the UI for snippet attribution).
+                    if nested_value:
+                        raw = nested_value if isinstance(nested_value, list) else [nested_value]
+                        tm_result.xref = [_normalize_publication_id(p) for p in raw]
+                    else:
+                        tm_result.xref = []
                 elif nested_type == "biolink:supporting_text_located_in":
-                    tm_result.supporting_text_section_type = nested_value
+                    # Lowercase to collapse trivial casing duplicates
+                    # (e.g. "abstract" vs "ABSTRACT", "table" vs "TABLE").
+                    tm_result.supporting_text_section_type = (
+                        nested_value.lower() if isinstance(nested_value, str) else nested_value
+                    )
                 elif nested_type == "biolink:extraction_confidence_score":
                     tm_result.extraction_confidence_score = float(nested_value) if nested_value else None
                 elif nested_type == "biolink:subject_location_in_text":
@@ -347,19 +361,31 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
             else:
                 supporting_sources.append(value)
 
+        elif slot_name == "publications" or (
+            slot_name in TMKP_TO_BIOLINK_SLOT_MAP
+            and TMKP_TO_BIOLINK_SLOT_MAP[slot_name] == "publications"
+        ):
+            # All paths into association.publications (top-level biolink:publications,
+            # supporting_publications, supporting_document) are normalized and deduped
+            # here. Source data can contain pre-duplicated publication lists
+            # (e.g. ["PMC:9308958", "PMC:9308958", "PMC:9308958"]) and duplicates
+            # also arise when multiple attributes contribute the same IDs.
+            raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
+            new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
+            existing = association.publications or []
+            seen: Set[str] = set()
+            association.publications = [
+                p for p in (existing + new_pubs) if not (p in seen or seen.add(p))
+            ]
+
+        elif slot_name == "evidence_count" or slot_name == "has_evidence_count" or slot_name == "has evidence count":
+            association.evidence_count = value
+
+        elif slot_name == "has_confidence_score" or slot_name == "tmkp_confidence_score" or slot_name == "has confidence score":
+            association.has_confidence_score = value
+
         elif hasattr(association, slot_name):
             setattr(association, slot_name, value)
-
-        elif slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
-            biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
-            if hasattr(association, biolink_slot):
-                if biolink_slot == "publications":
-                    raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
-                    new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
-                    existing = getattr(association, biolink_slot) or []
-                    setattr(association, biolink_slot, existing + new_pubs)
-                else:
-                    setattr(association, biolink_slot, value)
 
         elif attr_type and attr_type not in _warned_unmapped_attrs:
             # Log warning for truly unrecognized attributes (only once per attribute type)

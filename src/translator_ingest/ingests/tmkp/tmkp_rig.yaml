@@ -69,8 +69,14 @@ ingest_info:
       transformation: "Attribute mapping: TMKP attribute names are mapped to Biolink slot names (e.g. 'has_evidence_count' → 'evidence_count', 'supporting_publications' → 'publications', 'tmkp_confidence_score' → 'has_confidence_score')"
       rationale: "TMKP uses different naming conventions for some attributes. The ingest maps these to their canonical Biolink Model equivalents so they are recognized by downstream consumers."
     - file_name: edges.tsv.gz
-      transformation: "Publication ID normalization: bare PMC identifiers (e.g. 'PMC6211782') are normalized to CURIE form ('PMC:PMC6211782')."
-      rationale: "Source TMKP data emits PMC publication IDs without a CURIE prefix. The Biolink Model prefix map registers 'PMC' as a prefix, so downstream consumers (e.g., NodeNormalization) expect the prefixed form for resolution."
+      transformation: "Publication ID normalization: current TMKP data emits already-prefixed PMC IDs (e.g. 'PMC:6211782') and PMID IDs (e.g. 'PMID:31388901'), which are passed through unchanged. Bare PMC identifiers (e.g. 'PMC6211782') from older releases are still normalized to CURIE form ('PMC:PMC6211782') for backward compatibility."
+      rationale: "Earlier TMKP releases emitted PMC publication IDs without a CURIE prefix. The Biolink Model prefix map registers 'PMC' as a prefix, so downstream consumers (e.g., NodeNormalization) expect the prefixed form for resolution."
+    - file_name: edges.tsv.gz
+      transformation: "Publication deduplication: the publications list on each association is deduplicated (preserving first-seen order). Per-study-result publication IDs from nested 'biolink:publications' attributes are captured on the TextMiningStudyResult.xref field."
+      rationale: "Source data sometimes contains pre-duplicated publication lists (e.g. ['PMC:9308958', 'PMC:9308958', 'PMC:9308958']) and overlap between top-level publications and per-study-result references. Deduping keeps the edge-level publications list compact while xref preserves the per-snippet attribution required by the UI."
+    - file_name: edges.tsv.gz
+      transformation: "Supporting text section type normalization: values for 'supporting_text_section_type' are lowercased to collapse trivial casing duplicates (e.g. 'ABSTRACT' → 'abstract', 'TABLE' → 'table')."
+      rationale: "Source data inconsistently mixes upper- and lowercase forms of the same section label. Lowercasing collapses these to a single canonical form for downstream filtering and display."
 
   future_considerations:
     - category: edge_property_content

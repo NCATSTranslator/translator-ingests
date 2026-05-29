@@ -78,12 +78,14 @@ class TestNormalizePublicationId:
     @pytest.mark.parametrize(
         "raw,expected",
         [
-            # Bare PMC IDs gain the "PMC:" CURIE prefix
+            # Current TMKP data uses already-prefixed CURIEs - pass through unchanged
+            ("PMC:6211782", "PMC:6211782"),
+            ("PMID:31388901", "PMID:31388901"),
+            # Backward compat: older releases emitted bare PMC IDs, which gain the "PMC:" prefix
             ("PMC6211782", "PMC:PMC6211782"),
             ("PMC8208096", "PMC:PMC8208096"),
-            # Already-prefixed IDs are passed through unchanged
+            # Legacy double-prefixed form (from older normalization) passes through
             ("PMC:PMC6211782", "PMC:PMC6211782"),
-            ("PMID:31388901", "PMID:31388901"),
             # Empty / None-like values pass through unchanged
             ("", ""),
             # Non-PMC, non-prefixed values pass through unchanged
@@ -282,7 +284,7 @@ class TestParseAttributes:
                 "value": "tmkp:result_1",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "Drug X treats disease Y."},
-                    {"attribute_type_id": "biolink:supporting_document", "value": "PMID:12345"},
+                    {"attribute_type_id": "biolink:publications", "value": "PMID:12345"},
                     {"attribute_type_id": "biolink:supporting_text_located_in", "value": "abstract"},
                     {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.95"},
                     {"attribute_type_id": "biolink:subject_location_in_text", "value": "42|50"},
