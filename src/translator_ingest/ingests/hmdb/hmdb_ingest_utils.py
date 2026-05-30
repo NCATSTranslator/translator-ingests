@@ -410,3 +410,78 @@ def get_pathways(
         count(koza_transform, "Missing pathway data")
 
     return pathway_list
+
+
+def get_locations(
+        koza_transform,
+        el,
+        metabolite_id
+) -> list[tuple[Pathway, ChemicalEntityToPathwayAssociation]]:
+    """
+    This method creates edges associating HMDB-reported
+    cellular, biospecimen, and tissue locations of metabolites.
+
+    :param koza_transform: The koza transform context
+    :param el: the root of this XML fragment
+    :param metabolite_id: the metabolite id (edge subject)
+    :return: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]
+    """
+    locations_list: list[tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
+
+    # get cellular locations
+    cellular_locations: list = el.find('biological_properties').find('cellular_locations').findall('cellular')
+
+    # get biospecimen locations
+    biospecimen_locations: list = el.find('biological_properties').find('biospecimen_locations').findall('biospecimen')
+
+    # get tissue locations
+    tissue_locations: list = el.find('biological_properties').find('tissue_locations').findall('tissue')
+
+    # did we find any cellular locations?
+    if len(cellular_locations) > 0:
+        # for each pathway
+        for c in cellular_locations:
+            # get the pathway id
+            smpdb_id: E_Tree.Element = p.find('smpdb_id')
+
+            # did we get a good value?
+            if id is not None and smpdb_id.text is not None:
+                # get the pathway curie ID
+                pathway_id: str = smpdb_to_curie(smpdb_id.text)
+
+                # did we get an id. a valid curie here is 16 characters long (SMPDB:SMP1234567)
+                if len(pathway_id) == 16:
+
+                    # get the name
+                    name_el: E_Tree.Element = p.find('name')
+
+                    # did we get a good value (optional)
+                    if name_el is not None and name_el.text is not None:
+                        name: str = name_el.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+                    else:
+                        name: str = ''
+
+                    pathway_node = Pathway(id=pathway_id, name=name)
+
+                    edge = ChemicalEntityToPathwayAssociation(
+                        id=entity_id(),
+                        subject=pathway_id,
+
+                        # replaces original 'RO:0000056' - correlated_with
+                        predicate="biolink:participates_in",
+
+                        object=metabolite_id,
+                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent
+                    )
+
+                    locations_list.append( (pathway_node, edge) )
+                else:
+                    count(koza_transform, "Invalid pathway SMPDB ID")
+            else:
+                count(koza_transform, "Missing pathway SMPDB ID")
+    else:
+        count(koza_transform, "Missing pathway data")
+
+    return locations_list

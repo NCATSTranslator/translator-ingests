@@ -24,6 +24,7 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
     get_genes,
     get_diseases,
     get_pathways,
+    get_locations,
     initialize_counts,
     count
 )
@@ -114,8 +115,11 @@ def transform_hmdb_ingest(
                         # get the nodes and edges for genes
                         genes = get_genes(koza_transform, el, metabolite_id)
 
+                        # get the nodes and edges for metabolite locations
+                        locations = get_locations(koza_transform, el, metabolite_id)
+
                         # did we get something created?
-                        if pathways or diseases or genes:
+                        if pathways or diseases or genes or locations:
                             nodes: list = []
                             edges: list = []
 
@@ -125,6 +129,8 @@ def transform_hmdb_ingest(
                             edges.extend([entry[1] for entry in diseases])
                             nodes.extend([entry[0] for entry in genes])
                             edges.extend([entry[1] for entry in genes])
+                            nodes.extend([entry[0] for entry in locations])
+                            edges.extend([entry[1] for entry in locations])
 
                             # create the common metabolite node and add it to the list
                             nodes.append(
