@@ -97,11 +97,22 @@ CHANNEL_PREDICATES: dict[str, str] = {
 # without specific channel signal is most likely a physical interaction.
 FALLBACK_PREDICATE = "biolink:physically_interacts_with"
 
+# Symmetry note (resolves "are these predicates reflexive?"): every STRING
+# evidence channel describes a *symmetric* (undirected) relationship — if A
+# physically interacts with / is coexpressed with / is a genetic neighbor of B,
+# the converse holds. STRING reflects this by listing each pair in both
+# directions (``p1 p2`` and ``p2 p1``), which is why we dedup on the sorted pair
+# (see ``sorted_pair_key``). The predicates are symmetric, not reflexive in the
+# self-loop sense; STRING does not ship self-interactions (A,A).
+
 # Biolink Association class to instantiate per predicate. Most of our per-channel
 # predicates fit ``PairwiseMolecularInteraction``'s permitted predicate set, but
 # ``biolink:coexpressed_with`` is not a molecular-interaction predicate in
-# biolink — it belongs to ``GeneToGeneCoexpressionAssociation``. The mapping
-# keeps each edge in its most-specific canonical class.
+# biolink — it belongs to ``GeneToGeneCoexpressionAssociation``. We can't collapse
+# the two: biolink rejects ``coexpressed_with`` on ``PairwiseMolecularInteraction``
+# and rejects the molecular-interaction predicates on the coexpression class.
+# ``make_string_ppi_edge`` encapsulates the dispatch so the transform doesn't
+# repeat it.
 PREDICATE_TO_ASSOCIATION_CLASS = {
     "biolink:physically_interacts_with":  PairwiseMolecularInteraction,
     "biolink:interacts_with":             PairwiseMolecularInteraction,
@@ -111,13 +122,32 @@ PREDICATE_TO_ASSOCIATION_CLASS = {
     "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
 }
 
+# Per-channel knowledge-level / agent-type assignment, mirroring ORION's STRING
+# parser. Each STRING evidence channel implies a different epistemic status:
+# EXPERIMENTS / DATABASE are curated assertions (manual_agent); COEXPRESSION /
+# COOCCURENCE are statistical associations from a data pipeline; NEIGHBORHOOD /
+# FUSION / HOMOLOGY are computational predictions; TEXTMINING is NLP-derived.
+# This map keys on *all 8* STRING channels (including homology and database,
+# which don't drive predicates) because KL/AT is a row-level property derived
+# from the dominant-evidence channel, independent of which predicates fire.
+CHANNEL_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
+    "neighborhood": (KnowledgeLevelEnum.prediction,              AgentTypeEnum.data_analysis_pipeline),
+    "fusion":       (KnowledgeLevelEnum.prediction,              AgentTypeEnum.data_analysis_pipeline),
+    "cooccurence":  (KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
+    "homology":     (KnowledgeLevelEnum.prediction,              AgentTypeEnum.computational_model),
+    "coexpression": (KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
+    "experiments":  (KnowledgeLevelEnum.knowledge_assertion,     AgentTypeEnum.manual_agent),
+    "database":     (KnowledgeLevelEnum.knowledge_assertion,     AgentTypeEnum.manual_agent),
+    "textmining":   (KnowledgeLevelEnum.not_provided,            AgentTypeEnum.text_mining_agent),
+}
+
 # PSI-MI interaction type attached only to ``physically_interacts_with`` edges.
 # ``MI:0915`` is "physical association" — semantically aligned with the
 # physical-interaction predicate only. Other predicates (coexpressed_with,
 # genetic_neighborhood_of, etc.) describe different evidence types that
 # don't correspond to PSI-MI physical-association semantics; for those we
 # omit the slot rather than attaching a misleading term.
-PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915"
+PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915" # TODO: double check if this is the correct association ID with Sierra
 
 # Filename of the STRING ↔ Entrez gene-ID mapping (universal across species).
 # Downloaded by download.yaml into ``koza.input_files_dir``. Loaded once at
@@ -154,6 +184,13 @@ def get_latest_version() -> str:
     return f"v{response.json()[0]['string_version']}"
 
 
+# Note on identifier scheme (resolves "are they all ENSEMBL?"): for the three
+# Translator-target taxa we support (human / mouse / rat), STRING uses ENSEMBL
+# protein identifiers exclusively — ENSP* (human), ENSMUSP* (mouse), ENSRNOP*
+# (rat). Verified across the checked-in fixtures: 100% ENSEMBL, no UniProtKB
+# accessions. (STRING does use non-ENSEMBL schemes for some non-vertebrate
+# species — e.g. yeast ORF names — but those taxa aren't in SUPPORTED_TAXA, and
+# parse_string_protein_id raises on them, so a more complex parser isn't needed.)
 def parse_string_protein_id(string_id: str) -> tuple[str, str]:
     """
     Parse a STRING-prefixed protein identifier into an ``(ENSEMBL CURIE, NCBITaxon CURIE)`` pair.
@@ -265,6 +302,125 @@ def predicates_for_row(
             fired.append(predicate)
             seen.add(predicate)
     return fired if fired else [FALLBACK_PREDICATE]
+
+
+def knowledge_level_and_agent_type_for_row(
+    record: dict[str, Any],
+) -> tuple[KnowledgeLevelEnum, AgentTypeEnum]:
+    """
+    Derive a single ``(knowledge_level, agent_type)`` for a STRING ``.full`` row
+    from its evidence channels, mirroring ORION's STRING parser.
+
+    Rule:
+      1. Pick the channel with the highest score for the row; use its KL/AT from
+         ``CHANNEL_KL_AT``.
+      2. If two or more channels exceed ``CHANNEL_HIGH_CONF_THRESHOLD`` (750),
+         upgrade to ``knowledge_assertion`` and prefer ``manual_agent`` when any
+         high-confidence channel is curator-backed (EXPERIMENTS/DATABASE),
+         otherwise ``data_analysis_pipeline``.
+      3. If no channel has a positive score (only possible for synthetic rows;
+         real rows passing combined_score > 500 always have ≥1 positive channel),
+         fall back to ``(not_provided, not_provided)``.
+
+    KL/AT is a row-level property: all edges emitted from a row share it,
+    regardless of which per-channel predicates fired.
+
+    >>> # Single dominant channel → that channel's KL/AT.
+    >>> row = {"experiments": "800", "coexpression": "100", "textmining": "0",
+    ...        "neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
+    >>> kl.value, at.value
+    ('knowledge_assertion', 'manual_agent')
+
+    >>> # Text-mining dominant.
+    >>> row = {"experiments": "0", "coexpression": "0", "textmining": "900",
+    ...        "neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
+    >>> kl.value, at.value
+    ('not_provided', 'text_mining_agent')
+
+    >>> # Two high-confidence channels, one curator-backed → upgrade.
+    >>> row = {"experiments": "800", "coexpression": "800", "textmining": "0",
+    ...        "neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
+    >>> kl.value, at.value
+    ('knowledge_assertion', 'manual_agent')
+
+    >>> # All-zero (synthetic) row → not_provided.
+    >>> row = {ch: "0" for ch in CHANNEL_KL_AT}
+    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
+    >>> kl.value, at.value
+    ('not_provided', 'not_provided')
+    """
+    max_score = 0
+    dominant_channel: str | None = None
+    high_conf_channels: list[str] = []
+    for channel in CHANNEL_KL_AT:
+        raw = record.get(channel)
+        if raw is None:
+            continue
+        try:
+            score = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if score > max_score:
+            max_score = score
+            dominant_channel = channel
+        if score > CHANNEL_HIGH_CONF_THRESHOLD:
+            high_conf_channels.append(channel)
+
+    if dominant_channel is None:
+        return KnowledgeLevelEnum.not_provided, AgentTypeEnum.not_provided
+
+    if len(high_conf_channels) > 1:
+        # Multiple strong channels: treat as a curator-grade assertion. Prefer
+        # manual_agent if any high-confidence channel is curator-backed.
+        any_manual = any(
+            CHANNEL_KL_AT[c][1] == AgentTypeEnum.manual_agent
+            for c in high_conf_channels
+        )
+        agent = AgentTypeEnum.manual_agent if any_manual else AgentTypeEnum.data_analysis_pipeline
+        return KnowledgeLevelEnum.knowledge_assertion, agent
+
+    return CHANNEL_KL_AT[dominant_channel]
+
+
+def make_string_ppi_edge(
+    subject_id: str,
+    predicate: str,
+    object_id: str,
+    knowledge_level: KnowledgeLevelEnum,
+    agent_type: AgentTypeEnum,
+):
+    """
+    Construct one STRING PPI edge, dispatching to the correct biolink Association
+    class for the predicate and attaching the PSI-MI physical-association
+    attribute only to ``physically_interacts_with`` edges.
+
+    Centralizes the per-predicate class dispatch + has_attribute logic so the
+    transform body stays a flat loop. Returns a ``PairwiseMolecularInteraction``
+    for most predicates and a ``GeneToGeneCoexpressionAssociation`` for
+    ``coexpressed_with`` (see ``PREDICATE_TO_ASSOCIATION_CLASS``).
+    """
+    has_attribute = (
+        [PSI_MI_PHYSICAL_ASSOCIATION]
+        if predicate == "biolink:physically_interacts_with"
+        else None
+    )
+    association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]
+    return association_cls(
+        id=entity_id(),
+        subject=subject_id,
+        predicate=predicate,
+        object=object_id,
+        sources=STRING_SOURCES,
+        has_attribute=has_attribute,
+        knowledge_level=knowledge_level,
+        agent_type=agent_type,
+    )
 
 
 def parse_stitch_chemical_id(stitch_id: str) -> str:
@@ -398,9 +554,16 @@ def transform_string_ppi(
     (>500), a single fallback ``physically_interacts_with`` edge is emitted.
     Up to 6 edges per pair (one per fired predicate); typically 1–2.
 
+    Each edge carries a per-row knowledge_level / agent_type derived from the
+    dominant evidence channel (see ``knowledge_level_and_agent_type_for_row``).
+
     Dedup is per (sorted_pair, predicate) so multiple predicates can fire for the
     same pair without colliding, while symmetric duplicate rows still collapse.
     """
+    # NOTE: the combined_score > 500 gate is also applied as a reader-level filter
+    # in string.yaml (the production path — Koza skips sub-threshold rows before
+    # they reach here). This guard keeps the transform correct when called
+    # directly in unit tests, where rows aren't pre-filtered.
     if not passes_combined_score(record["combined_score"]):
         return None
 
@@ -415,9 +578,13 @@ def transform_string_ppi(
         )
 
     predicates = predicates_for_row(record)
-    seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
 
-    # Filter to predicates we haven't already emitted for this unordered pair.
+    # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
+    # and grows with the number of unique (pair, predicate) tuples — bounded by
+    # the above-threshold edge count (~1-2M for human PPI). If memory becomes a
+    # constraint at full multi-organism scale, swap for an on-disk set (sqlite)
+    # or an integer-keyed roaring bitmap; the key is already a hashable tuple.
+    seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
     new_predicates = [
         p for p in predicates
         if sorted_pair_key(subject_id, object_id, p) not in seen_pairs
@@ -448,31 +615,13 @@ def transform_string_ppi(
         equivalent_identifiers=object_equivalents,
     )
 
-    edges = []
-    for predicate in new_predicates:
-        # MI:0915 (physical association) attaches only to the physical predicate.
-        # Other predicates describe non-physical evidence types — coexpression,
-        # genetic context, text-mining co-mentions — for which the physical
-        # association attribute would be a semantic misread.
-        has_attribute = (
-            [PSI_MI_PHYSICAL_ASSOCIATION]
-            if predicate == "biolink:physically_interacts_with"
-            else None
-        )
-        association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]
-        edges.append(association_cls(
-            id=entity_id(),
-            subject=subject_id,
-            predicate=predicate,
-            object=object_id,
-            sources=STRING_SOURCES,
-            has_attribute=has_attribute,
-            # Uniform KL/AT per session decision: STRING's combined_score is a
-            # computational aggregate, and we don't propagate per-channel KL/AT
-            # nuance in this iteration. See CHANGELOG for the trade-off.
-            knowledge_level=KnowledgeLevelEnum.not_provided,
-            agent_type=AgentTypeEnum.not_provided,
-        ))
+    # KL/AT is a row-level property (derived from the dominant evidence channel),
+    # shared by all edges emitted from this row.
+    knowledge_level, agent_type = knowledge_level_and_agent_type_for_row(record)
+    edges = [
+        make_string_ppi_edge(subject_id, predicate, object_id, knowledge_level, agent_type)
+        for predicate in new_predicates
+    ]
     return KnowledgeGraph(nodes=[subject_node, object_node], edges=edges)
 
 
@@ -495,9 +644,9 @@ def transform_stitch_pcl(
         so the loose predicate is honest
       * ``has_attribute``: ``[MI:0190]`` (PSI-MI "interaction", root term)
       * ``primary_knowledge_source``: ``infores:stitch``
-      * ``knowledge_level=not_provided`` and ``agent_type=not_provided``,
-        matching the STRING ingest's rationale (aggregate computational score
-        across heterogeneous channels)
+      * ``knowledge_level=not_provided`` and ``agent_type=not_provided`` — the
+        basic STITCH file has no per-channel scores to derive KL/AT from (unlike
+        STRING's .full file, which now drives per-channel KL/AT)
     """
     if not passes_combined_score(record["combined_score"]):
         return None
@@ -521,6 +670,11 @@ def transform_stitch_pcl(
         object=protein_id,
         sources=STITCH_SOURCES,
         has_attribute=[STITCH_INTERACTION_TYPE_PSI_MI],
+        # KL/AT stays not_provided for STITCH: unlike STRING's .full file, the
+        # basic protein_chemical.links file carries no per-channel scores, so we
+        # have no dominant-channel signal to derive KL/AT from. Per-channel KL/AT
+        # (and mode-of-action predicates) would require the detailed/actions files
+        # — see RIG future_considerations.
         knowledge_level=KnowledgeLevelEnum.not_provided,
         agent_type=AgentTypeEnum.not_provided,
     )

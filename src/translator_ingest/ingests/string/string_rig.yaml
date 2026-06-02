@@ -223,8 +223,19 @@ target_info:
       #
       # Common attributes across all 6 edge types: subject/object categories
       # = biolink:Protein; species_context_qualifier ∈ {9606, 10090, 10116};
-      # knowledge_level = not_provided; agent_type = not_provided;
       # primary_knowledge_source = infores:string.
+      #
+      # knowledge_level / agent_type are a ROW-level property, derived from the
+      # dominant (max-score) evidence channel rather than from the predicate
+      # (matches ORION's STRING parser). So any edge type can carry any of the
+      # values below — the enumeration is the same across all 6 types:
+      #   EXPERIMENTS/DATABASE dominant → knowledge_assertion / manual_agent
+      #   COEXPRESSION/COOCCURENCE dominant → statistical_association / data_analysis_pipeline
+      #   NEIGHBORHOOD/FUSION dominant → prediction / data_analysis_pipeline
+      #   HOMOLOGY dominant → prediction / computational_model
+      #   TEXTMINING dominant → not_provided / text_mining_agent
+      #   ≥2 channels above 750 → knowledge_assertion / manual_agent (or
+      #     data_analysis_pipeline if no curator-backed channel is high-conf)
       #
       # Per-edge differences: predicate, biolink class, and has_attribute
       # (only physically_interacts_with carries MI:0915).
@@ -240,8 +251,17 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        knowledge_level: [not_provided]
-        agent_type: [not_provided]
+        knowledge_level:   # row-level, from dominant channel (see header note)
+          - knowledge_assertion
+          - statistical_association
+          - prediction
+          - not_provided
+        agent_type:
+          - manual_agent
+          - data_analysis_pipeline
+          - computational_model
+          - text_mining_agent
+          - not_provided
         edge_properties:
           # PSI-MI MI:0915 (physical association) attached only here — the
           # semantically matched predicate. Other per-channel edges below
@@ -268,8 +288,17 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        knowledge_level: [not_provided]
-        agent_type: [not_provided]
+        knowledge_level:   # row-level, from dominant channel (see header note)
+          - knowledge_assertion
+          - statistical_association
+          - prediction
+          - not_provided
+        agent_type:
+          - manual_agent
+          - data_analysis_pipeline
+          - computational_model
+          - text_mining_agent
+          - not_provided
         primary_knowledge_sources: [infores:string]
         ui_explanation: >-
           Driven by the COEXPRESSION channel (score > 750). Indicates that the two proteins' coding genes are
@@ -293,8 +322,17 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        knowledge_level: [not_provided]
-        agent_type: [not_provided]
+        knowledge_level:   # row-level, from dominant channel (see header note)
+          - knowledge_assertion
+          - statistical_association
+          - prediction
+          - not_provided
+        agent_type:
+          - manual_agent
+          - data_analysis_pipeline
+          - computational_model
+          - text_mining_agent
+          - not_provided
         primary_knowledge_sources: [infores:string]
         ui_explanation: >-
           Driven by the TEXTMINING channel (score > 750). Text-mining co-mention evidence is loose semantically
@@ -317,8 +355,17 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        knowledge_level: [not_provided]
-        agent_type: [not_provided]
+        knowledge_level:   # row-level, from dominant channel (see header note)
+          - knowledge_assertion
+          - statistical_association
+          - prediction
+          - not_provided
+        agent_type:
+          - manual_agent
+          - data_analysis_pipeline
+          - computational_model
+          - text_mining_agent
+          - not_provided
         primary_knowledge_sources: [infores:string]
         ui_explanation: >-
           Driven by the NEIGHBORHOOD channel (score > 750). Indicates that the coding genes of the two proteins
@@ -341,8 +388,17 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        knowledge_level: [not_provided]
-        agent_type: [not_provided]
+        knowledge_level:   # row-level, from dominant channel (see header note)
+          - knowledge_assertion
+          - statistical_association
+          - prediction
+          - not_provided
+        agent_type:
+          - manual_agent
+          - data_analysis_pipeline
+          - computational_model
+          - text_mining_agent
+          - not_provided
         primary_knowledge_sources: [infores:string]
         ui_explanation: >-
           Driven by the FUSION channel (score > 750). Indicates that the two proteins' coding genes appear as a
@@ -364,8 +420,17 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        knowledge_level: [not_provided]
-        agent_type: [not_provided]
+        knowledge_level:   # row-level, from dominant channel (see header note)
+          - knowledge_assertion
+          - statistical_association
+          - prediction
+          - not_provided
+        agent_type:
+          - manual_agent
+          - data_analysis_pipeline
+          - computational_model
+          - text_mining_agent
+          - not_provided
         primary_knowledge_sources: [infores:string]
         ui_explanation: >-
           Driven by the COOCCURRENCE channel (score > 750). Indicates that the two proteins' coding genes show

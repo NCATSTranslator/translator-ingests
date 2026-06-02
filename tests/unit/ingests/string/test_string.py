@@ -11,9 +11,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.string.string import (
+    CHANNEL_KL_AT,
     CHANNEL_PREDICATES,
     FALLBACK_PREDICATE,
     get_latest_version,
+    knowledge_level_and_agent_type_for_row,
     load_string_to_entrez_mapping,
     parse_stitch_chemical_id,
     parse_string_protein_id,
@@ -371,6 +373,86 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
     assert second is None  # full dup
     assert third is not None and len(third.edges) == 1
     assert third.edges[0].predicate == "biolink:coexpressed_with"
+
+
+# ──── Per-channel knowledge-level / agent-type tests ─────────────────────────
+
+
+@pytest.mark.parametrize(
+    "channel_scores,expected_kl,expected_at",
+    [
+        # Single dominant channel → that channel's KL/AT
+        ({"experiments": 800},  KnowledgeLevelEnum.knowledge_assertion,    AgentTypeEnum.manual_agent),
+        ({"database": 800},     KnowledgeLevelEnum.knowledge_assertion,    AgentTypeEnum.manual_agent),
+        ({"coexpression": 800}, KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
+        ({"cooccurence": 800},  KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
+        ({"neighborhood": 800}, KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
+        ({"fusion": 800},       KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
+        ({"homology": 800},     KnowledgeLevelEnum.prediction,             AgentTypeEnum.computational_model),
+        ({"textmining": 800},   KnowledgeLevelEnum.not_provided,           AgentTypeEnum.text_mining_agent),
+    ],
+)
+def test_knowledge_level_and_agent_type_single_channel(channel_scores, expected_kl, expected_at):
+    row = {ch: 0 for ch in [
+        "neighborhood", "fusion", "cooccurence", "homology",
+        "coexpression", "experiments", "database", "textmining",
+    ]}
+    row.update(channel_scores)
+    kl, at = knowledge_level_and_agent_type_for_row(row)
+    assert kl == expected_kl
+    assert at == expected_at
+
+
+def test_knowledge_level_multi_high_conf_upgrades_to_manual():
+    """Two high-conf channels including a curator-backed one → knowledge_assertion + manual_agent."""
+    row = {ch: 0 for ch in CHANNEL_KL_AT}
+    row.update({"experiments": 800, "coexpression": 800})  # one manual, one pipeline
+    kl, at = knowledge_level_and_agent_type_for_row(row)
+    assert kl == KnowledgeLevelEnum.knowledge_assertion
+    assert at == AgentTypeEnum.manual_agent
+
+
+def test_knowledge_level_multi_high_conf_without_manual_uses_pipeline():
+    """Two high-conf channels, neither curator-backed → knowledge_assertion + data_analysis_pipeline."""
+    row = {ch: 0 for ch in CHANNEL_KL_AT}
+    row.update({"coexpression": 800, "neighborhood": 800})  # statistical + prediction, no manual
+    kl, at = knowledge_level_and_agent_type_for_row(row)
+    assert kl == KnowledgeLevelEnum.knowledge_assertion
+    assert at == AgentTypeEnum.data_analysis_pipeline
+
+
+def test_knowledge_level_all_zero_row_is_not_provided():
+    row = {ch: 0 for ch in CHANNEL_KL_AT}
+    kl, at = knowledge_level_and_agent_type_for_row(row)
+    assert kl == KnowledgeLevelEnum.not_provided
+    assert at == AgentTypeEnum.not_provided
+
+
+def test_transform_propagates_channel_kl_at_to_edges(mock_koza):
+    """Every edge from a row shares the row-level KL/AT derived from the dominant channel."""
+    # experiments dominant → knowledge_assertion + manual_agent on all edges,
+    # including the coexpression edge that also fires.
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=952, experiments=900, coexpression=800),
+    )
+    assert result is not None
+    assert len(result.edges) == 2
+    for edge in result.edges:
+        assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+        assert edge.agent_type == AgentTypeEnum.manual_agent
+
+
+def test_transform_textmining_only_edge_carries_textmining_kl_at(mock_koza):
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=952, textmining=900),
+    )
+    assert result is not None
+    edge = result.edges[0]
+    assert edge.predicate == "biolink:interacts_with"
+    assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
+    assert edge.agent_type == AgentTypeEnum.text_mining_agent
 
 
 def test_load_string_to_entrez_mapping(tmp_path):

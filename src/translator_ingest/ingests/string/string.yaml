@@ -40,7 +40,19 @@ readers:
       - database_transferred
       - textmining
       - textmining_transferred
-      - combined_score
+      # Typed as int so the combined_score > 500 reader filter compares numerically
+      # (untyped CSV columns are strings, and '594' > 500 raises TypeError).
+      - combined_score: int
+    # Row-inclusion gate at the reader level: drop sub-threshold rows before they
+    # reach the transform (STRING's medium-confidence cutoff, combined_score > 500).
+    # The transform retains an equivalent guard (passes_combined_score) so it stays
+    # correct when called directly in unit tests; this reader filter is the
+    # production efficiency path (Koza skips object construction for dropped rows).
+    filters:
+      - inclusion: 'include'
+        column: 'combined_score'
+        filter_code: 'gt'
+        value: 500
 
   # STITCH protein–chemical interactions. Tab-separated; rows look like
   # ``CIDm91758680\t9606.ENSP00000257254\t279``.
@@ -55,4 +67,10 @@ readers:
     columns:
       - chemical
       - protein
-      - combined_score
+      - combined_score: int
+    # Same combined_score > 500 gate as string_ppi.
+    filters:
+      - inclusion: 'include'
+        column: 'combined_score'
+        filter_code: 'gt'
+        value: 500

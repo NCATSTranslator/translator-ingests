@@ -221,6 +221,17 @@ PPI_CATEGORIES = {
 }
 
 
+# Valid per-channel KL/AT values the transform can assign (see CHANNEL_KL_AT +
+# the multi-high-conf upgrade + the all-zero fallback in string.py).
+PPI_KNOWLEDGE_LEVELS = {
+    "knowledge_assertion", "statistical_association", "prediction", "not_provided",
+}
+PPI_AGENT_TYPES = {
+    "manual_agent", "data_analysis_pipeline", "computational_model",
+    "text_mining_agent", "not_provided",
+}
+
+
 def test_ppi_edge_shape(koza_output):
     _, edges = _ppi_partition(*_load_all(koza_output))
     for edge in edges:
@@ -228,13 +239,26 @@ def test_ppi_edge_shape(koza_output):
         assert edge["predicate"] in PPI_PREDICATES, edge["predicate"]
         assert edge["subject"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
-        assert edge["knowledge_level"] == "not_provided"
-        assert edge["agent_type"] == "not_provided"
+        assert edge["knowledge_level"] in PPI_KNOWLEDGE_LEVELS, edge["knowledge_level"]
+        assert edge["agent_type"] in PPI_AGENT_TYPES, edge["agent_type"]
         # MI:0915 only attaches to physically_interacts_with edges; omitted for others.
         if edge["predicate"] == "biolink:physically_interacts_with":
             assert edge.get("has_attribute") == ["MI:0915"]
         else:
             assert not edge.get("has_attribute")
+
+
+def test_ppi_knowledge_level_varies_by_channel(koza_output):
+    """Per-channel KL/AT means the output shouldn't be uniformly not_provided —
+    high-confidence channel rows in the fixtures should yield curator/statistical
+    knowledge levels. Verifies the per-channel KL/AT path runs end-to-end."""
+    _, edges = _ppi_partition(*_load_all(koza_output))
+    kls = {e["knowledge_level"] for e in edges}
+    ats = {e["agent_type"] for e in edges}
+    # At least one edge should carry a non-default KL or AT (the fixtures contain
+    # high-confidence channel rows: mouse ~15, rat ~3, human ~2).
+    assert kls - {"not_provided"}, f"all knowledge_levels were not_provided: {kls}"
+    assert ats - {"not_provided"}, f"all agent_types were not_provided: {ats}"
 
 
 def test_ppi_emits_multiple_predicates(koza_output):

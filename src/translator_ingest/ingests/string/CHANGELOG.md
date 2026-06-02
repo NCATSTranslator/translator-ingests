@@ -5,6 +5,66 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-05-28 — Per-channel KL/AT, reader-level threshold filter, helper cleanup
+
+A round of TODO resolution on top of the per-channel predicate work.
+
+**Per-channel knowledge_level / agent_type.** Previously uniform `not_provided`.
+Now derived per row from the dominant (max-score) evidence channel, mirroring
+ORION's STRING parser:
+
+| Dominant channel | knowledge_level | agent_type |
+|---|---|---|
+| EXPERIMENTS, DATABASE | `knowledge_assertion` | `manual_agent` |
+| COEXPRESSION, COOCCURENCE | `statistical_association` | `data_analysis_pipeline` |
+| NEIGHBORHOOD, FUSION | `prediction` | `data_analysis_pipeline` |
+| HOMOLOGY | `prediction` | `computational_model` |
+| TEXTMINING | `not_provided` | `text_mining_agent` |
+
+Plus an upgrade rule: if ≥2 channels exceed 750, KL becomes `knowledge_assertion`
+and AT prefers `manual_agent` (when any high-confidence channel is curator-backed)
+else `data_analysis_pipeline`. All-zero synthetic rows fall back to
+`(not_provided, not_provided)`.
+
+Key design point: **KL/AT is a row-level property, not a predicate-level one.**
+It's derived from the dominant channel and shared by every edge emitted from
+that row, even if a given edge's predicate came from a different (lower-scoring)
+channel. This matches ORION and keeps the determination simple, at the cost of
+some edges carrying a KL/AT that reflects the row's strongest evidence rather
+than the specific channel that fired their predicate.
+
+This reverses the earlier (2026-05-27) decision to keep uniform `not_provided`.
+That decision was made to keep plumbing simple for the first per-channel
+iteration; the KL/AT logic adds real downstream-filter value (e.g. "give me only
+experimentally-grounded edges" → filter KL=knowledge_assertion). STITCH keeps
+uniform `not_provided` — the basic protein_chemical.links file has no per-channel
+scores to derive KL/AT from.
+
+**Reader-level threshold filter.** The `combined_score > 500` gate now also lives
+in `string.yaml` as a Koza `ComparisonFilter` on both tagged readers (so Koza
+drops sub-threshold rows before constructing objects — the production efficiency
+path). The in-transform `passes_combined_score` guard is retained so the
+transform stays correct when called directly in unit tests. `combined_score` is
+declared `int` in the reader `columns` so the numeric filter compares correctly
+(untyped CSV columns are strings, and `'594' > 500` raises TypeError).
+
+**Helper cleanup.**
+- `knowledge_level_and_agent_type_for_row()` — the KL/AT derivation above, doctested.
+- `make_string_ppi_edge()` — encapsulates the predicate→Association-class dispatch
+  + has_attribute logic, so the transform body is a flat list comprehension.
+- `sorted_pair_key` symmetry and ENSEMBL-only questions resolved inline (all STRING
+  predicates are symmetric → sorted-pair dedup is correct; all 3 supported taxa
+  use ENSEMBL protein IDs exclusively → the simple parser is correct).
+
+**Still open (needs external input):** whether `MI:0915` is the right PSI-MI term
+for the physical-interaction edges — flagged for confirmation with Sierra. Left as
+an inline TODO since it's a modeling sign-off, not a code task.
+
+**Tests:** 104 pass (was 89) — +15 KL/AT unit tests (single-channel mapping,
+multi-high-conf upgrade, all-zero fallback, transform propagation) + integration
+assertions that KL/AT varies across the output rather than being uniformly
+`not_provided`.
+
 ## 2026-05-27 — Per-channel STRING predicates (6 edge types) matching ORION
 
 **Decision.** Switch the STRING PPI source from the 3-column `protein.links.v12.0.txt.gz`
