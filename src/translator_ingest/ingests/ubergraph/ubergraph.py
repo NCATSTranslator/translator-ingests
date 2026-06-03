@@ -27,7 +27,7 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
     "CHEBI",
     "PR",
     "NCIT",
-    "HPO",
+    "HP",
     "MONDO",
     "RO",
     "SO",
@@ -38,7 +38,7 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
     "OBI",
     "MAXO",
     "ECO",
-    "NCBITAXON",
+    "NCBITaxon",
     "FOODON",
     "MI",
     "UO"
@@ -46,15 +46,10 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
 
 EXTRACTED_ONTOLOGY_PREFIXES_SET = set(EXTRACTED_ONTOLOGY_PREFIXES)
 
-OBO_MISSING_MAPPINGS = {
-    'NCBIGene': 'http://purl.obolibrary.org/obo/NCBIGene_',
-    'HGNC': 'http://purl.obolibrary.org/obo/HGNC_',
-    'SGD': 'http://purl.obolibrary.org/obo/SGD_'
-}
-
-BIOLINK_MAPPING_CHANGES = {
-    'KEGG': 'http://identifiers.org/kegg/',
-    'NCBIGene': 'https://identifiers.org/ncbigene/'
+# Source predicate IRIs mapped directly to their Biolink predicate. Only edges whose
+# predicate IRI appears here are ingested; add entries to support more predicates.
+PREDICATE_IRI_TO_BIOLINK = {
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": "biolink:subclass_of",
 }
 
 
@@ -90,7 +85,6 @@ def get_biolink_prefix_map() -> dict:
             response.raise_for_status()
         biolink_prefix_map = response.json()
 
-    biolink_prefix_map.update(BIOLINK_MAPPING_CHANGES)
     return biolink_prefix_map
 
 
@@ -98,12 +92,10 @@ def init_curie_converter() -> curies.Converter:
     biolink_prefix_map = get_biolink_prefix_map()
     iri_to_biolink_curie_converter = curies.Converter.from_prefix_map(biolink_prefix_map)
     iri_to_obo_curie_converter = curies.get_obo_converter()
-    custom_converter = curies.Converter.from_prefix_map(OBO_MISSING_MAPPINGS)
 
     chain_converter = curies.chain([
         iri_to_biolink_curie_converter,
         iri_to_obo_curie_converter,
-        custom_converter,
     ])
     return chain_converter
 
@@ -112,8 +104,6 @@ def init_curie_converter() -> curies.Converter:
 def on_begin_redundant_graph(koza: koza.KozaTransform) -> None:
     koza.state["record_counter"] = 0
     koza.state["skipped_record_counter"] = 0
-    koza.state["node_curies"] = {}
-    koza.state["edge_curies"] = {}
     koza.transform_metadata["redundant_graph"] = {
         "num_source_lines": 0,
         "unusable_source_lines": 0
@@ -141,7 +131,6 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
     node_curies = {}
     node_mapping_failures = []
     edge_curies = {}
-    edge_mapping_failures = []
 
     with tarfile.open(tar_path, 'r:gz') as tar:
         koza.log("Converting node IRIs to CURIEs...", level="INFO")
@@ -160,42 +149,42 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
         if node_mapping_failures:
             koza.log(f"Node conversion failure examples: {node_mapping_failures[:10]}", level="WARNING")
 
-        koza.log("Converting edge IRIs to CURIEs...", level="INFO")
+        koza.log("Mapping edge IRIs to Biolink predicates...", level="INFO")
         with tar.extractfile(f'{graph_base_path}/edge-labels.tsv') as edge_labels_file:
             for line in edge_labels_file:
                 edge_id, edge_iri = line.decode('utf-8').rstrip().split('\t')
-                edge_curie = curie_converter.compress(edge_iri)
-                if edge_iri == "http://www.w3.org/2000/01/rdf-schema#subClassOf":
-                    if edge_curie is not None:
-                        edge_curies[edge_id] = edge_curie
-                    else:
-                        edge_mapping_failures.append(edge_iri)
-        koza.log(f"Edges: {len(edge_curies):,} successfully converted, {len(edge_mapping_failures):,} failures.", level="INFO")
-        if edge_mapping_failures:
-            koza.log(f"Edge conversion failure examples: {edge_mapping_failures[:10]}", level="WARNING")
-
-        koza.state["node_curies"] = node_curies
-        koza.state["edge_curies"] = edge_curies
+                biolink_predicate = PREDICATE_IRI_TO_BIOLINK.get(edge_iri)
+                if biolink_predicate is not None:
+                    edge_curies[edge_id] = biolink_predicate
+        koza.log(f"Edges: {len(edge_curies):,} predicate IRIs mapped to Biolink predicates.", level="INFO")
 
         koza.log("Streaming edges from tar archive...", level="INFO")
-        edge_stream_count = 0
+        source_line_count = 0
+        skipped_count = 0
         with tar.extractfile(f'{graph_base_path}/edges.tsv') as edges_file:
             for line in edges_file:
+                source_line_count += 1
                 subject_id, predicate_id, object_id = line.decode('utf-8').rstrip().split('\t')
-                # Only include edges where predicate is in our edge_curies dict (subClassOf only)
-                if predicate_id not in edge_curies:
+                # Only include edges where the predicate and nodes were mapped successfully,
+                # this excludes edges with predicates not in the PREDICATE_IRI_TO_BIOLINK lookup.
+                predicate = edge_curies.get(predicate_id)
+                subject_curie = node_curies.get(subject_id)
+                object_curie = node_curies.get(object_id)
+                if predicate is None or subject_curie is None or object_curie is None:
+                    skipped_count += 1
                     continue
-                # Only include edges where both subject and object are in our node_curies mapping
-                if subject_id not in node_curies or object_id not in node_curies:
-                    continue
-                
-                edge_stream_count += 1
                 yield {
-                    "subject_id": subject_id,
-                    "predicate_id": predicate_id,
-                    "object_id": object_id
+                    "subject": subject_curie,
+                    "predicate": predicate,
+                    "object": object_curie,
                 }
-        koza.log(f"Finished streaming {edge_stream_count:,} edges from tar archive.", level="INFO")
+        koza.state["record_counter"] = source_line_count
+        koza.state["skipped_record_counter"] = skipped_count
+        koza.log(
+            f"Finished streaming {source_line_count - skipped_count:,} edges "
+            f"from {source_line_count:,} source lines ({skipped_count:,} skipped).",
+            level="INFO",
+        )
 
 
 @koza.transform(tag="redundant_graph")
@@ -209,39 +198,22 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
     batch_count = 0
     
     for record in data:
-        koza.state["record_counter"] += 1
-        
-        subject_id = record["subject_id"]
-        predicate_id = record["predicate_id"]
-        object_id = record["object_id"]
-        
-        subject_curie = koza.state["node_curies"].get(subject_id)
-        if not subject_curie:
-            koza.state["skipped_record_counter"] += 1
-            continue
-        
-        object_curie = koza.state["node_curies"].get(object_id)
-        if not object_curie:
-            koza.state["skipped_record_counter"] += 1
-            continue
-        
-        predicate_curie = koza.state["edge_curies"].get(predicate_id)
-        if not predicate_curie:
-            koza.state["skipped_record_counter"] += 1
-            continue
-        
+        # Records are already filtered and converted to CURIEs/predicates in prepare_data.
+        subject_curie = record["subject"]
+        object_curie = record["object"]
+
         if subject_curie not in nodes_seen:
             nodes_batch.append(NamedThing(id=subject_curie))
             nodes_seen.add(subject_curie)
-        
+
         if object_curie not in nodes_seen:
             nodes_batch.append(NamedThing(id=object_curie))
             nodes_seen.add(object_curie)
-        
+
         edges_batch.append(Association(
             id=entity_id(),
             subject=subject_curie,
-            predicate=predicate_curie,
+            predicate=record["predicate"],
             object=object_curie,
             sources=UBERGRAPH_SOURCES,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
