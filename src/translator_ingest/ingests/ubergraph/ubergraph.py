@@ -27,7 +27,7 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
     "CHEBI",
     "PR",
     "NCIT",
-    "HPO",
+    "HP",
     "MONDO",
     "RO",
     "SO",
@@ -38,7 +38,7 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
     "OBI",
     "MAXO",
     "ECO",
-    "NCBITAXON",
+    "NCBITaxon",
     "FOODON",
     "MI",
     "UO"
