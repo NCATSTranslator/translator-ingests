@@ -19,8 +19,6 @@ from translator_ingest.ingests.ubergraph.ubergraph import (
     transform_redundant_graph,
     INFORES_UBERGRAPH,
     EXTRACTED_ONTOLOGY_PREFIXES,
-    OBO_MISSING_MAPPINGS,
-    BIOLINK_MAPPING_CHANGES,
 )
 
 SUBCLASS_OF_IRI = "http://www.w3.org/2000/01/rdf-schema#subClassOf"
@@ -33,17 +31,6 @@ def test_extracted_ontology_prefixes():
     assert "MONDO" in EXTRACTED_ONTOLOGY_PREFIXES
     assert "CHEBI" in EXTRACTED_ONTOLOGY_PREFIXES
     assert len(EXTRACTED_ONTOLOGY_PREFIXES) > 0
-
-
-def test_obo_missing_mappings():
-    assert OBO_MISSING_MAPPINGS["NCBIGene"] == "http://purl.obolibrary.org/obo/NCBIGene_"
-    assert OBO_MISSING_MAPPINGS["HGNC"] == "http://purl.obolibrary.org/obo/HGNC_"
-    assert OBO_MISSING_MAPPINGS["SGD"] == "http://purl.obolibrary.org/obo/SGD_"
-
-
-def test_biolink_mapping_changes():
-    assert BIOLINK_MAPPING_CHANGES["KEGG"] == "http://identifiers.org/kegg/"
-    assert BIOLINK_MAPPING_CHANGES["NCBIGene"] == "https://identifiers.org/ncbigene/"
 
 
 def test_infores_ubergraph():

@@ -46,17 +46,6 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
 
 EXTRACTED_ONTOLOGY_PREFIXES_SET = set(EXTRACTED_ONTOLOGY_PREFIXES)
 
-OBO_MISSING_MAPPINGS = {
-    'NCBIGene': 'http://purl.obolibrary.org/obo/NCBIGene_',
-    'HGNC': 'http://purl.obolibrary.org/obo/HGNC_',
-    'SGD': 'http://purl.obolibrary.org/obo/SGD_'
-}
-
-BIOLINK_MAPPING_CHANGES = {
-    'KEGG': 'http://identifiers.org/kegg/',
-    'NCBIGene': 'https://identifiers.org/ncbigene/'
-}
-
 # Source predicate IRIs mapped directly to their Biolink predicate. Only edges whose
 # predicate IRI appears here are ingested; add entries to support more predicates.
 PREDICATE_IRI_TO_BIOLINK = {
@@ -96,7 +85,6 @@ def get_biolink_prefix_map() -> dict:
             response.raise_for_status()
         biolink_prefix_map = response.json()
 
-    biolink_prefix_map.update(BIOLINK_MAPPING_CHANGES)
     return biolink_prefix_map
 
 
@@ -104,12 +92,10 @@ def init_curie_converter() -> curies.Converter:
     biolink_prefix_map = get_biolink_prefix_map()
     iri_to_biolink_curie_converter = curies.Converter.from_prefix_map(biolink_prefix_map)
     iri_to_obo_curie_converter = curies.get_obo_converter()
-    custom_converter = curies.Converter.from_prefix_map(OBO_MISSING_MAPPINGS)
 
     chain_converter = curies.chain([
         iri_to_biolink_curie_converter,
         iri_to_obo_curie_converter,
-        custom_converter,
     ])
     return chain_converter
 
