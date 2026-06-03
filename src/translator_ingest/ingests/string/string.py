@@ -1,21 +1,18 @@
 """
-STRING + STITCH ingest (human, mouse, rat).
+STRING protein–protein interaction ingest (human, mouse, rat).
 
-This module hosts two sibling ingests under one yaml config:
+Reads STRING's ``{taxon}.protein.links.full.v12.0.txt.gz`` (16 columns: 7
+evidence channels + 6 orthology-transferred variants + combined_score) and emits
+per-channel biolink predicates between ``Protein`` nodes, following ORION's
+STRING parser. See [CHANGELOG.md](./CHANGELOG.md) and
+[string_rig.yaml](./string_rig.yaml) for scope, rationale, and alternatives.
 
-  * ``string_ppi`` — protein–protein interactions from STRING
-    (``{taxon}.protein.links.v12.0.txt.gz``)
-  * ``stitch_pcl`` — protein–chemical interactions from STITCH
-    (``{taxon}.protein_chemical.links.v5.0.tsv.gz``)
-
-Both files share STRING's 3-column shape (subject, object, combined_score),
-identifier scheme, and >500 medium-confidence cutoff. The ``stitch_pcl``
-tag adds a ``CIDm``/``CIDs`` → ``PUBCHEM.COMPOUND`` parser and emits
-``ChemicalEntity → interacts_with → Protein`` edges sourced from
-``infores:stitch``.
-
-Scope, rationale, and design alternatives are documented in
-[CHANGELOG.md](./CHANGELOG.md) and [string_rig.yaml](./string_rig.yaml).
+Note: the STITCH protein–chemical sibling ingest (``stitch_pcl`` tag) was
+developed alongside this STRING ingest but has been split out of this PR for a
+later, properly-scoped effort (with mode-of-action predicates from
+``actions.v5.0.tsv``). The complete STITCH implementation is preserved on the
+``stitch-ingest`` branch; see the CHANGELOG entry dated 2026-05-28 for the
+reintegration pointer.
 
 Reference implementations consulted:
   * https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
@@ -30,8 +27,6 @@ import koza
 import requests
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
-    Association,
-    ChemicalEntity,
     GeneToGeneCoexpressionAssociation,
     KnowledgeLevelEnum,
     PairwiseMolecularInteraction,
@@ -40,7 +35,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.biolink import (
-    INFORES_STITCH,
     INFORES_STRING,
     build_association_knowledge_sources,
 )
@@ -155,15 +149,6 @@ PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915" # TODO: double check if this is the corr
 ENTREZ_MAPPING_FILENAME = "all_organisms.entrez_2_string.tsv"
 
 STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
-
-# PSI-MI interaction type for STITCH protein-chemical edges. STITCH aggregates
-# multiple evidence channels (binding assays, manual curation, text mining,
-# co-occurrence in databases). We use ``MI:0190`` (interaction — root term)
-# rather than a more specific binding term because STITCH doesn't characterize
-# the *kind* of protein-chemical interaction on a per-row basis.
-STITCH_INTERACTION_TYPE_PSI_MI = "MI:0190"
-
-STITCH_SOURCES = build_association_knowledge_sources(primary=INFORES_STITCH)
 
 
 def get_latest_version() -> str:
@@ -423,38 +408,6 @@ def make_string_ppi_edge(
     )
 
 
-def parse_stitch_chemical_id(stitch_id: str) -> str:
-    """
-    Convert a STITCH-prefixed chemical identifier into a ``PUBCHEM.COMPOUND`` CURIE.
-
-    STITCH ships chemical IDs in two forms, both encoding a PubChem CID with leading
-    zero padding:
-
-      * ``CIDm{8-digit-int}`` — the "merged" (flat / non-stereo) compound
-      * ``CIDs{8-digit-int}`` — a specific stereoisomer
-
-    Both map to ``PUBCHEM.COMPOUND:{int}`` after stripping the 4-character prefix
-    and any leading zeros. Raises ``ValueError`` for unrecognized formats.
-
-    >>> parse_stitch_chemical_id("CIDm00000234")
-    'PUBCHEM.COMPOUND:234'
-    >>> parse_stitch_chemical_id("CIDm91758680")
-    'PUBCHEM.COMPOUND:91758680'
-    >>> parse_stitch_chemical_id("CIDs00012345")
-    'PUBCHEM.COMPOUND:12345'
-    """
-    if not (stitch_id.startswith("CIDm") or stitch_id.startswith("CIDs")):
-        raise ValueError(
-            f"Expected STITCH chemical ID prefixed with 'CIDm' or 'CIDs', got: {stitch_id!r}"
-        )
-    digits = stitch_id[4:]
-    if not digits.isdigit():
-        raise ValueError(
-            f"STITCH chemical ID has non-numeric body: {stitch_id!r}"
-        )
-    return f"PUBCHEM.COMPOUND:{int(digits)}"
-
-
 def load_string_to_entrez_mapping(
     mapping_path: Path | str,
     supported_taxa: Iterable[str] = SUPPORTED_TAXA,
@@ -623,59 +576,3 @@ def transform_string_ppi(
         for predicate in new_predicates
     ]
     return KnowledgeGraph(nodes=[subject_node, object_node], edges=edges)
-
-
-@koza.transform_record(tag="stitch_pcl")
-def transform_stitch_pcl(
-    koza_transform: koza.KozaTransform, record: dict[str, Any]
-) -> KnowledgeGraph | None:
-    """
-    Transform one row of STITCH's ``protein_chemical.links`` file into one
-    ``ChemicalEntity`` node, one ``Protein`` node, and one ``biolink:interacts_with``
-    edge directed from chemical to protein.
-
-    Rows with ``combined_score`` at or below ``COMBINED_SCORE_THRESHOLD`` are
-    dropped (same medium-confidence cutoff used for STRING). STITCH rows are
-    directed (chemical → protein) and not symmetric, so no dedup is needed.
-    The edge carries:
-
-      * ``predicate``: ``biolink:interacts_with`` — STITCH doesn't characterize
-        the kind of protein-chemical interaction (binding, modulation, substrate),
-        so the loose predicate is honest
-      * ``has_attribute``: ``[MI:0190]`` (PSI-MI "interaction", root term)
-      * ``primary_knowledge_source``: ``infores:stitch``
-      * ``knowledge_level=not_provided`` and ``agent_type=not_provided`` — the
-        basic STITCH file has no per-channel scores to derive KL/AT from (unlike
-        STRING's .full file, which now drives per-channel KL/AT)
-    """
-    if not passes_combined_score(record["combined_score"]):
-        return None
-
-    chemical_id = parse_stitch_chemical_id(record["chemical"])
-    protein_id, protein_taxon = parse_string_protein_id(record["protein"])
-
-    chemical_node = ChemicalEntity(
-        id=chemical_id,
-        category=["biolink:ChemicalEntity"],
-    )
-    protein_node = Protein(
-        id=protein_id,
-        category=["biolink:Protein"],
-        in_taxon=[protein_taxon],
-    )
-    edge = Association(
-        id=entity_id(),
-        subject=chemical_id,
-        predicate="biolink:interacts_with",
-        object=protein_id,
-        sources=STITCH_SOURCES,
-        has_attribute=[STITCH_INTERACTION_TYPE_PSI_MI],
-        # KL/AT stays not_provided for STITCH: unlike STRING's .full file, the
-        # basic protein_chemical.links file carries no per-channel scores, so we
-        # have no dominant-channel signal to derive KL/AT from. Per-channel KL/AT
-        # (and mode-of-action predicates) would require the detailed/actions files
-        # — see RIG future_considerations.
-        knowledge_level=KnowledgeLevelEnum.not_provided,
-        agent_type=AgentTypeEnum.not_provided,
-    )
-    return KnowledgeGraph(nodes=[chemical_node, protein_node], edges=[edge])

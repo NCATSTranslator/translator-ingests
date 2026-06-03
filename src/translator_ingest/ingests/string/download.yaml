@@ -27,14 +27,3 @@
 # Matches the pattern used by Monarch's STRING ingest.
 - url: https://string-db.org/mapping_files/entrez/all_organisms.entrez_2_string.tsv
   local_name: all_organisms.entrez_2_string.tsv
-
-# STITCH protein-chemical interaction files (one per Translator-target taxon).
-# Same 3-column shape as STRING's protein.links file but with a chemical column
-# (``CIDm`` or ``CIDs`` prefix → ``PUBCHEM.COMPOUND`` CURIE after prefix stripping).
-# Loaded by the ``stitch_pcl`` tagged reader in string.yaml.
-- url: http://stitch.embl.de/download/protein_chemical.links.v5.0/9606.protein_chemical.links.v5.0.tsv.gz
-  local_name: 9606.protein_chemical.links.v5.0.tsv.gz
-- url: http://stitch.embl.de/download/protein_chemical.links.v5.0/10090.protein_chemical.links.v5.0.tsv.gz
-  local_name: 10090.protein_chemical.links.v5.0.tsv.gz
-- url: http://stitch.embl.de/download/protein_chemical.links.v5.0/10116.protein_chemical.links.v5.0.tsv.gz
-  local_name: 10116.protein_chemical.links.v5.0.tsv.gz

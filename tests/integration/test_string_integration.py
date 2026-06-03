@@ -47,11 +47,6 @@ PPI_FIXTURES = [
     FIXTURE_DIR / "10090.protein.links.full.v12.0.txt.gz",
     FIXTURE_DIR / "10116.protein.links.full.v12.0.txt.gz",
 ]
-STITCH_FIXTURES = [
-    FIXTURE_DIR / "9606.protein_chemical.links.v5.0.tsv.gz",
-    FIXTURE_DIR / "10090.protein_chemical.links.v5.0.tsv.gz",
-    FIXTURE_DIR / "10116.protein_chemical.links.v5.0.tsv.gz",
-]
 PPI_HEADER = [
     "protein1", "protein2",
     "neighborhood", "neighborhood_transferred",
@@ -67,13 +62,10 @@ PPI_HEADER = [
 @pytest.fixture(scope="module")
 def koza_output(tmp_path_factory) -> Path:
     """
-    Run the full Koza pipeline (both ``string_ppi`` and ``stitch_pcl`` tagged
-    readers, all three taxa) once per module against the checked-in fixtures
-    and return the output dir. Both tags write to the same
-    ``string_nodes.jsonl`` / ``string_edges.jsonl`` files; per-tag assertions
-    partition on edge primary source.
+    Run the full Koza pipeline (``string_ppi`` reader, all three taxa) once per
+    module against the checked-in fixtures and return the output dir.
     """
-    for f in [ENTREZ_FIXTURE, *PPI_FIXTURES, *STITCH_FIXTURES]:
+    for f in [ENTREZ_FIXTURE, *PPI_FIXTURES]:
         assert f.exists(), f"Missing fixture: {f}"
     output_dir = tmp_path_factory.mktemp("string_output")
 
@@ -121,20 +113,6 @@ def _ppi_partition(nodes: list[dict], edges: list[dict]) -> tuple[list[dict], li
     return ppi_nodes, ppi_edges
 
 
-def _stitch_partition(nodes: list[dict], edges: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Filter the merged output to just the STITCH PCL subset."""
-    stitch_edges = [
-        e for e in edges
-        if any(
-            s["resource_id"] == "infores:stitch" and s["resource_role"] == "primary_knowledge_source"
-            for s in e["sources"]
-        )
-    ]
-    stitch_node_ids = {e["subject"] for e in stitch_edges} | {e["object"] for e in stitch_edges}
-    stitch_nodes = [n for n in nodes if n["id"] in stitch_node_ids]
-    return stitch_nodes, stitch_edges
-
-
 def _load_jsonl(path: Path) -> list[dict]:
     with open(path) as fh:
         return [json.loads(line) for line in fh if line.strip()]
@@ -146,9 +124,6 @@ def _load_jsonl(path: Path) -> list[dict]:
         ("9606.protein.links.full.v12.0.txt.gz",     200,  PPI_HEADER, None),
         ("10090.protein.links.full.v12.0.txt.gz",    200,  PPI_HEADER, None),
         ("10116.protein.links.full.v12.0.txt.gz",    200,  PPI_HEADER, None),
-        ("9606.protein_chemical.links.v5.0.tsv.gz",  5000, ["chemical", "protein", "combined_score"], "\t"),
-        ("10090.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"], "\t"),
-        ("10116.protein_chemical.links.v5.0.tsv.gz", 5000, ["chemical", "protein", "combined_score"], "\t"),
     ],
 )
 def test_fixture_row_counts(fixture_name, expected_rows, expected_header, delimiter):
@@ -282,59 +257,18 @@ def test_ppi_no_duplicate_edges_by_unordered_pair(koza_output):
     assert len(pair_keys) == len(edges), "symmetric duplicates leaked into PPI output"
 
 
-# ──── stitch_pcl tag: protein-chemical interaction assertions ────────────────
+# ──── output-wide assertions ─────────────────────────────────────────────────
 
 
-def test_stitch_produces_nodes_and_edges(koza_output):
-    nodes, edges = _stitch_partition(*_load_all(koza_output))
-    # 4,999 data rows × 3 species → roughly 25-50 above-threshold pairs per species.
-    assert 30 < len(edges) < 200, f"unexpected STITCH edge count: {len(edges)}"
-    assert 30 < len(nodes) < 400, f"unexpected STITCH node count: {len(nodes)}"
-
-
-def test_stitch_emits_chemical_and_protein_nodes(koza_output):
-    nodes, _ = _stitch_partition(*_load_all(koza_output))
-    chemicals = [n for n in nodes if n["category"] == ["biolink:ChemicalEntity"]]
-    proteins = [n for n in nodes if n["category"] == ["biolink:Protein"]]
-    assert len(chemicals) > 0, "no chemical nodes emitted"
-    assert len(proteins) > 0, "no protein nodes emitted"
-    assert len(chemicals) + len(proteins) == len(nodes), "unexpected category in STITCH output"
-
-    for chem in chemicals:
-        assert chem["id"].startswith("PUBCHEM.COMPOUND:"), chem["id"]
-    seen_taxa = set()
-    for prot in proteins:
-        assert prot["id"].startswith(ENSEMBL_PROTEIN_PREFIXES), prot["id"]
-        assert len(prot["in_taxon"]) == 1 and prot["in_taxon"][0] in EXPECTED_TAXA
-        seen_taxa.add(prot["in_taxon"][0])
-    assert seen_taxa == EXPECTED_TAXA, f"STITCH missing taxa: {EXPECTED_TAXA - seen_taxa}"
-
-
-def test_stitch_edge_shape(koza_output):
-    _, edges = _stitch_partition(*_load_all(koza_output))
-    for edge in edges:
-        assert edge["predicate"] == "biolink:interacts_with"
-        assert edge["subject"].startswith("PUBCHEM.COMPOUND:")
-        assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
-        assert edge["knowledge_level"] == "not_provided"
-        assert edge["agent_type"] == "not_provided"
-        assert edge["has_attribute"] == ["MI:0190"]
-
-
-# ──── merged-output assertions (both tags) ───────────────────────────────────
-
-
-def test_merged_output_partition_covers_all(koza_output):
-    """Every emitted edge belongs to exactly one of the two source partitions."""
+def test_all_edges_are_string_sourced(koza_output):
+    """Every emitted edge has infores:string as its primary knowledge source."""
     nodes, edges = _load_all(koza_output)
     ppi_nodes, ppi_edges = _ppi_partition(nodes, edges)
-    stitch_nodes, stitch_edges = _stitch_partition(nodes, edges)
-    assert len(ppi_edges) + len(stitch_edges) == len(edges), \
-        "an edge falls outside both partitions"
+    assert len(ppi_edges) == len(edges), "an edge is not infores:string-sourced"
 
 
-def test_no_duplicate_nodes_in_merged_output(koza_output):
-    """Each node id appears at most once across the combined output."""
+def test_no_duplicate_nodes_in_output(koza_output):
+    """Each node id appears at most once across the output."""
     nodes, _ = _load_all(koza_output)
     ids = [n["id"] for n in nodes]
-    assert len(ids) == len(set(ids)), "duplicate node IDs in merged output"
+    assert len(ids) == len(set(ids)), "duplicate node IDs in output"

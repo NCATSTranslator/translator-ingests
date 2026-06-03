@@ -3,17 +3,16 @@ name: STRING Reference Ingest Guide
 # Information about the Source of the ingest
 source_info:
     infores_id: infores:string
-    name: Search Tool for the Retrieval of Interacting Genes/Proteins (STRING) and STITCH
+    name: Search Tool for the Retrieval of Interacting Genes/Proteins (STRING)
     description: >-
       STRING (Search Tool for the Retrieval of Interacting Genes/Proteins) is a database of known and predicted
       protein–protein interactions hosted by SIB / EMBL / CPR. STRING aggregates evidence from seven channels —
       genomic neighborhood, gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, and text
       mining — plus curated databases, and combines them into a single ``combined_score`` per interaction pair.
 
-      STITCH is STRING's sister database for protein–chemical interactions, sharing STRING's protein identifier
-      scheme and combined_score model. Both are ingested here under tagged readers (``string_ppi`` and
-      ``stitch_pcl``) in a single ingest yaml, with separate transforms emitting Protein–Protein and
-      Chemical–Protein edges respectively.
+      (STITCH, STRING's sister database for protein–chemical interactions, was developed alongside this ingest but
+      split out for a later, properly-scoped effort — preserved on the ``stitch-ingest`` branch. See CHANGELOG
+      2026-05-28.)
     citations:
       - Szklarczyk D, Kirsch R, Koutrouli M, et al. The STRING database in 2023. Nucleic Acids Res. 2023;51(D1):D638–D646. doi:10.1093/nar/gkac1000
     terms_of_use_info:
@@ -41,19 +40,17 @@ ingest_info:
     ingest_categories:
       - Primary Knowledge Provider
     utility: >-
-      STRING provides a broad protein–protein interaction graph derived from multiple evidence channels; STITCH adds
-      a protein–chemical layer using the same scoring framework. Together they supply Translator reasoning with
-      generic "these proteins interact" and "this chemical interacts with this protein" signals at human-scale.
+      STRING provides a broad protein–protein interaction graph derived from multiple evidence channels,
+      supplying Translator reasoning with channel-specific "these proteins interact / are coexpressed /
+      are genomic neighbors" signals across human, mouse, and rat.
     scope: >-
-      Protein–protein interactions (STRING) and protein–chemical interactions (STITCH) for three
-      Translator-target species: human (NCBITaxon:9606), mouse (NCBITaxon:10090), and rat (NCBITaxon:10116).
-      Protein identifiers are kept in their native ENSEMBL form (ENSP / ENSMUSP / ENSRNOP) — no mapping to
-      gene-level identifiers as canonical IDs; NCBIGene equivalents are attached via ``equivalent_identifiers``.
-      Chemical identifiers from STITCH are normalized to ``PUBCHEM.COMPOUND`` CURIEs (both ``CIDm`` and ``CIDs``
-      are collapsed to the underlying PubChem CID). All channel-level evidence is collapsed into a single edge
-      per pair using each source's pre-computed ``combined_score``; per-channel subscores are not surfaced in
-      this iteration. Future iterations may extend to additional species and per-channel predicate/qualifier
-      modeling — see ``future_considerations`` below.
+      Protein–protein interactions for three Translator-target species: human (NCBITaxon:9606),
+      mouse (NCBITaxon:10090), and rat (NCBITaxon:10116). Protein identifiers are kept in their native ENSEMBL
+      form (ENSP / ENSMUSP / ENSRNOP) — no mapping to gene-level identifiers as canonical IDs; NCBIGene
+      equivalents are attached via ``equivalent_identifiers``. Per-channel evidence subscores drive per-channel
+      predicate emission (one edge per high-confidence channel); the aggregate ``combined_score`` gates row
+      inclusion. Future iterations may extend to additional species, surface per-channel subscores as edge
+      properties, and add the STITCH protein–chemical layer — see ``future_considerations`` below.
     relevant_files:
       - file_name: 9606.protein.links.full.v12.0.txt.gz
         location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
@@ -83,23 +80,6 @@ ingest_info:
           equivalents. Filtered to ``SUPPORTED_TAXA`` at load time so resident memory stays bounded.
           Not iterated by the reader; loaded as an auxiliary lookup file via ``koza.input_files_dir``.
           Same source file used by Monarch's STRING ingest.
-      - file_name: 9606.protein_chemical.links.v5.0.tsv.gz
-        location: http://stitch.embl.de/download/protein_chemical.links.v5.0/
-        description: >-
-          STITCH human protein–chemical interaction file (~70 MB gzipped, ~14.7M rows). Three tab-separated columns:
-          chemical, protein, combined_score. Chemical IDs are ``CIDm{N}`` (merged/flat) or ``CIDs{N}`` (stereo-specific)
-          encoding a PubChem CID with leading zero padding; we strip the prefix and emit ``PUBCHEM.COMPOUND`` CURIEs.
-      - file_name: 10090.protein_chemical.links.v5.0.tsv.gz
-        location: http://stitch.embl.de/download/protein_chemical.links.v5.0/
-        description: >-
-          STITCH mouse protein–chemical interaction file (~154 MB gzipped). Same shape as human STITCH; larger
-          because orthology-projected scores inflate the row count.
-      - file_name: 10116.protein_chemical.links.v5.0.tsv.gz
-        location: http://stitch.embl.de/download/protein_chemical.links.v5.0/
-        description: >-
-          STITCH rat protein–chemical interaction file (~145 MB gzipped). Same shape as human STITCH.
-          All three STITCH files drive the ``stitch_pcl`` tagged reader. Same source files used by ORION's
-          STITCH parser.
     included_content:
       - file_name: "{taxid}.protein.links.full.v12.0.txt.gz  (9606 / 10090 / 10116)"
         included_records: >-
@@ -108,17 +88,9 @@ ingest_info:
           Same logic applies uniformly across all three per-organism files.
         fields_used: >-
           protein1, protein2 (parsed into ENSEMBL protein CURIEs — ENSP for human, ENSMUSP for mouse, ENSRNOP for rat —
-          after stripping the ``{taxid}.`` taxon prefix), combined_score (used only for the row-inclusion filter;
-          not attached to the output edge).
-      - file_name: "{taxid}.protein_chemical.links.v5.0.tsv.gz  (9606 / 10090 / 10116)"
-        included_records: >-
-          Rows where combined_score > 500 (same medium-confidence cutoff as STRING). STITCH rows are directed
-          (chemical → protein) and not symmetric, so no dedup is needed. Same logic applies uniformly across
-          all three per-organism files.
-        fields_used: >-
-          chemical (``CIDm``/``CIDs`` → ``PUBCHEM.COMPOUND`` CURIE), protein (parsed into ENSEMBL protein CURIE
-          via the same helper as STRING), combined_score (used only for the row-inclusion filter; not attached
-          to the output edge).
+          after stripping the ``{taxid}.`` taxon prefix); the 7 evidence channels (neighborhood, fusion, cooccurence,
+          coexpression, experiments, textmining, plus homology and database for KL/AT) drive per-channel predicate
+          and knowledge-level/agent-type selection; combined_score gates row inclusion.
     filtered_content:
       - file_name: "{taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)"
         filtered_records: >-
@@ -130,56 +102,39 @@ ingest_info:
         filtered_records: >-
           Symmetric duplicate rows (the second occurrence of any unordered protein pair).
         rationale: >-
-          STRING lists each interaction in both directions. We emit one undirected edge per pair.
-      - file_name: "{taxid}.protein_chemical.links.v5.0.tsv.gz  (all three taxa)"
-        filtered_records: >-
-          Rows with combined_score <= 500 are excluded.
-        rationale: >-
-          Same medium-confidence cutoff applied to STRING; consistent threshold across both ingest tags.
+          STRING lists each interaction in both directions. We emit one undirected edge per pair (per predicate).
     future_considerations:
-      # NOTE: Mouse + rat STRING + STITCH have shipped (covered by SUPPORTED_TAXA
-      # 9606/10090/10116 in string.py and per-taxon files in download.yaml).
-      # Remaining: extend to additional Translator-relevant organisms below.
+      # Per-channel predicates AND per-channel KL/AT have shipped (the transform
+      # reads ``.full.v12.0``, fires up to 6 channel-specific predicates with a
+      # fallback above 750, and derives KL/AT from the dominant channel).
+      # Remaining axes below.
       - category: edge_content
         consideration: >-
-          Extend to additional Translator-relevant organisms beyond human/mouse/rat (zebrafish, fly, worm, yeast)
-          by ingesting their per-taxon STRING and STITCH files. The transform code accepts arbitrary taxa via the
-          ``SUPPORTED_TAXA`` dict in ``string.py``; adding a species is a one-line code change plus 2 download URLs
-          (PPI + STITCH) and 2 reader file entries per species. Note that non-vertebrate species may use protein ID
-          schemes other than ENSEMBL (e.g. yeast uses ORF names like ``YAL001C``); the parser would accept them but
-          downstream NodeNormalizer coverage should be probed first.
-        relevant_files: "{taxon}.protein.links.v12.0.txt.gz, {taxon}.protein_chemical.links.v5.0.tsv.gz"
-      # NOTE: Per-channel predicate emission has shipped — the transform reads
-      # ``.full.v12.0`` and fires one of 6 channel-specific predicates plus a
-      # fallback when channel scores exceed 750. See edge_type_info above.
+          Add the STITCH protein–chemical layer. Developed alongside this ingest as a ``stitch_pcl`` tagged reader
+          but split out for a later, properly-scoped effort — the complete implementation (ChemicalEntity →
+          interacts_with → Protein, ``CIDm``/``CIDs`` → PUBCHEM.COMPOUND parsing, human/mouse/rat) is preserved on
+          the ``stitch-ingest`` branch. The reintegration should land mode-of-action predicates from
+          ``actions.v5.0.tsv`` (activation, inhibition, binding, catalysis, …) from the start rather than the bare
+          ``interacts_with`` form, since no production STITCH KP exists to merely match (confirmed: Automat's
+          STRING-DB graph has no STITCH interaction edges — its only Protein↔ChemicalEntity edges are Ubergraph
+          ontology backbone, ``primary_knowledge_source: infores:ubergraph``).
+        relevant_files: "{taxon}.protein_chemical.links.v5.0.tsv.gz, {taxon}.actions.v5.0.tsv.gz"
+      - category: edge_content
+        consideration: >-
+          Extend to additional Translator-relevant organisms beyond human/mouse/rat (zebrafish, fly, worm, yeast).
+          The transform accepts arbitrary taxa via the ``SUPPORTED_TAXA`` dict in ``string.py``; adding a species
+          is a one-line code change plus a download URL and a reader file entry. Note that non-vertebrate species
+          may use protein ID schemes other than ENSEMBL (e.g. yeast uses ORF names like ``YAL001C``); the parser
+          would accept them but downstream NodeNormalizer coverage should be probed first.
+        relevant_files: "{taxon}.protein.links.full.v12.0.txt.gz"
       - category: edge_property_content
         consideration: >-
-          Surface per-channel subscores as edge properties (not just predicate-driving signals). Currently the
-          channel scores are consumed by the predicate-selection rule and discarded; downstream consumers don't
-          see the actual COEXPRESSION/EXPERIMENTS/TEXTMINING numbers on the edge. Attach them as
-          ``biolink:Attribute`` instances on each edge, named after the channel. The data is already in the
-          ``.full`` file we read; this is a transform-only change.
+          Surface per-channel subscores as edge properties (not just predicate-driving signals). The channel
+          scores currently drive predicate + KL/AT selection and are then discarded; downstream consumers don't
+          see the actual COEXPRESSION/EXPERIMENTS/TEXTMINING numbers. Attach them as ``biolink:Attribute``
+          instances on each edge, named after the channel. The data is already in the ``.full`` file we read;
+          this is a transform-only change.
         relevant_files: "{taxid}.protein.links.full.v12.0.txt.gz (already ingested)"
-      - category: edge_property_content
-        consideration: >-
-          Per-channel KL/AT instead of uniform ``not_provided``. Matches ORION's behavior: each channel maps to
-          a specific KnowledgeLevel/AgentType (e.g. EXPERIMENTS → knowledge_assertion+manual_agent; TEXTMINING →
-          not_provided+text_mining_agent), with overrides when multiple channels are high-confidence. Defers
-          to ORION's choices in the absence of a Translator-wide convention. We elected uniform
-          ``not_provided`` for this iteration to keep the plumbing simple; the per-channel KL/AT logic adds
-          real semantic value.
-        relevant_files: "{taxid}.protein.links.full.v12.0.txt.gz (already ingested)"
-      # NOTE: STITCH integration has shipped (the ``stitch_pcl`` tag) for human,
-      # mouse, and rat. Remaining STITCH work: surface per-channel subscores via
-      # ``protein_chemical.links.detailed.v5.0.tsv.gz``; add mode-of-action from
-      # ``actions.v5.0.tsv`` (would split STITCH's generic ``interacts_with`` into
-      # specific predicates: ``activation``, ``inhibition``, ``binding``, etc.).
-      - category: edge_property_content
-        consideration: >-
-          Ingest STITCH's ``actions.v5.0.tsv`` file (mode-of-action: activation, inhibition, binding, catalysis,
-          reaction, expression, pred_bind). Would let STITCH emit specific predicates instead of the generic
-          ``biolink:interacts_with``, materially sharpening the protein-chemical edges.
-        relevant_files: "{taxon}.actions.v5.0.tsv.gz"
       - category: node_content
         consideration: >-
           Ingest ``protein.aliases.v12.0.txt.gz`` to populate node ``name`` and ``synonym`` properties. Currently nodes
@@ -187,18 +142,19 @@ ingest_info:
           recommended name" warnings on every node.
         relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
     additional_notes: >-
-      Current scope: STRING + STITCH for human, mouse, and rat. STRING emits 6 per-channel predicates
-      (physically_interacts_with, coexpressed_with, interacts_with, genetic_neighborhood_of, gene_fusion_with,
-      genetically_interacts_with) plus a fallback ``physically_interacts_with`` for rows that pass the
-      combined-score gate without any high-confidence channel. The predicate-selection rule matches ORION's
+      Current scope: STRING protein–protein interactions for human, mouse, and rat. STRING emits 6 per-channel
+      predicates (physically_interacts_with, coexpressed_with, interacts_with, genetic_neighborhood_of,
+      gene_fusion_with, genetically_interacts_with) plus a fallback ``physically_interacts_with`` for rows that
+      pass the combined-score gate without any high-confidence channel. knowledge_level / agent_type are derived
+      per row from the dominant evidence channel (ORION-aligned). The predicate-selection rule matches ORION's
       STRING parser to maintain downstream compatibility with the existing Translator KP ecosystem (Automat
       STRING-DB, RoboKOP). HOMOLOGY channel is deliberately excluded from predicate emission because STRING's
       HOMOLOGY score means "inferred via orthologs in another species" not "A is homologous to B."
 
-      The ``future_considerations`` section lists the principal axes along which the ingest could continue to
-      grow: per-channel subscores as edge properties, per-channel KL/AT (currently uniform ``not_provided``),
-      mode-of-action splitting for STITCH, additional non-mammalian species, node names from
-      protein.aliases, and physical-subnetwork filtering.
+      The STITCH protein–chemical sibling ingest was split out for a later effort (preserved on the
+      ``stitch-ingest`` branch); see ``future_considerations`` and CHANGELOG 2026-05-28. Other growth axes:
+      per-channel subscores as edge properties, additional non-mammalian species, and node names from
+      protein.aliases.
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -441,46 +397,6 @@ target_info:
           - 10090.protein.links.full.v12.0.txt.gz
           - 10116.protein.links.full.v12.0.txt.gz
 
-      # STITCH protein–chemical interactions (``stitch_pcl`` tag).
-      - subject_categories:
-          - biolink:ChemicalEntity
-        predicates:
-          - biolink:interacts_with
-        object_categories:
-          - biolink:Protein
-        qualifiers:
-          - property: species_context_qualifier
-            value_enumeration:
-              - NCBITaxon:9606    # Homo sapiens
-              - NCBITaxon:10090   # Mus musculus
-              - NCBITaxon:10116   # Rattus norvegicus
-        knowledge_level:
-          # STITCH's combined_score aggregates across binding assays, manual
-          # curation, text mining, and database co-occurrence. Same rationale
-          # as STRING: not an explicit curator assertion, so ``not_provided``
-          # is the honest punt.
-          - not_provided
-        agent_type:
-          - not_provided
-        edge_properties:
-          # PSI-MI root term: STITCH doesn't characterize the kind of
-          # protein-chemical interaction (binding, modulation, substrate),
-          # so ``MI:0190`` (interaction) is the most defensible choice.
-          - has_attribute:
-              - MI:0190
-        primary_knowledge_sources:
-          - infores:stitch
-        ui_explanation: >-
-          STITCH provides a chemical-centric companion to STRING, aggregating evidence for protein-chemical
-          interactions across binding assays, manual curation databases, and text mining into a single combined_score.
-          An edge with this predicate is emitted for any chemical-protein pair whose combined_score exceeds 500.
-          STITCH does not characterize the *kind* of interaction (binding, modulation, substrate) on a per-row
-          basis, so we use the loose ``biolink:interacts_with`` predicate.
-        source_files:
-          - 9606.protein_chemical.links.v5.0.tsv.gz
-          - 10090.protein_chemical.links.v5.0.tsv.gz
-          - 10116.protein_chemical.links.v5.0.tsv.gz
-
     node_type_info:
       - node_category: biolink:Protein
         # Source identifier types reflect the canonical post-normalization identifier
@@ -506,21 +422,6 @@ target_info:
           ingest pattern (Kevin Schaper, 2026-05) and the Translator NodeNormalizer's expectations, without
           forcing a gene-centric reshape of the graph. NodeNormalizer resolution verified at 98.5% (human),
           100% (mouse), 98% (rat) on sample probes.
-
-      - node_category: biolink:ChemicalEntity
-        # Emitted by the ``stitch_pcl`` tagged transform. STITCH chemical IDs
-        # use ``CIDm`` (merged/flat) or ``CIDs`` (stereo-specific) prefixes
-        # encoding a PubChem CID with leading zeros; we strip the prefix and
-        # emit ``PUBCHEM.COMPOUND`` CURIEs.
-        source_identifier_types:
-          - PUBCHEM.COMPOUND
-        node_properties: []
-        additional_notes: >-
-          Emitted only by the ``stitch_pcl`` tag from ``9606.protein_chemical.links.v5.0.tsv.gz``. Chemical IDs are
-          parsed via ``parse_stitch_chemical_id``: strip the 4-char ``CIDm``/``CIDs`` prefix, drop leading zeros,
-          prefix with ``PUBCHEM.COMPOUND:``. STITCH does not distinguish merged vs stereo-specific compounds in
-          its scoring; we collapse both to the same PubChem CID. No ``in_taxon`` qualifier — chemicals are
-          species-agnostic.
 
 # Information about how the ingest was specified and performed
 provenance_info:

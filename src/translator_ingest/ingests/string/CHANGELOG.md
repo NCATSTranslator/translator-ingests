@@ -5,6 +5,54 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-05-28 — Split STITCH out of this ingest (preserved on `stitch-ingest` branch)
+
+**Decision.** Remove the STITCH protein–chemical layer (the `stitch_pcl` tagged
+reader, transform, helpers, RIG edge/node types, tests, and fixtures) from this
+ingest so the PR ships **STRING-only**. The complete STITCH implementation is
+preserved on the **`stitch-ingest` branch** (at commit `e2386459`) for a later,
+properly-scoped reintegration.
+
+**Why.** STITCH had accreted against the original 2026-05-19 scope-reduction
+decision (which explicitly dropped it), and in its shipped form it was the
+weakest possible version — a single `biolink:interacts_with` predicate,
+`knowledge_level=not_provided`, no mode-of-action. Three findings made removal
+the right call:
+
+1. **No production precedent to match.** We probed Automat's STRING-DB MKG
+   expecting to find STITCH protein-chemical edges. There are none. The only
+   Protein↔ChemicalEntity edges in that graph are `subclass_of` ontology-backbone
+   edges injected by **Ubergraph** (`primary_knowledge_source: infores:ubergraph`)
+   — a protein *is-a* biomacromolecule *is-a* chemical entity via the Protein
+   Ontology / ChEBI hierarchy. Not STITCH, not interactions. And there's no
+   separate `stitch` KP in the Automat registry. So STITCH would be wholly
+   net-new surface area, not a gap-filler.
+
+2. **Net-new ⇒ value depends entirely on doing it well.** With no baseline to
+   merely match, a bare `interacts_with` STITCH adds low-information edges that
+   dilute the (strong) STRING deliverable. STITCH's real value lives in
+   `actions.v5.0.tsv` mode-of-action predicates (binding / activation /
+   inhibition / …), which the shipped form didn't have.
+
+3. **The STRING ingest is the finished, defensible thing.** 6 per-channel
+   predicates, per-channel KL/AT, multi-organism, ORION parity. Bundling a weak
+   STITCH with it weakens the whole for a reviewer.
+
+**Reintegration pointer.** When STITCH is taken up again:
+- Start from the `stitch-ingest` branch (full implementation: CIDm/CIDs →
+  PUBCHEM.COMPOUND parsing, ChemicalEntity → interacts_with → Protein,
+  human/mouse/rat, tests, fixtures).
+- Land `actions.v5.0.tsv` mode-of-action predicates **from the start** rather
+  than the bare `interacts_with` form.
+- Reconsider the ChemicalEntity identifier prefix (we used PUBCHEM.COMPOUND;
+  worth checking against whatever chemical KP it will co-reside with).
+- Decide whether it's a tagged reader in `string.yaml` again or its own
+  `stitch.yaml` ingest — the original tagged-reader coupling made STRING and
+  STITCH harder to evolve independently.
+
+**Cost of removal:** surgical (STITCH was entangled across several commits), not
+a clean `git revert`. 22 STITCH tests removed (113 STRING tests remain pass).
+
 ## 2026-05-28 — Per-channel KL/AT, reader-level threshold filter, helper cleanup
 
 A round of TODO resolution on top of the per-channel predicate work.
