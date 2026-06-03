@@ -5,8 +5,17 @@ from os.path import join, abspath, dirname
 from loguru import logger
 from pathlib import Path
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum, \
-    GeneToPhenotypicFeaturePredicateEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    GeneToPhenotypicFeaturePredicateEnum,
+    DiseaseToPhenotypicFeatureAssociation,
+    CausalGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
+    GeneToPhenotypicFeatureAssociation,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 
 import koza
 from koza.transform import Mappings
@@ -594,3 +603,79 @@ def test_gene_to_phenotype_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_HPOA_SOURCES = [
+    RetrievalSource(
+        id="infores:hpo-annotations",
+        resource_id="infores:hpo-annotations",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": DiseaseToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-1",
+            "subject": "OMIM:117650",
+            "predicate": "biolink:has_phenotype",
+            "object": "HP:0001249",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+    {
+        "association_class": CausalGeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-2",
+            "subject": "NCBIGene:64170",
+            "predicate": "biolink:associated_with",
+            "object": "OMIM:212050",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-3",
+            "subject": "NCBIGene:6505",
+            "predicate": "biolink:associated_with",
+            "object": "OMIM:615232",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-4",
+            "subject": "NCBIGene:8086",
+            "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
+            "object": "HP:0000252",
+            "knowledge_level": KnowledgeLevelEnum.logical_entailment,
+            "agent_type": AgentTypeEnum.automated_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
