@@ -118,8 +118,6 @@ def init_curie_converter() -> curies.Converter:
 def on_begin_redundant_graph(koza: koza.KozaTransform) -> None:
     koza.state["record_counter"] = 0
     koza.state["skipped_record_counter"] = 0
-    koza.state["node_curies"] = {}
-    koza.state["edge_curies"] = {}
     koza.transform_metadata["redundant_graph"] = {
         "num_source_lines": 0,
         "unusable_source_lines": 0
@@ -174,28 +172,33 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                     edge_curies[edge_id] = biolink_predicate
         koza.log(f"Edges: {len(edge_curies):,} predicate IRIs mapped to Biolink predicates.", level="INFO")
 
-        koza.state["node_curies"] = node_curies
-        koza.state["edge_curies"] = edge_curies
-
         koza.log("Streaming edges from tar archive...", level="INFO")
-        edge_stream_count = 0
+        source_line_count = 0
+        skipped_count = 0
         with tar.extractfile(f'{graph_base_path}/edges.tsv') as edges_file:
             for line in edges_file:
+                source_line_count += 1
                 subject_id, predicate_id, object_id = line.decode('utf-8').rstrip().split('\t')
-                # Only include edges where predicate is in our edge_curies dict (subClassOf only)
-                if predicate_id not in edge_curies:
+                # Only include edges where the predicate and nodes were mapped successfully,
+                # this excludes edges with predicates not in the PREDICATE_IRI_TO_BIOLINK lookup.
+                predicate = edge_curies.get(predicate_id)
+                subject_curie = node_curies.get(subject_id)
+                object_curie = node_curies.get(object_id)
+                if predicate is None or subject_curie is None or object_curie is None:
+                    skipped_count += 1
                     continue
-                # Only include edges where both subject and object are in our node_curies mapping
-                if subject_id not in node_curies or object_id not in node_curies:
-                    continue
-                
-                edge_stream_count += 1
                 yield {
-                    "subject_id": subject_id,
-                    "predicate_id": predicate_id,
-                    "object_id": object_id
+                    "subject": subject_curie,
+                    "predicate": predicate,
+                    "object": object_curie,
                 }
-        koza.log(f"Finished streaming {edge_stream_count:,} edges from tar archive.", level="INFO")
+        koza.state["record_counter"] = source_line_count
+        koza.state["skipped_record_counter"] = skipped_count
+        koza.log(
+            f"Finished streaming {source_line_count - skipped_count:,} edges "
+            f"from {source_line_count:,} source lines ({skipped_count:,} skipped).",
+            level="INFO",
+        )
 
 
 @koza.transform(tag="redundant_graph")
@@ -209,39 +212,22 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
     batch_count = 0
     
     for record in data:
-        koza.state["record_counter"] += 1
-        
-        subject_id = record["subject_id"]
-        predicate_id = record["predicate_id"]
-        object_id = record["object_id"]
-        
-        subject_curie = koza.state["node_curies"].get(subject_id)
-        if not subject_curie:
-            koza.state["skipped_record_counter"] += 1
-            continue
-        
-        object_curie = koza.state["node_curies"].get(object_id)
-        if not object_curie:
-            koza.state["skipped_record_counter"] += 1
-            continue
-        
-        predicate_curie = koza.state["edge_curies"].get(predicate_id)
-        if not predicate_curie:
-            koza.state["skipped_record_counter"] += 1
-            continue
-        
+        # Records are already filtered and converted to CURIEs/predicates in prepare_data.
+        subject_curie = record["subject"]
+        object_curie = record["object"]
+
         if subject_curie not in nodes_seen:
             nodes_batch.append(NamedThing(id=subject_curie))
             nodes_seen.add(subject_curie)
-        
+
         if object_curie not in nodes_seen:
             nodes_batch.append(NamedThing(id=object_curie))
             nodes_seen.add(object_curie)
-        
+
         edges_batch.append(Association(
             id=entity_id(),
             subject=subject_curie,
-            predicate=predicate_curie,
+            predicate=record["predicate"],
             object=object_curie,
             sources=UBERGRAPH_SOURCES,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
