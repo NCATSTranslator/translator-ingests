@@ -57,6 +57,12 @@ BIOLINK_MAPPING_CHANGES = {
     'NCBIGene': 'https://identifiers.org/ncbigene/'
 }
 
+# Source predicate IRIs mapped directly to their Biolink predicate. Only edges whose
+# predicate IRI appears here are ingested; add entries to support more predicates.
+PREDICATE_IRI_TO_BIOLINK = {
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": "biolink:subclass_of",
+}
+
 
 def get_latest_version() -> str:
     base_url = 'https://ubergraph.apps.renci.org'
@@ -141,7 +147,6 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
     node_curies = {}
     node_mapping_failures = []
     edge_curies = {}
-    edge_mapping_failures = []
 
     with tarfile.open(tar_path, 'r:gz') as tar:
         koza.log("Converting node IRIs to CURIEs...", level="INFO")
@@ -160,19 +165,14 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
         if node_mapping_failures:
             koza.log(f"Node conversion failure examples: {node_mapping_failures[:10]}", level="WARNING")
 
-        koza.log("Converting edge IRIs to CURIEs...", level="INFO")
+        koza.log("Mapping edge IRIs to Biolink predicates...", level="INFO")
         with tar.extractfile(f'{graph_base_path}/edge-labels.tsv') as edge_labels_file:
             for line in edge_labels_file:
                 edge_id, edge_iri = line.decode('utf-8').rstrip().split('\t')
-                edge_curie = curie_converter.compress(edge_iri)
-                if edge_iri == "http://www.w3.org/2000/01/rdf-schema#subClassOf":
-                    if edge_curie is not None:
-                        edge_curies[edge_id] = edge_curie
-                    else:
-                        edge_mapping_failures.append(edge_iri)
-        koza.log(f"Edges: {len(edge_curies):,} successfully converted, {len(edge_mapping_failures):,} failures.", level="INFO")
-        if edge_mapping_failures:
-            koza.log(f"Edge conversion failure examples: {edge_mapping_failures[:10]}", level="WARNING")
+                biolink_predicate = PREDICATE_IRI_TO_BIOLINK.get(edge_iri)
+                if biolink_predicate is not None:
+                    edge_curies[edge_id] = biolink_predicate
+        koza.log(f"Edges: {len(edge_curies):,} predicate IRIs mapped to Biolink predicates.", level="INFO")
 
         koza.state["node_curies"] = node_curies
         koza.state["edge_curies"] = edge_curies
