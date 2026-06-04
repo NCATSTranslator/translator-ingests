@@ -29,9 +29,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import Protein
 
 from koza.model.graphs import KnowledgeGraph
 
-from translator_ingest.ingests.string.string_utils import load_string_to_entrez_mapping, passes_combined_score, \
-    parse_string_protein_id, predicates_for_row, sorted_pair_key, knowledge_level_and_agent_type_for_row, \
+from translator_ingest.ingests.string.string_utils import (
+    load_string_to_entrez_mapping,
+    passes_combined_score,
+    parse_string_protein_id,
+    predicates_for_row,
+    sorted_pair_key,
+    knowledge_level_and_agent_type_for_row,
     make_string_ppi_edge
+)
 
 
 STRING_VERSION_API_URL = "https://string-db.org/api/json/version"
