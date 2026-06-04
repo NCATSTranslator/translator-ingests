@@ -3,25 +3,30 @@
 import pytest
 
 import koza
+
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    Protein,
     AgentTypeEnum,
-    KnowledgeLevelEnum,
+    KnowledgeLevelEnum
 )
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.string.string import (
+    get_latest_version,
+    transform_string_ppi
+
+)
+from translator_ingest.ingests.string.string_utils import (
     CHANNEL_KL_AT,
     CHANNEL_PREDICATES,
     FALLBACK_PREDICATE,
-    get_latest_version,
     knowledge_level_and_agent_type_for_row,
     load_string_to_entrez_mapping,
     parse_string_protein_id,
     passes_combined_score,
     predicates_for_row,
-    sorted_pair_key,
-    transform_string_ppi,
+    sorted_pair_key
 )
 
 
@@ -31,9 +36,9 @@ def _full_row(
     combined_score: str | int,
     **channel_scores: int | str,
 ) -> dict:
-    """Build a STRING ``.full`` record dict. Channels default to 0 unless
-    overridden by keyword arg (named after the channel column, e.g.
-    ``experiments=800``). Saves a lot of dict-spelling-out in transform tests.
+    """Build a STRING ".full" record dict. Channels default to 0 unless
+    overridden by the keyword arg (named after the channel column, e.g.
+    "experiments=800"). Saves lots of dict-spelling-outs in transform tests.
     """
     row = {"protein1": protein1, "protein2": protein2, "combined_score": str(combined_score)}
     for ch in [
@@ -66,7 +71,7 @@ FIXTURE_STRING_TO_ENTREZ: dict[str, list[str]] = {
 
 @pytest.fixture
 def mock_koza() -> koza.KozaTransform:
-    """Fresh MockKozaTransform with empty state + fixture mapping for each test."""
+    """Fresh MockKozaTransform with empty state and fixture mapping for each test."""
     mk = MockKozaTransform(extra_fields={}, writer=MockKozaWriter(), mappings={})
     mk.state = {"string_to_entrez": FIXTURE_STRING_TO_ENTREZ}
     return mk
@@ -146,7 +151,7 @@ def test_sorted_pair_key(p1, p2, expected):
 
 
 def test_sorted_pair_key_collapses_symmetric_rows():
-    """``p1 p2`` and ``p2 p1`` produce the same key for the same predicate."""
+    """"p1 p2" and "p2 p1" produce the same key for the same predicate."""
     a, b = "ENSEMBL:ENSP00000481152", "ENSEMBL:ENSP00000478289"
     assert sorted_pair_key(a, b, "biolink:coexpressed_with") == \
            sorted_pair_key(b, a, "biolink:coexpressed_with")
@@ -191,28 +196,31 @@ R2 = "10116.ENSRNOP00000000002"
 )
 def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expected_taxon):
     """Above-combined-score row with no high-confidence channels emits a single
-    fallback edge (``physically_interacts_with``). PSI-MI MI:0915 attached only
+    fallback edge ("physically_interacts_with"). PSI-MI MI:0915 attached only
     to the physical-interaction predicate."""
     result = transform_string_ppi(
         mock_koza,
         _full_row(p1, p2, combined_score=540),
     )
     assert result is not None
-    assert len(result.nodes) == 2
-    assert len(result.edges) == 1
+    assert result.nodes is not None and result.edges is not None
+    assert len(list(result.nodes)) == 2
+    assert len(list(result.edges)) == 1
 
     for node in result.nodes:
         assert node.category == ["biolink:Protein"]
-        assert node.in_taxon == [expected_taxon]
+        assert isinstance(node,Protein) and node.in_taxon == [expected_taxon]
         assert node.equivalent_identifiers
         for eq in node.equivalent_identifiers:
             assert eq.startswith("NCBIGene:")
 
-    edge = result.edges[0]
+    edges = list(result.edges)
+    edge = edges[0]
     assert edge.predicate == "biolink:physically_interacts_with"
     assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
     assert edge.agent_type == AgentTypeEnum.not_provided
     assert edge.has_attribute == ["MI:0915"]
+    assert edge.sources is not None
     primary = next(s for s in edge.sources if s.resource_role == "primary_knowledge_source")
     assert primary.resource_id == "infores:string"
 
@@ -220,7 +228,8 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
 def test_transform_populates_equivalent_identifiers_from_mapping(mock_koza):
     """Each Protein node carries its NCBIGene equivalents from the mapping dict."""
     result = transform_string_ppi(mock_koza, _full_row(H1, H2, combined_score=952))
-    by_id = {n.id: n for n in result.nodes}
+    assert result is not None and result.nodes is not None
+    by_id = {n.id: n for n in list(result.nodes)}
     assert by_id["ENSEMBL:ENSP00000478725"].equivalent_identifiers == ["NCBIGene:7157"]
     assert by_id["ENSEMBL:ENSP00000478289"].equivalent_identifiers == ["NCBIGene:4193"]
 
@@ -228,7 +237,8 @@ def test_transform_populates_equivalent_identifiers_from_mapping(mock_koza):
 def test_transform_preserves_multimapping(mock_koza):
     """Proteins with multiple Entrez mappings carry the full list."""
     result = transform_string_ppi(mock_koza, _full_row(H1, H3, combined_score=952))
-    by_id = {n.id: n for n in result.nodes}
+    assert result is not None and result.nodes is not None
+    by_id = {n.id: n for n in list(result.nodes)}
     # H3 (ENSP00000481152) maps to two genes in the fixture.
     assert by_id["ENSEMBL:ENSP00000481152"].equivalent_identifiers == [
         "NCBIGene:1234",
@@ -237,12 +247,13 @@ def test_transform_preserves_multimapping(mock_koza):
 
 
 def test_transform_handles_missing_mapping(mock_koza):
-    """A protein with no Entrez mapping yields ``equivalent_identifiers=None``,
+    """A protein with no Entrez mapping yields "equivalent_identifiers=None",
     not a crash or empty list."""
     # "9606.ENSP00000000001" is deliberately absent from FIXTURE_STRING_TO_ENTREZ.
     result = transform_string_ppi(
         mock_koza, _full_row("9606.ENSP00000000001", H2, combined_score=952),
     )
+    assert result is not None and result.nodes is not None
     by_id = {n.id: n for n in result.nodes}
     assert by_id["ENSEMBL:ENSP00000000001"].equivalent_identifiers is None
     # The other protein still gets its mapping populated.
@@ -268,7 +279,7 @@ def test_predicates_for_row_multiple_channels_fire_independently():
 
 
 def test_predicates_for_row_at_threshold_does_not_fire():
-    """Threshold is strict greater-than; equal does not fire."""
+    """Threshold is strictly greater-than; equal does not fire."""
     row = {"experiments": "750", "coexpression": "0", "neighborhood": "0",
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     # No channel exceeds 750 → fallback only.
@@ -301,7 +312,7 @@ def test_predicates_for_row_database_never_emits_predicate():
 
 
 def test_predicates_for_row_all_channels_fire():
-    """When every mapped channel is above threshold, all 6 predicates fire."""
+    """When every mapped channel is above the threshold, all 6 predicates fire."""
     row = {ch: "800" for ch in CHANNEL_PREDICATES}
     preds = predicates_for_row(row)
     assert set(preds) == set(CHANNEL_PREDICATES.values())
@@ -325,7 +336,7 @@ def test_transform_emits_predicate_per_high_confidence_channel(
     result = transform_string_ppi(
         mock_koza, _full_row(H1, H2, combined_score=952, **channel_scores),
     )
-    assert result is not None
+    assert result is not None and result.edges is not None
     predicates = [e.predicate for e in result.edges]
     assert predicates == expected_predicates
 
@@ -338,7 +349,7 @@ def test_transform_emits_multiple_edges_for_multi_channel_row(mock_koza):
         _full_row(H1, H2, combined_score=952,
                   experiments=800, coexpression=800, textmining=800),
     )
-    assert result is not None
+    assert result is not None and result.edges is not None
     predicates = {e.predicate for e in result.edges}
     assert predicates == {
         "biolink:physically_interacts_with",
@@ -367,10 +378,12 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
     third = transform_string_ppi(
         mock_koza, _full_row(H2, H1, combined_score=952, coexpression=800),
     )
-    assert first is not None and len(first.edges) == 1
+    assert first is not None and first.edges is not None
+    assert len(list(first.edges)) == 1
     assert second is None  # full dup
-    assert third is not None and len(third.edges) == 1
-    assert third.edges[0].predicate == "biolink:coexpressed_with"
+    assert third is not None and third.edges is not None
+    assert len(list(third.edges)) == 1
+    assert list(third.edges)[0].predicate == "biolink:coexpressed_with"
 
 
 # ──── Per-channel knowledge-level / agent-type tests ─────────────────────────
@@ -434,8 +447,8 @@ def test_transform_propagates_channel_kl_at_to_edges(mock_koza):
         mock_koza,
         _full_row(H1, H2, combined_score=952, experiments=900, coexpression=800),
     )
-    assert result is not None
-    assert len(result.edges) == 2
+    assert result is not None and result.edges is not None
+    assert len(list(result.edges)) == 2
     for edge in result.edges:
         assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
         assert edge.agent_type == AgentTypeEnum.manual_agent
@@ -446,8 +459,8 @@ def test_transform_textmining_only_edge_carries_textmining_kl_at(mock_koza):
         mock_koza,
         _full_row(H1, H2, combined_score=952, textmining=900),
     )
-    assert result is not None
-    edge = result.edges[0]
+    assert result is not None and result.edges is not None
+    edge = list(result.edges)[0]
     assert edge.predicate == "biolink:interacts_with"
     assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
     assert edge.agent_type == AgentTypeEnum.text_mining_agent
@@ -461,12 +474,12 @@ def test_load_string_to_entrez_mapping(tmp_path):
         "# NCBI taxid / entrez / STRING\n"
         "9606\t381\t9606.ENSP00000000233\n"
         "9606\t9606\t9606.ENSP00000000412\n"
-        "9606\t1234\t9606.ENSP00000481152\n"   # first of a multi-map
+        "9606\t1234\t9606.ENSP00000481152\n"   # first of a multimap
         "9606\t5678\t9606.ENSP00000481152\n"   # second of the same protein
         "10090\t11428\t10090.ENSMUSP00000000001\n"
-        "4932\t850001\t4932.YAL001C\n"          # unsupported taxon, must be skipped
-        "\n"                                     # blank line, must be tolerated
-        "9606\tmalformed\n"                      # short line, must be skipped
+        "4932\t850001\t4932.YAL001C\n"          # unsupported taxon must be skipped
+        "\n"                                     # blank line must be tolerated
+        "9606\tmalformed\n"                      # short line must be skipped
     )
     mapping = load_string_to_entrez_mapping(p)
     assert mapping == {
@@ -493,7 +506,7 @@ def test_transform_keeps_distinct_pairs(mock_koza):
 
 
 def test_transform_rejects_unsupported_taxon(mock_koza):
-    """A row from a non-target species (e.g. yeast) should raise loudly."""
+    """A row from a non-target species (e.g., yeast) should raise loudly."""
     with pytest.raises(ValueError, match="Unsupported taxon prefix"):
         transform_string_ppi(
             mock_koza,
