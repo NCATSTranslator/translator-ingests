@@ -3,8 +3,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     Association,
     CausalGeneToDiseaseAssociation,
-    ChemicalAffectsBiologicalEntityAssociation,
     ChemicalAffectsGeneAssociation,
+    ChemicalAffectsBiologicalEntityAssociation,
     ChemicalEntity,
     Disease,
     Gene,
@@ -14,6 +14,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     NamedThing,
     Protein,
+    RetrievalSource,
+    ResourceRoleEnum,
     Study,
     TextMiningStudyResult,
 )
@@ -244,8 +246,14 @@ def test_qualifier_gene_affects_gene():
     assert assoc.object_direction_qualifier == "increased"
 
 
-def test_qualifier_fallback_named_thing():
-    """NamedThing subject + NamedThing object -> ChemicalAffectsBiologicalEntityAssociation."""
+def test_qualifier_stripped_when_endpoints_untyped():
+    """NamedThing-on-both-sides with activity aspect strips the qualifier triple.
+
+    Regression for NCATSTranslator/Feedback#1213. Activity-like aspects are
+    only valid when both endpoints are Gene/Protein/ChemicalEntity, so an
+    untyped subject and object cannot bear them. The edge is downgraded to a
+    plain ``biolink:affects`` Association without qualifier fields.
+    """
     record = _base_record(
         subject="UMLS:C0011847",
         object="UMLS:C0012345",
@@ -256,7 +264,95 @@ def test_qualifier_fallback_named_thing():
     )
     entities = _create_test_runner(record)
     assoc = [e for e in entities if isinstance(e, Association)][0]
-    assert isinstance(assoc, ChemicalAffectsBiologicalEntityAssociation)
+    assert type(assoc) is Association
+    assert assoc.predicate == "biolink:affects"
+    dumped = assoc.model_dump(mode="json", exclude_none=True)
+    assert "qualified_predicate" not in dumped
+    assert "object_aspect_qualifier" not in dumped
+    assert "object_direction_qualifier" not in dumped
+
+
+def test_issue_1213_chemical_to_phenotype_strips_qualifier():
+    """Regression for NCATSTranslator/Feedback#1213.
+
+    The literal failing example from the issue: D-glucose (CHEBI:17234) ->
+    "injury" (UMLS:C3263723) with ``causes activity_or_abundance increased``.
+    Aragorn was chaining the qualifier semantics to produce "X has increased
+    activity caused by glucose" inferences. After this fix, the qualifier
+    triple is stripped so the chain cannot match.
+    """
+    record = _base_record(
+        subject="CHEBI:17234",
+        object="UMLS:C3263723",
+        predicate="biolink:affects",
+        qualified_predicate="biolink:causes",
+        qualified_object_aspect="activity_or_abundance",
+        qualified_object_direction="increased",
+    )
+    entities = _create_test_runner(record)
+    assoc = [e for e in entities if isinstance(e, Association)][0]
+    assert type(assoc) is Association
+    assert assoc.predicate == "biolink:affects"
+    dumped = assoc.model_dump(mode="json", exclude_none=True)
+    assert "qualified_predicate" not in dumped
+    assert "object_aspect_qualifier" not in dumped
+    assert "object_direction_qualifier" not in dumped
+
+
+@pytest.mark.parametrize("subject_id,object_id", [
+    ("CHEBI:15365", "MONDO:0005148"),
+    ("CHEBI:15365", "HP:0000118"),
+    ("CHEBI:15365", "UBERON:0000001"),
+    ("CHEBI:15365", "UMLS:C0012345"),
+    ("UMLS:C0011847", "NCBIGene:100"),
+    ("MONDO:0005148", "CHEBI:15365"),
+])
+def test_activity_qualifier_stripped_for_non_activity_bearing_endpoints(
+    subject_id: str,
+    object_id: str,
+):
+    """Activity-like qualifiers require Gene/Protein/Chemical on BOTH sides."""
+    record = _base_record(
+        subject=subject_id,
+        object=object_id,
+        predicate="biolink:affects",
+        qualified_predicate="biolink:causes",
+        qualified_object_aspect="activity_or_abundance",
+        qualified_object_direction="increased",
+    )
+    entities = _create_test_runner(record)
+    assoc = [e for e in entities if isinstance(e, Association)][0]
+    assert type(assoc) is Association
+    assert assoc.predicate == "biolink:affects"
+    dumped = assoc.model_dump(mode="json", exclude_none=True)
+    assert "qualified_predicate" not in dumped
+    assert "object_aspect_qualifier" not in dumped
+    assert "object_direction_qualifier" not in dumped
+
+
+@pytest.mark.parametrize("subject_id,object_id", [
+    ("CHEBI:15365", "NCBIGene:100"),
+    ("CHEBI:15365", "UniProtKB:P12345"),
+    ("CHEBI:15365", "CHEBI:99999"),
+    ("NCBIGene:100", "CHEBI:15365"),
+    ("NCBIGene:100", "HGNC:200"),
+    ("UniProtKB:P12345", "NCBIGene:100"),
+])
+def test_activity_qualifier_kept_for_activity_bearing_endpoints(
+    subject_id: str,
+    object_id: str,
+):
+    """Activity-like qualifiers pass through when both endpoints are Gene/Protein/Chemical."""
+    record = _base_record(
+        subject=subject_id,
+        object=object_id,
+        predicate="biolink:affects",
+        qualified_predicate="biolink:causes",
+        qualified_object_aspect="activity",
+        qualified_object_direction="increased",
+    )
+    entities = _create_test_runner(record)
+    assoc = [e for e in entities if isinstance(e, Association)][0]
     assert assoc.qualified_predicate == "biolink:causes"
     assert assoc.object_aspect_qualifier == "activity"
     assert assoc.object_direction_qualifier == "increased"
@@ -496,3 +592,126 @@ def test_causes_without_disease_or_phenotype_no_variant_qualifier():
     entities = _create_test_runner(record)
     association = [e for e in entities if isinstance(e, Association)][0]
     assert type(association) is Association
+
+
+# ---------------------------------------------------------------------------
+# Pydantic roundtrip edge fixtures
+# ---------------------------------------------------------------------------
+
+TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:semmeddb",
+        resource_id="infores:semmeddb",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:test-semmeddb-1",
+            "subject": "CHEBI:15365",
+            "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+            "object": "MONDO:0005148",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-2",
+            "subject": "CHEBI:15365",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:100",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity",
+            "object_direction_qualifier": "increased",
+        },
+    },
+    {
+        "association_class": GeneAffectsChemicalAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-3",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "CHEBI:15365",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity",
+            "object_direction_qualifier": "decreased",
+        },
+    },
+    {
+        "association_class": GeneToGeneAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-4",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "HGNC:200",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+        },
+    },
+    {
+        "association_class": CausalGeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-5",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:causes",
+            "object": "MONDO:0005148",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-6",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:causes",
+            "object": "HP:0000118",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalAffectsBiologicalEntityAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-7",
+            "subject": "CHEBI:15365",
+            "predicate": "biolink:affects",
+            "object": "UBERON:0000001",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

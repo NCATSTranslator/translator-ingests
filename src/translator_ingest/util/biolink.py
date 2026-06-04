@@ -59,6 +59,8 @@ INFORES_ONCOKB = "infores:oncokb"
 INFORES_PHARMGKB = "infores:pharmgkb"
 INFORES_STRING = "infores:string"
 INFORES_STITCH = "infores:stitch"
+INFORES_CUREID = "infores:cureid"
+
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
