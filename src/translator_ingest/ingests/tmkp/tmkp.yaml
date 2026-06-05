@@ -4,8 +4,9 @@ readers:
   nodes:
     format: csv
     delimiter: '\t'
+    header_mode: none
     files:
-      - nodes.tsv
+      - nodes.tsv.gz
     columns:
       - 'id'
       - 'name'
@@ -13,8 +14,9 @@ readers:
   edges:
     format: csv
     delimiter: '\t'
+    header_mode: none
     files:
-      - edges.tsv
+      - edges.tsv.gz
     columns:
       - 'subject'
       - 'predicate'
