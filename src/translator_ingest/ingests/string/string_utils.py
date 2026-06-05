@@ -8,6 +8,7 @@ from pathlib import Path
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneCoexpressionAssociation,
     PairwiseMolecularInteraction,
+    PairwiseGeneToGeneInteraction,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -15,7 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_STRING
 from translator_ingest.util.transform_utils import entity_id
 
-# Target species for this ingest. STRING ships per-organism files and prefixes every
+# Target species for this ingest task. STRING ships per-organism files and prefixes every
 # protein ID with the NCBI taxon (e.g. "9606.ENSP00000478725"), so we identify the
 # species by parsing that prefix per row rather than configuring it per file.
 SUPPORTED_TAXA: dict[str, str] = {
@@ -25,7 +26,8 @@ SUPPORTED_TAXA: dict[str, str] = {
 }
 
 # Row-inclusion threshold (STRING's medium-confidence cutoff). A row is processed
-# only if combined_score exceeds this; matches the default offered on the STRING
+# only if 'combined_score' exceeds this threshold.
+# This value matches the default offered on the STRING
 # web UI and ORION's STRING parser.
 COMBINED_SCORE_THRESHOLD = 500
 
@@ -58,10 +60,10 @@ CHANNEL_PREDICATES: dict[str, str] = {
     "textmining":   "biolink:interacts_with",
 }
 
-# Fallback predicate emitted when "combined_score" clears the row gate but no
+# Fallback predicate emitted when "combined_score" clears the row gate, but no
 # individual channel exceeds CHANNEL_HIGH_CONF_THRESHOLD. ORION uses the same
 # fallback — the implicit assumption is that an above-medium-confidence pair
-# without specific channel signal is most likely a physical interaction.
+# without a specific channel signal is most likely a physical interaction.
 FALLBACK_PREDICATE = "biolink:physically_interacts_with"
 
 
@@ -69,24 +71,26 @@ FALLBACK_PREDICATE = "biolink:physically_interacts_with"
 # evidence channel describes a *symmetric* (undirected) relationship — if A
 # physically interacts with / is coexpressed with / is a genetic neighbor of B,
 # the converse holds. STRING reflects this by listing each pair in both
-# directions ("p1 p2" and "p2 p1"), which is why we dedup on the sorted pair
+# directions ("p1 to p2" and "p2 to p1"), which is why we dedup on the sorted pair
 # (see "sorted_pair_key"). The predicates are symmetric, not reflexive in the
-# self-loop sense; STRING does not ship self-interactions (A,A).
+# self-loop sense; STRING does not ship self-interactions (A, A).
 
 # Biolink Association class to instantiate per predicate. Most of our per-channel
-# predicates fit "PairwiseMolecularInteraction"'s permitted predicate set, but
+# predicates fit the permitted predicate set of "PairwiseMolecularInteraction", but
 # "biolink:coexpressed_with" is not a molecular-interaction predicate in
 # biolink — it belongs to "GeneToGeneCoexpressionAssociation". We can't collapse
 # the two: biolink rejects "coexpressed_with" on "PairwiseMolecularInteraction"
 # and rejects the molecular-interaction predicates on the coexpression class.
 # "make_string_ppi_edge" encapsulates the dispatch so the transform doesn't
-# repeat it.
+# repeat it. The predicates "biolink:genetic_neighborhood_of" and
+# "biolink:genetically_interacts_with" are simply considered gene-to-gene interactions
+# which may not necessarily imply direct physical interaction between two gene products.
 PREDICATE_TO_ASSOCIATION_CLASS = {
     "biolink:physically_interacts_with":  PairwiseMolecularInteraction,
     "biolink:interacts_with":             PairwiseMolecularInteraction,
     "biolink:gene_fusion_with":           PairwiseMolecularInteraction,
-    "biolink:genetic_neighborhood_of":    PairwiseMolecularInteraction,
-    "biolink:genetically_interacts_with": PairwiseMolecularInteraction,
+    "biolink:genetic_neighborhood_of":    PairwiseGeneToGeneInteraction,
+    "biolink:genetically_interacts_with": PairwiseGeneToGeneInteraction,
     "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
 }
 
@@ -116,17 +120,17 @@ CHANNEL_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
 # genetic_neighborhood_of, etc.) describe different evidence types that
 # don't correspond to PSI-MI physical-association semantics; for those we
 # omit the slot rather than attaching a misleading term.
-PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915" # TODO: double check if this is the correct association ID with Sierra
+PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915" # TODO: doublecheck if this is the correct association ID with Sierra
 
 STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
 
-# Note on identifier scheme (resolves "are they all ENSEMBL?"): for the three
+# Note on the identifier scheme (resolves "are they all ENSEMBL?"): for the three
 # Translator-target taxa we support (human / mouse / rat), STRING uses ENSEMBL
 # protein identifiers exclusively — ENSP* (human), ENSMUSP* (mouse), ENSRNOP*
 # (rat). Verified across the checked-in fixtures: 100% ENSEMBL, no UniProtKB
 # accessions. (STRING does use non-ENSEMBL schemes for some non-vertebrate
-# species — e.g. yeast ORF names — but those taxa aren't in SUPPORTED_TAXA, and
-# parse_string_protein_id raises on them, so a more complex parser isn't needed.)
+# species — e.g., yeast ORF names — but those taxa aren't in SUPPORTED_TAXA, and
+# parse_string_protein_id raises an exception on them, so a more complex parser isn't needed.)
 def parse_string_protein_id(string_id: str) -> tuple[str, str]:
     """
     Parse a STRING-prefixed protein identifier into an "(ENSEMBL CURIE, NCBITaxon CURIE)" pair.
@@ -193,7 +197,7 @@ def predicates_for_row(
     The returned list is order-stable (follows "CHANNEL_PREDICATES" insertion
     order) and deduplicated — multiple channels mapping to the same predicate
     only fire once. Channels with non-numeric or missing scores are silently
-    skipped; STRING guarantees integer scores so this is a defensive guard.
+    skipped; STRING guarantees integer scores, so this is a defensive guard.
 
     >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
     ...        "coexpression": "0", "experiments": "800", "textmining": "0",
@@ -231,13 +235,20 @@ def predicates_for_row(
         if raw is None:
             continue
         try:
-            score = int(raw)
+            score = int(str(raw))
         except (TypeError, ValueError):
             continue
         if score > channel_threshold and predicate not in seen:
             fired.append(predicate)
             seen.add(predicate)
     return fired if fired else [FALLBACK_PREDICATE]
+
+
+def molecular_interaction_codes(predicate: str)-> list[str] | None:
+    return \
+        [PSI_MI_PHYSICAL_ASSOCIATION] \
+        if predicate == "biolink:physically_interacts_with" \
+        else None
 
 
 def knowledge_level_and_agent_type_for_row(
@@ -299,7 +310,7 @@ def knowledge_level_and_agent_type_for_row(
         if raw is None:
             continue
         try:
-            score = int(raw)
+            score = int(str(raw))
         except (TypeError, ValueError):
             continue
         if score > max_score:
@@ -341,11 +352,7 @@ def make_string_ppi_edge(
     for most predicates and a "GeneToGeneCoexpressionAssociation" for
     "coexpressed_with" (see "PREDICATE_TO_ASSOCIATION_CLASS").
     """
-    has_attribute = (
-        [PSI_MI_PHYSICAL_ASSOCIATION]
-        if predicate == "biolink:physically_interacts_with"
-        else None
-    )
+    assert predicate in PREDICATE_TO_ASSOCIATION_CLASS, f"Unknown predicate: {predicate!r}"
     association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]
     return association_cls(
         id=entity_id(),
@@ -353,7 +360,7 @@ def make_string_ppi_edge(
         predicate=predicate,
         object=object_id,
         sources=STRING_SOURCES,
-        has_attribute=has_attribute,
+        has_attribute=molecular_interaction_codes(predicate),
         knowledge_level=knowledge_level,
         agent_type=agent_type,
     )
@@ -361,7 +368,7 @@ def make_string_ppi_edge(
 
 def load_string_to_entrez_mapping(
     mapping_path: Path | str,
-    supported_taxa: Iterable[str] = SUPPORTED_TAXA,
+    supported_taxa: Iterable[str] = SUPPORTED_TAXA.keys(),
 ) -> dict[str, list[str]]:
     """
     Load the STRING ↔ Entrez gene-ID mapping into a dict keyed by raw STRING ID.
@@ -385,9 +392,9 @@ def load_string_to_entrez_mapping(
     >>> def _parse(stream, taxa):
     ...     m = {}
     ...     next(stream)
-    ...     for line in stream:
-    ...         taxid, entrez, sid = line.rstrip().split("\\t")
-    ...         if taxid in taxa:
+    ...     for entry in stream:
+    ...         taxon_id, entrez, sid = entry.rstrip().split("\\t")
+    ...         if taxon_id in taxa:
     ...             m.setdefault(sid, []).append(f"NCBIGene:{entrez}")
     ...     return m
     >>> _parse(sample, {"9606"})
@@ -425,4 +432,4 @@ def sorted_pair_key(p1: str, p2: str, predicate: str = "") -> tuple[str, str, st
     ('ENSEMBL:A', 'ENSEMBL:B', 'biolink:coexpressed_with')
     """
     a, b = sorted([p1, p2])
-    return (a, b, predicate)
+    return a, b, predicate
