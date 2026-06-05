@@ -2,10 +2,11 @@
 Supporting variables and utility methods for the
 STRING protein–protein interaction ingest processing.
 """
-from typing import Any, Iterable
+from typing import Any, Iterable, Literal
 from pathlib import Path
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    GeneToGeneAssociation,
     GeneToGeneCoexpressionAssociation,
     PairwiseMolecularInteraction,
     PairwiseGeneToGeneInteraction,
@@ -25,6 +26,29 @@ SUPPORTED_TAXA: dict[str, str] = {
     "10116": "NCBITaxon:10116",  # Rattus norvegicus
 }
 
+STRING_CHANNELS = Literal[
+    "neighborhood",
+    "fusion",
+    "cooccurence",
+    "coexpression",
+    "experiments",
+    "textmining",
+    # "homology",
+    # "database"
+]
+
+# Strict subset of specific
+# Molecular Interaction predicates
+# as constrained by the Biolink Model
+MI_PREDICATE = Literal[
+  "biolink:gene_fusion_with",
+  "biolink:genetic_neighborhood_of",
+  "biolink:genetically_interacts_with",
+  "biolink:interacts_with",
+  "biolink:physically_interacts_with",
+  "biolink:coexpressed_with"
+]
+
 # Row-inclusion threshold (STRING's medium-confidence cutoff). A row is processed
 # only if 'combined_score' exceeds this threshold.
 # This value matches the default offered on the STRING
@@ -36,6 +60,7 @@ COMBINED_SCORE_THRESHOLD = 500
 # (their "high_conf_threshold"); we follow suit so that downstream consumers
 # expecting ORION-equivalent predicate semantics see the same per-channel signal.
 CHANNEL_HIGH_CONF_THRESHOLD = 750
+
 
 # Channel → biolink predicate map. Mirrors ORION's STRING parser. Two channels
 # are deliberately omitted:
@@ -51,7 +76,7 @@ CHANNEL_HIGH_CONF_THRESHOLD = 750
 # The "_transferred" variants (orthology-projected evidence) similarly don't
 # get their own predicates — only the native channel score is consulted, again
 # matching ORION's behavior.
-CHANNEL_PREDICATES: dict[str, str] = {
+CHANNEL_PREDICATES: dict[ STRING_CHANNELS, MI_PREDICATE ] = {
     "neighborhood": "biolink:genetic_neighborhood_of",
     "fusion":       "biolink:gene_fusion_with",
     "cooccurence":  "biolink:genetically_interacts_with",  # STRING's spelling (sic)
@@ -60,11 +85,12 @@ CHANNEL_PREDICATES: dict[str, str] = {
     "textmining":   "biolink:interacts_with",
 }
 
+
 # Fallback predicate emitted when "combined_score" clears the row gate, but no
 # individual channel exceeds CHANNEL_HIGH_CONF_THRESHOLD. ORION uses the same
 # fallback — the implicit assumption is that an above-medium-confidence pair
 # without a specific channel signal is most likely a physical interaction.
-FALLBACK_PREDICATE = "biolink:physically_interacts_with"
+FALLBACK_PREDICATE: MI_PREDICATE = "biolink:physically_interacts_with"
 
 
 # Symmetry note (resolves "are these predicates reflexive?"): every STRING
@@ -85,7 +111,7 @@ FALLBACK_PREDICATE = "biolink:physically_interacts_with"
 # repeat it. The predicates "biolink:genetic_neighborhood_of" and
 # "biolink:genetically_interacts_with" are simply considered gene-to-gene interactions
 # which may not necessarily imply direct physical interaction between two gene products.
-PREDICATE_TO_ASSOCIATION_CLASS = {
+PREDICATE_TO_ASSOCIATION_CLASS: dict[MI_PREDICATE, type[GeneToGeneAssociation]] = {
     "biolink:physically_interacts_with":  PairwiseMolecularInteraction,
     "biolink:interacts_with":             PairwiseMolecularInteraction,
     "biolink:gene_fusion_with":           PairwiseMolecularInteraction,
@@ -187,7 +213,7 @@ def passes_combined_score(
 def predicates_for_row(
     record: dict[str, Any],
     channel_threshold: int = CHANNEL_HIGH_CONF_THRESHOLD,
-) -> list[str]:
+) -> list[MI_PREDICATE]:
     """
     Return the list of biolink predicates that should be emitted for one
     STRING ".full" row, based on which channels exceed the high-confidence
@@ -228,8 +254,8 @@ def predicates_for_row(
     >>> predicates_for_row(row)
     ['biolink:physically_interacts_with']
     """
-    fired: list[str] = []
-    seen: set[str] = set()
+    fired: list[MI_PREDICATE] = []
+    seen: set[MI_PREDICATE] = set()
     for channel, predicate in CHANNEL_PREDICATES.items():
         raw = record.get(channel)
         if raw is None:
@@ -241,10 +267,11 @@ def predicates_for_row(
         if score > channel_threshold and predicate not in seen:
             fired.append(predicate)
             seen.add(predicate)
-    return fired if fired else [FALLBACK_PREDICATE]
+    fpl: list[MI_PREDICATE] = [FALLBACK_PREDICATE]
+    return fired if fired else fpl
 
 
-def molecular_interaction_codes(predicate: str)-> list[str] | None:
+def molecular_interaction_codes(predicate: MI_PREDICATE)-> list[str] | None:
     return \
         [PSI_MI_PHYSICAL_ASSOCIATION] \
         if predicate == "biolink:physically_interacts_with" \
@@ -337,7 +364,7 @@ def knowledge_level_and_agent_type_for_row(
 
 def make_string_ppi_edge(
     subject_id: str,
-    predicate: str,
+    predicate: MI_PREDICATE,
     object_id: str,
     knowledge_level: KnowledgeLevelEnum,
     agent_type: AgentTypeEnum,

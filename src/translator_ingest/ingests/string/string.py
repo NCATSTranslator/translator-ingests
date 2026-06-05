@@ -36,7 +36,8 @@ from translator_ingest.ingests.string.string_utils import (
     predicates_for_row,
     sorted_pair_key,
     knowledge_level_and_agent_type_for_row,
-    make_string_ppi_edge
+    make_string_ppi_edge,
+    MI_PREDICATE
 )
 
 
@@ -128,7 +129,7 @@ def transform_string_ppi(
     # constraint at the full multi-organism scale, swap for an on-disk set (sqlite)
     # or an integer-keyed roaring bitmap; the key is already a hashable tuple.
     seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
-    new_predicates = [
+    new_predicates: list[MI_PREDICATE] = [
         p for p in predicates
         if sorted_pair_key(subject_id, object_id, p) not in seen_pairs
     ]
