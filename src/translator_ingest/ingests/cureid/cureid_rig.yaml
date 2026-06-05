@@ -49,6 +49,21 @@ target_info:
   infores_id: infores:cureid
   edge_type_info:
     - subject_categories:
+        - biolink:Disease
+      predicates:
+        - biolink:has_phenotype
+      object_categories:
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+      knowledge_level:
+        - observation
+      agent_type:
+        - manual_agent
+      edge_properties:
+        - supporting_text
+        - evidence_count
+      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype.
+    - subject_categories:
         - biolink:ChemicalEntity
         - biolink:SmallMolecule
       predicates:
@@ -57,11 +72,13 @@ target_info:
         - biolink:Disease
         - biolink:PhenotypicFeature
       knowledge_level:
-        - knowledge_assertion
+        - observation
       agent_type:
         - manual_agent
       edge_properties:
-        - publications
+        - evidence_count
+        - has_attribute
+        - supporting_text
       ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication was applied_to_treat a particular disease or phenotype.
     - subject_categories:
         - biolink:SmallMolecule
@@ -75,23 +92,10 @@ target_info:
       agent_type:
         - manual_agent
       edge_properties:
+        - supporting_text
+        - evidence_count
         - FDA_adverse_event_level
-        - publications
       ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype.
-    - subject_categories:
-        - biolink:Disease
-      predicates:
-        - biolink:has_phenotype
-      object_categories:
-        - biolink:Disease
-        - biolink:PhenotypicFeature
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      edge_properties:
-        - publications
-      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype.
     - subject_categories:
         - biolink:Gene
       predicates:
@@ -99,17 +103,14 @@ target_info:
       object_categories:
         - biolink:Disease
       knowledge_level:
-        - knowledge_assertion
+        - observation
       agent_type:
         - manual_agent
       edge_properties:
-        - publications
+        - supporting_text
+        - evidence_count
       ui_explanation: A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease.
   node_type_info:
-    - node_categories:
-        - biolink:SmallMolecule
-      source_identifier_types:
-        - CHEBI
     - node_categories:
         - biolink:Disease
       source_identifier_types:
@@ -122,13 +123,17 @@ target_info:
         - NCIT
         - UMLS
     - node_categories:
-        - biolink:Gene
+        - biolink:SmallMolecule
       source_identifier_types:
-        - NCBIGene
+        - CHEBI
     - node_categories:
         - biolink:ChemicalEntity
       source_identifier_types:
         - UNII
+    - node_categories:
+        - biolink:Gene
+      source_identifier_types:
+        - NCBIGene
 
 provenance_info:
   contributions:

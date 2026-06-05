@@ -1,3 +1,17 @@
-# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
-- url: https://opendata.ncats.nih.gov/public/cureid/cureid_data.tsv
-  local_name: cureid_data.tsv
+# Files are saved as `local_name` which must match the file names used in the main ingest yaml.
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_condition_has_phenotype.jsonl
+  local_name: rasopathies_condition_has_phenotype.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_drug_applied_to_treat_condition.jsonl
+  local_name: rasopathies_drug_applied_to_treat_condition.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_drug_applied_to_treat_phenotype.jsonl
+  local_name: rasopathies_drug_applied_to_treat_phenotype.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_drug_has_adverse_event.jsonl
+  local_name: rasopathies_drug_has_adverse_event.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_gene_associated_with_condition.jsonl
+  local_name: rasopathies_gene_associated_with_condition.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_gene_has_sequence_variant.jsonl
+  local_name: rasopathies_gene_has_sequence_variant.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_sequence_variant_genetically_associated_with_condition.jsonl
+  local_name: rasopathies_sequence_variant_genetically_associated_with_condition.jsonl
+- url: https://opendata.ncats.nih.gov/public/cureid/rasopathies_translator_version_info.jsonl
+  local_name: rasopathies_translator_version_info.jsonl

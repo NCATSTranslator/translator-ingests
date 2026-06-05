@@ -2,29 +2,12 @@ name: CURE ID Ingest Guide
 
 readers:
   ingest_all:
-    format: "csv"
-    delimiter: "\t"
-    header_mode: infer
-    header_prefix: "#"
+    format: "jsonl"
     files:
-      - "cureid_data.tsv"
-    columns:
-      - subject_label_original
-      - subject_label
-      - subject_type
-      - subject_final_label
-      - subject_final_curie
-      - subject_missing_final
-      - predicate_raw
-      - biolink_predicate
-      - association_category
-      - object_label_original
-      - object_label
-      - object_type
-      - object_final_label
-      - object_final_curie
-      - object_missing_final
-      - report_id
-      - pmid
-      - link
-      - outcome
+      - "rasopathies_condition_has_phenotype.jsonl"
+      - "rasopathies_drug_applied_to_treat_condition.jsonl"
+      - "rasopathies_drug_applied_to_treat_phenotype.jsonl"
+      - "rasopathies_drug_has_adverse_event.jsonl"
+      - "rasopathies_gene_associated_with_condition.jsonl"
+      - "rasopathies_gene_has_sequence_variant.jsonl"
+      - "rasopathies_sequence_variant_genetically_associated_with_condition.jsonl"
