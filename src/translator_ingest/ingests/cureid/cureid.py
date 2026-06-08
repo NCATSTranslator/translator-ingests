@@ -1,26 +1,44 @@
 import json
 import re
+from enum import Enum
+from typing import Any, Iterable, Mapping
+
 import koza
 import requests
-from typing import Any, Iterable, Mapping
-from enum import Enum
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
+    Association,
     ChemicalEntity,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalOrDrugOrTreatmentAdverseEventAssociation,
     Disease,
-    NamedThing,
+    DiseaseToPhenotypicFeatureAssociation,
+    FDAIDAAdverseEventEnum,
+    Gene,
+    GeneToDiseaseAssociation,
+    GenotypeToVariantAssociation,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
-    Association, PhenotypicFeature, ChemicalOrDrugOrTreatmentAdverseEventAssociation,
-    FDAIDAAdverseEventEnum, DiseaseToPhenotypicFeatureAssociation, Gene, GeneToDiseaseAssociation, SequenceVariant,
-    GenotypeToVariantAssociation, VariantToDiseaseAssociation, ResourceRoleEnum, RetrievalSource
+    NamedThing,
+    PhenotypicFeature,
+    ResourceRoleEnum,
+    RetrievalSource,
+    SequenceVariant,
+    VariantToDiseaseAssociation,
 )
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import INFORES_CUREID
 from translator_ingest.util.transform_utils import entity_id
 
 CUREID_RELEASE_METADATA_URL = 'https://opendata.ncats.nih.gov/public/cureid/rasopathies_translator_version_info.jsonl'
+CUREID_TREATMENT_OUTCOME_ATTRIBUTE_PREFIX = "CUREID:treatment_outcome_"
+NOT_REPORTED = "Not reported"
+
+CUREID_OBSERVATION_EDGE_PARAMS: dict[str, Any] = {
+    "primary_knowledge_source": INFORES_CUREID,
+    "knowledge_level": KnowledgeLevelEnum.observation,
+    "agent_type": AgentTypeEnum.manual_agent,
+}
 
 class CUREIDAdverseEventEnum(str, Enum):
     death = 'Death'
@@ -86,11 +104,6 @@ def get_adverse_event_level_from_outcomes(outcomes: list[str]) -> FDAIDAAdverseE
 
 def extract_cureid_source_version(version_records: Iterable[Mapping[str, Any]]) -> str:
     """Return the CURE-ID source version from RASopathies Translator version records.
-
-    >>> extract_cureid_source_version([
-    ...     {"source_versions": [{"name": "CURE-ID", "version": "reports_20260518T211409Z"}]}
-    ... ])
-    'reports_20260518T211409Z'
     """
     for version_record in version_records:
         for source_version in version_record.get("source_versions", []):
@@ -101,9 +114,6 @@ def extract_cureid_source_version(version_records: Iterable[Mapping[str, Any]]) 
 
 def parse_cureid_version_records(metadata_text: str) -> Iterable[Mapping[str, Any]]:
     """Parse CURE ID JSONL version metadata records.
-
-    >>> list(parse_cureid_version_records('{"id": "cure_rasopathies_translator"}\\n'))
-    [{'id': 'cure_rasopathies_translator'}]
     """
     for line in metadata_text.splitlines():
         if line.strip():
@@ -119,35 +129,6 @@ def get_latest_version() -> str:
         raise RuntimeError(f"Unable to retrieve CURE ID release metadata from {CUREID_RELEASE_METADATA_URL}") from exc
 
     return extract_cureid_source_version(parse_cureid_version_records(response.text))
-
-
-def _create_node(id: str, label: str, obj_type: str, record: dict[str, Any]):
-    params = {
-        'id': id,
-        'name': label
-    }
-    if obj_type == "Drug":
-        return ChemicalEntity(
-            **params
-        )
-    elif obj_type == "Disease":
-        return Disease(
-            **params
-        )
-    elif obj_type == "Gene":
-        return Gene(
-            **params
-        )
-    elif obj_type == "SequenceVariant":
-        return SequenceVariant(
-            **params
-        )
-    elif obj_type in ["PhenotypicFeature", "AdverseEvent"]:
-        return PhenotypicFeature(
-            **params
-        )
-    else:
-        raise ValueError(f"Unhandled node type: {obj_type} in record: {record}")
 
 
 def _unique_present_values(values: Iterable[str | None]) -> list[str]:
@@ -167,16 +148,32 @@ def _get_cureid_case_report_urls(record: dict[str, Any]) -> list[str]:
     )
 
 
-def _get_cureid_supporting_text(record: dict[str, Any]) -> list[str]:
-    """Return unique source finding values from an aggregate JSONL record."""
-    return _unique_present_values(
-        evidence.get("finding", {}).get("source_value")
-        for evidence in record.get("evidence", [])
+def _primary_retrieval_source(source_record_urls: list[str] | None = None) -> RetrievalSource:
+    """Return the primary CURE ID retrieval source used on emitted edges."""
+    return RetrievalSource(
+        id=INFORES_CUREID,
+        resource_id=INFORES_CUREID,
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+        source_record_urls=source_record_urls,
     )
 
 
-def _get_cureid_treatment_supporting_text(record: dict[str, Any]) -> list[str]:
-    """Return unique treatment finding values from an aggregate JSONL record."""
+def _cureid_jsonl_edge_params(record: dict[str, Any]) -> dict[str, Any]:
+    """Return common edge parameters for aggregate CURE ID JSONL records."""
+    return {
+        **CUREID_OBSERVATION_EDGE_PARAMS,
+        "evidence_count": record["case_report_count"],
+        "sources": [_primary_retrieval_source(_get_cureid_case_report_urls(record))],
+    }
+
+
+def _knowledge_graph(nodes: list[NamedThing], edge: Association) -> KnowledgeGraph:
+    """Return a single-edge knowledge graph."""
+    return KnowledgeGraph(nodes=nodes, edges=[edge])
+
+
+def _get_cureid_supporting_text(record: dict[str, Any]) -> list[str]:
+    """Return unique source finding values from an aggregate JSONL record."""
     return _unique_present_values(
         evidence.get("finding", {}).get("source_value")
         for evidence in record.get("evidence", [])
@@ -200,7 +197,7 @@ def _get_cureid_treatment_outcome_attribute_ids(record: dict[str, Any]) -> list[
     ['CUREID:treatment_outcome_patient_improved']
     """
     return [
-        f"CUREID:treatment_outcome_{re.sub(r'[^a-z0-9]+', '_', outcome.lower()).strip('_')}"
+        f"{CUREID_TREATMENT_OUTCOME_ATTRIBUTE_PREFIX}{re.sub(r'[^a-z0-9]+', '_', outcome.lower()).strip('_')}"
         for outcome in _get_cureid_treatment_outcomes(record)
     ]
 
@@ -209,7 +206,7 @@ def _get_cureid_treatment_supporting_text_with_outcomes(record: dict[str, Any]) 
     """Return source finding values and labeled treatment outcomes for supporting text."""
     return _unique_present_values(
         [
-            *_get_cureid_treatment_supporting_text(record),
+            *_get_cureid_supporting_text(record),
             *(f"treatment_outcome: {outcome}" for outcome in _get_cureid_treatment_outcomes(record)),
         ]
     )
@@ -250,7 +247,7 @@ def _get_cureid_variant_name(gene_variant: Mapping[str, Any]) -> str:
     'BRAF variant'
     """
     variant_label = gene_variant.get("variant_label")
-    if variant_label and variant_label != "Not reported":
+    if variant_label and variant_label != NOT_REPORTED:
         return variant_label
     if gene_variant.get("source_gene_symbol"):
         return f"{gene_variant['source_gene_symbol']} variant"
@@ -268,7 +265,7 @@ def _get_cureid_variant_supporting_text(record: dict[str, Any]) -> list[str]:
             ("protein_change", "protein_change"),
             ("variant_label", "variant_label"),
         ]
-        if gene_variant.get(field) and gene_variant[field] != "Not reported"
+        if gene_variant.get(field) and gene_variant[field] != NOT_REPORTED
     ]
     return _unique_present_values([*variant_facts, *_get_cureid_diagnosis_supporting_text(record)])
 
@@ -292,28 +289,14 @@ def get_condition_has_phenotype_edge(record: dict[str, Any]) -> DiseaseToPhenoty
         subject=condition["id"],
         predicate="biolink:has_phenotype",
         object=phenotype["id"],
-        primary_knowledge_source=INFORES_CUREID,
-        knowledge_level=KnowledgeLevelEnum.observation,
-        agent_type=AgentTypeEnum.manual_agent,
-        evidence_count=record["case_report_count"],
+        **_cureid_jsonl_edge_params(record),
         supporting_text=_get_cureid_supporting_text(record),
-        sources=[
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
     )
 
 
 def get_condition_has_phenotype_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID condition-has-phenotype aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_condition_has_phenotype_nodes(record),
-        edges=[get_condition_has_phenotype_edge(record)],
-    )
+    return _knowledge_graph(get_condition_has_phenotype_nodes(record), get_condition_has_phenotype_edge(record))
 
 
 def get_drug_applied_to_treat_phenotype_nodes(record: dict[str, Any]) -> list[NamedThing]:
@@ -337,30 +320,19 @@ def get_drug_applied_to_treat_phenotype_edge(
         subject=drug["id"],
         predicate="biolink:applied_to_treat",
         object=phenotype["id"],
-        primary_knowledge_source=INFORES_CUREID,
-        knowledge_level=KnowledgeLevelEnum.observation,
-        agent_type=AgentTypeEnum.manual_agent,
-        evidence_count=record["case_report_count"],
+        **_cureid_jsonl_edge_params(record),
         # TODO: Use this dedicated slot after Biolink adds treatment_outcome to this association class.
         # treatment_outcome=_get_cureid_treatment_outcomes(record),
         has_attribute=_get_cureid_treatment_outcome_attribute_ids(record),
         supporting_text=_get_cureid_treatment_supporting_text_with_outcomes(record),
-        sources=[
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
     )
 
 
 def get_drug_applied_to_treat_phenotype_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID drug-applied-to-treat-phenotype aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_drug_applied_to_treat_phenotype_nodes(record),
-        edges=[get_drug_applied_to_treat_phenotype_edge(record)],
+    return _knowledge_graph(
+        get_drug_applied_to_treat_phenotype_nodes(record),
+        get_drug_applied_to_treat_phenotype_edge(record),
     )
 
 
@@ -385,26 +357,15 @@ def get_drug_applied_to_treat_condition_edge(
         subject=drug["id"],
         predicate="biolink:applied_to_treat",
         object=condition["id"],
-        primary_knowledge_source=INFORES_CUREID,
-        knowledge_level=KnowledgeLevelEnum.observation,
-        agent_type=AgentTypeEnum.manual_agent,
-        evidence_count=record["case_report_count"],
-        sources=[
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
+        **_cureid_jsonl_edge_params(record),
     )
 
 
 def get_drug_applied_to_treat_condition_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID drug-applied-to-treat-condition aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_drug_applied_to_treat_condition_nodes(record),
-        edges=[get_drug_applied_to_treat_condition_edge(record)],
+    return _knowledge_graph(
+        get_drug_applied_to_treat_condition_nodes(record),
+        get_drug_applied_to_treat_condition_edge(record),
     )
 
 
@@ -428,19 +389,8 @@ def get_drug_has_adverse_event_edge(record: dict[str, Any]) -> ChemicalOrDrugOrT
         "subject": drug["id"],
         "predicate": "biolink:has_adverse_event",
         "object": phenotype["id"],
-        "primary_knowledge_source": INFORES_CUREID,
-        "knowledge_level": KnowledgeLevelEnum.observation,
-        "agent_type": AgentTypeEnum.manual_agent,
-        "evidence_count": record["case_report_count"],
+        **_cureid_jsonl_edge_params(record),
         "supporting_text": _get_cureid_adverse_event_supporting_text(record),
-        "sources": [
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
     }
     if outcomes:
         params["FDA_adverse_event_level"] = get_adverse_event_level_from_outcomes(outcomes)
@@ -449,10 +399,7 @@ def get_drug_has_adverse_event_edge(record: dict[str, Any]) -> ChemicalOrDrugOrT
 
 def get_drug_has_adverse_event_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID drug-has-adverse-event aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_drug_has_adverse_event_nodes(record),
-        edges=[get_drug_has_adverse_event_edge(record)],
-    )
+    return _knowledge_graph(get_drug_has_adverse_event_nodes(record), get_drug_has_adverse_event_edge(record))
 
 
 def get_gene_associated_with_condition_nodes(record: dict[str, Any]) -> list[NamedThing]:
@@ -474,27 +421,16 @@ def get_gene_associated_with_condition_edge(record: dict[str, Any]) -> GeneToDis
         subject=gene["id"],
         predicate="biolink:associated_with",
         object=condition["id"],
-        primary_knowledge_source=INFORES_CUREID,
-        knowledge_level=KnowledgeLevelEnum.observation,
-        agent_type=AgentTypeEnum.manual_agent,
-        evidence_count=record["case_report_count"],
+        **_cureid_jsonl_edge_params(record),
         supporting_text=_get_cureid_diagnosis_supporting_text(record),
-        sources=[
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
     )
 
 
 def get_gene_associated_with_condition_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID gene-associated-with-condition aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_gene_associated_with_condition_nodes(record),
-        edges=[get_gene_associated_with_condition_edge(record)],
+    return _knowledge_graph(
+        get_gene_associated_with_condition_nodes(record),
+        get_gene_associated_with_condition_edge(record),
     )
 
 
@@ -517,28 +453,14 @@ def get_gene_has_sequence_variant_edge(record: dict[str, Any]) -> GenotypeToVari
         subject=gene["id"],
         predicate="biolink:has_sequence_variant",
         object=gene_variant["id"],
-        primary_knowledge_source=INFORES_CUREID,
-        knowledge_level=KnowledgeLevelEnum.observation,
-        agent_type=AgentTypeEnum.manual_agent,
-        evidence_count=record["case_report_count"],
+        **_cureid_jsonl_edge_params(record),
         supporting_text=_get_cureid_variant_supporting_text(record),
-        sources=[
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
     )
 
 
 def get_gene_has_sequence_variant_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID gene-has-sequence-variant aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_gene_has_sequence_variant_nodes(record),
-        edges=[get_gene_has_sequence_variant_edge(record)],
-    )
+    return _knowledge_graph(get_gene_has_sequence_variant_nodes(record), get_gene_has_sequence_variant_edge(record))
 
 
 def get_sequence_variant_genetically_associated_with_condition_nodes(record: dict[str, Any]) -> list[NamedThing]:
@@ -562,128 +484,36 @@ def get_sequence_variant_genetically_associated_with_condition_edge(
         subject=gene_variant["id"],
         predicate="biolink:related_condition",
         object=condition["id"],
-        primary_knowledge_source=INFORES_CUREID,
-        knowledge_level=KnowledgeLevelEnum.observation,
-        agent_type=AgentTypeEnum.manual_agent,
-        evidence_count=record["case_report_count"],
+        **_cureid_jsonl_edge_params(record),
         supporting_text=_get_cureid_variant_supporting_text(record),
-        sources=[
-            RetrievalSource(
-                id=INFORES_CUREID,
-                resource_id=INFORES_CUREID,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=_get_cureid_case_report_urls(record),
-            )
-        ],
     )
 
 
 def get_sequence_variant_genetically_associated_with_condition_graph(record: dict[str, Any]) -> KnowledgeGraph:
     """Return a graph for one CURE ID local variant-condition aggregate record."""
-    return KnowledgeGraph(
-        nodes=get_sequence_variant_genetically_associated_with_condition_nodes(record),
-        edges=[get_sequence_variant_genetically_associated_with_condition_edge(record)],
+    return _knowledge_graph(
+        get_sequence_variant_genetically_associated_with_condition_nodes(record),
+        get_sequence_variant_genetically_associated_with_condition_edge(record),
     )
 
 
-def _get_predicate(record: dict[str, Any]):
-    if record['biolink_predicate'] == 'biolink:gene_associated_with_condition':  # map old predicate :(
-        return 'biolink:associated_with'
-    return record['biolink_predicate']
-
-def _create_associations(record: dict[str, Any]):
-    edge_type = record['association_category']
-    subjects = record['subject_final_curie'].split("|")
-    objects = record['object_final_curie'].split("|")
-    associations = []
-
-    for subject in subjects:
-        for object in objects:
-            links = []
-            if 'link' in record and record['link']:
-                links.append(record['link'])
-
-            params = {
-                'id': entity_id(),
-                'subject': subject,
-                'predicate': _get_predicate(record),
-                'object': object,
-                'primary_knowledge_source': INFORES_CUREID,
-                'knowledge_level': KnowledgeLevelEnum.knowledge_assertion,
-                'agent_type': AgentTypeEnum.manual_agent,
-                'sources': [
-                    RetrievalSource(
-                        id=INFORES_CUREID,
-                        resource_id=INFORES_CUREID,
-                        resource_role=ResourceRoleEnum.primary_knowledge_source,
-                        source_record_urls=links,
-                    )
-                ],
-            }
-            publications = []
-            if record['pmid']:
-                publications.append(f"PMID:{record['pmid']}")
-            if len(publications) > 0:
-                params['publications'] = publications
-
-            if edge_type == 'biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation':
-                if record['object_type'] == 'AdverseEvent':
-                    params['FDA_adverse_event_level'] = get_adverse_event_level_from_outcomes(record['outcome'].split(';'))
-                    params['knowledge_level'] = KnowledgeLevelEnum.observation # adverse events are observations, while other associations are assertions
-                    associations.append(ChemicalOrDrugOrTreatmentAdverseEventAssociation(
-                        **params
-                    ))
-                else:
-                    associations.append(ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-                        **params
-                    ))
-            elif edge_type == 'biolink:DiseaseToPhenotypicFeatureAssociation':
-                associations.append(DiseaseToPhenotypicFeatureAssociation(
-                    **params
-                ))
-            elif edge_type == 'biolink:GeneToDiseaseAssociation':
-                associations.append(GeneToDiseaseAssociation(
-                    **params
-                ))
-            elif edge_type in ['biolink:GeneToVariantAssociation', # handle old misspelling
-                               'biolink:GenotypeToVariantAssociation']:
-                associations.append(GenotypeToVariantAssociation(
-                    **params
-                ))
-            elif edge_type == 'biolink:VariantToDiseaseAssociation':
-                # VariantToDiseaseAssociation only accepts biolink:related_condition
-                params['predicate'] = 'biolink:related_condition'
-                associations.append(VariantToDiseaseAssociation(
-                    **params
-                ))
-            else:
-                raise ValueError(f"Unhandled edge type: {edge_type} in record: {record}")
-    return associations
-
-def _get_nodes(record: dict[str, Any], subject_or_object: str):
-    if subject_or_object == "object":
-        id = record['object_final_curie']
-        label = record['object_final_label']
-        type = record['object_type']
-    else:
-        id = record['subject_final_curie']
-        label = record['subject_final_label']
-        type = record['subject_type']
-    ids = id.split("|")
-    labels = label.split("|")
-    return [_create_node(one_id, one_label, type, record) for one_id, one_label in zip(ids, labels)]
-
-
-def get_subject_nodes(record: dict[str, Any]):
-    return _get_nodes(record, "subject")
-
-
-def get_object_nodes(record: dict[str, Any]):
-    return _get_nodes(record, "object")
-
-
-def get_edges(record: dict[str, Any]):
-    return _create_associations(record)
+def get_jsonl_graph(record: dict[str, Any]) -> KnowledgeGraph:
+    """Return the mapped graph for a CURE ID JSONL record."""
+    if "condition" in record and "phenotype" in record:
+        return get_condition_has_phenotype_graph(record)
+    if "drug" in record and record.get("predicate", {}).get("id") == "has_adverse_event":
+        return get_drug_has_adverse_event_graph(record)
+    if "drug" in record and "phenotype" in record:
+        return get_drug_applied_to_treat_phenotype_graph(record)
+    if "drug" in record and "condition" in record:
+        return get_drug_applied_to_treat_condition_graph(record)
+    if "gene" in record and "condition" in record:
+        return get_gene_associated_with_condition_graph(record)
+    if "gene" in record and "gene_variant" in record:
+        return get_gene_has_sequence_variant_graph(record)
+    if "gene_variant" in record and "condition" in record:
+        return get_sequence_variant_genetically_associated_with_condition_graph(record)
+    raise ValueError(f"Unhandled CURE ID JSONL record shape: {record}")
 
 
 @koza.transform(tag="ingest_all")
@@ -692,47 +522,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
     edges: list[Association] = []
 
     for record in data:
-        if "condition" in record and "phenotype" in record:
-            graph = get_condition_has_phenotype_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        if "drug" in record and record.get("predicate", {}).get("id") == "has_adverse_event":
-            graph = get_drug_has_adverse_event_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        if "drug" in record and "phenotype" in record:
-            graph = get_drug_applied_to_treat_phenotype_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        if "drug" in record and "condition" in record:
-            graph = get_drug_applied_to_treat_condition_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        if "gene" in record and "condition" in record:
-            graph = get_gene_associated_with_condition_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        if "gene" in record and "gene_variant" in record:
-            graph = get_gene_has_sequence_variant_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        if "gene_variant" in record and "condition" in record:
-            graph = get_sequence_variant_genetically_associated_with_condition_graph(record)
-            nodes.extend(graph.nodes)
-            edges.extend(graph.edges)
-            continue
-        subjects = get_subject_nodes(record)
-        objects = get_object_nodes(record)
-        edge_records = get_edges(record)
-
-        nodes.extend(subjects)
-        nodes.extend(objects)
-        edges.extend(edge_records)
+        graph = get_jsonl_graph(record)
+        nodes.extend(graph.nodes)
+        edges.extend(graph.edges)
 
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
