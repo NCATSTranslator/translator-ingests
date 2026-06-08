@@ -45,10 +45,10 @@
 
 | Subject Categories | Predicates | Object Categories | Knowledge Level | Agent Type | UI Explanation |
 | --- | --- | --- | --- | --- | --- |
-| biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype. |
-| biolink:ChemicalEntity, biolink:SmallMolecule | biolink:applied_to_treat | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication was applied_to_treat a particular disease or phenotype. |
-| biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype. |
-| biolink:Gene | biolink:associated_with | biolink:Disease | observation | manual_agent | A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease. |
+| biolink:Disease | biolink:has_phenotype | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | One or more CURE ID users (patients and health care providers) have reported that a disease has a particular phenotype. |
+| biolink:ChemicalEntity, biolink:SmallMolecule | biolink:applied_to_treat | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | One or more CURE ID users (patients and health care providers) have reported that a medication was applied_to_treat a particular disease or phenotype. |
+| biolink:SmallMolecule | biolink:has_adverse_event | biolink:Disease, biolink:PhenotypicFeature | observation | manual_agent | One or more CURE ID users (patients and health care providers) have reported that a medication had an adverse event related to a particular disease or phenotype. |
+| biolink:Gene | biolink:associated_with | biolink:Disease | observation | manual_agent | One or more CURE ID users (patients and health care providers) have reported that a gene is associated with a particular disease. |
 
 ### Node Types
 
