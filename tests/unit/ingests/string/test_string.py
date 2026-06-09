@@ -21,6 +21,7 @@ from translator_ingest.ingests.string.string_utils import (
     CHANNEL_KL_AT,
     CHANNEL_PREDICATES,
     FALLBACK_PREDICATE,
+    PSI_MI_PHYSICAL_ASSOCIATION,
     knowledge_level_and_agent_type_for_row,
     load_string_to_entrez_mapping,
     parse_string_protein_id,
@@ -196,8 +197,8 @@ R2 = "10116.ENSRNOP00000000002"
 )
 def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expected_taxon):
     """Above-combined-score row with no high-confidence channels emits a single
-    fallback edge ("physically_interacts_with"). PSI-MI MI:0915 attached only
-    to the physical-interaction predicate."""
+    fallback edge ("physically_interacts_with"). PSI-MI MI:0915 (PSI_MI_PHYSICAL_ASSOCIATION)
+    is attached only to the physical-interaction predicate."""
     result = transform_string_ppi(
         mock_koza,
         _full_row(p1, p2, combined_score=540),
@@ -219,7 +220,7 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
     assert edge.predicate == "biolink:physically_interacts_with"
     assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
     assert edge.agent_type == AgentTypeEnum.not_provided
-    assert edge.has_attribute == ["MI:0915"]
+    assert edge.has_attribute == [PSI_MI_PHYSICAL_ASSOCIATION]
     assert edge.sources is not None
     primary = next(s for s in edge.sources if s.resource_role == "primary_knowledge_source")
     assert primary.resource_id == "infores:string"
@@ -358,7 +359,7 @@ def test_transform_emits_multiple_edges_for_multi_channel_row(mock_koza):
     }
     # MI:0915 only on the physical-interaction edge; others omit has_attribute.
     physical = next(e for e in result.edges if e.predicate == "biolink:physically_interacts_with")
-    assert physical.has_attribute == ["MI:0915"]
+    assert physical.has_attribute == [PSI_MI_PHYSICAL_ASSOCIATION]
     for e in result.edges:
         if e.predicate != "biolink:physically_interacts_with":
             assert e.has_attribute is None

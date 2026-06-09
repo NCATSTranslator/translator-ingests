@@ -4,11 +4,11 @@
 # loaded directly in string.py via koza.input_files_dir (for auxiliary lookup files).
 ---
 # STRING protein-protein interaction files (one per Translator-target taxon).
-# Loaded by the ``string_ppi`` tagged reader in string.yaml.
+# Loaded by the 'string_ppi' tagged reader in string.yaml.
 #
-# We use the ``.full.`` variant (16 columns: 7 evidence channels + 6
+# We use the '.full.' variant (16 columns: 7 evidence channels + 6
 # orthology-transferred variants + combined_score) rather than the 3-column
-# ``.links.`` variant, because the per-channel subscores drive per-channel
+# '.links.' variant, because the per-channel subscores drive per-channel
 # predicate emission. See string.py CHANNEL_PREDICATES for the channel→
 # predicate mapping (matches ORION's STRING parser). File size is ~2x the
 # 3-column variant.
@@ -21,9 +21,9 @@
 
 # Universal STRING ↔ Entrez gene-ID mapping (all species, ~285 MB uncompressed).
 # Not iterated by the reader; loaded once at transform start via on_data_begin
-# to populate the ``equivalent_identifiers`` slot on Protein nodes with their
+# to populate the 'equivalent_identifiers' slot on Protein nodes with their
 # NCBIGene equivalents. The transform filters this file by SUPPORTED_TAXA
 # at load time so the resident dict only carries human, mouse, and rat entries.
-# Matches the pattern used by Monarch's STRING ingest.
+# Matches the pattern used by Monarch's STRING ingest task.
 - url: https://string-db.org/mapping_files/entrez/all_organisms.entrez_2_string.tsv
   local_name: all_organisms.entrez_2_string.tsv

@@ -101,7 +101,7 @@ FALLBACK_PREDICATE: MI_PREDICATE = "biolink:physically_interacts_with"
 # (see "sorted_pair_key"). The predicates are symmetric, not reflexive in the
 # self-loop sense; STRING does not ship self-interactions (A, A).
 
-# Biolink Association class to instantiate per predicate. Most of our per-channel
+# Biolink Association child class to instantiate per predicate. Most of our per-channel
 # predicates fit the permitted predicate set of "PairwiseMolecularInteraction", but
 # "biolink:coexpressed_with" is not a molecular-interaction predicate in
 # biolink — it belongs to "GeneToGeneCoexpressionAssociation". We can't collapse
@@ -120,6 +120,29 @@ PREDICATE_TO_ASSOCIATION_CLASS: dict[MI_PREDICATE, type[GeneToGeneAssociation]] 
     "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
 }
 
+# PSI-MI interaction type attached only to "physically_interacts_with" edges.
+# "MI:0915" is "physical association" — semantically aligned with the
+# physical-interaction predicate only. Other predicates (coexpressed_with,
+# genetic_neighborhood_of, etc.) describe different evidence types that
+# don't correspond to PSI-MI physical-association semantics; for those we
+# omit the slot rather than attaching a misleading term.
+# TODO: doublecheck if this is the correct association ID with Sierra
+PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915"
+PSI_MI_FUNCTIONAL_INTERACTION = "MI:2286"
+PSI_MI_COVALENT_BINDING = "MI:0195"
+
+PREDICATE_TO_MI_TYPE = {
+    "biolink:gene_fusion_with": PSI_MI_COVALENT_BINDING,
+    # "biolink:genetic_neighborhood_of": "",
+    "biolink:genetically_interacts_with": PSI_MI_FUNCTIONAL_INTERACTION,
+    # "biolink:interacts_with": "",
+    "biolink:physically_interacts_with": PSI_MI_PHYSICAL_ASSOCIATION,
+
+    # This predicate only documents correlated expression,
+    # whereas the source of the correlation may *or may not*
+    # be due to a direct molecular interaction
+    # "biolink:coexpressed_with": ""
+}
 
 # Per-channel knowledge-level / agent-type assignment, mirroring ORION's STRING
 # parser. Each STRING evidence channel implies a different epistemic status:
@@ -139,14 +162,6 @@ CHANNEL_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
     "database":     (KnowledgeLevelEnum.knowledge_assertion,     AgentTypeEnum.manual_agent),
     "textmining":   (KnowledgeLevelEnum.not_provided,            AgentTypeEnum.text_mining_agent),
 }
-
-# PSI-MI interaction type attached only to "physically_interacts_with" edges.
-# "MI:0915" is "physical association" — semantically aligned with the
-# physical-interaction predicate only. Other predicates (coexpressed_with,
-# genetic_neighborhood_of, etc.) describe different evidence types that
-# don't correspond to PSI-MI physical-association semantics; for those we
-# omit the slot rather than attaching a misleading term.
-PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915" # TODO: doublecheck if this is the correct association ID with Sierra
 
 STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
 
@@ -271,10 +286,15 @@ def predicates_for_row(
     return fired if fired else fpl
 
 
-def molecular_interaction_codes(predicate: MI_PREDICATE)-> list[str] | None:
+def molecular_interaction_type(predicate: MI_PREDICATE)-> list[str] | None:
+    """
+    This method attempts to assign the molecular interaction (MI)
+    type code to a given STRING entry, based on the assigned predicate
+    See https://ontobee.org/ontology/MI?iri=http://purl.obolibrary.org/obo/MI_0190
+    """
     return \
-        [PSI_MI_PHYSICAL_ASSOCIATION] \
-        if predicate == "biolink:physically_interacts_with" \
+        [PREDICATE_TO_MI_TYPE[predicate]] \
+        if predicate in PREDICATE_TO_MI_TYPE \
         else None
 
 
@@ -387,9 +407,9 @@ def make_string_ppi_edge(
         predicate=predicate,
         object=object_id,
         sources=STRING_SOURCES,
-        has_attribute=molecular_interaction_codes(predicate),
+        has_attribute=molecular_interaction_type(predicate),
         knowledge_level=knowledge_level,
-        agent_type=agent_type,
+        agent_type=agent_type
     )
 
 
