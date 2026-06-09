@@ -37,7 +37,7 @@
     data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | kgx | mysql | postgresql | sqlite | other)
       - 
     data_versioning_and_releases:  # (optional, range = string)
-    source_status:   # (required, range = SourceStatusEnum: active | inactive | unknown)
+    source_status:   # (required, range = SourceStatusEnum:  maintained_regular_updates | maintained_as_needed_updates | not_maintained | unknown)
     additional_notes:  # (optional, range = string)
 
 
