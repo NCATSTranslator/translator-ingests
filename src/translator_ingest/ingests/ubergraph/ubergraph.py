@@ -38,7 +38,6 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
     "OBI",
     "MAXO",
     "ECO",
-    "NCBITaxon",
     "FOODON",
     "MI",
     "UO"
@@ -190,13 +189,13 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
 @koza.transform(tag="redundant_graph")
 def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     BATCH_SIZE = 2000000
-    
+
     nodes_seen = set()
     nodes_batch = []
     edges_batch = []
 
     batch_count = 0
-    
+
     for record in data:
         # Records are already filtered and converted to CURIEs/predicates in prepare_data.
         subject_curie = record["subject"]
@@ -219,14 +218,14 @@ def transform_redundant_graph(koza: koza.KozaTransform, data: Iterable[dict[str,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         ))
-        
+
         if len(edges_batch) >= BATCH_SIZE:
             batch_count += 1
             koza.log(f"Yielding batch {batch_count} with {len(edges_batch):,} edges and {len(nodes_batch):,} nodes...", level="INFO")
             yield KnowledgeGraph(nodes=nodes_batch, edges=edges_batch)
             nodes_batch = []
             edges_batch = []
-    
+
     if edges_batch:
         batch_count += 1
         koza.log(f"Yielding final batch {batch_count} with {len(edges_batch):,} edges and {len(nodes_batch):,} nodes...", level="INFO")
