@@ -1,4 +1,5 @@
 import re
+import datetime
 import yaml
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, Dict
@@ -39,9 +40,13 @@ class PipelineMetadata:
     # build_version: a composite version representing all the dependencies which should be considered when determining
     # whether the pipeline needs to be run, or if an ingest was already fully completed
     build_version: str | None = None
+    # build_date: the date (ISO 8601, YYYY-MM-DD) the build was generated
+    build_date: str | None = None
     # release_version: a version assigned to a completed ingest when it is released
     # (moved to the releases directory, compressed, and distribution metadata generated)
     release_version: str | None = None
+    # release_date: the date (ISO 8601, YYYY-MM-DD) the release was made
+    release_date: str | None = None
     # data: a URL pointing to the pipeline stage artifacts used to process an entire ingest
     data: str | None = None
     # koza_config: the koza config yaml file associated with an ingest
@@ -81,6 +86,11 @@ class PipelineMetadata:
         pipeline_metadata_dict = asdict(self)
         del pipeline_metadata_dict["koza_config"]
         return pipeline_metadata_dict
+
+def current_iso_date() -> str:
+    """Return today's date as an ISO 8601 string (YYYY-MM-DD)."""
+    return datetime.date.today().isoformat()
+
 
 def next_release_version(previous_release_version: str | None) -> str:
     """Compute the next semantic release version (MAJOR.MINOR.PATCH).

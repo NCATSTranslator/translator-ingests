@@ -6,7 +6,7 @@ import zstandard as zstd
 from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
-from translator_ingest.util.metadata import PipelineMetadata, next_release_version
+from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -143,9 +143,10 @@ def release_ingest(source: str):
     atomic_copy_directory(release_dir, latest_dir)
     logger.info("Copied release to latest directory")
 
-    # Write the new latest-release-metadata
+    # Write the new latest-release-metadata, stamping the date the release was made
     latest_release_metadata = latest_build_metadata
     latest_release_metadata.release_version = release_version
+    latest_release_metadata.release_date = current_iso_date()
     latest_release_metadata.data = release_url
 
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,
