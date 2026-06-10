@@ -1,3 +1,4 @@
+import re
 import yaml
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, Dict
@@ -5,6 +6,9 @@ from typing import Any, Dict
 from orion import KGXKnowledgeSource
 
 from translator_ingest import INGESTS_PARSER_PATH
+
+# Matches a semantic version of the form MAJOR.MINOR.PATCH (e.g. "1.0.0").
+SEMANTIC_VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 
 @dataclass
@@ -77,6 +81,32 @@ class PipelineMetadata:
         pipeline_metadata_dict = asdict(self)
         del pipeline_metadata_dict["koza_config"]
         return pipeline_metadata_dict
+
+def next_release_version(previous_release_version: str | None) -> str:
+    """Compute the next semantic release version (MAJOR.MINOR.PATCH).
+
+    The patch component is bumped on every release. If there is no previous
+    release carrying a valid semantic version (``None``, or a legacy
+    date-based version like ``"2026_06_10"``), versioning starts fresh at
+    ``"1.0.0"``.
+
+    >>> next_release_version(None)
+    '1.0.0'
+    >>> next_release_version("2026_06_10")
+    '1.0.0'
+    >>> next_release_version("1.0.0")
+    '1.0.1'
+    >>> next_release_version("1.2.9")
+    '1.2.10'
+    """
+    if previous_release_version is None:
+        return "1.0.0"
+    match = SEMANTIC_VERSION_PATTERN.match(previous_release_version)
+    if not match:
+        return "1.0.0"
+    major, minor, patch = (int(part) for part in match.groups())
+    return f"{major}.{minor}.{patch + 1}"
+
 
 def get_kgx_source_from_rig(source: str) -> KGXKnowledgeSource:
     """Read a source's rig YAML file and create a KGXSource instance."""
