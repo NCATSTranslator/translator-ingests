@@ -2,7 +2,7 @@
 
 ## Overview
 
-The storage component handles uploading translator-ingests data and releases to S3, managing local EBS versions, and providing path utilities for the versioned directory layout. Data is served publicly via `https://kgx-storage.rtx.ai`.
+The storage component handles uploading translator-ingests data and releases to S3, managing local EBS versions, and providing path utilities for the versioned directory layout. Data is served publicly via `https://kgx-storage.ci.transltr.io`.
 
 Key modules:
 
@@ -24,10 +24,10 @@ The IAM role needs the following permissions on the translator-ingests bucket:
 
 ## Public Access
 
-Uploaded data is served publicly via `https://kgx-storage.rtx.ai`. The base URLs are configurable via environment variables:
+Uploaded data is served publicly via `https://kgx-storage.ci.transltr.io`. The base URLs are configurable via environment variables:
 
-- `INGESTS_STORAGE_URL` — defaults to `https://kgx-storage.rtx.ai/data`
-- `INGESTS_RELEASES_URL` — defaults to `https://kgx-storage.rtx.ai/releases`
+- `INGESTS_STORAGE_URL` — defaults to `https://kgx-storage.ci.transltr.io/data`
+- `INGESTS_RELEASES_URL` — defaults to `https://kgx-storage.ci.transltr.io/releases`
 
 The kgx-webserver that serves these files runs on a separate t3.medium EC2 instance.
 

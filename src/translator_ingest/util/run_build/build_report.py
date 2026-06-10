@@ -132,8 +132,8 @@ class BuildReport:
     biolink_version: str | None = None
     node_normalizer_version: str | None = None
     release_version: str | None = None
-    storage_url: str = "https://kgx-storage.rtx.ai"
-    docs_url: str = "https://kgx-storage.rtx.ai/docs"
+    storage_url: str = "https://kgx-storage.ci.transltr.io"
+    docs_url: str = "https://kgx-storage.ci.transltr.io/docs"
     source_reports: list[SourceReport] = field(default_factory=list)
     merged_graph: MergedGraphReport | None = None
     upload: UploadReport | None = None
