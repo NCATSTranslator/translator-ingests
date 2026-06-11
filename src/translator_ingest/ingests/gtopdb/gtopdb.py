@@ -978,34 +978,30 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if record["Type"] == "None" and record["Action"] not in none_list_with_separate_directly_physically_interacts_with_edge:
 
             if record["Action"] == "None":
-                predicate = BIOLINK_RELATED
-                object_aspect_qualifier = None
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
+                association = Association(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate=BIOLINK_RELATED,
+                    sources=GTOPDB_SOURCES,
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
             elif record["Action"] == "Potentiation":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                qualified_predicate = BIOLINK_CAUSES
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
-                object_direction_qualifier = current_direction_mapping[0]
+                association = ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    subject=subject.id,
+                    object=object.id,
+                    predicate=current_predicate_mapping,
+                    qualified_predicate=BIOLINK_CAUSES,
+                    object_aspect_qualifier=GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+                    object_direction_qualifier=current_direction_mapping[0],
+                    causal_mechanism_qualifier=CausalMechanismQualifierEnum.potentiation,
+                    sources=GTOPDB_SOURCES,
+                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                    agent_type=AgentTypeEnum.manual_agent,
+                )
 
-            association = ChemicalAffectsGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                ## Five edge attributes in order
-                predicate = predicate,
-                qualified_predicate = qualified_predicate,
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
-                ## other edge attributes
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-
-            )
             if publications:
                 association.publications = publications
 

@@ -234,16 +234,10 @@ def transform(koza: koza.KozaTransform, record: Dict[str, Any]) -> Optional[Know
 
     # Create appropriate association based on category or predicate
     # We need to check object node type from the data, not the Pydantic object
-    object_categories = object_node_data.get("category", [])
-    object_category = object_categories[0] if isinstance(object_categories, list) else object_categories
-
     if "genetically_associated_with" in predicate:
-        if "Disease" in str(object_category):
-            association = GeneToDiseaseAssociation(**edge_props)
-        elif "PhenotypicFeature" in str(object_category):
-            association = GeneToPhenotypicFeatureAssociation(**edge_props)
-        else:
-            association = Association(**edge_props)
+        # biolink:genetically_associated_with is not in the predicate enums
+        # for typed associations, so use the generic Association class
+        association = Association(**edge_props)
     elif category == "biolink:GeneToDiseaseAssociation":
         association = GeneToDiseaseAssociation(**edge_props)
     elif category == "biolink:GeneToPhenotypicFeatureAssociation":
