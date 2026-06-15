@@ -5,6 +5,126 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-06-11 — Config-driven per-channel filter thresholds (canonical in `string.py`)
+
+**Decision.** Move the filter thresholds out of hardcoded module constants and
+into **per-channel, YAML-declared config** that `string.py` consumes as the
+single source of truth. Each channel is now an **independently tunable knob**,
+validated against the EDA (`eda/`). Default values reproduce the prior
+ORION-aligned behavior exactly (per-channel 750, combined 500), so this is a
+pure mechanism refactor with no output change.
+
+**Why the canonical filter lives in `string.py`, not Koza's `filters:`.** The
+proper per-channel rule is "include a row if **any** channel clears **its own**
+threshold (or combined_score clears the fallback gate)" — an **OR** across
+per-column comparisons with different thresholds. Koza's declarative `filters:`
+are **AND-only** (`koza/utils/row_filter.py` returns False on first miss; 8
+filter codes; no OR/compound/nested support), so that semantics is **not
+expressible** in the reader config. We therefore keep the per-channel logic in
+the transform and use Koza's `filters:` only as a coarse efficiency pre-filter.
+
+**Mechanism.** Thresholds are declared under a `transform.channel_thresholds:`
+block in `string.yaml` and surfaced to the transform via
+`KozaTransform.extra_fields` (the same pattern the `go_cam` ingest uses for its
+`transform.filters`). `on_data_begin` resolves them once
+(`resolve_thresholds(DEFAULT_THRESHOLDS + overrides)`) into
+`koza_transform.state["thresholds"]`; the per-row transform reads that dict and
+passes it to `predicates_for_row` / `passes_combined_score` /
+`knowledge_level_and_agent_type_for_row` (all now accept an optional per-channel
+`thresholds` dict, defaulting to the old constants so direct unit calls are
+unchanged). Verified end-to-end that `extra_fields` carries the block.
+
+**Reader pre-filter invariant.** The `combined_score > 500` Koza filter is now
+documented as a *performance floor only*; it must stay `<= min(channel_thresholds)`
+so it never pre-drops a row a channel would fire. This is provably safe for any
+channel threshold `>= 501`: an EDA scan of all three taxa found
+`combined_score >= (max native predicate-channel score) - 1` (max gap = 1), so a
+row with `channel > T` always has `combined_score >= T`. Lowering a channel knob
+to `<= 500` requires lowering the reader filter value to match (documented in
+`string.yaml`).
+
+**What this enables.** Independent per-channel filtering/validation — e.g.
+lowering the `cooccurence` knob below 542 surfaces `genetically_interacts_with`
+edges the uniform 750 gate hides (new doctest + unit tests cover this). Native
+`neighborhood` stays empty at any threshold (EDA: 0 in every row).
+
+**Out of scope (still open):** the gene-vs-protein predicate-set question
+(Automat Protein/Protein meta_kg vs the Monarch precedent of NCBIGene nodes +
+`PairwiseGeneToGeneInteraction` + generic `interacts_with`). This refactor is
+agnostic to it — `CHANNEL_PREDICATES` is unchanged; only its thresholds became
+tunable. Resolving that decision is the next step and will adjust the
+channel→predicate map and the RIG `edge_type_info`.
+
+**Tests:** existing 75 unit + 12 integration pass unchanged; added
+`resolve_thresholds` defaults/overrides, per-channel `predicates_for_row`
+override, default-equivalence, injected per-channel + combined-gate transform
+tests, and a tunability doctest.
+
+## 2026-06-11 — QA EDA + provider-meta_kg-constrained predicate set (`qa-string-ingest` branch)
+
+**Context.** The "Custom Build Summary Jun 11 2026" normalized run emitted **0
+`PairwiseGeneToGeneInteraction` edges** — neither `genetic_neighborhood_of` nor
+`genetically_interacts_with` appeared. Opened the `qa-string-ingest` branch to
+find out why and to QA the predicate model against production.
+
+**EDA (all 3 taxa, ~40M rows each, streamed single-pass — see [`eda/`](./eda/)).**
+
+- Native `neighborhood` is **0 in every row** of human/mouse/rat → `genetic_neighborhood_of`
+  can never fire. `neighborhood_transferred` exists (~4% of rows) but maxes at **385**.
+- `cooccurence` maxes at **542** → never clears the 750 per-channel gate, so
+  `genetically_interacts_with` never fires either.
+- Predicate-driving channels are statistically **independent** (|r| < 0.15) — no
+  overencoding; each carries distinct signal. No clean threshold band isolates the
+  gene signal without molecular co-firing, and the whole band sits below STRING's
+  confidence floor → splitting out gene predicates is unjustified by the data.
+- Native `experiments` evidence is **human-skewed** (8.3% human / 1.0% mouse /
+  0.2% rat) → curated physical edges are largely a human phenomenon.
+- The `combined_score > 500` gate **never drops a row a per-channel predicate
+  (>750) would have fired** (0 exceptions across 40M rows). Its only function is
+  governing the volume of **fallback** edges (~1.1M kept per taxon vs ~13.7M
+  rows). So today's 1.43M `physically_interacts_with` (93% of the graph) is
+  **mostly fallback, not real physical evidence** — corroborated by its KL/AT
+  carrying `not_provided` / `text_mining_agent`.
+
+**Decision — constrain the predicate set to the Automat STRING-DB meta_kg.**
+Per the standing rule that the RIG must not exceed what provider meta_kgs
+support, fetched `https://automat.renci.org/string-db/meta_knowledge_graph`. The
+provider supports exactly these **Protein→Protein** interaction triples:
+`physically_interacts_with`, `coexpressed_with`, `homologous_to`, `related_to`
+(plus `subclass_of` ontology backbone). No gene-family predicates; no
+`interacts_with`. Resulting constrained mapping:
+
+| channel | current predicate | constrained predicate |
+|---|---|---|
+| experiments > 750 | physically_interacts_with | **physically_interacts_with** (keep) |
+| coexpression > 750 | coexpressed_with | **coexpressed_with** (keep) |
+| textmining > 750 | interacts_with | **related_to** (remap — provider's choice) |
+| fallback (combined > 500) | physically_interacts_with | **related_to** (fixes over-claim) |
+| fusion > 750 | gene_fusion_with | **drop** |
+| neighborhood > 750 | genetic_neighborhood_of | **drop** (empty + invalid) |
+| cooccurence > 750 | genetically_interacts_with | **drop** (sub-threshold + invalid) |
+
+**Why drop the gene-family predicates (not just leave them empty).** All three —
+`genetically_interacts_with`, `genetic_neighborhood_of`, `gene_fusion_with` —
+have biolink **domain/range = gene**, but STRING nodes are **Protein**. That is
+the root cause of the `BIOLINK_SUBOBJ_ERRORS` in the build summary (e.g.
+`gene_fusion_with | BAD SUBJECT | gene | protein`); the 732 `gene_fusion_with`
+edges that shipped are already domain/range-violating. They are also absent from
+the provider meta_kg. Both reasons point the same way.
+
+**Why not introduce `neighborhood_transferred`.** It is orthology-projected
+("interolog") evidence — `genetic_neighborhood_of` would assert a chromosomal
+adjacency the actual pair doesn't have (the same semantic misread that excludes
+HOMOLOGY). The only node-type-valid target is the generic `related_to`, which it
+would merely duplicate — and at max 385 it yields **zero** edges at any
+defensible threshold anyway.
+
+**Net.** For these taxa STRING is a **protein-level interaction + coexpression**
+source: 3 provider-supported predicates (`physically_interacts_with`,
+`coexpressed_with`, `related_to`), all Protein-valid, removing every
+domain/range warning. Implementation (transform `CHANNEL_PREDICATES` / fallback,
+RIG `edge_type_info`) is the next step on this branch.
+
 ## 2026-05-28 — Split STITCH out of this ingest (preserved on `stitch-ingest` branch)
 
 **Decision.** Remove the STITCH protein–chemical layer (the `stitch_pcl` tagged

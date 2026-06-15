@@ -93,6 +93,40 @@ CHANNEL_PREDICATES: dict[ STRING_CHANNELS, MI_PREDICATE ] = {
 FALLBACK_PREDICATE: MI_PREDICATE = "biolink:physically_interacts_with"
 
 
+# Canonical default thresholds: every predicate-driving channel gates at
+# CHANNEL_HIGH_CONF_THRESHOLD (750) and the row-inclusion fallback gate is
+# COMBINED_SCORE_THRESHOLD (500). These are the single source of truth for the
+# transform when no per-channel overrides are supplied in string.yaml's
+# 'transform.channel_thresholds' block (read via KozaTransform.extra_fields).
+# Using this dict (rather than the bare constants) makes every channel an
+# independently tunable knob — see resolve_thresholds() and the EDA under eda/.
+DEFAULT_THRESHOLDS: dict[str, int] = {
+    **{channel: CHANNEL_HIGH_CONF_THRESHOLD for channel in CHANNEL_PREDICATES},
+    "combined_score": COMBINED_SCORE_THRESHOLD,
+}
+
+
+def resolve_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, int]:
+    """
+    Merge per-channel threshold overrides (from string.yaml
+    'transform.channel_thresholds', surfaced via KozaTransform.extra_fields) on
+    top of DEFAULT_THRESHOLDS. Values are coerced to int so YAML strings compare
+    numerically. Unknown keys are kept (a channel not in CHANNEL_PREDICATES is
+    harmless — nothing reads it), letting the config stay forward-compatible.
+
+    >>> resolve_thresholds() == DEFAULT_THRESHOLDS
+    True
+    >>> resolve_thresholds({"cooccurence": "450", "combined_score": 400})["cooccurence"]
+    450
+    >>> resolve_thresholds({"combined_score": 400})["combined_score"]
+    400
+    """
+    merged = dict(DEFAULT_THRESHOLDS)
+    if overrides:
+        merged.update({str(k): int(v) for k, v in overrides.items()})
+    return merged
+
+
 # Symmetry note (resolves "are these predicates reflexive?"): every STRING
 # evidence channel describes a *symmetric* (undirected) relationship — if A
 # physically interacts with / is coexpressed with / is a genetic neighbor of B,
@@ -227,6 +261,7 @@ def passes_combined_score(
 
 def predicates_for_row(
     record: dict[str, Any],
+    thresholds: dict[str, int] | None = None,
     channel_threshold: int = CHANNEL_HIGH_CONF_THRESHOLD,
 ) -> list[MI_PREDICATE]:
     """
@@ -268,6 +303,20 @@ def predicates_for_row(
     ...        "homology": "0", "database": "0"}
     >>> predicates_for_row(row)
     ['biolink:physically_interacts_with']
+
+    Per-channel override: a ``thresholds`` dict (from string.yaml's
+    ``transform.channel_thresholds``) gates each channel independently. Lowering
+    the ``cooccurence`` knob below a row's score surfaces
+    ``genetically_interacts_with`` that the default 750 gate would hide (EDA: the
+    cooccurence channel maxes at 542 across all three taxa).
+
+    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "540",
+    ...        "coexpression": "0", "experiments": "0", "textmining": "0",
+    ...        "homology": "0", "database": "0"}
+    >>> predicates_for_row(row)
+    ['biolink:physically_interacts_with']
+    >>> predicates_for_row(row, thresholds={"cooccurence": 450})
+    ['biolink:genetically_interacts_with']
     """
     fired: list[MI_PREDICATE] = []
     seen: set[MI_PREDICATE] = set()
@@ -279,7 +328,8 @@ def predicates_for_row(
             score = int(str(raw))
         except (TypeError, ValueError):
             continue
-        if score > channel_threshold and predicate not in seen:
+        threshold = thresholds.get(channel, channel_threshold) if thresholds else channel_threshold
+        if score > threshold and predicate not in seen:
             fired.append(predicate)
             seen.add(predicate)
     fpl: list[MI_PREDICATE] = [FALLBACK_PREDICATE]
@@ -300,6 +350,7 @@ def molecular_interaction_type(predicate: MI_PREDICATE)-> list[str] | None:
 
 def knowledge_level_and_agent_type_for_row(
     record: dict[str, Any],
+    thresholds: dict[str, int] | None = None,
 ) -> tuple[KnowledgeLevelEnum, AgentTypeEnum]:
     """
     Derive a single "(knowledge_level, agent_type)" for a STRING ".full" row
@@ -363,7 +414,8 @@ def knowledge_level_and_agent_type_for_row(
         if score > max_score:
             max_score = score
             dominant_channel = channel
-        if score > CHANNEL_HIGH_CONF_THRESHOLD:
+        channel_threshold = thresholds.get(channel, CHANNEL_HIGH_CONF_THRESHOLD) if thresholds else CHANNEL_HIGH_CONF_THRESHOLD
+        if score > channel_threshold:
             high_conf_channels.append(channel)
 
     if dominant_channel is None:

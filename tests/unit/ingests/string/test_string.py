@@ -20,6 +20,7 @@ from translator_ingest.ingests.string.string import (
 from translator_ingest.ingests.string.string_utils import (
     CHANNEL_KL_AT,
     CHANNEL_PREDICATES,
+    DEFAULT_THRESHOLDS,
     FALLBACK_PREDICATE,
     PSI_MI_PHYSICAL_ASSOCIATION,
     knowledge_level_and_agent_type_for_row,
@@ -27,6 +28,7 @@ from translator_ingest.ingests.string.string_utils import (
     parse_string_protein_id,
     passes_combined_score,
     predicates_for_row,
+    resolve_thresholds,
     sorted_pair_key
 )
 
@@ -519,3 +521,62 @@ def test_transform_rejects_cross_species_pair(mock_koza):
     """Per-organism STRING files only contain intra-species rows; defend against corruption."""
     with pytest.raises(ValueError, match="Cross-species pair"):
         transform_string_ppi(mock_koza, _full_row(H1, M1, combined_score=952))
+
+
+# ──── Configurable per-channel threshold tests ───────────────────────────────
+
+
+def test_resolve_thresholds_defaults_and_overrides():
+    """No overrides → the canonical defaults; overrides are coerced to int and
+    merged on top, leaving untouched channels at their default."""
+    assert resolve_thresholds() == DEFAULT_THRESHOLDS
+    assert resolve_thresholds(None) == DEFAULT_THRESHOLDS
+    merged = resolve_thresholds({"cooccurence": "450", "combined_score": 400})
+    assert merged["cooccurence"] == 450          # string coerced to int
+    assert merged["combined_score"] == 400
+    assert merged["experiments"] == DEFAULT_THRESHOLDS["experiments"]  # untouched
+
+
+def test_predicates_for_row_per_channel_threshold_override():
+    """A per-channel thresholds dict gates each channel independently, surfacing
+    a predicate the uniform 750 default would hide (EDA: cooccurence maxes 542)."""
+    row = _full_row(H1, H2, combined_score=952, cooccurence=540)
+    # Default gate (750): cooccurence (540) does not fire → fallback only.
+    assert predicates_for_row(row) == [FALLBACK_PREDICATE]
+    # Lowered cooccurence knob: the gene-to-gene predicate now fires.
+    assert predicates_for_row(row, thresholds={"cooccurence": 450}) == [
+        "biolink:genetically_interacts_with"
+    ]
+
+
+def test_transform_default_thresholds_reproduce_prior_output(mock_koza):
+    """With no thresholds injected (state lacks the key), the transform falls
+    back to DEFAULT_THRESHOLDS — a sub-750 channel yields only the fallback
+    predicate, identical to the historical hardcoded behavior."""
+    result = transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=952, cooccurence=540)
+    )
+    assert result is not None and result.edges is not None
+    assert [e.predicate for e in result.edges] == ["biolink:physically_interacts_with"]
+
+
+def test_transform_respects_injected_per_channel_thresholds(mock_koza):
+    """Lowering the cooccurence threshold (as string.yaml would via extra_fields,
+    here injected into state) surfaces genetically_interacts_with for a row whose
+    cooccurence score sits below the default gate."""
+    mock_koza.state["thresholds"] = resolve_thresholds({"cooccurence": 450})
+    result = transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=952, cooccurence=540)
+    )
+    assert result is not None and result.edges is not None
+    assert [e.predicate for e in result.edges] == ["biolink:genetically_interacts_with"]
+
+
+def test_transform_respects_injected_combined_score_gate(mock_koza):
+    """The combined_score gate is read from the resolved thresholds too: raising
+    it drops a row that the default 500 gate would have kept."""
+    mock_koza.state["thresholds"] = resolve_thresholds({"combined_score": 900})
+    # combined_score 600 > 500 (default) but <= 900 (override) → dropped.
+    assert transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=600, experiments=800)
+    ) is None
