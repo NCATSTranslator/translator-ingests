@@ -216,6 +216,8 @@ def transform(pipeline_metadata: PipelineMetadata):
         output_dir=str(transform_output_dir),
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
+        # Make the resolved source version available to transforms as koza.extra_fields["source_version"]
+        overrides={"transform": {"extra_fields": {"source_version": pipeline_metadata.source_version}}},
     )
     start_time = time.perf_counter()
     runner.run()

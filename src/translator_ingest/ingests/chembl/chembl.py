@@ -4,6 +4,7 @@ from typing import Any, Iterable
 import tarfile
 import sqlite3
 import json
+import requests
 
 import biolink_model.datamodel.pydanticmodel_v2 as bm
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -27,7 +28,7 @@ from translator_ingest import INGESTS_PARSER_PATH
 
 QUALIFIER_CONFIG_PATH = INGESTS_PARSER_PATH / "chembl" / "chembl_qualifiers.json"
 
-LATEST_VERSION = "36"
+LATEST_README = "https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/README"
 
 INFORES_CHEMBL = "infores:chembl"
 CHEMBL_SOURCES = build_association_knowledge_sources(primary=INFORES_CHEMBL)
@@ -304,7 +305,7 @@ def load_config():
             qualifiers = {}
             for qualifier_type, qualifier_value in entry.get("qualifiers", {}).items():
               # skip TODO qualifiers until biolink model supports them
-               if not qualifier_type.startswith("TODO:"): 
+               if not qualifier_type.startswith("TODO:"):
                 qualifiers[qualifier_type] = qualifier_value
             QUALIFIER_CONFIG[action_type] = {
                 "association": association,
@@ -320,17 +321,21 @@ def load_config():
 
 load_config()
 
-
 # This function returns the latest version of the data source.
 def get_latest_version() -> str:
-    return LATEST_VERSION
+    r = requests.get(LATEST_README, timeout=15)
+    r.raise_for_status()
+    for line in r.text.splitlines():
+        if line.startswith("* Release:"):
+            return line.removeprefix("* Release:").strip()
+    raise ValueError("Could not determine latest release from ChEMBL README")
 
 
 def get_connection(koza: koza.KozaTransform) -> sqlite3.Connection:
     log = koza.log if hasattr(koza, 'log') else None
-    version = get_latest_version()
-    download_file = f"{koza.input_files_dir}/chembl_{version}_sqlite.tar.gz"
-    database_path = f"{koza.input_files_dir}/chembl_{version}/chembl_{version}_sqlite/chembl_{version}.db"
+    version = koza.extra_fields["source_version"]
+    download_file = f"{koza.input_files_dir}/{version}_sqlite.tar.gz"
+    database_path = f"{koza.input_files_dir}/{version}/{version}_sqlite/{version}.db"
     if log:
         log(f"Using ChEMBL database at {database_path}", level="INFO")
     # uncompress tar.gz file
@@ -357,7 +362,7 @@ def get_protein(chembl_id: str, name: str, record: dict[str, Any]) -> bm.Protein
         return None
     if record["db_source"] not in ("UNIPROT", "SWISS-PROT", "TREMBL"):
         return None
-    
+
     uniprot_id = UNIPROT_PREFIX+record["accession"]
     synonym = record["description"]
     tax_id = TAX_ID_PREFIX+str(record["component_tax_id"]) if record["component_tax_id"] else None
@@ -778,7 +783,7 @@ def transform_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]
             component = create_component_node(koza, record)
             if component:
                 nodes.append(component)
-                nodes.append(target)    
+                nodes.append(target)
                 association = get_has_part_association(koza, component, target, record)
                 edges.append(association)
         yield KnowledgeGraph(nodes=nodes, edges=edges)
