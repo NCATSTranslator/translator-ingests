@@ -57,7 +57,7 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = ["*.ipynb"]
+extend-exclude = ["*.ipynb","**/eda"]
 
 [tool.black]
 line-length = 120
