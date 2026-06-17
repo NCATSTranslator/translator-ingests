@@ -117,7 +117,11 @@ ingest_info:
           The transform accepts arbitrary taxa via the "SUPPORTED_TAXA" dict in "string.py"; adding a species
           is a one-line code change plus a download URL and a reader file entry. Note that non-vertebrate species
           may use protein ID schemes other than ENSEMBL (e.g. yeast uses ORF names like "YAL001C"); the parser
-          would accept them but downstream NodeNormalizer coverage should be probed first.
+          would accept them but downstream NodeNormalizer coverage should be probed first.  Generally speaking,
+          the use of transferred evidence ("interlogs") could suggest additional protein-protein interactions but
+          given the intensity of research of human, mouse and rat gene products, such evidence is already likely
+          to be implicitly integrated by research projects confirming such interactions with stronger 
+          taxonomic-specific evidence.
         relevant_files: "{taxon}.protein.links.full.v12.0.txt.gz"
       - category: edge_property_content
         consideration: >-
@@ -174,7 +178,7 @@ target_info:
       # values below — the enumeration is the same across all 6 types:
       #   EXPERIMENTS/DATABASE dominant: knowledge_assertion / manual_agent
       #   COEXPRESSION/COOCCURENCE dominant: statistical_association / data_analysis_pipeline
-      #   NEIGHBORHOOD/FUSION dominant: prediction / data_analysis_pipeline
+      #   FUSION dominant: prediction / data_analysis_pipeline
       #   HOMOLOGY dominant: prediction / computational_model
       #   TEXTMINING dominant: not_provided / text_mining_agent
       #   ≥2 channels above 750 to knowledge_assertion / manual_agent (or
@@ -281,39 +285,6 @@ target_info:
           Driven by the TEXTMINING channel (score > 750). Text-mining co-mention evidence is loose semantically
           (the proteins co-occur in literature) so the predicate is the generic "biolink:interacts_with"
           rather than something stronger.
-        source_files:
-          - 9606.protein.links.full.v12.0.txt.gz
-          - 10090.protein.links.full.v12.0.txt.gz
-          - 10116.protein.links.full.v12.0.txt.gz
-
-      - subject_categories:
-          - biolink:Protein
-        predicates:
-          - biolink:genetic_neighborhood_of
-        object_categories:
-          - biolink:Protein
-        qualifiers:
-          - property: species_context_qualifier
-            value_enumeration:
-              - NCBITaxon:9606
-              - NCBITaxon:10090
-              - NCBITaxon:10116
-        knowledge_level:   # row-level, from dominant channel (see header note)
-          - knowledge_assertion
-          - statistical_association
-          - prediction
-          - not_provided
-        agent_type:
-          - manual_agent
-          - data_analysis_pipeline
-          - computational_model
-          - text_mining_agent
-          - not_provided
-        primary_knowledge_sources: [infores:string]
-        ui_explanation: >-
-          Driven by the NEIGHBORHOOD channel (score > 750). Indicates that the coding genes of the two proteins
-          are genomic neighbors (commonly co-located in prokaryotic operons or conserved gene clusters across
-          species).
         source_files:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
