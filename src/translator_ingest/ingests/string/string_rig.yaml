@@ -5,7 +5,7 @@ source_info:
     description: >-
       STRING (Search Tool for the Retrieval of Interacting Genes/Proteins) is a database of known and predicted
       protein–protein interactions hosted by SIB / EMBL / CPR. STRING aggregates evidence from seven channels —
-      genomic neighborhood, gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, 
+      gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, 
       and text mining — plus curated databases, and combines them into a single "combined_score" per interaction pair.
       
       The STRING "combined_score" does not measure interaction strength, binding affinity, or the magnitude of
@@ -347,9 +347,10 @@ target_info:
           - not_provided
         primary_knowledge_sources: [infores:string]
         ui_explanation: >-
-          Driven by the COOCCURRENCE channel (score > 750). Indicates that the two proteins' coding genes show
-          a similar phylogenetic distribution across organisms — present together or absent together — a
-          phylogenetic-profile signal of functional coupling.
+          Driven by the COOCCURRENCE channel. This channel is given a slightly lower score threshold
+          (score > 450) since the scores on this channel have a smaller range (0 < x < 540). 
+          Indicates that the two proteins' coding genes show a similar phylogenetic distribution across organisms —
+          present together or absent together — a phylogenetic-profile signal of functional coupling.
         source_files:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
