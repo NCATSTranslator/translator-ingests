@@ -45,7 +45,7 @@ def _full_row(
     """
     row = {"protein1": protein1, "protein2": protein2, "combined_score": str(combined_score)}
     for ch in [
-        "neighborhood", "neighborhood_transferred",
+        "neighborhood_transferred",
         "fusion", "cooccurence", "homology",
         "coexpression", "coexpression_transferred",
         "experiments", "experiments_transferred",
@@ -267,13 +267,13 @@ def test_transform_handles_missing_mapping(mock_koza):
 
 
 def test_predicates_for_row_single_channel_above_threshold():
-    row = {"experiments": "800", "coexpression": "0", "neighborhood": "0",
+    row = {"experiments": "800", "coexpression": "0", 
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     assert predicates_for_row(row) == ["biolink:physically_interacts_with"]
 
 
 def test_predicates_for_row_multiple_channels_fire_independently():
-    row = {"experiments": "780", "coexpression": "780", "neighborhood": "0",
+    row = {"experiments": "780", "coexpression": "780", 
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     preds = predicates_for_row(row)
     assert "biolink:physically_interacts_with" in preds
@@ -283,15 +283,14 @@ def test_predicates_for_row_multiple_channels_fire_independently():
 
 def test_predicates_for_row_at_threshold_does_not_fire():
     """Threshold is strictly greater-than; equal does not fire."""
-    row = {"experiments": "750", "coexpression": "0", "neighborhood": "0",
+    row = {"experiments": "750", "coexpression": "0", 
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     # No channel exceeds 750 → fallback only.
     assert predicates_for_row(row) == [FALLBACK_PREDICATE]
 
 
 def test_predicates_for_row_no_channel_above_threshold_returns_fallback():
-    row = {"experiments": "500", "coexpression": "400", "neighborhood": "200",
-           "fusion": "0", "cooccurence": "0", "textmining": "300"}
+    row = {"experiments": "500", "coexpression": "400", "fusion": "0", "cooccurence": "0", "textmining": "300"}
     assert predicates_for_row(row) == [FALLBACK_PREDICATE]
 
 
@@ -300,7 +299,7 @@ def test_predicates_for_row_homology_never_emits_predicate():
     HOMOLOGY score means 'interaction inferred via orthologs in another
     species', NOT 'A is homologous to B'. So even with a maxed-out homology
     score, no predicate is added (and we fall back to physically_interacts_with)."""
-    row = {"experiments": "0", "coexpression": "0", "neighborhood": "0",
+    row = {"experiments": "0", "coexpression": "0", 
            "fusion": "0", "cooccurence": "0", "textmining": "0",
            "homology": "999"}
     assert predicates_for_row(row) == [FALLBACK_PREDICATE]
@@ -406,7 +405,7 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
 )
 def test_knowledge_level_and_agent_type_single_channel(channel_scores, expected_kl, expected_at):
     row = {ch: 0 for ch in [
-        "neighborhood", "fusion", "cooccurence", "homology",
+        "fusion", "cooccurence", "homology",
         "coexpression", "experiments", "database", "textmining",
     ]}
     row.update(channel_scores)
