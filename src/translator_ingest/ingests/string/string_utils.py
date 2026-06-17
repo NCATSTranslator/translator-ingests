@@ -153,12 +153,7 @@ PREDICATE_TO_ASSOCIATION_CLASS: dict[MI_PREDICATE, type[GeneToGeneAssociation]] 
     "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
 }
 
-# PSI-MI interaction type attached only to "physically_interacts_with" edges.
-# "MI:0915" is "physical association" — semantically aligned with the
-# physical-interaction predicate only. Other predicates (coexpressed_with, etc.)
-# describe different evidence types that don't directly imply direct physical association;
-# for those we omit the slot rather than attaching a misleading term.
-# TODO: doublecheck if this is the correct association ID with Sierra
+# PSI-MI interaction types
 PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915"
 PSI_MI_FUNCTIONAL_INTERACTION = "MI:2286"
 PSI_MI_COVALENT_BINDING = "MI:0195"
