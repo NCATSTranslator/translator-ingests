@@ -83,29 +83,29 @@ ingest_info:
           Not iterated by the reader; loaded as an auxiliary lookup file via "koza.input_files_dir".
           Same source file used by Monarch's STRING ingest.
     included_content:
-      - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (9606 / 10090 / 10116)
+      - file_name: "{NCBI Taxon ID}.protein.links.full.v12.0.txt.gz" # (9606 / 10090 / 10116)
         included_records: >-
           Rows where combined_score > 500 (STRING's medium-confidence cutoff). Symmetric duplicates
           (each unordered pair appears in both p1 to p2 and p2 to p1 form) are deduplicated on the sorted-pair key
           so each pair is emitted once. Same logic applies uniformly across all three per-organism files.
         fields_used: >-
           protein1, protein2 (parsed into ENSEMBL protein CURIEs — ENSP for human, ENSMUSP for mouse, ENSRNOP for rat
-          after stripping the "{taxid}." taxon prefix); 6 of the 7 available evidence channels (fusion, cooccurence,
+          after stripping the "{NCBI Taxon ID}." taxon prefix); 6 of the 7 available evidence channels (fusion, cooccurence,
           coexpression, experiments, textmining, plus homology and database for KL/AT) drive per-channel predicate
           and knowledge-level/agent-type selection; each record "combined_score" filters row inclusion.
     filtered_content:
-      - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)
+      - file_name: "{NCBI Taxon ID}.protein.links.full.v12.0.txt.gz" # (all three taxa)
         filtered_records: >-
           Rows with combined_score <= 500 are excluded.
         rationale: >-
           Below medium confidence, STRING's predictions are too noisy for Translator reasoning.
           Matches the default confidence cutoff offered on the STRING web interface.
-      - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)
+      - file_name: "{NCBI Taxon ID}.protein.links.full.v12.0.txt.gz" # (all three taxa)
         filtered_records: >-
           Symmetric duplicate rows (the second occurrence of any unordered protein pair).
         rationale: >-
           STRING lists each interaction in both directions. We emit one undirected edge per pair (per predicate).
-      - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)
+      - file_name: "{NCBI Taxon ID}.protein.links.full.v12.0.txt.gz" # (all three taxa)
         filtered_records: >-
           The 'neighborhood' channel is ignored.
         rationale: >-
@@ -122,7 +122,7 @@ ingest_info:
           given the intensity of research of human, mouse and rat gene products, such evidence is already likely
           to be implicitly integrated by research projects confirming such interactions with stronger 
           taxonomic-specific evidence.
-        relevant_files: "{taxon}.protein.links.full.v12.0.txt.gz"
+        relevant_files: "{NCBI Taxon ID}.protein.links.full.v12.0.txt.gz"
       - category: edge_property_content
         consideration: >-
           Surface per-channel subscores as edge properties (not just predicate-driving signals). The channel
@@ -130,7 +130,7 @@ ingest_info:
           see the actual COEXPRESSION/EXPERIMENTS/TEXTMINING numbers. Attach them as "biolink:Attribute"
           instances on each edge, named after the channel. The data is already in the ".full" file we read;
           this is a transform-only change.
-        relevant_files: "{taxid}.protein.links.full.v12.0.txt.gz (already ingested)"
+        relevant_files: "{NCBI Taxon ID}.protein.links.full.v12.0.txt.gz (already ingested)"
       - category: node_content
         consideration: >-
           Ingest "protein.aliases.v12.0.txt.gz" to populate node "name" and "synonym" properties. Currently nodes
@@ -374,7 +374,7 @@ target_info:
           - equivalent_identifiers
         additional_notes: >-
           Protein nodes use STRING's native identifiers — ENSEMBL protein IDs that vary by species: ENSP (human),
-          ENSMUSP (mouse), ENSRNOP (rat). The leading "{taxid}." prefix is stripped and the result is prefixed
+          ENSMUSP (mouse), ENSRNOP (rat). The leading "{NCBI Taxon ID}." prefix is stripped and the result is prefixed
           with "ENSEMBL:". Each node carries "in_taxon" derived from the row's taxon prefix, and (when a
           STRING to Entrez mapping exists) "equivalent_identifiers" listing one or more "NCBIGene:" CURIEs.
           This explicit equivalence is the hybrid design choice that aligns with both Monarch's gene-endpoint
