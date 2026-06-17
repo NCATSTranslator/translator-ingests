@@ -45,7 +45,7 @@ from translator_ingest.ingests.string.string_utils import (
 
 STRING_VERSION_API_URL = "https://string-db.org/api/json/version"
 
-# Filename of the STRING ↔ Entrez gene-ID mapping (universal across species).
+# Filename of the STRING to Entrez gene-ID mapping (universal across species).
 # Downloaded by download.yaml into 'koza.input_files_dir'. Loaded once at the
 # start of the transform to populate 'equivalent_identifiers' on Protein nodes.
 ENTREZ_MAPPING_FILENAME = "all_organisms.entrez_2_string.tsv"
@@ -72,7 +72,7 @@ def get_latest_version() -> str:
 @koza.on_data_begin(tag="string_ppi")
 def on_data_begin_string_ppi(koza_transform: koza.KozaTransform) -> None:
     """
-    Load the STRING ↔ Entrez mapping into 'koza_transform.state["string_to_entrez"]'
+    Load the STRING to Entrez mapping into 'koza_transform.state["string_to_entrez"]'
     once per 'string_ppi' transform run. Used by 'transform_string_ppi' to
     populate 'equivalent_identifiers' on Protein nodes with their NCBIGene
     equivalents.

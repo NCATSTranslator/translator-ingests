@@ -6,7 +6,15 @@ source_info:
       STRING (Search Tool for the Retrieval of Interacting Genes/Proteins) is a database of known and predicted
       protein–protein interactions hosted by SIB / EMBL / CPR. STRING aggregates evidence from seven channels —
       genomic neighborhood, gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, and text
-      mining — plus curated databases, and combines them into a single "combined_score" per interaction pair.
+      mining — plus curated databases, and combines them into a single "combined_score" per interaction pair. 
+      The STRING "combined_score" does not measure interaction strength, binding affinity, or the magnitude of
+      the biological effect. Instead, it reflects how strongly the available data support the presence of a
+      biological association. A high STRING score therefore does not imply that the interaction is
+      strong or stable at the biochemical level.
+      
+      Each protein encoded by a single gene locus.  Since STRING proteins are not all human-specific or higher
+      mammalian in origin, nor even eukaryotic, only of subset of STRING data will be ingested into the Translator KG.
+      Furthermore, certain STRING channels are not relevant to the Translator KG (i.e.,"neighborhood" is prokaryote-only).
 
       (STITCH, STRING's sister database for protein–chemical interactions, was developed alongside this ingest but
       split out for a later, properly-scoped effort — preserved on the "stitch-ingest" branch. See CHANGELOG
@@ -39,8 +47,8 @@ ingest_info:
       - Primary Knowledge Provider
     utility: >-
       STRING provides a broad protein–protein interaction graph derived from multiple evidence channels,
-      supplying Translator reasoning with channel-specific these proteins interact or are coexpressed 
-      signals across human, mouse, and rat.
+      supplying Translator reasoning with interaction or coexpression data proteins - across human, 
+      mouse, and rat - supported by diverse evidence ("channels").
     scope: >-
       Protein–protein interactions for three Translator-target species: human (NCBITaxon:9606),
       mouse (NCBITaxon:10090), and rat (NCBITaxon:10116). Protein identifiers are kept in their native ENSEMBL
@@ -140,8 +148,8 @@ ingest_info:
           recommended name warnings on every node.
         relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
     additional_notes: >-
-      Current scope: STRING protein–protein interactions for human, mouse, and rat. STRING emits 6 per-channel
-      predicates (physically_interacts_with, coexpressed_with, interacts_with, genetic_neighborhood_of,
+      Current scope: STRING protein–protein interactions for human, mouse, and rat. The STRING ingest emits
+      6 channel-mapped predicates (physically_interacts_with, coexpressed_with, interacts_with, genetic_neighborhood_of,
       gene_fusion_with, genetically_interacts_with) plus a fallback "physically_interacts_with" for rows that
       pass the combined-score gate without any high-confidence channel. knowledge_level / agent_type are derived
       per row from the dominant evidence channel (ORION-aligned). The predicate-selection rule matches ORION's
