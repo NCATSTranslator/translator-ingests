@@ -79,7 +79,7 @@ def _write_artifact(path: Path, rows: list[tuple[str, str, str, str, str]]) -> N
     ).write_parquet(path)
 
 
-def test_load_drop_set_only_keeps_no_verdicts(tmp_path: Path) -> None:
+def test_load_drop_set_keeps_no_and_maybe(tmp_path: Path) -> None:
     artifact = tmp_path / VERDICT_ARTIFACT_FILENAME
     _write_artifact(
         artifact,
@@ -91,7 +91,12 @@ def test_load_drop_set_only_keeps_no_verdicts(tmp_path: Path) -> None:
         ],
     )
     drop_set = load_drop_set(artifact)
-    assert drop_set == {("A", "p", "B"): {"PMID:1"}, ("C", "p", "D"): {"PMID:3"}}
+    # both "no" and "maybe" are dropped; "yes" is kept
+    assert drop_set == {
+        ("A", "p", "B"): {"PMID:1"},
+        ("C", "p", "D"): {"PMID:3"},
+        ("A", "p", "E"): {"PMID:5"},
+    }
 
 
 def test_filter_normalized_kgx_end_to_end(tmp_path: Path) -> None:
