@@ -1,10 +1,11 @@
 """SemMedDB post-normalization filter: drop publications the LLM PMID-checker rejected.
 
-Rule B: drop a publication only when its verdict is ``no``; keep ``yes`` / ``maybe`` (and any
-PMID with no verdict, e.g. a paper the checker could not read). Also drop the matching
-``TextMiningStudyResult`` from ``has_supporting_studies``. Drop an edge when no publication
-remains. Trim an edge to the most recent ``MAX_PUBLICATIONS_PER_EDGE`` publications when it has
-more than that, then prune nodes left without any edge.
+Drop a publication when its verdict is ``no`` or ``maybe``; keep ``yes`` and any PMID with no
+verdict (e.g. a paper the checker could not read). The ``maybe`` bucket is dropped for now and
+will be refined in a later second pass. Also drop the matching ``TextMiningStudyResult`` from
+``has_supporting_studies``. Drop an edge when no publication remains. Trim an edge to the most
+recent ``MAX_PUBLICATIONS_PER_EDGE`` publications when it has more than that, then prune nodes
+left without any edge.
 
 The filter overwrites ``normalized_nodes.jsonl`` / ``normalized_edges.jsonl`` in place (no raw
 backup), so merge and every downstream stage read the filtered output with no path change.
@@ -22,9 +23,9 @@ import polars as pl
 # the "no" rows, which all live here, so no separate no-abstract file is required.
 VERDICT_ARTIFACT_FILENAME = "semmeddb_pmid_checker_results.parquet"
 
-# only this verdict removes a publication; every other value (and any PMID absent from the
-# results, e.g. a no-abstract paper) is kept (Rule B)
-DROP_SUPPORT_VALUE = "no"
+# these verdicts remove a publication; "yes" and any PMID absent from the results (e.g. a
+# no-abstract paper) are kept. "maybe" is dropped now and refined in a later second pass.
+DROP_SUPPORT_VALUES = frozenset({"no", "maybe"})
 
 # edges left with more than this many publications after filtering are trimmed to the most
 # recent ones (highest PMID number, since PMIDs are assigned chronologically). This bounds the
@@ -36,7 +37,7 @@ DropSet = dict[EdgeKey, set[str]]
 
 
 def load_drop_set(artifact_file: Path) -> DropSet:
-    """Build ``{(subject, predicate, object) -> {rejected PMIDs}}`` from the ``no`` verdicts.
+    """Build ``{(subject, predicate, object) -> {rejected PMIDs}}`` from the ``no``/``maybe`` verdicts.
 
     Keyed per edge so each edge needs a single dict lookup rather than one membership
     test per publication.
@@ -47,7 +48,7 @@ def load_drop_set(artifact_file: Path) -> DropSet:
             columns=["subject_curie", "predicate", "object_curie", "PMID", "support"],
         )
         .with_columns(pl.col("support").cast(pl.Utf8).str.to_lowercase().str.strip_chars())
-        .filter(pl.col("support") == DROP_SUPPORT_VALUE)
+        .filter(pl.col("support").is_in(DROP_SUPPORT_VALUES))
     )
 
     drop_set: DropSet = {}
@@ -114,9 +115,9 @@ def _cap_by_recency(publications: list[str], limit: int) -> list[str]:
 def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | None:
     """Remove rejected publications and cap oversized edges, or return None if none remain.
 
-    Drops publications the checker marked ``no``. If more than ``MAX_PUBLICATIONS_PER_EDGE``
-    remain, keeps only the most recent ones (highest PMID). Matching ``TextMiningStudyResult``
-    entries are pruned for every removed publication.
+    Drops publications the checker marked ``no`` or ``maybe``. If more than
+    ``MAX_PUBLICATIONS_PER_EDGE`` remain, keeps only the most recent ones (highest PMID).
+    Matching ``TextMiningStudyResult`` entries are pruned for every removed publication.
 
     >>> drop = {("A", "p", "B"): {"PMID:2"}}
     >>> filter_edge({"subject": "A", "predicate": "p", "object": "B",
