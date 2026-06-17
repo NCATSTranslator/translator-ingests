@@ -57,7 +57,7 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = ["*.ipynb","**/eda"]
+extend-exclude = ["*.ipynb","src/docs/ingests/*"]
 
 [tool.black]
 line-length = 120

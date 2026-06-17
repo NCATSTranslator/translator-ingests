@@ -67,7 +67,7 @@ tests, and a tunability doctest.
 `genetically_interacts_with` appeared. Opened the `qa-string-ingest` branch to
 find out why and to QA the predicate model against production.
 
-**EDA (all 3 taxa, ~40M rows each, streamed single-pass — see [`eda/`](./eda/)).**
+**EDA (all 3 taxa, ~40M rows each, streamed single-pass — see [`eda/`](../../../docs/ingests/string/eda/)).**
 
 - Native `neighborhood` is **0 in every row** of human/mouse/rat → `genetic_neighborhood_of`
   can never fire. `neighborhood_transferred` exists (~4% of rows) but maxes at **385**.
