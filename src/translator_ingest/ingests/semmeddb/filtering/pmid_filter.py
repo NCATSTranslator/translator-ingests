@@ -3,7 +3,8 @@
 Rule B: drop a publication only when its verdict is ``no``; keep ``yes`` / ``maybe`` (and any
 PMID with no verdict, e.g. a paper the checker could not read). Also drop the matching
 ``TextMiningStudyResult`` from ``has_supporting_studies``. Drop an edge when no publication
-remains, then prune nodes left without any edge.
+remains. Trim an edge to the most recent ``MAX_PUBLICATIONS_PER_EDGE`` publications when it has
+more than that, then prune nodes left without any edge.
 
 The filter overwrites ``normalized_nodes.jsonl`` / ``normalized_edges.jsonl`` in place (no raw
 backup), so merge and every downstream stage read the filtered output with no path change.
@@ -24,6 +25,11 @@ VERDICT_ARTIFACT_FILENAME = "semmeddb_pmid_checker_results.parquet"
 # only this verdict removes a publication; every other value (and any PMID absent from the
 # results, e.g. a no-abstract paper) is kept (Rule B)
 DROP_SUPPORT_VALUE = "no"
+
+# edges left with more than this many publications after filtering are trimmed to the most
+# recent ones (highest PMID number, since PMIDs are assigned chronologically). This bounds the
+# small tail of very large edges without touching the vast majority.
+MAX_PUBLICATIONS_PER_EDGE = 1000
 
 EdgeKey = tuple[str, str, str]
 DropSet = dict[EdgeKey, set[str]]
@@ -77,8 +83,40 @@ def _prune_supporting_studies(
     return pruned
 
 
+def _pmid_number(pmid: str) -> int:
+    """Return the numeric part of a PMID for recency ordering, or -1 if not numeric.
+
+    PMIDs are assigned chronologically, so a higher number is a more recent paper.
+
+    >>> _pmid_number("PMID:12345")
+    12345
+    >>> _pmid_number("PMID:not-a-number")
+    -1
+    """
+    digits = pmid.rsplit(":", 1)[-1]
+    return int(digits) if digits.isdigit() else -1
+
+
+def _cap_by_recency(publications: list[str], limit: int) -> list[str]:
+    """Keep the ``limit`` most recent publications (highest PMID number), in original order.
+
+    >>> _cap_by_recency(["PMID:5", "PMID:1", "PMID:9", "PMID:3"], 2)
+    ['PMID:5', 'PMID:9']
+    >>> _cap_by_recency(["PMID:1", "PMID:2"], 5)
+    ['PMID:1', 'PMID:2']
+    """
+    if len(publications) <= limit:
+        return publications
+    kept = set(sorted(publications, key=_pmid_number, reverse=True)[:limit])
+    return [pmid for pmid in publications if pmid in kept]
+
+
 def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | None:
-    """Remove rejected publications from one edge, or return None if none remain.
+    """Remove rejected publications and cap oversized edges, or return None if none remain.
+
+    Drops publications the checker marked ``no``. If more than ``MAX_PUBLICATIONS_PER_EDGE``
+    remain, keeps only the most recent ones (highest PMID). Matching ``TextMiningStudyResult``
+    entries are pruned for every removed publication.
 
     >>> drop = {("A", "p", "B"): {"PMID:2"}}
     >>> filter_edge({"subject": "A", "predicate": "p", "object": "B",
@@ -93,20 +131,28 @@ def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | Non
     """
     # normalized KGX edges always carry subject/predicate/object
     edge_key = (edge["subject"], edge["predicate"], edge["object"])
-    dropped_pmids = drop_set.get(edge_key)
-    if not dropped_pmids:
-        # no rejected publication for this edge; pass it through untouched
-        return edge
+    dropped_pmids = drop_set.get(edge_key) or set()
 
-    publications = [pmid for pmid in edge.get("publications", []) if pmid not in dropped_pmids]
+    original_publications = edge.get("publications", [])
+    publications = [pmid for pmid in original_publications if pmid not in dropped_pmids]
     if not publications:
         # every publication was rejected -> drop the whole edge
         return None
 
+    removed_pmids = set(dropped_pmids)
+    if len(publications) > MAX_PUBLICATIONS_PER_EDGE:
+        capped = _cap_by_recency(publications, MAX_PUBLICATIONS_PER_EDGE)
+        removed_pmids |= set(publications) - set(capped)
+        publications = capped
+
+    if len(publications) == len(original_publications):
+        # nothing dropped and nothing capped; pass the edge through untouched
+        return edge
+
     filtered_edge = {**edge, "publications": publications}
     supporting_studies = filtered_edge.get("has_supporting_studies")
-    if supporting_studies:
-        pruned_studies = _prune_supporting_studies(supporting_studies, dropped_pmids)
+    if supporting_studies and removed_pmids:
+        pruned_studies = _prune_supporting_studies(supporting_studies, removed_pmids)
         if pruned_studies:
             filtered_edge["has_supporting_studies"] = pruned_studies
         else:
