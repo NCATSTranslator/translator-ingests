@@ -32,6 +32,11 @@ DROP_SUPPORT_VALUES = frozenset({"no", "maybe"})
 # small tail of very large edges without touching the vast majority.
 MAX_PUBLICATIONS_PER_EDGE = 1000
 
+# the cap is on by default. Set SEMMEDDB_UNCAPPED=1 (or true/yes) to disable it and keep every
+# surviving publication, for example to regenerate uncapped output for a fresh PMID-checker run.
+# Switching this between runs requires OVERWRITE, since it does not change the filter version hash.
+CAP_ENABLED = os.environ.get("SEMMEDDB_UNCAPPED", "").lower() not in ("1", "true", "yes")
+
 EdgeKey = tuple[str, str, str]
 DropSet = dict[EdgeKey, set[str]]
 
@@ -115,9 +120,10 @@ def _cap_by_recency(publications: list[str], limit: int) -> list[str]:
 def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | None:
     """Remove rejected publications and cap oversized edges, or return None if none remain.
 
-    Drops publications the checker marked ``no`` or ``maybe``. If more than
-    ``MAX_PUBLICATIONS_PER_EDGE`` remain, keeps only the most recent ones (highest PMID).
-    Matching ``TextMiningStudyResult`` entries are pruned for every removed publication.
+    Drops publications the checker marked ``no`` or ``maybe``. If the cap is enabled
+    (``CAP_ENABLED``) and more than ``MAX_PUBLICATIONS_PER_EDGE`` remain, keeps only the most
+    recent ones (highest PMID). Matching ``TextMiningStudyResult`` entries are pruned for every
+    removed publication.
 
     >>> drop = {("A", "p", "B"): {"PMID:2"}}
     >>> filter_edge({"subject": "A", "predicate": "p", "object": "B",
@@ -141,7 +147,7 @@ def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | Non
         return None
 
     removed_pmids = set(dropped_pmids)
-    if len(publications) > MAX_PUBLICATIONS_PER_EDGE:
+    if CAP_ENABLED and len(publications) > MAX_PUBLICATIONS_PER_EDGE:
         capped = _cap_by_recency(publications, MAX_PUBLICATIONS_PER_EDGE)
         removed_pmids |= set(publications) - set(capped)
         publications = capped
