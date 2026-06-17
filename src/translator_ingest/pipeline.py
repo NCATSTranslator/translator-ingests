@@ -4,11 +4,14 @@ import json
 import time
 import shutil
 
+from collections.abc import Callable
 from dataclasses import is_dataclass, asdict
 from datetime import datetime
 from importlib import import_module
+from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -343,6 +346,99 @@ def normalize(pipeline_metadata: PipelineMetadata):
     logger.info(f"Normalization complete for {pipeline_metadata.source}.")
 
 
+# Optional post-normalization filter. A source opts in by providing a
+# translator_ingest.ingests.{source}.filtering subpackage exposing filter_normalized_kgx().
+# Kept in a subpackage (not the ingest's top-level files) so filter edits do not change the
+# content-hash transform version. Sources without one are unaffected: filter_code_version stays
+# None, this stage is a no-op, and no directory or build-version segment is added.
+SOURCE_FILTER_FUNCTION_NAME = "filter_normalized_kgx"
+
+
+def get_source_filter(source: str) -> Callable[..., dict[str, Any]] | None:
+    module_name = f"translator_ingest.ingests.{source}.filtering"
+    if find_spec(module_name) is None:
+        return None
+    filtering_module = import_module(module_name)
+    return getattr(filtering_module, SOURCE_FILTER_FUNCTION_NAME, None)
+
+
+def get_filter_code_version(source: str) -> str | None:
+    """Content hash of a source's filtering subpackage, or None when it has no filter."""
+    filtering_dir = INGESTS_PARSER_PATH / source / "filtering"
+    if not filtering_dir.is_dir():
+        return None
+    files_to_hash: list[Path] = sorted(filtering_dir.glob("*.py"))
+    if not files_to_hash:
+        return None
+    hasher = hashlib.sha256()
+    for file_path in files_to_hash:
+        hasher.update(file_path.read_bytes())
+    return hasher.hexdigest()[:8]
+
+
+def is_source_filter_complete(pipeline_metadata: PipelineMetadata) -> bool:
+    # sources without a filter have nothing to do, so they are always "complete"
+    if pipeline_metadata.filter_code_version is None:
+        return True
+    metadata_path = get_versioned_file_paths(
+        file_type=IngestFileType.FILTER_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+    if not metadata_path.exists():
+        return False
+    with metadata_path.open() as metadata_file:
+        recorded_version = json.load(metadata_file).get("filter_code_version")
+    return recorded_version == pipeline_metadata.filter_code_version
+
+
+def apply_source_filter(pipeline_metadata: PipelineMetadata, overwrite: bool) -> None:
+    """Run a source's optional filter in place over the normalized KGX files.
+
+    The filter overwrites normalized_nodes.jsonl / normalized_edges.jsonl with no raw
+    backup, so merge and every downstream stage read the filtered output without any path
+    change. Changing filter code later therefore requires an OVERWRITE run.
+    """
+    source = pipeline_metadata.source
+    filter_function = get_source_filter(source)
+    if filter_function is None:
+        return
+
+    normalized_nodes_file, normalized_edges_file = get_versioned_file_paths(
+        file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    )
+    metadata_path = get_versioned_file_paths(
+        file_type=IngestFileType.FILTER_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+
+    # Without a raw backup the normalized files are already the filtered output once a filter
+    # has run. Re-filtering them with changed filter code would be wrong and unrecoverable, so
+    # fail fast and require an OVERWRITE run that regenerates normalization first.
+    if metadata_path.exists() and not overwrite:
+        with metadata_path.open() as metadata_file:
+            recorded_version = json.load(metadata_file).get("filter_code_version")
+        if recorded_version != pipeline_metadata.filter_code_version:
+            raise RuntimeError(
+                f"Filter code for {source} changed (was {recorded_version}, now "
+                f"{pipeline_metadata.filter_code_version}) but the normalized output was already "
+                f"filtered in place with no raw backup. Re-run with OVERWRITE=1 to regenerate."
+            )
+
+    logger.info(f"Applying post-normalization filter for {source}...")
+    start_time = time.perf_counter()
+    filter_stats = filter_function(
+        nodes_file=normalized_nodes_file,
+        edges_file=normalized_edges_file,
+        source_data_dir=get_source_data_directory(pipeline_metadata),
+    )
+    elapsed_time = time.perf_counter() - start_time
+    logger.info(f"Filter complete for {source} in {elapsed_time:.1f} seconds: {filter_stats}")
+
+    write_ingest_file(
+        file_type=IngestFileType.FILTER_METADATA_FILE,
+        pipeline_metadata=pipeline_metadata,
+        data={"filter_code_version": pipeline_metadata.filter_code_version, **filter_stats},
+    )
+
+
 def is_merge_complete(pipeline_metadata: PipelineMetadata):
     merged_nodes, merged_edges = get_versioned_file_paths(
         file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
@@ -651,6 +747,17 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         )
     else:
         normalize(pipeline_metadata)
+
+    # Apply an optional source-specific filter to the normalized KGX files.
+    # No-op for sources without a filtering subpackage (filter_code_version stays None).
+    pipeline_metadata.filter_code_version = get_filter_code_version(source)
+    if is_source_filter_complete(pipeline_metadata) and not overwrite:
+        logger.info(
+            f"Source filter already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
+            f"filter: {pipeline_metadata.filter_code_version}"
+        )
+    else:
+        apply_source_filter(pipeline_metadata, overwrite)
 
     # Merge entities in post-normalization KGX files
     pipeline_metadata.merging_code_version = MERGING_CODE_VERSION

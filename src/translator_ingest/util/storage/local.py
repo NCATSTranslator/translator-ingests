@@ -24,6 +24,7 @@ class IngestFileType(Enum):
     VALIDATION_REPORT_FILE = 16
     LATEST_BUILD_FILE = 17
     LATEST_RELEASE_FILE = 18
+    FILTER_METADATA_FILE = 19
 
 
 
@@ -34,6 +35,7 @@ class IngestFileName(StrEnum):
     NORMALIZATION_METADATA = "normalization-metadata.json"
     NORMALIZATION_MAP = "normalization_map.json"
     NORMALIZATION_FAILURES = "normalization_failures.txt"
+    FILTER_METADATA = "filter-metadata.json"
     MERGED_NODES = "merged_nodes.jsonl"
     MERGED_EDGES = "merged_edges.jsonl"
     MERGE_METADATA_FILE = "merge_metadata.json"
@@ -62,6 +64,8 @@ FILE_PATH_LOOKUP = {
     / IngestFileName.NORMALIZATION_MAP,
     IngestFileType.NORMALIZATION_FAILURES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
     / IngestFileName.NORMALIZATION_FAILURES,
+    IngestFileType.FILTER_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    / IngestFileName.FILTER_METADATA,
     IngestFileType.MERGED_KGX_FILES: lambda pipeline_metadata: (
         get_merge_directory(pipeline_metadata) / IngestFileName.MERGED_NODES,
         get_merge_directory(pipeline_metadata) / IngestFileName.MERGED_EDGES,
