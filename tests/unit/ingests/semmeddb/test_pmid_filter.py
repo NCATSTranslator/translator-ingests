@@ -7,9 +7,12 @@ from typing import Any
 import polars as pl
 import pytest
 
+from translator_ingest.ingests.semmeddb.filtering import pmid_filter
 from translator_ingest.ingests.semmeddb.filtering.pmid_filter import (
     VERDICT_ARTIFACT_FILENAME,
     DropSet,
+    _cap_by_recency,
+    _pmid_number,
     filter_edge,
     filter_normalized_kgx,
     load_drop_set,
@@ -179,3 +182,47 @@ def test_filter_code_version_present_only_for_filtered_source() -> None:
     semmeddb_version = get_filter_code_version("semmeddb")
     assert isinstance(semmeddb_version, str) and len(semmeddb_version) == 8
     assert get_filter_code_version("ctd") is None
+
+
+@pytest.mark.parametrize(
+    "publications, limit, expected",
+    [
+        # keep the 2 highest PMIDs (9, 5), preserving original order
+        (["PMID:5", "PMID:1", "PMID:9", "PMID:3"], 2, ["PMID:5", "PMID:9"]),
+        # under the limit -> untouched
+        (["PMID:1", "PMID:2"], 5, ["PMID:1", "PMID:2"]),
+        (["PMID:10", "PMID:2", "PMID:30"], 1, ["PMID:30"]),
+    ],
+)
+def test_cap_by_recency(publications: list[str], limit: int, expected: list[str]) -> None:
+    assert _cap_by_recency(publications, limit) == expected
+
+
+def test_pmid_number_handles_non_numeric() -> None:
+    assert _pmid_number("PMID:42") == 42
+    assert _pmid_number("PMID:abc") == -1
+
+
+def test_filter_edge_caps_oversized_edge(monkeypatch: pytest.MonkeyPatch) -> None:
+    # with a low cap, an oversized edge keeps only the most recent PMIDs and prunes their studies
+    monkeypatch.setattr(pmid_filter, "MAX_PUBLICATIONS_PER_EDGE", 2)
+    edge = {
+        "subject": "S", "predicate": "p", "object": "O",
+        "publications": ["PMID:10", "PMID:30", "PMID:20"],
+        "has_supporting_studies": {
+            "study1": {
+                "id": "study1",
+                "has_study_results": [
+                    {"id": "r10", "xref": ["PMID:10"], "supporting_text": ["old"]},
+                    {"id": "r30", "xref": ["PMID:30"], "supporting_text": ["new"]},
+                    {"id": "r20", "xref": ["PMID:20"], "supporting_text": ["mid"]},
+                ],
+            }
+        },
+    }
+    result = filter_edge(edge, {})
+    assert result is not None
+    # PMID:10 (lowest) dropped; the two most recent kept in original order
+    assert result["publications"] == ["PMID:30", "PMID:20"]
+    kept_xrefs = [r["xref"] for r in result["has_supporting_studies"]["study1"]["has_study_results"]]
+    assert kept_xrefs == [["PMID:30"], ["PMID:20"]]
