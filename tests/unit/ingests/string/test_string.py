@@ -328,7 +328,6 @@ def test_predicates_for_row_all_channels_fire():
         ({"experiments": 800},  ["biolink:physically_interacts_with"]),
         ({"coexpression": 800}, ["biolink:coexpressed_with"]),
         ({"textmining": 800},   ["biolink:interacts_with"]),
-        ({"neighborhood": 800}, ["biolink:genetic_neighborhood_of"]),
         ({"fusion": 800},       ["biolink:gene_fusion_with"]),
         ({"cooccurence": 800},  ["biolink:genetically_interacts_with"]),
     ],
@@ -400,7 +399,6 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
         ({"database": 800},     KnowledgeLevelEnum.knowledge_assertion,    AgentTypeEnum.manual_agent),
         ({"coexpression": 800}, KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
         ({"cooccurence": 800},  KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
-        ({"neighborhood": 800}, KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
         ({"fusion": 800},       KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
         ({"homology": 800},     KnowledgeLevelEnum.prediction,             AgentTypeEnum.computational_model),
         ({"textmining": 800},   KnowledgeLevelEnum.not_provided,           AgentTypeEnum.text_mining_agent),
@@ -427,9 +425,9 @@ def test_knowledge_level_multi_high_conf_upgrades_to_manual():
 
 
 def test_knowledge_level_multi_high_conf_without_manual_uses_pipeline():
-    """Two high-conf channels, neither curator-backed → knowledge_assertion + data_analysis_pipeline."""
+    """High-conf channels, neither curator-backed → knowledge_assertion + data_analysis_pipeline."""
     row = {ch: 0 for ch in CHANNEL_KL_AT}
-    row.update({"coexpression": 800, "neighborhood": 800})  # statistical + prediction, no manual
+    row.update({"coexpression": 800, "cooccurence": 800})  # statistical + prediction, no manual
     kl, at = knowledge_level_and_agent_type_for_row(row)
     assert kl == KnowledgeLevelEnum.knowledge_assertion
     assert at == AgentTypeEnum.data_analysis_pipeline

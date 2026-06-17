@@ -27,12 +27,14 @@ SUPPORTED_TAXA: dict[str, str] = {
 }
 
 STRING_CHANNELS = Literal[
-    "neighborhood",
     "fusion",
     "cooccurence",
     "coexpression",
     "experiments",
     "textmining",
+
+    # Ignored STRING evidence channels: see RIG
+    # "neighborhood",
     # "homology",
     # "database"
 ]
@@ -42,7 +44,6 @@ STRING_CHANNELS = Literal[
 # as constrained by the Biolink Model
 MI_PREDICATE = Literal[
   "biolink:gene_fusion_with",
-  "biolink:genetic_neighborhood_of",
   "biolink:genetically_interacts_with",
   "biolink:interacts_with",
   "biolink:physically_interacts_with",
@@ -77,7 +78,6 @@ CHANNEL_HIGH_CONF_THRESHOLD = 750
 # get their own predicates — only the native channel score is consulted, again
 # matching ORION's behavior.
 CHANNEL_PREDICATES: dict[ STRING_CHANNELS, MI_PREDICATE ] = {
-    "neighborhood": "biolink:genetic_neighborhood_of",
     "fusion":       "biolink:gene_fusion_with",
     "cooccurence":  "biolink:genetically_interacts_with",  # STRING's spelling (sic)
     "coexpression": "biolink:coexpressed_with",
@@ -142,24 +142,22 @@ def resolve_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, int
 # the two: biolink rejects "coexpressed_with" on "PairwiseMolecularInteraction"
 # and rejects the molecular-interaction predicates on the coexpression class.
 # "make_string_ppi_edge" encapsulates the dispatch so the transform doesn't
-# repeat it. The predicates "biolink:genetic_neighborhood_of" and
-# "biolink:genetically_interacts_with" are simply considered gene-to-gene interactions
+# repeat it. The "biolink:genetically_interacts_with" predicate
+# is simply considered gene-to-gene interactions
 # which may not necessarily imply direct physical interaction between two gene products.
 PREDICATE_TO_ASSOCIATION_CLASS: dict[MI_PREDICATE, type[GeneToGeneAssociation]] = {
     "biolink:physically_interacts_with":  PairwiseMolecularInteraction,
     "biolink:interacts_with":             PairwiseMolecularInteraction,
     "biolink:gene_fusion_with":           PairwiseMolecularInteraction,
-    "biolink:genetic_neighborhood_of":    PairwiseGeneToGeneInteraction,
     "biolink:genetically_interacts_with": PairwiseGeneToGeneInteraction,
     "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
 }
 
 # PSI-MI interaction type attached only to "physically_interacts_with" edges.
 # "MI:0915" is "physical association" — semantically aligned with the
-# physical-interaction predicate only. Other predicates (coexpressed_with,
-# genetic_neighborhood_of, etc.) describe different evidence types that
-# don't correspond to PSI-MI physical-association semantics; for those we
-# omit the slot rather than attaching a misleading term.
+# physical-interaction predicate only. Other predicates (coexpressed_with, etc.)
+# describe different evidence types that don't directly imply direct physical association;
+# for those we omit the slot rather than attaching a misleading term.
 # TODO: doublecheck if this is the correct association ID with Sierra
 PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915"
 PSI_MI_FUNCTIONAL_INTERACTION = "MI:2286"
@@ -167,10 +165,14 @@ PSI_MI_COVALENT_BINDING = "MI:0195"
 
 PREDICATE_TO_MI_TYPE = {
     "biolink:gene_fusion_with": PSI_MI_COVALENT_BINDING,
-    # "biolink:genetic_neighborhood_of": "",
     "biolink:genetically_interacts_with": PSI_MI_FUNCTIONAL_INTERACTION,
-    # "biolink:interacts_with": "",
+
     "biolink:physically_interacts_with": PSI_MI_PHYSICAL_ASSOCIATION,
+
+    # This predicate only documents research occurrence of protein identities
+    # within a common research paper, where the source of correlation
+    # may *or may not* be due to a direct molecular interaction
+    # "biolink:interacts_with": "",
 
     # This predicate only documents correlated expression,
     # whereas the source of the correlation may *or may not*
@@ -187,7 +189,6 @@ PREDICATE_TO_MI_TYPE = {
 # which don't drive predicates) because KL/AT is a row-level property derived
 # from the dominant-evidence channel, independent of which predicates fire.
 CHANNEL_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
-    "neighborhood": (KnowledgeLevelEnum.prediction,              AgentTypeEnum.data_analysis_pipeline),
     "fusion":       (KnowledgeLevelEnum.prediction,              AgentTypeEnum.data_analysis_pipeline),
     "cooccurence":  (KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
     "homology":     (KnowledgeLevelEnum.prediction,              AgentTypeEnum.computational_model),
@@ -275,13 +276,13 @@ def predicates_for_row(
     only fire once. Channels with non-numeric or missing scores are silently
     skipped; STRING guarantees integer scores, so this is a defensive guard.
 
-    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    >>> row = {"fusion": "0", "cooccurence": "0",
     ...        "coexpression": "0", "experiments": "800", "textmining": "0",
     ...        "homology": "0", "database": "0"}
     >>> predicates_for_row(row)
     ['biolink:physically_interacts_with']
 
-    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    >>> row = {"fusion": "0", "cooccurence": "0",
     ...        "coexpression": "780", "experiments": "0", "textmining": "0",
     ...        "homology": "0", "database": "0"}
     >>> predicates_for_row(row)
@@ -289,7 +290,7 @@ def predicates_for_row(
 
     Multi-channel: experiments + coexpression both fire above 750, emit both.
 
-    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    >>> row = {"fusion": "0", "cooccurence": "0",
     ...        "coexpression": "780", "experiments": "780", "textmining": "0",
     ...        "homology": "0", "database": "0"}
     >>> predicates_for_row(row)
@@ -298,23 +299,24 @@ def predicates_for_row(
     No channel above 750 → fallback (assumes the row passed combined_score
     gate elsewhere).
 
-    >>> row = {"neighborhood": "200", "fusion": "0", "cooccurence": "0",
+    >>> row = {"fusion": "0", "cooccurence": "0",
     ...        "coexpression": "300", "experiments": "200", "textmining": "100",
     ...        "homology": "0", "database": "0"}
     >>> predicates_for_row(row)
     ['biolink:physically_interacts_with']
 
-    Per-channel override: a ``thresholds`` dict (from string.yaml's
-    ``transform.channel_thresholds``) gates each channel independently. Lowering
-    the ``cooccurence`` knob below a row's score surfaces
-    ``genetically_interacts_with`` that the default 750 gate would hide (EDA: the
+    Per-channel override: a "thresholds" dict (from string.yaml's
+    "transform.channel_thresholds") gates each channel independently. Lowering
+    the "cooccurence" knob below a row's score surfaces
+    "genetically_interacts_with" that the default 750 gate would hide (EDA: the
     cooccurence channel maxes at 542 across all three taxa).
 
-    >>> row = {"neighborhood": "0", "fusion": "0", "cooccurence": "540",
+    >>> row = {"fusion": "0", "cooccurence": "540",
     ...        "coexpression": "0", "experiments": "0", "textmining": "0",
     ...        "homology": "0", "database": "0"}
     >>> predicates_for_row(row)
     ['biolink:physically_interacts_with']
+
     >>> predicates_for_row(row, thresholds={"cooccurence": 450})
     ['biolink:genetically_interacts_with']
     """
@@ -372,7 +374,7 @@ def knowledge_level_and_agent_type_for_row(
 
     >>> # Single dominant channel → that channel's KL/AT.
     >>> row = {"experiments": "800", "coexpression": "100", "textmining": "0",
-    ...        "neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "fusion": "0", "cooccurence": "0",
     ...        "homology": "0", "database": "0"}
     >>> kl, at = knowledge_level_and_agent_type_for_row(row)
     >>> kl.value, at.value
@@ -380,7 +382,7 @@ def knowledge_level_and_agent_type_for_row(
 
     >>> # Text-mining dominant.
     >>> row = {"experiments": "0", "coexpression": "0", "textmining": "900",
-    ...        "neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "fusion": "0", "cooccurence": "0",
     ...        "homology": "0", "database": "0"}
     >>> kl, at = knowledge_level_and_agent_type_for_row(row)
     >>> kl.value, at.value
@@ -388,7 +390,7 @@ def knowledge_level_and_agent_type_for_row(
 
     >>> # Two high-confidence channels, one curator-backed → upgrade.
     >>> row = {"experiments": "800", "coexpression": "800", "textmining": "0",
-    ...        "neighborhood": "0", "fusion": "0", "cooccurence": "0",
+    ...        "fusion": "0", "cooccurence": "0",
     ...        "homology": "0", "database": "0"}
     >>> kl, at = knowledge_level_and_agent_type_for_row(row)
     >>> kl.value, at.value
