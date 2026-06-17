@@ -231,3 +231,16 @@ def test_filter_edge_caps_oversized_edge(monkeypatch: pytest.MonkeyPatch) -> Non
     assert result["publications"] == ["PMID:30", "PMID:20"]
     kept_xrefs = [r["xref"] for r in result["has_supporting_studies"]["study1"]["has_study_results"]]
     assert kept_xrefs == [["PMID:30"], ["PMID:20"]]
+
+
+def test_filter_edge_cap_can_be_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    # SEMMEDDB_UNCAPPED disables the cap, so an oversized edge keeps every publication
+    monkeypatch.setattr(pmid_filter, "CAP_ENABLED", False)
+    monkeypatch.setattr(pmid_filter, "MAX_PUBLICATIONS_PER_EDGE", 2)
+    edge = {
+        "subject": "S", "predicate": "p", "object": "O",
+        "publications": ["PMID:10", "PMID:30", "PMID:20"],
+    }
+    result = filter_edge(edge, {})
+    assert result is not None
+    assert result["publications"] == ["PMID:10", "PMID:30", "PMID:20"]
