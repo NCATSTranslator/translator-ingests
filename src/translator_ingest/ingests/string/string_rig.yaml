@@ -5,8 +5,9 @@ source_info:
     description: >-
       STRING (Search Tool for the Retrieval of Interacting Genes/Proteins) is a database of known and predicted
       protein–protein interactions hosted by SIB / EMBL / CPR. STRING aggregates evidence from seven channels —
-      genomic neighborhood, gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, and text
-      mining — plus curated databases, and combines them into a single "combined_score" per interaction pair. 
+      genomic neighborhood, gene fusion, phylogenetic co-occurrence, homology, co-expression, experiments, 
+      and text mining — plus curated databases, and combines them into a single "combined_score" per interaction pair.
+      
       The STRING "combined_score" does not measure interaction strength, binding affinity, or the magnitude of
       the biological effect. Instead, it reflects how strongly the available data support the presence of a
       biological association. A high STRING score therefore does not imply that the interaction is
@@ -14,11 +15,7 @@ source_info:
       
       Each protein encoded by a single gene locus.  Since STRING proteins are not all human-specific or higher
       mammalian in origin, nor even eukaryotic, only of subset of STRING data will be ingested into the Translator KG.
-      Furthermore, certain STRING channels are not relevant to the Translator KG (i.e.,"neighborhood" is prokaryote-only).
-
-      (STITCH, STRING's sister database for protein–chemical interactions, was developed alongside this ingest but
-      split out for a later, properly-scoped effort — preserved on the "stitch-ingest" branch. See CHANGELOG
-      2026-05-28.)
+      Certain STRING channels are not relevant to the Translator KG (i.e.,"neighborhood" generally non-eukaryotic).
     citations:
       - https://doi.org/10.1093/nar/gkac1000
     terms_of_use_info:
@@ -32,8 +29,6 @@ source_info:
       - STRING main site: https://string-db.org/
     data_provision_mechanisms:
       - file_download
-      - web_interface
-      - web_service_api
     data_formats:
       - TSV (gzip), space-delimited
     data_versioning_and_releases: >-
@@ -51,12 +46,12 @@ ingest_info:
       mouse, and rat - supported by diverse evidence ("channels").
     scope: >-
       Protein–protein interactions for three Translator-target species: human (NCBITaxon:9606),
-      mouse (NCBITaxon:10090), and rat (NCBITaxon:10116). Protein identifiers are kept in their native ENSEMBL
-      form (ENSP / ENSMUSP / ENSRNOP) — no mapping to gene-level identifiers as canonical IDs; NCBIGene
-      equivalents are attached via "equivalent_identifiers". Per-channel evidence subscores drive per-channel
-      predicate emission (one edge per high-confidence channel); the aggregate "combined_score" gates row
-      inclusion. Future iterations may extend to additional species, surface per-channel subscores as edge
-      properties, and add the STITCH protein–chemical layer — see "future_considerations" below.
+      mouse (NCBITaxon:10090), and rat (NCBITaxon:10116). Protein identifiers are kept in their native
+      ENSEMBL forms (ENSP / ENSMUSP / ENSRNOP) — no mapping to gene-level identifiers as canonical IDs;
+      NCBIGene equivalents are attached via "equivalent_identifiers". Per-channel evidence subscores drive
+      per-channel predicate emission (one edge per high-confidence channel); the aggregate "combined_score"
+      filters row inclusion. Future iterations may extend to additional species and surface per-channel
+      subscores as edge properties.
     relevant_files:
       - file_name: 9606.protein.links.full.v12.0.txt.gz
         location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
@@ -64,23 +59,24 @@ ingest_info:
           Human protein–protein interaction file, full variant (~154 MB gzipped, ~2x the 3-column .links file).
           16 space-delimited columns: protein1, protein2, 7 evidence channels (neighborhood, fusion, cooccurence,
           homology, coexpression, experiments, database, textmining), 6 orthology-transferred variants of those
-          channels, and combined_score. One row per directed pair (each unordered pair appears twice). We use
-          the .full variant rather than the 3-column .links variant because per-channel subscores drive
-          per-channel predicate emission (see edge_type_info below).
+          channels, and the "combined_score". One row per directed pair (each unordered pair appears twice).
+          We use the .full variant rather than the 3-column .links variant because per-channel subscores drive
+          per-channel predicate emission (see edge_type_info below). Mouse and rat also ingested in the same way
+          and all three PPI files are processed by a single "string_ppi" tagged reader.
       - file_name: 10090.protein.links.full.v12.0.txt.gz
         location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
         description: >-
-          Mouse (Mus musculus) protein–protein interaction file, full variant (~140 MB gzipped). Same 16-column
-          shape as human.
+          Mouse (Mus musculus) protein–protein interaction file, full variant (~140 MB gzipped).
+          Same 16-column shape as human.
       - file_name: 10116.protein.links.full.v12.0.txt.gz
         location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
         description: >-
-          Rat (Rattus norvegicus) protein–protein interaction file, full variant (~139 MB gzipped). Same
-          16-column shape as human. All three PPI files drive the "string_ppi" tagged reader.
+          Rat (Rattus norvegicus) protein–protein interaction file, full variant (~139 MB gzipped).
+          Same 16-column shape as human.
       - file_name: all_organisms.entrez_2_string.tsv
         location: https://string-db.org/mapping_files/entrez/
         description: >-
-          Universal STRING to Entrez gene-ID mapping (~285 MB uncompressed, all species in one file).
+          Universal STRING to Entrez gene-ID mapping (~285 MB uncompressed, all STRING species in one file).
           Three tab-separated columns: NCBI taxid, Entrez gene ID, STRING protein ID. Loaded once at transform start
           via "on_data_begin" and used to populate "equivalent_identifiers" on Protein nodes with their NCBIGene
           equivalents. Filtered to "SUPPORTED_TAXA" at load time so resident memory stays bounded.
@@ -89,42 +85,32 @@ ingest_info:
     included_content:
       - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (9606 / 10090 / 10116)
         included_records: >-
-          Rows where combined_score > 500 (STRING's medium-confidence cutoff). Symmetric duplicates (each unordered pair
-          appears in both p1→p2 and p2→p1 form) are deduplicated on the sorted-pair key so each pair is emitted once.
-          Same logic applies uniformly across all three per-organism files.
+          Rows where combined_score > 500 (STRING's medium-confidence cutoff). Symmetric duplicates
+          (each unordered pair appears in both p1 to p2 and p2 to p1 form) are deduplicated on the sorted-pair key
+          so each pair is emitted once. Same logic applies uniformly across all three per-organism files.
         fields_used: >-
-          protein1, protein2 (parsed into ENSEMBL protein CURIEs — ENSP for human, ENSMUSP for mouse, ENSRNOP for rat —
-          after stripping the "{taxid}." taxon prefix); 6 of the 7 available evidence channels (neighborhood, fusion, cooccurence,
+          protein1, protein2 (parsed into ENSEMBL protein CURIEs — ENSP for human, ENSMUSP for mouse, ENSRNOP for rat
+          after stripping the "{taxid}." taxon prefix); 6 of the 7 available evidence channels (fusion, cooccurence,
           coexpression, experiments, textmining, plus homology and database for KL/AT) drive per-channel predicate
-          and knowledge-level/agent-type selection; combined_score gates row inclusion.
+          and knowledge-level/agent-type selection; each record "combined_score" filters row inclusion.
     filtered_content:
       - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)
         filtered_records: >-
           Rows with combined_score <= 500 are excluded.
         rationale: >-
-          Below medium confidence, STRING's predictions are too noisy for Translator reasoning. Matches the default
-          confidence cutoff offered on the STRING web interface.
+          Below medium confidence, STRING's predictions are too noisy for Translator reasoning.
+          Matches the default confidence cutoff offered on the STRING web interface.
       - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)
         filtered_records: >-
           Symmetric duplicate rows (the second occurrence of any unordered protein pair).
         rationale: >-
           STRING lists each interaction in both directions. We emit one undirected edge per pair (per predicate).
+      - file_name: {taxid}.protein.links.full.v12.0.txt.gz  (all three taxa)
+        filtered_records: >-
+          The 'neighborhood' channel is ignored.
+        rationale: >-
+          The 'neighborhood' channel only applies to prokaryotic genomes not directly relevant to Translator.
     future_considerations:
-      # Per-channel predicates AND per-channel KL/AT have shipped (the transform
-      # reads ".full.v12.0", fires up to 6 channel-specific predicates with a
-      # fallback above 750, and derives KL/AT from the dominant channel).
-      # Remaining axes below.
-      - category: edge_content
-        consideration: >-
-          Add the STITCH protein–chemical layer. Developed alongside this ingest as a "stitch_pcl" tagged reader
-          but split out for a later, properly-scoped effort — the complete implementation (ChemicalEntity →
-          interacts_with → Protein, "CIDm"/"CIDs" → PUBCHEM.COMPOUND parsing, human/mouse/rat) is preserved on
-          the "stitch-ingest" branch. The reintegration should land mode-of-action predicates from
-          "actions.v5.0.tsv" (activation, inhibition, binding, catalysis, …) from the start rather than the bare
-          "interacts_with" form, since no production STITCH KP exists to merely match (confirmed: Automat's
-          STRING-DB graph has no STITCH interaction edges — its only ProteintoChemicalEntity edges are Ubergraph
-          ontology backbone, "primary_knowledge_source: infores:ubergraph").
-        relevant_files: "{taxon}.protein_chemical.links.v5.0.tsv.gz, {taxon}.actions.v5.0.tsv.gz"
       - category: edge_content
         consideration: >-
           Extend to additional Translator-relevant organisms beyond human/mouse/rat (zebrafish, fly, worm, yeast).
@@ -149,7 +135,7 @@ ingest_info:
         relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
     additional_notes: >-
       Current scope: STRING protein–protein interactions for human, mouse, and rat. The STRING ingest emits
-      6 channel-mapped predicates (physically_interacts_with, coexpressed_with, interacts_with, genetic_neighborhood_of,
+      5 channel-mapped predicates (physically_interacts_with, coexpressed_with, interacts_with,
       gene_fusion_with, genetically_interacts_with) plus a fallback "physically_interacts_with" for rows that
       pass the combined-score gate without any high-confidence channel. knowledge_level / agent_type are derived
       per row from the dominant evidence channel (ORION-aligned). The predicate-selection rule matches ORION's
@@ -157,12 +143,7 @@ ingest_info:
       STRING-DB, RoboKOP). HOMOLOGY channel is deliberately excluded from predicate emission because STRING's
       HOMOLOGY score means inferred via orthologs in another species not A is homologous to B.
 
-      The STITCH protein–chemical sibling ingest was split out for a later effort (preserved on the
-      "stitch-ingest" branch); see "future_considerations" and CHANGELOG 2026-05-28. Other growth axes:
-      per-channel subscores as edge properties, additional non-mammalian species, and node names from
-      protein.aliases.
-
-# Information about the Graph Output by the ingest
+# Information about the Graph Output by the ingest task
 target_info:
     infores_id: infores:string
     edge_type_info:
@@ -172,8 +153,8 @@ target_info:
       # columns: 7 channels + 6 _transferred variants + combined_score) and
       # emits one edge per evidence channel whose score exceeds the
       # high-confidence per-channel threshold (>750). Rows are gated by
-      # "combined_score > 500". If no channel exceeds 750 but the row
-      # passes the combined-score gate, a single fallback
+      # "combined_score > 500". Channel specific thresholds are used for filtering
+      # but if a record passes the combined-score gate, a single fallback
       # "physically_interacts_with" edge is emitted (matches ORION's
       # behavior). Up to 6 edges per pair; typically 1–2.
       #
@@ -184,19 +165,19 @@ target_info:
       # misread (per ORION's comment). DATABASE is similarly excluded.
       #
       # Common attributes across all 6 edge types: subject/object categories
-      # = biolink:Protein; species_context_qualifier ∈ {9606, 10090, 10116};
+      # = biolink:Protein; species_context_qualifier subset of {9606, 10090, 10116};
       # primary_knowledge_source = infores:string.
       #
       # knowledge_level / agent_type are a ROW-level property, derived from the
       # dominant (max-score) evidence channel rather than from the predicate
       # (matches ORION's STRING parser). So any edge type can carry any of the
       # values below — the enumeration is the same across all 6 types:
-      #   EXPERIMENTS/DATABASE dominant → knowledge_assertion / manual_agent
-      #   COEXPRESSION/COOCCURENCE dominant → statistical_association / data_analysis_pipeline
-      #   NEIGHBORHOOD/FUSION dominant → prediction / data_analysis_pipeline
-      #   HOMOLOGY dominant → prediction / computational_model
-      #   TEXTMINING dominant → not_provided / text_mining_agent
-      #   ≥2 channels above 750 → knowledge_assertion / manual_agent (or
+      #   EXPERIMENTS/DATABASE dominant: knowledge_assertion / manual_agent
+      #   COEXPRESSION/COOCCURENCE dominant: statistical_association / data_analysis_pipeline
+      #   NEIGHBORHOOD/FUSION dominant: prediction / data_analysis_pipeline
+      #   HOMOLOGY dominant: prediction / computational_model
+      #   TEXTMINING dominant: not_provided / text_mining_agent
+      #   ≥2 channels above 750 to knowledge_assertion / manual_agent (or
       #     data_analysis_pipeline if no curator-backed channel is high-conf)
       #
       # Per-edge differences: predicate, biolink class, and has_attribute
