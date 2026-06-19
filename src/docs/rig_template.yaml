@@ -28,13 +28,13 @@
     terms_of_use_info:  # (required, range = TermsOfUseInfo)
       terms_of_use_url: # (optional, range = URIorCURIE)
       terms_of_use_description:  # (optional, range = string)
-      license name:  # (optional, range = string)
-      license url:   # (optional, range = URIorCURIE)
+      license_name:  # (optional, range = string)
+      license_url:   # (optional, range = URIorCURIE)
     data_access_locations:  # (required, multivalued, range = string) Each value should include a url, and optional description of what is provided at that location.
       - 
     data_provision_mechanisms:  # (optional, multivalued, range = ProvisionMechanismEnum: file_download | api_endpoint | database_dump | other)
       - 
-    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
+    data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | kgx | mysql | postgresql | sqlite | other)
       - 
     data_versioning_and_releases:  # (optional, range = string)
     additional_notes:  # (optional, range = string)
@@ -42,7 +42,7 @@
 
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
   ingest_info:  # (required, range = IngestInformation)
-    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology/terminology_provider | node_property_only_provider | other/unknown)
+    ingest_categories:  # (optional, multivalued, range = IngestCategoryEnum: primary_knowledge_provider | aggregation_provider | aggregation_interpreter | supporting_data_provider | translator_knowledge_creator | ontology_provider | node_property_only_provider | other)
       -
     utility:  # (required, range = string)
     scope:  # (optional, range = string)
@@ -76,7 +76,7 @@
     edge_type_info:  # (required, multivalued, range = EdgeType)
       - subject_categories:  # (required, multivalued, range = URIorCURIE) Note: multiple sub_cat and obj_cat values for an edge type does not mean that the full cross-product must be instantiated in the data. See schema for more details.
           -
-        predicates:  # (required, multivaluded, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
+        predicates:  # (required, multivalued, range = URIorCURIE) Note: Multiple values allowed only if they are a predicate and one or more of its descendent predicates (e.g. ["biolink:affects", "biolink:regulates", "biolink:disrupts"]
           - 
         object_categories:  # (required, multivalued, range = URIorCURIE)
           -
