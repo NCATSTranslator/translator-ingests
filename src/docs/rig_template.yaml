@@ -101,7 +101,7 @@
           -
         aggregator_knowledge_sources:  # (optional, multivalued, range = URIorCURIE (an infores id))
           - 
-        edge_properties:  # (optional, multivalued, range = URIorCURIE)
+        edge_properties:  # (optional, multivalued, range = URIorCURIE).  NOTE: No need to report those that are on EVERY edge - e.g. id, category, original subject, original object, knowledge level, agent type, sources.
           -     
         ui_explanation:  # (required, range = string)  Follow templates/examples in the spreadsheet here when writing these: https://docs.google.com/spreadsheets/d/1Tl-FQYaxoB2QRdurm1EDBWYUOA0RhEU5S_3Qiw9SdkU/edit?gid=0#gid=0
         source_files:   # (multivalued, range = string)  
