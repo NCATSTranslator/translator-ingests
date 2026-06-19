@@ -16,7 +16,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
-from bmt.pydantic import entity_id
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.util.logging_utils import get_logger
