@@ -154,7 +154,7 @@ def test_prepare_bindingdb_data(
             f"Unexpected reactant set ID # {test_record[REACTANT_SET_ID]}"
 
         # ... but expecting all the other records being tested further
-        assert test_record[REACTANT_SET_ID] in [1, 2, 4, 5, 9], \
+        assert test_record[REACTANT_SET_ID] in [1, 2, 4, 5, 9, 10], \
             f"Missing expected reactant set ID # {test_record[REACTANT_SET_ID]}"
 
         # Didn't extract this field (among others...) - column was not needed
@@ -189,6 +189,11 @@ def test_prepare_bindingdb_data(
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
             assert test_record["IC50 (nM)"] is None
+
+        elif test_record[REACTANT_SET_ID] == 10:
+            # Row 10 is a PubChem entry with AID
+            # that should be retained if proper filtering is done
+            assert test_record[PUBLICATION] == "pubchem.aid:1438"
 
 
 @pytest.mark.parametrize(

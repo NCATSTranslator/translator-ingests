@@ -36,6 +36,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
     ARTICLE_DOI,
     PMID,
+    PUBCHEM_AID,
     PATENT_NUMBER,
     MISSING_PUBS,
     ROWS_MISSING_AFFINITY
@@ -51,6 +52,7 @@ BINDINGDB_COLUMNS = (
     CURATION_DATASOURCE,
     ARTICLE_DOI,
     PMID,
+    PUBCHEM_AID,
     PATENT_NUMBER
 ) + tuple(AFFINITY_PARAMETERS.values())
 

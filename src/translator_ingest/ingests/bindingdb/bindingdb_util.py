@@ -51,6 +51,7 @@ nM = 1.0e-9
 CURATION_DATASOURCE = "Curation/DataSource"
 ARTICLE_DOI = "Article DOI"
 PMID = "PMID"
+PUBCHEM_AID="PubChem AID"
 PATENT_NUMBER = "Patent Number"
 PUBCHEM_CID = "PubChem CID"
 UNIPROT_ID = "UniProt (SwissProt) Primary ID of Target Chain 1"
@@ -189,6 +190,13 @@ def process_publications(
             pl.concat_str([
                 pl.lit("uspto-patent:"),
                 pl.col(PATENT_NUMBER).str.replace("US", "")
+            ])
+        )
+        .when(pl.col(PUBCHEM_AID).is_not_null())
+        .then(
+            pl.concat_str([
+                pl.lit("pubchem.aid:"),
+                pl.col(PUBCHEM_AID).str.replace("aid", "")
             ])
         )
         .when(pl.col(ARTICLE_DOI).is_not_null())
