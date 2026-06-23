@@ -278,3 +278,37 @@ CASPASE3_KI_RECORD_DUPLICATION = {
     "publication": "PMID:12408711",
     "supporting_data_id": None
 }
+
+# Test record 8: PubChem record
+PUBCHEM_RECORD = {
+    "BindingDB Reactant_set_id": "53983",
+    "Ligand SMILES": "Cc1ccc(Cn2c3nc4ccccn4c(=O)c3cc(C(=O)NCc3ccco3)c2=N)cc1",
+    "Ligand InChI": "InChI=1S/C25H21N5O3/c1-16-7-9-17(10-8-16)15-30-22(26)19(24(31)27-14-18-5-4-12-33-18)13-20-23(30)28-21-6-2-3-11-29(21)25(20)32/h2-13,26H,14-15H2,1H3,(H,27,31)",
+    "Ligand InChI Key": "MWQOUSHKYPZGHQ-UHFFFAOYSA-N",
+    "BindingDB MonomerID": "29613",
+    "BindingDB Ligand Name": "MLS000075054",
+    "Target Name": "Runt-related transcription factor 1",
+    "Target Source Organism According to Curator or DataSource": "Homo sapiens",
+    "Ki (nM)": "",
+    "IC50 (nM)": "15300",
+    "Kd (nM)": "",
+    "EC50 (nM)": "",
+    "kon (M-1-s-1)": "",
+    "koff (s-1)": "",
+    "pH": "7.4",
+    "Temp (C)": "23.00",
+    "Curation/DataSource": "PubChem",
+    "Article DOI": "",
+    "BindingDB Entry DOI": "10.7270/Q2T72FSX",
+    "PMID": "",
+    "PubChem AID": "aid1438",
+    "Patent Number": "",
+    "PubChem CID": "644735",
+    "PubChem SID": "252614830",
+    "ChEBI ID of Ligand": "",
+    "ChEMBL ID of Ligand": "",
+    "UniProt (SwissProt) Primary ID of Target Chain 1": "Q01196",
+    "UniProt (SwissProt) Recommended Name of Target Chain 1": "Runt-related transcription factor 1",
+    "publication": "",
+    "supporting_data_id": None
+}

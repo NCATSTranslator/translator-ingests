@@ -48,7 +48,8 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE1_KD_RECORD,
     CASPASE1_WEAK_KON_RECORD,
     CASPASE1_RECORD_WITH_DOI,
-    BINDINGDB_RECORD_WITH_A_US_PATENT
+    BINDINGDB_RECORD_WITH_A_US_PATENT,
+    PUBCHEM_RECORD
 )
 
 
@@ -384,6 +385,44 @@ def test_prepare_bindingdb_data(
                         "affinity_parameter": "pIC50",
                         "affinity": 4.301029995663981,
                         "has_binary_relation": "greater_than"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
+            }
+        ),
+        (  # Test record 8: PubChem BindingDb record
+            PUBCHEM_RECORD,
+            [
+                {
+                    "id": "PUBCHEM.COMPOUND:644735",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:Q01196",
+                    "name": "Runt-related transcription factor 1",
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens"
+                },
+            ],
+            {
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
+                "subject": "PUBCHEM.COMPOUND:644735",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:Q01196",
+                "publications": ["pubchem.aid:1438"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:pubchem"}
+                ],
+                "has_affinity": [
+                    {
+                        "affinity_parameter": "pIC50",
+                        "affinity": 4.815308569,
+                        "has_binary_relation": "equal_to"
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
