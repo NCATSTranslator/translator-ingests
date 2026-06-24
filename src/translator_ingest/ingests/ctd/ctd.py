@@ -216,7 +216,12 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     if chemical_is_subject and gene_is_subject:
         # There are some records where one name is a subset of the other (e.g. chem "NAD" vs gene "NADK");
         # So the startswith check triggers for both entities. Currently, there are only 6 of these and the
-        # longer string is always the real subject but this could result in bugs in the future
+        # longer string is always the real subject but this could result in bugs in the future.
+        #
+        # Note that this sounds really dumb, but it actually is hard to disambiguate them, see this example:
+        #   ChemicalName: SIRT3 inhibitor 3-TYP
+        #   GeneSymbol:   SIRT3
+        #   Interaction:  SIRT3 inhibitor 3-TYP results in decreased expression of SIRT3 protein
         chemical_is_subject = len(chemical_name) >= len(gene_symbol)
         gene_is_subject = not chemical_is_subject
     if not (chemical_is_subject or gene_is_subject):
