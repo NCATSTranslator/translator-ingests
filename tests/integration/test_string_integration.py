@@ -147,10 +147,13 @@ ENSEMBL_PROTEIN_PREFIXES = ("ENSEMBL:ENSP", "ENSEMBL:ENSMUSP", "ENSEMBL:ENSRNOP"
 
 def test_ppi_produces_nodes_and_edges(koza_output):
     nodes, edges = _ppi_partition(*_load_all(koza_output))
-    # 199 rows × 3 species → roughly 30-100 above-threshold pairs per species.
-    # Range is loose so the test absorbs minor STRING reissues.
-    assert 30 < len(edges) < 300, f"unexpected PPI edge count: {len(edges)}"
-    assert 30 < len(nodes) < 500, f"unexpected PPI node count: {len(nodes)}"
+    # Under Matt's mapping only rows with a mapped channel > 750 (experiments /
+    # coexpression / database) or combined_score > 800 emit an edge, so the
+    # 199-row head-slices yield a modest count (~28 in the checked-in fixtures,
+    # mostly database-channel functionally_interacts_with). Loose bounds absorb
+    # minor STRING reissues.
+    assert 10 < len(edges) < 300, f"unexpected PPI edge count: {len(edges)}"
+    assert 10 < len(nodes) < 500, f"unexpected PPI node count: {len(nodes)}"
 
 
 def test_ppi_node_shape(koza_output):
@@ -177,22 +180,21 @@ def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
             assert eq.startswith("NCBIGene:"), eq
 
 
-# Per-channel predicates emitted by string_ppi (matches CHANNEL_PREDICATES +
-# FALLBACK_PREDICATE in string.py).
+# Predicates emitted by string_ppi under Matt Brush's 2026-06-16 mapping
+# (CHANNEL_PREDICATES + FALLBACK_PREDICATE in string_utils.py).
 PPI_PREDICATES = {
-    "biolink:physically_interacts_with",  # experiments channel + fallback
-    "biolink:coexpressed_with",           # coexpression channel
-    "biolink:interacts_with",             # textmining channel
-    "biolink:gene_fusion_with",           # fusion channel
-    "biolink:genetic_neighborhood_of",    # neighborhood channel
-    "biolink:genetically_interacts_with", # cooccurence channel
+    "biolink:physically_interacts_with",   # experiments channel
+    "biolink:coexpressed_with",            # coexpression channel
+    "biolink:functionally_interacts_with", # database channel + high-combined fallback
 }
-# Edge classes that may appear in PPI output. PairwiseMolecularInteraction
-# covers most predicates; GeneToGeneCoexpressionAssociation is the canonical
-# class for coexpressed_with.
+# Edge classes that may appear in PPI output: PairwiseMolecularInteraction
+# (physically_interacts_with), GeneToGeneCoexpressionAssociation (coexpressed_with),
+# and the generic Association (functionally_interacts_with — not yet in biolink's
+# molecular-interaction enum; see string_utils.MI_PREDICATE note).
 PPI_CATEGORIES = {
     "biolink:PairwiseMolecularInteraction",
     "biolink:GeneToGeneCoexpressionAssociation",
+    "biolink:Association",
 }
 
 
@@ -216,9 +218,11 @@ def test_ppi_edge_shape(koza_output):
         assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["knowledge_level"] in PPI_KNOWLEDGE_LEVELS, edge["knowledge_level"]
         assert edge["agent_type"] in PPI_AGENT_TYPES, edge["agent_type"]
-        # MI:0915 only attaches to physically_interacts_with edges; omitted for others.
+        # PSI-MI: MI:0915 on physical, MI:2286 on functional, none on coexpressed.
         if edge["predicate"] == "biolink:physically_interacts_with":
             assert edge.get("has_attribute") == ["MI:0915"]
+        elif edge["predicate"] == "biolink:functionally_interacts_with":
+            assert edge.get("has_attribute") == ["MI:2286"]
         else:
             assert not edge.get("has_attribute")
 
@@ -236,18 +240,17 @@ def test_ppi_knowledge_level_varies_by_channel(koza_output):
     assert ats - {"not_provided"}, f"all agent_types were not_provided: {ats}"
 
 
-def test_ppi_emits_multiple_predicates(koza_output):
-    """At least the fallback predicate is always emitted; high-confidence
-    channels in fixture data should yield additional predicate variety."""
+def test_ppi_predicates_are_in_the_expected_set(koza_output):
+    """Every emitted predicate is one of the three Matt-mapping predicates, and
+    functionally_interacts_with (database channel + high-combined fallback)
+    appears in the fixture output."""
     _, edges = _ppi_partition(*_load_all(koza_output))
     predicates_seen = {e["predicate"] for e in edges}
-    assert "biolink:physically_interacts_with" in predicates_seen, \
-        "fallback predicate should always appear for above-threshold rows"
-    # Mouse fixture has ~15 high-conf rows; rat ~3; human ~2 — expect at least
-    # one non-fallback predicate to fire across the combined output.
-    non_fallback = predicates_seen - {"biolink:physically_interacts_with"}
-    assert len(non_fallback) >= 1, \
-        f"expected at least one non-fallback predicate, got: {predicates_seen}"
+    assert predicates_seen, "no PPI edges emitted"
+    assert predicates_seen <= PPI_PREDICATES, \
+        f"unexpected predicate(s): {predicates_seen - PPI_PREDICATES}"
+    assert "biolink:functionally_interacts_with" in predicates_seen, \
+        f"expected the functional predicate to appear, got: {predicates_seen}"
 
 
 def test_ppi_no_duplicate_edges_by_unordered_pair(koza_output):

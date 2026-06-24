@@ -31,14 +31,11 @@ from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.string.string_utils import (
     load_string_to_entrez_mapping,
-    passes_combined_score,
     parse_string_protein_id,
     predicates_for_row,
     sorted_pair_key,
     knowledge_level_and_agent_type_for_row,
     make_string_ppi_edge,
-    resolve_thresholds,
-    DEFAULT_THRESHOLDS,
     MI_PREDICATE
 )
 
@@ -77,23 +74,12 @@ def on_data_begin_string_ppi(koza_transform: koza.KozaTransform) -> None:
     populate 'equivalent_identifiers' on Protein nodes with their NCBIGene
     equivalents.
 
-    Also resolves the canonical per-channel thresholds for this run: defaults
-    (DEFAULT_THRESHOLDS) overlaid with any 'transform.channel_thresholds' block
-    declared in string.yaml (surfaced via 'koza_transform.extra_fields', mirroring
-    the go_cam ingest). Stashed in state so the per-row transform reads a single
-    resolved dict rather than re-parsing config per record.
-
     Tests bypass this hook by setting 'koza_transform.state["string_to_entrez"]'
-    directly to a small fixture dict; they may likewise inject
-    'koza_transform.state["thresholds"]' to exercise per-channel tuning (the
-    transform falls back to DEFAULT_THRESHOLDS when it is absent).
+    directly to a small fixture dict.
     """
     assert koza_transform.input_files_dir is not None, "Koza Transform 'input_files_dir' variable cannot be null!"
     mapping_path = Path(koza_transform.input_files_dir) / ENTREZ_MAPPING_FILENAME
     koza_transform.state["string_to_entrez"] = load_string_to_entrez_mapping(mapping_path)
-    koza_transform.state["thresholds"] = resolve_thresholds(
-        koza_transform.extra_fields.get("channel_thresholds")
-    )
 
 
 @koza.transform_record(tag="string_ppi")
@@ -104,12 +90,13 @@ def transform_string_ppi(
     Transform one row of STRING's 'protein.links.full.v12.0.txt.gz' file into two
     'Protein' nodes and one or more per-channel edges.
 
-    Predicate selection follows ORION's STRING parser: any evidence channel whose
-    score exceeds 'CHANNEL_HIGH_CONF_THRESHOLD' (750) fires the channel's
-    corresponding predicate (see 'CHANNEL_PREDICATES'). If no channel exceeds
-    the high-confidence threshold but the row passes the combined_score gate
-    (>500), a single fallback 'physically_interacts_with' edge is emitted.
-    Up to 6 edges per pair (one per fired predicate); typically 1–2.
+    Predicate selection follows Matt Brush's 2026-06-16 mapping: the experiments,
+    coexpression, and database channels above 'CHANNEL_HIGH_CONF_THRESHOLD' (750)
+    fire physically_interacts_with / coexpressed_with / functionally_interacts_with
+    respectively (see 'CHANNEL_PREDICATES'). If no channel qualifies but the
+    overall combined_score is high (> 800), a single fallback
+    functionally_interacts_with edge is emitted. A row with no qualifying channel
+    and combined_score <= 800 produces no edge. Up to 3 edges per pair; typically 1.
 
     Each edge carries a per-row knowledge_level / agent_type derived from the
     dominant evidence channel (see 'knowledge_level_and_agent_type_for_row').
@@ -117,19 +104,14 @@ def transform_string_ppi(
     Dedup is per (sorted_pair, predicate), so multiple predicates can fire for the
     same pair without colliding, while symmetric duplicate rows still collapse.
     """
-    # Canonical per-channel thresholds for this run, resolved once in
-    # on_data_begin from DEFAULT_THRESHOLDS + string.yaml overrides. Unit tests
-    # that call the transform directly don't set it → fall back to defaults
-    # (identical to the historical hardcoded behavior).
-    thresholds = koza_transform.state.get("thresholds") or DEFAULT_THRESHOLDS
-
-    # NOTE: the combined_score gate is also applied as a coarse reader-level
-    # filter in string.yaml (the production efficiency path — Koza skips
-    # sub-threshold rows before they reach here). This guard keeps the transform
-    # correct when called directly in unit tests, where rows aren't pre-filtered,
-    # and is the *canonical* gate (the reader filter is only a performance floor;
-    # see string.yaml for the invariant tying it to the per-channel thresholds).
-    if not passes_combined_score(record["combined_score"], thresholds["combined_score"]):
+    # Predicate selection IS the canonical row gate: predicates_for_row returns
+    # the channel-driven predicates (experiments/coexpression/database > 750), or
+    # the functionally_interacts_with fallback when combined_score > 800, or an
+    # empty list when the row clears nothing — in which case we emit no edge. The
+    # combined_score > 500 reader filter in string.yaml is only a coarse
+    # efficiency pre-filter (no row below it can clear any of these gates).
+    predicates = predicates_for_row(record)
+    if not predicates:
         return None
 
     subject_id, subject_taxon = parse_string_protein_id(record["protein1"])
@@ -141,8 +123,6 @@ def transform_string_ppi(
         raise ValueError(
             f"Cross-species pair in STRING row: {record['protein1']!r} vs {record['protein2']!r}"
         )
-
-    predicates = predicates_for_row(record, thresholds)
 
     # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
     # and grows with the number of unique (pair, predicate) tuples — bounded by
@@ -182,7 +162,7 @@ def transform_string_ppi(
 
     # KL/AT is a row-level property (derived from the dominant evidence channel),
     # shared by all edges emitted from this row.
-    knowledge_level, agent_type = knowledge_level_and_agent_type_for_row(record, thresholds)
+    knowledge_level, agent_type = knowledge_level_and_agent_type_for_row(record)
     edges = [
         make_string_ppi_edge(subject_id, predicate, object_id, knowledge_level, agent_type)
         for predicate in new_predicates

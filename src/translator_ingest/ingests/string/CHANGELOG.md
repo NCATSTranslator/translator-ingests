@@ -5,6 +5,64 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-06-24 — Matt Brush's predicate mapping (`string-functional-predicates` branch)
+
+**Decision.** Implement the channel→predicate mapping Matt Brush proposed in the
+DINGO thread (2026-06-16), on a fresh revision branch for review (re-run the KGX
+summary, then share with Matt/Sierra). Collapses STRING to **three** Protein↔Protein
+predicates and drops every gene-family predicate:
+
+| Signal | Predicate |
+|---|---|
+| experiments > 750 | `physically_interacts_with` |
+| coexpression > 750 | `coexpressed_with` |
+| **database** > 750 | **`functionally_interacts_with`** |
+| **combined_score > 800**, no channel qualifies | **`functionally_interacts_with`** (fallback) |
+| else | *(no edge)* |
+
+`textmining`, `fusion`, `cooccurence`, `neighborhood`, `homology` are read but no
+longer mint their own predicate — their signal flows only through `combined_score`.
+
+**Why the changes vs. the prior iteration.**
+- **Promote the `database` channel** to a predicate driver (we'd excluded it,
+  ORION-style). Curated-DB evidence is high-value.
+- **Re-point the fallback** from `physically_interacts_with` to
+  `functionally_interacts_with`, and **raise the gate 500 → 800**. The old fallback
+  over-claimed *physical* interaction for aggregate-only evidence (it was ~93% of
+  the graph). Functional + >0.8 is the honest claim.
+- **Drop text-mining as a standalone driver** (Translator convention on text-mined
+  co-occurrence; cf. the `diseases` ingest). Removing its contribution from
+  `combined_score` itself is a separate longer-term step (Matt).
+- **Gene-family predicates dropped** — they're biolink domain/range = gene, invalid
+  on Protein nodes (root of the `BIOLINK_SUBOBJ_ERRORS`), and Matt's mapping omits
+  them. This also moots the cooccurence-450 tuning from the prior iteration.
+
+**Open biolink gap (needs Sierra).** `biolink:functionally_interacts_with` is **not
+in the Biolink Model** — `PairwiseMolecularInteraction` rejects it. It is emitted as
+a generic **`Association`** (predicate accepted as a free CURIE there) pending
+addition of the predicate to biolink. Until then, KGX/biolink validation will flag
+these edges. Semantics (Matt): "two proteins participate in one or more common
+biological processes, pathways, reactions, complexes, or cellular functions" (not
+necessarily contributing in the same direction).
+
+**Also reverted the config-driven threshold machinery** (the 2026-06-11
+`transform.channel_thresholds` YAML block + `resolve_thresholds`/`DEFAULT_THRESHOLDS`).
+Thresholds are now hardcoded module constants in `string_utils.py` (Kevin/Richard's
+"keep it pythonic" call); the RIG documents the values. The Koza reader `filters`
+(`combined_score > 500`) remains a coarse efficiency pre-filter only.
+
+**Decided earlier, still holds:** `neighborhood_transferred` is not used (orthology-
+projected; would mis-assert adjacency). Native `neighborhood` is empty for vertebrates.
+
+**PSI-MI:** `physically_interacts_with` → MI:0915; `functionally_interacts_with` →
+MI:2286 (functional interaction); `coexpressed_with` → none.
+
+**Fixture output (200-row head-slices ×3 taxa):** 28 edges, all
+`functionally_interacts_with` (22 from the database channel → knowledge_assertion /
+manual_agent; 6 from the >800 combined fallback) — the slices contain no
+experiments/coexpression rows above 750. **Tests:** 85 pass / 1 skip (unit +
+integration + doctests) rewritten for the new mapping.
+
 ## 2026-06-11 — Config-driven per-channel filter thresholds (canonical in `string.py`)
 
 **Decision.** Move the filter thresholds out of hardcoded module constants and
