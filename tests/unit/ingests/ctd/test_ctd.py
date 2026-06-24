@@ -1,5 +1,6 @@
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    Association,
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToBiologicalProcessAssociation,
@@ -26,6 +27,9 @@ from translator_ingest.ingests.ctd.ctd import (
     on_chem_gene_ixns_begin,
     on_pheno_ixns_begin,
     BIOLINK_AFFECTS,
+    BIOLINK_AFFECTS_SENSITIVITY_TO,
+    BIOLINK_INCREASES_SENSITIVITY_TO,
+    BIOLINK_DECREASES_SENSITIVITY_TO,
     BIOLINK_ASSOCIATED_WITH,
     BIOLINK_CAUSES,
     BIOLINK_CORRELATED_WITH,
@@ -464,6 +468,80 @@ def chem_gene_ixns_multi_entity_output():
 def test_chem_gene_ixns_multi_entity_skipped(chem_gene_ixns_multi_entity_output):
     # the sentence starts with neither this record's chemical nor gene -> dropped
     assert len(chem_gene_ixns_multi_entity_output) == 0
+
+
+def _run_chem_gene(record):
+    writer = MockKozaWriter()
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(
+            on_data_begin=[on_chem_gene_ixns_begin],
+            transform_record=[transform_chem_gene_ixns]
+        )
+    )
+    runner.run()
+    return writer.items
+
+
+@pytest.mark.parametrize(
+    "direction,expected_predicate",
+    [
+        ("affects", BIOLINK_AFFECTS_SENSITIVITY_TO),
+        ("increases", BIOLINK_INCREASES_SENSITIVITY_TO),
+        ("decreases", BIOLINK_DECREASES_SENSITIVITY_TO),
+    ],
+)
+def test_chem_gene_ixns_response_to_substance_gene_subject(direction, expected_predicate):
+    # "response to substance" -> sensitivity predicates; here the gene is the actor (gene -> chemical).
+    verb = {"affects": "affects the", "increases": "results in increased", "decreases": "results in decreased"}[direction]
+    record = {
+        "ChemicalName": "10-hydroxycamptothecin",
+        "ChemicalID": "C098920",
+        "CasRN": "",
+        "GeneSymbol": "BCL2",
+        "GeneID": "596",
+        "GeneForms": "protein",
+        "Organism": "Homo sapiens",
+        "OrganismID": "9606",
+        "Interaction": f"BCL2 protein {verb} susceptibility to 10-hydroxycamptothecin",
+        "InteractionActions": f"{direction}^response to substance",
+        "PubMedIDs": "15151515",
+    }
+    entities = _run_chem_gene(record)
+    assert len(entities) == 3  # chemical, gene, association
+    # generic Association (no chemical<->gene sensitivity class exists), not an affects/causes class
+    assert not any(isinstance(e, (ChemicalAffectsGeneAssociation, GeneAffectsChemicalAssociation)) for e in entities)
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.predicate == expected_predicate
+    assert association.subject == "NCBIGene:596"
+    assert association.object == "MESH:C098920"
+    # direction is carried by the predicate, so the generic Association has no qualifier slots to populate
+    assert not hasattr(association, "qualified_predicate")
+    assert not hasattr(association, "object_direction_qualifier")
+    assert "PMID:15151515" in association.publications
+
+
+def test_chem_gene_ixns_response_to_substance_chemical_subject():
+    # the chemical can also be the actor (chemical -> gene)
+    record = {
+        "ChemicalName": "15-deoxy-delta(12,14)-prostaglandin J2",
+        "ChemicalID": "C088349",
+        "CasRN": "",
+        "GeneSymbol": "INS",
+        "GeneID": "3630",
+        "GeneForms": "protein",
+        "Organism": "Homo sapiens",
+        "OrganismID": "9606",
+        "Interaction": "15-deoxy-delta(12,14)-prostaglandin J2 results in decreased susceptibility to INS protein",
+        "InteractionActions": "decreases^response to substance",
+        "PubMedIDs": "16161616",
+    }
+    entities = _run_chem_gene(record)
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.predicate == BIOLINK_DECREASES_SENSITIVITY_TO
+    assert association.subject == "MESH:C088349"
+    assert association.object == "NCBIGene:3630"
 
 
 @pytest.fixture
