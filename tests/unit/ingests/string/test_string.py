@@ -20,6 +20,7 @@ from translator_ingest.ingests.string.string import (
 from translator_ingest.ingests.string.string_utils import (
     CHANNEL_KL_AT,
     CHANNEL_PREDICATES,
+    DEFAULT_THRESHOLDS,
     FALLBACK_PREDICATE,
     PSI_MI_PHYSICAL_ASSOCIATION,
     knowledge_level_and_agent_type_for_row,
@@ -27,6 +28,7 @@ from translator_ingest.ingests.string.string_utils import (
     parse_string_protein_id,
     passes_combined_score,
     predicates_for_row,
+    resolve_thresholds,
     sorted_pair_key
 )
 
@@ -43,7 +45,7 @@ def _full_row(
     """
     row = {"protein1": protein1, "protein2": protein2, "combined_score": str(combined_score)}
     for ch in [
-        "neighborhood", "neighborhood_transferred",
+        "neighborhood_transferred",
         "fusion", "cooccurence", "homology",
         "coexpression", "coexpression_transferred",
         "experiments", "experiments_transferred",
@@ -265,13 +267,13 @@ def test_transform_handles_missing_mapping(mock_koza):
 
 
 def test_predicates_for_row_single_channel_above_threshold():
-    row = {"experiments": "800", "coexpression": "0", "neighborhood": "0",
+    row = {"experiments": "800", "coexpression": "0", 
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     assert predicates_for_row(row) == ["biolink:physically_interacts_with"]
 
 
 def test_predicates_for_row_multiple_channels_fire_independently():
-    row = {"experiments": "780", "coexpression": "780", "neighborhood": "0",
+    row = {"experiments": "780", "coexpression": "780", 
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     preds = predicates_for_row(row)
     assert "biolink:physically_interacts_with" in preds
@@ -281,15 +283,14 @@ def test_predicates_for_row_multiple_channels_fire_independently():
 
 def test_predicates_for_row_at_threshold_does_not_fire():
     """Threshold is strictly greater-than; equal does not fire."""
-    row = {"experiments": "750", "coexpression": "0", "neighborhood": "0",
+    row = {"experiments": "750", "coexpression": "0", 
            "fusion": "0", "cooccurence": "0", "textmining": "0"}
     # No channel exceeds 750 → fallback only.
     assert predicates_for_row(row) == [FALLBACK_PREDICATE]
 
 
 def test_predicates_for_row_no_channel_above_threshold_returns_fallback():
-    row = {"experiments": "500", "coexpression": "400", "neighborhood": "200",
-           "fusion": "0", "cooccurence": "0", "textmining": "300"}
+    row = {"experiments": "500", "coexpression": "400", "fusion": "0", "cooccurence": "0", "textmining": "300"}
     assert predicates_for_row(row) == [FALLBACK_PREDICATE]
 
 
@@ -298,7 +299,7 @@ def test_predicates_for_row_homology_never_emits_predicate():
     HOMOLOGY score means 'interaction inferred via orthologs in another
     species', NOT 'A is homologous to B'. So even with a maxed-out homology
     score, no predicate is added (and we fall back to physically_interacts_with)."""
-    row = {"experiments": "0", "coexpression": "0", "neighborhood": "0",
+    row = {"experiments": "0", "coexpression": "0", 
            "fusion": "0", "cooccurence": "0", "textmining": "0",
            "homology": "999"}
     assert predicates_for_row(row) == [FALLBACK_PREDICATE]
@@ -326,7 +327,6 @@ def test_predicates_for_row_all_channels_fire():
         ({"experiments": 800},  ["biolink:physically_interacts_with"]),
         ({"coexpression": 800}, ["biolink:coexpressed_with"]),
         ({"textmining": 800},   ["biolink:interacts_with"]),
-        ({"neighborhood": 800}, ["biolink:genetic_neighborhood_of"]),
         ({"fusion": 800},       ["biolink:gene_fusion_with"]),
         ({"cooccurence": 800},  ["biolink:genetically_interacts_with"]),
     ],
@@ -398,7 +398,6 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
         ({"database": 800},     KnowledgeLevelEnum.knowledge_assertion,    AgentTypeEnum.manual_agent),
         ({"coexpression": 800}, KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
         ({"cooccurence": 800},  KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
-        ({"neighborhood": 800}, KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
         ({"fusion": 800},       KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
         ({"homology": 800},     KnowledgeLevelEnum.prediction,             AgentTypeEnum.computational_model),
         ({"textmining": 800},   KnowledgeLevelEnum.not_provided,           AgentTypeEnum.text_mining_agent),
@@ -406,7 +405,7 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
 )
 def test_knowledge_level_and_agent_type_single_channel(channel_scores, expected_kl, expected_at):
     row = {ch: 0 for ch in [
-        "neighborhood", "fusion", "cooccurence", "homology",
+        "fusion", "cooccurence", "homology",
         "coexpression", "experiments", "database", "textmining",
     ]}
     row.update(channel_scores)
@@ -425,9 +424,9 @@ def test_knowledge_level_multi_high_conf_upgrades_to_manual():
 
 
 def test_knowledge_level_multi_high_conf_without_manual_uses_pipeline():
-    """Two high-conf channels, neither curator-backed → knowledge_assertion + data_analysis_pipeline."""
+    """High-conf channels, neither curator-backed → knowledge_assertion + data_analysis_pipeline."""
     row = {ch: 0 for ch in CHANNEL_KL_AT}
-    row.update({"coexpression": 800, "neighborhood": 800})  # statistical + prediction, no manual
+    row.update({"coexpression": 800, "cooccurence": 800})  # statistical + prediction, no manual
     kl, at = knowledge_level_and_agent_type_for_row(row)
     assert kl == KnowledgeLevelEnum.knowledge_assertion
     assert at == AgentTypeEnum.data_analysis_pipeline
@@ -519,3 +518,62 @@ def test_transform_rejects_cross_species_pair(mock_koza):
     """Per-organism STRING files only contain intra-species rows; defend against corruption."""
     with pytest.raises(ValueError, match="Cross-species pair"):
         transform_string_ppi(mock_koza, _full_row(H1, M1, combined_score=952))
+
+
+# ──── Configurable per-channel threshold tests ───────────────────────────────
+
+
+def test_resolve_thresholds_defaults_and_overrides():
+    """No overrides → the canonical defaults; overrides are coerced to int and
+    merged on top, leaving untouched channels at their default."""
+    assert resolve_thresholds() == DEFAULT_THRESHOLDS
+    assert resolve_thresholds(None) == DEFAULT_THRESHOLDS
+    merged = resolve_thresholds({"cooccurence": "450", "combined_score": 400})
+    assert merged["cooccurence"] == 450          # string coerced to int
+    assert merged["combined_score"] == 400
+    assert merged["experiments"] == DEFAULT_THRESHOLDS["experiments"]  # untouched
+
+
+def test_predicates_for_row_per_channel_threshold_override():
+    """A per-channel thresholds dict gates each channel independently, surfacing
+    a predicate the uniform 750 default would hide (EDA: cooccurence maxes 542)."""
+    row = _full_row(H1, H2, combined_score=952, cooccurence=540)
+    # Default gate (750): cooccurence (540) does not fire → fallback only.
+    assert predicates_for_row(row) == [FALLBACK_PREDICATE]
+    # Lowered cooccurence knob: the gene-to-gene predicate now fires.
+    assert predicates_for_row(row, thresholds={"cooccurence": 450}) == [
+        "biolink:genetically_interacts_with"
+    ]
+
+
+def test_transform_default_thresholds_reproduce_prior_output(mock_koza):
+    """With no thresholds injected (state lacks the key), the transform falls
+    back to DEFAULT_THRESHOLDS — a sub-750 channel yields only the fallback
+    predicate, identical to the historical hardcoded behavior."""
+    result = transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=952, cooccurence=540)
+    )
+    assert result is not None and result.edges is not None
+    assert [e.predicate for e in result.edges] == ["biolink:physically_interacts_with"]
+
+
+def test_transform_respects_injected_per_channel_thresholds(mock_koza):
+    """Lowering the cooccurence threshold (as string.yaml would via extra_fields,
+    here injected into state) surfaces genetically_interacts_with for a row whose
+    cooccurence score sits below the default gate."""
+    mock_koza.state["thresholds"] = resolve_thresholds({"cooccurence": 450})
+    result = transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=952, cooccurence=540)
+    )
+    assert result is not None and result.edges is not None
+    assert [e.predicate for e in result.edges] == ["biolink:genetically_interacts_with"]
+
+
+def test_transform_respects_injected_combined_score_gate(mock_koza):
+    """The combined_score gate is read from the resolved thresholds too: raising
+    it drops a row that the default 500 gate would have kept."""
+    mock_koza.state["thresholds"] = resolve_thresholds({"combined_score": 900})
+    # combined_score 600 > 500 (default) but <= 900 (override) → dropped.
+    assert transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=600, experiments=800)
+    ) is None
