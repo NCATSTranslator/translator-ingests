@@ -34,11 +34,12 @@ AFFINITY_PARAMETERS = {
     ape.pEC50: "EC50 (nM)",
 }
 
-# An upper filter threshold of 1.0e-6 (1 micromole)
-# (equal to a negative base 10 logarithm value of 6)
-# is specified, which is 1,000 (1.0e+3) times the recorded
-# 1.0e-9 (nanoMolar) units of the BindingDb dataset values
-AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
+# The specified upper filter threshold is 10 micromoles
+# (that is, 1.0e-5, equal to 10.0 x 1.0e-6) which has a
+# negative base 10 logarithm value of 5. Since BindingDb
+# values are recorded in nanoMolar (1.0e-9) units, then
+# 10,000 (1.0e+4) nanomolar is the upper bound threshold.
+AFFINITY_FILTER_UPPER_BOUND = 1.0e+4
 
 ROWS_MISSING_AFFINITY = "rows_missing_affinity"
 
@@ -50,6 +51,7 @@ nM = 1.0e-9
 CURATION_DATASOURCE = "Curation/DataSource"
 ARTICLE_DOI = "Article DOI"
 PMID = "PMID"
+PUBCHEM_AID="PubChem AID"
 PATENT_NUMBER = "Patent Number"
 PUBCHEM_CID = "PubChem CID"
 UNIPROT_ID = "UniProt (SwissProt) Primary ID of Target Chain 1"
@@ -163,7 +165,7 @@ def extract_bindingdb_columns_polars(
         )
 
     koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    koza_transform.log(df.columns)
+    koza_transform.log(str(df.columns))
 
     return df
 
@@ -188,6 +190,13 @@ def process_publications(
             pl.concat_str([
                 pl.lit("uspto-patent:"),
                 pl.col(PATENT_NUMBER).str.replace("US", "")
+            ])
+        )
+        .when(pl.col(PUBCHEM_AID).is_not_null())
+        .then(
+            pl.concat_str([
+                pl.lit("pubchem.aid:"),
+                pl.col(PUBCHEM_AID).str.replace("aid", "")
             ])
         )
         .when(pl.col(ARTICLE_DOI).is_not_null())
@@ -228,7 +237,7 @@ def filter_affinity_values(
     """
     initial_count = df.height
 
-    # Stage 1: null out individual values outside bounds
+    # Stage 1: null out individual BindingDb nanoMolar values outside bounds
     bound_exprs = []
     for col_name in AFFINITY_PARAMETERS.values():
         parsed = (
@@ -236,6 +245,7 @@ def filter_affinity_values(
             .str.strip_chars("<> ")
             .cast(pl.Float64, strict=False)
         )
+        # BindingDb values smaller than the AFFINITY_FILTER_UPPER_BOUND are kept
         in_range = parsed.gt(0.0) & parsed.le(AFFINITY_FILTER_UPPER_BOUND)
         bound_exprs.append(
             pl.when(in_range)
@@ -276,8 +286,8 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
             else:
                 has_binary_relation = bre.equal_to
 
-            # Adjust BindingDb nominal nanomolar values to actual float values then transform
-            # to a linearized negative base 10 logarithm ("pK") value in which a higher
+            # Adjust BindingDb nominal nanomolar values to the actual float value, then transform
+            # it to a linearized negative base 10 logarithm ("pK") value in which a higher
             # real value represents higher binding affinity at lower ligand concentrations
             affinity = -log10(float(value)*nM)
 
