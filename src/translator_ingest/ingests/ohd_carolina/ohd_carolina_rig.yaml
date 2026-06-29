@@ -8,7 +8,10 @@ supporting_data_source_info:
 source_info:
   infores_id: "infores:openhealthdata-carolina"
   name: "Open Health Data - Carolina"
-  description: null
+  description: >-
+    A graph based on infores:openhealthdata-carolina, providing access to counts
+    and frequencies of conditions, procedures, drug exposures, and patient demographics,
+    and the co-occurrence frequencies between them.
   citations: null
   terms_of_use_info:
     terms_of_use_url: null
