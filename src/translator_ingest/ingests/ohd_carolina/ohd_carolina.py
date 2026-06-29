@@ -36,69 +36,93 @@ def get_latest_version() -> str:
 
 _cohd_nodes: dict[str, NamedThing] = {}
 
-
-@koza.transform_record(tag="cohd_nodes")
-def transform_cohd_node(
+@koza.transform()
+def transform_hmdb_ingest(
         koza_transform: koza.KozaTransform,
-        record: dict[str, Any]
-) -> KnowledgeGraph | None:
+        data: Iterable[dict[str, Any]]
+) -> Iterable[KnowledgeGraph]:
     """
-    Ingest COHD phase 2 JSONL 'node' entry into a Phase 3 compliant Pydantic node.
-    :param koza_transform: Koza context of ingest
-    :param record: original Phase 2 COHD 'node' data record
-    :return: KnowledgeGraph[nodes=list[NamedThing]]
+    Given that HMDB is a zip archive wrapping an XML file, through which we iterate over metabolites,
+    we rather might sd well process this a streaming knowledge source design pattern.
     """
-    node_id = record["id"]
-    category = record.get("categories", [])
-    node_class: type[NamedThing] = get_node_class(node_id, category, bmt=bmt)
+    # We actually ignore the input data Iterable,
+    # assuming that Koza didn't bother pre-processing
+    # the downloaded HMDB file, leaving it to us here
+    if koza_transform.input_files_dir is None:
+        raise ValueError("input_files_dir must be set for HMDB ingest")
 
-    # It currently seems that the COHD attributes block wraps a
-    # complex representation of a simple database xref of the node
-    node_properties = parse_node_properties(record.get("attributes", []))
+    hmdb_data_archive_path: Path = koza_transform.input_files_dir / "hmdb_metabolites.zip"
 
-    node = node_class(id=node_id, name=record["name"], **node_properties, **{})
+    with ZipFile(hmdb_data_archive_path) as zf:
+        # open the hmdb xml file
+        with zf.open('hmdb_metabolites.xml', 'r') as fp:
+            # loop through, filtering for relevant elements
+            for record in read_xml_file(koza_transform, fp, 'metabolite'):
 
-    _cohd_nodes[node_id] = node
+                count_input(koza_transform)
 
-    return KnowledgeGraph(nodes=[node])
+                # convert the xml text into an object
+                el: E_Tree.Element = E_Tree.fromstring(record)
 
+                # get the metabolite element
+                metabolite_accession: E_Tree.Element = el.find('accession')
 
-@koza.transform_record(tag="cohd_edges")
-def transform_cohd_edge(
-        koza_transform: koza.KozaTransform,
-        record: dict[str, Any]
-) -> KnowledgeGraph | None:
-    """
-    Ingest COHD phase 2 JSONL 'edge' entry into a Phase 3 compliant Pydantic association.
-    :param koza_transform: Koza context of ingest
-    :param record: original Phase 2 COHD 'node' data record
-    :return: KnowledgeGraph[nodes=list[NamedThing]]
-    """
-    edge_id = entity_id()
+                # did we get a good value?
+                if metabolite_accession is not None and metabolite_accession.text is not None:
+                    # create a valid curie for the metabolite id
+                    metabolite_id = f"HMDB:{metabolite_accession.text}"
 
-    cohd_subject: str = record["subject"]
+                    # get the metabolite name element
+                    metabolite_name: E_Tree.Element = el.find('name')
 
-    cohd_predicate: str = record["predicate"]
+                    # did we get a good value?
+                    if metabolite_name is not None and metabolite_name.text is not None:
 
-    cohd_object: str = record["object"]
+                        # get the nodes and edges for the pathways
+                        pathways = get_pathways(koza_transform, el, metabolite_id)
 
-    confidence_score: Optional[float] = record.get("score", None)
+                        # get nodes and edges for the diseases
+                        diseases = get_diseases(koza_transform, el, metabolite_id)
 
-    cohd_study: Optional[dict[str, Study]] = get_cohd_supporting_study(
-        edge_id=edge_id,
-        attribute_list=record.get("attributes", [])
-    )
+                        # get the nodes and edges for genes
+                        genes = get_genes(koza_transform, el, metabolite_id)
 
-    association = Association(
-        id=edge_id,
-        subject=cohd_subject,
-        predicate=cohd_predicate,
-        object=cohd_object,
-        has_confidence_score=confidence_score,
-        has_supporting_studies=cohd_study,
-        sources=knowledge_sources_from_trapi(record["sources"]),
-        knowledge_level=KnowledgeLevelEnum.statistical_association,
-        agent_type=AgentTypeEnum.data_analysis_pipeline,
-        ** {}
-    )
-    return KnowledgeGraph(edges=[association])
+                        # did we get something created?
+                        if pathways or diseases or genes:
+                            nodes: list = []
+                            edges: list = []
+
+                            nodes.extend([entry[0] for entry in pathways])
+                            edges.extend([entry[1] for entry in pathways])
+                            nodes.extend([entry[0] for entry in diseases])
+                            edges.extend([entry[1] for entry in diseases])
+                            nodes.extend([entry[0] for entry in genes])
+                            edges.extend([entry[1] for entry in genes])
+
+                            # create the common metabolite node and add it to the list
+                            nodes.append(
+                                MolecularEntity(
+                                    id=metabolite_id,
+                                    name=metabolite_name.text
+                                            .encode('ascii',errors='ignore')
+                                            .decode(encoding="utf-8")
+                                )
+                            )
+                            # send the metabolite-specific subgraph out to the data ingest stream
+                            yield KnowledgeGraph(nodes=nodes, edges=edges)
+
+                        else:
+                            count_skipped(
+                                koza_transform,
+                                tag='Missing pathway, disease and gene data'
+                            )
+                    else:
+                        count_skipped(
+                            koza_transform,
+                            tag='Invalid metabolite name'
+                        )
+                else:
+                    count_skipped(
+                        koza_transform,
+                        tag='Invalid metabolite ID'
+                    )
