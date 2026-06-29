@@ -2,7 +2,7 @@
 Open Health Data - Carolina ingest parser
 (adapted from COHD ingestion)
 """
-from typing import Optional, Any
+from typing import Optional, Any, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
