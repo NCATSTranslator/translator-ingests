@@ -1,0 +1,19 @@
+name: ohd_carolina
+
+readers:
+  ohd_carolina:
+    files:
+      - "unc_omop_2018_2022_kg.zip"
+    format: 'csv'  # compressed in zip file
+    required_properties:
+      - subject
+      - subject_name
+      - object
+      - object_name
+      - predicate
+      - chi_squared_p_value
+      - log_odds_ratio
+      - log_odds_ratio_95_ci
+      - score
+      - total_sample_size
+      - primary_knowledge_source

@@ -1,0 +1,113 @@
+name: Open Health Data Carolina
+supporting_data_source_info:
+- infores_id: null
+  name: null
+  description: null
+  terms_of_use_info:
+    terms_of_use_url: null
+source_info:
+  infores_id: "infores:openhealthdata-carolina"
+  name: "Open Health Data - Carolina"
+  description: null
+  citations: null
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations: "https://stars.renci.org/var/data_services/ohd/unc_omop_2018_2022_kg.zip"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - zip
+    - csv
+  data_versioning_and_releases: null
+  additional_notes: null
+ingest_info:
+  ingest_categories:
+  - aggregation_interpreter
+  utility: >-
+    Real clinical data from patients diagnosed with a condition, exposed to a drug, or who had a procedure.
+  scope: Clinical correlations of patients to treatments.
+  relevant_files:
+  - file_name: unc_omop_2018_2022_kg.zip
+    location: https://stars.renci.org/var/data_services/ohd
+    description: Zip compressed csv file of OHD Carolina clinical data.
+  included_content:
+  - file_name: unc_omop_2018_2022_kg.csv
+    included_records: all
+    fields_used: "subject,subject_name,object,object_name,predicate,chi_squared_p_value,log_odds_ratio,log_odds_ratio_95_ci,score,total_sample_size,primary_knowledge_source"
+
+#  filtered_content:
+#  - file_name: null
+#    filtered_records: null
+#    rationale: null
+  future_considerations:
+  - category: null
+    consideration:  null
+    relevant_files: null
+  additional_notes: null
+target_info:
+  infores_id: infores:ohd-carolina
+  # TODO: The information below is copied from COHD and requires careful review.
+  edge_type_info:
+  - subject:
+    - biolink:Disease
+    - biolink:Drug
+    - biolink:ChemicalEntity
+    - biolink:SmallMolecule
+    - biolink:MolecularMixture
+    predicates:
+    - biolink:positively_correlated_with
+    - biolink:negatively_correlated_with
+    object:
+    - biolink:Disease
+    - biolink:SmallMolecule
+    - biolink:Drug
+    - biolink:MolecularMixture
+    - biolink:ChemicalEntity
+    knowledge_level: statistical_association
+    agent_type: data_analysis_pipeline
+    edge_properties:
+    - has_confidence_score
+    - has_supporting_studies
+  node_type_info:
+  - node_category: biolink:Disease
+    source_identifier_types:
+    - DOID
+    - UMLS
+    node_properties:
+    - name
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - UNII
+    - CHEBI
+    node_properties:
+    - name
+  - node_category: biolink:Drug
+    source_identifier_types:
+    - RXCUI
+    node_properties:
+    - name
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - CHEBI
+    node_properties:
+    - name
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - MESH
+    - UNII
+    - CHEBI
+    node_properties:
+    - name
+    - xref
+  future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
+    - category:  null
+      consideration: null
+      relevant_files:  null
+provenance_info:
+  contributions:
+  - "Richard Bruskiewich - data modeling, code author"
+  - "Kara Fecho - domain expertise"
+  - "Hong Yi - data modeling, domain expertise"
