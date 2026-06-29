@@ -1,19 +1,21 @@
 name: ohd_carolina
-
+# The OHD@Carolina data is CSV compressed into a zip file, therefore,
+# we don't ask Koza to directly ingest it following a reader specification
+# but instead directly access and pre-process the downloaded file into a
+# record stream within the @koza.prepare_data() decorated method of the parser.
+#
 readers:
   ohd_carolina:
-    files:
-      - "unc_omop_2018_2022_kg.zip"
-    format: 'csv'  # compressed in zip file
-    required_properties:
-      - subject
-      - subject_name
-      - object
-      - object_name
-      - predicate
-      - chi_squared_p_value
-      - log_odds_ratio
-      - log_odds_ratio_95_ci
-      - score
-      - total_sample_size
-      - primary_knowledge_source
+    format: 'csv'  # fake format, we don't directly use it
+#    required_properties:
+#      - subject
+#      - subject_name
+#      - object
+#      - object_name
+#      - predicate
+#      - chi_squared_p_value
+#      - log_odds_ratio
+#      - log_odds_ratio_95_ci
+#      - score
+#      - total_sample_size
+#      - primary_knowledge_source
