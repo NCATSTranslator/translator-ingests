@@ -17,6 +17,7 @@ output
 data
 releases
 /.agent-of-empires/
+/.ignore
 
 # Documentation build artifacts (only used locally and in CI)
 /docs/
