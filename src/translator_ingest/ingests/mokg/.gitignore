@@ -1,3 +1,6 @@
 # local development inputs
 *.edges.ndjson
 *.nodes.ndjson
+
+# temp plan file
+/TEMP-PLAN.md
