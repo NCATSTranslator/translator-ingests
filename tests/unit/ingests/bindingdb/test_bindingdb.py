@@ -421,7 +421,7 @@ def test_prepare_bindingdb_data(
                 "has_affinity": [
                     {
                         "affinity_parameter": "pIC50",
-                        "affinity": 4.815308569,
+                        "affinity": 4.815308569182401,
                         "has_binary_relation": "equal_to"
                     }
                 ],

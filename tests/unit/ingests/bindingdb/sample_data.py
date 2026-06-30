@@ -246,6 +246,7 @@ BINDINGDB_RECORD_WITH_A_US_PATENT = {
 
 # Test record 7: Duplication of Caspase-3 inhibitor, to test merging of records.
 #                Caspase-3 inhibitor with IC50 (nM) = 6676.9"
+# TODO: possibly obsolete? Remove, if currently unused in testing?
 CASPASE3_KI_RECORD_DUPLICATION = {
     "BindingDB Reactant_set_id": "199",
     "Ligand SMILES": "CN(Cc1ccc(s1)C(=O)N[C@@H](CC(O)=O)C(=O)CSCc1ccccc1Cl)Cc1ccc(O)c(c1)C(O)=O",
@@ -309,6 +310,6 @@ PUBCHEM_RECORD = {
     "ChEMBL ID of Ligand": "",
     "UniProt (SwissProt) Primary ID of Target Chain 1": "Q01196",
     "UniProt (SwissProt) Recommended Name of Target Chain 1": "Runt-related transcription factor 1",
-    "publication": "",
-    "supporting_data_id": None
+    "publication": "pubchem.aid:1438",
+    "supporting_data_id": "infores:pubchem"
 }
