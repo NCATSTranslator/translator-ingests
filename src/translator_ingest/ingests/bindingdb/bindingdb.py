@@ -36,6 +36,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     REACTANT_SET_ID,
     ARTICLE_DOI,
     PMID,
+    PUBCHEM_AID,
     PATENT_NUMBER,
     MISSING_PUBS,
     ROWS_MISSING_AFFINITY
@@ -51,6 +52,7 @@ BINDINGDB_COLUMNS = (
     CURATION_DATASOURCE,
     ARTICLE_DOI,
     PMID,
+    PUBCHEM_AID,
     PATENT_NUMBER
 ) + tuple(AFFINITY_PARAMETERS.values())
 
@@ -123,7 +125,7 @@ def prepare_bindingdb_data(
     @koza.prepare_data decorated method to perform a simple consolidation of such
     edges across rows, returning a single edge per unique ligand-target pair.
 
-    This polars-based consolidates duplicate assay records for the same
+    This polars-based method consolidates duplicate assay records for the same
     ligand-target pair using polars' efficient grouping and aggregation.
 
     Possible performance improvements over the original implementation:
