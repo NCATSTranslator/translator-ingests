@@ -143,10 +143,11 @@ def test_prepare_bindingdb_data(
     # bypasses Koza to directly read in the input data file to return
     # an iterable sequence of records, where duplication in the
     # original assay records is removed, merging into a single edge...
-    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
-    assert merged_records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
+    records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+    assert records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
 
-    for test_record in merged_records_iterable:
+    expected_records: set[int] = {1, 2, 4, 5, 9, 10}
+    for test_record in records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
         # Record "6" excluded because the source organism "Pan troglodytes" is not in the target list of taxa
         # Record "7" excluded because it has no affinity values at all
@@ -154,23 +155,22 @@ def test_prepare_bindingdb_data(
         assert test_record[REACTANT_SET_ID] not in [3, 6, 7, 8], \
             f"Unexpected reactant set ID # {test_record[REACTANT_SET_ID]}"
 
-        # ... but expecting all the other records being tested further
-        assert test_record[REACTANT_SET_ID] in [1, 2, 4, 5, 9, 10], \
-            f"Missing expected reactant set ID # {test_record[REACTANT_SET_ID]}"
-
         # Didn't extract this field (among others...) - column was not needed
         assert LIGAND_SMILES not in test_record
 
         # Check that the publication and supporting data fields are set correctly
         if test_record[REACTANT_SET_ID] == 1:
+            expected_records.remove(1)
             assert test_record[PUBLICATION] == "PMID:12408711"
             assert test_record[SUPPORTING_DATA_ID] is None
 
         elif test_record[REACTANT_SET_ID] == 2:
+            expected_records.remove(2)
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 4:
+            expected_records.remove(4)
             assert test_record[TARGET_NAME] == "Caspase-1b"
             assert test_record[PUBLICATION] == "uspto-patent:9447092"
             assert test_record[SUPPORTING_DATA_ID] == "infores:uspto-patent"
@@ -180,11 +180,13 @@ def test_prepare_bindingdb_data(
             assert test_record["Ki (nM)"] == ">390"
 
         elif test_record[REACTANT_SET_ID] == 5:
+            expected_records.remove(5)
             assert test_record[SOURCE_ORGANISM] == "Mus musculus"
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 9:
+            expected_records.remove(9)
             # Row 9 has Ki=90 (in range) and IC50=50000 
             # (out of range for 10,000 nM (10 micromolar) threshold);
             # Ki should be retained, IC50 should be nulled out
@@ -192,10 +194,18 @@ def test_prepare_bindingdb_data(
             assert test_record["IC50 (nM)"] is None
 
         elif test_record[REACTANT_SET_ID] == 10:
+            expected_records.remove(10)
             # Row 10 is a PubChem entry with AID
-            # that should be retained if proper filtering is done
+            # that should be retained with its IC50 parameter
+            # if proper PubChem-specific filtering is done
+            assert test_record[TARGET_NAME] == "Runt-related transcription factor 1"
+            assert test_record["IC50 (nM)"] == "15300"
             assert test_record[PUBLICATION] == "pubchem.aid:1438"
+            assert test_record[SUPPORTING_DATA_ID] == "infores:pubchem"
 
+    # ... but expecting all the other records being tested further
+    assert not expected_records, \
+        f"Missing expected reactant set ID's in 'merged_records_iterable'  # {str(expected_records)}"
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
