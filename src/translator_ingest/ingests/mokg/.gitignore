@@ -1,0 +1,3 @@
+# local development inputs
+*.edges.ndjson
+*.nodes.ndjson
