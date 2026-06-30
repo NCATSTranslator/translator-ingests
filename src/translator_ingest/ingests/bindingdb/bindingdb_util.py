@@ -224,11 +224,13 @@ def filter_affinity_values(
 
     Two-stage filtering:
     1. Null out individual affinity column values that fall outside
-       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND.
+       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND,
+       except for PubChem records (identified by CURATION_DATASOURCE == "PubChem"),
+       which are only subject to the lower bound (value > 0).
     2. Remove rows where all affinity columns are null (either
        originally missing or nulled by range filtering).
 
-    Values may contain relational prefixes (``<``, ``>``) which are
+    Values may contain relational prefixes ("<", ">") which are
     stripped before numeric comparison.
 
     :param koza_transform: Ingest context for recording filter metadata.
@@ -236,6 +238,14 @@ def filter_affinity_values(
     :return: Filtered DataFrame with out-of-range values nulled.
     """
     initial_count = df.height
+
+    # PubChem assay records use a different concentration scale and are
+    # exempt from the upper-bound filter; only the lower bound (> 0) applies.
+    is_pubchem = (
+        pl.col(CURATION_DATASOURCE).eq("PubChem")
+        if CURATION_DATASOURCE in df.columns
+        else pl.lit(False)
+    )
 
     # Stage 1: null out individual BindingDb nanoMolar values outside bounds
     bound_exprs = []
@@ -245,10 +255,12 @@ def filter_affinity_values(
             .str.strip_chars("<> ")
             .cast(pl.Float64, strict=False)
         )
-        # BindingDb values smaller than the AFFINITY_FILTER_UPPER_BOUND are kept
-        in_range = parsed.gt(0.0) & parsed.le(AFFINITY_FILTER_UPPER_BOUND)
+        above_zero = parsed.gt(0.0)
+        within_upper_bound = parsed.le(AFFINITY_FILTER_UPPER_BOUND)
+        # PubChem records bypass the upper bound; all others require full range
+        passes_filter = above_zero & (within_upper_bound | is_pubchem)
         bound_exprs.append(
-            pl.when(in_range)
+            pl.when(passes_filter)
             .then(pl.col(col_name))
             .otherwise(None)
             .alias(col_name)

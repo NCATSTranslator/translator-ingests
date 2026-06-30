@@ -34,6 +34,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     LIGAND_SMILES,
     TARGET_NAME,
     SOURCE_ORGANISM,
+    CURATION_DATASOURCE,
     PUBLICATION,
     SUPPORTING_DATA_ID,
     ROWS_MISSING_AFFINITY,
@@ -478,70 +479,113 @@ def affinity_metadata_transform() -> koza.KozaTransform:
     )
 
 
-def _affinity_df(rows: list[dict]) -> pl.DataFrame:
-    """Build a minimal polars DataFrame with affinity columns from row dicts."""
-    columns = {col: [] for col in AFFINITY_PARAMETERS.values()}
+def _affinity_df(rows: list[dict], curation_sources: list[str] | None = None) -> pl.DataFrame:
+    """Build a minimal polars DataFrame with affinity columns from row dicts.
+
+    :param rows: List of dicts keyed by affinity column name.
+    :param curation_sources: Optional list of CURATION_DATASOURCE values (one per row).
+        When provided, a CURATION_DATASOURCE column is added so PubChem-bypass logic
+        in filter_affinity_values can be exercised.
+    """
+    columns: dict[str, list] = {col: [] for col in AFFINITY_PARAMETERS.values()}
     for row in rows:
         for col in columns:
             columns[col].append(row.get(col))
-    schema = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    schema: dict[str, pl.PolarsDataType] = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    if curation_sources is not None:
+        columns[CURATION_DATASOURCE] = curation_sources
+        schema[CURATION_DATASOURCE] = pl.Utf8
     return pl.DataFrame(columns, schema=schema)
 
 
 @pytest.mark.parametrize(
-    "rows,expected_count,expected_filtered,description",
+    "rows,curation_sources,expected_count,expected_filtered,description",
     [
         (
             [{"Ki (nM)": "90"}],
+            None,
             1, 0,
             "single in-range Ki value passes"
         ),
         (
             [{}],
+            None,
             0, 1,
             "row with no affinity values is filtered"
         ),
         (
             [{"IC50 (nM)": "50000"}],
+            None,
             0, 1,
             "IC50=50000 nM (50 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
+            None,
             1, 0,
             "Ki in range keeps row; IC50 out of range is nulled"
         ),
         (
             [{"Ki (nM)": "<500"}],
+            None,
             1, 0,
             "relational prefix '<' is stripped before range check"
         ),
         (
             [{"Ki (nM)": ">2000000"}],
+            None,
             0, 1,
             "Ki=2000000 nM (2000 micromolar) far exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Kd (nM)": "0"}],
+            None,
             0, 1,
             "Kd=0 excluded by exclusive lower bound"
         ),
         (
             [{"Kd (nM)": "1000"}, {"Kd (nM)": "11000"}],
+            None,
             1, 1,
-            "Kd=1000 nM (1 micromolar) at upper bound passes; "+
+            "Kd=1000 nM (1 micromolar) at upper bound passes; "
             "Kd=11000 nM (11 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
+        ),
+        # PubChem records are exempt from the upper-bound filter
+        (
+            [{"IC50 (nM)": "15300"}],
+            ["PubChem"],
+            1, 0,
+            "PubChem record with IC50=15300 nM above threshold is retained (upper-bound exempt)"
+        ),
+        (
+            [{"IC50 (nM)": "50000"}],
+            ["PubChem"],
+            1, 0,
+            "PubChem record with IC50=50000 nM far above threshold is retained (upper-bound exempt)"
+        ),
+        (
+            [{"IC50 (nM)": "0"}],
+            ["PubChem"],
+            0, 1,
+            "PubChem record with IC50=0 is still excluded by the lower bound"
+        ),
+        (
+            [{"IC50 (nM)": "15300"}, {"IC50 (nM)": "50000"}],
+            ["PubChem", "Curated from the literature by BindingDB"],
+            1, 1,
+            "PubChem row with IC50=15300 nM passes; non-PubChem row with IC50=50000 nM is filtered"
         ),
     ]
 )
 def test_filter_affinity_values(
     affinity_metadata_transform: koza.KozaTransform,
     rows: list[dict],
+    curation_sources: list[str] | None,
     expected_count: int,
     expected_filtered: int,
     description: str
 ):
-    df = _affinity_df(rows)
+    df = _affinity_df(rows, curation_sources)
     result = filter_affinity_values(affinity_metadata_transform, df)
     assert result.height == expected_count, description
     actual_filtered = affinity_metadata_transform.transform_metadata.get(ROWS_MISSING_AFFINITY, 0)
