@@ -196,13 +196,18 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         "qualifiers": qualifiers if qualifiers else None,
     }
 
-    adjusted_p_value = parse_optional_float(record.get("adjusted p value"))
-    if adjusted_p_value is not None:
-        edge_props["adjusted_p_value"] = adjusted_p_value
-
-    relationship_strength = parse_optional_float(record.get("relationship strength"))
-    if relationship_strength is not None:
-        edge_props["has_confidence_score"] = relationship_strength
+    # Numeric statistics: map each source column to a biolink float slot.
+    # Non-numeric values (leaked headers, tissue labels) are dropped by parse_optional_float.
+    statistics: dict[str, float] = {
+        slot: value
+        for slot, column in (
+            ("p_value", "p value"),
+            ("adjusted_p_value", "adjusted p value"),
+            ("has_confidence_score", "relationship strength"),
+        )
+        if (value := parse_optional_float(record.get(column))) is not None
+    }
+    edge_props.update(statistics)
 
     association = Association(**edge_props)
 
