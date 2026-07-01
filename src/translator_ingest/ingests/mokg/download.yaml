@@ -1,0 +1,7 @@
+---
+# Placeholder: no stable release URL yet for the Multiomics Knowledge Provider.
+# Fill in real URLs before production use; {version} is substituted from the manifest.
+- url: https://example.org/mokg/MULTIOMICS_KG_{version}.nodes.ndjson
+  local_name: MULTIOMICS_KG_3.0.0.nodes.ndjson
+- url: https://example.org/mokg/MULTIOMICS_KG_{version}.edges.ndjson
+  local_name: MULTIOMICS_KG_3.0.0.edges.ndjson

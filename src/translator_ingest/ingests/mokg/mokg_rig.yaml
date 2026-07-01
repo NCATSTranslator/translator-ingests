@@ -1,0 +1,79 @@
+name: "Multiomics Knowledge Provider (MOKG) Reference Ingest Guide"
+
+source_info:
+  infores_id: "infores:multiomics-kg"
+  name: "Multiomics Knowledge Provider (Multiomics-KG)"
+  description: >-
+    The Multiomics Knowledge Provider (MOKG) aggregates multi-omics assertions
+    derived from the biomedical literature, capturing relationships (e.g. correlation,
+    association, biomarker, regulation) between genes, proteins, small molecules,
+    organisms, diseases, and other biomedical entities, along with statistical
+    evidence and disease/anatomical context.
+  terms_of_use_info:
+    terms_of_use_description: "Freely available"
+  data_access_locations:
+    - "Local NDJSON snapshots provided for development; stable download URL TBD"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - kgx
+  data_versioning_and_releases: "Release 3.0.0"
+
+ingest_info:
+  ingest_categories:
+    - translator_knowledge_creator
+  utility: "MOKG provides literature-derived multi-omics relationships with statistical evidence (adjusted p-value, relationship strength) and disease/anatomical context qualifiers, useful for many Translator query types."
+  scope: "Curated multi-omics associations between biomedical entities (genes, proteins, chemicals, organisms, diseases, etc.)."
+  relevant_files:
+    - file_name: "MULTIOMICS_KG_3.0.0.nodes.ndjson"
+      location: "Local development snapshot"
+      description: "KGX-like node records (id, name, category, source)"
+    - file_name: "MULTIOMICS_KG_3.0.0.edges.ndjson"
+      location: "Local development snapshot"
+      description: "KGX-like edge records with predicate, statistics, qualifiers, and provenance"
+  included_content:
+    - file_name: "MULTIOMICS_KG_3.0.0.edges.ndjson"
+      included_records: "Multi-omics assertions (correlated_with, associated_with, biomarker_for, regulates, etc.)"
+      fields_used: "subject, predicate, object, uuid, publication, disease/anatomical context qualifiers, adjusted p value, relationship strength"
+
+target_info:
+  infores_id: "infores:multiomics-kg"
+  node_type_info:
+    - node_category: "biolink:Protein"
+      source_identifier_types:
+        - "UniProtKB, PR identifiers"
+    - node_category: "biolink:Gene"
+      source_identifier_types:
+        - "NCBIGene identifiers"
+    - node_category: "biolink:SmallMolecule"
+      source_identifier_types:
+        - "CHEBI, PUBCHEM.COMPOUND identifiers"
+    - node_category: "biolink:Disease"
+      source_identifier_types:
+        - "MONDO identifiers"
+    - node_category: "biolink:OrganismTaxon"
+      source_identifier_types:
+        - "NCBITaxon identifiers"
+  edge_type_info:
+    - subject_categories:
+        - "biolink:NamedThing"
+      predicates:
+        - "biolink:correlated_with"
+        - "biolink:associated_with"
+        - "biolink:biomarker_for"
+        - "biolink:regulates"
+        - "biolink:gene_associated_with_condition"
+      object_categories:
+        - "biolink:NamedThing"
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      ui_explanation: >-
+        MOKG edges report literature-derived multi-omics relationships, with statistical
+        evidence (adjusted p-value, relationship strength) and disease/anatomical context
+        captured in qualifiers.
+
+provenance_info:
+  contributions:
+    - "To be filled in with code authors, domain experts, and data modelers"

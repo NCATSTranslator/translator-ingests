@@ -1,0 +1,7 @@
+name: mokg
+
+readers:
+  edges:
+    format: "jsonl"
+    files:
+      - "MULTIOMICS_KG_3.0.0.edges.ndjson"
