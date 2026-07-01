@@ -17,6 +17,7 @@ from translator_ingest.ingests.mokg.mokg import (
     create_node,
     normalize_category,
     parse_optional_float,
+    transform,
 )
 
 
@@ -106,6 +107,41 @@ def test_significant_and_sample_size_have_no_slot():
         Association(**common, significant="YES")
     with pytest.raises(ValidationError):
         Association(**common, sample_size=179)
+
+
+@pytest.mark.parametrize(
+    ("significant", "expected_none"),
+    [
+        ("NO", True),
+        ("YES", False),
+        ("UNSURE", False),
+    ],
+)
+def test_transform_filters_not_significant_edges(significant, expected_none):
+    """The transform drops edges flagged significant='NO' and keeps YES/UNSURE."""
+    from types import SimpleNamespace
+
+    from koza.model.graphs import KnowledgeGraph
+
+    nodes = [
+        {"id": "A:1", "name": "a", "category": "biolink:Gene"},
+        {"id": "B:1", "name": "b", "category": "biolink:Protein"},
+    ]
+    koza = SimpleNamespace(
+        state={"nodes_lookup": {n["id"]: n for n in nodes}},
+        input_files_dir=".",
+    )
+    record = {
+        "subject": "A:1",
+        "object": "B:1",
+        "predicate": "biolink:associated_with",
+        "significant": significant,
+    }
+    result = transform(koza, record)
+    if expected_none:
+        assert result is None
+    else:
+        assert isinstance(result, KnowledgeGraph)
 
 
 def test_association_minimal_without_optional_fields():

@@ -162,6 +162,12 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         logger.warning(f"Skipping edge missing required fields: {record}")
         return None
 
+    # Drop edges flagged not significant. The `significant` column is a curated
+    # ternary (YES/NO/UNSURE); keep YES and UNSURE, drop NO.
+    if record.get("significant") == "NO":
+        logger.debug("Dropping not-significant edge")
+        return None
+
     nodes_lookup = koza.state.get("nodes_lookup", {})
 
     subject_node_data = nodes_lookup.get(subject_id)
