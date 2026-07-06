@@ -27,7 +27,7 @@ transform:
     coexpression:   750   # max ~999; the only channel with a nonzero median
     textmining:     750   # noisiest channel; dominant in ~40% of rows
     fusion:         750   # rare (~0.2-0.4% nonzero), max 900
-    cooccurence:    750   # EDA: max 542 -> never fires at 750; lower to ~450 to surface genetically_interacts_with
+    cooccurence:    450   # EDA: max 542 -> never fires at 750; lower to ~450 to surface genetically_interacts_with
     neighborhood:   750   # EDA: native score is 0 in every row -> never fires at ANY threshold
     combined_score: 500   # row-inclusion fallback gate (STRING medium-confidence cutoff)
 
