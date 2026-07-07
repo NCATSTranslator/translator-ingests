@@ -50,9 +50,6 @@ ingest_info:
       filtered_records: "Records with no values in both 'disease mim' and 'disease MONDO' columns"
       rationale: "No IDs to use for disease nodes"
     - file_name: "G2P_all_[date].csv"
-      filtered_records: "Records with NodeNorm mapping failures for the node IDs"
-      rationale: "Failed normalization means that the node would not be connected to other data/nodes in Translator graphs"
-    - file_name: "G2P_all_[date].csv"
       filtered_records: "Records where 'disease mim' value is '188400'"
       rationale: "OMIM:188400 is incorrectly mapped by NodeNorm to a Gene when it's actually a Disease. To avoid creating an incorrect edge, we are temporarily removing rows with this ID from the data."
 
@@ -72,8 +69,6 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-gene2phenotype
-
   edge_type_info:
     - subject_categories:
         - biolink:Gene
@@ -99,8 +94,6 @@ target_info:
       primary_knowledge_sources:
         - infores:gene2phenotype
       edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
         - biolink:publications
         - biolink:allelic_requirement
         - biolink:update_date
