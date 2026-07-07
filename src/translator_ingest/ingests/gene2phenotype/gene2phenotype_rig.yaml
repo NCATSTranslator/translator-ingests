@@ -22,6 +22,7 @@ source_info:
     - csv    # on-the-fly downloads
     - other    # FTP static releases are csv.gz
   data_versioning_and_releases: "On-the-fly downloads: creation/download date are the same and can be used for versioning; note that the date in the filename may differ from the date in your timezone. Static releases: creation date (shown on FTP site and in folder/file names) can be used for versioning; releases cut and archived roughly every 1-2 months."
+  source_status: maintained_regular_updates
   # additional_notes:  # (optional, range = string)
 
 # Information about Ingested Content
