@@ -92,6 +92,7 @@ target_info:
       agent_type:
         - manual_agent
       primary_knowledge_sources:
+        ## includes source_record_urls: source has page for each record
         - infores:gene2phenotype
       edge_properties:
         - biolink:publications
