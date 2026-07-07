@@ -10,8 +10,8 @@ source_info:
     - "https://doi.org/10.1186/s13073-024-01398-1"
     - "https://www.nature.com/articles/s41467-019-10016-3"
   terms_of_use_info:
-    terms_of_use_description: "Unsure, but likely uses EMBL-EBI terms of use (linked in website footer). Currently don't see a formal standard license. Various resource webpages (About -> The G2P Project, Downloads, Publications) say that all data is 'freely available' and to please cite the date accessed/data version and Thorman et al 2019"
     terms_of_use_url: "https://www.ebi.ac.uk/about/terms-of-use/#general"
+    terms_of_use_description: "Unsure, but likely uses EMBL-EBI terms of use (linked in website footer). Currently don't see a formal standard license. Various resource webpages (About -> The G2P Project, Downloads, Publications) say that all data is 'freely available' and to please cite the date accessed/data version and Thorman et al 2019"
   data_access_locations:
     - "Latest data is provided at https://www.ebi.ac.uk/gene2phenotype/download (downloads created on-the-fly)"
     - "Archived static releases provided on the FTP site at https://ftp.ebi.ac.uk/pub/databases/gene2phenotype/G2P_data_downloads/"
