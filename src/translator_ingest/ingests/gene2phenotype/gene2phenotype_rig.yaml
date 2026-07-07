@@ -101,7 +101,8 @@ target_info:
       ui_explanation: "EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease."
       source_files: 
         - "G2P_all_[date].csv"
-      # additional_notes:  # (optional, range = string)
+      additional_notes: >-
+        Can trust/have high confidence in edges with 'definitive' or 'strong' gene2phenotype_confidence_category values. Can have medium-high confidence in edges with 'moderate' gene2phenotype_confidence_category value. See https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section for confidence term definitions and https://doi.org/10.1186/s13073-024-01398-1 for more info on the curation process and terminology. 
 
   node_type_info:
     - node_category: biolink:Gene
