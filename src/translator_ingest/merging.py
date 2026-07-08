@@ -165,18 +165,50 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
     logger.info(f"Release generated for merged graph {merged_graph_metadata.source}... ")
 
 
-def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[PipelineMetadata, list[KGXKnowledgeSource]]:
+def _get_source_release_metadata(source: str, build_metadata: PipelineMetadata) -> PipelineMetadata | None:
+    """Load a source's latest release metadata, verifying it corresponds to the source's current build.
+
+    Used by the merge to reference each underlying source by its release. The build files under data/ are still
+    what actually gets merged; this only supplies the release version and release URL for the merge metadata.
+    It might be cleaner to actually use the nodes and edges from the releases, but it'd be a lot slower due to
+    compression of the release files.
+    """
+    release_path = get_versioned_file_paths(IngestFileType.LATEST_RELEASE_FILE, PipelineMetadata(source=source))
+    if not release_path.exists():
+        logger.warning(f"Source {source} has no release metadata; it will be referenced by its build version. "
+                       f"(This is expected for node-only sources, which are not released individually.)")
+        return None
+
+    with release_path.open() as release_metadata_file:
+        release_metadata = PipelineMetadata.from_dict(json.load(release_metadata_file))
+
+    if release_metadata.release_version is None:
+        logger.error(f"Source {source} release metadata has None for release_version")
+        raise ValueError(f"Source {source} release metadata is missing a release_version.")
+
+    # Guard against merging a source whose latest build is newer than its latest release: the build files we merge
+    # would then not correspond to the release version we would cite. Re-release the source to resolve this.
+    if release_metadata.build_version != build_metadata.build_version:
+        logger.error(f"Source {source} latest release build ({release_metadata.build_version}) does not match its "
+                     f"latest build ({build_metadata.build_version})")
+        raise ValueError(f"Source {source} has been rebuilt since its latest release. Re-release {source} before "
+                         f"merging so the merge references the current build.")
+
+    return release_metadata
+
+
+def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> PipelineMetadata:
     """Use ORION to merge multiple sources together into a single KGX output.
     Note that this process skips writing files to the data/storage directory and immediately generates a release,
     unlike single_merge and single-ingest merges done by the pipeline.
 
     Returns:
-        Tuple of (merged_graph_metadata, kgx_sources)
+        The merged graph's PipelineMetadata.
     """
     logger.info(f"Merging {graph_id}. Sources: {sources}.")
     graph_spec_sources = []
-    graph_source_versions = []
     kgx_sources = []
+    knowledge_sources = []
     biolink_versions = set()
     babel_versions = set()
 
@@ -184,10 +216,16 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     for source in sources:
         latest_path = Path(INGESTS_DATA_PATH) / source / IngestFileName.LATEST_BUILD_FILE
         if not latest_path.exists():
-            raise IOError(f"Could not find latest release metadata for {source}")
+            raise IOError(f"Could not find latest build metadata for {source}")
 
         with latest_path.open() as latest_pipeline_metadata_file:
             pipeline_metadata = PipelineMetadata.from_dict(json.load(latest_pipeline_metadata_file))
+
+        # Load the source's latest release metadata (if it has been released) for its release version and release URL.
+        # We still merge from the build files under data/ (via get_versioned_file_paths below); the release metadata is
+        # only used to identify each underlying released graph in the merge metadata and graph metadata.
+        # Node-only sources are never released, so a missing release file is expected and we fall back to build info.
+        release_metadata = _get_source_release_metadata(source, pipeline_metadata)
 
         # Validate that this source has all required version information
         if pipeline_metadata.biolink_version is None:
@@ -209,7 +247,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         # Get KGXKnowledgeSource metadata from the rig file
         data_source_info = get_kgx_source_from_rig(source)
         data_source_info.version = pipeline_metadata.source_version
-        kgx_sources.append(data_source_info)
+        knowledge_sources.append(data_source_info)
 
         node_path, edge_path = get_versioned_file_paths(
             file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
@@ -219,14 +257,29 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         # handle node-only ingests
         if edge_path.exists():
             files_to_merge.append(str(edge_path))
+
+        # Identify this source's underlying graph by its release, falling back to build info for unreleased
+        # (e.g. node-only) sources that have no release version or release URL.
+        if release_metadata is not None:
+            graph_version = release_metadata.release_version
+            part_id = release_metadata.data or f"{INGESTS_RELEASES_URL}/{source}/{release_metadata.release_version}/"
+        else:
+            graph_version = pipeline_metadata.build_version
+            part_id = pipeline_metadata.data
+
         # NOTE: merge_strategy=DONT_MERGE really means don't merge edges, nodes are always merged.
         # We already merged edges for every ingest and don't have overlapping
         # primary-knowledge-sources, so we don't need to merge edges here.
         graph_spec_sources.append(SubGraphSource(id=source,
                                                  file_paths=files_to_merge,
-                                                 graph_version=pipeline_metadata.source_version,
+                                                 graph_version=graph_version,
                                                  merge_strategy=KGXFileMerger.DONT_MERGE))
-        graph_source_versions.append(pipeline_metadata.build_version)
+        kgx_sources.append({
+            "@id": part_id,
+            "name": source,
+            "release_version": release_metadata.release_version if release_metadata is not None else None,
+            "build_version": pipeline_metadata.build_version
+        })
 
     # Validate that all sources have the same biolink and babel versions
     if len(biolink_versions) > 1:
@@ -241,7 +294,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     babel_version = list(babel_versions)[0]
 
     # Generate a build version based on the build versions of all source graphs
-    build_version = hashlib.md5("".join(sorted(graph_source_versions)).encode()).hexdigest()[:12]
+    build_version = hashlib.md5("".join(sorted([kgx_source['build_version'] for kgx_source in kgx_sources])).encode()).hexdigest()[:12]
     release_version = datetime.datetime.now().strftime("%Y_%m_%d")
     data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
 
@@ -260,7 +313,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     # Check if the latest release already has this build version
     if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
         logger.info(f"Graph {graph_id} latest release is already current (build: {build_version}). Skipping merge.")
-        return merged_graph_metadata, kgx_sources
+        return merged_graph_metadata
 
     logger.info(f"Graph {graph_id} versioned, release version: {release_version}, build version: {build_version}")
     graph_spec = GraphSpec(
@@ -298,16 +351,21 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
                 metadata_file.write(json.dumps(merge_metadata, indent=4))
 
     # Generate graph metadata after successful merge
-    merge_graph_metadata(pipeline_metadata=merged_graph_metadata, kgx_sources=kgx_sources, overwrite=overwrite)
+    merge_graph_metadata(pipeline_metadata=merged_graph_metadata, knowledge_sources=knowledge_sources,
+                         kgx_sources=kgx_sources, overwrite=overwrite)
 
-    return merged_graph_metadata, kgx_sources
+    return merged_graph_metadata
 
-def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[KGXKnowledgeSource], overwrite: bool = False):
+def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
+                         knowledge_sources: list[KGXKnowledgeSource],
+                         kgx_sources: list[dict] | None = None,
+                         overwrite: bool = False):
     """Generate graph metadata for a merged graph.
 
     Args:
         pipeline_metadata: PipelineMetadata instance for the merged graph
-        kgx_sources: List of KGXKnowledgeSource metadata instances for each source in the merge
+        knowledge_sources: List of KGXKnowledgeSource metadata instances for each source in the merge
+        kgx_sources: hasPart entries identifying each underlying graph used to build the merged graph.
         overwrite: Whether to overwrite existing metadata
     """
     graph_id = pipeline_metadata.source
@@ -340,14 +398,19 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata, kgx_sources: list[
         date_created=datetime.datetime.now().strftime("%Y_%m_%d"),
         biolink_version=biolink_version,
         babel_version=babel_version,
-        knowledge_sources=kgx_sources,
+        knowledge_sources=knowledge_sources,
     )
     source_metadata.schema = generate_schema(nodes_file_path=str(merged_graph_nodes),
                                              edges_file_path=str(merged_graph_edges),
                                              biolink_version=biolink_version)
 
+    # Populate hasPart with each underlying graph the merged graph is built from. We post-process the emitted JSON
+    # (rather than relying on ORION's metadata fields) so this output stays stable while ORION's objects are refactored.
+    graph_metadata = json.loads(source_metadata.to_json())
+    graph_metadata["hasPart"] = kgx_sources or []
+
     with graph_metadata_file_path.open("w") as output_file:
-        output_file.write(source_metadata.to_json())
+        json.dump(graph_metadata, output_file, indent=2)
     logger.info(f"Graph metadata complete for {graph_id} ({release_version}).")
 
 
@@ -394,7 +457,7 @@ def main(graph_id, sources, overwrite):
     _warn_if_sources_diverge_from_declaration(graph_id, list(sources))
 
     # Merge the sources into one KGX and generate metadata
-    merged_graph_metadata, kgx_sources = merge(
+    merged_graph_metadata = merge(
         graph_id, sources=list(sources), overwrite=overwrite
     )
 
