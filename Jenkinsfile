@@ -75,15 +75,15 @@ node('transltr-ci-build-node-03-24.04') {
                 env.PIPELINE_RESULTS = results.collect { k, v -> "${k}:${v}" }.join(',')
             }
             
+            stage('Create Releases') {
+                echo "Creating release packages..."
+                sh "make release SOURCES='${sources.join(' ')}'"
+            }
+
             stage('Merge Sources') {
                 def overwriteFlag = params.OVERWRITE ? 'OVERWRITE=true' : ''
                 echo "Merging and releasing all multisource KGs"
                 sh "make merge-all ${overwriteFlag}"
-            }
-            
-            stage('Create Releases') {
-                echo "Creating release packages..."
-                sh "make release SOURCES='${sources.join(' ')}'"
             }
             
             stage('Upload to S3') {
