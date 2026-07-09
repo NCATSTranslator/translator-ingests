@@ -8,6 +8,29 @@ metadata:
     for human, mouse, and rat, with per-channel biolink predicates.
   rights: 'https://string-db.org/cgi/access'
 
+transform:
+  code: string.py
+  # Canonical per-channel score thresholds — the single source of truth for the
+  # filter strategy. string.py reads these via KozaTransform.extra_fields (same
+  # mechanism as the go_cam ingest) and applies them per row; a channel's
+  # predicate fires only when its score exceeds the value below. Each channel is
+  # an INDEPENDENTLY tunable knob. Defaults reproduce the historical
+  # ORION-aligned behavior (per-channel 750, combined 500); annotations cite the
+  # EDA distribution (eda/reports/) that justifies each value.
+  #
+  # NOTE on semantics: an "include the row if ANY channel clears its own
+  # threshold" rule is an OR across per-column comparisons, which Koza's
+  # declarative `filters:` (AND-only, see koza/utils/row_filter.py) cannot
+  # express — so this per-channel logic lives in string.py, not in `filters:`.
+  channel_thresholds:
+    experiments:    750   # real physical evidence; human p99 ~510, max 999
+    coexpression:   750   # max ~999; the only channel with a nonzero median
+    textmining:     750   # noisiest channel; dominant in ~40% of rows
+    fusion:         750   # rare (~0.2-0.4% nonzero), max 900
+    cooccurence:    450   # EDA: max 542 -> never fires at 750; lower to ~450 to surface genetically_interacts_with
+    neighborhood:   750   # EDA: native score is 0 in every row -> never fires at ANY threshold
+    combined_score: 500   # row-inclusion fallback gate (STRING medium-confidence cutoff)
+
 readers:
   # STRING protein–protein interactions. The transform function lives in
   # string.py decorated with @koza.transform_record(tag="string_ppi").
@@ -45,11 +68,17 @@ readers:
       # Typed as int so the combined_score > 500 reader filter compares numerically
       # (untyped CSV columns are strings, and '594' > 500 raises TypeError).
       - combined_score: int
-    # Row-inclusion gate at the reader level: drop sub-threshold rows before they
-    # reach the transform (STRING's medium-confidence cutoff, combined_score > 500).
-    # The transform retains an equivalent guard (passes_combined_score) so it stays
-    # correct when called directly in unit tests; this reader filter is the
-    # production efficiency path (Koza skips object construction for dropped rows).
+    # Coarse efficiency PRE-FILTER only (Koza skips object construction for
+    # dropped rows). The CANONICAL filter strategy is in string.py using
+    # transform.channel_thresholds above; this reader gate just avoids building
+    # objects for rows that cannot possibly emit an edge.
+    #
+    # INVARIANT: this value must stay <= min(transform.channel_thresholds) so it
+    # never pre-drops a row whose channel would have fired. This is provably safe
+    # for any channel threshold >= 501: an EDA scan of all 3 taxa found
+    # combined_score >= (max channel score) - 1 for the native predicate channels
+    # (max gap = 1), so a row with channel > T has combined_score >= T. If you
+    # lower ANY channel_threshold to <= 500, lower this value to match.
     filters:
       - inclusion: 'include'
         column: 'combined_score'
