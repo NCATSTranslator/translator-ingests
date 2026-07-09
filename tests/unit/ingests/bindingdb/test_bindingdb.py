@@ -34,6 +34,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     LIGAND_SMILES,
     TARGET_NAME,
     SOURCE_ORGANISM,
+    CURATION_DATASOURCE,
     PUBLICATION,
     SUPPORTING_DATA_ID,
     ROWS_MISSING_AFFINITY,
@@ -48,7 +49,8 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE1_KD_RECORD,
     CASPASE1_WEAK_KON_RECORD,
     CASPASE1_RECORD_WITH_DOI,
-    BINDINGDB_RECORD_WITH_A_US_PATENT
+    BINDINGDB_RECORD_WITH_A_US_PATENT,
+    PUBCHEM_RECORD
 )
 
 
@@ -142,9 +144,11 @@ def test_prepare_bindingdb_data(
     # bypasses Koza to directly read in the input data file to return
     # an iterable sequence of records, where duplication in the
     # original assay records is removed, merging into a single edge...
-    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+    records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+    assert records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
 
-    for test_record in merged_records_iterable:
+    expected_records: set[int] = {1, 2, 4, 5, 9, 10}
+    for test_record in records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
         # Record "6" excluded because the source organism "Pan troglodytes" is not in the target list of taxa
         # Record "7" excluded because it has no affinity values at all
@@ -152,23 +156,22 @@ def test_prepare_bindingdb_data(
         assert test_record[REACTANT_SET_ID] not in [3, 6, 7, 8], \
             f"Unexpected reactant set ID # {test_record[REACTANT_SET_ID]}"
 
-        # ... but expecting all the other records being tested further
-        assert test_record[REACTANT_SET_ID] in [1, 2, 4, 5, 9], \
-            f"Missing expected reactant set ID # {test_record[REACTANT_SET_ID]}"
-
         # Didn't extract this field (among others...) - column was not needed
         assert LIGAND_SMILES not in test_record
 
         # Check that the publication and supporting data fields are set correctly
         if test_record[REACTANT_SET_ID] == 1:
+            expected_records.remove(1)
             assert test_record[PUBLICATION] == "PMID:12408711"
             assert test_record[SUPPORTING_DATA_ID] is None
 
         elif test_record[REACTANT_SET_ID] == 2:
+            expected_records.remove(2)
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 4:
+            expected_records.remove(4)
             assert test_record[TARGET_NAME] == "Caspase-1b"
             assert test_record[PUBLICATION] == "uspto-patent:9447092"
             assert test_record[SUPPORTING_DATA_ID] == "infores:uspto-patent"
@@ -178,17 +181,32 @@ def test_prepare_bindingdb_data(
             assert test_record["Ki (nM)"] == ">390"
 
         elif test_record[REACTANT_SET_ID] == 5:
+            expected_records.remove(5)
             assert test_record[SOURCE_ORGANISM] == "Mus musculus"
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 9:
+            expected_records.remove(9)
             # Row 9 has Ki=90 (in range) and IC50=50000 
-            # (out of range for 1000 nM (1 micromolar) threshold);
+            # (out of range for 10,000 nM (10 micromolar) threshold);
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
             assert test_record["IC50 (nM)"] is None
 
+        elif test_record[REACTANT_SET_ID] == 10:
+            expected_records.remove(10)
+            # Row 10 is a PubChem entry with AID
+            # that should be retained with its IC50 parameter
+            # if proper PubChem-specific filtering is done
+            assert test_record[TARGET_NAME] == "Runt-related transcription factor 1"
+            assert test_record["IC50 (nM)"] == "15300"
+            assert test_record[PUBLICATION] == "pubchem.aid:1438"
+            assert test_record[SUPPORTING_DATA_ID] == "infores:pubchem"
+
+    # ... but expecting all the other records being tested further
+    assert not expected_records, \
+        f"Missing expected reactant set ID's in 'merged_records_iterable'  # {str(expected_records)}"
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
@@ -383,6 +401,44 @@ def test_prepare_bindingdb_data(
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
+        ),
+        (  # Test record 8: PubChem BindingDb record
+            PUBCHEM_RECORD,
+            [
+                {
+                    "id": "PUBCHEM.COMPOUND:644735",
+                    "category": ["biolink:ChemicalEntity"]
+                },
+                {
+                    "id": "UniProtKB:Q01196",
+                    "name": "Runt-related transcription factor 1",
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens"
+                },
+            ],
+            {
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
+                "subject": "PUBCHEM.COMPOUND:644735",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:Q01196",
+                "publications": ["pubchem.aid:1438"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:pubchem"}
+                ],
+                "has_affinity": [
+                    {
+                        "affinity_parameter": "pIC50",
+                        "affinity": 4.815308569182401,
+                        "has_binary_relation": "equal_to"
+                    }
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent
+            }
         )
     ]
 )
@@ -423,70 +479,113 @@ def affinity_metadata_transform() -> koza.KozaTransform:
     )
 
 
-def _affinity_df(rows: list[dict]) -> pl.DataFrame:
-    """Build a minimal polars DataFrame with affinity columns from row dicts."""
-    columns = {col: [] for col in AFFINITY_PARAMETERS.values()}
+def _affinity_df(rows: list[dict], curation_sources: list[str] | None = None) -> pl.DataFrame:
+    """Build a minimal polars DataFrame with affinity columns from row dicts.
+
+    :param rows: List of dicts keyed by affinity column name.
+    :param curation_sources: Optional list of CURATION_DATASOURCE values (one per row).
+        When provided, a CURATION_DATASOURCE column is added so PubChem-bypass logic
+        in filter_affinity_values can be exercised.
+    """
+    columns: dict[str, list] = {col: [] for col in AFFINITY_PARAMETERS.values()}
     for row in rows:
         for col in columns:
             columns[col].append(row.get(col))
-    schema = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    schema: dict[str, pl.PolarsDataType] = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    if curation_sources is not None:
+        columns[CURATION_DATASOURCE] = curation_sources
+        schema[CURATION_DATASOURCE] = pl.Utf8
     return pl.DataFrame(columns, schema=schema)
 
 
 @pytest.mark.parametrize(
-    "rows,expected_count,expected_filtered,description",
+    "rows,curation_sources,expected_count,expected_filtered,description",
     [
         (
             [{"Ki (nM)": "90"}],
+            None,
             1, 0,
             "single in-range Ki value passes"
         ),
         (
             [{}],
+            None,
             0, 1,
             "row with no affinity values is filtered"
         ),
         (
             [{"IC50 (nM)": "50000"}],
+            None,
             0, 1,
-            "IC50=50000 nM (50 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
+            "IC50=50000 nM (50 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
+            None,
             1, 0,
             "Ki in range keeps row; IC50 out of range is nulled"
         ),
         (
             [{"Ki (nM)": "<500"}],
+            None,
             1, 0,
             "relational prefix '<' is stripped before range check"
         ),
         (
             [{"Ki (nM)": ">2000000"}],
+            None,
             0, 1,
-            "Ki=2000000 nM (2000 micromolar) far exceeds the 1000 nM (1 micromolar) threshold"
+            "Ki=2000000 nM (2000 micromolar) far exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Kd (nM)": "0"}],
+            None,
             0, 1,
             "Kd=0 excluded by exclusive lower bound"
         ),
         (
-            [{"Kd (nM)": "1000"}, {"Kd (nM)": "2000"}],
+            [{"Kd (nM)": "1000"}, {"Kd (nM)": "11000"}],
+            None,
             1, 1,
-            "Kd=1000 nM (1 micromolar) at upper bound passes; "+
-            "Kd=2000 nM (2 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
+            "Kd=1000 nM (1 micromolar) at upper bound passes; "
+            "Kd=11000 nM (11 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
+        ),
+        # PubChem records are exempt from the upper-bound filter
+        (
+            [{"IC50 (nM)": "15300"}],
+            ["PubChem"],
+            1, 0,
+            "PubChem record with IC50=15300 nM above threshold is retained (upper-bound exempt)"
+        ),
+        (
+            [{"IC50 (nM)": "50000"}],
+            ["PubChem"],
+            1, 0,
+            "PubChem record with IC50=50000 nM far above threshold is retained (upper-bound exempt)"
+        ),
+        (
+            [{"IC50 (nM)": "0"}],
+            ["PubChem"],
+            0, 1,
+            "PubChem record with IC50=0 is still excluded by the lower bound"
+        ),
+        (
+            [{"IC50 (nM)": "15300"}, {"IC50 (nM)": "50000"}],
+            ["PubChem", "Curated from the literature by BindingDB"],
+            1, 1,
+            "PubChem row with IC50=15300 nM passes; non-PubChem row with IC50=50000 nM is filtered"
         ),
     ]
 )
 def test_filter_affinity_values(
     affinity_metadata_transform: koza.KozaTransform,
     rows: list[dict],
+    curation_sources: list[str] | None,
     expected_count: int,
     expected_filtered: int,
     description: str
 ):
-    df = _affinity_df(rows)
+    df = _affinity_df(rows, curation_sources)
     result = filter_affinity_values(affinity_metadata_transform, df)
     assert result.height == expected_count, description
     actual_filtered = affinity_metadata_transform.transform_metadata.get(ROWS_MISSING_AFFINITY, 0)
