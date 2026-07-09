@@ -151,14 +151,16 @@ target_info:
         - target_gene_biological_process
         - target_gene_occurs_in
       ui_explanation: "GO-CAM models provide causal relationships where one gene product negatively regulates another gene product's activity, potentially through indirect mechanisms."
-      additional_notes: "GO-CAM predicates are mapped to Biolink regulation predicates based on the causal relationship types defined in the Relation Ontology (RO). All edges are manual agent knowledge assertions as GO-CAMs are manually curated models of biological mechanisms. Edge properties preserve the functional context (molecular function, biological process, cellular component) for both source and target genes."
+      additional_notes:
+        - "GO-CAM predicates are mapped to Biolink regulation predicates based on the causal relationship types defined in the Relation Ontology (RO). All edges are manual agent knowledge assertions as GO-CAMs are manually curated models of biological mechanisms. Edge properties preserve the functional context (molecular function, biological process, cellular component) for both source and target genes."
 
   node_type_info:
     - node_category: biolink:Gene
       source_identifier_types:
         - "UniProtKB"
         - "MGI"
-      additional_notes: "Gene identifiers from human and mouse models only (NCBITaxon:9606, NCBITaxon:10090)"
+      additional_notes:
+        - "Gene identifiers from human and mouse models only (NCBITaxon:9606, NCBITaxon:10090)"
 
   future_considerations:
     - category: other
