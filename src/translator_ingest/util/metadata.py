@@ -1,6 +1,6 @@
 import re
-import datetime
 import yaml
+from datetime import datetime, timezone
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, Dict
 
@@ -88,8 +88,8 @@ class PipelineMetadata:
         return pipeline_metadata_dict
 
 def current_iso_date() -> str:
-    """Return today's date as an ISO 8601 string (YYYY-MM-DD)."""
-    return datetime.date.today().isoformat()
+    # Current UTC timestamp in ISO 8601 format (e.g., "2026-07-09T14:23:51Z"), with seconds precision.
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def next_release_version(previous_release_version: str | None) -> str:

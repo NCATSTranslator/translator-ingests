@@ -1,4 +1,5 @@
 """Tests for the release write path (release_ingest)."""
+import datetime
 import json
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 import translator_ingest.release
 import translator_ingest.util.storage.local as local_storage
 from translator_ingest.release import release_ingest
-from translator_ingest.util.metadata import PipelineMetadata, current_iso_date
+from translator_ingest.util.metadata import PipelineMetadata
 
 # Version fields used to build the on-disk directory tree. The merge directory path is derived
 # from these individual fields (not from build_version), so changing only build_version between
@@ -83,9 +84,12 @@ def test_release_ingest_first_release(release_env):
     release_metadata = _read_latest_release(releases_path)
     assert release_metadata["release_version"] == "1.0.0"
     assert release_metadata["build_version"] == "build1"
-    # build_date is preserved from the build; release_date is stamped now.
+    # build_date is preserved from the build; release_date is stamped now as a
+    # timezone-aware UTC ISO 8601 timestamp (e.g. "2026-07-09T14:23:51Z").
     assert release_metadata["build_date"] == "2026-01-01"
-    assert release_metadata["release_date"] == current_iso_date()
+    release_date = datetime.datetime.fromisoformat(release_metadata["release_date"])
+    assert release_date.tzinfo is not None
+    assert release_date.date() == datetime.datetime.now(datetime.timezone.utc).date()
 
     # The versioned release directory and its compressed archive exist, and are copied to latest.
     assert (releases_path / SOURCE / "1.0.0" / f"{SOURCE}.tar.zst").exists()
