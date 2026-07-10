@@ -18,7 +18,7 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.chembl.chembl import transform_complexes
+from translator_ingest.ingests.chembl.chembl import build_chemical_entity_from_row, transform_complexes
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
@@ -28,6 +28,13 @@ def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = dict()
     return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
+
+
+@pytest.fixture
+def fresh_koza() -> koza.KozaTransform:
+    # Function-scoped so each test gets an empty state (and thus an empty chemical_cache);
+    # build_chemical_entity_from_row memoizes by molregno, which would otherwise leak across tests.
+    return MockKozaTransform(extra_fields=dict(), writer=MockKozaWriter(), mappings=dict())
 
 
 # list of slots whose values are
@@ -233,3 +240,80 @@ def test_pydantic_roundtrip(fixture):
     dumped = obj.model_dump()
     restored = cls.model_validate(dumped)
     assert restored == obj
+
+
+# ===== build_chemical_entity_from_row (activities pre-join) =====
+
+def _activity_row(**overrides) -> dict:
+    """A pre-joined ChEMBL activity row carrying the molecule_* fields the builder reads."""
+    row = {
+        "molregno": 97,
+        "molecule_chembl_id": "CHEMBL2",
+        "molecule_pref_name": "PRAZOSIN",
+        "molecule_inchi_key": "IENZQIKPOWMVPG-UHFFFAOYSA-N",
+        "molecule_smiles": "COc1cc2nc(N3CCN(C(=O)c4ccco4)CC3)nc(N)c2cc1OC",
+        "molecule_synonyms": ["CP-122991", "Prazosin"],
+        "molecule_availability_type": 1,
+        "molecule_black_box_warning": 0,
+        "molecule_natural_product": 0,
+        "molecule_prodrug": 0,
+    }
+    row.update(overrides)
+    return row
+
+
+@pytest.mark.parametrize(
+    "row,expected",
+    [
+        (  # full record: structures -> xref (InChIKey then SMILES), availability mapped, flags off
+            _activity_row(),
+            {
+                "id": "CHEMBL.COMPOUND:CHEMBL2",
+                "name": "PRAZOSIN",
+                "xref": ["InChIKey:IENZQIKPOWMVPG-UHFFFAOYSA-N",
+                         "SMILES:COc1cc2nc(N3CCN(C(=O)c4ccco4)CC3)nc(N)c2cc1OC"],
+                "synonym": ["CP-122991", "Prazosin"],
+                "chembl_availability_type": "prescription only",
+                "chembl_black_box_warning": None,
+                "chembl_natural_product": None,
+                "chembl_prodrug": None,
+            },
+        ),
+        (  # no structures/synonyms -> xref/synonym None; flags on; withdrawn availability
+            _activity_row(
+                molecule_inchi_key=None, molecule_smiles=None, molecule_synonyms=None,
+                molecule_availability_type=-2, molecule_black_box_warning=1,
+                molecule_natural_product=1, molecule_prodrug=1,
+            ),
+            {
+                "xref": None,
+                "synonym": None,
+                "chembl_availability_type": "withdrawn",
+                "chembl_black_box_warning": "True",
+                "chembl_natural_product": True,
+                "chembl_prodrug": True,
+            },
+        ),
+        (  # empty synonym list collapses to None
+            _activity_row(molecule_synonyms=[]),
+            {"synonym": None},
+        ),
+    ],
+)
+def test_build_chemical_entity_from_row(fresh_koza, row, expected):
+    entity = build_chemical_entity_from_row(fresh_koza, row)
+    for slot, value in expected.items():
+        assert getattr(entity, slot) == value
+
+
+def test_build_chemical_entity_from_row_no_molecule_returns_none(fresh_koza):
+    # a molregno absent from molecule_dictionary comes through the LEFT JOIN with a NULL chembl_id
+    assert build_chemical_entity_from_row(fresh_koza, _activity_row(molecule_chembl_id=None)) is None
+
+
+def test_build_chemical_entity_from_row_is_memoized(fresh_koza):
+    first = build_chemical_entity_from_row(fresh_koza, _activity_row())
+    # same molregno, different molecule fields -> must return the cached object, not rebuild
+    second = build_chemical_entity_from_row(fresh_koza, _activity_row(molecule_pref_name="CHANGED"))
+    assert second is first
+    assert second.name == "PRAZOSIN"
