@@ -36,7 +36,7 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
-from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import record_download_metadata, substitute_version_in_download_yaml
 
 logger = get_logger(__name__)
 
@@ -161,7 +161,7 @@ def download(pipeline_metadata: PipelineMetadata):
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
         logger.info(f"Downloading source data for {pipeline_metadata.source}...")
-        kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        report = kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
         # is a temporary file with versioning resolved but is
@@ -169,6 +169,10 @@ def download(pipeline_metadata: PipelineMetadata):
         if download_yaml_with_version and \
                 download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
+
+    # Record when source data was actually fetched. The timestamp is only refreshed when a real
+    # download happened this run; cache-hit reruns preserve the existing downloaded_at.
+    record_download_metadata(pipeline_metadata, report)
 
 
 # Check if the transform stage was already completed
