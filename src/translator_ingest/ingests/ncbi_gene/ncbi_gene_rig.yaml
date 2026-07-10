@@ -6,9 +6,12 @@ source_info:
   infores_id: infores:ncbi-gene
   name: NCBI Gene
   description: >-
-    "The NCBI Gene integrates information from a wide range of species.
-    A record may include nomenclature, Reference Sequences (RefSeqs), maps, pathways, variations, phenotypes,
-    and links to genome-, phenotype-, and locus-specific resources worldwide."
+    NCBI Gene is a database maintained by the National Center for Biotechnology Information (NCBI) that
+    provides authoritative, integrated information about genes across a wide range of species. A gene record
+    may include official nomenclature and symbols, gene descriptions, Reference Sequences (RefSeqs), genomic
+    maps, pathways, variations, phenotypes, and links to genome-, phenotype-, and locus-specific resources
+    worldwide. This ingest uses NCBI Gene as the authoritative source of gene identity and basic gene
+    properties (symbol, full name, description, and taxon) for human, mouse, and rat.
   citations:
     - "National Center for Biotechnology Information (NCBI)[Internet]. Bethesda (MD): National Library of Medicine (US), National Center for Biotechnology Information; [1988] – [cited 2024 Dec]. Available from: https://www.ncbi.nlm.nih.gov/"
   terms_of_use_info:
@@ -22,12 +25,13 @@ source_info:
   data_formats:
     - tsv
   data_versioning_and_releases: >-
-    "NCBI Gene data is updated regularly. Gene information files are available as current snapshots from the FTP site."
+    NCBI Gene data is updated regularly. Gene information files are available as current snapshots from the FTP site.
+  source_status: maintained_regular_updates
 
 # Information about Ingested Content
 ingest_info:
   ingest_categories:
-    - primary_provider
+    - node_property_only_provider
   utility: >-
     "NCBI Gene provides authoritative gene information for human, mouse, and rat genes, including official gene
     symbols, descriptions, and taxonomic information critical for gene normalization and identification in
@@ -53,22 +57,21 @@ ingest_info:
       rationale: "This ingest focuses specifically on human, mouse, and rat genes as these are the primary model organisms of interest for biomedical research and translation."
 
   future_considerations:
-    - category: node_content
+    - category: other
       consideration: "Consider expanding to include additional model organisms (e.g., zebrafish, fly, worm, yeast) if needed for broader comparative genomics support"
       relevant_files: "gene_info.gz (additional taxon IDs)"
     - category: node_property_content
       consideration: "Consider adding additional gene properties such as map_location, chromosome, synonyms, or dbXrefs for richer gene annotation"
 
-  additional_notes: "The NCBI Gene ingest provides foundational gene nodes that serve as authoritative identifiers and basic properties for downstream integration with other biomedical data sources."
+  additional_notes:
+    - "The NCBI Gene ingest provides foundational gene nodes that serve as authoritative identifiers and basic properties for downstream integration with other biomedical data sources."
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-ncbi-gene-kgx
-
   node_type_info:
     - node_category: biolink:Gene
       source_identifier_types:
-        - "NCBIGene (NCBI Gene ID)"
+        - "NCBIGene"
       node_properties:
         - id
         - category
@@ -77,13 +80,16 @@ target_info:
         - description
         - full_name
         - taxon
-      additional_notes: "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information."
+      additional_notes:
+        - "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information."
 
   future_considerations:
-    - category: edge_content
+    - category: spoq_pattern
       consideration: "Future iterations could include gene-to-gene orthology relationships or gene-to-pathway associations if such data becomes available from NCBI Gene"
 
-  additional_notes: "This ingest creates comprehensive gene nodes for human, mouse, and rat that serve as foundational entities for biomedical knowledge graphs, providing authoritative gene identifiers and basic properties."
+  additional_notes:
+    - "This ingest creates comprehensive gene nodes for human, mouse, and rat that serve as foundational entities for biomedical knowledge graphs, providing authoritative gene identifiers and basic properties."
+    - "This is a node-only ingest: it produces biolink:Gene nodes and no edges. As a result, no edge_type_info is applicable."
 
 # Information about how the ingest was specified and performed
 provenance_info:
