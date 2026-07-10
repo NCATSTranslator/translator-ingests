@@ -15,6 +15,7 @@ dependencies = [
     "click>=8.0.0",
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
+    "duckdb>=1.4.4",    # ChEMBL activities transform pre-joins over the source sqlite via duckdb
     "hatchling",
     "kghub-downloader>=0.4.5",
     "koza>=2.4.0",
