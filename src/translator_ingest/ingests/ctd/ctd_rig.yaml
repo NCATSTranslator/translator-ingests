@@ -146,7 +146,8 @@
         ui_explanation: Source CTD data provides assertions about Chemical-Disease relationships that were manually curated from literature by CTD curators. The CTD record used to create this Translator edge has a "T" (therapeutic) as a DirectEvidence code, indicating the chemical to be a "potential" treatment in virtue of its clinical use or scientific study. The broad and imprecise nature of this relationship is best represented with the Biolink predicate 'treats or applied or studied to treat' - which is used when it is not clear whether the chemical shows established efficacy or was merely studied or attempted as a treatment.
         source_files:
           - CTD_chemicals_diseases.tsv
-        additional_notes: Note that the 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease.
+        additional_notes:
+          - Note that the 'treats_or_applied_or_studied_to_treat' predicate is used to avoid making too strong a claim, as CTDs definition of its "T" flag is broad ("a chemical that has a known or potential therapeutic role in a disease"), which covered cases where a chemical may formally treat a disease or only have been studied or applied to treat a disease.
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -158,13 +159,15 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-        primary_knowledge_source: infores:ctd
+        primary_knowledge_sources:
+          - infores:ctd
         edge_properties:
           - publications
         ui_explanation: Source CTD data provides assertions about Chemical-Disease relationships that were manually curated from literature by CTD. The CTD record used to create this Translator edge has a 'DirectEvidence' code of "M" (marker/mechanism), indicating that the chemical is either a marker or contributing factor for a condition. This vague/imprecise relationship implies that at minimum there is correlation between the presence of the chemical and condition, and is best represented here using the Biolink 'correlated_with' predicate.
         source_files:
           - CTD_chemicals_diseases.tsv
-        additional_notes: CTD_chemicals_diseases.tsv data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores. Separate edges will be created for each type of association reported between a chemical and a given disease, according to the mappings described above. All "shared gene" rows in the source data file for a given C-D pair will be aggregated into a single edge that reports a relationship with the inference score as an edge property (and possibly the list of shared genes). This means that for a given C-D pair in the CTD file, there may be 1, 2, or 3 separate edges created in the Translator graph.
+        additional_notes:
+          - CTD_chemicals_diseases.tsv data includes one row per curated 'T', or 'M' association with pub reference(s), plus one row per shared gene association with pub reference(s), and inference scores. Separate edges will be created for each type of association reported between a chemical and a given disease, according to the mappings described above. All "shared gene" rows in the source data file for a given C-D pair will be aggregated into a single edge that reports a relationship with the inference score as an edge property (and possibly the list of shared genes). This means that for a given C-D pair in the CTD file, there may be 1, 2, or 3 separate edges created in the Translator graph.
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -489,7 +492,8 @@
           - biolink:MolecularMixture
         source_identifier_types:
           - MeSH
-        additional_notes: Majority are Biolink SmallMolecules
+        additional_notes:
+          - Majority are Biolink SmallMolecules
       - node_categories:
           - biolink:DiseaseOrPhenotypicFeature
           - biolink:Disease
@@ -521,9 +525,9 @@
         consideration: Revisit 'correlated_with' and 'treats_or_studied_or_applied_to_treat' predicates if/when we refactor modeling or conventions here.
       - category: other
         consideration: May want to improve ui_explanations for the chemical-gene interactions edge types, once we understand how the UI will stitch together / display predicates and qualifier values for these edges.
-      - category: edges
+      - category: predicates  # conformance: was 'edges'
         consideration: CTD_pheno_term_ixns and CTD_chem_gene_ixns both have lots of interactions involve three entities, like A causes B which results in B causing C. These are hard to model on a single edge, but we may be able to extract single edges from them.
-      - category: edges
+      - category: predicates  # conformance: was 'edges'
         consideration: (related to the consideration above) The CTD_pheno_term_ixns.tsv that links chemicals to phenotypes (post-composed from GO term + direction) includes a column indicating gene(s) mediating the phenotype.  Consider adding this info (perhaps using a new statement-level qualifier such as 'gene context qualifier', or 'mediating gene qualifier'.)
 
 # Information about how the task ingest was specified and performed

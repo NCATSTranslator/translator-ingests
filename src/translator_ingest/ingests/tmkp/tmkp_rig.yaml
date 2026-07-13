@@ -21,7 +21,7 @@ source_info:
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - tsv.gz
+    - tsv  # conformance: was 'tsv.gz'
     - tsv
   data_versioning_and_releases: "Periodic releases managed through Google Cloud Storage. Versioning is tracked via the last-modified date on the published files."
 
@@ -324,41 +324,48 @@ target_info:
       source_identifier_types:
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:Protein"
       source_identifier_types:
         - "UniProtKB"
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:SmallMolecule"
       source_identifier_types:
         - "DRUGBANK"
         - "CHEBI"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:Disease"
       source_identifier_types:
         - "MONDO"
         - "HP"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:MolecularMixture"
       source_identifier_types:
         - "DRUGBANK"
         - "CHEBI"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:PhenotypicFeature"
       source_identifier_types:
         - "HP"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:ComplexMolecularMixture"
       source_identifier_types:
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
 
   future_considerations:
     - category: edge_properties
@@ -366,7 +373,8 @@ target_info:
     - category: other
       consideration: "May want to improve ui_explanations for edge types once we understand how the UI will stitch together / display predicates and qualifier values for these edges."
 
-  additional_notes: "All nodes created from edge records are minimal NamedThing placeholders with only an id. Richer node information (names, categories, etc.) comes from the nodes.tsv.gz file via the node transform, or from downstream normalization."
+  additional_notes:
+    - "All nodes created from edge records are minimal NamedThing placeholders with only an id. Richer node information (names, categories, etc.) comes from the nodes.tsv.gz file via the node transform, or from downstream normalization."
 
 # Information about how the ingest was specified and performed
 provenance_info:
