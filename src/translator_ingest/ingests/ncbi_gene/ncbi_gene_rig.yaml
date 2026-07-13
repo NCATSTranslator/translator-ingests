@@ -27,7 +27,7 @@ source_info:
 # Information about Ingested Content
 ingest_info:
   ingest_categories:
-    - primary_provider
+    - primary_knowledge_provider  # conformance: was 'primary_provider'
   utility: >-
     "NCBI Gene provides authoritative gene information for human, mouse, and rat genes, including official gene
     symbols, descriptions, and taxonomic information critical for gene normalization and identification in
@@ -53,13 +53,14 @@ ingest_info:
       rationale: "This ingest focuses specifically on human, mouse, and rat genes as these are the primary model organisms of interest for biomedical research and translation."
 
   future_considerations:
-    - category: node_content
+    - category: node_property_content  # conformance: was 'node_content'
       consideration: "Consider expanding to include additional model organisms (e.g., zebrafish, fly, worm, yeast) if needed for broader comparative genomics support"
       relevant_files: "gene_info.gz (additional taxon IDs)"
     - category: node_property_content
       consideration: "Consider adding additional gene properties such as map_location, chromosome, synonyms, or dbXrefs for richer gene annotation"
 
-  additional_notes: "The NCBI Gene ingest provides foundational gene nodes that serve as authoritative identifiers and basic properties for downstream integration with other biomedical data sources."
+  additional_notes:
+    - "The NCBI Gene ingest provides foundational gene nodes that serve as authoritative identifiers and basic properties for downstream integration with other biomedical data sources."
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -77,13 +78,15 @@ target_info:
         - description
         - full_name
         - taxon
-      additional_notes: "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information."
+      additional_notes:
+        - "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information."
 
   future_considerations:
-    - category: edge_content
+    - category: other  # conformance: was 'edge_content'
       consideration: "Future iterations could include gene-to-gene orthology relationships or gene-to-pathway associations if such data becomes available from NCBI Gene"
 
-  additional_notes: "This ingest creates comprehensive gene nodes for human, mouse, and rat that serve as foundational entities for biomedical knowledge graphs, providing authoritative gene identifiers and basic properties."
+  additional_notes:
+    - "This ingest creates comprehensive gene nodes for human, mouse, and rat that serve as foundational entities for biomedical knowledge graphs, providing authoritative gene identifiers and basic properties."
 
 # Information about how the ingest was specified and performed
 provenance_info:

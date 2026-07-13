@@ -14,7 +14,7 @@
         license_name: CC0 # (optional, range = string)
         license_url: https://creativecommons.org/publicdomain/zero/1.0/
     data_formats:  
-      - tsv.gz        
+      - tsv  # conformance: was 'tsv.gz'
     data_provision_mechanisms:  
       - file_download
     data_versioning_and_releases:  v15.0
@@ -32,7 +32,7 @@
         license_name: CC0 # (optional, range = string)
         license_url: https://creativecommons.org/publicdomain/zero/1.0/
     data_formats:  
-      - tsv.gz        
+      - tsv  # conformance: was 'tsv.gz'
     data_provision_mechanisms:  
       - file_download
     data_versioning_and_releases:  v15.0
@@ -95,7 +95,7 @@
       - category: edge_content
         consideration: Add edges describing over/under expression of genes in specific tissues.  And info indicating when a gene is ubiquitously expressed.  
         relevant_files: all
-      - category:  edge_properties
+      - category: edge_property_content  # conformance: was 'edge_properties'
         consideration: Add in incorporation of Expressionrank, Expressionscore, and FDR as edge properties.   
         relevant_files: all
       - category:  edge_content
@@ -129,7 +129,8 @@
           - Homo_sapiens_expr_simple.tsv.gz
           - Rattus_norvegicus_expr_simple.tsv.gz
           - Mus_musculus_expr_simple.tsv.gz
-        additional_notes: "BGee edges included incdicate a strong association between a specific gene expression and a given anatomical region in an organism."
+        additional_notes:
+          - "BGee edges included incdicate a strong association between a specific gene expression and a given anatomical region in an organism."
 
     node_type_info:  
       - node_category: biolink:Gene  

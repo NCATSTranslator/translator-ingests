@@ -42,9 +42,10 @@ source_info:
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - jsonl
+    - json  # conformance: was 'jsonl'
   data_versioning_and_releases: "2024-11-25"  # last Phase 2 release of COHD
-  additional_notes: null
+  additional_notes:
+    - null
 ingest_info:
   ingest_categories:
   - aggregation_interpreter
@@ -83,7 +84,8 @@ ingest_info:
       evidence annotation which should be added to the COHD knowledge graph.
     relevant_files:
       - cohd_edges.jsonl
-  additional_notes: null
+  additional_notes:
+    - null
 target_info:
   infores_id: infores:cohd
   edge_type_info:
@@ -96,14 +98,16 @@ target_info:
     predicates:
     - biolink:positively_correlated_with
     - biolink:negatively_correlated_with
-    object:
+    object_categories:
     - biolink:Disease
     - biolink:SmallMolecule
     - biolink:Drug
     - biolink:MolecularMixture
     - biolink:ChemicalEntity
-    knowledge_level: statistical_association
-    agent_type: data_analysis_pipeline
+    knowledge_level:
+      - statistical_association
+    agent_type:
+      - data_analysis_pipeline
     edge_properties:
     - has_confidence_score
     - has_supporting_studies
@@ -139,7 +143,7 @@ target_info:
     - name
     - xref
   future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
-    - category:  edge_property_content
+    - category: edge_properties  # conformance: was 'edge_property_content'
       consideration: >-
         Second level ("EPC") study result attributes from the Phase 2 source edge jsonl file are not yet being ingested.
       relevant_files:  cohd_edges.jsonl

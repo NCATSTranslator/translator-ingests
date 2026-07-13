@@ -101,7 +101,8 @@
           - biolink:publications
           - biolink:has_confidence_score
         ui_explanation: "Drug mechanisms and bioactivities where a chemical affects a gene or protein target"
-        additional_notes: "The 'mechanism' reported by ChEMBL determines the type of edge created. For mechanisms that imply an effect of the chemical on the target (e.g. 'agonist', 'inhibitor', 'stabiliser'), an 'affects' edge with appropriate qualifiers is created. A full mapping of ChEMBL mechanisms to Biolink predicate and qualifier combinations can be found in chembl_qualifiers.json."
+        additional_notes:
+          - "The 'mechanism' reported by ChEMBL determines the type of edge created. For mechanisms that imply an effect of the chemical on the target (e.g. 'agonist', 'inhibitor', 'stabiliser'), an 'affects' edge with appropriate qualifiers is created. A full mapping of ChEMBL mechanisms to Biolink predicate and qualifier combinations can be found in chembl_qualifiers.json."
 
       # GeneAffectsChemicalAssociation: gene/protein target affects chemical
       - subject_categories:
@@ -138,7 +139,8 @@
           - biolink:publications
           - biolink:has_confidence_score
         ui_explanation: "Drug mechanisms where a gene or protein (e.g. enzyme) affects a chemical (e.g. hydrolysis, oxidation, reduction)"
-        additional_notes: "For mechanisms where the gene/protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'reducing agent'), the gene is the subject and the chemical is the object. The object_aspect_qualifier and object_direction_qualifier describe what happens to the chemical."
+        additional_notes:
+          - "For mechanisms where the gene/protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'reducing agent'), the gene is the subject and the chemical is the object. The object_aspect_qualifier and object_direction_qualifier describe what happens to the chemical."
 
       # ChemicalGeneInteractionAssociation: direct physical interactions and untyped interactions
       - subject_categories:
@@ -178,7 +180,8 @@
           - biolink:publications
           - biolink:has_confidence_score
         ui_explanation: "Drug mechanisms where the mechanism implies a direct physical interaction (e.g. binding, chelation, crosslinking, sequestration)"
-        additional_notes: "For mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent'), a 'directly_physically_interacts_with' edge is created. Mechanisms classified as 'OTHER' produce an 'interacts_with' edge."
+        additional_notes:
+          - "For mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent'), a 'directly_physically_interacts_with' edge is created. Mechanisms classified as 'OTHER' produce an 'interacts_with' edge."
 
       # MacromolecularMachineHasSubstrateAssociation: substrate relationships
       - subject_categories:
