@@ -5,7 +5,7 @@ name: Alliance of Genome Resources (AGR) Reference Ingest Guide
 source_info:
   infores_id: infores:agrkb
   name: Alliance of Genome Resources (AGR)
-  description: "The Alliance of Genome Resources (AGR) is a consortium of model organism databases and the Gene Ontology Consortium that provides a unified view of gene function, biological processes, phenotypes, and disease associations across multiple model organisms. The AGR aggregates and harmonizes data from member databases including MGI (mouse), RGD (rat), SGD (yeast), WormBase (C. elegans), FlyBase (D. melanogaster), ZFIN (zebrafish), and Xenbase (X. laevis and X. tropicalis)."
+  description: "The Alliance of Genome Resources (AGR) is an international consortium of model organism databases and the Gene Ontology Consortium, coordinated through Alliance Central and supported primarily by the U.S. National Institutes of Health (NIH). It provides a unified, cross-species knowledge resource that enables researchers to compare genes, genomes, phenotypes, diseases, and biological functions across human and major model organisms, aggregating and harmonizing data from member databases including MGI (mouse), RGD (rat), SGD (yeast), WormBase (C. elegans), FlyBase (D. melanogaster), ZFIN (zebrafish), and Xenbase (X. laevis and X. tropicalis). AGR provides harmonized information on genes, alleles, variants, orthology, gene function, phenotypes, disease associations, gene expression, pathways, and molecular and genetic interactions. Its knowledge is generated through integration and harmonization of manually curated data from participating organism databases, incorporation of selected information from external resources, standardized computational analyses such as orthology inference, and automated data-processing pipelines; machine-learning- and text-mining-assisted workflows support literature curation, while biological annotations remain the product of expert curation."
   citations:
     - "Alliance of Genome Resources Portal: enhancing a MOD resource. Nucleic Acids Res. 2020 Jan 8;48(D1):D650-D658. PMID: 31691787"
     - "https://www.alliancegenome.org/"
@@ -22,6 +22,7 @@ source_info:
     - json
     - tsv
   data_versioning_and_releases: "The Alliance releases data in numbered versions (e.g., 7.0.0, 7.1.0) approximately every 2-3 months. Each release is archived and accessible via the FMS. Release information is available at https://www.alliancegenome.org/downloads and version metadata can be retrieved from the API at https://www.alliancegenome.org/api/releaseInfo."
+  source_status: maintained_regular_updates
 
 # Information about Ingested Content
 ingest_info:
@@ -97,7 +98,6 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-agr-kgx
 
   edge_type_info:
     - subject_categories:
