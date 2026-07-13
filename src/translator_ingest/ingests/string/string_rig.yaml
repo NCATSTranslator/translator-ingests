@@ -26,10 +26,10 @@ source_info:
       - STRING main site: https://string-db.org/
     data_provision_mechanisms:
       - file_download
-      - web_interface
-      - web_service_api
+      - other  # conformance: was 'web_interface'
+      - api_endpoint  # conformance: was 'web_service_api'
     data_formats:
-      - TSV (gzip), space-delimited
+      - tsv  # conformance: was 'TSV (gzip), space-delimited'
     data_versioning_and_releases: >-
       STRING uses dotted version numbers (currently v12.0). The version is published at
       https://string-db.org/api/json/version and is embedded in download URLs (e.g. ``protein.links.v12.0/``).
@@ -38,7 +38,7 @@ source_info:
 # Information about Ingested Content
 ingest_info:
     ingest_categories:
-      - Primary Knowledge Provider
+      - primary_knowledge_provider  # conformance: was 'Primary Knowledge Provider'
     utility: >-
       STRING provides a broad protein–protein interaction graph derived from multiple evidence channels,
       supplying Translator reasoning with channel-specific "these proteins interact / are coexpressed /
@@ -135,7 +135,7 @@ ingest_info:
           instances on each edge, named after the channel. The data is already in the ``.full`` file we read;
           this is a transform-only change.
         relevant_files: "{taxid}.protein.links.full.v12.0.txt.gz (already ingested)"
-      - category: node_content
+      - category: node_property_content  # conformance: was 'node_content'
         consideration: >-
           Ingest ``protein.aliases.v12.0.txt.gz`` to populate node ``name`` and ``synonym`` properties. Currently nodes
           carry only the ENSEMBL ID as their identifier; biolink validation flags this with INFO-level "missing

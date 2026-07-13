@@ -27,8 +27,7 @@ source_info:
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - tsv
-    - kgx
+    - tsv  # conformance: was 'tsv.gz'
   data_versioning_and_releases: "Periodic releases managed through Google Cloud Storage. Versioning is tracked via the last-modified date on the published files."
   source_status: maintained_regular_updates
 
@@ -336,41 +335,48 @@ target_info:
       source_identifier_types:
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:Protein"
       source_identifier_types:
         - "UniProtKB"
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:SmallMolecule"
       source_identifier_types:
         - "DRUGBANK"
         - "CHEBI"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:Disease"
       source_identifier_types:
         - "MONDO"
         - "HP"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:MolecularMixture"
       source_identifier_types:
         - "DRUGBANK"
         - "CHEBI"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:PhenotypicFeature"
       source_identifier_types:
         - "HP"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:ComplexMolecularMixture"
       source_identifier_types:
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
 
   future_considerations:
     - category: edge_properties

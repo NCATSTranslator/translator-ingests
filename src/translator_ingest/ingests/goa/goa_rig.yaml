@@ -99,7 +99,8 @@ target_info:
                                    # AB: Implemented. GOA now emits ECO evidence codes using has_evidence_of_type.
         - publications
       ui_explanation: "A GO Annotation uses 'enables' predicate when a gene product is solely capable of executing the reported function."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+      additional_notes:
+        - "varies, depending on mappings from GO evidence codes"
     - subject_categories:
         - biolink:MacromolecularComplex
       predicates:
@@ -120,7 +121,8 @@ target_info:
         - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'contributes_to' predicate when a gene product is required as part of a macromolecular complex for executing the reported function."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+      additional_notes:
+        - "varies, depending on mappings from GO evidence codes"
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -144,7 +146,8 @@ target_info:
         - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+      additional_notes:
+        - "varies, depending on mappings from GO evidence codes"
 
     # MHB: I made notes on each edge type below as well, but in general, we should try to merge some Edge types where the provenance and S/O categories is the same, and the only difference is some cue that differentiates between acts_upstream subpredicates. Ultimately, want to define EdgeTypes at a granularity that ensures shared provenance, ease of UI explanation authoring, and the same confidence prior.
     # AB: Implemented this suggestion by merging the upstream predicate family into one EdgeType with shared provenance and categories.
@@ -179,7 +182,8 @@ target_info:
         - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses this upstream predicate family when a gene product acts upstream of a biological process, with predicate variants capturing mechanism/timing and effect direction."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+      additional_notes:
+        - "varies, depending on mappings from GO evidence codes"
 
     # MHB: same issue as above - could probably merge with EdgeType above
     # MHB: same issue as above - could probably merge with EdgeType above
@@ -209,7 +213,8 @@ target_info:
         - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses this cellular component predicate family for active localization, static localization, or transient co-localization in a cellular component."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+      additional_notes:
+        - "varies, depending on mappings from GO evidence codes"
       
     - subject_categories:
         - biolink:Gene
@@ -233,7 +238,8 @@ target_info:
         - has_evidence_of_type
         - publications
       ui_explanation: "A GO Annotation uses 'part_of' predicate when a gene product is a component of the reported macromolecular complex."
-      additional_notes: "varies, depending on mappings from GO evidence codes"
+      additional_notes:
+        - "varies, depending on mappings from GO evidence codes"
 
   node_type_info:
     - node_category: biolink:Gene
@@ -296,7 +302,7 @@ target_info:
     - category: node_properties
       consideration: "If we end up ingesting taxon info for gene nodes, we may have to update the Biolink Model to support this (currently in_taxon is represented as a predicate, and species_context_qualifier as an edge property - but there is no taxon node property)"
     # Manual QA 1: Matt's suggestion about edge type merging
-    - category: edge_content
+    - category: other  # conformance: was 'edge_content'
       consideration: "AB: Completed initial edge type consolidation in this QA pass for upstream and cellular component predicate families; monitor whether additional grouping is needed after next production validation run."
 
 # Information about the how the ingest was specified and performed
