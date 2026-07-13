@@ -73,7 +73,8 @@ target_info:
         - manual_agent
       edge_properties: []
       ui_explanation: "Ontological subclass relationships from Ubergraph representing hierarchical is-a relationships between biomedical concepts. These edges support ontology-based reasoning and query expansion in Translator."
-      additional_notes: "The redundant graph includes both direct and inferred subclass relationships with complete transitive closure. All relationships are derived from manually curated ontologies integrated into Ubergraph."
+      additional_notes:
+        - "The redundant graph includes both direct and inferred subclass relationships with complete transitive closure. All relationships are derived from manually curated ontologies integrated into Ubergraph."
 
   node_type_info:
     - node_category: biolink:NamedThing
@@ -99,7 +100,8 @@ target_info:
         - "FOODON (food ontology)"
         - "MI (molecular interactions)"
         - "UO (units of measurement)"
-      additional_notes: "Nodes represent ontology terms from selected biomedical ontologies integrated into Ubergraph. In the raw ingest, all nodes are assigned the generic biolink:NamedThing category. NodeNormalization subsequently enriches these nodes with more specific Biolink categories (e.g., biolink:Disease, biolink:ChemicalEntity, biolink:AnatomicalEntity, biolink:BiologicalProcess, biolink:CellularComponent, biolink:MolecularActivity, biolink:PhenotypicFeature) based on the ontology prefix and internal mappings. This normalization step provides proper semantic typing for downstream Translator operations."
+      additional_notes:
+        - "Nodes represent ontology terms from selected biomedical ontologies integrated into Ubergraph. In the raw ingest, all nodes are assigned the generic biolink:NamedThing category. NodeNormalization subsequently enriches these nodes with more specific Biolink categories (e.g., biolink:Disease, biolink:ChemicalEntity, biolink:AnatomicalEntity, biolink:BiologicalProcess, biolink:CellularComponent, biolink:MolecularActivity, biolink:PhenotypicFeature) based on the ontology prefix and internal mappings. This normalization step provides proper semantic typing for downstream Translator operations."
 
   future_considerations:
     - category: predicates

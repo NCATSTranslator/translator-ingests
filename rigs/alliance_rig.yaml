@@ -94,7 +94,8 @@ ingest_info:
     - category: node_property_content
       consideration: "Currently all nodes are minimal placeholders. Future iterations could enrich gene nodes with names, symbols, and other properties from the BGI files, or rely on downstream normalization for this enrichment."
 
-  additional_notes: "The ingest uses DuckDB to create an in-memory lookup table of gene IDs from BGI files, allowing efficient filtering of phenotype records by entity type without loading all genotype and allele data. This approach significantly reduces memory footprint and processing time compared to loading all entity types."
+  additional_notes:
+    - "The ingest uses DuckDB to create an in-memory lookup table of gene IDs from BGI files, allowing efficient filtering of phenotype records by entity type without loading all genotype and allele data. This approach significantly reduces memory footprint and processing time compared to loading all entity types."
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -122,7 +123,8 @@ target_info:
       source_files:
         - "PHENOTYPE_MGI.json.gz"
         - "PHENOTYPE_RGD.json.gz"
-      additional_notes: "Phenotype records may contain multiple phenotype terms (phenotypeTermIdentifiers), and each generates a separate association edge. Experimental conditions (conditionRelations) are not expected in mouse/rat data and would raise an error if encountered. Qualifier support for conditions may be needed if this ingest expands to species like zebrafish (ZFIN) in the future."
+      additional_notes:
+        - "Phenotype records may contain multiple phenotype terms (phenotypeTermIdentifiers), and each generates a separate association edge. Experimental conditions (conditionRelations) are not expected in mouse/rat data and would raise an error if encountered. Qualifier support for conditions may be needed if this ingest expands to species like zebrafish (ZFIN) in the future."
 
     - subject_categories:
         - biolink:Gene
@@ -153,7 +155,8 @@ target_info:
       source_files:
         - "EXPRESSION_MGI.json.gz"
         - "EXPRESSION_RGD.json.gz"
-      additional_notes: "The ingest prefers anatomical entity IDs (anatomicalStructureTermId) over cellular component IDs (cellularComponentTermId) when both are present. Stage information and assay type are captured as qualifiers when available."
+      additional_notes:
+        - "The ingest prefers anatomical entity IDs (anatomicalStructureTermId) over cellular component IDs (cellularComponentTermId) when both are present. Stage information and assay type are captured as qualifiers when available."
 
   node_type_info:
     - node_category: biolink:Gene
@@ -163,7 +166,8 @@ target_info:
       node_properties:
         - id
         - category
-      additional_notes: "Gene nodes are created as minimal placeholders with only id and category. Richer gene information (names, symbols, descriptions, etc.) is expected to be merged from authoritative gene sources during downstream normalization."
+      additional_notes:
+        - "Gene nodes are created as minimal placeholders with only id and category. Richer gene information (names, symbols, descriptions, etc.) is expected to be merged from authoritative gene sources during downstream normalization."
 
     - node_category: biolink:PhenotypicFeature
       source_identifier_types:
@@ -171,7 +175,8 @@ target_info:
       node_properties:
         - id
         - category
-      additional_notes: "Phenotype nodes are minimal placeholders. Full phenotype definitions, names, and hierarchical relationships should come from ontology sources during normalization."
+      additional_notes:
+        - "Phenotype nodes are minimal placeholders. Full phenotype definitions, names, and hierarchical relationships should come from ontology sources during normalization."
 
     - node_category: biolink:AnatomicalEntity
       source_identifier_types:
@@ -179,7 +184,8 @@ target_info:
       node_properties:
         - id
         - category
-      additional_notes: "Anatomical entity nodes are minimal placeholders. Full anatomical information should come from ontology sources during normalization."
+      additional_notes:
+        - "Anatomical entity nodes are minimal placeholders. Full anatomical information should come from ontology sources during normalization."
 
     - node_category: biolink:CellularComponent
       source_identifier_types:
@@ -187,7 +193,8 @@ target_info:
       node_properties:
         - id
         - category
-      additional_notes: "Cellular component nodes are minimal placeholders. Full GO term information should come from ontology sources during normalization."
+      additional_notes:
+        - "Cellular component nodes are minimal placeholders. Full GO term information should come from ontology sources during normalization."
 
   future_considerations:
     - category: node_properties
@@ -196,10 +203,11 @@ target_info:
       consideration: "Review whether additional qualifying information could be extracted from Alliance data to further contextualize associations (e.g., genetic background, sex, age)."
     - category: edge_properties
       consideration: "Consider mapping evidence codes to more granular knowledge_level and agent_type enums if such mappings become available from Alliance."
-    - category: edge_content
+    - category: other  # conformance: was 'edge_content'
       consideration: Ingest additional species. 
 
-  additional_notes: "The minimal placeholder approach for nodes is intentional: it reduces redundancy and allows authoritative sources for each entity type to provide the canonical entity information during normalization. The Alliance ingest focuses on providing high-quality associations while leaving entity enrichment to specialized sources."
+  additional_notes:
+    - "The minimal placeholder approach for nodes is intentional: it reduces redundancy and allows authoritative sources for each entity type to provide the canonical entity information during normalization. The Alliance ingest focuses on providing high-quality associations while leaving entity enrichment to specialized sources."
 
 # Information about how the ingest was specified and performed
 provenance_info:

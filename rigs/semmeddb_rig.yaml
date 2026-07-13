@@ -17,7 +17,7 @@ source_info:
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - jsonl
+    - json  # conformance: was 'jsonl'
   data_versioning_and_releases: "Versioning inherited from the RTX-KG2 snapshot built from SemMedDB VER43-era releases."
 
 ingest_info:
