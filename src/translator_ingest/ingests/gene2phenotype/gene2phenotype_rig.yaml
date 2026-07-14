@@ -5,12 +5,17 @@ name: EBI Gene2Phenotype Reference Ingest Guide
 source_info:
   infores_id: infores:gene2phenotype
   name: Gene2Phenotype
+  ## LLM text manually reviewed by CX using:
+  ## - various G2P website pages, mostly https://www.ebi.ac.uk/gene2phenotype/about/project
+  ## - March 2026 publication: https://doi.org/10.1016/j.jmb.2026.169768
+  ## - Newer curation process and terminology paper: https://doi.org/10.1186/s13073-024-01398-1
   description: >-
     The Gene2Phenotype (G2P) database is hosted at the European Molecular Biology Laboratory's European Bioinformatics Institute (EMBL-EBI), and its disease panels/datasets are produced and maintained by domain experts (clinicians, clinical scientists, and scientific curators) and overseen by a physician with expertise in that disease domain.
     Its purpose is to support clinical variant interpretation and genomic diagnosis by providing detailed, expert-curated, clinician-reviewed models of monogenic rare diseases.
     In its gene-disease associations, the resource includes allelic requirements, molecular mechanism information, variant consequence annotations, confidence assessments, phenotypes, and supporting literature references.
     Knowledge is generated primarily through manual curation by domain experts, who review publications and evaluate gene-disease validity. For some data, the terminology is standardized to ontology terms.
   citations:
+    - "https://doi.org/10.1016/j.jmb.2026.169768"
     - "https://doi.org/10.1186/s13073-024-01398-1"
     - "https://www.nature.com/articles/s41467-019-10016-3"
   terms_of_use_info:
