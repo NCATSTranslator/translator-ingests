@@ -28,7 +28,7 @@ source_info:
     - file_download  ## this is partial and maybe not the latest version
   data_versioning_and_releases: "DrugCentral currently (late 2025) isn't being maintained due to lack of funding."
   source_status: not_maintained
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
@@ -107,12 +107,9 @@ ingest_info:
         RTX-KG2 was ingesting more tables that may be sources of node attributes (see linked issue's
         comments, RTX-KG2's extract-drugcentral.sh).
 
-  additional_notes: >- # (optional, range = string)
-    (1) omop_relationship_doid_view seems to have some overlap with DAKP. May want to revisit (evaluate
-        DrugCentral underlying sources, methods) and decide if DAKP can replace/be used instead
-    (2) act_table_full's action_type values are defined in a different database table named
-        'action_type'. This table also includes 'parent_type' and some values that aren't currently
-        in act_table_full. It looks like an older version of Chembl's MOA values. 
+  additional_notes:
+    - omop_relationship_doid_view seems to have some overlap with DAKP. May want to revisit (evaluate DrugCentral underlying sources, methods) and decide if DAKP can replace/be used instead
+    - act_table_full's action_type values are defined in a different database table named 'action_type'. This table also includes 'parent_type' and some values that aren't currently in act_table_full. It looks like an older version of Chembl's MOA values. 
 
 
 # Information about the Graph Output by the ingest
@@ -143,17 +140,11 @@ target_info:
         The predicate of this edge is based on the relationship_name field of the original database row.
       source_files:
         - omop_relationship_doid_view
-      additional_notes: >-
-        (1) We're unsure on the agent_type choice and don't have concrete support. Matt thought DrugCentral
-            used automated methods to do some initial NLP / extraction of candidate indications, which
-            were then manually reviewed/validated. 
-        (2) The table has no underlying source, reference, or date info that can be used to tell where a
-            specific record/row came from (out of two possibilities, see next point).
-        (3) The UI explanation origin info is based on https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10. 
-            The paper says 'indications, contraindications, and off-label uses have been extracted from the OMOP data model version 4.4 up to 2012' and 'all information after 2012 has been manually curated from approved drug labels'.
-        (4) See ingest code's mapping.py for the relationship_name value to predicate/edge-attribute mapping. Notes: 
-            'indication' seems to equate to on-label/approved use based on first two paragraphs of https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec15; 
-            for 'off-label use', there was discussion on using the current 'treats' vs previous 'applied_to_treat'.
+      additional_notes:
+        - We're unsure on the agent_type choice and don't have concrete support. Matt thought DrugCentral used automated methods to do some initial NLP / extraction of candidate indications, which were then manually reviewed/validated. 
+        - The table has no underlying source, reference, or date info that can be used to tell where a specific record/row came from (out of two possibilities, see next point).
+        - The UI explanation origin info is based on https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec10. The paper says 'indications, contraindications, and off-label uses have been extracted from the OMOP data model version 4.4 up to 2012' and 'all information after 2012 has been manually curated from approved drug labels'.
+        - "See ingest code's mapping.py for the relationship_name value to predicate/edge-attribute mapping. Notes: 'indication' seems to equate to on-label/approved use based on first two paragraphs of https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec15; for 'off-label use', there was discussion on using the current 'treats' vs previous 'applied_to_treat'."
     ## act_table_full
     ## PLAIN INTERACTS_WITH
     - subject_categories:
@@ -176,7 +167,7 @@ target_info:
       ui_explanation: "The DrugCentral-reported 'action type' was 'OTHER' - without more information on the relationship type, we assigned the generic predicate for a drug-protein interaction."
       source_files:
         - act_table_full
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     ## SUBSTRATE
     - subject_categories:
         - biolink:Gene
@@ -202,7 +193,7 @@ target_info:
       ui_explanation: "The DrugCentral-reported 'action type' was 'SUBSTRATE' - this means the chemical is a substrate of the protein."
       source_files:
         - act_table_full
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     ## "BINDING AGENT" or inferred physical interaction edges
     - subject_categories:
         - biolink:ChemicalEntity
@@ -234,7 +225,7 @@ target_info:
       ui_explanation: "The DrugCentral-reported action type either (1) corresponds to the predicate and causal_mechanism_qualifier OR (2) implied a physical-interaction (so Translator generated another edge to represent this)."
       source_files:
         - act_table_full
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     ## AFFECTS EDGES
     - subject_categories:
         - biolink:ChemicalEntity
@@ -291,10 +282,8 @@ target_info:
     - node_category: biolink:DiseaseOrPhenotypicFeature
       source_identifier_types:
         - UMLS
-      additional_notes: >- # (optional, range = string)
-        Using only umls_cui column for object ID because it's the most comprehensive (covers same rows as
-        snomed_conceptid and doid plus a little more). I was worried that some IDs wouldn't actually be
-        DiseaseOrPhenotypicFeatures, and that was addressed with filtering.
+      additional_notes:
+        - Using only umls_cui column for object ID because it's the most comprehensive (covers same rows as snomed_conceptid and doid plus a little more). I was worried that some IDs wouldn't actually be DiseaseOrPhenotypicFeatures, and that was addressed with filtering.
     ## act_table_full
     - node_category: Protein
       source_identifier_types:
@@ -316,21 +305,13 @@ target_info:
       consideration: >-
         NodeNorm should perhaps map UMLS:C0022650 (Kidney Calculi aka kidney stones) to the main clique for kidney stones MONDO:0008171 (primary label nephrolithiasis).
 
-  additional_notes: >- # (optional, range = string)
-    For act_table_full publications, we mapped some base urls to prefixes (PMID and DOI) and left
-    others as-is.
-
-    For act_table_full agent_type, we decided on manual_agent for all primary knowledge sources.
-    (1) However, we are only ASSUMING manual curation of DrugMatrix and PDSP data because the subset we
-        ingest (has action_type values) is a very small fraction of the total rows from those
-        resources. We assume a person manually reviewed the rows with action_types and assigned those values, and that's why there's so few. This assumption has not been confirmed yet (by finding proof in DrugCentral, DrugMatrix, or PDSP papers).
-        If we later include rows without an action_type value, this assumption will no longer be valid.
-    (2) It's also unclear what agent_type should be assigned when act_source is 'UNKNOWN'.
-    (3) On other primary sources: Colleen thinks 'WOMBAT-PK' devs curated data manually (reasoning
-        recorded in https://github.com/NCATSTranslator/Translator-All/wiki/WOMBAT-PK). And it seems
-        safe to assume DrugCentral curators did manual curation for 'SCIENTIFIC LITERATURE' and 'DRUG
-        LABEL' (although Colleen didn't look for lines in DrugCentral papers saying these terms mean
-        manual curation).
+  additional_notes:
+    - For act_table_full publications, we mapped some base urls to prefixes (PMID and DOI) and left others as-is.
+    - >-
+      For act_table_full agent_type, we decided on manual_agent for all primary knowledge sources.
+      (1) However, we are only ASSUMING manual curation of DrugMatrix and PDSP data because the subset we ingest (has action_type values) is a very small fraction of the total rows from those resources. We assume a person manually reviewed the rows with action_types and assigned those values, and that's why there's so few. This assumption has not been confirmed yet (by finding proof in DrugCentral, DrugMatrix, or PDSP papers). If we later include rows without an action_type value, this assumption will no longer be valid.
+      (2) It's also unclear what agent_type should be assigned when act_source is 'UNKNOWN'.
+      (3) On other primary sources: Colleen thinks 'WOMBAT-PK' devs curated data manually (reasoning recorded in https://github.com/NCATSTranslator/Translator-All/wiki/WOMBAT-PK). And it seems safe to assume DrugCentral curators did manual curation for 'SCIENTIFIC LITERATURE' and 'DRUG LABEL' (although Colleen didn't look for lines in DrugCentral papers saying these terms mean manual curation).
 
 
 # Information about how the ingest was specified and performed
