@@ -62,7 +62,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  ## NO source_record_urls: interaction page urls seem to use hash ids that we don't have
+  ## NO source_record_urls: see additional_notes for more info
   edge_type_info:
     ## PLAIN INTERACTS_WITH EDGES
     - subject_categories:
@@ -247,7 +247,7 @@ target_info:
 
   additional_notes:
     - "Edge provenance: primary source is DGIdb, and the underlying sources are supporting data providers or publications"
-    - "We couldn't generate links to DGIdb interaction webpages because they use an ID that looks random or like a hash (and links to the drug or gene can currently be generated but wouldn't be specific to the edge)."
+    - "We couldn't generate source_record_urls to DGIdb interaction webpages because they use an ID that looks random or like a hash. And links to the drug or gene can currently be generated but wouldn't be specific to the edge."
 
 # Information about how the ingest was specified and performed
 provenance_info:
