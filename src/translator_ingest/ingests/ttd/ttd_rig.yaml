@@ -17,7 +17,8 @@ source_info:
     - "https://doi.org/10.1093/nar/gkp1014"    ## 2010
     - "https://doi.org/10.1093/nar/30.1.412"   ## 2002 first paper
   terms_of_use_info:
-    terms_of_use_description: "No formal license. Andrew Su has emailed developers and gotten a positive response for use with 'proper attribution'. Papers describe resource as 'freely accessible to all users'."
+    terms_of_use_description: >-
+      Does not specify a standard license. According to https://ttd.idrblab.cn/citation, there are various guidelines for using and citing the resource's content. Andrew Su has emailed developers and gotten a positive response for use with 'proper attribution'. Papers describe resource as 'freely accessible to all users'.
   data_access_locations:
     - "Downloads page: https://db.idrblab.net/ttd/full-data-download"
   data_provision_mechanisms:
@@ -25,7 +26,8 @@ source_info:
   data_formats:
     - other
   data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't."
-  # additional_notes:  # (optional, range = string)
+  source_status: maintained_as_needed_updates
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about Ingested Content
 ingest_info:
@@ -103,7 +105,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-ttd
+  ## includes source_record_urls: source has page for each record
   edge_type_info:
   ## P1-05
     - subject_categories:
@@ -121,8 +123,6 @@ target_info:
       edge_properties:
         - biolink:clinical_approval_status    ## values: approved_for_condition
         - biolink:max_research_phase    ## values: clinical_trial_phase_4
-        - biolink:original_subject
-        - biolink:original_object
       ## GENERAL NOTE: we are assuming manual agent because edges generally come from "literature search" that we assume was done manually. However, papers only sometimes use the words "manual review".
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Approved', 'Approved (orphan drug)', 'Approved in China)', 'Approved in EU', or 'Phase 4'."
       source_files:
@@ -139,9 +139,8 @@ target_info:
         - manual_agent
       primary_knowledge_sources: 
         - infores:ttd
-      edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
+      # edge_properties:
+      #   - 
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Investigative' or 'Patented'."
       source_files:
         - P1-05-Drug_disease.txt
@@ -160,8 +159,6 @@ target_info:
       edge_properties:
         ## redundant w/ pred, for standards
         - biolink:max_research_phase    ## values: pre_clinical_research_phase
-        - biolink:original_subject
-        - biolink:original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status of 'Preclinical' or 'IND submitted'."
       source_files:
         - P1-05-Drug_disease.txt
@@ -179,8 +176,6 @@ target_info:
         - infores:ttd
       edge_properties:
         - biolink:max_research_phase    ## values: not_provided, phase values
-        - biolink:original_subject
-        - biolink:original_object
       ui_explanation: "The TTD curators assigned this relationship a clinical status related to clinical trials (which could be a specific phase, registration/preregistration, or submissions for approval)."
       source_files:
         - P1-05-Drug_disease.txt
@@ -220,9 +215,8 @@ target_info:
         - manual_agent
       primary_knowledge_sources: 
         - infores:ttd
-      edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
+      # edge_properties:
+      #   - 
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The qualifier-set is based on the TTD reported mechanism-of-action."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
@@ -242,13 +236,12 @@ target_info:
         - manual_agent
       primary_knowledge_sources: 
         - infores:ttd
-      edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
+      # edge_properties:
+      #   - 
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). TTD did not include a mechanism-of-action."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     ## "BINDING" OR INFERRED physical interaction edges
     - subject_categories:
         - biolink:ChemicalEntity
@@ -268,9 +261,8 @@ target_info:
         - manual_agent
       primary_knowledge_sources: 
         - infores:ttd
-      edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
+      # edge_properties:
+      #   - 
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). The TTD-reported mechanism-of-action either (1) corresponds to the predicate and causal_mechanism_qualifier OR (2) implied a physical-interaction (so Translator generated another edge to represent this)."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
@@ -295,19 +287,22 @@ target_info:
       source_identifier_types:
         - "UniProtKB"
       additional_notes:
-        - "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human. NodeNorm with gene/protein conflation will set some of these to Gene entities."
+        - "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed.
+        - Some are non-human.
+        - NodeNorm with gene/protein conflation will set some of these to Gene entities."
     - node_category: biolink:Protein
       source_identifier_types:
         - "UniProtKB"
       additional_notes:
-        - "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
+        - Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed.
+        - Some are non-human.
 
   future_considerations:
     - category: node_properties
       consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
-    - category: other  # conformance: was 'edge_content'
-      consideration: "Ingest the P1-06 file for Drug-target_for-Disease edges. This would be a chance to explore utility and modeling of this new type of edge/knowledge.  May need some modeling work / Biolink updates. Matt's understanding is that the targets here are necessarily mechanistic for the disease - which is new/valuable info."
-  # additional_notes:  # (optional, range = string)
+  
+  additional_notes:
+    - Lower confidence because NameResolver was used to get Disease and Protein/Gene IDs, which may have introduced errors. Also, data is updated infrequently and may be outdated.
 
 
 # Information about the how the ingest was specified and performed
