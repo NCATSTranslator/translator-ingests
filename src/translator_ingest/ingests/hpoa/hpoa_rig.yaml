@@ -268,20 +268,12 @@ target_info:
       - "DECIPHER"
     node_properties:
     - "biolink:inheritance"
-    additional_notes:
-      - null
   - node_category: "biolink:PhenotypicFeature"
     source_identifier_types:
       - "HP"
-    node_properties: null
-    additional_notes:
-      - null
   - node_category: "biolink:Gene"
     source_identifier_types:
       - "NCBIGene"
-    node_properties: null
-    additional_notes:
-      - null
   future_considerations:
     - category: spoq_pattern
       consideration: >-
