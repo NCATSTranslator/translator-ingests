@@ -16,7 +16,7 @@
       with intermediate concept (e.g. Chemical X associated with Disease Y based on shared associations
       with a common set of genes).
     citations:
-      - "Davis AP, Wiegers TC, Johnson RJ, Sciaky D, Wiegers J, Mattingly CJ Comparative Toxicogenomics Database (CTD). update 2023. Nucleic Acids Res. 2022 Sep 28"
+      - "Davis AP, Wiegers TC, Sciaky D, Barkalow F, Strong M, Wyatt B, Wiegers J, McMorran R, Abrar S, Mattingly CJ. Comparative Toxicogenomics Database's 20th anniversary: update 2025. Nucleic Acids Res. 2024 Oct 10. PMID: 39385618"
     terms_of_use_info:
       terms_of_use_url: "https://ctdbase.org/about/legal.jsp"
       terms_of_use_description: "Bespoke terms describing specific conditions for use of CTD data. No formal license."
@@ -74,7 +74,7 @@
         description: Inferred associations between chemicals and biological pathways - computationally derived enrichments based on curated chemical–gene and gene–pathway data in CTD.
       - file_name: CTD_pheno_term_ixns.tsv.gz
         location: http://ctdbase.org/downloads/
-        description: Curated, literature-based associations between chemicals and phenotypes (often disease-like or physiological outcomes).
+        description: Curated, literature-based associations between chemicals and "phenotypes". Note that CTD represents these phenotypes as GO terms (biological processes, molecular functions, cellular components) rather than as disease-like phenotypic features.
       - file_name: CTD_genes_diseases.tsv.gz
         location: http://ctdbase.org/downloads/
         description: Manually curated and computationally inferred associations between genes and diseases (not yet ingested - see future considerations)
@@ -84,34 +84,75 @@
 
     included_content:
       - file_name: CTD_chemicals_diseases.tsv.gz
-        included_records: Associations curated and designated therapeutic or marker/mechanism
-        fields_used: ChemicalName, ChemicalID, CasRN, DiseaseName, DiseaseID, DirectEvidence, OmimIDs, PubMedIDs
+        included_records: >-
+          Only the manually curated rows - those carrying a DirectEvidence code of "therapeutic" or
+          "marker/mechanism". Currently, these are a small fraction of the file: of ~9.83M rows, ~39.8K are "therapeutic" and
+          ~69.7K are "marker/mechanism", with the remaining ~9.72M (98.9%) being CTD's inferred chemical-disease
+          rows, which are excluded.
+        fields_used: ChemicalName, ChemicalID, DiseaseName, DiseaseID, DirectEvidence, PubMedIDs
       - file_name: CTD_exposure_events.tsv.gz
-        included_records: All records with an outcomerelationship of "positive correlation" or "negative correlation"
+        included_records: >-
+          Only records with an outcomerelationship of "positive correlation" or "negative correlation", and an
+          exposurestressorid, and at least one of diseaseid / phenotypeid. This is a small slice of the file:
+          of ~245.7K rows, ~9.4K are "positive correlation" and ~0.7K are "negative correlation" (the rest are
+          empty, "no correlation", or "prediction/hypothesis").
+        fields_used: exposurestressorid, outcomerelationship, diseaseid, phenotypeid, reference
       - file_name: CTD_chem_gene_ixns.tsv.gz
-        included_records: All records that only involve two entities, records that involve three or more entities are dropped.
+        included_records: >-
+          Only records carrying exactly one interaction action, and whose Interaction sentence begins with either
+          the chemical name or the gene symbol (so that a subject/object orientation can be recovered). ~1.83M of
+          ~3.13M rows (58.7%) have a single interaction action.
+        fields_used: ChemicalID, GeneID, GeneSymbol, ChemicalName, OrganismID, Interaction, InteractionActions, PubMedIDs
       - file_name: CTD_chem_go_enriched.tsv.gz
-        included_records: Records with a corrected p value less than 1e-10 and a highest go level greater than or equal to 3
+        included_records: >-
+          Records with a corrected p value less than 1e-10 and a highest GO level greater than or equal to 3
+          (~2.10M of ~6.46M rows). Covers all three GO branches - Biological Process, Molecular Function, and
+          Cellular Component.
+        fields_used: ChemicalID, GOTermID, HighestGOLevel, PValue, CorrectedPValue
       - file_name: CTD_chem_pathways_enriched.tsv.gz
-        included_records: Records with a corrected p value less than 1e-10
+        included_records: Records with a corrected p value less than 1e-10 (~0.62M of ~1.70M rows). Pathways are roughly 2/3 Reactome and 1/3 KEGG.
+        fields_used: ChemicalID, PathwayID, PValue, CorrectedPValue
       - file_name: CTD_pheno_term_ixns.tsv.gz
-        included_records: All records (none filtered)
+        included_records: >-
+          Only records carrying exactly one interaction action - ~133.6K of ~472.6K rows (28.3%). Every one of
+          those single-action records is an "increases^phenotype", "decreases^phenotype", or "affects^phenotype"
+          action.
+        fields_used: chemicalid, phenotypeid, organismid, interactionactions, anatomyterms, pubmedids
 
     filtered_content:
       - file_name: CTD_chemicals_diseases.tsv.gz
         filtered_records: Records lacking a DirectEvidence designation
         rationale: These relationships are only based on computational inference and were found to be not reliably useful enough to include
       - file_name: CTD_chem_gene_ixns.tsv.gz
-        filtered_records: Records involving three or more entities are removed.
-        rationale: It is not clear how we could split them into individual edges in a way that preserves the original knowledge assertion.
+        filtered_records: >-
+          Two rules drop records here. First, any record carrying more than one interaction action (a '|'-delimited
+          InteractionActions value) is dropped - roughly 1.29M of 3.13M rows (41%). Second, any remaining record
+          whose Interaction sentence begins with neither the chemical name nor the gene symbol is dropped, since
+          the subject/object orientation cannot be recovered from it.
+        rationale: >-
+          Multi-action records typically describe a chain of events across three or more entities (e.g. "[A results
+          in increased expression of B] which results in increased activity of C"), which cannot be split into a
+          single self-contained edge without inventing an assertion CTD did not make. The same applies to sentences
+          that begin with some third entity. Note that the multi-action rule is broader than strictly necessary:
+          about 317K of the dropped multi-action records (~25%) do appear to involve only the chemical and the gene,
+          and describe several simultaneous effects on the same pair (e.g. "expression+reaction"). Those are
+          potentially recoverable - see future considerations.
       - file_name: CTD_chem_go_enriched.tsv.gz
         filtered_records: Records with a corrected p value higher than 1e-10 or a highestGoLevel lower than 3 are dropped.
         rationale: This removes a large number of weak and overly vague associations.
       - file_name: CTD_chem_pathways_enriched.tsv.gz
         filtered_records: Records with a corrected p value higher than 1e-10 are dropped.
         rationale: This removes a large number of weak associations.
+      - file_name: CTD_pheno_term_ixns.tsv.gz
+        filtered_records: >-
+          Records carrying more than one interaction action are dropped - roughly 339K of 472.6K rows (72%).
+        rationale: >-
+          As with the chemical-gene interactions, these multi-action records describe chains of events across three
+          or more entities that cannot be reduced to one self-contained edge. The scale of the loss here is worth
+          noting: we keep less than a third of this file, so any future work to extract edges from multi-entity
+          interaction records would have a large payoff for this file in particular.
       - file_name: CTD_exposure_events.tsv.gz
-        filtered_records: Records that do not have an outcomerelationship of "positive correlation" or "negative correlation" are dropped. Records without an exposurestressorid, or with neither a diseaseid nor a phenotypeid, are also dropped.
+        filtered_records: Records that do not have an outcomerelationship of "positive correlation" or "negative correlation" are dropped - about 96% of the file. Records without an exposurestressorid, or with neither a diseaseid nor a phenotypeid, are also dropped.
         rationale: >-
           The other outcomerelationship values ("no correlation", "prediction/hypothesis", and empty values) do not
           assert a directional relationship that can be represented with a correlation predicate. Records lacking a
@@ -144,11 +185,27 @@
         relevant_files: CTD_chem_go_enriched.tsv.gz, CTD_chem_pathways_enriched.tsv.gz
       - category:  edge_content
         consideration: >-
-          CTD's chemical-gene interaction records use a "binding" interaction aspect that the ingest does not
-          currently map. These records fall through to a generic 'affects' edge with no aspect qualifier, and are
-          reported as unmapped by the transform. Consider mapping them to biolink:directly_physically_interacts_with,
-          which captures the binding relationship without asserting an effect on the gene.
+          Five CTD chemical-gene interaction aspects have no Biolink aspect mapping in the transform, so records
+          carrying them currently become 'affects' edges with no aspect qualifier (they are counted as unmapped by
+          the transform). Among the single-action records that actually reach the transform these are: "binding"
+          (~10.5K records), "export" (~420), "import" (~185), "reaction" (~5), and "polymerization" (~2). "binding"
+          is the one that matters at scale and has a clean target - biolink:directly_physically_interacts_with,
+          which captures the interaction without asserting an effect on the gene. "export"/"import" could plausibly
+          map to a transport aspect with a direction. Until they are mapped, these edges silently understate what
+          CTD asserts.
         relevant_files: CTD_chem_gene_ixns.tsv.gz
+      - category:  edge_content
+        consideration: >-
+          Reconsider the wholesale drop of multi-action interaction records, which is the single largest source of
+          content loss in this ingest - about 41% of CTD_chem_gene_ixns and about 72% of CTD_pheno_term_ixns.
+          The rule exists because a chain like "[A increases expression of B] which increases activity of C" cannot
+          become one self-contained edge. But a substantial minority of these records involve only the chemical and
+          the gene, and simply assert several simultaneous effects on that one pair (the most common aspect
+          combinations are expression+reaction, binding+reaction, and phosphorylation+reaction). Roughly 317K of the
+          1.29M dropped chemical-gene records look like this. Splitting a two-entity multi-action record into one
+          edge per action would recover a large amount of curated content; identifying them reliably (rather than by
+          the current sentence-prefix heuristic) is the hard part.
+        relevant_files: CTD_chem_gene_ixns.tsv.gz, CTD_pheno_term_ixns.tsv.gz
       - category: node_property_content
         consideration: Molepro ingested chemical properties in its previous ingests - which we will likely bring in at some point. In particular, data from the CTD_chemicals.tsv file
         relevant_files: CTD_chemicals.tsv
@@ -225,7 +282,8 @@
           - CTD_exposure_events.tsv.gz
         additional_notes:
           - Only records with an outcomerelationship of "positive correlation" or "negative correlation" are ingested, so every edge of this type carries a directional predicate - the bare 'correlated_with' parent predicate is never emitted.
-          - A single exposure event record can describe both a disease outcome (diseaseid, a MeSH or OMIM identifier) and a phenotype outcome (phenotypeid, a GO identifier). Where both are present, two edges are created from the one record, sharing the same predicate and publication.
+          - A single exposure event record can describe both a disease outcome (diseaseid) and a phenotype outcome (phenotypeid, always a GO identifier). Where both are present, two edges are created from the one record, sharing the same predicate and publication. This is rare - only ~134 rows in the file carry both.
+          - CTD supplies diseaseid without a CURIE prefix, so the ingest infers the namespace - values beginning with D or C are treated as MeSH, and purely numeric values as OMIM. OMIM is vanishingly rare here (~10 rows), so the MeSH path is effectively the only one exercised in practice.
           - These edges are the weakest curated content in this ingest from a prior-confidence standpoint - each rests on a single observational study, and CTD does not record effect size or study quality in a form we currently ingest. Treat a single exposure edge as a much weaker signal than a curated chemical-disease or chemical-gene assertion.
 
       - subject_categories:
@@ -263,7 +321,7 @@
         additional_notes:
           - CTD encodes each interaction as an InteractionActions value of the form "<direction>^<aspect>" (e.g. "increases^expression"). The direction becomes the object_direction_qualifier, and the aspect becomes the object_aspect_qualifier. 'qualified_predicate' is only set to 'biolink:causes' when the record carries a direction (increases/decreases) - an "affects^<aspect>" record yields a bare 'affects' edge with an aspect but no direction.
           - The subject/object orientation is not a separate column in CTD - it is recovered from CTD's human-readable Interaction sentence, which is always written as "<subject> <action> ... of <object>". Records whose sentence begins with the chemical produce this Chemical-Gene edge; records beginning with the gene symbol produce the Gene-Chemical edge described below.
-          - CTD's "binding" interaction aspect has no Biolink aspect equivalent and is not currently mapped, so binding records surface here as 'affects' edges with no aspect qualifier. See future considerations.
+          - A handful of CTD aspects have no Biolink mapping in the transform - most notably "binding" (~10.5K records reaching the transform), plus "export", "import", "reaction", and "polymerization". Records carrying them surface here as 'affects' edges with no aspect qualifier, which understates what CTD asserts. See future considerations.
 
       - subject_categories:
           - biolink:Gene
@@ -387,7 +445,8 @@
         additional_notes:
           - CTD frames these "phenotypes" as GO terms (biological processes and molecular activities), not as disease-like phenotypic features - hence the process/activity object categories rather than biolink:PhenotypicFeature.
           - As with the chemical-gene interactions, 'qualified_predicate' is set to 'biolink:causes' only when the record carries a direction ("increases^phenotype" / "decreases^phenotype"). An "affects^phenotype" record yields a bare 'affects' edge.
-          - Records describing interactions among three or more entities (multiple '|'-delimited interaction actions) are dropped rather than being forced onto a single edge. See future considerations.
+          - Records carrying more than one interaction action are dropped rather than being forced onto a single edge. This is a heavy filter for this file - only about 28% of rows survive it. See future considerations.
+          - Every single-action record in this file carries an "increases^phenotype", "decreases^phenotype", or "affects^phenotype" action, so every record that reaches the transform maps onto a direction. The other aspects present in the file (reaction, abundance, cotreatment, and so on) only ever occur alongside a second action, and so are dropped with the multi-action records.
 
       - subject_categories:
           - biolink:ChemicalEntity
@@ -396,6 +455,7 @@
         predicates:
           - biolink:associated_with
         object_categories:
+          - biolink:BiologicalProcess
           - biolink:BiologicalProcessOrActivity
           - biolink:MolecularActivity
           - biolink:CellularComponent
@@ -412,7 +472,8 @@
         source_files:
           - CTD_chem_go_enriched.tsv.gz
         additional_notes:
-          - Only enrichments with a corrected p-value below 1e-10 and a highestGoLevel of at least 3 are ingested. The p-value cutoff removes a large volume of weak associations, and the GO level requirement removes associations to very high-level, uninformatively broad GO terms.
+          - Only enrichments with a corrected p-value below 1e-10 and a highestGoLevel of at least 3 are ingested - roughly a third of the file. The p-value cutoff removes a large volume of weak associations, and the GO level requirement removes associations to very high-level, uninformatively broad GO terms.
+          - CTD's Ontology column distinguishes the three GO branches, and all three are ingested. Biological Process dominates (about 80% of the surviving rows), with Molecular Function and Cellular Component making up roughly 10% each - hence the process, activity, and cellular component object categories.
           - These edges are inferred from co-occurrence of gene annotations, not from any curated or literature-based claim about the chemical and the GO term - no publications are attached. For prior-confidence purposes they are substantially weaker than CTD's curated content, and 'associated_with' should be read as "worth looking at", not as an assertion of a biological relationship.
 
       - subject_categories:
