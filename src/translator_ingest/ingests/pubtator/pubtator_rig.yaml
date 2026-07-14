@@ -22,7 +22,7 @@ source_info:
   data_versioning_and_releases: >-
     The releases appear to be ~every two months (there was one 2026-03-17 and 2026-05-17). The FTP files "are expected to be updated monthly", according to the FTP README. There isn't a formal version, so we use the last-modified date.
   source_status: maintained_regular_updates
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
@@ -77,7 +77,7 @@ ingest_info:
       consideration: "See if we can add text snippet information for relations using other files."
       relevant_files: "entity files or BioC-XML files"
 
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 
 # Information about the Graph Output by the ingest
@@ -106,7 +106,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'associate', which corresponds to a very general predicate."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -125,7 +125,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'cause'. Based on the relation definition, we picked this predicate."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -144,7 +144,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'drug_interact'. For a potential drug-drug interaction, we picked this predicate."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:Gene
@@ -165,7 +165,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'interact'. Based on the relation definition (physical interaction), we picked this predicate."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - subject_categories:
         - biolink:DiseaseOrPhenotypicFeature
         - biolink:ChemicalEntity
@@ -188,7 +188,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'inhibit' and 'negative_correlate'. Based on the relation definitions (negative correlation), we picked this predicate."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - subject_categories:
         - biolink:DiseaseOrPhenotypicFeature
         - biolink:ChemicalEntity
@@ -210,7 +210,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'stimulate' and 'positive_correlate'. Based on the relation definitions (positive correlation), we picked this predicate."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - subject_categories:
         - biolink:ChemicalEntity
       predicates:
@@ -229,7 +229,7 @@ target_info:
       ui_explanation: "The Pubtator-reported 'relation' was 'treat' for a Chemical - Disease pair. We use a more general predicate because this is a text-mined assertion."
       source_files:
         - relation2pubtator3.gz
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
@@ -237,7 +237,7 @@ target_info:
         - MESH
       # node_properties:  # (optional, multivalued, range = URIorCURIE)
       #   -
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     - node_category: biolink:DiseaseOrPhenotypicFeature
       source_identifier_types:
         - MESH
@@ -251,13 +251,13 @@ target_info:
     - category: predicates
       consideration: "Add a biolink predicate for relation value 'cotreat', so we can ingest that data?"
 
-  additional_notes: >-
-    (1) Relation name can be specific, but def is usually very general (starts with positive/negative correlation…). And the relation-assignment can be incorrect, so using weaker/general predicates may be better?
-    (2) A few MESH (chem/disease) and OMIM (disease) IDs are NodeNormed to NCBIGene, which can be seen in the normalization-metadata file, field normalized_to. This seems like an issue with the data or NodeNorm that should be investigated at some point.
-    (3) When running the ingest, there are some validation warnings that other categories are encountered when Chemical was expected. CX expects something is going on with the MESH IDs - either issues with the data, issues with NodeNorm, or understandable issues resolving proteins vs drugs. 
-    (4) Can't create links to Pubtator webpages (source_record_urls) because they include entity names/labels, which aren't in the relation file (ref: https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial "Relation Search").
-    (5) Using relation definitions in tutorial https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ("Relation Annotations", Table 2), which seem to make more sense and match the current data better than the paper's supplementary table 2.
-    (6) Paper Supplementary Table 7 summarizes each tool within Pubtator (what it does, citation, all public domain license) 
+  additional_notes:
+    - Relation name can be specific, but def is usually very general (starts with positive/negative correlation…). And the relation-assignment can be incorrect, so using weaker/general predicates may be better?
+    - A few MESH (chem/disease) and OMIM (disease) IDs are NodeNormed to NCBIGene, which can be seen in the normalization-metadata file, field normalized_to. This seems like an issue with the data or NodeNorm that should be investigated at some point.
+    - When running the ingest, there are some validation warnings that other categories are encountered when Chemical was expected. CX expects something is going on with the MESH IDs - either issues with the data, issues with NodeNorm, or understandable issues resolving proteins vs drugs. 
+    - "Can't create links to Pubtator webpages (source_record_urls) because they include entity names/labels, which aren't in the relation file (ref: https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial 'Relation Search')."
+    - "Using relation definitions in tutorial https://www.ncbi.nlm.nih.gov/research/pubtator3/tutorial ('Relation Annotations', Table 2), which seem to make more sense and match the current data better than the paper's supplementary table 2."
+    - Paper Supplementary Table 7 summarizes each tool within Pubtator (what it does, citation, all public domain license) 
 
 
 # Information about how the ingest was specified and performed
