@@ -156,9 +156,10 @@ target_info:
       knowledge_level:
       - knowledge_assertion
       agent_type:
-      - text_mining_agent
-      - manual_agent
-      - manual_validation_of_automated_agent
+        # see https://obophenotype.github.io/human-phenotype-ontology/annotations/creation/
+        - text_mining_agent
+        - manual_agent
+        - manual_validation_of_automated_agent
       primary_knowledge_sources:
         - infores:hpo-annotations
       edge_properties:

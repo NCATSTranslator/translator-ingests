@@ -4,7 +4,7 @@ HPOA processing utility methods
 from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, AgentTypeEnum
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
@@ -46,12 +46,17 @@ def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
-evidence_to_eco: dict = {
-    "IEA": "ECO:0000501",  # "inferred from electronic annotation",
-    "PCS": "ECO:0006017",  # "published clinical study evidence",
-    "TAS": "ECO:0000304",  # "traceable author statement",
-    "ICE": "ECO:0006019",
-}  # "individual clinical experience evidence"
+evidence_mappings: dict = {
+
+    # "inferred from electronic annotation"
+    "IEA": ("ECO:0000501",AgentTypeEnum.text_mining_agent),
+
+    # "published clinical study evidence"
+    "PCS": ("ECO:0006017",AgentTypeEnum.manual_agent),
+
+    # "traceable author statement"
+    "TAS": ("ECO:0000304",AgentTypeEnum.manual_validation_of_automated_agent)
+}
 
 # Sex (right now both all uppercase and all lowercase
 sex_format: dict = {"male": "male", "MALE": "male", "female": "female", "FEMALE": "female"}

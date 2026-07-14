@@ -29,7 +29,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalOrGeneOrGeneProductFormOrVariantEnum as VE,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
-    AgentTypeEnum, GeneToPhenotypicFeaturePredicateEnum,
+    AgentTypeEnum,
+    GeneToPhenotypicFeaturePredicateEnum,
 )
 
 from translator_ingest.util.github import GitHubReleases
@@ -39,7 +40,7 @@ from translator_ingest.util.biolink import INFORES_HPOA
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_hpoa_association_sources,
-    evidence_to_eco,
+    evidence_mappings,
     sex_format,
     sex_to_pato,
     Frequency,
@@ -205,7 +206,8 @@ def transform_disease_to_phenotype_edge_record(
         ## Evidence Code
         # Three letter Evidence Code Ontology ("ECO") term translated
         # to ECO class CURIE based on HPO documentation
-        evidence_code_term = evidence_to_eco[record["evidence"]]
+        evidence_code = record["evidence"]
+        evidence_code_term, agent_type = evidence_mappings[evidence_code]
 
         ## Publications
         references: str = record["reference"]
@@ -216,6 +218,7 @@ def transform_disease_to_phenotype_edge_record(
 
         ## Filter out NCBI web publication endpoints
         publications = [p for p in publications if not p.startswith("http")]
+
 
         # Association/Edge
         association = DiseaseToPhenotypicFeatureAssociation(
@@ -235,7 +238,7 @@ def transform_disease_to_phenotype_edge_record(
             has_quotient=frequency.has_quotient,
             sources=get_hpoa_association_sources(disease_id),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
+            agent_type=agent_type,
             **{},
         )
         return KnowledgeGraph(edges=[association])
