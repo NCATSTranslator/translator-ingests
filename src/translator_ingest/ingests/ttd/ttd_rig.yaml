@@ -105,6 +105,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
+  ## includes source_record_urls: source has page for each record
   edge_type_info:
   ## P1-05
     - subject_categories:
