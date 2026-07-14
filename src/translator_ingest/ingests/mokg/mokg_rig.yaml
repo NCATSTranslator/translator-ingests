@@ -27,14 +27,18 @@ ingest_info:
   relevant_files:
     - file_name: "MULTIOMICS_KG_3.0.0.nodes.ndjson"
       location: "Local development snapshot"
-      description: "KGX-like node records (id, name, category, source)"
+      description: "KGX-like node records (id, name, category, source, taxon)"
     - file_name: "MULTIOMICS_KG_3.0.0.edges.ndjson"
       location: "Local development snapshot"
       description: "KGX-like edge records with predicate, statistics, qualifiers, and provenance"
   included_content:
     - file_name: "MULTIOMICS_KG_3.0.0.edges.ndjson"
-      included_records: "Multi-omics assertions (correlated_with, associated_with, biomarker_for, regulates, etc.)"
-      fields_used: "subject, predicate, object, uuid, publication, disease/anatomical context qualifiers, adjusted p value, relationship strength"
+      included_records: "All multi-omics assertions, regardless of predicate"
+      fields_used: >-
+        subject, predicate, object, uuid, publication, sample size, multiple
+        testing correction method, adjusted p value (any case), relationship
+        strength, all 15 biolink qualifier columns, url, contributing
+        contributors, supporting study-specific numeric columns
 
 target_info:
   infores_id: "infores:multiomics-kg"
@@ -58,11 +62,24 @@ target_info:
     - subject_categories:
         - "biolink:NamedThing"
       predicates:
-        - "biolink:correlated_with"
+        - "biolink:acts_upstream_of_or_within"
+        - "biolink:affects"
         - "biolink:associated_with"
+        - "biolink:associated_with_increased_likelihood_of"
+        - "biolink:associated_with_resistance_to"
+        - "biolink:associated_with_sensitivity_to"
         - "biolink:biomarker_for"
-        - "biolink:regulates"
+        - "biolink:correlated_with"
+        - "biolink:disease_has_location"
+        - "biolink:expressed_in"
         - "biolink:gene_associated_with_condition"
+        - "biolink:genetically_associated_with"
+        - "biolink:is_sequence_variant_of"
+        - "biolink:negatively_correlated_with"
+        - "biolink:participates_in"
+        - "biolink:positively_correlated_with"
+        - "biolink:regulates"
+        - "biolink:related_to"
       object_categories:
         - "biolink:NamedThing"
       knowledge_level:
@@ -70,9 +87,16 @@ target_info:
       agent_type:
         - manual_agent
       ui_explanation: >-
-        MOKG edges report literature-derived multi-omics relationships, with statistical
-        evidence (adjusted p-value, relationship strength) and disease/anatomical context
-        captured in qualifiers.
+        MOKG edges report literature-derived multi-omics relationships, with
+        statistical evidence (adjusted p-value, relationship strength) and
+        disease/anatomical context captured in qualifiers. Each predicate
+        routes to a typed Association subclass when one accepts the literal
+        predicate and the record provides the required slot values; otherwise
+        the edge falls back to the generic Association. Sample size, multiple
+        testing correction method, assertion method, and other ETL metadata
+        are preserved on the `has_attribute` slot, and the dozen
+        study-specific numeric columns (odds ratio, hazard ratio, IVW, MR-Egger)
+        are surfaced as a JSON payload on `supporting_text`.
 
 provenance_info:
   contributions:
