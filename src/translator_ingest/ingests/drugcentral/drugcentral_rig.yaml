@@ -52,15 +52,13 @@ ingest_info:
   included_content:
     - file_name: omop_relationship_doid_view
       included_records: >-
-        (1) Have values in the columns/fields used (no missing values). (2) cui_semantic_type (UMLS
-        semantic type) maps to DiseaseOrPhenotypicFeature or its descendants. 
+        (1) Have values in the columns/fields used (no missing values).
+        (2) cui_semantic_type (UMLS semantic type) maps to DiseaseOrPhenotypicFeature or its descendants. 
         (3) unique triples (removed duplicate rows).
       fields_used: "struct_id, relationship_name, umls_cui, cui_semantic_type"
     - file_name: act_table_full
       included_records: >-
-        Must have an action_type value - we interpret this as an assertion of a relationship (often
-        a specific kind). VS an activity value, which doesn't necessarily mean a relationship (need a
-        threshold for meaningful/actual effect)
+        Must have an action_type value - we interpret this as an assertion of a relationship (often a specific kind). VS an activity value, which doesn't necessarily mean a relationship (need a threshold for meaningful/actual effect)
       fields_used: "struct_id, accession, action_type, act_source, act_source_url"
 
   filtered_content:
