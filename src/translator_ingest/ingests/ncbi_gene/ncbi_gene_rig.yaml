@@ -32,6 +32,7 @@ source_info:
 ingest_info:
   ingest_categories:
     - node_property_only_provider
+    - primary_knowledge_provider  # conformance: was 'primary_provider'
   utility: >-
     "NCBI Gene provides authoritative gene information for human, mouse, and rat genes, including official gene
     symbols, descriptions, and taxonomic information critical for gene normalization and identification in
@@ -57,7 +58,7 @@ ingest_info:
       rationale: "This ingest focuses specifically on human, mouse, and rat genes as these are the primary model organisms of interest for biomedical research and translation."
 
   future_considerations:
-    - category: other
+    - category: node_property_content  # conformance: was 'node_content'
       consideration: "Consider expanding to include additional model organisms (e.g., zebrafish, fly, worm, yeast) if needed for broader comparative genomics support"
       relevant_files: "gene_info.gz (additional taxon IDs)"
     - category: node_property_content

@@ -81,17 +81,17 @@ target_info:
         - biolink:SmallMolecule
       qualifiers:
         - property: biolink:qualified_predicate
-          value_enumerations:
+          value_enumeration:
               - biolink:causes
         - property: biolink:object_aspect_qualifier
-          value_enumerations:
+          value_enumeration:
               - activity_or_abundance
               - activity
               - abundance
               - expression
               - stability
         - property: biolink:object_direction_qualifier
-          value_enumerations:
+          value_enumeration:
             - downregulated
             - upregulated
         - property: biolink:causal_mechanism_qualifier
@@ -147,17 +147,17 @@ target_info:
         - biolink:SmallMolecule
       qualifiers:
         - property: biolink:qualified_predicate
-          value_enumerations:
+          value_enumeration:
               - biolink:causes
         - property: biolink:object_aspect_qualifier
-          value_enumerations:
+          value_enumeration:
             - activity_or_abundance
             - activity
             - abundance
             - expression
             - stability
         - property: biolink:object_direction_qualifier
-          value_enumerations:
+          value_enumeration:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
@@ -187,17 +187,17 @@ target_info:
         - biolink:ChemicalEntity
       qualifiers:
         - property: biolink:qualified_predicate
-          value_enumerations:
+          value_enumeration:
             - biolink:causes
         - property: biolink:object_aspect_qualifier
-          value_enumerations:
+          value_enumeration:
             - activity_or_abundance
             - activity
             - abundance
             - expression
             - stability
         - property: biolink:object_direction_qualifier
-          value_enumerations:
+          value_enumeration:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
@@ -224,17 +224,17 @@ target_info:
         - biolink:ChemicalEntity
       qualifiers:
         - property: biolink:qualified_predicate
-          value_enumerations:
+          value_enumeration:
             - biolink:causes
         - property: biolink:object_aspect_qualifier
-          value_enumerations:
+          value_enumeration:
             - activity_or_abundance
             - activity
             - abundance
             - expression
             - stability
         - property: biolink:object_direction_qualifier
-          value_enumerations:
+          value_enumeration:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
@@ -372,9 +372,9 @@ target_info:
     #   source_identifier_types:
     #     - "SIGNOR ID"
   future_considerations:
-    - category: node_content
+    - category: node_properties  # conformance: was 'node_content'
       consideration: "Considering future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
-    - category: edge_content
+    - category: other  # conformance: was 'edge_content'
       consideration: Note that fact that X modifies Y (e.g. phosphorylates) is represented indirectly here, by an 'affects' predicate plus a mechanism qualifier that captures the type of modification.  Do we want a more direct edge (e.g. X phosphorylates Y) to be created at ingest?  Or derived afterward? Or perhaps live only in a 'predicate-semantics' KG derived from the primary 'qualifier-semantics' KG)?
 
 # Information about the how the ingest was specified and performed
