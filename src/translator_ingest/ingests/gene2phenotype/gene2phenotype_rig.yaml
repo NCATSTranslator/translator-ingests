@@ -113,7 +113,8 @@ target_info:
       source_identifier_types:
         - "OMIM"
         - "MONDO"
-      additional_notes: "'disease mim' column is source of OMIM IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column"
+      additional_notes:
+        - "'disease mim' column is source of OMIM IDs. MONDO IDs from 'disease MONDO' column are only used if row doesn't have a value in 'disease mim' column"
 
   future_considerations:
     - category: qualifiers
