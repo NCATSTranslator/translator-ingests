@@ -27,7 +27,7 @@ source_info:
     - other
   data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't."
   source_status: maintained_as_needed_updates
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about Ingested Content
 ingest_info:
@@ -240,7 +240,7 @@ target_info:
       ui_explanation: "The TTD curators associated this chemical or drug with its therapeutic target (reported in literature). TTD did not include a mechanism-of-action."
       source_files:
         - P1-07-Drug-TargetMapping.xlsx
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
     ## "BINDING" OR INFERRED physical interaction edges
     - subject_categories:
         - biolink:ChemicalEntity
@@ -286,19 +286,22 @@ target_info:
       source_identifier_types:
         - "UniProtKB"
       additional_notes:
-        - "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human. NodeNorm with gene/protein conflation will set some of these to Gene entities."
+        - "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed.
+        - Some are non-human.
+        - NodeNorm with gene/protein conflation will set some of these to Gene entities."
     - node_category: biolink:Protein
       source_identifier_types:
         - "UniProtKB"
       additional_notes:
-        - "Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed. Some are non-human."
+        - Original IDs are TTD target, but we are using a TTD mapping file (P2-01) and NameResolver to get UniProt IDs that can be NodeNormed.
+        - Some are non-human.
 
   future_considerations:
     - category: node_properties
       consideration: "TTD has files with information on drugs and therapeutic target proteins (P1-01 targets, P1-02 drugs). This could potentially be used for node properties (but it may be better to use existing resources that are updated more frequently)."
     - category: other  # conformance: was 'edge_content'
       consideration: "Ingest the P1-06 file for Drug-target_for-Disease edges. This would be a chance to explore utility and modeling of this new type of edge/knowledge.  May need some modeling work / Biolink updates. Matt's understanding is that the targets here are necessarily mechanistic for the disease - which is new/valuable info."
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 
 # Information about the how the ingest was specified and performed
