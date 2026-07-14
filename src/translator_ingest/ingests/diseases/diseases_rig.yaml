@@ -47,15 +47,10 @@ ingest_info:
     - file_name: "human_disease_knowledge_filtered.tsv"
       filtered_records: "Records with no ENSP ID in gene ID column or no DOID in disease ID column"
       rationale: "Need node IDs that are in NodeNorm's scope. Other values are non-ID strings (based on string-searches, a little manual review) or IDs that wouldn't be resolved by NodeNorm (AmyCo)."
-    - file_name: "human_disease_knowledge_filtered.tsv"
-      filtered_records: "Records that had NodeNorm mapping failure on gene or disease ID"
-      rationale: "Need node IDs that NodeNorm successfully maps to entities."
   
   # future_considerations:
 
-target_info:
-  infores_id: "infores:translator-diseases"
-  
+target_info:  
   edge_type_info:
     ## from "knowledge channel" file
     - subject_categories:
@@ -76,8 +71,6 @@ target_info:
         - infores:diseases
       edge_properties:
         - "biolink:diseases_confidence_score"
-        - "biolink:original_subject"
-        - "biolink:original_object"
       ui_explanation: "Source DISEASES provides Gene-Disease associations ingested from external, manually-curated sources. The DISEASES record used to create this Translator edge does not report a specific type of gene-disease relationship for these 'associations' and is therefore represented using the relatively-generic Biolink 'associated with' predicate."
       source_files:
         - human_disease_knowledge_filtered.tsv
