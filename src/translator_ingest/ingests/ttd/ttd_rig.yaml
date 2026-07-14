@@ -17,7 +17,8 @@ source_info:
     - "https://doi.org/10.1093/nar/gkp1014"    ## 2010
     - "https://doi.org/10.1093/nar/30.1.412"   ## 2002 first paper
   terms_of_use_info:
-    terms_of_use_description: "No formal license. Andrew Su has emailed developers and gotten a positive response for use with 'proper attribution'. Papers describe resource as 'freely accessible to all users'."
+    terms_of_use_description: >-
+      Does not specify a standard license. According to https://ttd.idrblab.cn/citation, there are various guidelines for using and citing the resource's content. Andrew Su has emailed developers and gotten a positive response for use with 'proper attribution'. Papers describe resource as 'freely accessible to all users'.
   data_access_locations:
     - "Downloads page: https://db.idrblab.net/ttd/full-data-download"
   data_provision_mechanisms:
