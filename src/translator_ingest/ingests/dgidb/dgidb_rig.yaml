@@ -22,6 +22,7 @@ source_info:
   data_formats:
     - tsv
   data_versioning_and_releases: "DGIdb updates 1-2 times a year since 2021 (based on the raw data dump table in https://dgidb.org/downloads). Versioning is by date (year-month abbrev.) but 2024-Dec also has a semantic version number in its header."
+  source_status: maintained_as_needed_updates
   # additional_notes:  # (optional, range = string)
 
 # Information about Ingested Content
