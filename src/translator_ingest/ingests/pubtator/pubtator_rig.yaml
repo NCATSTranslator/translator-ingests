@@ -19,7 +19,9 @@ source_info:
   data_formats:  # (optional, multivalued, range = DataFormatEnum: tsv | xml | csv | json | yaml | obo | protobuff | other)
     - tsv  ## gzipped
     - other  ## tar.gz + BioC-XML format
-  data_versioning_and_releases: "The FTP files are expected to be updated monthly, according to the FTP README. There isn't a formal version, so we use the last-modified date."
+  data_versioning_and_releases: >-
+    The releases appear to be ~every two months (there was one 2026-03-17 and 2026-05-17). The FTP files "are expected to be updated monthly", according to the FTP README. There isn't a formal version, so we use the last-modified date.
+  source_status: maintained_regular_updates
   # additional_notes:  # (optional, range = string)
 
 
