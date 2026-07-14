@@ -74,6 +74,8 @@ target_info:
       ui_explanation: "Source DISEASES provides Gene-Disease associations ingested from external, manually-curated sources. The DISEASES record used to create this Translator edge does not report a specific type of gene-disease relationship for these 'associations' and is therefore represented using the relatively-generic Biolink 'associated with' predicate."
       source_files:
         - human_disease_knowledge_filtered.tsv
+      additional_notes: >-
+        DISEASES gives all MedlinePlus associations a confidence score of 5 (out of 5). It gives most AmyCo associations a 4, but a few (<100) are given scores of 2 or 3. Based on a quick look, I (CX) can't tell why some AmyCo scores are lower (looks like specific diseases but I've found exceptions).
   
   node_type_info:
     - node_category: "biolink:Gene"
