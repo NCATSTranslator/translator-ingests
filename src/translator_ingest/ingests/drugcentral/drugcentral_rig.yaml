@@ -27,6 +27,7 @@ source_info:
     - database_dump
     - file_download  ## this is partial and maybe not the latest version
   data_versioning_and_releases: "DrugCentral currently (late 2025) isn't being maintained due to lack of funding."
+  source_status: not_maintained
   # additional_notes:  # (optional, range = string)
 
 
