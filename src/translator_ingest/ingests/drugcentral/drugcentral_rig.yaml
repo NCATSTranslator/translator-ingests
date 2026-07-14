@@ -117,8 +117,6 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: "infores:translator-drugcentral"
-
   edge_type_info:
     ## omop_relationship_doid_view: including all edge types even though predicates aren't descendants of each other
     - subject_categories:
@@ -174,8 +172,6 @@ target_info:
       ## can find this info in graph-metadata.json output file
         - infores:drugcentral
       edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
         - biolink:publications
       ui_explanation: "The DrugCentral-reported 'action type' was 'OTHER' - without more information on the relationship type, we assigned the generic predicate for a drug-protein interaction."
       source_files:
@@ -200,9 +196,8 @@ target_info:
       aggregator_knowledge_sources:
       ## when drugcentral isn't primary
         - infores:drugcentral
-      edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
+      # edge_properties:
+      #   - 
         ## currently no edges have publications - can find this info in graph-metadata.json
       ui_explanation: "The DrugCentral-reported 'action type' was 'SUBSTRATE' - this means the chemical is a substrate of the protein."
       source_files:
@@ -235,8 +230,6 @@ target_info:
       ## when drugcentral isn't primary
         - infores:drugcentral
       edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
         - biolink:publications    ## only on some edges
       ui_explanation: "The DrugCentral-reported action type either (1) corresponds to the predicate and causal_mechanism_qualifier OR (2) implied a physical-interaction (so Translator generated another edge to represent this)."
       source_files:
@@ -283,8 +276,6 @@ target_info:
       ## when drugcentral isn't primary
         - infores:drugcentral
       edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
         - biolink:publications    ## only on some edges
       ui_explanation: "The qualifier-set is based on the DrugCentral-reported action type."
       source_files:
