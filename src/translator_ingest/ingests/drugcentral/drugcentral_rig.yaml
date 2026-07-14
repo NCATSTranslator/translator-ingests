@@ -18,7 +18,8 @@ source_info:
   terms_of_use_info:
     terms_of_use_url: "https://drugcentral.org/privacy"
     terms_of_use_description: "DrugCentral's webpage says DrugCentral is available under the Creative Commons license. In the 2023 papers, DrugCentral is described as available 'free of charge, without registration' (https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#notes3) thru its website, public instance, a full database dump, and a Docker container (https://pmc.ncbi.nlm.nih.gov/articles/PMC9825566/#SEC6)."
-    license name: "CC BY-SA"
+    license_name: "CC BY-SA 4.0"
+    license_url: "https://creativecommons.org/licenses/by-sa/4.0/legalcode"
   data_access_locations:
     - "Download and database access info: https://drugcentral.org/download"
   data_provision_mechanisms:
