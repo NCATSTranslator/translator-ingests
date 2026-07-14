@@ -6,9 +6,12 @@ source_info:
   infores_id: infores:ncbi-gene
   name: NCBI Gene
   description: >-
-    "The NCBI Gene integrates information from a wide range of species.
-    A record may include nomenclature, Reference Sequences (RefSeqs), maps, pathways, variations, phenotypes,
-    and links to genome-, phenotype-, and locus-specific resources worldwide."
+    NCBI Gene is a database maintained by the National Center for Biotechnology Information (NCBI) that
+    provides authoritative, integrated information about genes across a wide range of species. A gene record
+    may include official nomenclature and symbols, gene descriptions, Reference Sequences (RefSeqs), genomic
+    maps, pathways, variations, phenotypes, and links to genome-, phenotype-, and locus-specific resources
+    worldwide. This ingest uses NCBI Gene as the authoritative source of gene identity and basic gene
+    properties (symbol, full name, description, and taxon) for human, mouse, and rat.
   citations:
     - "National Center for Biotechnology Information (NCBI)[Internet]. Bethesda (MD): National Library of Medicine (US), National Center for Biotechnology Information; [1988] – [cited 2024 Dec]. Available from: https://www.ncbi.nlm.nih.gov/"
   terms_of_use_info:
@@ -22,11 +25,13 @@ source_info:
   data_formats:
     - tsv
   data_versioning_and_releases: >-
-    "NCBI Gene data is updated regularly. Gene information files are available as current snapshots from the FTP site."
+    NCBI Gene data is updated regularly. Gene information files are available as current snapshots from the FTP site.
+  source_status: maintained_regular_updates
 
 # Information about Ingested Content
 ingest_info:
   ingest_categories:
+    - node_property_only_provider
     - primary_knowledge_provider  # conformance: was 'primary_provider'
   utility: >-
     "NCBI Gene provides authoritative gene information for human, mouse, and rat genes, including official gene
@@ -64,12 +69,10 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-ncbi-gene-kgx
-
   node_type_info:
     - node_category: biolink:Gene
       source_identifier_types:
-        - "NCBIGene (NCBI Gene ID)"
+        - "NCBIGene"
       node_properties:
         - id
         - category
@@ -82,11 +85,12 @@ target_info:
         - "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information."
 
   future_considerations:
-    - category: other  # conformance: was 'edge_content'
+    - category: spoq_pattern
       consideration: "Future iterations could include gene-to-gene orthology relationships or gene-to-pathway associations if such data becomes available from NCBI Gene"
 
   additional_notes:
     - "This ingest creates comprehensive gene nodes for human, mouse, and rat that serve as foundational entities for biomedical knowledge graphs, providing authoritative gene identifiers and basic properties."
+    - "This is a node-only ingest: it produces biolink:Gene nodes and no edges. As a result, no edge_type_info is applicable."
 
 # Information about how the ingest was specified and performed
 provenance_info:
