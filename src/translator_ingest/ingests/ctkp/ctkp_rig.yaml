@@ -2,32 +2,51 @@ name: "Multiomics Clinical Trials Knowledge Provider (CTKP) Reference Ingest Gui
 
 supporting_data_source_info:
   - infores_id: "infores:aact"
-    name: "Aggregate Analysis of ClinicalTrial.gov (AACT)"
-    description: "AACT is derived from researcher submissions to clinicaltrials.gov"
+    name: "Aggregate Analysis of ClinicalTrials.gov (AACT)"
+    description: >-
+      AACT is a publicly available, relational database containing all information (protocol and result
+      data elements) about every study registered in ClinicalTrials.gov. It is maintained by the Clinical
+      Trials Transformation Initiative (CTTI) and is derived from researcher submissions to ClinicalTrials.gov.
     terms_of_use_info:
+      terms_of_use_url: "https://aact.ctti-clinicaltrials.org/documentation/346"
       terms_of_use_description: >-
-         Freely available, with suggested acknowledgement of the source.
-         See https://aact.ctti-clinicaltrials.org/documentation/346.
+        Freely available, with suggested acknowledgement of the source.
+        See https://aact.ctti-clinicaltrials.org/documentation/346.
     relevant_files:
       - file_name: "yyyymmdd_export_ctgov.zip"
         location: "https://aact.ctti-clinicaltrials.org/downloads"
-        description: "Use these pipe-delimited text files to import AACT data into any database or analysis tool. Each file corresponds to a table in the AACT database schema."
+        description: >-
+          Pipe-delimited text files used to import AACT data into any database or analysis tool.
+          Each file corresponds to a table in the AACT database schema.
 
 source_info:
   infores_id: "infores:multiomics-clinicaltrials"
   name: "Multiomics Clinical Trials Knowledge Provider (Multiomics-CTKP)"
-  description:  "The Clinical Trials KP provides information on Clinical Trials, ultimately derived from researcher submissions to clinicaltrials.gov, via the Aggregate Analysis of Clinical Trials (AACT) database. Information on select trials includes the NCT Identifier of the trial, interventions used, diseases/conditions relevant to the trial, adverse events, etc.  "
+  description: >-
+    The Multiomics Clinical Trials Knowledge Provider (CTKP) is a Translator Knowledge Provider,
+    developed by the Multiomics team, that provides computable knowledge about clinical trials.
+    Its content is derived from researcher submissions to ClinicalTrials.gov, accessed via the
+    Aggregate Analysis of ClinicalTrials.gov (AACT) database maintained by the Clinical Trials
+    Transformation Initiative. CTKP addresses quality and computability issues in the underlying
+    AACT/ClinicalTrials.gov data, and represents each trial's interventions, the diseases/conditions
+    being studied, trial phase, and related metadata (e.g. NCT identifier, overall status,
+    enrollment, primary purpose, age range). From this data CTKP asserts edges linking an
+    intervention to the disease/condition it was tested in ('in clinical trials for'), and
+    treatment assertions ('treats') derived from interventions studied in Phase 4 trials. The
+    resulting knowledge graph is published in KGX format and is useful for Translator treatment
+    and drug-repurposing query types.
   citations:
-    - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
+    - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
   terms_of_use_info:
-    terms_of_use_description: "Freely available"
+    terms_of_use_description: "Freely available."
   data_access_locations:
     - "Direct download links for the latest version are given in the manifest file: https://github.com/multiomicsKP/clinical_trials_kp/blob/main/manifest.json"
   data_provision_mechanisms:
     - file_download
   data_formats:
     - kgx
-  data_versioning_and_releases:  "New versions are released weekly"
+  data_versioning_and_releases: "New versions are released weekly."
+  source_status: maintained_regular_updates
 
 ingest_info:
   ingest_categories:
@@ -35,20 +54,23 @@ ingest_info:
   utility: "CTKP provides an improved version of clinical trials information that addresses quality and computability issues with sources it uses (AACT, ct.gov), as well as treatment assertions derived from this data. This type of knowledge is critical for many Translator query types."
   scope: "Clinical trials information including interventions, diseases/conditions, and treatment assertions derived from clinical trial outcomes."
   relevant_files:
-    - file_name: "CTKP processed data"
-      location: "https://ctkp.ncats.io/"
-      description: "Clinical trials data processed from AACT/clinicaltrials.gov"
+    - file_name: "clinical_trials_kg_nodes.jsonl.gz"
+      location: "https://db.systemsbiology.net/gestalt/KG/"
+      description: "KGX node file for the CTKP knowledge graph (interventions, diseases/conditions, and clinical trial nodes)."
+    - file_name: "clinical_trials_kg_edges.jsonl.gz"
+      location: "https://db.systemsbiology.net/gestalt/KG/"
+      description: "KGX edge file for the CTKP knowledge graph (intervention-to-disease edges derived from AACT/ClinicalTrials.gov data)."
   included_content:
-    - file_name: "CTKP processed data"
-      included_records: "Clinical trial interventions and their associated diseases/conditions, plus treatment assertions for successful trials"
-      fields_used: "NCT Identifier, interventions, diseases/conditions, adverse events, trial phases"
+    - file_name: "clinical_trials_kg_edges.jsonl.gz"
+      included_records: "Clinical trial intervention-to-disease/condition edges, plus treatment assertions for interventions studied in Phase 4 trials."
+      fields_used: "subject, predicate, object, category, publications, qualifiers, max_research_phase, has_supporting_studies, sources"
 
 target_info:
-  infores_id: "infores:translator-ctkp-kgx"
   edge_type_info:
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:MolecularMixture"
+        - "biolink:SmallMolecule"
       predicates:
         - "biolink:in_clinical_trials_for"
       object_categories:
@@ -57,10 +79,24 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      ui_explanation: "The 'in_clinical_trials_for' predicate reports that an intervention was tested in a clinical trial for a particular disease - based on a registered trial in ct.gov."
+      primary_knowledge_sources:
+        - "infores:multiomics-clinicaltrials"
+      supporting_data_sources:
+        - "infores:aact"
+      edge_properties:
+        - publications
+        - qualifiers
+        - max_research_phase
+        - has_supporting_studies
+      ui_explanation: "The 'in_clinical_trials_for' predicate reports that an intervention was tested in a clinical trial for a particular disease or condition - based on a registered trial in ClinicalTrials.gov, accessed via the AACT database. Each edge aggregates the supporting trials, with the maximum research phase reached across those trials reported as an edge property."
+      source_files:
+        - "clinical_trials_kg_edges.jsonl.gz"
+      additional_notes:
+        - "These edges assert only that an intervention was studied in a trial for a disease/condition; they do not assert efficacy. Confidence should account for the fact that a registered trial does not imply a positive or completed outcome."
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:MolecularMixture"
+        - "biolink:SmallMolecule"
       predicates:
         - "biolink:treats"
       object_categories:
@@ -69,21 +105,39 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      ui_explanation: "The `treats` predicate is used for interventions in Phase 4 trials that are performed for after successful demonstration of efficacy in treating a particular disease."
+      primary_knowledge_sources:
+        - "infores:multiomics-clinicaltrials"
+      supporting_data_sources:
+        - "infores:aact"
+      edge_properties:
+        - publications
+        - qualifiers
+        - max_research_phase
+        - has_supporting_studies
+      ui_explanation: "The 'treats' predicate is used for interventions studied in Phase 4 trials, which are performed after a treatment has already been approved and its efficacy demonstrated for a particular disease. The presence of a Phase 4 trial is used by CTKP as evidence that the intervention treats the disease/condition."
+      source_files:
+        - "clinical_trials_kg_edges.jsonl.gz"
+      additional_notes:
+        - "The 'treats' assertion is inferred from the presence of Phase 4 (post-approval) trials, rather than from a direct efficacy statement in the source. This is a strong claim relative to the underlying data, and should be weighted accordingly when assigning prior confidence."
 
   node_type_info:
     - node_category: "biolink:ChemicalEntity"
       source_identifier_types:
-        - "Free text in AACT - no identifiers"
+        - "Free text intervention names in AACT - CTKP maps these to identifiers where possible"
     - node_category: "biolink:MolecularMixture"
       source_identifier_types:
-        - "Free text in AACT - no identifiers"
+        - "Free text intervention names in AACT - CTKP maps these to identifiers where possible"
     - node_category: "biolink:SmallMolecule"
       source_identifier_types:
-        - "Free text in AACT - no identifiers"
+        - "Free text intervention names in AACT - CTKP maps these to identifiers where possible"
     - node_category: "biolink:DiseaseOrPhenotypicFeature"
       source_identifier_types:
-        - "Free text in AACT - no identifiers"
+        - "Free text condition names in AACT - CTKP maps these to identifiers where possible"
+    - node_category: "biolink:ClinicalTrial"
+      source_identifier_types:
+        - "CLINICALTRIALS"
+      additional_notes:
+        - "Clinical trial nodes (identified by NCT numbers under the CLINICALTRIALS prefix) are attached to edges as supporting studies via the has_supporting_studies edge property, and carry trial metadata such as phase, overall status, enrollment, primary purpose, and age range."
 
 provenance_info:
   contributions:
