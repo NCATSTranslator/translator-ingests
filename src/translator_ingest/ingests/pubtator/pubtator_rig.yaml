@@ -36,6 +36,7 @@ ingest_info:
     - file_name: relation2pubtator3.gz
       location: https://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator3/
       description: "whole set of relations extracted by BioREx"
+  
   included_content:
     - file_name: relation2pubtator3.gz
       included_records: >-
@@ -81,8 +82,6 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: "infores:translator-pubtator"
-
   edge_type_info:
     ## 1 per biolink predicate
     - subject_categories:
