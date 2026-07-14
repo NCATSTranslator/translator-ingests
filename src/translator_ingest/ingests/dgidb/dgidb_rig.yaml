@@ -10,7 +10,9 @@ source_info:
     - "https://doi.org/10.1093/nar/gkad1040"
   terms_of_use_info:
     terms_of_use_url: "https://dgidb.org/about/overview/data-accessibility"
-    terms_of_use_description: "According to the webpage on 'Data Accessibility', '[t]he data used in DGIdb is all open access and where possible made available as raw data dumps in the downloads section.' However, according to the 2024 paper, DGIdb 'aggregate[s] content from...sources with varying content licenses'; and the DGIdb downloads page says 'some of the data sources we import may have restrictions that prevent us from redistributing them'."
+    terms_of_use_description: >-
+      According to https://github.com/dgidb/dgidb-v5/issues/620, 'the data is available under CC0 license terms (except where imported sources have restrictions)'.
+      And according to the 2024 paper, DGIdb 'aggregate[s] content from...sources with varying content licenses'; and the DGIdb downloads page says 'some of the data sources we import may have restrictions that prevent us from redistributing them'.
   data_access_locations:
   - "Downloads page: https://dgidb.org/downloads"
   data_provision_mechanisms:
