@@ -23,7 +23,7 @@ source_info:
     - tsv
   data_versioning_and_releases: "DGIdb updates 1-2 times a year since 2021 (based on the raw data dump table in https://dgidb.org/downloads). Versioning is by date (year-month abbrev.) but 2024-Dec also has a semantic version number in its header."
   source_status: maintained_as_needed_updates
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about Ingested Content
 ingest_info:
@@ -58,7 +58,7 @@ ingest_info:
       relevant_files: "genes.tsv, drugs.tsv"
     - category: other
       consideration: "According to others that worked with DGIdb in the past, there's a way to load a local database that has more information. However, I looked at the Github instructions for recreating the database locally, and I don't think this can be easily/automatically done by the Translator ingest pipeline."
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -235,7 +235,7 @@ target_info:
         - "ENSEMBL"    ## ENSG
       # node_properties:  # (optional, multivalued, range = URIorCURIE)
       #   -
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
 
   future_considerations:  # Notes on possible changes/additions to modeling in future iteration of the ingest
     - category: spoq_pattern
@@ -246,7 +246,8 @@ target_info:
       consideration: "Matt said underlying-source licensing and data overlap with 'directly-ingested' resources are not concerns because DGIdb is an 'interpreter' and can be set as the primary source (with the underlying sources set to supporting data providers or publications). HOWEVER, if we are directly ingesting all underlying sources for an edge, the DGIdb edge then seems like extraneous duplication."
 
   additional_notes:
-    - "(1) Edge provenance: primary source is DGIdb, and the underlying sources are supporting data providers or publications. (2) We couldn't generate links to DGIdb interaction webpages because they use an ID that looks random or like a hash (and links to the drug or gene can currently be generated but wouldn't be specific to the edge)."
+    - "Edge provenance: primary source is DGIdb, and the underlying sources are supporting data providers or publications"
+    - "We couldn't generate links to DGIdb interaction webpages because they use an ID that looks random or like a hash (and links to the drug or gene can currently be generated but wouldn't be specific to the edge)."
 
 # Information about how the ingest was specified and performed
 provenance_info:
