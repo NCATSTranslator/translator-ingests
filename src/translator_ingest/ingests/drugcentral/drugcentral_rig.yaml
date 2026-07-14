@@ -114,6 +114,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
+  ## includes source_record_urls for drugcentral, not for other primary/underlying sources
   edge_type_info:
     ## omop_relationship_doid_view: including all edge types even though predicates aren't descendants of each other
     - subject_categories:
