@@ -1,29 +1,38 @@
-name: Human Phenotype Ontology Annotations
+name: Human Phenotype Ontology Annotations Reference Ingest Guide
 source_info:
   infores_id: infores:hpo-annotations
+  name: Human Phenotype Ontology Annotations
   description: >-
-    The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides a 
-    standard vocabulary of phenotypic abnormalities encountered in human disease.
-    Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. 
-    The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. 
-    HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. 
-    The HPO project and others have developed software for phenotype-driven differential diagnostics,
-    genomic diagnostics, and translational research.
+    The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) annotation dataset is
+    produced and maintained by the Human Phenotype Ontology Consortium, led by investigators
+    at the Charité – Universitätsmedizin Berlin and collaborating institutions.
+    Its purpose is to provide standardized annotations linking human diseases and 
+    genes to phenotypic abnormalities using Human Phenotype Ontology terms, 
+    thereby supporting rare disease diagnosis, genomic variant interpretation, 
+    disease gene discovery, and computational phenotype analysis.
     
-    The Human Phenotype Ontology group curates and assembles over 115,000 HPO-related annotations ("HPOA")
-    to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases
-    and phenotypic features, together with their evidence, and age of onset and frequency (if known).
-    Disease annotations here are also cross-referenced to the MONarch Disease Ontology (MONDO)
-    (https://mondo.monarchinitiative.org/).
-
-    There are four HPOA ingests ('disease-to-phenotype' (includes capture of disease modes of inheritance,
-    'gene-to-phenotype' and 'gene-to-disease') that parse out records from the 
-    HPO Phenotype Annotation File (http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+    The dataset contains disease–phenotype annotations, gene–phenotype associations,
+    phenotype frequencies, onset information, modifiers, evidence metadata,
+    and supporting references. Knowledge is generated through expert manual curation
+    of the biomedical literature, clinical case reports, and authoritative disease resources,
+    together with integration of annotations from external databases such as rare disease
+    and clinical genetics resources. Additional computational pipelines harmonize annotations
+    to ontology terms and propagate annotations through the ontology hierarchy
+    while preserving provenance and evidence for each association.
+    
+    Here we create Biolink associations between genes, phenotypic features and diseases,
+    together with their evidence, and age of onset and frequency (if known). Disease annotations here
+    are also cross-referenced to the [MONarch Disease Ontology (MONDO)](https://mondo.monarchinitiative.org/).
+    There are three HPOA ingests: 'disease-to-phenotype' (nodes including disease modes of inheritance
+    when given, plus edges), 'gene-to-phenotype' and 'gene-to-disease'.
   citations:
   - https://doi.org/10.1093/nar/gkaa1043
   terms_of_use_info:
     terms_of_use_url: "https://hpo.jax.org/license"
-    terms_of_use_description: "Bespoke terms describing specific conditions for use of HPOA data. No formal license."
+    terms_of_use_description: >-
+      Freely available for use and redistribution with attribution, 
+      version/date disclosure, and no content modification.
+      Human Phenotype Ontology (HPO) used herein is copyrighted.
   data_access_locations:
   - https://hpo.jax.org/data/annotations
   data_provision_mechanisms:
@@ -34,9 +43,8 @@ source_info:
   - other  # phenotype.hpoa is actually a tsv with a multi-line comment header
   data_versioning_and_releases: >-
      GitHub managed releases at https://github.com/obophenotype/human-phenotype-ontology/releases
-     No consistent cadence for releases. Versioning is based on the month and year of the release.
-  additional_notes:
-    - null
+     HPO is released +/- 5 times each year. Versioning is based on the month and year of the release.
+  source_status: maintained_regular_updates
 ingest_info:
   ingest_categories:
   - primary_knowledge_provider
