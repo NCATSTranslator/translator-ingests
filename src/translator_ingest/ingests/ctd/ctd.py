@@ -13,9 +13,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntityToBiologicalProcessAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntityToPathwayAssociation,
+    Association,
     Disease,
     DirectionQualifierEnum,
     Gene,
+    GeneAffectsChemicalAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     Pathway,
     PhenotypicFeature,
@@ -38,6 +40,17 @@ BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
 BIOLINK_POSITIVELY_CORRELATED = "biolink:positively_correlated_with"
 BIOLINK_NEGATIVELY_CORRELATED = "biolink:negatively_correlated_with"
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
+BIOLINK_AFFECTS_SENSITIVITY_TO = "biolink:affects_sensitivity_to"
+BIOLINK_INCREASES_SENSITIVITY_TO = "biolink:increases_sensitivity_to"
+BIOLINK_DECREASES_SENSITIVITY_TO = "biolink:decreases_sensitivity_to"
+
+# CTD's "response to substance" interaction action maps to the sensitivity predicates, with the direction
+# carried by the predicate itself (not a qualifier).
+SENSITIVITY_PREDICATES = {
+    "affects": BIOLINK_AFFECTS_SENSITIVITY_TO,
+    "increases": BIOLINK_INCREASES_SENSITIVITY_TO,
+    "decreases": BIOLINK_DECREASES_SENSITIVITY_TO,
+}
 
 CHEM_TO_DISEASE_PREDICATES = {
     "therapeutic": BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
@@ -203,8 +216,58 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     interaction = interactions[0]
     interaction_direction, interaction_aspect = interaction.split("^")
 
-    predicate = BIOLINK_AFFECTS
-    qualified_predicate = BIOLINK_CAUSES
+    # CTD builds the human-readable Interaction sentence as "<subject> <action> ... of <object>",
+    # This direction is per-record, not per-aspect: e.g. "<chem> results in increased expression of <gene>" is
+    # chemical->gene, while "<gene> protein results in increased transport of <chem>" is gene->chemical. The aspect
+    # and direction qualifiers always describe the object, so they attach correctly once the orientation is set.
+    interaction_sentence = record['Interaction']
+    chemical_name = record['ChemicalName']
+    gene_symbol = record['GeneSymbol']
+    chemical_is_subject = interaction_sentence.startswith(chemical_name)
+    gene_is_subject = interaction_sentence.startswith(gene_symbol)
+    if chemical_is_subject and gene_is_subject:
+        # There are some records where one name is a subset of the other (e.g. chem "NAD" vs gene "NADK");
+        # So the startswith check triggers for both entities. Currently, there are only 6 of these and the
+        # longer string is always the real subject but this could result in bugs in the future.
+        #
+        # Note that this sounds really dumb, but it actually is hard to disambiguate them, see this example:
+        #   ChemicalName: SIRT3 inhibitor 3-TYP
+        #   GeneSymbol:   SIRT3
+        #   Interaction:  SIRT3 inhibitor 3-TYP results in decreased expression of SIRT3 protein
+        chemical_is_subject = len(chemical_name) >= len(gene_symbol)
+        gene_is_subject = not chemical_is_subject
+    if not (chemical_is_subject or gene_is_subject):
+        # the sentence starts with neither entity, meaning it describes a multi-entity interaction
+        # (e.g. "[<chem> results in ... of <intermediate>] which results in ... of <gene>") that we can't
+        # split into a single self-contained edge, so drop it like the multi-action records above.
+        return None
+
+    subject_id, object_id = (chemical_id, gene_id) if chemical_is_subject else (gene_id, chemical_id)
+    publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
+
+    # CTD's "response to substance" action describes susceptibility ("... affects/increases/decreases the
+    # susceptibility to ..."), which Biolink models with the (affects|increases|decreases)_sensitivity_to
+    # predicates rather than an affects+aspect qualifier - the direction is carried by the predicate itself.
+    # No Biolink chemical<->gene association class accepts these predicates, so a generic Association is used;
+    # this means the species/taxon context can't be attached the way it is on the affects/causes edges below.
+    if interaction_aspect == 'response to substance':
+        sensitivity_predicate = SENSITIVITY_PREDICATES.get(interaction_direction)
+        if sensitivity_predicate is None:
+            koza.transform_metadata['unmapped_chem_gene_ixns'].add(interaction)
+            return None
+        association = Association(
+            id=entity_id(),
+            subject=subject_id,
+            predicate=sensitivity_predicate,
+            object=object_id,
+            sources=CTD_SOURCES,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            publications=publications,
+        )
+        return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id), Gene(id=gene_id)],
+                              edges=[association])
+
     object_direction_qualifier = None
     object_aspect_qualifier = None
 
@@ -315,14 +378,13 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         case _:
             koza.transform_metadata['unmapped_chem_gene_ixns'].add(interaction)
 
-    publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
-
-    association = ChemicalAffectsGeneAssociation(
+    # The predicate is always affects/causes; only the subject/object orientation (decided above) differs.
+    association_class = ChemicalAffectsGeneAssociation if chemical_is_subject else GeneAffectsChemicalAssociation
+    association = association_class(
         id=entity_id(),
-        subject=chemical_id,
-        predicate=predicate,
-        object=gene_id,
-        qualified_predicate=qualified_predicate,
+        subject=subject_id,
+        predicate=BIOLINK_AFFECTS,
+        object=object_id,
         sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -333,6 +395,8 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         association.object_aspect_qualifier = object_aspect_qualifier
     if object_direction_qualifier:
         association.object_direction_qualifier = object_direction_qualifier
+        # qualified_predicate (causes) only applies when the effect has a direction (increased/decreased)
+        association.qualified_predicate = BIOLINK_CAUSES
 
     return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
                                  Gene(id=gene_id)],

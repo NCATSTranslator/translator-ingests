@@ -80,8 +80,10 @@ target_info:
       value_range: str
     - property: biolink:object_feature_name
       value_range: str
-    knowledge_level: knowledge_assertion
-    agent_type: not_provided
+    knowledge_level:
+      - knowledge_assertion
+    agent_type:
+      - not_provided
     edge_properties:
     - biolink:equivalent_identifiers   # biolink:same_as
   node_type_info:
@@ -240,7 +242,8 @@ target_info:
   future_considerations:
   - category: null
     consideration: null
-  additional_notes: null
+  additional_notes:
+    - null
 provenance_info:
   contributions:
   - Richard Bruskiewich - data modeling, code author"
