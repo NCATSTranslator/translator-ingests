@@ -65,9 +65,13 @@ target_info:
       agent_type:
         - manual_agent
       primary_knowledge_sources:
+        ## NO source_record_urls:
+        ## - tried a method of generating for medlineplus and it wasn't reliable (and was slow)
+        ## - no website for amyco
         - infores:amyco
         - infores:medlineplus
       aggregator_knowledge_sources:
+      ## maybe can generate source_record_urls for this, but UI doesn't show aggregator
         - infores:diseases
       edge_properties:
         - "biolink:diseases_confidence_score"
