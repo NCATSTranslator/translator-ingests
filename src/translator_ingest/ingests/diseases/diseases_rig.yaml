@@ -7,7 +7,9 @@ source_info:
     - "https://doi.org/10.1093/database/baac019"
     - "https://www.sciencedirect.com/science/article/pii/S1046202314003831"
   terms_of_use_info:
-    license_name: "CC BY 4.0"
+    terms_of_use_url: "https://diseases.jensenlab.org/About"
+    license_name: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+    license_url: "https://creativecommons.org/licenses/by/4.0/"
   data_access_locations:
     - "https://diseases.jensenlab.org/Downloads"
   data_provision_mechanisms:
