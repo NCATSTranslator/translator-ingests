@@ -1,0 +1,8 @@
+name: hmdb
+
+# HMDB data is an XML file compressed into a zip file, therefore,
+# we don't ask Koza to directly ingest it following a reader specification
+# but instead directly access and pre-process the downloaded file in a stream parser.
+
+reader:
+  format: csv  # fake format, we don't use it!
