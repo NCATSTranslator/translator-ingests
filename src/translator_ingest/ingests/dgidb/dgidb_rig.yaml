@@ -50,6 +50,8 @@ ingest_info:
 
   future_considerations:
   # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+    - category: other
+      consideration: "Filter out chemical IDs that normalize to Protein (seen in KGX summary report and graph-metadata file). Based on a quick look at normalization-metadata.json, it looks like 1 original DRUGBANK ID normalizes to NCBIGene. And possibly other original RXCUI and DRUGBANK IDs normalize to undesired categories, based on the namespaces they normalized to."
     - category: node_property_content
       consideration: "interactions.tsv has some columns that could be ingested as node properties: drug_is_approved, drug_is_immunotherapy, drug_is_antineoplastic, drug_specificity_score, gene_specificity_score. However, we may want to use a different resource that's updated more frequently or has more coverage."
       relevant_files: "interactions.tsv"
