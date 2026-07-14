@@ -135,11 +135,11 @@ ingest_info:
 target_info:
   edge_type_info:
     - subject_categories:
-      - "biolink:Disease"
+        - "biolink:Disease"
       predicates:
         - "biolink:has_phenotype"
       object_categories:
-      - "biolink:PhenotypicFeature"
+        - "biolink:PhenotypicFeature"
       qualifiers:
         - property: "biolink:onset_qualifier"
           value_id_prefixes:
@@ -156,17 +156,19 @@ target_info:
       knowledge_level:
       - knowledge_assertion
       agent_type:
+      - text_mining_agent
       - manual_agent
+      - manual_validation_of_automated_agent
       primary_knowledge_sources:
         - infores:hpo-annotations
       edge_properties:
         - "biolink:negated"
+        - "biolink:publications"
+        - "biolink:has_evidence_of_type"
         - "biolink:has_count"
         - "biolink:has_total"
         - "biolink:has_percentage"
         - "biolink:has_quotient"
-        - "biolink:publications"
-        - "biolink:has_evidence"
       ui_explanation: >-
         Source HPOA data provide Disease-Phenotype associations that are produced by
         HPO curators through manual review of clinical data and published evidence.
