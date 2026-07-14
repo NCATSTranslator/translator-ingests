@@ -70,6 +70,11 @@ ingest_info:
         - MESH:C000719328 (smoker's inclusion bodies): Pubtator classifies as Disease. But Nodenorm is correct that it's a CellularComponent (see [wiki paragraph 3](https://en.wikipedia.org/wiki/Inclusion_bodies))
 
   future_considerations:
+    - category: edge_content
+      consideration: "Review a few MESH (chem/disease) and OMIM (disease) IDs that are NodeNormed to NCBIGene (see normalization-metadata.json). These are likely contributing to the unexpected/undesired MetaEdge in output (see KGX summary file, 'rollup summary' tab)."
+    - category: edge_property_content
+      consideration: "Explore feasibility of adding source_record_urls. Previously found a way to generate 'triple + specific publication' urls (for row/record level). Couldn't figure out a way to generate the higher-level triple url (working format seems to involve entity labels which aren't in file)."
+      relevant_files: relation2pubtator3.gz
     - category: other
       consideration: "NodeNorm could add the variant rs# (dbSNP) namespace. Then some of the variant data would have IDs that can be NodeNormed and we could ingest it."
       relevant_files: relation2pubtator3.gz
@@ -82,6 +87,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
+  ## NO source_record_urls: see future_considerations above for info
   edge_type_info:
     ## 1 per biolink predicate
     - subject_categories:
