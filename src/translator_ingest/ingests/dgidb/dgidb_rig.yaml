@@ -62,6 +62,7 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
+  ## NO source_record_urls: interaction page urls seem to use hash ids that we don't have
   edge_type_info:
     ## PLAIN INTERACTS_WITH EDGES
     - subject_categories:
