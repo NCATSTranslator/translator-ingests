@@ -26,6 +26,7 @@ source_info:
   data_formats:
     - other
   data_versioning_and_releases: "New release ~ every 2 years. Versioning is a little complicated. Some files have a header section that includes a semantic version number and date (these dates can differ a lot). Others don't."
+  source_status: maintained_as_needed_updates
   # additional_notes:  # (optional, range = string)
 
 # Information about Ingested Content
