@@ -49,15 +49,22 @@ ingest_info:
   ingest_categories:
   - primary_knowledge_provider
   utility: >-
-    The HPO and associated annotations are a flagship product of the Monarch Initiative 
-    (https://monarchinitiative.org/), an NIH-supported international consortium dedicated
-    to semantic integration of biomedical and model organism data with the ultimate goal
-    of improving biomedical research. The human phenotype/disease/gene knowledge integration
-    aligns well with the general mission of the Biomedical Data Translator.  As a consequence,
-    several members of the Monarch Initiative are direct participants in the Biomedical Data Translator,
-    with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs.
+    The Human Phenotype Ontology was initially developed at the Charité University Hospital
+    in Berlin, Germany by Peter N Robinson and Sebastian Köhler with support from
+    Sandra Doelken and Sebastian Bauer. Very soon after the initial publication of the HPO in 2008,
+    a collaboration was initiated with researchers from the Lawrence Berkeley National Laboratory
+    (Chris Mungall, Suzi Lewis, and Nicole Washington), the University of Cambridge
+    (Michael Ashburner Paul Schofield, George Gkoutos), and the University of Oregon
+    (Melissa Haendel, Monte Westerfield). These groups have developed a scheme for
+    Linking human diseases to animal models using ontology-based phenotype annotation.
+    In parallel, the DECIPHER project at the Wellcome Trust Sanger Institute led by
+    Helen Firth and Matt Hurles, conducted clinical workshops to extend the HPO
+    and have provided an enormous amount of support and input in subsequent years.
+    Knowledge asserted by HPO phenotype/disease/gene annotation aligns well with research
+    questions for target users of the Biomedical Data Translator.
   scope:
-    Covers curated Disease, Phenotype and Genes relationships annotated with Human Phenotype Ontology terms.
+    Covers curated Disease, Phenotype and Genes relationships annotated with
+    Human Phenotype Ontology terms.
   relevant_files:
   - file_name: phenotype.hpoa
     location: https://hpo.jax.org/data/annotations
@@ -105,8 +112,9 @@ ingest_info:
         contributes_to, or is associated with D1, and D1 is associated with a Phenotype P1.
         This logic holds for Mendelian disease where a single gene is causal and thus
         responsible for all associated phenotypes. It does not necessarily hold for 
-        Polygenic or Unknown diseases where the gene may be one of many contributing factors,
-        and thus does not necessarily contribute to or have an association with each phenotype of the disease.
+        Polygenic or Unknown diseases where the gene may be one of many contributing
+        factors, and thus does not necessarily contribute to or have an association
+        with each phenotype of the disease.
   future_considerations:
   - category: edge_content
     consideration: >-
@@ -124,8 +132,6 @@ ingest_info:
       Mendelian diseases where the Gene is individually causal for the disease
       and all of its phenotypes.
     relevant_files: genes_to_phenotype.txt
-  additional_notes:
-    - null
 target_info:
   infores_id: "infores:translator-hpo-annotations"
   edge_type_info:
