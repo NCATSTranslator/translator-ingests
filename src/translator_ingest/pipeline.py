@@ -36,7 +36,11 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
-from translator_ingest.util.download_utils import record_download_metadata, substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import (
+    get_recorded_download_date,
+    record_download_metadata,
+    substitute_version_in_download_yaml,
+)
 
 logger = get_logger(__name__)
 
@@ -618,6 +622,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
+    # Carry the recorded download timestamp (either new or from a previous download) into the
+    # pipeline metadata so it surfaces in the build and release metadata outputs.
+    pipeline_metadata.source_download_date = get_recorded_download_date(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # Transform version is auto-computed as a content hash of the ingest's source files

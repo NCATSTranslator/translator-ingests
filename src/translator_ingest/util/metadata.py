@@ -18,6 +18,8 @@ class PipelineMetadata:
     source: str
     # source_version: version of the source data itself, as determined by a get_latest_version() function
     source_version: str | None = None
+    # source_download_date: the timestamp (ISO 8601) the source data was actually fetched
+    source_download_date: str | None = None
     # transform_version: version of the translator-ingests ingest code used to generate KGX files from the source data
     transform_version: str | None = None
     # The following are normalization versions (babel_version, node_normalizer_version, normalization_code_version)
@@ -40,12 +42,12 @@ class PipelineMetadata:
     # build_version: a composite version representing all the dependencies which should be considered when determining
     # whether the pipeline needs to be run, or if an ingest was already fully completed
     build_version: str | None = None
-    # build_date: the date (ISO 8601, YYYY-MM-DD) the build was generated
+    # build_date: the timestamp (ISO 8601) the build was generated
     build_date: str | None = None
     # release_version: a version assigned to a completed ingest when it is released
     # (moved to the releases directory, compressed, and distribution metadata generated)
     release_version: str | None = None
-    # release_date: the date (ISO 8601, YYYY-MM-DD) the release was made
+    # release_date: the timestamp (ISO 8601) the release was made
     release_date: str | None = None
     # data: a URL pointing to the pipeline stage artifacts used to process an entire ingest
     data: str | None = None

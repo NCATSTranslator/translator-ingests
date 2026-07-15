@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from kghub_downloader.model import DownloadReport
 
 from translator_ingest.util.download_utils import (
+    get_recorded_download_date,
     record_download_metadata,
     substitute_version_in_download_yaml,
 )
@@ -191,6 +192,30 @@ def test_record_download_metadata_none_report_writes_nothing(source_data_dir):
     record_download_metadata(pipeline_metadata, None)
 
     assert not metadata_path.exists()
+
+
+def test_get_recorded_download_date_reads_back_recorded_timestamp(source_data_dir):
+    """get_recorded_download_date returns the downloaded_at that record_download_metadata persisted."""
+    pipeline_metadata, data_dir, metadata_path = source_data_dir
+    report = DownloadReport(downloaded=[data_dir / "fetched.tsv"])
+    record_download_metadata(pipeline_metadata, report)
+    recorded = json.loads(metadata_path.read_text())["downloaded_at"]
+    assert get_recorded_download_date(pipeline_metadata) == recorded
+
+
+def test_get_recorded_download_date_none_when_no_metadata(source_data_dir):
+    """With no source-metadata.json (e.g. a source without a download.yaml), the date is None."""
+    pipeline_metadata, _data_dir, _metadata_path = source_data_dir
+    assert get_recorded_download_date(pipeline_metadata) is None
+
+
+def test_source_download_date_surfaces_in_release_metadata():
+    """The source_download_date field flows into the build/release metadata output."""
+    pipeline_metadata = PipelineMetadata(
+        source="test_source", source_version="v1", source_download_date="2024-01-15T00:00:00Z"
+    )
+    release_metadata = pipeline_metadata.get_release_metadata()
+    assert release_metadata["source_download_date"] == "2024-01-15T00:00:00Z"
 
 
 def _fake_download(download_yaml_file: Path):
