@@ -172,7 +172,7 @@ def test_record_download_metadata_preserves_on_cache_hit(source_data_dir):
     existing = {
         "source": "test_source",
         "source_version": "v1",
-        "downloaded_at": "2024-01-15T00:00:00",
+        "downloaded_at": "2024-01-15T00:00:00Z",
         "downloaded": ["fetched.tsv"],
         "skipped": [],
     }

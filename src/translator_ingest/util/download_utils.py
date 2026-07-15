@@ -2,14 +2,13 @@
 
 import tempfile
 import yaml
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
 
 from kghub_downloader.model import DownloadReport
 
 from translator_ingest.util.logging_utils import get_logger
-from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.metadata import PipelineMetadata, current_iso_date
 from translator_ingest.util.storage.local import (
     IngestFileType,
     get_versioned_file_paths,
@@ -45,7 +44,7 @@ def record_download_metadata(
     metadata: dict[str, Any] = {
         "source": pipeline_metadata.source,
         "source_version": pipeline_metadata.source_version,
-        "downloaded_at": datetime.now().isoformat(),
+        "downloaded_at": current_iso_date(),
         "downloaded": [path.name for path in report.downloaded],
         "skipped": [path.name for path in report.skipped],
     }
