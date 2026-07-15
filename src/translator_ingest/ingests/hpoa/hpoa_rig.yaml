@@ -196,7 +196,8 @@ target_info:
         - property: "biolink:subject_form_or_variant_qualifier"
           value_range:
           - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
-          value_description: "Specifically, the 'genetic_variant_form' enum value is used in all cases"
+          value_description: >-
+            Specifically, the 'genetic_variant_form' enum value is used in all cases of this ingest.
       knowledge_level:
       - knowledge_assertion
       agent_type:
