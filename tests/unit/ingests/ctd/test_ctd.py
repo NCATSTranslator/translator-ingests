@@ -233,6 +233,76 @@ def test_exposure_events_with_phenotype(exposure_events_with_phenotype_output):
 
 
 @pytest.fixture
+def exposure_events_disease_and_phenotype_output():
+    """A single exposure record can report both a disease outcome and a phenotype outcome."""
+    writer = MockKozaWriter()
+    record = {
+        "exposurestressorid": "D000082",
+        "exposurestressorname": "Acetaminophen",
+        "outcomerelationship": "positive correlation",
+        "diseaseid": "D006505",
+        "diseasename": "Hepatitis",
+        "phenotypeid": "GO:0006915",
+        "phenotypename": "apoptotic process",
+        "reference": "12345678",
+    }
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_exposure_events])
+    )
+    runner.run()
+    return writer.items
+
+
+def test_exposure_events_disease_and_phenotype(exposure_events_disease_and_phenotype_output):
+    # one record -> two edges (chemical->disease and chemical->phenotype), sharing predicate and publication
+    entities = exposure_events_disease_and_phenotype_output
+    associations = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)]
+    assert len(associations) == 2
+    assert {a.object for a in associations} == {"MESH:D006505", "GO:0006915"}
+    for association in associations:
+        assert association.predicate == BIOLINK_POSITIVELY_CORRELATED
+        assert association.subject == "MESH:D000082"
+        assert "PMID:12345678" in association.publications
+
+    assert [e.id for e in entities if isinstance(e, Disease)] == ["MESH:D006505"]
+    assert [e.id for e in entities if isinstance(e, PhenotypicFeature)] == ["GO:0006915"]
+
+
+@pytest.fixture
+def exposure_events_omim_disease_output():
+    """CTD supplies bare disease ids - numeric ones are OMIM, not MeSH."""
+    writer = MockKozaWriter()
+    record = {
+        "exposurestressorid": "D000082",
+        "exposurestressorname": "Acetaminophen",
+        "outcomerelationship": "negative correlation",
+        "diseaseid": "104300",
+        "diseasename": "Alzheimer Disease",
+        "phenotypeid": "",
+        "phenotypename": "",
+        "reference": "12345678",
+    }
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_exposure_events])
+    )
+    runner.run()
+    return writer.items
+
+
+def test_exposure_events_omim_disease(exposure_events_omim_disease_output):
+    entities = exposure_events_omim_disease_output
+    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
+    assert association.object == "OMIM:104300"
+
+    disease = [e for e in entities if isinstance(e, Disease)][0]
+    assert disease.id == "OMIM:104300"
+
+
+@pytest.fixture
 def exposure_events_no_output():
     """Test that records with unsupported outcome relationships return None."""
     writer = MockKozaWriter()
@@ -630,11 +700,12 @@ def test_chem_go_enriched(chem_go_output):
 
 @pytest.fixture
 def chem_go_output_weak_p_value():
-    chem_go_record_weak_p_value = chem_go_record.copy()
-    chem_go_record_weak_p_value["PValue"] = "0.001"
+    record = chem_go_record.copy()
+    # the transform filters on CorrectedPValue, not PValue
+    record["CorrectedPValue"] = "0.001"
     writer = MockKozaWriter()
     runner = KozaRunner(
-        data=[],
+        data=[record],
         writer=writer,
         hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
     )
@@ -648,11 +719,11 @@ def test_chem_go_weak_p_value(chem_go_output_weak_p_value):
 
 @pytest.fixture
 def chem_go_output_low_go_level():
-    chem_go_record_weak_p_value = chem_go_record.copy()
-    chem_go_record_weak_p_value["HighestGOLevel"] = "2"
+    record = chem_go_record.copy()
+    record["HighestGOLevel"] = "2"
     writer = MockKozaWriter()
     runner = KozaRunner(
-        data=[],
+        data=[record],
         writer=writer,
         hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
     )
