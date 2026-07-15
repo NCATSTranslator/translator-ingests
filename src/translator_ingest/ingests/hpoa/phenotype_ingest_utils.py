@@ -172,11 +172,14 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
                     # assume a ratio
                     ratio_parts = frequency_field.split("/")
                     assert (
-                        len(ratio_parts) == 2
+                        len(ratio_parts) == 2 and
+                        ratio_parts[0].isdigit() and
+                        ratio_parts[1] is not None and
+                        ratio_parts[1].isdigit()
                     ), f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
-                    has_count = int(ratio_parts[0])
-                    has_total = int(ratio_parts[1])
-                    quotient = round(float(has_count / has_total), 2)
+                    has_count: int = int(ratio_parts[0])
+                    has_total: int = int(ratio_parts[1])
+                    quotient: float = round(float(has_count / has_total), 2)
                     percentage = round(quotient * 100.0, 1)
 
                 # This should map onto a non-null HPO term
