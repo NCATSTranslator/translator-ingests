@@ -167,7 +167,7 @@ def test_disease_to_phenotype_node_transform(
                 "biocuration": "HPO:skoehler[2012-11-16]",
             },
             # This is not a 'P' record, so it should be skipped
-            None,
+            None
         ),
         (  # Query 1 - An 'aspect' == 'P' record processed
             {
@@ -176,7 +176,7 @@ def test_disease_to_phenotype_node_transform(
                 "qualifier": "",
                 "hpo_id": "HP:0001249",
                 "reference": "OMIM:117650",
-                "evidence": "TAS",
+                "evidence": "IEA",
                 "onset": "",
                 "frequency": "50%",
                 "sex": "",
@@ -194,7 +194,7 @@ def test_disease_to_phenotype_node_transform(
                 # Although "OMIM:117650" is recorded above as
                 # a reference, it is not used as a publication
                 "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0000501"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": 50.0,
@@ -207,7 +207,7 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
+                "agent_type": AgentTypeEnum.text_mining_agent,
             },
         ),
         (  # Query 2 - Another 'aspect' == 'P' record processed
@@ -219,7 +219,7 @@ def test_disease_to_phenotype_node_transform(
                 "qualifier": "NOT",
                 "hpo_id": "HP:0001545",
                 "reference": "OMIM:117650",
-                "evidence": "TAS",
+                "evidence": "PCS",
                 "onset": "",
                 "frequency": "HP:0040283",
                 "sex": "",
@@ -234,7 +234,7 @@ def test_disease_to_phenotype_node_transform(
                 "negated": True,
                 "object": "HP:0001545",
                 "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0006017"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": None,
@@ -283,7 +283,7 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             },
         )
     ],
