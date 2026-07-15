@@ -21,6 +21,7 @@ source_info:
       SQL and graph database dumps, and branding materials, are provided under the Apache License 2.0, a permissive open-source license that allows reuse and modification with
       standard notice requirements. IntAct collects minimal personal data (author names and corresponding emails) solely for data traceability, and its curation activities
       follow EBI’s long-term data preservation policies. The licensing policy is described here: https://www.ebi.ac.uk/intact/about#license_privacy
+    source_status: maintained_regular_updates 
     data_access_locations:
       - IntAct main site: https://www.ebi.ac.uk/intact/
       - IntAct Download / FTP or bulk access: https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
@@ -55,13 +56,13 @@ ingest_info:
     scope: >-
       IntAct ingest focuses on experimentally determined
       molecular interactions where at least one participant can be
-      normalized to a Biolink-compatible protein or small molecule
-      identifier, with an emphasis on human protein–protein interactions.
-      All interaction records with valid PSI-MI interaction types and
-      detection methods are considered within scope. The ingest is
-      designed to preserve interaction evidence metadata (detection method,
-      interaction type, source database, publications) while providing a
-      Biolink-compliant edge representation.
+      normalized to a Biolink-compatible protein identifier, with an 
+      emphasis on human protein–protein interactions. All interaction 
+      records with valid PSI-MI interaction types and detection methods 
+      are considered within scope. The ingest is designed to preserve 
+      interaction evidence metadata (detection method, interaction type, 
+      source database, publications) while providing a Biolink-compliant 
+      edge representation.
     relevant_files:
       - file_name: intact.zip
         location:  https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/
@@ -82,7 +83,7 @@ ingest_info:
           aliasesA, aliasesB (for extracting gene names), taxidA, taxidB (organism filtering),
           interactionTypes (for predicate mapping), publicationIDs (for evidence),
           confidenceScores (for edge properties), interactionDetectionMethod (for edge properties)
-    filtered_content:
+    excluded_content:
       - file_name: intact.txt
         filtered_records: >-
           All non-human interactions are excluded. A record is removed if either interactor lacks "taxid:9606".
@@ -128,7 +129,6 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-    infores_id: infores:intact
     edge_type_info:
       - subject_categories:
           - biolink:Protein
@@ -148,12 +148,20 @@ target_info:
           - infores:uniprot
           - infores:hpidb
           - infores:mint
-          - infores:ebi
-          - infores:dip     # TO DO: not sure this list is complete - if not, complete it (may need to get some into the infores catalog) 
+          - infores:dip
+          - infores:intact     # self-source; since it is added here, its left out of the aggregator_knowledge_sources
+          - infores:flybase
+          - infores:matrixdb
+          - infores:innatedb
+          - infores:mbinfo
+          - infores:i2d
+          - infores:bhf-ucl    # There are 3 more (mpidb, molecular_connections, and ntnu) that needs to be added here that are not in the infores_registry. Have raised a PR, will add once added to registry. https://github.com/biolink/information-resource-registry/pull/120
+        aggregator_knowledge_sources: 
+          - infores:imex       # The IMEx Consortium is the governance/aggregation umbrella above IntAct; IntAct is the primary IMEx host.
         edge_properties:
           - biolink:publications                            # a list of pubs used across all merged records
         ui_explanation: >-
-          Source Intact data aggregates protein-protein interaction statements of different types (e.g. 'physical association, 'direct interaction’, ‘glycosylation reaction’) from external manually curated knowledgebases. An automated algorithm assigns a 'Confidence Value' ('intact-miscore') to each unique protein-protein pair across aggregated records. In performing this aggregation and 'meta-assessment', Intact makes its own implicit claims about each interaction, which are captured in Translator edges. The Intact record(s) used to create this particular edge have an 'interaction_type' that asserts or implies a physical interaction between the two proteins (‘association’, ‘physical association’, ‘putative self interaction’, ‘self interaction’, `direct interaction`). This relationship is represented using the Biolink 'physically interacts with' predicate - which covers direct and indirect physical interactions" Each edge in the UI represents a merged set of IntAct experiment records describing the same molecular interaction. The edge displays a list of supporting publications. All data sources contributing to the merged edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to the edge.
+          Source Intact data aggregates protein-protein interaction statements of different types (e.g. 'physical association', 'direct interaction', 'self interaction') from external manually curated knowledgebases. An automated algorithm assigns a 'Confidence Value' ('intact-miscore') to each unique protein-protein pair across aggregated records. In performing this aggregation and 'meta-assessment', Intact makes its own implicit claims about each interaction, which are captured in Translator edges. The Intact record(s) used to create this particular edge have an 'interaction_type' that asserts or implies a physical interaction between the two proteins ('association', 'physical association', 'putative self interaction', 'self interaction', `direct interaction`). This relationship is represented using the Biolink 'physically interacts with' predicate - which covers direct and indirect physical interactions" Each edge in the UI represents a merged set of IntAct experiment records describing the same molecular interaction. The edge displays a list of supporting publications. All data sources contributing to the merged edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to the edge.
         additional_notes: >-
           IntAct records report the results/conclusion of a single study or experiment as curated from  a publication. There may be many records that describe the same set of interactors and interaction type - which we merge to create a single Biolink edge. It is at this level that IntAct appears to assign their confidence score, so this is applied to each such edge. Supporting publications and methods used across the set of merged experiment-level records are collapsed into a list and attached to these edges. Similarly, all sources of records that get merged into this edge are reported as "supporting data sources" in the biolink:RetrievalSource object attached to this edge.
         source_files:
@@ -169,10 +177,7 @@ target_info:
         additional_notes: >-
           Gene nodes are created when the primary or alternative identifiers include Ensembl, NCBIGene (Entrez), or RefSeq entries,
           but no UniProtKB identifier is found.
-      - node_category: biolink:SmallMolecule
-        source_identifier_types: chebi
-        additional_notes: >-
-          Small molecule nodes are created when the primary or alternative identifiers include CHEBI entries.
+
 # Information about the how the ingest was specified and performed
 provenance_info:
     contributions:
