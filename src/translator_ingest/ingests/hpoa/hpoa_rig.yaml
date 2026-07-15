@@ -244,35 +244,55 @@ target_info:
             - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
           value_description: >-
             Specifically, the 'genetic_variant_form' enum value is used in all cases of this ingest.
-        - property: "biolink:frequency_qualifier"
-          value_id_prefixes:
-            - "HP"
-          value_description: "A term from the 'Frequency' (HP:0040279) branch of the Human Phenotype Ontology"
         - property: "biolink:disease_context_qualifier"
           value_id_prefixes:
             - "MONDO"
           value_description: "A term from the 'Disease' (MONDO:0000001) branch of the MONDO Ontology"
+        - property: "biolink:frequency_qualifier"
+          value_id_prefixes:
+            - "HP"
+          value_description: >-
+            A term from the 'Frequency' (HP:0040279) branch of the Human Phenotype Ontology,
+            inferred from the 'frequency' field of the HPOA record used to create this edge.
       knowledge_level:
       - logical_entailment
       agent_type:
-      - automated_agent
+        # Inferred from 'evidence' code inherited from the HPOA phenotype.hpoa file
+        # see https://obophenotype.github.io/human-phenotype-ontology/annotations/creation/
+        - text_mining_agent
+        - manual_agent
+        - manual_validation_of_automated_agent
       primary_knowledge_sources:
         - infores:hpo-annotations        
-      edge_properties: null
+      edge_properties:
+        - "biolink:publications"
+        - "biolink:has_evidence_of_type"
+        - "biolink:has_count"
+        - "biolink:has_total"
+        - "biolink:has_percentage"
+        - "biolink:has_quotient"
       ui_explanation: >-
-        A left outer join of HPOA phenotype and gene-to-disease data provides for the assignment of
-        Gene-Phenotype associations that are manifested in a Disease associated with a particular Gene.
+        A left outer join of HPOA phenotype, gene-to-disease and gene-to-phenotype data
+        provides for the assignment of Gene-Phenotype associations that are manifested
+        in a Disease associated with a particular Gene.
+        
         The record used to create this edge specifically reports a Gene-Phenotype association
         where the Gene has variants causal for a Mendelian disorder in which the Phenotype
         is manifested - from which it is logically entailed that variants in the Gene are
         also causal for the Phenotype (as such disorders have a single causal gene).
+        
         Given the uncertainties of directly mapping genes onto phenotypic features for either
         polygenic or diseases of unknown genetic etiology, this edge type is only generated for
         Mendelian disorders. The Mendelian causality of the relationship is therefore represented
-        using the Biolink 'causes' predicate. Use of the qualifier 'genetic_variant_form'
-        indicates that it is a variant of the gene that is causing the Phenotype
-        (not necessarily other variants, including wild type variants of the Gene)."
+        using the Biolink 'causes' predicate.
+        
+        Use of the qualifier 'genetic_variant_form' indicates that it is a variant of the gene that is
+        causing the Phenotype (not necessarily other variants, including wild type variants of the Gene).
+        
+        Agent type of the relationship is inherited from the HPOA phenotype.hpoa file.
       source_files:
+        - phenotype.hpoa
+        - genes_to_disease.txt
         - genes_to_phenotype.txt
   node_type_info:
   - node_category: "biolink:Disease"
