@@ -1,7 +1,7 @@
-name: "ICEES (Integrated Clinical and Environmental Exposures Service)"
+name: "ICEES Reference Ingest Guide"
 source_info:
   infores_id: infores:icees-kg
-  name: Integrated Clinical and Environmental Exposures Service (ICEES) KGX dataset
+  name: Integrated Clinical and Environmental Exposures Service (ICEES)
   description: ICEES KG is the KG version of the Integrated Clinical and Environmental
     Exposures Service (ICEES), which provides regulatory-compliant open access to
     clinical data (e.g., electronic health records, survey data, clinical research
@@ -41,7 +41,6 @@ ingest_info:
     included_records: all
     fields_used: id, subject, predicate, object, primary_knowledge_source, attributes
 target_info:
-  infores_id: infores:icees-kg
   edge_type_info:
   - subject_categories:
     - biolink:Disease
