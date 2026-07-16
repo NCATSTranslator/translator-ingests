@@ -74,7 +74,7 @@ ingest_info:
     included_records: "All records for the specified taxon."
     fields_used: "Gene, Ortholog, Type of ortholog, Panther Ortholog ID"
   filtered_content:
-  - file_name: "RefGenomeOrthologs.tar.gz, PTHR<Panther-version>_<taxon_name>"
+  - file_name: "RefGenomeOrthologs.tar.gz"
     filtered_records: >-
       All records with Gene and Ortholog pairwise annotated with taxon name as 'HUMAN', 'MOUSE' or 'RAT' specific.
     rationale: >-
@@ -116,7 +116,7 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     primary_knowledge_sources:
-    - infores:panther
+    - "infores:panther"
     edge_properties:
     - has_evidence
     ui_explanation: >-
@@ -124,7 +124,7 @@ target_info:
       that rely only on sequence similarity, evolutionary tree topology, and evolutionary event labeling.
       Curators will manually review the data underlying orthology calls to improve accuracy.
     source_files:
-    - RefGenomeOrthologs.tar.gz
+    - "RefGenomeOrthologs.tar.gz"
   - subject_categories:
     - "biolink:Gene"
     predicates:
@@ -136,14 +136,14 @@ target_info:
     agent_type:
     - automated_agent
     primary_knowledge_sources:
-      - infores:panther
+      - "infores:panther"
     ui_explanation: >-
       Gene membership in Panther orthology family.  Panther defines protein families using a
       statistical Hidden Markov Model (HMM) that represents its sequence signature.
       Individual protein sequences are compared to and scored against these signatures,
       with those passing a membership threshold being assigned to a family.
     source_files:
-    - RefGenomeOrthologs.tar.gz
+    - "RefGenomeOrthologs.tar.gz"
   node_type_info:
   - node_category: "biolink:Gene"
     source_identifier_types:
