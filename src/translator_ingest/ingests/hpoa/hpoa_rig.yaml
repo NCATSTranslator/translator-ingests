@@ -210,7 +210,6 @@ target_info:
       - manual_agent
       primary_knowledge_sources:
         - infores:hpo-annotations      
-      edge_properties: null
       ui_explanation: >-
         Source HPOA data provide Gene-Disease associations that are manually curated from
         sources like Orphanet and MIM2Gene and DECIPHER by HPO. The record used to create
