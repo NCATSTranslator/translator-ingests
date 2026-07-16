@@ -181,8 +181,6 @@ target_info:
         as well as, the 'negated' property to indicate that the Phenotype is not observed.
       source_files:
         - phenotype.hpoa
-      additional_notes:
-        - null
     - subject_categories:
       - "biolink:Gene"
       predicates:
