@@ -32,6 +32,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther Gene family cellular location of expression"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Gene Family--actively involved in->Biological Process
   - subject_categories:
     - "biolink:GeneFamily"
@@ -44,6 +48,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther Gene Family involvement in a biological process"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Gene Family--catalyzes->Molecular Activity
   - subject_categories:
     - "biolink:GeneFamily"
@@ -56,11 +64,15 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther Gene Family catalysis of a molecular activity"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Gene Family--actively involved in->Pathway
   - subject_categories:
     - "biolink:GeneFamily"
     predicates:
-      - "biolink:actively_involved_in"
+    - "biolink:actively_involved_in"
     object_categories:
     - "biolink:Pathway"
     knowledge_level:
@@ -68,6 +80,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther active involvement of a Gene Family in a pathway"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Pathway--has participant->Gene Family
   - subject_categories:
     - "biolink:Pathway"
@@ -80,6 +96,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther participation of a Gene Family in a pathway"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Pathway--subclass of->Biological Process
   - subject_categories:
     - "biolink:Pathway"
@@ -92,6 +112,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther pathway as a subclass of a biological process"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Pathway--subclass of->Pathway
   - subject_categories:
     - "biolink:Pathway"
@@ -104,6 +128,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther pathway as a subclass of another pathway"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Molecular Activity--subclass of->Molecular Activity
   - subject_categories:
     - "biolink:MolecularActivity"
@@ -116,6 +144,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther molecular activity as a subclass of another molecular activity"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Biological Process--subclass of->Biological Process
   - subject_categories:
     - "biolink:BiologicalProcess"
@@ -128,6 +160,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther biological process as a subclass of another biological process"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Cellular Component--subclass of->Cellular Component
   - subject_categories:
     - "biolink:CellularComponent"
@@ -140,6 +176,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther cellular component as a subclass of another cellular component"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Cellular Component--subclass of->Anatomical Entity
   - subject_categories:
     - "biolink:CellularComponent"
@@ -152,6 +192,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther cellular component as a subclass of anatomical entity"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Cellular Component--subclass of->Gross Anatomical Structure
   - subject_categories:
     - "biolink:CellularComponent"
@@ -164,6 +208,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther cellular component as a subclass of gross anatomical structure"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Anatomical Entity--subclass of->Cellular Component
   - subject_categories:
     - "biolink:AnatomicalEntity"
@@ -176,6 +224,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther anatomical entity as a subclass of cellular component"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
   #automat-panther: Gross Anatomical Structure--subclass of->Cellular Component
   - subject_categories:
     - "biolink:GrossAnatomicalStructure"
@@ -188,6 +240,10 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     ui_explanation: "Panther gross anatomical structure as a subclass of cellular component"
+    primary_knowledge_sources:
+      - "infores:panther"
+    source_files:
+      - "PTHR<release>_<taxon_name>"
 node_type_info:
   - node_category: "biolink:Pathway"
     source_identifier_types:
