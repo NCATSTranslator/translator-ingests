@@ -23,22 +23,6 @@ source_info:
     - https://doi.org/10.1002/pro.4218
   terms_of_use_info:
     terms_of_use_url: "http://www.pantherdb.org/tou.jsp"
-    license_info: >-
-      The PANTHER Hidden Markov Models (including names, descriptions and abstracts) that
-      are distributed with the InterproScan software package may be copied and redistributed
-      freely in accordance with the Interpro Copyright agreement.
-      
-      PANTHER data and data products: CC Attribution 4.0 International License.
-      
-      PANTHER software and tools: under their own licenses as specified in the software.
-      
-      Intellectual Property Rights: Except for the limited nonexclusive right granted 
-      to access and use certain software, data, information and downloads as expressly
-      provided herein, Paul Thomas retains all right, title and interest in and to all software,
-      data, information and downloads made available herein, and any intellectual property rights
-      therein or thereto. Except as expressly provided herein, no right, license, immunity,
-      or other defense shall be implied by or inferred from this Agreement or the activities
-      of the parties in connection herewith.
     license_url: "https://creativecommons.org/licenses/by/4.0/legalcode, https://interpro-documentation.readthedocs.io/en/latest/interproscan.html"
   data_access_locations:
     - "http://data.pantherdb.org/ftp/"
