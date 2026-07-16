@@ -1,13 +1,23 @@
-name: Panther Gene Orthology and Annotation RIG
+name: Panther Gene Orthology Reference Ingest Guide
 source_info:
   infores_id: infores:panther
-  name: "Panther Gene to Gene Orthology Relationships"
+  name: Panther Gene to Gene Orthology Relationships
   description: >-
-    The PANTHER (Protein ANalysis THrough Evolutionary Relationships) Classification System 
-    was designed to classify proteins (and their genes) in order to facilitate
-    high-throughput analysis. The core of PANTHER is a comprehensive, annotated
-    library of gene family phylogenetic trees. All nodes in the tree have persistent
-    identifiers that are maintained between versions of PANTHER, providing a
+    PANTHER (Protein ANalysis THrough Evolutionary Relationships) is developed and maintained
+    by researchers at the University of Southern California in collaboration with
+    the Gene Ontology Consortium and other partners. The core of PANTHER is a comprehensive,
+    annotated library of gene family phylogenetic trees providing protein family and
+    subfamily classifications, ortholog relationships, Gene Ontology annotations,
+    biological pathways, protein class assignments, and evolutionary histories for genes
+    across numerous species.  The goal of Panther is to facilitate high-throughput analysis
+    for comparative genomics, functional classification, evolutionary analysis,
+    gene set enrichment, and interpretation of high-throughput genomic experiments.
+    Knowledge is generated through computational phylogenetic analyses that classify
+    proteins into evolutionary families, inference of orthology and gene function
+    from evolutionary relationships, integration of Gene Ontology annotations and
+    other external biological resources, and expert manual curation of selected
+    protein families, evolutionary events, and biological pathways. All nodes in the tree
+    have persistent identifiers that are maintained between versions of PANTHER, providing a
     stable substrate for annotations of protein properties like subfamily and function.
   citations:
     - https://doi.org/10.1002/pro.4218
@@ -78,7 +88,6 @@ ingest_info:
     consideration: >-
       Family node properties we might capture: HMM length, member count, others?
 target_info:
-  infores_id: infores:translator-panther-kgx
   edge_type_info:
   - subject_categories:
     - "biolink:Gene"
