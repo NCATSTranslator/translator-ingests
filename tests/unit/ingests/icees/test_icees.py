@@ -348,7 +348,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -405,7 +405,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -460,7 +460,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -526,7 +526,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -572,7 +572,7 @@ EDGE_FIXTURES = [
             "predicate": "biolink:positively_correlated_with",
             "object": "MONDO:0007079",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            "agent_type": AgentTypeEnum.not_provided,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": _ICEES_SOURCES,
         },
     },
@@ -584,7 +584,7 @@ EDGE_FIXTURES = [
             "predicate": "biolink:positively_correlated_with",
             "object": "MONDO:0007079",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            "agent_type": AgentTypeEnum.not_provided,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": _ICEES_SOURCES,
         },
     },

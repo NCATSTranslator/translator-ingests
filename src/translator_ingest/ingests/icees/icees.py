@@ -137,7 +137,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         has_supporting_studies=supporting_studies,
         sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.not_provided,
+        agent_type=AgentTypeEnum.data_analysis_pipeline,
         **icees_qualifiers
     )
 

@@ -96,7 +96,7 @@ target_info:
     knowledge_level:
       - knowledge_assertion
     agent_type:
-      - not_provided
+      - data_analysis_pipeline  # aggregating clinical data and environmental exposures
     edge_properties:
     - biolink:equivalent_identifiers   # biolink:same_as
     primary_knowledge_sources:
