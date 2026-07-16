@@ -314,7 +314,7 @@ target_info:
         Should we consider creating support paths in our data/graphs, 
         for the G-D-P hops over which HPO infers G-P associations?
         (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)
-  additional_notes: >-
+  additional_notes:
     - >
       The HPOA ingest of the Disease.node_properties.inheritance value is currently thought to be mildly
       unreliable due to the way node property merging is (not) currently implemented in the ingest. This is a
