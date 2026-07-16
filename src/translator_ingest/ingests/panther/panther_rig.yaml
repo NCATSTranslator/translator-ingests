@@ -89,15 +89,20 @@ ingest_info:
       mice or rats, in particular, studied responses in pharmacology, metabolism, and the immune system.
   future_considerations:
   - category: other
-    consideration: "Additional model species may be included in the future."
-  - category: edge_property_content  # conformance: was 'edge_property'
+    consideration: Additional model species may be included in the future.
+  - category: edge_property_content
     consideration: >-
       Are there any useful edge properties / EPC metrics that could be collected
       on orthology edges (e.g. data items output from the sequence alignment /
       phylogenetic analysis) that could be used to score these edges?
-  - category: node_property_content  # conformance: was 'node_property'
+      Notes: this would require meta-analysis of the Panther HMM classification files
+      (at https://data.pantherdb.org/ftp/hmm_classifications/current_release) and/or sequence
+      classification files (at https://data.pantherdb.org/ftp/sequence_classifications/current_release).
+  - category: node_property_content
     consideration: >-
       Family node properties we might capture: HMM length, member count, others?
+      Note: HMM data annotation would require meta-analysis of the Panther HMM library data
+      at https://data.pantherdb.org/ftp/panther_library/current_release/
 target_info:
   edge_type_info:
   - subject_categories:
