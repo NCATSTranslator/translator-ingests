@@ -2,12 +2,11 @@ import json
 import shutil
 import tarfile
 import click
-import datetime
 import zstandard as zstd
 from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
-from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -111,10 +110,12 @@ def release_ingest(source: str):
         file_type=IngestFileType.LATEST_RELEASE_FILE,
         pipeline_metadata=PipelineMetadata(source=source)
     )
+    previous_release_version = None
     if latest_release_metadata_file_path.exists():
         with open(latest_release_metadata_file_path, 'r') as f:
             latest_release_metadata = PipelineMetadata.from_dict(json.load(f))
             latest_released_build = latest_release_metadata.build_version
+            previous_release_version = latest_release_metadata.release_version
             # if the latest release is already of the latest build, no need to do anything
             if latest_released_build == latest_build:
                 logger.info(f"Release already current for {source}.")
@@ -125,8 +126,8 @@ def release_ingest(source: str):
     graph_metadata_path = get_versioned_file_paths(IngestFileType.GRAPH_METADATA_FILE, latest_build_metadata)
     test_data_path = get_versioned_file_paths(IngestFileType.TEST_DATA_FILE, latest_build_metadata)
 
-    # Create the release
-    release_version = datetime.datetime.now().strftime("%Y_%m_%d")
+    # Create the release, bumping the version from the previous release
+    release_version = next_release_version(previous_release_version)
     release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
     release_url = f"{INGESTS_RELEASES_URL}/{source}/{release_version}/"
     create_release(source,
@@ -142,9 +143,10 @@ def release_ingest(source: str):
     atomic_copy_directory(release_dir, latest_dir)
     logger.info("Copied release to latest directory")
 
-    # Write the new latest-release-metadata
+    # Write the new latest-release-metadata, stamping the date the release was made
     latest_release_metadata = latest_build_metadata
     latest_release_metadata.release_version = release_version
+    latest_release_metadata.release_date = current_iso_date()
     latest_release_metadata.data = release_url
 
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,

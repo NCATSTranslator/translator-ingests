@@ -289,7 +289,8 @@ target_info:
       ui_explanation: "The qualifier-set is based on the DrugCentral-reported action type."
       source_files:
         - act_table_full
-      additional_notes: "See mapping.py or Causal Mechanism Mappings google sheet for details."
+      additional_notes:
+        - "See mapping.py or Causal Mechanism Mappings google sheet for details."
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
@@ -310,7 +311,8 @@ target_info:
     - node_category: Gene
       source_identifier_types:
         - UniProtKB
-      additional_notes: "NodeNorm with gene/protein conflation will map some UniProtKB IDs to Gene entities."
+      additional_notes:
+        - "NodeNorm with gene/protein conflation will map some UniProtKB IDs to Gene entities."
 
   future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
     # (optional, range = ModelingCategoryEnum: spoq_pattern | predicates | qualifiers | edge_properties | node_properties | other)
