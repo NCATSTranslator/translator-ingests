@@ -27,6 +27,18 @@ bmt = get_biolink_model_toolkit()
 def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
+@koza.on_data_begin(tag="nodes")
+def on_begin_ingest_nodes(koza: koza.KozaTransform) -> None:
+    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
+    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
+    koza.transform_metadata["node_category_counts"] = dict()
+    koza.transform_metadata["subject_category_counts"] = dict()
+    koza.transform_metadata["object_category_counts"] = dict()
+
+def increment_category_count(koza_transform: koza.KozaTransform, context: str, category: str) -> None:
+    if category not in koza_transform.transform_metadata[f"{context}_category_counts"]:
+        koza_transform.transform_metadata[f"{context}_category_counts"][category] = 0
+    koza_transform.transform_metadata[f"{context}_category_counts"][category] += 1
 
 _icees_nodes: dict[str, NamedThing] = {}
 
@@ -36,8 +48,8 @@ def transform_icees_node(
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Ingest ICEES phase 2 JSONL node entry into a Phase 3 compliant Pydantic node.
-    :param koza_transform: Koza context of ingest
+    Ingest ICEES phase 2 jsonl node entry into a Phase 3 compliant Pydantic node.
+    :param koza_transform: Koza context of the ingest task
     :param record: original Phase 2 ICEES 'node' data record
     :return: KnowledgeGraph[nodes=list[NamedThing]]
     """
@@ -54,6 +66,8 @@ def transform_icees_node(
         logger.warning(f"Pydantic class for node '{node_id}' could not be inferred from categories '{category}'")
         return None
 
+    increment_category_count(koza_transform, "node", node_class.__name__)
+
     equivalent_identifiers: Optional[list[str]] = record.get("equivalent_identifiers", None)
 
     node = node_class(
@@ -63,7 +77,7 @@ def transform_icees_node(
         **{}
     )
 
-    # Cache the node for dereferencing during edge file ingest
+    # Cache the node for dereferencing during edge file ingest task
     _icees_nodes[node_id] = node
 
     return KnowledgeGraph(nodes=[node])
@@ -72,9 +86,9 @@ def transform_icees_node(
 @koza.transform_record(tag="edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
-    Ingest ICEES phase 2 JSONL 'edge' entry into a Phase 3 compliant Pydantic node.
-    :param koza_transform: Koza context of ingest
-    :param record: original Phase 2 ICEES 'edge'' data record
+    Ingest ICEES phase 2 jsonl 'edge' entry into a Phase 3 compliant Pydantic node.
+    :param koza_transform: Koza context of the ingest task
+    :param record: original Phase 2 ICEES 'edge'  data record
     :return: KnowledgeGraph[edges=list[Association]]
     """
     global _icees_nodes
@@ -90,6 +104,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         )
         return None
     subject_categories: list[str] = subject_node.category
+    increment_category_count(koza_transform, "subject", subject_categories[0])
 
     icees_predicate: str = record["predicate"]
 
@@ -102,6 +117,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         )
         return None
     object_categories: list[str] = object_node.category
+    increment_category_count(koza_transform, "object", object_categories[0])
 
     # Specialized case of G2D Association
     if "gene or gene product" in bmt.get_ancestors(subject_categories[0]) and \
