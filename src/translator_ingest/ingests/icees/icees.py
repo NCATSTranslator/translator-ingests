@@ -28,12 +28,8 @@ def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
 @koza.on_data_begin(tag="nodes")
-def on_begin_ingest_nodes(koza: koza.KozaTransform) -> None:
-    # koza.transform_metadata is a dictionary that can be used to save arbitrary metadata, the contents of  which will
-    # be copied to metadata output files. transform_metadata persists across all tagged transforms for a source.
-    koza.transform_metadata["node_category_counts"] = dict()
-    koza.transform_metadata["subject_category_counts"] = dict()
-    koza.transform_metadata["object_category_counts"] = dict()
+def on_begin_ingest_nodes(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["node_category_counts"] = dict()
 
 def increment_category_count(koza_transform: koza.KozaTransform, context: str, category: str) -> None:
     if category not in koza_transform.transform_metadata[f"{context}_category_counts"]:
@@ -82,6 +78,10 @@ def transform_icees_node(
 
     return KnowledgeGraph(nodes=[node])
 
+@koza.on_data_begin(tag="edges")
+def on_begin_ingest_edges(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["subject_category_counts"] = dict()
+    koza_transform.transform_metadata["object_category_counts"] = dict()
 
 @koza.transform_record(tag="edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
