@@ -32,6 +32,7 @@ def on_begin_ingest_nodes(koza_transform: koza.KozaTransform) -> None:
     koza_transform.transform_metadata["node_category_counts"] = dict()
 
 def increment_category_count(koza_transform: koza.KozaTransform, context: str, category: str) -> None:
+    category = category.replace("biolink:", "")
     if category not in koza_transform.transform_metadata[f"{context}_category_counts"]:
         koza_transform.transform_metadata[f"{context}_category_counts"][category] = 0
     koza_transform.transform_metadata[f"{context}_category_counts"][category] += 1
@@ -62,7 +63,7 @@ def transform_icees_node(
         logger.warning(f"Pydantic class for node '{node_id}' could not be inferred from categories '{category}'")
         return None
 
-    increment_category_count(koza_transform, "node", node_class.__name__)
+    increment_category_count(koza_transform, "node", node_class.category[0])
 
     equivalent_identifiers: Optional[list[str]] = record.get("equivalent_identifiers", None)
 
@@ -103,7 +104,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             level="WARNING"
         )
         return None
-    increment_category_count(koza_transform, "subject", subject_node.__name__)
+    increment_category_count(koza_transform, "subject", subject_node.category[0])
     subject_categories: list[str] = subject_node.category
 
     icees_predicate: str = record["predicate"]
@@ -116,7 +117,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             level="WARNING"
         )
         return None
-    increment_category_count(koza_transform, "object", object_node.__name__)
+    increment_category_count(koza_transform, "object", object_node.category[0])
     object_categories: list[str] = object_node.category
 
     # Specialized case of G2D Association
