@@ -18,6 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ComplexMolecularMixture,
     ChemicalMixture,
     OrganismTaxon,
+    Procedure,
     NamedThing,
     Association,
     EntityToDiseaseAssociation,
@@ -93,6 +94,7 @@ def create_node(node_data: dict) -> Any:
         "biolink:PhenotypicFeature": PhenotypicFeature,
         "biolink:DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
         "biolink:OrganismTaxon": OrganismTaxon,
+        "biolink:Procedure": Procedure,
     }
 
     node_class = category_to_class.get(category)
@@ -104,12 +106,14 @@ def create_node(node_data: dict) -> Any:
             category=categories
         )
     else:
-        # For unknown categories, use NamedThing as default
+        # For unknown categories, use NamedThing as default.
+        # NamedThing.category is a Literal that only accepts 'biolink:NamedThing',
+        # so we must not pass through the unmapped categories here.
         logger.debug(f"Unknown category {category} for node {node_id}, using NamedThing")
         return NamedThing(
             id=node_id,
             name=name,
-            category=categories
+            category=["biolink:NamedThing"]
         )
 
 
