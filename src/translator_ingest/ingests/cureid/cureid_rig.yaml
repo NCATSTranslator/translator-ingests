@@ -1,9 +1,23 @@
 name: CURE ID
 source_info:
   infores_id: infores:cureid
-  description: "CURE ID is a free platform developed by FDA and NIH to share novel uses of existing drugs - also known as drug repurposing/off-label use - and explore what others have tried. The goal is to find potential treatments for challenging diseases that lack good treatment options. Our mission is to use the information collected from users sharing their treatment experiences publicly on CURE ID to help inform what drugs are studied in clinical trials. The findings from these trials will enable the medical community to learn whether a drug is effective or not for it’s new use."
+  description: >-
+    CURE ID is a public FDA/NIH platform for collecting and sharing de-identified
+    case reports describing novel uses of existing medications, including drug
+    repurposing and off-label treatment experiences. Reports may be submitted by
+    healthcare providers, public health officials, patients, and caregivers, and
+    are reviewed before publication. The Translator ingest currently uses the
+    public CURE ID RASopathies export to represent observed treatment, adverse
+    event, phenotype, and gene-condition relationships from case reports and
+    linked literature.
   citations:
     - "Farid T, Ruzhnikov MRZ, Duggal M, Tumas KC, Strongin S, Sid E, Fuchs SR, Sacks L, Pichard DC, Pilgrim-Grayson C, Mathé EA, Stone HA. CURE ID: A Platform to Collect Real-World Treatment Data for Drug Repurposing in Rare Genetic Disorders. Am J Med Genet C Semin Med Genet. 2025 Sep;199(3):189-193. doi: 10.1002/ajmg.c.32153. Epub 2026 Jan 7. PMID: [ 41496707 ](https://pubmed.ncbi.nlm.nih.gov/41496707/)"
+  terms_of_use_info:
+    terms_of_use_url: https://cure.ncats.io/terms
+    terms_of_use_description: >-
+      CURE ID terms and conditions govern use of the platform and describe case
+      report submission criteria, privacy expectations, moderation, and use of
+      submitted content.
   data_access_locations:
     - https://opendata.ncats.nih.gov/public/cureid/
     - https://cure.ncats.io/
@@ -11,17 +25,26 @@ source_info:
     - file_download
   data_formats:
     - tsv
+  data_versioning_and_releases: >-
+    The public open-data directory includes a cureid_version.json metadata file
+    with a version date and original source file name for the current RASopathies
+    export.
+  source_status: maintained_as_needed_updates
 
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: >-
-    CURE ID is a user documented source of real world evidence on drug repurposing
-    opportunities for rare and difficult to treat diseases. It provides chemical-disease
-    associations, adverse events, and treatment outcomes, among other information. Information is collected from 
-    case reports and series published in the medical literature.
+    CURE ID is a user documented source of real world evidence on drug
+    repurposing opportunities for rare and difficult to treat diseases. It
+    provides treatment, adverse-event, phenotype, and gene-condition observations
+    that can help Translator surface case-report-level evidence for attempted
+    therapies and disease presentations.
   scope: >-
-    This initial ingest focuses on case report entities and relationships for RASopathies as documented in CURE ID.
+    This ingest focuses on RASopathies case-report entities and relationships
+    from the public CURE ID export. It emits disease, phenotype, chemical, and
+    gene nodes plus edges for treatment use, adverse events, disease phenotypes,
+    and gene-condition associations.
 
   relevant_files:
     - file_name: cureid_data.tsv
@@ -33,9 +56,27 @@ ingest_info:
     - file_name: cureid_data.tsv
       included_records: All records
       fields_used: "subject_type, subject_final_curie, subject_final_label, object_type, object_final_curie, object_final_label, association_category, biolink_predicate, outcome, pmid, link"
+  filtered_content:
+    - file_name: cureid_data.tsv
+      filtered_records: Records outside the public RASopathies export
+      rationale: >-
+        The current Translator ingest is scoped to the CURE ID RASopathies export
+        rather than the full CURE ID case-report corpus.
+  future_considerations:
+    - category: edge_content
+      consideration: >-
+        Consider expanding beyond RASopathies to additional CURE ID disease
+        collections, such as Long COVID, once the source provides stable public
+        exports and the ingest has been reviewed for the larger corpus.
+      relevant_files: CURE ID public exports
+    - category: edge_property_content
+      consideration: >-
+        Consider modeling aggregate evidence counts, supporting text, treatment
+        outcomes, and multiple source record URLs when ingesting association-view
+        JSONL exports rather than the current TSV export.
+      relevant_files: CURE ID association-view JSONL exports
 
 target_info:
-  infores_id: infores:cureid
   edge_type_info:
     - subject_categories:
         - biolink:ChemicalEntity
@@ -49,9 +90,22 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:cureid
       edge_properties:
         - publications
-      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication was applied_to_treat a particular disease or phenotype.
+      ui_explanation: >-
+        CURE ID provides curated case-report records in which a submitted or
+        literature-derived treatment experience reports that an existing
+        medication was applied to treat a disease or phenotype. The Translator
+        edge preserves linked PubMed IDs when present and stores the CURE ID
+        source record URL in provenance.
+      source_files:
+        - cureid_data.tsv
+      additional_notes:
+        - >-
+          These edges report attempted treatment use in real-world case reports
+          and should not be interpreted as established treatment efficacy.
     - subject_categories:
         - biolink:SmallMolecule
       predicates:
@@ -63,10 +117,24 @@ target_info:
         - observation
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:cureid
       edge_properties:
         - FDA_adverse_event_level
         - publications
-      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a medication had an adverse event related to a particular disease or phenotype.
+      ui_explanation: >-
+        CURE ID provides curated case-report records in which a submitted or
+        literature-derived treatment experience reports an adverse event observed
+        with a medication. The ingest maps CURE ID outcome strings to the
+        Biolink FDA adverse event level when the source outcome supports that
+        mapping.
+      source_files:
+        - cureid_data.tsv
+      additional_notes:
+        - >-
+          Adverse-event records are modeled as observations because they come
+          from case-report evidence rather than from a controlled causality
+          assessment.
     - subject_categories:
         - biolink:Disease
       predicates:
@@ -78,9 +146,23 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:cureid
       edge_properties:
         - publications
-      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a disease has a particular phenotype.
+      ui_explanation: >-
+        CURE ID provides curated case-report records describing phenotypes or
+        symptoms observed in patients with a disease. The ingest maps these
+        disease-to-phenotype relationships to Biolink while preserving linked
+        PubMed IDs when present.
+      source_files:
+        - cureid_data.tsv
+      additional_notes:
+        - >-
+          Phenotype observations are standardized to identifiers such as HP,
+          NCIT, or UMLS in the source export, but may not have been
+          independently validated against disease-phenotype authority sources
+          such as HPOA.
     - subject_categories:
         - biolink:Gene
       predicates:
@@ -91,31 +173,39 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:cureid
       edge_properties:
         - publications
-      ui_explanation: A CURE ID user (a patient or health care provider) has reported that a gene is associated with a particular disease.
+      ui_explanation: >-
+        CURE ID provides curated case-report records that include gene-condition
+        relationships relevant to the reported diagnosis or treatment context.
+        The ingest represents these as generic gene-disease associations because
+        CURE ID does not specify a more precise causal or mechanistic predicate.
+      source_files:
+        - cureid_data.tsv
+      additional_notes:
+        - >-
+          CURE ID does not currently distinguish whether gene-condition
+          relationships are causal, contributing, marker-based, or otherwise
+          associated.
   node_type_info:
-    - node_categories:
-        - biolink:SmallMolecule
+    - node_category: biolink:SmallMolecule
       source_identifier_types:
         - CHEBI
-    - node_categories:
-        - biolink:Disease
+    - node_category: biolink:Disease
       source_identifier_types:
         - MONDO
         - UMLS
-    - node_categories:
-        - biolink:PhenotypicFeature
+    - node_category: biolink:PhenotypicFeature
       source_identifier_types:
         - HP
         - NCIT
         - UMLS
-    - node_categories:
-        - biolink:Gene
+    - node_category: biolink:Gene
       source_identifier_types:
         - NCBIGene
-    - node_categories:
-        - biolink:ChemicalEntity
+    - node_category: biolink:ChemicalEntity
       source_identifier_types:
         - UNII
 
