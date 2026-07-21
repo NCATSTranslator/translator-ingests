@@ -5,6 +5,87 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-07-17 — New edge model: `associated_with` + qualifier, raise threshold to 700, drop per-channel predicates
+
+**Context.** Two community calls (2026-07-10 channel semantics review; 2026-07-17 decision call) re-evaluated
+the STRING edge model established in the ORION-aligned per-channel iteration (see 2026-06-11 entries below).
+The attendees reviewed STRING's channel semantics in detail, the calibration method underlying the combined_score,
+and the downstream implications of the predicate choices.
+
+**Decision — replace 5-predicate per-channel model with 3-edge model.**
+
+| Edge | Condition | Edge property |
+|---|---|---|
+| `associated_with + association_basis_qualifier:Functional` | always, `combined_score > 700` | `stringdb_combined_score` |
+| `directly_physically_interacts_with` | `experiments ≥ TBD (Vlado)` | `stringdb_experimental_score` |
+| `coexpressed_with` | `coexpression ≥ TBD (Vlado)` | `stringdb_coexpression_score` |
+
+**Threshold change: 500 → 700.** The prior 500 medium-confidence gate included too much noise.
+STRING's high-confidence cutoff (0.70) corresponds to the point where the calibrated evidence level
+reflects reliable functional co-association. This also eliminates the regime where the fallback predicate
+(`physically_interacts_with` at combined > 500, no high-conf channel) was overclaiming physical binding
+for rows whose dominant evidence was textmining or co-occurrence — confirmed in the 2026-06-11 EDA
+(93% of prior edges were fallback, most carrying `not_provided` / `text_mining_agent` KL/AT).
+
+**Why `associated_with` instead of a new `functionally_associated_with` predicate.**
+Two alternatives were considered at the 2026-07-10 call:
+(a) Propose a new `biolink:functionally_associated_with` predicate under `associated_with`
+(b) Broaden the existing `biolink:interacts_with` definition and use it for general functional associations
+
+Option (a) was preferred but determined to require a mixin or complex placement in the predicate hierarchy.
+Option (b) was not taken forward — `interacts_with` already carries a narrow physical-contact implication
+for many downstream consumers, and broadening it risks semantic confusion.
+Final decision: use `associated_with` as the predicate and encode the functional semantics via the new
+`association_basis_qualifier: Functional` qualifier (Matt's biolink PR, pending). This avoids introducing
+a new predicate while clearly signalling the nature of the association through the qualifier.
+
+**Why drop gene-genomics predicates (`gene_fusion_with`, `genetic_neighborhood_of`, `genetically_interacts_with`).**
+These predicates have biolink domain/range = Gene but STRING nodes are Protein — a domain/range violation
+that produced `BIOLINK_SUBOBJ_ERRORS` in the build validator (see 2026-06-11 QA EDA entry). They are also
+absent from the Automat STRING-DB `meta_knowledge_graph`. Both findings point the same direction.
+
+**Why drop `interacts_with` (textmining channel) and the `related_to` fallback.**
+The `associated_with + association_basis_qualifier:Functional` edge now handles what the generic fallback
+was approximating: a calibrated probabilistic claim of functional co-association. Emitting a separate
+`interacts_with` from textmining-dominant rows would add a second edge whose semantics don't add precision
+over the always-present functional association edge. Textmining signal is already reflected in the
+combined_score and thus in the `stringdb_combined_score` property.
+
+**STRING calibration note (from 2026-07-10 call).** STRING does not use raw evidence measures (co-mention
+counts, expression correlations) directly. It calibrates each channel against a gold-standard set of
+known pathway co-members: a text-mining score of X means "protein pairs with this level of literature
+association have historically been pathway co-members at rate Y". This calibration means a high
+textmining score is NOT merely "frequently co-mentioned" — it is a principled claim that the pair
+co-occurs in curated biology at a predictable rate. The current approach (include textmining in
+combined_score but don't create a separate textmining-specific edge) preserves this calibrated signal
+without asserting specific mechanistic interaction type from text evidence alone. An ongoing investigation
+into re-weighting the textmining channel's contribution to the combined_score is noted in
+`future_considerations`.
+
+**Pending blockers before implementation.**
+- **A.** biolink PR (Matt): `association_basis_qualifier` enum {Statistical, Genetic, Functional}
+- **B.** attributes.yaml PR (Matt / Sierra): `stringdb_combined_score`, `stringdb_experimental_score`,
+  `stringdb_coexpression_score` edge properties
+- **C.** Vlado: recommend experiments channel score cutoff for `directly_physically_interacts_with`;
+  recommend coexpression channel score cutoff for `coexpressed_with`
+- **D.** KL/AT finalization: 7-17-26 call said "automated agent, knowledge assertion" tentatively
+  for the functional association and physical interaction edges. The exact `AgentTypeEnum` value for
+  "automated agent" needs confirmation against the current biolink model (the enum may not have this
+  literal value; `data_analysis_pipeline` is the nearest current candidate).
+
+**Considered and deferred.**
+
+| Idea | Disposition |
+|---|---|
+| New `functionally_associated_with` predicate under `associated_with` | Deferred — hierarchy placement requires mixin; revisit if `associated_with + qualifier` proves insufficient for downstream consumers. |
+| Broaden `interacts_with` definition to cover functional associations | Deferred — too many downstream consumers assume physical-contact semantics; broadening risks silent semantic drift. |
+| Move `coexpressed_with` to live under `interacts_with` | Deferred — currently under `correlated_with`; moving it is a broader biolink change with cross-ingest consequences. |
+| Supporting data source per edge (infores:biogrid, infores:intact, …) | Deferred — the `.full` bulk download does not report per-pair source databases; would require STRING detail-endpoint calls per pair. See `future_considerations`. |
+| Deprecate `genetically_associated_with` (Matt) | To be handled in a separate biolink PR; not a blocker for this ingest. |
+
+## 2026-06-11 — Config-driven per-channel filter thresholds (canonical in `string.py`)
+without re-deriving the reasoning.
+
 ## 2026-06-11 — Config-driven per-channel filter thresholds (canonical in `string.py`)
 
 **Decision.** Move the filter thresholds out of hardcoded module constants and
