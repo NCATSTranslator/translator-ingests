@@ -31,7 +31,7 @@ source_info:
   data_formats:
     - csv
   data_versioning_and_releases: "Versioning by number. See https://www.pantherdb.org/data/"
-  source_status: unknown  # seems quiescent now: the last major update was in 2024
+  source_status: maintained_regular_updates  # Sierra suggests that another update is soon due
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
