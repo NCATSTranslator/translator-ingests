@@ -23,13 +23,11 @@ transform:
   # declarative `filters:` (AND-only, see koza/utils/row_filter.py) cannot
   # express — so this per-channel logic lives in string.py, not in `filters:`.
   channel_thresholds:
-    experiments:    750   # real physical evidence; human p99 ~510, max 999
-    coexpression:   750   # max ~999; the only channel with a nonzero median
-    textmining:     750   # noisiest channel; dominant in ~40% of rows
-    fusion:         750   # rare (~0.2-0.4% nonzero), max 900
-    cooccurence:    450   # EDA: max 542 -> never fires at 750; lower to ~450 to surface genetically_interacts_with
-    neighborhood:   750   # EDA: native score is 0 in every row -> never fires at ANY threshold
-    combined_score: 500   # row-inclusion fallback gate (STRING medium-confidence cutoff)
+    # TODO: replace experiments and coexpression thresholds with Vlado's
+    # recommendations (pending 2026-07-17 call AI action).
+    experiments:    750   # placeholder — Vlado to recommend; fires directly_physically_interacts_with
+    coexpression:   750   # placeholder — Vlado to recommend; fires coexpressed_with
+    combined_score: 700   # row-inclusion gate (STRING high-confidence cutoff; raised from 500)
 
 readers:
   # STRING protein–protein interactions. The transform function lives in
@@ -65,8 +63,8 @@ readers:
       - database_transferred
       - textmining
       - textmining_transferred
-      # Typed as int so the combined_score > 500 reader filter compares numerically
-      # (untyped CSV columns are strings, and '594' > 500 raises TypeError).
+      # Typed as int so the combined_score > 700 reader filter compares numerically
+      # (untyped CSV columns are strings, and '594' > 700 raises TypeError).
       - combined_score: int
     # Coarse efficiency PRE-FILTER only (Koza skips object construction for
     # dropped rows). The CANONICAL filter strategy is in string.py using
@@ -75,12 +73,12 @@ readers:
     #
     # INVARIANT: this value must stay <= min(transform.channel_thresholds) so it
     # never pre-drops a row whose channel would have fired. This is provably safe
-    # for any channel threshold >= 501: an EDA scan of all 3 taxa found
+    # for any channel threshold >= 701: an EDA scan of all 3 taxa found
     # combined_score >= (max channel score) - 1 for the native predicate channels
     # (max gap = 1), so a row with channel > T has combined_score >= T. If you
-    # lower ANY channel_threshold to <= 500, lower this value to match.
+    # lower ANY channel_threshold to <= 700, lower this value to match.
     filters:
       - inclusion: 'include'
         column: 'combined_score'
         filter_code: 'gt'
-        value: 500
+        value: 700

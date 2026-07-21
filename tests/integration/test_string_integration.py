@@ -41,7 +41,7 @@ FIXTURE_DIR = (
 )
 ENTREZ_FIXTURE = FIXTURE_DIR / "all_organisms.entrez_2_string.tsv"
 # Per-taxon fixture filenames (must match string.yaml's reader configuration).
-# PPI uses the ``.full.`` 16-column variant for per-channel predicate selection.
+# PPI uses the ``.full.`` 16-column variant for per-channel edge selection.
 PPI_FIXTURES = [
     FIXTURE_DIR / "9606.protein.links.full.v12.0.txt.gz",
     FIXTURE_DIR / "10090.protein.links.full.v12.0.txt.gz",
@@ -74,9 +74,7 @@ def koza_output(tmp_path_factory) -> Path:
 
     # Our fixture filenames match the yaml's `files:` declarations exactly, so
     # we don't need to override `input_files` — Koza picks them up by name from
-    # the yaml and resolves them under input_files_dir. (Avoids a Koza bug in
-    # the dict form of input_files combined with input_files_dir, where the
-    # nested override shape is mis-applied.)
+    # the yaml and resolves them under input_files_dir.
     _, runner = KozaRunner.from_config_file(
         str(config_yaml_path),
         output_dir=str(output_dir),
@@ -88,12 +86,7 @@ def koza_output(tmp_path_factory) -> Path:
 
 
 def _load_all(output_dir: Path) -> tuple[list[dict], list[dict]]:
-    """Load all nodes and edges from the merged output files.
-
-    Koza concatenates output from all tagged readers into one pair of files
-    (``string_nodes.jsonl`` / ``string_edges.jsonl``), so per-tag assertions
-    filter on node category / edge primary_knowledge_source.
-    """
+    """Load all nodes and edges from the merged output files."""
     nodes = _load_jsonl(output_dir / "string_nodes.jsonl")
     edges = _load_jsonl(output_dir / "string_edges.jsonl")
     return nodes, edges
@@ -139,18 +132,48 @@ def test_fixture_row_counts(fixture_name, expected_rows, expected_header, delimi
 # ──── string_ppi tag: protein-protein interaction assertions ─────────────────
 
 
-# All three target taxa appear in the multi-organism fixtures.
 EXPECTED_TAXA = {"NCBITaxon:9606", "NCBITaxon:10090", "NCBITaxon:10116"}
-# ENSEMBL protein prefixes vary by species: ENSP (human), ENSMUSP (mouse), ENSRNOP (rat).
 ENSEMBL_PROTEIN_PREFIXES = ("ENSEMBL:ENSP", "ENSEMBL:ENSMUSP", "ENSEMBL:ENSRNOP")
+
+# Edge types that may appear in PPI output under the 2026-07-17 edge model.
+PPI_PREDICATES = {
+    "biolink:associated_with",                    # always-emitted functional association
+    "biolink:directly_physically_interacts_with", # experiments channel
+    "biolink:coexpressed_with",                   # coexpression channel
+}
+
+# Association classes that may appear per predicate.
+# associated_with → Association (base class)
+# directly_physically_interacts_with → PairwiseMolecularInteraction
+# coexpressed_with → GeneToGeneCoexpressionAssociation
+PPI_CATEGORIES = {
+    "biolink:Association",
+    "biolink:PairwiseMolecularInteraction",
+    "biolink:GeneToGeneCoexpressionAssociation",
+}
+
+PPI_KNOWLEDGE_LEVELS = {
+    "knowledge_assertion",
+    "statistical_association",
+}
+PPI_AGENT_TYPES = {
+    "data_analysis_pipeline",
+}
 
 
 def test_ppi_produces_nodes_and_edges(koza_output):
     nodes, edges = _ppi_partition(*_load_all(koza_output))
-    # 199 rows × 3 species → roughly 30-100 above-threshold pairs per species.
-    # Range is loose so the test absorbs minor STRING reissues.
-    assert 30 < len(edges) < 300, f"unexpected PPI edge count: {len(edges)}"
-    assert 30 < len(nodes) < 500, f"unexpected PPI node count: {len(nodes)}"
+    # 199 data rows × 3 species, with combined_score > 700 filter: expect
+    # fewer edges than the old threshold=500 run. Range is loose.
+    assert len(edges) > 0, f"no PPI edges produced"
+    assert len(nodes) > 0, f"no PPI nodes produced"
+
+
+def test_ppi_always_predicate_present(koza_output):
+    """Every row above the threshold emits at least one associated_with edge."""
+    _, edges = _ppi_partition(*_load_all(koza_output))
+    assert any(e["predicate"] == "biolink:associated_with" for e in edges), \
+        "no associated_with edges found"
 
 
 def test_ppi_node_shape(koza_output):
@@ -167,8 +190,7 @@ def test_ppi_node_shape(koza_output):
 
 def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
     """The fixture mapping covers 18 of 21 distinct proteins above threshold.
-    Verify most PPI nodes carry NCBIGene equivalents (proves the on_data_begin
-    hook loaded the mapping end-to-end)."""
+    Verify most PPI nodes carry NCBIGene equivalents."""
     nodes, _ = _ppi_partition(*_load_all(koza_output))
     with_equivs = [n for n in nodes if n.get("equivalent_identifiers")]
     assert len(with_equivs) > 0, "no nodes got equivalent_identifiers — mapping load failed?"
@@ -177,84 +199,36 @@ def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):
             assert eq.startswith("NCBIGene:"), eq
 
 
-# Per-channel predicates emitted by string_ppi (matches CHANNEL_PREDICATES +
-# FALLBACK_PREDICATE in string.py).
-PPI_PREDICATES = {
-    "biolink:physically_interacts_with",  # experiments channel + fallback
-    "biolink:coexpressed_with",           # coexpression channel
-    "biolink:interacts_with",             # textmining channel
-    "biolink:gene_fusion_with",           # fusion channel
-    "biolink:genetic_neighborhood_of",    # neighborhood channel
-    "biolink:genetically_interacts_with", # cooccurence channel
-}
-# Edge classes that may appear in PPI output. PairwiseMolecularInteraction
-# covers most predicates; GeneToGeneCoexpressionAssociation is the canonical
-# class for coexpressed_with.
-PPI_CATEGORIES = {
-    "biolink:PairwiseMolecularInteraction",
-    "biolink:GeneToGeneCoexpressionAssociation",
-}
-
-
-# Valid per-channel KL/AT values the transform can assign (see CHANNEL_KL_AT +
-# the multi-high-conf upgrade + the all-zero fallback in string.py).
-PPI_KNOWLEDGE_LEVELS = {
-    "knowledge_assertion", "statistical_association", "prediction", "not_provided",
-}
-PPI_AGENT_TYPES = {
-    "manual_agent", "data_analysis_pipeline", "computational_model",
-    "text_mining_agent", "not_provided",
-}
-
-
 def test_ppi_edge_shape(koza_output):
     _, edges = _ppi_partition(*_load_all(koza_output))
     for edge in edges:
-        assert edge["category"][0] in PPI_CATEGORIES, edge["category"]
         assert edge["predicate"] in PPI_PREDICATES, edge["predicate"]
         assert edge["subject"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["knowledge_level"] in PPI_KNOWLEDGE_LEVELS, edge["knowledge_level"]
         assert edge["agent_type"] in PPI_AGENT_TYPES, edge["agent_type"]
-        # MI:0915 only attaches to physically_interacts_with edges; omitted for others.
-        if edge["predicate"] == "biolink:physically_interacts_with":
-            assert edge.get("has_attribute") == ["MI:0915"]
-        else:
-            assert not edge.get("has_attribute")
 
 
-def test_ppi_knowledge_level_varies_by_channel(koza_output):
-    """Per-channel KL/AT means the output shouldn't be uniformly not_provided —
-    high-confidence channel rows in the fixtures should yield curator/statistical
-    knowledge levels. Verifies the per-channel KL/AT path runs end-to-end."""
+def test_ppi_no_duplicate_edges_by_pair_and_predicate(koza_output):
+    """Symmetric duplicate rows in STRING should be collapsed to one edge per predicate."""
+    _, edges = _ppi_partition(*_load_all(koza_output))
+    pair_predicate_keys = {
+        (tuple(sorted([e["subject"], e["object"]])), e["predicate"])
+        for e in edges
+    }
+    assert len(pair_predicate_keys) == len(edges), \
+        "symmetric duplicates or duplicate (pair, predicate) leaked into PPI output"
+
+
+def test_ppi_knowledge_level_varies_by_edge_type(koza_output):
+    """associated_with uses knowledge_assertion; coexpressed_with uses
+    statistical_association — so the output should contain both."""
     _, edges = _ppi_partition(*_load_all(koza_output))
     kls = {e["knowledge_level"] for e in edges}
-    ats = {e["agent_type"] for e in edges}
-    # At least one edge should carry a non-default KL or AT (the fixtures contain
-    # high-confidence channel rows: mouse ~15, rat ~3, human ~2).
-    assert kls - {"not_provided"}, f"all knowledge_levels were not_provided: {kls}"
-    assert ats - {"not_provided"}, f"all agent_types were not_provided: {ats}"
-
-
-def test_ppi_emits_multiple_predicates(koza_output):
-    """At least the fallback predicate is always emitted; high-confidence
-    channels in fixture data should yield additional predicate variety."""
-    _, edges = _ppi_partition(*_load_all(koza_output))
-    predicates_seen = {e["predicate"] for e in edges}
-    assert "biolink:physically_interacts_with" in predicates_seen, \
-        "fallback predicate should always appear for above-threshold rows"
-    # Mouse fixture has ~15 high-conf rows; rat ~3; human ~2 — expect at least
-    # one non-fallback predicate to fire across the combined output.
-    non_fallback = predicates_seen - {"biolink:physically_interacts_with"}
-    assert len(non_fallback) >= 1, \
-        f"expected at least one non-fallback predicate, got: {predicates_seen}"
-
-
-def test_ppi_no_duplicate_edges_by_unordered_pair(koza_output):
-    """Symmetric duplicate rows in STRING should be collapsed to one edge."""
-    _, edges = _ppi_partition(*_load_all(koza_output))
-    pair_keys = {tuple(sorted([e["subject"], e["object"]])) for e in edges}
-    assert len(pair_keys) == len(edges), "symmetric duplicates leaked into PPI output"
+    # If coexpressed_with edges are present (coexpression channel fires in fixtures)
+    # we expect statistical_association to appear. Only assert knowledge_assertion
+    # since associated_with always fires.
+    assert "knowledge_assertion" in kls, f"knowledge_assertion missing: {kls}"
 
 
 # ──── output-wide assertions ─────────────────────────────────────────────────

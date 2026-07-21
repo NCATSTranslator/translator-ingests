@@ -2,16 +2,15 @@
 Supporting variables and utility methods for the
 STRING protein–protein interaction ingest processing.
 """
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable
 from pathlib import Path
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    GeneToGeneAssociation,
+    Association,
     GeneToGeneCoexpressionAssociation,
     PairwiseMolecularInteraction,
-    PairwiseGeneToGeneInteraction,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    AgentTypeEnum,
 )
 
 from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_STRING
@@ -26,84 +25,79 @@ SUPPORTED_TAXA: dict[str, str] = {
     "10116": "NCBITaxon:10116",  # Rattus norvegicus
 }
 
-STRING_CHANNELS = Literal[
-    "fusion",
-    "cooccurence",
-    "coexpression",
-    "experiments",
-    "textmining",
+# Row-inclusion threshold (STRING's high-confidence cutoff, 2026-07-17 decision).
+# A row is processed only if combined_score exceeds this threshold.
+# Raised from 500 (medium-confidence) to 700 (high-confidence) per the 7-17-26 call:
+# at 0.70, calibrated evidence supports a reliable functional co-association claim.
+COMBINED_SCORE_THRESHOLD = 700
 
-    # Ignored STRING evidence channels: see RIG
-    # "neighborhood",
-    # "homology",
-    # "database"
-]
+# Per-channel thresholds for the conditional edges. A channel-specific edge fires only
+# when the channel score exceeds the corresponding threshold.
+# TODO: replace EXPERIMENTS_THRESHOLD and COEXPRESSION_THRESHOLD with Vlado's recommendations
+# (pending the 2026-07-17 call AI action: Vlado to recommend cutoffs for
+# directly_physically_interacts_with and coexpressed_with edges).
+EXPERIMENTS_THRESHOLD = 750
+COEXPRESSION_THRESHOLD = 750
 
-# Strict subset of specific
-# Molecular Interaction predicates
-# as constrained by the Biolink Model
-MI_PREDICATE = Literal[
-  "biolink:gene_fusion_with",
-  "biolink:genetically_interacts_with",
-  "biolink:interacts_with",
-  "biolink:physically_interacts_with",
-  "biolink:coexpressed_with"
-]
-
-# Row-inclusion threshold (STRING's medium-confidence cutoff). A row is processed
-# only if 'combined_score' exceeds this threshold.
-# This value matches the default offered on the STRING
-# web UI and ORION's STRING parser.
-COMBINED_SCORE_THRESHOLD = 500
-
-# Per-channel high-confidence threshold. A predicate is emitted for a row only
-# if the contributing channel's individual score exceeds this. ORION uses 750
-# (their "high_conf_threshold"); we follow suit so that downstream consumers
-# expecting ORION-equivalent predicate semantics see the same per-channel signal.
-CHANNEL_HIGH_CONF_THRESHOLD = 750
-
-
-# Channel → biolink predicate map. Mirrors ORION's STRING parser. Two channels
-# are deliberately omitted:
+# Always-emitted edge: functional association for every pair clearing the combined_score gate.
+# Encodes STRING's core claim: these proteins participate in a shared biological program
+# (process, pathway, reaction, complex, or expression program).
 #
-#   * "homology" — STRING's HOMOLOGY channel does NOT mean "A is homologous
-#     to B"; per STRING docs, it means "the interaction between A and B is
-#     inferred via homologous proteins in another species." Using it for
-#     "biolink:homologous_to" would be a semantic misread. (ORION's comment.)
-#   * "database" — ORION doesn't map it either; DATABASE evidence contributes
-#     to combined_score but doesn't drive an additional channel-specific
-#     predicate beyond the EXPERIMENTS-driven physically_interacts_with.
-#
-# The "_transferred" variants (orthology-projected evidence) similarly don't
-# get their own predicates — only the native channel score is consulted, again
-# matching ORION's behavior.
-CHANNEL_PREDICATES: dict[ STRING_CHANNELS, MI_PREDICATE ] = {
-    "fusion":       "biolink:gene_fusion_with",
-    "cooccurence":  "biolink:genetically_interacts_with",  # STRING's spelling (sic)
+# PENDING BLOCKER A: association_basis_qualifier:Functional qualifier to be added once
+# Matt's biolink PR lands (association_basis_qualifier enum {Statistical, Genetic, Functional}).
+ALWAYS_PREDICATE = "biolink:associated_with"
+
+# Channel-specific conditional edges. Each fires independently when its channel score
+# clears the per-channel threshold. See string.yaml channel_thresholds for values.
+# PENDING BLOCKER C: exact thresholds pending Vlado's recommendations.
+CONDITIONAL_CHANNEL_PREDICATES: dict[str, str] = {
+    "experiments":  "biolink:directly_physically_interacts_with",
     "coexpression": "biolink:coexpressed_with",
-    "experiments":  "biolink:physically_interacts_with",
-    "textmining":   "biolink:interacts_with",
 }
 
-
-# Fallback predicate emitted when "combined_score" clears the row gate, but no
-# individual channel exceeds CHANNEL_HIGH_CONF_THRESHOLD. ORION uses the same
-# fallback — the implicit assumption is that an above-medium-confidence pair
-# without a specific channel signal is most likely a physical interaction.
-FALLBACK_PREDICATE: MI_PREDICATE = "biolink:physically_interacts_with"
-
-
-# Canonical default thresholds: every predicate-driving channel gates at
-# CHANNEL_HIGH_CONF_THRESHOLD (750) and the row-inclusion fallback gate is
-# COMBINED_SCORE_THRESHOLD (500). These are the single source of truth for the
-# transform when no per-channel overrides are supplied in string.yaml's
-# 'transform.channel_thresholds' block (read via KozaTransform.extra_fields).
-# Using this dict (rather than the bare constants) makes every channel an
-# independently tunable knob — see resolve_thresholds() and the EDA under eda/.
+# Canonical default thresholds for one complete run.
+# `resolve_thresholds()` merges these with any per-channel overrides
+# from string.yaml's `transform.channel_thresholds` block.
 DEFAULT_THRESHOLDS: dict[str, int] = {
-    **{channel: CHANNEL_HIGH_CONF_THRESHOLD for channel in CHANNEL_PREDICATES},
     "combined_score": COMBINED_SCORE_THRESHOLD,
+    "experiments":    EXPERIMENTS_THRESHOLD,
+    "coexpression":   COEXPRESSION_THRESHOLD,
 }
+
+# KL/AT is fixed per edge type rather than row-derived for this iteration.
+# Per the 2026-07-17 call: "on first pass I don't think we want to get into this —
+# just use automated agent, knowledge assertion."
+# TODO: finalize KL/AT values once the group confirms the exact biolink enum entries.
+# ("automated agent" was specified but is not a current AgentTypeEnum value;
+#  data_analysis_pipeline is the nearest equivalent for an automated scoring pipeline.)
+EDGE_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
+    "biolink:associated_with": (
+        KnowledgeLevelEnum.knowledge_assertion,
+        AgentTypeEnum.data_analysis_pipeline,
+    ),
+    "biolink:directly_physically_interacts_with": (
+        KnowledgeLevelEnum.knowledge_assertion,
+        AgentTypeEnum.data_analysis_pipeline,
+    ),
+    "biolink:coexpressed_with": (
+        KnowledgeLevelEnum.statistical_association,
+        AgentTypeEnum.data_analysis_pipeline,
+    ),
+}
+
+# Association class to instantiate per predicate.
+# `associated_with` uses the base `Association` class (no Protein-specific functional
+# association class exists in the current biolink model).
+# `directly_physically_interacts_with` uses PairwiseMolecularInteraction.
+# `coexpressed_with` uses GeneToGeneCoexpressionAssociation (biolink rejects
+# coexpressed_with on PairwiseMolecularInteraction).
+PREDICATE_TO_ASSOCIATION_CLASS: dict[str, type[Association]] = {
+    "biolink:associated_with":                    Association,
+    "biolink:directly_physically_interacts_with": PairwiseMolecularInteraction,
+    "biolink:coexpressed_with":                   GeneToGeneCoexpressionAssociation,
+}
+
+STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
 
 
 def resolve_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, int]:
@@ -111,15 +105,15 @@ def resolve_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, int
     Merge per-channel threshold overrides (from string.yaml
     'transform.channel_thresholds', surfaced via KozaTransform.extra_fields) on
     top of DEFAULT_THRESHOLDS. Values are coerced to int so YAML strings compare
-    numerically. Unknown keys are kept (a channel not in CHANNEL_PREDICATES is
-    harmless — nothing reads it), letting the config stay forward-compatible.
+    numerically. Unknown keys are kept (a channel not in CONDITIONAL_CHANNEL_PREDICATES
+    is harmless — nothing reads it), letting the config stay forward-compatible.
 
     >>> resolve_thresholds() == DEFAULT_THRESHOLDS
     True
-    >>> resolve_thresholds({"cooccurence": "450", "combined_score": 400})["cooccurence"]
-    450
-    >>> resolve_thresholds({"combined_score": 400})["combined_score"]
-    400
+    >>> resolve_thresholds({"experiments": "800", "combined_score": 600})["experiments"]
+    800
+    >>> resolve_thresholds({"combined_score": 600})["combined_score"]
+    600
     """
     merged = dict(DEFAULT_THRESHOLDS)
     if overrides:
@@ -127,81 +121,11 @@ def resolve_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, int
     return merged
 
 
-# Symmetry note (resolves "are these predicates reflexive?"): every STRING
-# evidence channel describes a *symmetric* (undirected) relationship — if A
-# physically interacts with / is coexpressed with / is a genetic neighbor of B,
-# the converse holds. STRING reflects this by listing each pair in both
-# directions ("p1 to p2" and "p2 to p1"), which is why we dedup on the sorted pair
-# (see "sorted_pair_key"). The predicates are symmetric, not reflexive in the
-# self-loop sense; STRING does not ship self-interactions (A, A).
-
-# Biolink Association child class to instantiate per predicate. Most of our per-channel
-# predicates fit the permitted predicate set of "PairwiseMolecularInteraction", but
-# "biolink:coexpressed_with" is not a molecular-interaction predicate in
-# biolink — it belongs to "GeneToGeneCoexpressionAssociation". We can't collapse
-# the two: biolink rejects "coexpressed_with" on "PairwiseMolecularInteraction"
-# and rejects the molecular-interaction predicates on the coexpression class.
-# "make_string_ppi_edge" encapsulates the dispatch so the transform doesn't
-# repeat it. The "biolink:genetically_interacts_with" predicate
-# is simply considered gene-to-gene interactions
-# which may not necessarily imply direct physical interaction between two gene products.
-PREDICATE_TO_ASSOCIATION_CLASS: dict[MI_PREDICATE, type[GeneToGeneAssociation]] = {
-    "biolink:physically_interacts_with":  PairwiseMolecularInteraction,
-    "biolink:interacts_with":             PairwiseMolecularInteraction,
-    "biolink:gene_fusion_with":           PairwiseMolecularInteraction,
-    "biolink:genetically_interacts_with": PairwiseGeneToGeneInteraction,
-    "biolink:coexpressed_with":           GeneToGeneCoexpressionAssociation,
-}
-
-# PSI-MI interaction types
-PSI_MI_PHYSICAL_ASSOCIATION = "MI:0915"
-PSI_MI_FUNCTIONAL_INTERACTION = "MI:2286"
-PSI_MI_COVALENT_BINDING = "MI:0195"
-
-PREDICATE_TO_MI_TYPE = {
-    "biolink:gene_fusion_with": PSI_MI_COVALENT_BINDING,
-    "biolink:genetically_interacts_with": PSI_MI_FUNCTIONAL_INTERACTION,
-
-    "biolink:physically_interacts_with": PSI_MI_PHYSICAL_ASSOCIATION,
-
-    # This predicate only documents research occurrence of protein identities
-    # within a common research paper, where the source of correlation
-    # may *or may not* be due to a direct molecular interaction
-    # "biolink:interacts_with": "",
-
-    # This predicate only documents correlated expression,
-    # whereas the source of the correlation may *or may not*
-    # be due to a direct molecular interaction
-    # "biolink:coexpressed_with": ""
-}
-
-# Per-channel knowledge-level / agent-type assignment, mirroring ORION's STRING
-# parser. Each STRING evidence channel implies a different epistemic status:
-# EXPERIMENTS / DATABASE are curated assertions (manual_agent); COEXPRESSION /
-# COOCCURENCE are statistical associations from a data pipeline; NEIGHBORHOOD /
-# FUSION / HOMOLOGY are computational predictions; TEXTMINING is NLP-derived.
-# This map keys on *all 8* STRING channels (including homology and database,
-# which don't drive predicates) because KL/AT is a row-level property derived
-# from the dominant-evidence channel, independent of which predicates fire.
-CHANNEL_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
-    "fusion":       (KnowledgeLevelEnum.prediction,              AgentTypeEnum.data_analysis_pipeline),
-    "cooccurence":  (KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
-    "homology":     (KnowledgeLevelEnum.prediction,              AgentTypeEnum.computational_model),
-    "coexpression": (KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
-    "experiments":  (KnowledgeLevelEnum.knowledge_assertion,     AgentTypeEnum.manual_agent),
-    "database":     (KnowledgeLevelEnum.knowledge_assertion,     AgentTypeEnum.manual_agent),
-    "textmining":   (KnowledgeLevelEnum.not_provided,            AgentTypeEnum.text_mining_agent),
-}
-
-STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
-
-# Note on the identifier scheme (resolves "are they all ENSEMBL?"): for the three
-# Translator-target taxa we support (human / mouse / rat), STRING uses ENSEMBL
-# protein identifiers exclusively — ENSP* (human), ENSMUSP* (mouse), ENSRNOP*
-# (rat). Verified across the checked-in fixtures: 100% ENSEMBL, no UniProtKB
-# accessions. (STRING does use non-ENSEMBL schemes for some non-vertebrate
-# species — e.g., yeast ORF names — but those taxa aren't in SUPPORTED_TAXA, and
-# parse_string_protein_id raises an exception on them, so a more complex parser isn't needed.)
+# Note on identifier scheme: for the three Translator-target taxa (human / mouse / rat),
+# STRING uses ENSEMBL protein identifiers exclusively — ENSP* (human), ENSMUSP* (mouse),
+# ENSRNOP* (rat). Verified across the checked-in fixtures: 100% ENSEMBL, no UniProtKB
+# accessions. (STRING does use non-ENSEMBL schemes for some non-vertebrate species, but
+# those taxa aren't in SUPPORTED_TAXA and parse_string_protein_id raises on them.)
 def parse_string_protein_id(string_id: str) -> tuple[str, str]:
     """
     Parse a STRING-prefixed protein identifier into an "(ENSEMBL CURIE, NCBITaxon CURIE)" pair.
@@ -243,11 +167,11 @@ def passes_combined_score(
     Uses strict greater-than (">"), matching STRING's web-UI convention where
     the slider value is the lower exclusive bound.
 
-    >>> passes_combined_score("540")
+    >>> passes_combined_score("710")
     True
-    >>> passes_combined_score("500")
+    >>> passes_combined_score("700")
     False
-    >>> passes_combined_score("499")
+    >>> passes_combined_score("699")
     False
     >>> passes_combined_score(999)
     True
@@ -255,69 +179,54 @@ def passes_combined_score(
     return int(combined_score) > threshold
 
 
-def predicates_for_row(
+def edges_for_row(
     record: dict[str, Any],
     thresholds: dict[str, int] | None = None,
-    channel_threshold: int = CHANNEL_HIGH_CONF_THRESHOLD,
-) -> list[MI_PREDICATE]:
+) -> list[tuple[str, int | None]]:
     """
-    Return the list of biolink predicates that should be emitted for one
-    STRING ".full" row, based on which channels exceed the high-confidence
-    threshold. If no channel fires, return a single-element list with the
-    fallback predicate (matches ORION's behavior).
+    Return the list of (predicate, channel_score_or_None) tuples to emit for one
+    STRING ".full" row under the 2026-07-17 edge model.
 
-    The returned list is order-stable (follows "CHANNEL_PREDICATES" insertion
-    order) and deduplicated — multiple channels mapping to the same predicate
-    only fire once. Channels with non-numeric or missing scores are silently
-    skipped; STRING guarantees integer scores, so this is a defensive guard.
+    Always includes (ALWAYS_PREDICATE, combined_score). Additionally includes
+    channel-specific edges when their scores exceed the per-channel threshold.
+    The channel score is returned alongside each conditional predicate for later
+    attachment as a score property (PENDING BLOCKER B: attributes.yaml PR for
+    stringdb_experimental_score / stringdb_coexpression_score).
 
-    >>> row = {"fusion": "0", "cooccurence": "0",
-    ...        "coexpression": "0", "experiments": "800", "textmining": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> predicates_for_row(row)
-    ['biolink:physically_interacts_with']
+    >>> row = {"combined_score": "800", "experiments": "0", "coexpression": "0"}
+    >>> edges_for_row(row)
+    [('biolink:associated_with', 800)]
 
-    >>> row = {"fusion": "0", "cooccurence": "0",
-    ...        "coexpression": "780", "experiments": "0", "textmining": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> predicates_for_row(row)
-    ['biolink:coexpressed_with']
+    >>> row = {"combined_score": "800", "experiments": "800", "coexpression": "0"}
+    >>> edges_for_row(row)
+    [('biolink:associated_with', 800), ('biolink:directly_physically_interacts_with', 800)]
 
-    Multi-channel: experiments + coexpression both fire above 750, emit both.
+    >>> row = {"combined_score": "800", "experiments": "0", "coexpression": "800"}
+    >>> edges_for_row(row)
+    [('biolink:associated_with', 800), ('biolink:coexpressed_with', 800)]
 
-    >>> row = {"fusion": "0", "cooccurence": "0",
-    ...        "coexpression": "780", "experiments": "780", "textmining": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> predicates_for_row(row)
-    ['biolink:coexpressed_with', 'biolink:physically_interacts_with']
+    Both conditional channels fire when both exceed the threshold.
 
-    No channel above 750 → fallback (assumes the row passed combined_score
-    gate elsewhere).
+    >>> row = {"combined_score": "900", "experiments": "800", "coexpression": "800"}
+    >>> edges_for_row(row)
+    [('biolink:associated_with', 900), ('biolink:directly_physically_interacts_with', 800), ('biolink:coexpressed_with', 800)]
 
-    >>> row = {"fusion": "0", "cooccurence": "0",
-    ...        "coexpression": "300", "experiments": "200", "textmining": "100",
-    ...        "homology": "0", "database": "0"}
-    >>> predicates_for_row(row)
-    ['biolink:physically_interacts_with']
+    At the threshold is not above it — no conditional edge fires.
 
-    Per-channel override: a "thresholds" dict (from string.yaml's
-    "transform.channel_thresholds") gates each channel independently. Lowering
-    the "cooccurence" knob below a row's score surfaces
-    "genetically_interacts_with" that the default 750 gate would hide (EDA: the
-    cooccurence channel maxes at 542 across all three taxa).
+    >>> row = {"combined_score": "800", "experiments": "750", "coexpression": "750"}
+    >>> edges_for_row(row)
+    [('biolink:associated_with', 800)]
 
-    >>> row = {"fusion": "0", "cooccurence": "540",
-    ...        "coexpression": "0", "experiments": "0", "textmining": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> predicates_for_row(row)
-    ['biolink:physically_interacts_with']
+    Per-channel override lowers the experiments threshold to surface the edge.
 
-    >>> predicates_for_row(row, thresholds={"cooccurence": 450})
-    ['biolink:genetically_interacts_with']
+    >>> row = {"combined_score": "800", "experiments": "800", "coexpression": "0"}
+    >>> edges_for_row(row, thresholds={"experiments": 700, "coexpression": 750, "combined_score": 700})
+    [('biolink:associated_with', 800), ('biolink:directly_physically_interacts_with', 800)]
     """
-    fired: list[MI_PREDICATE] = []
-    seen: set[MI_PREDICATE] = set()
-    for channel, predicate in CHANNEL_PREDICATES.items():
+    resolved = thresholds if thresholds is not None else DEFAULT_THRESHOLDS
+    combined = int(str(record.get("combined_score", 0)))
+    result: list[tuple[str, int | None]] = [(ALWAYS_PREDICATE, combined)]
+    for channel, predicate in CONDITIONAL_CHANNEL_PREDICATES.items():
         raw = record.get(channel)
         if raw is None:
             continue
@@ -325,128 +234,32 @@ def predicates_for_row(
             score = int(str(raw))
         except (TypeError, ValueError):
             continue
-        threshold = thresholds.get(channel, channel_threshold) if thresholds else channel_threshold
-        if score > threshold and predicate not in seen:
-            fired.append(predicate)
-            seen.add(predicate)
-    fpl: list[MI_PREDICATE] = [FALLBACK_PREDICATE]
-    return fired if fired else fpl
-
-
-def molecular_interaction_type(predicate: MI_PREDICATE)-> list[str] | None:
-    """
-    This method attempts to assign the molecular interaction (MI)
-    type code to a given STRING entry, based on the assigned predicate
-    See https://ontobee.org/ontology/MI?iri=http://purl.obolibrary.org/obo/MI_0190
-    """
-    return \
-        [PREDICATE_TO_MI_TYPE[predicate]] \
-        if predicate in PREDICATE_TO_MI_TYPE \
-        else None
-
-
-def knowledge_level_and_agent_type_for_row(
-    record: dict[str, Any],
-    thresholds: dict[str, int] | None = None,
-) -> tuple[KnowledgeLevelEnum, AgentTypeEnum]:
-    """
-    Derive a single "(knowledge_level, agent_type)" for a STRING ".full" row
-    from its evidence channels, mirroring ORION's STRING parser.
-
-    Rule:
-      1. Pick the channel with the highest score for the row; use its KL/AT from
-         "CHANNEL_KL_AT".
-      2. If two or more channels exceed "CHANNEL_HIGH_CONF_THRESHOLD" (750),
-         upgrade to "knowledge_assertion" and prefer "manual_agent" when any
-         high-confidence channel is curator-backed (EXPERIMENTS/DATABASE),
-         otherwise "data_analysis_pipeline".
-      3. If no channel has a positive score (only possible for synthetic rows;
-         real rows passing combined_score > 500 always have ≥1 positive channel),
-         fall back to "(not_provided, not_provided)".
-
-    KL/AT is a row-level property: all edges emitted from a row share it,
-    regardless of which per-channel predicates fired.
-
-    >>> # Single dominant channel → that channel's KL/AT.
-    >>> row = {"experiments": "800", "coexpression": "100", "textmining": "0",
-    ...        "fusion": "0", "cooccurence": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
-    >>> kl.value, at.value
-    ('knowledge_assertion', 'manual_agent')
-
-    >>> # Text-mining dominant.
-    >>> row = {"experiments": "0", "coexpression": "0", "textmining": "900",
-    ...        "fusion": "0", "cooccurence": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
-    >>> kl.value, at.value
-    ('not_provided', 'text_mining_agent')
-
-    >>> # Two high-confidence channels, one curator-backed → upgrade.
-    >>> row = {"experiments": "800", "coexpression": "800", "textmining": "0",
-    ...        "fusion": "0", "cooccurence": "0",
-    ...        "homology": "0", "database": "0"}
-    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
-    >>> kl.value, at.value
-    ('knowledge_assertion', 'manual_agent')
-
-    >>> # All-zero (synthetic) row → not_provided.
-    >>> row = {ch: "0" for ch in CHANNEL_KL_AT}
-    >>> kl, at = knowledge_level_and_agent_type_for_row(row)
-    >>> kl.value, at.value
-    ('not_provided', 'not_provided')
-    """
-    max_score = 0
-    dominant_channel: str | None = None
-    high_conf_channels: list[str] = []
-    for channel in CHANNEL_KL_AT:
-        raw = record.get(channel)
-        if raw is None:
-            continue
-        try:
-            score = int(str(raw))
-        except (TypeError, ValueError):
-            continue
-        if score > max_score:
-            max_score = score
-            dominant_channel = channel
-        channel_threshold = thresholds.get(channel, CHANNEL_HIGH_CONF_THRESHOLD) if thresholds else CHANNEL_HIGH_CONF_THRESHOLD
-        if score > channel_threshold:
-            high_conf_channels.append(channel)
-
-    if dominant_channel is None:
-        return KnowledgeLevelEnum.not_provided, AgentTypeEnum.not_provided
-
-    if len(high_conf_channels) > 1:
-        # Multiple strong channels: treat as a curator-grade assertion. Prefer
-        # manual_agent if any high-confidence channel is curator-backed.
-        any_manual = any(
-            CHANNEL_KL_AT[c][1] == AgentTypeEnum.manual_agent
-            for c in high_conf_channels
-        )
-        agent = AgentTypeEnum.manual_agent if any_manual else AgentTypeEnum.data_analysis_pipeline
-        return KnowledgeLevelEnum.knowledge_assertion, agent
-
-    return CHANNEL_KL_AT[dominant_channel]
+        threshold = resolved.get(channel, EXPERIMENTS_THRESHOLD)
+        if score > threshold:
+            result.append((predicate, score))
+    return result
 
 
 def make_string_ppi_edge(
     subject_id: str,
-    predicate: MI_PREDICATE,
+    predicate: str,
     object_id: str,
     knowledge_level: KnowledgeLevelEnum,
     agent_type: AgentTypeEnum,
 ):
     """
     Construct one STRING PPI edge, dispatching to the correct biolink Association
-    class for the predicate and attaching the PSI-MI physical-association
-    attribute only to "physically_interacts_with" edges.
+    class for the predicate.
 
-    Centralizes the per-predicate class dispatch + has_attribute logic so the
-    transform body stays a flat loop. Returns a "PairwiseMolecularInteraction"
-    for most predicates and a "GeneToGeneCoexpressionAssociation" for
-    "coexpressed_with" (see "PREDICATE_TO_ASSOCIATION_CLASS").
+    Uses PREDICATE_TO_ASSOCIATION_CLASS for the dispatch; raises AssertionError
+    for unknown predicates.
+
+    Edge score properties (stringdb_combined_score / stringdb_experimental_score /
+    stringdb_coexpression_score) are PENDING BLOCKER B (attributes.yaml PR) and
+    are not yet attached here.
+
+    association_basis_qualifier:Functional on the associated_with edge is
+    PENDING BLOCKER A (Matt's biolink PR) and is not yet attached here.
     """
     assert predicate in PREDICATE_TO_ASSOCIATION_CLASS, f"Unknown predicate: {predicate!r}"
     association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]
@@ -456,9 +269,8 @@ def make_string_ppi_edge(
         predicate=predicate,
         object=object_id,
         sources=STRING_SOURCES,
-        has_attribute=molecular_interaction_type(predicate),
         knowledge_level=knowledge_level,
-        agent_type=agent_type
+        agent_type=agent_type,
     )
 
 

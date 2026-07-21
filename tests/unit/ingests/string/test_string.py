@@ -7,29 +7,27 @@ import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
     AgentTypeEnum,
-    KnowledgeLevelEnum
+    KnowledgeLevelEnum,
 )
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.string.string import (
     get_latest_version,
-    transform_string_ppi
-
+    transform_string_ppi,
 )
 from translator_ingest.ingests.string.string_utils import (
-    CHANNEL_KL_AT,
-    CHANNEL_PREDICATES,
+    ALWAYS_PREDICATE,
+    COMBINED_SCORE_THRESHOLD,
+    CONDITIONAL_CHANNEL_PREDICATES,
     DEFAULT_THRESHOLDS,
-    FALLBACK_PREDICATE,
-    PSI_MI_PHYSICAL_ASSOCIATION,
-    knowledge_level_and_agent_type_for_row,
+    EDGE_KL_AT,
+    edges_for_row,
     load_string_to_entrez_mapping,
     parse_string_protein_id,
     passes_combined_score,
-    predicates_for_row,
     resolve_thresholds,
-    sorted_pair_key
+    sorted_pair_key,
 )
 
 
@@ -116,10 +114,10 @@ def test_parse_string_protein_id_rejects_malformed(string_id):
     "score,expected",
     [
         ("952", True),   # high confidence
-        ("540", True),   # just above the boundary
-        ("501", True),   # one above the boundary
-        ("500", False),  # at the boundary; strict greater-than
-        ("499", False),  # just below
+        ("710", True),   # just above the boundary
+        ("701", True),   # one above the boundary
+        ("700", False),  # at the boundary; strict greater-than
+        ("699", False),  # just below
         ("0", False),    # zero
         (952, True),     # accepts int too
     ],
@@ -161,15 +159,13 @@ def test_sorted_pair_key_collapses_symmetric_rows():
 
 
 def test_sorted_pair_key_distinguishes_predicates():
-    """Different predicates produce different keys for the same pair, so
-    multiple per-channel predicates can coexist without colliding."""
+    """Different predicates produce different keys for the same pair."""
     a, b = "ENSEMBL:A", "ENSEMBL:B"
     assert sorted_pair_key(a, b, "biolink:coexpressed_with") != \
-           sorted_pair_key(a, b, "biolink:physically_interacts_with")
+           sorted_pair_key(a, b, "biolink:associated_with")
 
 
 # Network-dependent: hits https://string-db.org/api/json/version.
-# Skipped to keep CI hermetic, matching the convention in test_panther.py.
 @pytest.mark.skip(reason="hits string-db.org; run manually to verify the version endpoint")
 def test_get_latest_version_live():
     version = get_latest_version()
@@ -189,6 +185,90 @@ R1 = "10116.ENSRNOP00000000001"
 R2 = "10116.ENSRNOP00000000002"
 
 
+# ──── edges_for_row tests ─────────────────────────────────────────────────────
+
+
+def test_edges_for_row_always_emits_associated_with():
+    """Every row above the combined_score gate yields an associated_with edge."""
+    row = {"combined_score": "800", "experiments": "0", "coexpression": "0"}
+    result = edges_for_row(row)
+    assert len(result) >= 1
+    assert result[0] == (ALWAYS_PREDICATE, 800)
+
+
+def test_edges_for_row_experiments_above_threshold_fires_physical():
+    """experiments > threshold adds directly_physically_interacts_with."""
+    row = {"combined_score": "800", "experiments": "800", "coexpression": "0"}
+    predicates = [p for p, _ in edges_for_row(row)]
+    assert "biolink:directly_physically_interacts_with" in predicates
+
+
+def test_edges_for_row_coexpression_above_threshold_fires_coexpressed():
+    """coexpression > threshold adds coexpressed_with."""
+    row = {"combined_score": "800", "experiments": "0", "coexpression": "800"}
+    predicates = [p for p, _ in edges_for_row(row)]
+    assert "biolink:coexpressed_with" in predicates
+
+
+def test_edges_for_row_at_threshold_does_not_fire():
+    """At exactly the threshold is not above it — no conditional edge fires."""
+    row = {"combined_score": "800", "experiments": "750", "coexpression": "750"}
+    result = edges_for_row(row)
+    assert len(result) == 1  # associated_with only
+    assert result[0][0] == ALWAYS_PREDICATE
+
+
+def test_edges_for_row_both_channels_fire():
+    """Both conditional channels firing yields three total edges."""
+    row = {"combined_score": "900", "experiments": "800", "coexpression": "800"}
+    predicates = [p for p, _ in edges_for_row(row)]
+    assert set(predicates) == {
+        "biolink:associated_with",
+        "biolink:directly_physically_interacts_with",
+        "biolink:coexpressed_with",
+    }
+
+
+def test_edges_for_row_carries_channel_score():
+    """The score component of each tuple matches the raw channel value."""
+    row = {"combined_score": "850", "experiments": "820", "coexpression": "0"}
+    result = edges_for_row(row)
+    by_pred = {p: s for p, s in result}
+    assert by_pred["biolink:associated_with"] == 850
+    assert by_pred["biolink:directly_physically_interacts_with"] == 820
+
+
+def test_edges_for_row_per_channel_threshold_override():
+    """A thresholds dict overrides individual channels independently."""
+    row = {"combined_score": "800", "experiments": "760", "coexpression": "0"}
+    # Default (750): 760 > 750 → fires.
+    assert "biolink:directly_physically_interacts_with" in [
+        p for p, _ in edges_for_row(row)
+    ]
+    # Raised to 800: 760 is not > 800 → does not fire.
+    lowered = edges_for_row(row, thresholds={"experiments": 800, "coexpression": 750, "combined_score": 700})
+    assert "biolink:directly_physically_interacts_with" not in [p for p, _ in lowered]
+
+
+def test_edges_for_row_non_predicate_channels_never_fire():
+    """Channels that have no entry in CONDITIONAL_CHANNEL_PREDICATES never
+    add edges, even with very high scores."""
+    row = {
+        "combined_score": "900",
+        "experiments": "0", "coexpression": "0",
+        "textmining": "999", "fusion": "999", "cooccurence": "999",
+        "homology": "999", "database": "999",
+    }
+    predicates = [p for p, _ in edges_for_row(row)]
+    # Only always-predicate; the other channels are not in CONDITIONAL_CHANNEL_PREDICATES.
+    assert predicates == [ALWAYS_PREDICATE]
+    for ch in ["textmining", "fusion", "cooccurence", "homology", "database"]:
+        assert ch not in CONDITIONAL_CHANNEL_PREDICATES
+
+
+# ──── Transform tests ─────────────────────────────────────────────────────────
+
+
 @pytest.mark.parametrize(
     "p1,p2,expected_taxon",
     [
@@ -197,35 +277,119 @@ R2 = "10116.ENSRNOP00000000002"
         (R1, R2, "NCBITaxon:10116"),
     ],
 )
-def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expected_taxon):
-    """Above-combined-score row with no high-confidence channels emits a single
-    fallback edge ("physically_interacts_with"). PSI-MI MI:0915 (PSI_MI_PHYSICAL_ASSOCIATION)
-    is attached only to the physical-interaction predicate."""
+def test_transform_emits_associated_with_above_threshold(mock_koza, p1, p2, expected_taxon):
+    """Every above-threshold row emits at least one associated_with edge.
+    Nodes are Protein with correct taxon."""
     result = transform_string_ppi(
         mock_koza,
-        _full_row(p1, p2, combined_score=540),
+        _full_row(p1, p2, combined_score=750),
     )
     assert result is not None
     assert result.nodes is not None and result.edges is not None
     assert len(list(result.nodes)) == 2
-    assert len(list(result.edges)) == 1
+    edges = list(result.edges)
+    assert len(edges) >= 1
+    assert edges[0].predicate == "biolink:associated_with"
 
     for node in result.nodes:
         assert node.category == ["biolink:Protein"]
-        assert isinstance(node,Protein) and node.in_taxon == [expected_taxon]
+        assert isinstance(node, Protein) and node.in_taxon == [expected_taxon]
         assert node.equivalent_identifiers
-        for eq in node.equivalent_identifiers:
-            assert eq.startswith("NCBIGene:")
 
+
+def test_transform_associated_with_kl_at(mock_koza):
+    """The always-emitted associated_with edge carries the fixed KL/AT."""
+    result = transform_string_ppi(mock_koza, _full_row(H1, H2, combined_score=750))
+    assert result is not None and result.edges is not None
     edges = list(result.edges)
-    edge = edges[0]
-    assert edge.predicate == "biolink:physically_interacts_with"
-    assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
-    assert edge.agent_type == AgentTypeEnum.not_provided
-    assert edge.has_attribute == [PSI_MI_PHYSICAL_ASSOCIATION]
-    assert edge.sources is not None
-    primary = next(s for s in edge.sources if s.resource_role == "primary_knowledge_source")
-    assert primary.resource_id == "infores:string"
+    assoc = next(e for e in edges if e.predicate == "biolink:associated_with")
+    expected_kl, expected_at = EDGE_KL_AT["biolink:associated_with"]
+    assert assoc.knowledge_level == expected_kl
+    assert assoc.agent_type == expected_at
+
+
+def test_transform_experiments_fires_directly_physically_interacts_with(mock_koza):
+    """experiments > threshold adds directly_physically_interacts_with."""
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=900, experiments=800),
+    )
+    assert result is not None and result.edges is not None
+    predicates = {e.predicate for e in result.edges}
+    assert "biolink:directly_physically_interacts_with" in predicates
+    assert "biolink:associated_with" in predicates
+
+
+def test_transform_coexpression_fires_coexpressed_with(mock_koza):
+    """coexpression > threshold adds coexpressed_with."""
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=900, coexpression=800),
+    )
+    assert result is not None and result.edges is not None
+    predicates = {e.predicate for e in result.edges}
+    assert "biolink:coexpressed_with" in predicates
+    assert "biolink:associated_with" in predicates
+
+
+def test_transform_both_channels_fire(mock_koza):
+    """Both channels above threshold yields all three edge types."""
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=900, experiments=800, coexpression=800),
+    )
+    assert result is not None and result.edges is not None
+    predicates = {e.predicate for e in result.edges}
+    assert predicates == {
+        "biolink:associated_with",
+        "biolink:directly_physically_interacts_with",
+        "biolink:coexpressed_with",
+    }
+
+
+def test_transform_conditional_edges_carry_correct_kl_at(mock_koza):
+    """Each edge type carries its fixed KL/AT from EDGE_KL_AT."""
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=900, experiments=800, coexpression=800),
+    )
+    assert result is not None and result.edges is not None
+    for edge in result.edges:
+        expected_kl, expected_at = EDGE_KL_AT[edge.predicate]
+        assert edge.knowledge_level == expected_kl, f"KL mismatch on {edge.predicate}"
+        assert edge.agent_type == expected_at, f"AT mismatch on {edge.predicate}"
+
+
+def test_transform_non_predicate_channels_do_not_add_edges(mock_koza):
+    """textmining, fusion, cooccurence, homology at high scores yield only associated_with."""
+    result = transform_string_ppi(
+        mock_koza,
+        _full_row(H1, H2, combined_score=900,
+                  textmining=999, fusion=999, cooccurence=999, homology=999),
+    )
+    assert result is not None and result.edges is not None
+    predicates = [e.predicate for e in result.edges]
+    assert predicates == ["biolink:associated_with"]
+
+
+def test_transform_dedupes_per_pair_per_predicate(mock_koza):
+    """Symmetric duplicate row for the SAME predicate is suppressed; a DIFFERENT
+    predicate for the same pair is independent and still emits."""
+    first = transform_string_ppi(
+        mock_koza, _full_row(H1, H2, combined_score=900, experiments=800),
+    )
+    # Same pair, reversed — same predicates → fully suppressed
+    second = transform_string_ppi(
+        mock_koza, _full_row(H2, H1, combined_score=900, experiments=800),
+    )
+    # Same pair, reversed — coexpression didn't fire in first → emits
+    third = transform_string_ppi(
+        mock_koza, _full_row(H2, H1, combined_score=900, coexpression=800),
+    )
+    assert first is not None and first.edges is not None
+    assert second is None  # full dup (associated_with and directly_physically already seen)
+    assert third is not None and third.edges is not None
+    assert list(third.edges)[0].predicate == "biolink:coexpressed_with"
 
 
 def test_transform_populates_equivalent_identifiers_from_mapping(mock_koza):
@@ -242,7 +406,6 @@ def test_transform_preserves_multimapping(mock_koza):
     result = transform_string_ppi(mock_koza, _full_row(H1, H3, combined_score=952))
     assert result is not None and result.nodes is not None
     by_id = {n.id: n for n in list(result.nodes)}
-    # H3 (ENSP00000481152) maps to two genes in the fixture.
     assert by_id["ENSEMBL:ENSP00000481152"].equivalent_identifiers == [
         "NCBIGene:1234",
         "NCBIGene:5678",
@@ -250,249 +413,17 @@ def test_transform_preserves_multimapping(mock_koza):
 
 
 def test_transform_handles_missing_mapping(mock_koza):
-    """A protein with no Entrez mapping yields "equivalent_identifiers=None",
-    not a crash or empty list."""
-    # "9606.ENSP00000000001" is deliberately absent from FIXTURE_STRING_TO_ENTREZ.
+    """A protein with no Entrez mapping yields 'equivalent_identifiers=None'."""
     result = transform_string_ppi(
         mock_koza, _full_row("9606.ENSP00000000001", H2, combined_score=952),
     )
     assert result is not None and result.nodes is not None
     by_id = {n.id: n for n in result.nodes}
     assert by_id["ENSEMBL:ENSP00000000001"].equivalent_identifiers is None
-    # The other protein still gets its mapping populated.
     assert by_id["ENSEMBL:ENSP00000478289"].equivalent_identifiers == ["NCBIGene:4193"]
 
 
-# ──── Per-channel predicate tests ────────────────────────────────────────────
-
-
-def test_predicates_for_row_single_channel_above_threshold():
-    row = {"experiments": "800", "coexpression": "0", 
-           "fusion": "0", "cooccurence": "0", "textmining": "0"}
-    assert predicates_for_row(row) == ["biolink:physically_interacts_with"]
-
-
-def test_predicates_for_row_multiple_channels_fire_independently():
-    row = {"experiments": "780", "coexpression": "780", 
-           "fusion": "0", "cooccurence": "0", "textmining": "0"}
-    preds = predicates_for_row(row)
-    assert "biolink:physically_interacts_with" in preds
-    assert "biolink:coexpressed_with" in preds
-    assert len(preds) == 2
-
-
-def test_predicates_for_row_at_threshold_does_not_fire():
-    """Threshold is strictly greater-than; equal does not fire."""
-    row = {"experiments": "750", "coexpression": "0", 
-           "fusion": "0", "cooccurence": "0", "textmining": "0"}
-    # No channel exceeds 750 → fallback only.
-    assert predicates_for_row(row) == [FALLBACK_PREDICATE]
-
-
-def test_predicates_for_row_no_channel_above_threshold_returns_fallback():
-    row = {"experiments": "500", "coexpression": "400", "fusion": "0", "cooccurence": "0", "textmining": "300"}
-    assert predicates_for_row(row) == [FALLBACK_PREDICATE]
-
-
-def test_predicates_for_row_homology_never_emits_predicate():
-    """HOMOLOGY channel is excluded from CHANNEL_PREDICATES because STRING's
-    HOMOLOGY score means 'interaction inferred via orthologs in another
-    species', NOT 'A is homologous to B'. So even with a maxed-out homology
-    score, no predicate is added (and we fall back to physically_interacts_with)."""
-    row = {"experiments": "0", "coexpression": "0", 
-           "fusion": "0", "cooccurence": "0", "textmining": "0",
-           "homology": "999"}
-    assert predicates_for_row(row) == [FALLBACK_PREDICATE]
-    assert "homology" not in CHANNEL_PREDICATES
-
-
-def test_predicates_for_row_database_never_emits_predicate():
-    """DATABASE is similarly excluded from CHANNEL_PREDICATES (matches ORION).
-    Database evidence still contributes to combined_score; it just doesn't
-    drive an additional channel-specific predicate."""
-    assert "database" not in CHANNEL_PREDICATES
-
-
-def test_predicates_for_row_all_channels_fire():
-    """When every mapped channel is above the threshold, all 6 predicates fire."""
-    row = {ch: "800" for ch in CHANNEL_PREDICATES}
-    preds = predicates_for_row(row)
-    assert set(preds) == set(CHANNEL_PREDICATES.values())
-
-
-@pytest.mark.parametrize(
-    "channel_scores,expected_predicates",
-    [
-        # ORION-style channels
-        ({"experiments": 800},  ["biolink:physically_interacts_with"]),
-        ({"coexpression": 800}, ["biolink:coexpressed_with"]),
-        ({"textmining": 800},   ["biolink:interacts_with"]),
-        ({"fusion": 800},       ["biolink:gene_fusion_with"]),
-        ({"cooccurence": 800},  ["biolink:genetically_interacts_with"]),
-    ],
-)
-def test_transform_emits_predicate_per_high_confidence_channel(
-    mock_koza, channel_scores, expected_predicates
-):
-    result = transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=952, **channel_scores),
-    )
-    assert result is not None and result.edges is not None
-    predicates = [e.predicate for e in result.edges]
-    assert predicates == expected_predicates
-
-
-def test_transform_emits_multiple_edges_for_multi_channel_row(mock_koza):
-    """A row with three high-confidence channels emits three distinct edges
-    (one per fired predicate), sharing the same subject/object."""
-    result = transform_string_ppi(
-        mock_koza,
-        _full_row(H1, H2, combined_score=952,
-                  experiments=800, coexpression=800, textmining=800),
-    )
-    assert result is not None and result.edges is not None
-    predicates = {e.predicate for e in result.edges}
-    assert predicates == {
-        "biolink:physically_interacts_with",
-        "biolink:coexpressed_with",
-        "biolink:interacts_with",
-    }
-    # MI:0915 only on the physical-interaction edge; others omit has_attribute.
-    physical = next(e for e in result.edges if e.predicate == "biolink:physically_interacts_with")
-    assert physical.has_attribute == [PSI_MI_PHYSICAL_ASSOCIATION]
-    for e in result.edges:
-        if e.predicate != "biolink:physically_interacts_with":
-            assert e.has_attribute is None
-
-
-def test_transform_dedupes_per_pair_per_predicate(mock_koza):
-    """Symmetric duplicate row for the SAME predicate gets dropped; the same
-    pair under a DIFFERENT predicate is independent and still emits."""
-    first = transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=952, experiments=800),
-    )
-    # Same pair, reversed, same predicate → suppressed
-    second = transform_string_ppi(
-        mock_koza, _full_row(H2, H1, combined_score=952, experiments=800),
-    )
-    # Same pair, reversed, DIFFERENT predicate → emitted
-    third = transform_string_ppi(
-        mock_koza, _full_row(H2, H1, combined_score=952, coexpression=800),
-    )
-    assert first is not None and first.edges is not None
-    assert len(list(first.edges)) == 1
-    assert second is None  # full dup
-    assert third is not None and third.edges is not None
-    assert len(list(third.edges)) == 1
-    assert list(third.edges)[0].predicate == "biolink:coexpressed_with"
-
-
-# ──── Per-channel knowledge-level / agent-type tests ─────────────────────────
-
-
-@pytest.mark.parametrize(
-    "channel_scores,expected_kl,expected_at",
-    [
-        # Single dominant channel → that channel's KL/AT
-        ({"experiments": 800},  KnowledgeLevelEnum.knowledge_assertion,    AgentTypeEnum.manual_agent),
-        ({"database": 800},     KnowledgeLevelEnum.knowledge_assertion,    AgentTypeEnum.manual_agent),
-        ({"coexpression": 800}, KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
-        ({"cooccurence": 800},  KnowledgeLevelEnum.statistical_association, AgentTypeEnum.data_analysis_pipeline),
-        ({"fusion": 800},       KnowledgeLevelEnum.prediction,             AgentTypeEnum.data_analysis_pipeline),
-        ({"homology": 800},     KnowledgeLevelEnum.prediction,             AgentTypeEnum.computational_model),
-        ({"textmining": 800},   KnowledgeLevelEnum.not_provided,           AgentTypeEnum.text_mining_agent),
-    ],
-)
-def test_knowledge_level_and_agent_type_single_channel(channel_scores, expected_kl, expected_at):
-    row = {ch: 0 for ch in [
-        "fusion", "cooccurence", "homology",
-        "coexpression", "experiments", "database", "textmining",
-    ]}
-    row.update(channel_scores)
-    kl, at = knowledge_level_and_agent_type_for_row(row)
-    assert kl == expected_kl
-    assert at == expected_at
-
-
-def test_knowledge_level_multi_high_conf_upgrades_to_manual():
-    """Two high-conf channels including a curator-backed one → knowledge_assertion + manual_agent."""
-    row = {ch: 0 for ch in CHANNEL_KL_AT}
-    row.update({"experiments": 800, "coexpression": 800})  # one manual, one pipeline
-    kl, at = knowledge_level_and_agent_type_for_row(row)
-    assert kl == KnowledgeLevelEnum.knowledge_assertion
-    assert at == AgentTypeEnum.manual_agent
-
-
-def test_knowledge_level_multi_high_conf_without_manual_uses_pipeline():
-    """High-conf channels, neither curator-backed → knowledge_assertion + data_analysis_pipeline."""
-    row = {ch: 0 for ch in CHANNEL_KL_AT}
-    row.update({"coexpression": 800, "cooccurence": 800})  # statistical + prediction, no manual
-    kl, at = knowledge_level_and_agent_type_for_row(row)
-    assert kl == KnowledgeLevelEnum.knowledge_assertion
-    assert at == AgentTypeEnum.data_analysis_pipeline
-
-
-def test_knowledge_level_all_zero_row_is_not_provided():
-    row = {ch: 0 for ch in CHANNEL_KL_AT}
-    kl, at = knowledge_level_and_agent_type_for_row(row)
-    assert kl == KnowledgeLevelEnum.not_provided
-    assert at == AgentTypeEnum.not_provided
-
-
-def test_transform_propagates_channel_kl_at_to_edges(mock_koza):
-    """Every edge from a row shares the row-level KL/AT derived from the dominant channel."""
-    # experiments dominant → knowledge_assertion + manual_agent on all edges,
-    # including the coexpression edge that also fires.
-    result = transform_string_ppi(
-        mock_koza,
-        _full_row(H1, H2, combined_score=952, experiments=900, coexpression=800),
-    )
-    assert result is not None and result.edges is not None
-    assert len(list(result.edges)) == 2
-    for edge in result.edges:
-        assert edge.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
-        assert edge.agent_type == AgentTypeEnum.manual_agent
-
-
-def test_transform_textmining_only_edge_carries_textmining_kl_at(mock_koza):
-    result = transform_string_ppi(
-        mock_koza,
-        _full_row(H1, H2, combined_score=952, textmining=900),
-    )
-    assert result is not None and result.edges is not None
-    edge = list(result.edges)[0]
-    assert edge.predicate == "biolink:interacts_with"
-    assert edge.knowledge_level == KnowledgeLevelEnum.not_provided
-    assert edge.agent_type == AgentTypeEnum.text_mining_agent
-
-
-def test_load_string_to_entrez_mapping(tmp_path):
-    """Parser produces a dict[str, list[str]] of CURIEs, skips unsupported taxa,
-    preserves order on multi-mapping rows, and tolerates blank/short lines."""
-    p = tmp_path / "all_organisms.entrez_2_string.tsv"
-    p.write_text(
-        "# NCBI taxid / entrez / STRING\n"
-        "9606\t381\t9606.ENSP00000000233\n"
-        "9606\t9606\t9606.ENSP00000000412\n"
-        "9606\t1234\t9606.ENSP00000481152\n"   # first of a multimap
-        "9606\t5678\t9606.ENSP00000481152\n"   # second of the same protein
-        "10090\t11428\t10090.ENSMUSP00000000001\n"
-        "4932\t850001\t4932.YAL001C\n"          # unsupported taxon must be skipped
-        "\n"                                     # blank line must be tolerated
-        "9606\tmalformed\n"                      # short line must be skipped
-    )
-    mapping = load_string_to_entrez_mapping(p)
-    assert mapping == {
-        "9606.ENSP00000000233": ["NCBIGene:381"],
-        "9606.ENSP00000000412": ["NCBIGene:9606"],
-        "9606.ENSP00000481152": ["NCBIGene:1234", "NCBIGene:5678"],
-        "10090.ENSMUSP00000000001": ["NCBIGene:11428"],
-    }
-    # Yeast (4932) row was filtered out.
-    assert "4932.YAL001C" not in mapping
-
-
-@pytest.mark.parametrize("score", ["500", "499", "0"])
+@pytest.mark.parametrize("score", ["700", "699", "0"])
 def test_transform_drops_rows_at_or_below_threshold(mock_koza, score):
     assert transform_string_ppi(mock_koza, _full_row(H1, H2, combined_score=score)) is None
 
@@ -524,56 +455,69 @@ def test_transform_rejects_cross_species_pair(mock_koza):
 
 
 def test_resolve_thresholds_defaults_and_overrides():
-    """No overrides → the canonical defaults; overrides are coerced to int and
-    merged on top, leaving untouched channels at their default."""
+    """No overrides → the canonical defaults; overrides coerced to int and merged."""
     assert resolve_thresholds() == DEFAULT_THRESHOLDS
     assert resolve_thresholds(None) == DEFAULT_THRESHOLDS
-    merged = resolve_thresholds({"cooccurence": "450", "combined_score": 400})
-    assert merged["cooccurence"] == 450          # string coerced to int
-    assert merged["combined_score"] == 400
-    assert merged["experiments"] == DEFAULT_THRESHOLDS["experiments"]  # untouched
+    merged = resolve_thresholds({"experiments": "800", "combined_score": 600})
+    assert merged["experiments"] == 800          # string coerced to int
+    assert merged["combined_score"] == 600
+    assert merged["coexpression"] == DEFAULT_THRESHOLDS["coexpression"]  # untouched
 
 
-def test_predicates_for_row_per_channel_threshold_override():
-    """A per-channel thresholds dict gates each channel independently, surfacing
-    a predicate the uniform 750 default would hide (EDA: cooccurence maxes 542)."""
-    row = _full_row(H1, H2, combined_score=952, cooccurence=540)
-    # Default gate (750): cooccurence (540) does not fire → fallback only.
-    assert predicates_for_row(row) == [FALLBACK_PREDICATE]
-    # Lowered cooccurence knob: the gene-to-gene predicate now fires.
-    assert predicates_for_row(row, thresholds={"cooccurence": 450}) == [
-        "biolink:genetically_interacts_with"
-    ]
-
-
-def test_transform_default_thresholds_reproduce_prior_output(mock_koza):
-    """With no thresholds injected (state lacks the key), the transform falls
-    back to DEFAULT_THRESHOLDS — a sub-750 channel yields only the fallback
-    predicate, identical to the historical hardcoded behavior."""
+def test_transform_default_thresholds_no_channel_fire(mock_koza):
+    """With channel scores at 0 and combined_score just above 700, only
+    associated_with is emitted (no conditional channel fires)."""
     result = transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=952, cooccurence=540)
+        mock_koza, _full_row(H1, H2, combined_score=750)
     )
     assert result is not None and result.edges is not None
-    assert [e.predicate for e in result.edges] == ["biolink:physically_interacts_with"]
+    assert [e.predicate for e in result.edges] == ["biolink:associated_with"]
 
 
 def test_transform_respects_injected_per_channel_thresholds(mock_koza):
-    """Lowering the cooccurence threshold (as string.yaml would via extra_fields,
-    here injected into state) surfaces genetically_interacts_with for a row whose
-    cooccurence score sits below the default gate."""
-    mock_koza.state["thresholds"] = resolve_thresholds({"cooccurence": 450})
+    """Lowering the experiments threshold via injected state surfaces the
+    directly_physically_interacts_with edge."""
+    mock_koza.state["thresholds"] = resolve_thresholds({"experiments": 700})
     result = transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=952, cooccurence=540)
+        mock_koza, _full_row(H1, H2, combined_score=800, experiments=750)
     )
     assert result is not None and result.edges is not None
-    assert [e.predicate for e in result.edges] == ["biolink:genetically_interacts_with"]
+    predicates = {e.predicate for e in result.edges}
+    assert "biolink:directly_physically_interacts_with" in predicates
 
 
 def test_transform_respects_injected_combined_score_gate(mock_koza):
     """The combined_score gate is read from the resolved thresholds too: raising
-    it drops a row that the default 500 gate would have kept."""
+    it drops a row that the default gate would have kept."""
     mock_koza.state["thresholds"] = resolve_thresholds({"combined_score": 900})
-    # combined_score 600 > 500 (default) but <= 900 (override) → dropped.
     assert transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=600, experiments=800)
+        mock_koza, _full_row(H1, H2, combined_score=750, experiments=800)
     ) is None
+
+
+# ──── Entrez mapping tests ────────────────────────────────────────────────────
+
+
+def test_load_string_to_entrez_mapping(tmp_path):
+    """Parser produces a dict[str, list[str]] of CURIEs, skips unsupported taxa,
+    preserves order on multi-mapping rows, and tolerates blank/short lines."""
+    p = tmp_path / "all_organisms.entrez_2_string.tsv"
+    p.write_text(
+        "# NCBI taxid / entrez / STRING\n"
+        "9606\t381\t9606.ENSP00000000233\n"
+        "9606\t9606\t9606.ENSP00000000412\n"
+        "9606\t1234\t9606.ENSP00000481152\n"   # first of a multimap
+        "9606\t5678\t9606.ENSP00000481152\n"   # second of the same protein
+        "10090\t11428\t10090.ENSMUSP00000000001\n"
+        "4932\t850001\t4932.YAL001C\n"          # unsupported taxon must be skipped
+        "\n"                                     # blank line must be tolerated
+        "9606\tmalformed\n"                      # short line must be skipped
+    )
+    mapping = load_string_to_entrez_mapping(p)
+    assert mapping == {
+        "9606.ENSP00000000233": ["NCBIGene:381"],
+        "9606.ENSP00000000412": ["NCBIGene:9606"],
+        "9606.ENSP00000481152": ["NCBIGene:1234", "NCBIGene:5678"],
+        "10090.ENSMUSP00000000001": ["NCBIGene:11428"],
+    }
+    assert "4932.YAL001C" not in mapping
