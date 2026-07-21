@@ -1,29 +1,38 @@
-name: Human Phenotype Ontology Annotations
+name: Human Phenotype Ontology Annotations Reference Ingest Guide
 source_info:
   infores_id: infores:hpo-annotations
+  name: Human Phenotype Ontology Annotations
   description: >-
-    The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) provides a 
-    standard vocabulary of phenotypic abnormalities encountered in human disease.
-    Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect. 
-    The HPO is currently being developed using the medical literature, Orphanet, DECIPHER, and OMIM. 
-    HPO currently contains over 18,000 terms and over 156,000 annotations to hereditary diseases. 
-    The HPO project and others have developed software for phenotype-driven differential diagnostics,
-    genomic diagnostics, and translational research.
+    The [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) annotation dataset is
+    produced and maintained by the Human Phenotype Ontology Consortium, led by investigators
+    at the Charité – Universitätsmedizin Berlin and collaborating institutions.
+    Its purpose is to provide standardized annotations linking human diseases and 
+    genes to phenotypic abnormalities using Human Phenotype Ontology terms, 
+    thereby supporting rare disease diagnosis, genomic variant interpretation, 
+    disease gene discovery, and computational phenotype analysis.
     
-    The Human Phenotype Ontology group curates and assembles over 115,000 HPO-related annotations ("HPOA")
-    to hereditary diseases using the HPO ontology. Here we create Biolink associations between diseases
-    and phenotypic features, together with their evidence, and age of onset and frequency (if known).
-    Disease annotations here are also cross-referenced to the MONarch Disease Ontology (MONDO)
-    (https://mondo.monarchinitiative.org/).
-
-    There are four HPOA ingests ('disease-to-phenotype' (includes capture of disease modes of inheritance,
-    'gene-to-phenotype' and 'gene-to-disease') that parse out records from the 
-    HPO Phenotype Annotation File (http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa).
+    The dataset contains disease–phenotype annotations, gene–phenotype associations,
+    phenotype frequencies, onset information, modifiers, evidence metadata,
+    and supporting references. Knowledge is generated through expert manual curation
+    of the biomedical literature, clinical case reports, and authoritative disease resources,
+    together with integration of annotations from external databases such as rare disease
+    and clinical genetics resources. Additional computational pipelines harmonize annotations
+    to ontology terms and propagate annotations through the ontology hierarchy
+    while preserving provenance and evidence for each association.
+    
+    Here we create Biolink associations between genes, phenotypic features and diseases,
+    together with their evidence, and age of onset and frequency (if known). Disease annotations here
+    are also cross-referenced to the [MONarch Disease Ontology (MONDO)](https://mondo.monarchinitiative.org/).
+    There are three HPOA ingests: 'disease-to-phenotype' (nodes including disease modes of inheritance
+    when given, plus edges), 'gene-to-phenotype' and 'gene-to-disease'.
   citations:
   - https://doi.org/10.1093/nar/gkaa1043
   terms_of_use_info:
     terms_of_use_url: "https://hpo.jax.org/license"
-    terms_of_use_description: "Bespoke terms describing specific conditions for use of HPOA data. No formal license."
+    terms_of_use_description: >-
+      Freely available for use and redistribution with attribution, 
+      version/date disclosure, and no content modification.
+      Human Phenotype Ontology (HPO) used herein is copyrighted.
   data_access_locations:
   - https://hpo.jax.org/data/annotations
   data_provision_mechanisms:
@@ -34,22 +43,28 @@ source_info:
   - other  # phenotype.hpoa is actually a tsv with a multi-line comment header
   data_versioning_and_releases: >-
      GitHub managed releases at https://github.com/obophenotype/human-phenotype-ontology/releases
-     No consistent cadence for releases. Versioning is based on the month and year of the release.
-  additional_notes:
-    - null
+     HPO is released +/- 5 times each year. Versioning is based on the month and year of the release.
+  source_status: maintained_regular_updates
 ingest_info:
   ingest_categories:
   - primary_knowledge_provider
   utility: >-
-    The HPO and associated annotations are a flagship product of the Monarch Initiative 
-    (https://monarchinitiative.org/), an NIH-supported international consortium dedicated
-    to semantic integration of biomedical and model organism data with the ultimate goal
-    of improving biomedical research. The human phenotype/disease/gene knowledge integration
-    aligns well with the general mission of the Biomedical Data Translator.  As a consequence,
-    several members of the Monarch Initiative are direct participants in the Biomedical Data Translator,
-    with Monarch data forming one primary knowledge source contributing to Translator knowledge graphs.
+    The Human Phenotype Ontology was initially developed at the Charité University Hospital
+    in Berlin, Germany by Peter N Robinson and Sebastian Köhler with support from
+    Sandra Doelken and Sebastian Bauer. Very soon after the initial publication of the HPO in 2008,
+    a collaboration was initiated with researchers from the Lawrence Berkeley National Laboratory
+    (Chris Mungall, Suzi Lewis, and Nicole Washington), the University of Cambridge
+    (Michael Ashburner Paul Schofield, George Gkoutos), and the University of Oregon
+    (Melissa Haendel, Monte Westerfield). These groups have developed a scheme for
+    Linking human diseases to animal models using ontology-based phenotype annotation.
+    In parallel, the DECIPHER project at the Wellcome Trust Sanger Institute led by
+    Helen Firth and Matt Hurles, conducted clinical workshops to extend the HPO
+    and have provided an enormous amount of support and input in subsequent years.
+    Knowledge asserted by HPO phenotype/disease/gene annotation aligns well with research
+    questions for target users of the Biomedical Data Translator.
   scope:
-    Covers curated Disease, Phenotype and Genes relationships annotated with Human Phenotype Ontology terms.
+    Covers curated Disease, Phenotype and Genes relationships annotated with
+    Human Phenotype Ontology terms.
   relevant_files:
   - file_name: phenotype.hpoa
     location: https://hpo.jax.org/data/annotations
@@ -97,8 +112,9 @@ ingest_info:
         contributes_to, or is associated with D1, and D1 is associated with a Phenotype P1.
         This logic holds for Mendelian disease where a single gene is causal and thus
         responsible for all associated phenotypes. It does not necessarily hold for 
-        Polygenic or Unknown diseases where the gene may be one of many contributing factors,
-        and thus does not necessarily contribute to or have an association with each phenotype of the disease.
+        Polygenic or Unknown diseases where the gene may be one of many contributing
+        factors, and thus does not necessarily contribute to or have an association
+        with each phenotype of the disease.
   future_considerations:
   - category: edge_content
     consideration: >-
@@ -116,17 +132,14 @@ ingest_info:
       Mendelian diseases where the Gene is individually causal for the disease
       and all of its phenotypes.
     relevant_files: genes_to_phenotype.txt
-  additional_notes:
-    - null
 target_info:
-  infores_id: "infores:translator-hpo-annotations"
   edge_type_info:
     - subject_categories:
-      - "biolink:Disease"
+        - "biolink:Disease"
       predicates:
         - "biolink:has_phenotype"
       object_categories:
-      - "biolink:PhenotypicFeature"
+        - "biolink:PhenotypicFeature"
       qualifiers:
         - property: "biolink:onset_qualifier"
           value_id_prefixes:
@@ -143,29 +156,31 @@ target_info:
       knowledge_level:
       - knowledge_assertion
       agent_type:
-      - manual_agent
+        # see https://obophenotype.github.io/human-phenotype-ontology/annotations/creation/
+        - text_mining_agent
+        - manual_agent
+        - manual_validation_of_automated_agent
       primary_knowledge_sources:
         - infores:hpo-annotations
       edge_properties:
         - "biolink:negated"
+        - "biolink:publications"
+        - "biolink:has_evidence_of_type"
         - "biolink:has_count"
         - "biolink:has_total"
         - "biolink:has_percentage"
         - "biolink:has_quotient"
-        - "biolink:publications"
-        - "biolink:has_evidence"
       ui_explanation: >-
         Source HPOA data provide Disease-Phenotype associations that are produced by
         HPO curators through manual review of clinical data and published evidence.
         The HPOA record used to create this Translator edge reports that a Phenotype
         is observed to manifest in a particular Disease, and may include information about
-        the frequency and/or biological context (e.g. sex, onset) of this manifestation.
+        the frequency and/or biological context (e.g. sex, onset, frequency) of this manifestation.
         This relationship is represented using the Biolink 'has phenotype' predicate -
-        with optional qualifiers describing frequency/context information where provided.
+        with optional qualifiers describing frequency/context information where provided,
+        as well as, the 'negated' property to indicate that the Phenotype is not observed.
       source_files:
         - phenotype.hpoa
-      additional_notes:
-        - null
     - subject_categories:
       - "biolink:Gene"
       predicates:
@@ -176,34 +191,41 @@ target_info:
         - property: "biolink:qualified_predicate"
           value_enumeration: 
             - "biolink:causes" 
-            - "biolink:contributes_to"     
+            - "biolink:contributes_to"
+          value_description: >-
+            The qualified predicate is selected on the basis of whether the 'association_type'
+            reported by HPOA is 'MENDELIAN' or 'POLYGENIC'. For Mendelian disorders (where the
+            "association_type" field = 'MENDELIAN') direct causation is assumed hence the
+            qualified_predicate is 'causes'). For polygenic disorders, the qualified predicate
+            is rather set to 'contributes_to' since the subject gene of the relationship
+            may only be one of a set of genes contributing to the phenotype.
         - property: "biolink:subject_form_or_variant_qualifier"
           value_range:
           - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
-          value_description: "Specifically, the 'genetic_variant_form' enum value is used in all cases"
+          value_description: >-
+            Specifically, the 'genetic_variant_form' enum value is used in all cases of this ingest.
       knowledge_level:
       - knowledge_assertion
       agent_type:
       - manual_agent
       primary_knowledge_sources:
         - infores:hpo-annotations      
-      edge_properties: null
       ui_explanation: >-
         Source HPOA data provide Gene-Disease associations that are manually curated from
         sources like Orphanet and MIM2Gene and DECIPHER by HPO. The record used to create
         this Translator edge reports that a Gene is associated with a Disease when there
         is evidence that variants in the gene may cause or contribute to its manifestation.
         The Biolink predicate used to represent this relationship depends on the type of 
-        Disease. For Mendelian disorders (where the HPOA "association_type" field = 'MENDELIAN')
-        'associated_with' is the primary predicate and the 'causes' predicate is used as the
-        'qualified predicate'.  For polygenic disease (where the "association_type" field = "POLYGENIC")
-        'associated_with' is the primary predicate and the 'contributes_to' predicate is used as the
-        'qualified predicate'. Qualifier is used to indicate that it is a 'genetic_variant_form'
+        Disease. The qualified predicate is selected on the basis of whether the 'association_type'
+        reported by HPOA is 'MENDELIAN' or 'POLYGENIC'. For Mendelian disorders (where the
+        "association_type" field = 'MENDELIAN') direct causation is assumed hence the
+        qualified_predicate is 'causes'). For polygenic disorders, the qualified predicate
+        is rather set to 'contributes_to' since the subject gene of the relationship
+        may only be one of a set of genes contributing to the phenotype.
+        Qualifier is used to indicate that it is a 'genetic_variant_form'
         of the gene that participates in these relationships, not the Gene in general.
       source_files:
         - genes_to_disease.txt
-      additional_notes:
-        - null
     - subject_categories:
       - "biolink:Gene"
       predicates:
@@ -217,36 +239,58 @@ target_info:
         - property: "biolink:subject_form_or_variant_qualifier"
           value_range:
             - "biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum"
-          value_description: "Specifically, the 'genetic_variant_form' enum value is used in all cases"
-        - property: "biolink:frequency_qualifier"
-          value_id_prefixes:
-            - "HP"
-          value_description: "A term from the 'Frequency' (HP:0040279) branch of the Human Phenotype Ontology"
+          value_description: >-
+            Specifically, the 'genetic_variant_form' enum value is used in all cases of this ingest.
         - property: "biolink:disease_context_qualifier"
           value_id_prefixes:
             - "MONDO"
           value_description: "A term from the 'Disease' (MONDO:0000001) branch of the MONDO Ontology"
+        - property: "biolink:frequency_qualifier"
+          value_id_prefixes:
+            - "HP"
+          value_description: >-
+            A term from the 'Frequency' (HP:0040279) branch of the Human Phenotype Ontology,
+            inferred from the 'frequency' field of the HPOA record used to create this edge.
       knowledge_level:
       - logical_entailment
       agent_type:
-      - automated_agent
+        # Inferred from 'evidence' code inherited from the HPOA phenotype.hpoa file
+        # see https://obophenotype.github.io/human-phenotype-ontology/annotations/creation/
+        - text_mining_agent
+        - manual_agent
+        - manual_validation_of_automated_agent
       primary_knowledge_sources:
         - infores:hpo-annotations        
-      edge_properties: null
+      edge_properties:
+        - "biolink:publications"
+        - "biolink:has_evidence_of_type"
+        - "biolink:has_count"
+        - "biolink:has_total"
+        - "biolink:has_percentage"
+        - "biolink:has_quotient"
       ui_explanation: >-
-        Source HPOA data provide direct Gene-Phenotype associations that are automatically
-        assigned between a Gene and any Phenotype that manifests in a Mendelian Disease
-        associated with the Gene. The record used to create this edge specifically reports a
-        Gene-Phenotype association where the Gene has variants causal for a Mendelian disorder
-        in which the Phenotype is manifest - from which it is logically entailed that
-        variants in the Gene are also causal for the Phenotype (as such disorders have a
-        single causal gene). This relationship is represented using the Biolink 'causes' predicate,
-        with a qualifier indicating that it is a 'genetic_variant_form' of the gene that is
-        causing the Phenotype (not the Gene in general)."
+        A left outer join of HPOA phenotype, gene-to-disease and gene-to-phenotype data
+        provides for the assignment of Gene-Phenotype associations that are manifested
+        in a Disease associated with a particular Gene.
+        
+        The record used to create this edge specifically reports a Gene-Phenotype association
+        where the Gene has variants causal for a Mendelian disorder in which the Phenotype
+        is manifested - from which it is logically entailed that variants in the Gene are
+        also causal for the Phenotype (as such disorders have a single causal gene).
+        
+        Given the uncertainties of directly mapping genes onto phenotypic features for either
+        polygenic or diseases of unknown genetic etiology, this edge type is only generated for
+        Mendelian disorders. The Mendelian causality of the relationship is therefore represented
+        using the Biolink 'causes' predicate.
+        
+        Use of the qualifier 'genetic_variant_form' indicates that it is a variant of the gene that is
+        causing the Phenotype (not necessarily other variants, including wild type variants of the Gene).
+        
+        Agent type of the relationship is inherited from the HPOA phenotype.hpoa file.
       source_files:
+        - phenotype.hpoa
+        - genes_to_disease.txt
         - genes_to_phenotype.txt
-      additional_notes:
-        - null
   node_type_info:
   - node_category: "biolink:Disease"
     source_identifier_types:
@@ -255,20 +299,12 @@ target_info:
       - "DECIPHER"
     node_properties:
     - "biolink:inheritance"
-    additional_notes:
-      - null
   - node_category: "biolink:PhenotypicFeature"
     source_identifier_types:
       - "HP"
-    node_properties: null
-    additional_notes:
-      - null
   - node_category: "biolink:Gene"
     source_identifier_types:
       - "NCBIGene"
-    node_properties: null
-    additional_notes:
-      - null
   future_considerations:
     - category: spoq_pattern
       consideration: >-
@@ -278,11 +314,12 @@ target_info:
         Should we consider creating support paths in our data/graphs, 
         for the G-D-P hops over which HPO infers G-P associations?
         (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)
-  additional_notes: >-
-    The HPOA ingest of the Disease.node_properties.inheritance value is currently thought to be mildly
-    unreliable due to the way node property merging is (not) currently implemented in the ingest. This is a
-    known issue (Translator Ingest PR https://github.com/NCATSTranslator/translator-ingests/issues/259)
-    which will be addressed in a future release of the pipeline and/or ingest.
+  additional_notes:
+    - >
+      The HPOA ingest of the Disease.node_properties.inheritance value is currently thought to be mildly
+      unreliable due to the way node property merging is (not) currently implemented in the ingest. This is a
+      known issue (Translator Ingest PR https://github.com/NCATSTranslator/translator-ingests/issues/259)
+      which will be addressed in a future release of the pipeline and/or ingest.
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"
@@ -290,6 +327,4 @@ provenance_info:
   - "Sierra Moxon - data modeling, domain expertise, code support"
   - "Matthew Brush - data modeling, domain expertise"
   artifacts:
-  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1R9z-vywupNrD_3ywuOt_sntcTrNlGmhiUWDXUdkPVpM/edit?gid=0#gid=0)"
-  - "Ingest Ticket (https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/24)"
-  - "Modeling Ticket (https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/22)"
+  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1iLpJ3vULH058rBxlGv_soUyZw107OORZ-cUOgo3Lz3M/)"

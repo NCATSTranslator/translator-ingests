@@ -22,6 +22,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Gene,
     Disease,
+    GeneToDiseasePredicateEnum,
     PhenotypicFeature,
     DiseaseToPhenotypicFeatureAssociation,
     CausalGeneToDiseaseAssociation,
@@ -29,7 +30,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalOrGeneOrGeneProductFormOrVariantEnum as VE,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
-    AgentTypeEnum, GeneToPhenotypicFeaturePredicateEnum,
+    AgentTypeEnum,
+    GeneToPhenotypicFeaturePredicateEnum,
 )
 
 from translator_ingest.util.github import GitHubReleases
@@ -39,7 +41,7 @@ from translator_ingest.util.biolink import INFORES_HPOA
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_hpoa_association_sources,
-    evidence_to_eco,
+    evidence_mappings,
     sex_format,
     sex_to_pato,
     Frequency,
@@ -202,10 +204,11 @@ def transform_disease_to_phenotype_edge_record(
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
             frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
-        ## Evidence Code
-        # Three letter Evidence Code Ontology ("ECO") term translated
+        # Evidence Code Ontology ("ECO") term translated
         # to ECO class CURIE based on HPO documentation
-        evidence_code_term = evidence_to_eco[record["evidence"]]
+        # and mapped onto a given agent_type
+        evidence_code = record["evidence"]
+        evidence_code_term, agent_type = evidence_mappings[evidence_code]
 
         ## Publications
         references: str = record["reference"]
@@ -217,6 +220,7 @@ def transform_disease_to_phenotype_edge_record(
         ## Filter out NCBI web publication endpoints
         publications = [p for p in publications if not p.startswith("http")]
 
+
         # Association/Edge
         association = DiseaseToPhenotypicFeatureAssociation(
             id=entity_id(),
@@ -226,16 +230,16 @@ def transform_disease_to_phenotype_edge_record(
             object=hpo_id,
             publications=publications,
             has_evidence_of_type=[evidence_code_term],
-            sex_qualifier=sex_qualifier,
             onset_qualifier=onset,
-            has_percentage=frequency.has_percentage,
-            has_quotient=frequency.has_quotient,
             frequency_qualifier=frequency.frequency_qualifier,
+            sex_qualifier=sex_qualifier,
             has_count=frequency.has_count,
             has_total=frequency.has_total,
+            has_percentage=frequency.has_percentage,
+            has_quotient=frequency.has_quotient,
             sources=get_hpoa_association_sources(disease_id),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
+            agent_type=agent_type,
             **{},
         )
         return KnowledgeGraph(edges=[association])
@@ -268,7 +272,7 @@ def transform_gene_to_disease_record(
         association = CausalGeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:associated_with",
+            predicate=GeneToDiseasePredicateEnum.biolinkCOLONassociated_with,
             object=disease_id,
             qualified_predicate="biolink:causes",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
@@ -281,7 +285,7 @@ def transform_gene_to_disease_record(
         association = GeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
-            predicate="biolink:associated_with",
+            predicate=GeneToDiseasePredicateEnum.biolinkCOLONassociated_with,
             object=disease_id,
             qualified_predicate="biolink:contributes_to",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
@@ -302,8 +306,8 @@ def prepare_gene_to_phenotype_data(
     koza_transform: koza.KozaTransform, data: Iterable[dict[str, Any]]
 ) -> Iterable[dict[str, Any]] | None:
     """
-    For HPOA, we need to preprocess data to join data
-    from two files: phenotype.hpoa and genes_to_phenotype.txt
+    For HPOA, we need to preprocess data to join data from all three
+    HPOA data files: phenotype.hpoa, genes_to_disease and genes_to_phenotype.txt
     :param koza_transform: koza.KozaTransform
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
@@ -334,8 +338,9 @@ def prepare_gene_to_phenotype_data(
         from g2d 
         group by ncbi_gene_id_clean, disease_id)
     select g2p.*, 
-           array_to_string(list(hpoa.reference),';') as publications,
-           coalesce(g2d_grouped.association_types, '') as gene_to_disease_association_types
+            hpoa.evidence,
+            array_to_string(list(hpoa.reference),';') as publications,
+            coalesce(g2d_grouped.association_types, '') as gene_to_disease_association_types
     from g2p
          left outer join hpoa on hpoa.hpo_id = g2p.hpo_id
                      and g2p.disease_id = hpoa.database_id
@@ -394,6 +399,13 @@ def transform_gene_to_phenotype_record(
         # ...otherwise leave as is
         pass
 
+    # Evidence Code Ontology ("ECO") term, inherited
+    # from the phenotype.hpoa entry, translated
+    # to ECO class CURIE based on HPO documentation
+    # and mapped onto a given agent_type
+    evidence_code = record["evidence"]
+    evidence_code_term, agent_type = evidence_mappings[evidence_code]
+
     publications = [pub.strip() for pub in str(record["publications"]).split(";")] if record["publications"] else []
 
     association = GeneToPhenotypicFeatureAssociation(
@@ -401,18 +413,19 @@ def transform_gene_to_phenotype_record(
         subject=gene_id,
         predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
         object=hpo_id,
+        publications=publications,
+        has_evidence_of_type=[evidence_code_term],
         qualified_predicate="biolink:causes",
         subject_form_or_variant_qualifier=VE.genetic_variant_form,
+        disease_context_qualifier=dis_id,
         frequency_qualifier=frequency.frequency_qualifier,
         has_percentage=frequency.has_percentage,
         has_quotient=frequency.has_quotient,
         has_count=frequency.has_count,
         has_total=frequency.has_total,
-        disease_context_qualifier=dis_id,
-        publications=publications,
         sources=HPOA_SOURCES,
         knowledge_level=KnowledgeLevelEnum.logical_entailment,
-        agent_type=AgentTypeEnum.automated_agent,
+        agent_type=agent_type,
         **{},
     )
 
