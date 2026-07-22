@@ -5,82 +5,86 @@ name: The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) Reference Ingest Guide
 source_info:
   infores_id: infores:gtopdb
   name: The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb)
-  description: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb; https://www.guidetopharmacology.org) is an open-access, expert-curated, online
-database that provides succinct overviews and key references for pharmacological targets and their recommended experimental ligands. It
-includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies. GtoPdb) was established
-and developed by the International Union of Basic and Clinical Pharmacology (IUPHAR) and the British Pharmacological Society (BPS).
-It originated from the IUPHAR-DB, a former resource focused on receptors and channels that was first compiled in 2003 and from the
-BPS‘ Guide to Receptors and Channels’, a compendium of a wider range of targets than those originally covered in IUPHAR-DB"
+  description: >-
+    The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb; https://www.guidetopharmacology.org) is an open-access,
+    expert-curated online database that provides succinct overviews and key references for pharmacological
+    targets and their recommended experimental ligands. It includes over 3,039 protein targets and 12,163
+    ligand molecules, including approved drugs, small molecules, peptides and antibodies. GtoPdb was
+    established and developed by the International Union of Basic and Clinical Pharmacology (IUPHAR) and the
+    British Pharmacological Society (BPS). It originated from the IUPHAR-DB, a former resource focused on
+    receptors and channels that was first compiled in 2003, and from the BPS 'Guide to Receptors and Channels',
+    a compendium covering a wider range of targets than those originally covered in IUPHAR-DB.
   citations:
-    - "Harding SD, Armstrong JF, Faccenda E, Southan C, Alexander SPH, Davenport AP, Spedding M, Davies JA. (2023) The IUPHAR/BPS Guide to PHARMACOLOGY in 2024. Nucl. Acids Res. 2024; 52(D1):D1438-D1449. doi:10.1093/nar/gkad944. [Full text]. PMID: 37897341."
+    - "Harding SD, Armstrong JF, Faccenda E, Southan C, Alexander SPH, Davenport AP, Spedding M, Davies JA. (2023) The IUPHAR/BPS Guide to PHARMACOLOGY in 2024. Nucl. Acids Res. 2024; 52(D1):D1438-D1449. doi:10.1093/nar/gkad944. PMID: 37897341."
   terms_of_use_info:
-    license_name: "Creative Commons Attribution 4.0 International"
+    license_name: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
     license_url: "https://creativecommons.org/licenses/by/4.0/legalcode"
   data_access_locations:
-    - "gtoPdb Downloads: https://www.guidetopharmacology.org/download.jsp (this page includes file sizes and simple data dictionaries for each download)"
+    - "GtoPdb Downloads: https://www.guidetopharmacology.org/download.jsp (this page includes file sizes and simple data dictionaries for each download)"
   data_provision_mechanisms:
     - file_download
   data_formats:
     - csv
-  data_versioning_and_releases: "Based on the FAQ section:
-    Content expansion and feature enhancements are announced on the front page. Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in October 2023 etc.).
-    The current database content for version 2025.3 released 10 September 2025. https://www.guidetopharmacology.org/databaseContent.jsp"
+  data_versioning_and_releases: >-
+    Based on the FAQ section: content expansion and feature enhancements are announced on the front page.
+    Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in
+    October 2024). The ingest derives the source version by scraping the download page
+    (https://www.guidetopharmacology.org/download.jsp), which reports text of the form
+    "Downloads are from the 2025.4 version." Release history is documented at
+    https://www.guidetopharmacology.org/databaseContent.jsp
+  source_status: maintained_regular_updates
 
 ## Information about Ingested Content
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
-  utility: "The International Union of Basic and Clinical Pharmacology (IUPHAR) / British Pharmacological Society (BPS) Guide to PHARMACOLOGY is an expert-curated resource of ligand-activity-target relationships, the majority of which come from high-quality pharmacological and medicinal chemistry literature."
-  scope: "GtoPdb includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies."   # MHB: This is meant to describe the scope of the ingest, not the scope of the source (i.e. what subset of content we include in our ingest)
+  utility: >-
+    The IUPHAR/BPS Guide to PHARMACOLOGY is an expert-curated resource of ligand-activity-target relationships,
+    the majority of which come from high-quality pharmacological and medicinal chemistry literature. These
+    curated chemical-to-target interactions are an important type of edge for Translator query and reasoning
+    use cases, including drug mechanism-of-action and chemical-target regulation predictions.
+  scope: >-
+    This ingest covers curated ligand-target interaction records from GtoPdb's interactions.csv file, producing
+    chemical-to-protein edges. No species or record-level filtering is applied. Records with the same ligand,
+    target, and Type + Action are aggregated into a single edge, with publications from the merged records
+    combined into a list. Only the interactions.csv and ligands.csv files are used in this phase.
 
-  relevant_files:              # MHB: Do you really include/use all of these files in the ingest? Qi: for this phase, no
+  relevant_files:
     - file_name: "interactions.csv"
       location: "https://www.guidetopharmacology.org/DATA/interactions.csv"
-      description: "all interaction data for ligands and targets"
-    ## Qi review comment: following files can be downloaded from gtopdb, but now is not required for ingestion of gtopdb
-    # - file_name: "targets_and_families.csv"
-    #   location: "https://www.guidetopharmacology.org/DATA/targets_and_families.csv"
-    #   description: "complete target and family list"
-    ## Qi review comment: will need this to mapping between ligand id and pubchem CID
+      description: "All interaction data for ligands and targets."
     - file_name: "ligands.csv"
       location: "https://www.guidetopharmacology.org/DATA/ligands.csv"
-    #   description: "complete ligand list"
-    # - file_name: "peptides.csv"
-    #   location: "https://www.guidetopharmacology.org/DATA/peptides.csv"
-    #   description: "complete peptide ligand list:"
-    # - file_name: "GtP_to_HGNC_mapping.csv"
-    #   location: "https://www.guidetopharmacology.org/DATA/GtP_to_HGNC_mapping.csv"
-    #   description: "mapping Guide to PHARMACOLOGY target and peptide ligand IDs and URLs to HGNC gene IDs and symbols"
+      description: "Complete ligand list; used to map GtoPdb Ligand IDs to PubChem CIDs for subject node identifiers."
 
   included_content:
     - file_name: "interactions.csv"
-      # MHB: Content of the included_records field above is not really what we look for here. See suggested text below - confirm its accuracy. Qi: Confirmed, thanks for adding an example!
-      included_records: No filtering. Records for all species included.  Note however that records in the data describe results of a single published experiment. In our ingest records with the same ligand, target, and type + action are merged into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge.
+      included_records: >-
+        No filtering. Records for all species are included. Note that records in the source data describe
+        results of a single published experiment. In our ingest, records with the same ligand, target, and
+        Type + Action are merged into a single edge, and metadata from each merged record (publications) is
+        combined into a list and attached to the edge. Records lacking a Target UniProt ID or Ligand ID, and
+        records whose Ligand ID has no PubChem CID mapping in ligands.csv, are dropped because they cannot be
+        turned into a well-identified edge.
       fields_used: "Ligand, Target, Ligand ID, Target UniProt ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"
-      fields_used: 'Ligand ID, PubChem CID'
+      included_records: "Used only for identifier mapping (Ligand ID to PubChem CID); no edges are created directly from this file."
+      fields_used: "Ligand ID, PubChem CID"
 
-  filtered_content:
-    # - file_name: "peptides.csv"
-    #   filtered_records: "remove records with species in: Mouse, Rat, Pig, Bovine, Sheep, Bovine, Dog, Rabbit, European common frog, Rhesus macaque"
-    #   rationale: "Only include records with Human in Species"
+  filtered_content: []
 
   future_considerations:
     - category: edge_content
-      consideration: "Leverage the value of the ENDOGENOUS column to inform when to use regulates predicate and upregulates/downregulates direction qualifier values."
+      consideration: "Leverage the value of the ENDOGENOUS column to inform when to use the regulates predicate and upregulates/downregulates direction qualifier values."
     - category: edge_content
-      consideration: "Consider ingest the file 'approved_drug_primary_target_interactions.csv' which contains approved drugs detailed interactions list"
+      consideration: "Consider ingesting the file 'approved_drug_primary_target_interactions.csv', which contains a detailed interactions list for approved drugs."
     - category: edge_content
-      consideration: "Consider ingest peptides.csv with species other than Human"
+      consideration: "Consider ingesting peptides.csv, including records with species other than Human."
     - category: edge_property_content
-      consideration: "Longer term, consider creating ExperimentalStudyResult objects to capture metadata for each experiment that supports an edge (e.g. affinity data, assay descriptions, and associated publications)"
+      consideration: "Longer term, consider creating ExperimentalStudyResult objects to capture metadata for each experiment that supports an edge (e.g. affinity data, assay descriptions, and associated publications)."
 
 ## Information about the Graph Output by the ingest
-## based on https://github.com/biolink/biolink-model/blob/master/predicate_mapping.yaml
-# MHB: The mapping for GtpoP db is here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142  This is what you should be using - not the predicate-mapping file you reference above.
 target_info:
-  infores_id: infores:translator-gtopdb
-
   edge_type_info:
     - subject_categories:
         - biolink:ChemicalEntity
@@ -93,25 +97,41 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
-              - causes
+            - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_enumeration:
-              - activity
+            - activity
         - property: biolink:object_direction_qualifier
           value_enumeration:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
       edge_properties:
         - biolink:publications
-      ui_explanation: TO DO
+      ui_explanation: >-
+        Source GtoPdb data provides expert-curated assertions about how a ligand affects the activity of a
+        protein target, based on pharmacological and medicinal chemistry literature. The record used to create
+        this Translator edge reports a ligand-target interaction whose GtoPdb Type + Action values indicate an
+        effect on target activity, with a direction (increased or decreased). This is represented using the
+        Biolink 'affects'/'causes' predicate with an object_aspect_qualifier of 'activity', an
+        object_direction_qualifier capturing the direction of the effect, and a causal_mechanism_qualifier
+        capturing the mechanism (e.g. agonism, antagonism, inhibition, allosteric modulation). This edge type is
+        emitted when GtoPdb's ENDOGENOUS flag is FALSE (i.e. the ligand is not an endogenous regulator of the
+        target).
+      source_files:
+        - interactions.csv
+        - ligands.csv
       additional_notes:
-        - "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
+        - "The choice between increased/decreased direction is based on the combination of the Type and Action columns in GtoPdb. The choice between the 'affects' and 'regulates' predicate is based on whether ENDOGENOUS = FALSE (affects) or TRUE (regulates). Records in the source data describe interactions demonstrated in specific experiments; records with the same ligand, target, and Type + Action are aggregated into a single edge, and publications from each merged record are combined into a list and attached to the edge. Examples of record sets that should get merged are documented at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
+        - "The causal_mechanism_qualifier value depends on the Type + Action combination and is drawn from the Biolink CausalMechanismQualifierEnum (e.g. agonism, partial_agonism, inverse_agonism, antagonism, inhibition, competitive_inhibition, irreversible_inhibition, activation, potentiation, positive/negative/mixed_allosteric_modulation, molecular_channel_blockage, gating_inhibition, antibody_agonism, antibody_inhibition)."
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -124,25 +144,38 @@ target_info:
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
-              - causes
+            - biolink:causes
         - property: biolink:object_aspect_qualifier
           value_enumeration:
-              - activity
+            - activity
         - property: biolink:object_direction_qualifier
           value_enumeration:
-            - downregulated
             - upregulated
+            - downregulated
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
       edge_properties:
         - biolink:publications
-      ui_explanation: TO DO
+      ui_explanation: >-
+        Source GtoPdb data provides expert-curated assertions about how an endogenous ligand regulates the
+        activity of a protein target. This edge type is emitted when GtoPdb's ENDOGENOUS flag is TRUE, indicating
+        the ligand is an endogenous regulator of the target. It is otherwise identical in structure to the
+        'affects' edge type above: the interaction's Type + Action values are represented using the Biolink
+        'regulates'/'causes' predicate with an object_aspect_qualifier of 'activity', an
+        object_direction_qualifier of upregulated or downregulated, and a causal_mechanism_qualifier capturing
+        the mechanism.
+      source_files:
+        - interactions.csv
+        - ligands.csv
       additional_notes:
-        - "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
+        - "The choice between up- vs down-regulated direction is based on the combination of the Type and Action columns in GtoPdb. The choice between the 'affects' and 'regulates' predicate is based on whether ENDOGENOUS = FALSE (affects) or TRUE (regulates)."
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -152,40 +185,82 @@ target_info:
         - biolink:directly_physically_interacts_with
       object_categories:
         - biolink:Protein
-      qualifiers:
-        - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
       edge_properties:
         - biolink:publications
-      ui_explanation: TO DO
+      ui_explanation: >-
+        Source GtoPdb data provides expert-curated assertions about ligand-target interactions. This edge
+        reports that a ligand physically binds to a protein target, without asserting a direction of effect. It
+        is created (in addition to the corresponding 'affects'/'regulates' edge) when the GtoPdb Type + Action
+        values imply that a direct physical interaction is occurring (e.g. agonist, antagonist, binding,
+        inhibitor mechanisms). This relationship is represented using the symmetric Biolink
+        'directly_physically_interacts_with' predicate, and carries no aspect, direction, or mechanism
+        qualifier.
+      source_files:
+        - interactions.csv
+        - ligands.csv
       additional_notes:
-        - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+        - "This separate directly_physically_interacts_with edge is created when the Type + Action values in the source data report a mechanism that implies a direct physical interaction is occurring. The mapping table indicating when an additional physically-interacts-with edge is created is here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+        - "This edge type is modeled as a Biolink PairwiseMolecularInteraction, which does not accept a causal_mechanism_qualifier; the mechanism detail is carried only on the paired 'affects'/'regulates' edge."
 
+    - subject_categories:
+        - biolink:ChemicalEntity
+        - biolink:MolecularMixture
+        - biolink:SmallMolecule
+      predicates:
+        - biolink:related_to
+      object_categories:
+        - biolink:Protein
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
+      edge_properties:
+        - biolink:publications
+      ui_explanation: >-
+        Source GtoPdb data provides an expert-curated ligand-target interaction for which the source records a
+        Type of 'None' and an Action of 'None' - i.e. an interaction is documented but no mechanism, direction,
+        or effect on activity is specified. Because no more specific relationship can be inferred, this is
+        represented using the generic Biolink 'related_to' predicate. This is a fallback edge type of last
+        resort, and the source publications are retained on the edge.
+      source_files:
+        - interactions.csv
+        - ligands.csv
+      additional_notes:
+        - "Emitted as a generic biolink:Association when GtoPdb Type = 'None' and Action = 'None'. Consider revisiting whether these low-information edges should be retained or filtered in a future iteration."
 
-  node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
-                                                      ## Qi: I am using the ligand id directly from the interactions csv file now...didn't notice this comment of using Pubchem CID only, the ligands.tsv file does have a mapping between them
-                                                      ## however I need an example ingest.py code to show how koza model handle multiple files
+  node_type_info:
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
-        - "GTOPDB Ligand ID"
+        - "PUBCHEM.COMPOUND"
+      additional_notes:
+        - "Ligand nodes are identified in the target graph by PubChem CID (PUBCHEM.COMPOUND prefix). The ingest reads the GtoPdb Ligand ID from interactions.csv and maps it to a PubChem CID via the ligands.csv file; ligands with no PubChem CID mapping are dropped. The ingest assigns biolink:ChemicalEntity to all ligand nodes; downstream normalization may reassign more specific categories such as biolink:SmallMolecule or biolink:MolecularMixture."
     - node_category: biolink:MolecularMixture
       source_identifier_types:
-        - "GTOPDB Ligand ID"
+        - "PUBCHEM.COMPOUND"
     - node_category: biolink:SmallMolecule
       source_identifier_types:
-        - "GTOPDB Ligand ID"
+        - "PUBCHEM.COMPOUND"
     - node_category: biolink:Protein
       source_identifier_types:
-        - "UniProt"
-  future_considerations:
-    - category: node_properties  # conformance: was 'node_content'
-      consideration: "Considering future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
+        - "UniProtKB"
+      additional_notes:
+        - "Target nodes are identified by UniProt accession (UniProtKB prefix), taken from the Target UniProt ID column of interactions.csv."
 
-# Information about the how the ingest was specified and performed
+  future_considerations:
+    - category: node_properties
+      consideration: "Consider future new Biolink node types (e.g. stimulus and fusion protein) for more accurate mapping of GtoPdb target/ligand types into the Biolink Model."
+    - category: spoq_pattern
+      consideration: "Revisit the generic 'related_to' fallback edge (Type = 'None', Action = 'None') to decide whether these low-information edges should be retained, refined, or filtered."
+
+# Information about how the ingest was specified and performed
 provenance_info:
   contributions:
     - "Qi Wei: code author, data modeling"
@@ -196,3 +271,4 @@ provenance_info:
   artifacts:
     - "Ingest Survey: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=583858205#gid=583858205"
     - "Data Examples: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
+    - "Predicate/qualifier mapping: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
