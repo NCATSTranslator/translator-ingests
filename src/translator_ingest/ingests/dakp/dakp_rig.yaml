@@ -1,146 +1,319 @@
 name: "Multiomics Drug Approvals Knowledge Provider (DAKP) Reference Ingest Guide"
 
+# Upstream sources of data used by DAKP to derive the knowledge that we ingest.
+# DAKP is a "data-derived" KP: the edges we ingest are computed by the Multiomics
+# Drug Approvals pipeline from these upstream sources. The fields below (especially
+# terms_of_use_info) need owner (@gglusman) review/confirmation.
 supporting_data_source_info:
   - infores_id: "infores:dailymed"
     name: "DailyMed"
-    description: "DailyMed provides trustworthy information about marketed drugs in the United States"
+    description: >-
+      DailyMed provides trustworthy information about marketed drugs in the United States,
+      based on FDA Structured Product Labeling (SPL) documents. DAKP uses DailyMed to
+      identify FDA-approved drug-indication and drug-contraindication relationships.
     terms_of_use_info:
+      terms_of_use_url: "https://dailymed.nlm.nih.gov/dailymed/"
       terms_of_use_description: >-
-         DailyMed data are freely available. The data are in the public domain.
+         DailyMed data are freely available and in the public domain. (Owner to confirm exact terms.)
     relevant_files:
-      - file_name: "DailyMed Data"
+      - file_name: "DailyMed Structured Product Labeling"
         location: "https://dailymed.nlm.nih.gov/dailymed/"
-        description: "Structured product labeling documents"
+        description: "Structured product labeling (SPL) documents for FDA-approved drugs"
   - infores_id: "infores:faers"
     name: "FDA Adverse Event Reporting System (FAERS)"
-    description: "FAERS contains adverse event reports, medication error reports and product quality complaints"
+    description: >-
+      FAERS contains adverse event reports, medication error reports, and product quality
+      complaints submitted to the FDA. DAKP uses FAERS to derive drug-disease usage
+      relationships and case counts, including off-label use.
     terms_of_use_info:
+      terms_of_use_url: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
       terms_of_use_description: >-
-         FAERS data files are in the public domain and available for download.
+         FAERS data files are in the public domain and freely available for download. (Owner to confirm exact terms.)
     relevant_files:
       - file_name: "FAERS Quarterly Data Files"
         location: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
         description: "Quarterly data files containing adverse event reports"
   - infores_id: "infores:medi"
     name: "MEDI"
-    description: "MEDI contains contraindication information extracted from DailyMed documents"
+    description: >-
+      MEDI provides medication indication and contraindication information. DAKP uses MEDI
+      as the primary knowledge source for drug-contraindication relationships.
     terms_of_use_info:
       terms_of_use_description: >-
-         NA
+         TODO: Terms of use for MEDI need owner confirmation. Prior draft listed "NA".
+         The contraindication list is distributed via the everycure-org/matrix-indication-list
+         GitHub releases; confirm the applicable license/terms.
     relevant_files:
       - file_name: "contraindicationList.xlsx"
         location: "https://github.com/everycure-org/matrix-indication-list/releases/"
-        description: "Contraindications extracted from DailyMed"
+        description: "Contraindications used by DAKP (owner to confirm provenance/relationship to MEDI)"
 
 source_info:
   infores_id: "infores:multiomics-drugapprovals"
   name: "Multiomics Drug Approvals Knowledge Provider (Multiomics-DAKP)"
-  description: "The Drug Approvals KP provides information on FDA-approved drugs and their approved indications, derived from DailyMed and FAERS data. Information includes drug-disease treatment relationships with FDA approval status, approval numbers, and supporting evidence from adverse event reports."
+  description: >-
+    The Drug Approvals KP (DAKP) provides information on FDA-approved drugs and their approved
+    indications, along with drug usage in the absence of formal FDA approval and drug
+    contraindications. Knowledge is derived by the Multiomics pipeline from DailyMed (FDA
+    Structured Product Labeling), the FDA Adverse Event Reporting System (FAERS), and MEDI.
+    Drug-disease treatment edges carry FDA approval status, FDA approval (application) numbers,
+    supporting evidence identifiers, and adverse-event case counts. DAKP is one of several
+    Multiomics data-derived Knowledge Providers contributing to NCATS Translator.
   citations:
-    - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): (https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
+    - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
   terms_of_use_info:
-    terms_of_use_description: "Freely available"
+    terms_of_use_description: >-
+      Freely available. The DAKP manifest declares a CC BY 4.0 license for the processed data.
+    license_name: "CC BY 4.0"
+    license_url: "https://creativecommons.org/licenses/by/4.0/"
   data_access_locations:
     - "Direct download links for the latest version are given in the manifest file: https://github.com/multiomicsKP/drug_approvals_kp/blob/main/manifest.json"
+    - "Processed KGX node/edge files: https://db.systemsbiology.net/gestalt/KG/"
   data_provision_mechanisms:
     - file_download
   data_formats:
     - kgx
-  data_versioning_and_releases: "New versions are released periodically"
+  data_versioning_and_releases: >-
+    New versions are released periodically (not on a fixed schedule). The current version is
+    recorded in the manifest file (https://github.com/multiomicsKP/drug_approvals_kp/blob/main/manifest.json)
+    and embedded in the downloaded file names (e.g. drug_approvals_kg_edges_v{version}.jsonl.gz).
+  source_status: maintained_as_needed_updates
 
 ingest_info:
   ingest_categories:
     - translator_knowledge_creator
-  utility: "DAKP provides curated drug-disease treatment relationships with FDA approval status and supporting evidence. This knowledge is essential for understanding approved therapeutic uses and clinical evidence. DAKP also provides information on drug use in the absence of FDA approval, and information on contraindications."
-  scope: "FDA-approved drugs and their treatment relationships with diseases, including approval status, FDA approval numbers, and case counts from adverse event reporting; information on drug use in the absence of FDA approval, with case counts from adverse event reporting; and information on contraindications."
+  utility: >-
+    DAKP provides curated drug-disease treatment relationships with FDA approval status and
+    supporting evidence, which is essential for understanding approved therapeutic uses and
+    clinical evidence. DAKP also provides information on drug use in the absence of FDA approval
+    (including off-label use, with adverse-event case counts) and information on drug
+    contraindications. These edge types support Translator treatment-prediction and
+    drug-safety reasoning use cases.
+  scope: >-
+    FDA-approved drugs and their treatment relationships with diseases/phenotypes, including
+    approval status, FDA approval numbers, and supporting evidence; drug use in the absence of
+    FDA approval, with case counts derived from adverse-event reporting; and drug
+    contraindications. Node and edge properties beyond those listed are out of scope.
   relevant_files:
-    - file_name: "DAKP processed data"
+    - file_name: "drug_approvals_kg_edges.jsonl.gz"
       location: "https://db.systemsbiology.net/gestalt/KG/"
-      description: "Drug approval data processed from DailyMed and FAERS"
+      description: "Drug-disease treatment, usage, and contraindication edges processed from DailyMed, FAERS, and MEDI"
+    - file_name: "drug_approvals_kg_nodes.jsonl.gz"
+      location: "https://db.systemsbiology.net/gestalt/KG/"
+      description: "Node records (id, name, category) for the drug and disease/phenotype entities referenced by the edges"
   included_content:
-    - file_name: "DAKP processed data"
-      included_records: "Drug-disease treatment relationships with FDA approval information"
-      fields_used: "drug identifiers, disease identifiers, FDA approval numbers, approval status, case counts, evidence IDs"
+    - file_name: "drug_approvals_kg_edges.jsonl.gz"
+      included_records: >-
+        Drug-disease/phenotype edges with predicates biolink:treats (FDA-approved indications),
+        biolink:applied_to_treat (usage without formal approval, from FAERS), and
+        biolink:contraindicated_in (contraindications). Edges missing subject, object, or
+        predicate are skipped.
+      fields_used: >-
+        id, subject, object, predicate, category, knowledge_level, agent_type, sources,
+        N_cases, clinical_approval_status, approvals, has_evidence, publications
+    - file_name: "drug_approvals_kg_nodes.jsonl.gz"
+      included_records: "Node records for the subject (drug/chemical) and object (disease/phenotype) of each ingested edge."
+      fields_used: "id, name, category"
+  future_considerations:
+    - category: edge_property_content
+      consideration: >-
+        The has_evidence field (DailyMed SPL identifiers) is currently merged into the
+        publications edge property. Consider representing this supporting evidence with a
+        dedicated evidence/has_evidence property rather than co-mingling it with publications.
+      relevant_files: "drug_approvals_kg_edges.jsonl.gz"
+    - category: edge_property_content
+      consideration: >-
+        clinical_approval_status values that are not valid Biolink ClinicalApprovalStatusEnum
+        members (e.g. "?") are coerced to not_provided. Confirm the intended mapping with the
+        source, and whether additional statuses should be preserved.
+      relevant_files: "drug_approvals_kg_edges.jsonl.gz"
 
 target_info:
-  infores_id: "infores:translator-dakp-kgx"
   edge_type_info:
+    # 1. FDA-approved treatment edges (biolink:treats)
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:SmallMolecule"
         - "biolink:MolecularMixture"
-        - "biolink:ComplexMolecularMixture"
-        - "biolink:Drug"
       predicates:
         - "biolink:treats"
       object_categories:
         - "biolink:Disease"
         - "biolink:PhenotypicFeature"
-        - "biolink:DiseaseOrPhenotypicFeature"
       knowledge_level:
         - knowledge_assertion
       agent_type:
-        - text_mining_agent
-      ui_explanation: "The 'treats' predicate indicates an FDA-approved therapeutic relationship between a drug and a disease, with supporting regulatory approval information."
+        - manual_validation_of_automated_agent
+      primary_knowledge_sources:
+        - "infores:multiomics-drugapprovals"
+      supporting_data_sources:
+        - "infores:dailymed"
+        - "infores:faers"
+      edge_properties:
+        - "biolink:clinical_approval_status"
+        - "biolink:FDA_regulatory_approvals"
+        - "biolink:publications"
+      ui_explanation: >-
+        This edge asserts that a drug is an FDA-approved treatment for a disease or phenotype.
+        DAKP derives these assertions by processing FDA Structured Product Labeling documents
+        (via DailyMed) and FAERS, with manual validation of an automated pipeline. The edge
+        carries the FDA approval status (clinical_approval_status), the FDA approval/application
+        number(s) (FDA_regulatory_approvals), and DailyMed SPL evidence identifiers (recorded as
+        publications). The strength of an FDA approval is best represented with the Biolink
+        'treats' predicate.
+      source_files:
+        - "drug_approvals_kg_edges.jsonl.gz"
+      additional_notes:
+        - >-
+          In the source data all instances have clinical_approval_status = approved_for_condition.
+          FDA_regulatory_approvals is populated from the source 'approvals' field; publications is
+          populated from the source 'has_evidence' (DailyMed SPL) identifiers.
+    # 2. Usage-without-approval edges (biolink:applied_to_treat)
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:SmallMolecule"
         - "biolink:MolecularMixture"
-        - "biolink:ComplexMolecularMixture"
-        - "biolink:Drug"
       predicates:
         - "biolink:applied_to_treat"
       object_categories:
         - "biolink:Disease"
         - "biolink:PhenotypicFeature"
-        - "biolink:DiseaseOrPhenotypicFeature"
       knowledge_level:
-        - knowledge_assertion
+        - observation
       agent_type:
-        - text_mining_agent
-      ui_explanation: "The 'applied_to_treat' predicate indicates an therapeutic relationship between a drug and a disease, without FDA approval, based on usage reports in FAERS."
+        - manual_validation_of_automated_agent
+      primary_knowledge_sources:
+        - "infores:faers"
+      aggregator_knowledge_sources:
+        - "infores:multiomics-drugapprovals"
+      supporting_data_sources:
+        - "infores:dailymed"
+      edge_properties:
+        - "biolink:clinical_approval_status"
+        - "biolink:number_of_cases"
+      ui_explanation: >-
+        This edge reports that a drug was applied to treat a disease or phenotype in the absence
+        of (or beyond) a formal FDA approval, based on usage observed in FDA Adverse Event
+        Reporting System (FAERS) reports. FAERS is the primary knowledge source; the Multiomics
+        DAKP pipeline aggregates and manually validates the data. The number_of_cases property
+        reports how many FAERS reports support the usage, and clinical_approval_status
+        distinguishes approved-for-condition from off-label use. The observational, usage-based
+        nature of this relationship is represented with the Biolink 'applied_to_treat' predicate.
+      source_files:
+        - "drug_approvals_kg_edges.jsonl.gz"
+      additional_notes:
+        - >-
+          In the source data clinical_approval_status takes values approved_for_condition or
+          off_label_use. number_of_cases is populated from the source 'N_cases' field.
+    # 3. Contraindication edges (biolink:contraindicated_in)
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:SmallMolecule"
         - "biolink:MolecularMixture"
-        - "biolink:ComplexMolecularMixture"
         - "biolink:Drug"
       predicates:
         - "biolink:contraindicated_in"
       object_categories:
         - "biolink:Disease"
         - "biolink:PhenotypicFeature"
-        - "biolink:DiseaseOrPhenotypicFeature"
       knowledge_level:
         - knowledge_assertion
       agent_type:
-        - text_mining_agent
-      ui_explanation: "The 'contraindicated_in' predicate indicates a contraindication relationship between a drug and a disease or condition, based on warnings present in FDA approval documents."
+        - manual_validation_of_automated_agent
+      primary_knowledge_sources:
+        - "infores:medi"
+      aggregator_knowledge_sources:
+        - "infores:multiomics-drugapprovals"
+      supporting_data_sources:
+        - "infores:dailymed"
+      edge_properties:
+        - "biolink:clinical_approval_status"
+        - "biolink:FDA_regulatory_approvals"
+        - "biolink:publications"
+      ui_explanation: >-
+        This edge reports that a drug is contraindicated in the presence of a disease or
+        condition, based on warnings in FDA approval documents as captured by MEDI. MEDI is the
+        primary knowledge source; the Multiomics DAKP pipeline aggregates and manually validates
+        the data, with DailyMed as supporting data. The contraindication relationship is
+        represented with the Biolink 'contraindicated_in' predicate.
+      source_files:
+        - "drug_approvals_kg_edges.jsonl.gz"
+      additional_notes:
+        - >-
+          FDA_regulatory_approvals is populated from the source 'approvals' field; publications is
+          populated from the source 'has_evidence' (DailyMed SPL) identifiers.
 
   node_type_info:
     - node_category: "biolink:ChemicalEntity"
       source_identifier_types:
         - "CHEBI"
+        - "CHEMBL.COMPOUND"
+        - "DRUGBANK"
+        - "MESH"
         - "UNII"
+      node_properties:
+        - "biolink:name"
     - node_category: "biolink:SmallMolecule"
       source_identifier_types:
         - "CHEBI"
+        - "PUBCHEM.COMPOUND"
         - "UNII"
+      node_properties:
+        - "biolink:name"
     - node_category: "biolink:MolecularMixture"
       source_identifier_types:
         - "CHEBI"
-    - node_category: "biolink:ComplexMolecularMixture"
+        - "PUBCHEM.COMPOUND"
+        - "UNII"
+      node_properties:
+        - "biolink:name"
+    - node_category: "biolink:Drug"
       source_identifier_types:
-        - "CHEBI"
+        - "RXCUI"
+      node_properties:
+        - "biolink:name"
     - node_category: "biolink:Disease"
       source_identifier_types:
         - "MONDO"
+        - "DOID"
+        - "EFO"
+        - "UMLS"
+      node_properties:
+        - "biolink:name"
     - node_category: "biolink:PhenotypicFeature"
       source_identifier_types:
         - "HP"
+        - "EFO"
+        - "NCIT"
+        - "UMLS"
+      node_properties:
+        - "biolink:name"
+
+  future_considerations:
+    - category: node_properties
+      consideration: >-
+        The ingest code maps a biolink:ComplexMolecularMixture category, but no such nodes are
+        present in the current release. Revisit if/when the source begins providing them.
+    - category: edge_properties
+      consideration: >-
+        Confirm whether FDA_regulatory_approvals is the preferred Biolink property for FDA
+        application numbers, or whether a more specific/standard representation should be used.
+    - category: spoq_pattern
+      consideration: >-
+        Object categories are currently Disease and PhenotypicFeature only. Confirm whether
+        DiseaseOrPhenotypicFeature should be retained/used given downstream normalization.
+
+  additional_notes:
+    - >-
+      The previous draft included a target_info.infores_id ("infores:translator-dakp-kgx"); it was
+      removed as part of this review (deprecated/placeholder). Confirm the correct target infores
+      identifier for the DAKP output graph, if one is required.
 
 provenance_info:
   contributions:
     - "Gwenlyn Glusman - code author, domain expertise, data modeling"
     - "Matthew Brush - data modeling"
     - "Sierra Moxon - code, data modeling"
+  artifacts:
+    - "RIG review issue: https://github.com/NCATSTranslator/translator-ingests/issues/416"
+    - "RIG review epic: https://github.com/NCATSTranslator/translator-ingests/issues/407"
