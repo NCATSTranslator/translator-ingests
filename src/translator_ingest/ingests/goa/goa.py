@@ -82,7 +82,7 @@ QUALIFIER_TO_PREDICATE = {
     "enables": "biolink:enables",
     "located_in": "biolink:located_in",
     "part_of": "biolink:part_of",
-    "involved_in": "biolink:involved_in",
+    "involved_in": "biolink:actively_involved_in",
     "contributes_to": "biolink:contributes_to",
     "colocalizes_with": "biolink:colocalizes_with",
     "is_active_in": "biolink:active_in",
@@ -98,7 +98,7 @@ QUALIFIER_TO_PREDICATE = {
 
 # Fallback mapping for aspect-based predicates (used when the qualifier is not recognized)
 ASPECT_TO_PREDICATE = {
-    "P": "biolink:involved_in",  # Biological Process
+    "P": "biolink:actively_involved_in",  # Biological Process
     "F": "biolink:enables",  # Molecular Function
     "C": "biolink:located_in",  # Cellular Component
 }
