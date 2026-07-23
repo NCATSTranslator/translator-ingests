@@ -2,11 +2,63 @@
 ### the data to be downloaded and ingested for this project.
 ### The configuration is used by `kghub-downloader`.
 ### For more information, see https://github.com/monarch-initiative/kghub-downloader
----
-# KGX 'nodes' jsonl file
-- url: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
-  local_name: cohd_nodes.jsonl
 
-# KGX 'edges' jsonl file
-- url: https://stars.renci.org/var/data_services/cohd_2/cohd_edges.jsonl
-  local_name: cohd_edges.jsonl
+---
+# Deprecated: Original "sample" Phase 2 KGX data sets internally posted at RENCI
+## KGX 'nodes' jsonl file
+#- url: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
+#  local_name: cohd_nodes.jsonl
+#
+## KGX 'edges' jsonl file
+#- url: https://stars.renci.org/var/data_services/cohd_2/cohd_edges.jsonl
+#  local_name: cohd_edges.jsonl
+
+#
+# After some significant team deliberation, it was decided that the original COHD
+# study data should be downloaded and ingested directly from FigShare for ingesting,
+# superseding the Phase 2 KGX data sets internally accessed via RENCI (above).
+#
+# Original Published COHD study dataset, posted on FigShare
+# dataset posted on 2018-11-22, 02:23 authored by
+# Casey N. Ta, Michel Dumontier, George Hripcsak, Nicholas P. Tatonetti, Chunhua Weng
+#
+# Concept Nodes
+# =============
+#
+# Concept definitions.
+#
+# File format: tab-delimited table; newline terminated.
+#
+# Columns:
+#
+# concept id - Unique numeric code identifying each concept. This is the key concept id referenced in the other files;
+# concept name - The descriptive name of each concept;
+# domain - The OMOP domain of each concept;
+# vocabulary id - The source vocabulary which originally defined the concept (e.g., SNOMED-CT, RxNorm, etc.);
+# concept class id - The OMOP concept class;
+# concept code - The identifier from the source vocabulary for this concept.
+#
+- url: https://figshare.com/ndownloader/files/12272921
+  local_name: cohd_concepts.txt
+
+# Association Edges
+# =================
+#
+# Paired concept counts from the 5-year data set.
+#
+# 1,790,431 patients in this data set.
+#
+# File format: tab-delimited table; newline terminated.
+#
+# Columns:
+#
+# concept id 1 - Unique numeric code identifying the first of the paired concepts;
+# concept id 2 - Unique numeric code identifying the second of the paired concepts;
+# count - The number of patients with both concepts in this data set;
+# prevalence - The number of patients with both concepts divided by the total number of
+#              patients in this data set (1.0 is 100%). Each unique pair of concepts has at most one row,
+#              i.e., the same two concepts do not appear in two separate rows. The rows are arranged in
+#              ascending order by concept id 1 and concept id 2. Concept id 1 is always the smaller numeric value.
+#
+- url: https://figshare.com/ndownloader/files/12272924
+  local_name: cohd_5year_paired_concepts.txt
