@@ -18,6 +18,9 @@
 # study data should be downloaded and ingested directly from FigShare for ingesting,
 # superseding the Phase 2 KGX data sets internally accessed via RENCI (above).
 #
+# The original COHD study data was published on FigShare: https://doi.org/10.6084/m9.figshare.c.4151252.v1 as the
+# Columbia_Open_Health_Data_a_database_of_EHR_prevalence_and_co-occurrence_of_conditions_drugs_and_procedures
+#
 # Original Published COHD study dataset, posted on FigShare
 # dataset posted on 2018-11-22, 02:23 authored by
 # Casey N. Ta, Michel Dumontier, George Hripcsak, Nicholas P. Tatonetti, Chunhua Weng

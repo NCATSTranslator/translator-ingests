@@ -3,21 +3,25 @@ name: 'cohd'
 readers:
   cohd_nodes:
     files:
-      - 'cohd_nodes.jsonl'
-    format: 'jsonl'
-    required_properties:
-      - 'id'
-      - 'name'
-      - 'categories'  # to be renamed to 'category' during ingest
-      - 'attributes'
+      - 'cohd_concepts.txt'
+    format: "csv"
+    delimiter: "\t"
+    header_mode: "none"
+    columns:
+      - 'concept_id': 'int'
+      - 'concept_name'
+      - 'domain'
+      - 'vocabulary_id'
+      - 'concept_class_id'
+      - 'concept_code': 'int'
   cohd_edges:
     files:
-      - 'cohd_edges.jsonl'
-    format: 'jsonl'
-    required_properties:
-      - 'subject'
-      - 'predicate'
-      - 'object'
-      - 'score'
-      - 'attributes'
-      - 'sources'
+      - 'cohd_5year_paired_concepts.txt'
+    format: "csv"
+    delimiter: "\t"
+    header_mode: "none"
+    columns:
+      - 'concept_id_1': 'int'
+      - 'concept_id_2': 'int'
+      - 'count': 'int'
+      - 'prevalence': 'float'
