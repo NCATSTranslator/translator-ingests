@@ -8,6 +8,22 @@ from biolink_model.datamodel.pydanticmodel_v2 import Study, NamedThing
 from bmt.pydantic import get_node_class
 from translator_ingest.util.biolink import get_biolink_model_toolkit
 
+
+def to_curie(vocabulary_id, concept_code):
+    # TODO: probably need a more complex mapping here
+    return f"{vocabulary_id}:{concept_code}"
+
+_omop_domain_to_biolink_category: set[str] = { }
+
+def omop_to_biolink_category(omop_domain, omop_concept_class)-> str:
+    # TODO: first cut is to just use the OMOP domain to select the biolink category
+    if omop_domain == "Condition":
+        return "biolink:DiseaseOrPhenotypicFeature"
+    if omop_domain not in _omop_domain_to_biolink_category:
+        return "biolink:NamedThing"
+    return f"biolink:{omop_domain}"
+
+################### LEGACY UTILITIES from first KGX ingest iteration - likely deprecated, except where indicated
 bmt = get_biolink_model_toolkit()
 
 def parse_attributes(attribute_list: list[str]) -> list[dict[str, Any]]:
