@@ -258,8 +258,8 @@ def make_string_ppi_edge(
     stringdb_coexpression_score) are PENDING BLOCKER B (attributes.yaml PR) and
     are not yet attached here.
 
-    association_basis_qualifier:Functional on the associated_with edge is
-    PENDING BLOCKER A (Matt's biolink PR) and is not yet attached here.
+    TODO: association_basis_qualifier:Functional on the associated_with edge is
+          awaits merging of Matt's biolink PR 1771) thus is not yet added as an Association slot.
     """
     assert predicate in PREDICATE_TO_ASSOCIATION_CLASS, f"Unknown predicate: {predicate!r}"
     association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]

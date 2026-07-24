@@ -92,7 +92,7 @@ def on_data_begin_string_ppi(koza_transform: koza.KozaTransform) -> None:
     the go_cam ingest). Stashed in state so the per-row transform reads a single
     resolved dict rather than re-parsing config per record.
 
-    Tests bypass this hook by setting 'koza_transform.state["string_to_entrez"]'
+    Tests bypass this hook by setting 'koza_transform.state["thresholds"]'
     directly to a small fixture dict; they may likewise inject
     'koza_transform.state["thresholds"]' to exercise per-channel tuning (the
     transform falls back to DEFAULT_THRESHOLDS when it is absent).
