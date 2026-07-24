@@ -187,9 +187,9 @@ def edges_for_row(
     Return the list of (predicate, channel_score_or_None) tuples to emit for one
     STRING ".full" row under the 2026-07-17 edge model.
 
-    Always includes (ALWAYS_PREDICATE, combined_score). Additionally includes
+    Always includes (ALWAYS_PREDICATE, combined_score). Additionally, includes
     channel-specific edges when their scores exceed the per-channel threshold.
-    The channel score is returned alongside each conditional predicate for later
+    The channel score is returned alongside each conditional predicate for a later
     attachment as a score property (PENDING BLOCKER B: attributes.yaml PR for
     stringdb_experimental_score / stringdb_coexpression_score).
 
