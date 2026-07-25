@@ -98,11 +98,12 @@ target_info:
     agent_type:
       - data_analysis_pipeline  # aggregating clinical data and environmental exposures
     edge_properties:
-    - biolink:equivalent_identifiers   # biolink:same_as
+    - biolink:has_supporting_studies
     primary_knowledge_sources:
       - infores:icees-kg
     ui_explanation: >-
-      Observed relationships between clinical characteristics and environmental exposures
+      Observed relationships between clinical characteristics and
+      environmental exposures, indexed against associated studies.
   node_type_info:
   - node_category: biolink:SmallMolecule
     source_identifier_types:
