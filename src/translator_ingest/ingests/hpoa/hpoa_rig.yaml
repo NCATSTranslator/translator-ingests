@@ -1,4 +1,27 @@
 name: Human Phenotype Ontology Annotations Reference Ingest Guide
+supporting_data_source_info:
+  - infores_id: "infores:hpo"
+    name: "Human Phenotype Ontology (HPO)"
+    description: >-
+      The Human Phenotype Ontology (HPO) provides a standardized vocabulary of
+      phenotypic abnormalities encountered in human disease. Each term in the HPO
+      describes a phenotypic abnormality, such as Atrial septal defect.
+      The HPO is currently being developed using the medical literature,
+      Orphanet, DECIPHER, and OMIM. HPO currently contains over 18,000 terms
+      and over 156,000 annotations to hereditary diseases. The HPO project
+      and others have developed software for phenotype-driven differential
+      diagnostics, genomic diagnostics, and translational research. The HPO
+      is a central component of one of the 13 driver projects in the
+      Global Alliance for Genomics and Health (GA4GH) strategic roadmap.
+    terms_of_use_info:
+      terms_of_use_url: "https://hpo.jax.org/license"
+      terms_of_use_description: >-
+        Human Phenotype Ontology (HPO) is copyrighted.
+    relevant_files:
+      - file_name: "hp.obo|owl|json"
+        location: "http://purl.obolibrary.org/obo/hp/"
+        description: >-
+          OBO, OWL and JSON releases of HPO terms.
 source_info:
   infores_id: infores:hpo-annotations
   name: Human Phenotype Ontology Annotations
@@ -162,6 +185,8 @@ target_info:
         - manual_validation_of_automated_agent
       primary_knowledge_sources:
         - infores:hpo-annotations
+      supporting_data_sources:
+        - infores:hpo
       edge_properties:
         - "biolink:negated"
         - "biolink:publications"
@@ -181,6 +206,7 @@ target_info:
         as well as, the 'negated' property to indicate that the Phenotype is not observed.
       source_files:
         - phenotype.hpoa
+      additional_notes: null
     - subject_categories:
       - "biolink:Gene"
       predicates:
@@ -209,7 +235,9 @@ target_info:
       agent_type:
       - manual_agent
       primary_knowledge_sources:
-        - infores:hpo-annotations      
+        - infores:hpo-annotations
+      supporting_data_sources:
+        - infores:hpo
       ui_explanation: >-
         Source HPOA data provide Gene-Disease associations that are manually curated from
         sources like Orphanet and MIM2Gene and DECIPHER by HPO. The record used to create
@@ -226,6 +254,7 @@ target_info:
         of the gene that participates in these relationships, not the Gene in general.
       source_files:
         - genes_to_disease.txt
+      additional_notes: null
     - subject_categories:
       - "biolink:Gene"
       predicates:
@@ -260,7 +289,9 @@ target_info:
         - manual_agent
         - manual_validation_of_automated_agent
       primary_knowledge_sources:
-        - infores:hpo-annotations        
+        - infores:hpo-annotations
+      supporting_data_sources:
+        - infores:hpo
       edge_properties:
         - "biolink:publications"
         - "biolink:has_evidence_of_type"
@@ -291,6 +322,7 @@ target_info:
         - phenotype.hpoa
         - genes_to_disease.txt
         - genes_to_phenotype.txt
+      additional_notes: null
   node_type_info:
   - node_category: "biolink:Disease"
     source_identifier_types:
