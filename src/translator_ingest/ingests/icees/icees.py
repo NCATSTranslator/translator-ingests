@@ -7,8 +7,6 @@ import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Study,
-    Association,
-    CorrelatedGeneToDiseaseAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -17,11 +15,12 @@ from bmt.pydantic import get_node_class
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
+from translator_ingest.ingests.icees.icees_util import (
+    get_association_type,
+    get_icees_supporting_study
+)
 
 from translator_ingest.util.biolink import get_biolink_model_toolkit
-
-from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study
-
 bmt = get_biolink_model_toolkit()
 
 def get_latest_version() -> str:
@@ -118,12 +117,10 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
     increment_category_count(koza_transform, "object", object_node)
     object_categories: list[str] = object_node.category
 
-    # Specialized case of G2D Association
-    if "gene or gene product" in bmt.get_ancestors(subject_categories[0]) and \
-            object_categories[0] == "biolink:Disease":
-        association = CorrelatedGeneToDiseaseAssociation
-    else:
-        association = Association
+    association = get_association_type(
+        subject_categories[0],
+        object_categories[0]
+    )
 
     # Convert many of the ICEES edge attributes into specific edge properties
     supporting_studies: dict[str, Study] = {}
