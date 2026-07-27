@@ -98,7 +98,15 @@ target_info:
     agent_type:
       - data_analysis_pipeline  # aggregating clinical data and environmental exposures
     edge_properties:
-    - biolink:has_supporting_studies
+    - biolink:has_supporting_studies  #: <- semicolon needed for this tag
+#      - chi squared statistic
+#      - chi squared dof
+#      - chi squared p
+#      - total sample size
+#      - fisher exact odds ratio
+#      - fisher exact p
+#      - log odds ratio
+#      - log odds ratio 95 ci
     primary_knowledge_sources:
       - infores:icees-kg
     ui_explanation: >-
