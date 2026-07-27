@@ -48,8 +48,7 @@ source_info:
   citations: null
   terms_of_use_info:
     terms_of_use_url: "https://github.com/NCATSTranslator/Translator-All/wiki/Exposures-Provider-ICEES-and-ICEES-KG-Terms-and-Conditions-of-Use"
-    terms_of_use_description: "UNC Health is permitted to provide under 45 C.F.R.\
-      \ \xC2\xA7 164.502(d)(2)"
+    terms_of_use_description: "UNC Health is permitted to provide under 45 C.F.R. 164.502(d)(2)"
   data_access_locations:
     - 'https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/ - Automat ICEES Plater loaded KGX jsonl files, plus meta_knowledge_graph.json'
   data_provision_mechanisms:
@@ -141,9 +140,14 @@ target_info:
 #      - log odds ratio 95 ci
     primary_knowledge_sources:
       - infores:icees-kg
+#    supporting_data_sources:  TODO: to be elaborated by ICEES team
+#      - infores:dili-network-study-data
     ui_explanation: >-
       Observed relationships between clinical characteristics and
       environmental exposures, indexed against associated studies.
+    source_files:
+      - edges.jsonl.gz
+    additional_notes: null
   node_type_info:
   - node_category: biolink:SmallMolecule
     source_identifier_types:
