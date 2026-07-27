@@ -198,7 +198,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:involved_in
+        - biolink:actively_involved_in
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -232,6 +232,7 @@ target_info:
         - goa_human.gaf.gz
         - mgi.gaf.gz
         - rgd.gaf.gz
+      ui_explanation: "A GO Annotation uses the 'actively_involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
       additional_notes:
         - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
         - "When the GAF Qualifier is absent or unrecognized, the predicate is assigned from the Aspect (P -> involved_in) via the ASPECT_TO_PREDICATE fallback in goa.py."
@@ -425,6 +426,31 @@ target_info:
         - "GO (Aspect P, re-categorized by downstream normalization)"
       additional_notes:
         - "Not assigned by the ingest itself: downstream Babel/node normalization re-categorizes a subset of GO biological-process terms (~403 observed) as Pathway. Documented here so the resulting node category is expected rather than surprising."
+        - "Gene Ontology IDs (Aspect P, re-categorized by normalization)"
+
+  # Manual QA 1: Document known post-normalization behaviors and accepted warnings
+  known_issues:
+    # Predicate normalization inverts or generalizes some edges. This is expected behavior
+    # from the Babel/normalization pipeline, not a bug in the GOA ingest.
+    - issue: "Predicate normalization changes some edge types"
+      description: |
+        After normalization, predicates are transformed as follows:
+        - part_of → has_part (inverted, subject/object swap)
+        - active_in → active_in (retained after predicate correction)
+        This is documented in predicate_map.json output.
+      resolution: "Accepted. The ingest outputs the semantically correct predicates; normalization adjusts for Biolink conventions."
+    # Validation produces warnings for domain/range that we accept
+    - issue: "Domain/range validation warnings for enables"
+      description: |
+        Validation reports sampled warnings about domain/range constraints:
+        - enables expects domain 'physical entity' but subjects are Gene/Protein
+      resolution: "Accepted as warnings. Edges pass validation; warnings reflect Biolink model strictness."
+    # Some GO BP terms become Pathway after normalization
+    - issue: "GO Biological Process terms re-categorized as Pathway"
+      description: |
+        Normalization re-categorizes approximately 403 GO terms from BiologicalProcess
+        to Pathway. This is handled by the node normalizer based on GO term semantics.
+      resolution: "Accepted. Added Pathway to node_type_info to document this behavior."
 
   future_considerations:
     - category: qualifiers
