@@ -52,6 +52,9 @@ ingest_info:
     included_records: all
     # attributes encapsulate rich ICEES Study data
     fields_used: id, subject, predicate, object, primary_knowledge_source, attributes
+  filtered_content: null
+  future_considerations: null
+  additional_notes: null
 target_info:
   edge_type_info:
   - subject_categories:
@@ -265,7 +268,15 @@ target_info:
     - UMLS
     node_properties:
     - biolink:equivalent_identifiers   # biolink:same_as
-  future_considerations: null
+  future_considerations:
+    - category: spoq_pattern
+      consideration: >-
+        The initial ingest of ICEES KGX data only provides a special mapping for CorrelatedGeneToDiseaseAssociation
+        entries, but emits all other edges as undifferentiated Association edges. There was some attempt in coding
+        to leverage facilities of the Biolink Model Toolkit to provide mappings onto other subclasses of Association
+        but this proved to be semantically misleading; however, there may be a role here for some explicit curation
+        of such mappings based on SPOQ content, using more explicit code inside of the ingest. It may also be the case
+        that the Biolink Model needs to define additional Association child classes to specify such correlations.
   additional_notes: null
 provenance_info:
   contributions:
