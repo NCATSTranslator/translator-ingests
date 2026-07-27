@@ -1,18 +1,29 @@
-name: Panther Gene Orthology and Annotation RIG
+name: Panther Gene Orthology Reference Ingest Guide
 source_info:
   infores_id: infores:panther
-  name: "Panther Gene to Gene Orthology Relationships"
+  name: Panther Gene to Gene Orthology Relationships
   description: >-
-    The PANTHER (Protein ANalysis THrough Evolutionary Relationships) Classification System 
-    was designed to classify proteins (and their genes) in order to facilitate
-    high-throughput analysis. The core of PANTHER is a comprehensive, annotated
-    library of gene family phylogenetic trees. All nodes in the tree have persistent
-    identifiers that are maintained between versions of PANTHER, providing a
+    PANTHER (Protein ANalysis THrough Evolutionary Relationships) is developed and maintained
+    by researchers at the University of Southern California in collaboration with
+    the Gene Ontology Consortium and other partners. The core of PANTHER is a comprehensive,
+    annotated library of gene family phylogenetic trees providing protein family and
+    subfamily classifications, ortholog relationships, Gene Ontology annotations,
+    biological pathways, protein class assignments, and evolutionary histories for genes
+    across numerous species.  The goal of Panther is to facilitate high-throughput analysis
+    for comparative genomics, functional classification, evolutionary analysis,
+    gene set enrichment, and interpretation of high-throughput genomic experiments.
+    Knowledge is generated through computational phylogenetic analyses that classify
+    proteins into evolutionary families, inference of orthology and gene function
+    from evolutionary relationships, integration of Gene Ontology annotations and
+    other external biological resources, and expert manual curation of selected
+    protein families, evolutionary events, and biological pathways. All nodes in the tree
+    have persistent identifiers that are maintained between versions of PANTHER, providing a
     stable substrate for annotations of protein properties like subfamily and function.
   citations:
     - https://doi.org/10.1002/pro.4218
   terms_of_use_info:
     terms_of_use_url: "http://www.pantherdb.org/tou.jsp"
+    license_url: "https://creativecommons.org/licenses/by/4.0/legalcode, https://interpro-documentation.readthedocs.io/en/latest/interproscan.html"
   data_access_locations:
     - "http://data.pantherdb.org/ftp/"
   data_provision_mechanisms:
@@ -20,8 +31,7 @@ source_info:
   data_formats:
     - csv
   data_versioning_and_releases: "Versioning by number. See https://www.pantherdb.org/data/"
-  additional_notes:
-    - null
+  source_status: maintained_regular_updates  # Sierra suggests that another update is soon due
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
@@ -48,7 +58,7 @@ ingest_info:
     included_records: "All records for the specified taxon."
     fields_used: "Gene, Ortholog, Type of ortholog, Panther Ortholog ID"
   filtered_content:
-  - file_name: "RefGenomeOrthologs.tar.gz, PTHR<Panther-version>_<taxon_name>"
+  - file_name: "RefGenomeOrthologs.tar.gz"
     filtered_records: >-
       All records with Gene and Ortholog pairwise annotated with taxon name as 'HUMAN', 'MOUSE' or 'RAT' specific.
     rationale: >-
@@ -63,22 +73,21 @@ ingest_info:
       mice or rats, in particular, studied responses in pharmacology, metabolism, and the immune system.
   future_considerations:
   - category: other
-    consideration: "Additional model species may be included in the future."
-  - category: edge_property_content  # conformance: was 'edge_property'
+    consideration: Additional model species may be included in the future.
+  - category: edge_property_content
     consideration: >-
       Are there any useful edge properties / EPC metrics that could be collected
       on orthology edges (e.g. data items output from the sequence alignment /
       phylogenetic analysis) that could be used to score these edges?
-  - category: edge_property_content  # conformance: was 'edge_property'
-    consideration: >-
-      Do we want to capture the ortholog type (e.g. "least diverged ortholog",
-      "paralog", etc.) or consider additional / more granular predicates 
-      (RO has several under 'orthologous to', Biolink has 'xenologous to', 'paralogous to').
-  - category: node_property_content  # conformance: was 'node_property'
+      Notes: this would require meta-analysis of the Panther HMM classification files
+      (at https://data.pantherdb.org/ftp/hmm_classifications/current_release) and/or sequence
+      classification files (at https://data.pantherdb.org/ftp/sequence_classifications/current_release).
+  - category: node_property_content
     consideration: >-
       Family node properties we might capture: HMM length, member count, others?
+      Note: HMM data annotation would require meta-analysis of the Panther HMM library data
+      at https://data.pantherdb.org/ftp/panther_library/current_release/
 target_info:
-  infores_id: infores:translator-panther-kgx
   edge_type_info:
   - subject_categories:
     - "biolink:Gene"
@@ -91,16 +100,15 @@ target_info:
     agent_type:
     - manual_validation_of_automated_agent
     primary_knowledge_sources:
-    - infores:panther
+    - "infores:panther"
     edge_properties:
     - has_evidence
-    ui_explanation: "Panther gene orthology"
-    source_files:
-    - RefGenomeOrthologs.tar.gz
-    additional_notes: >-
-      To determine when two genes are orthologous, Panther uses advanced automated algorithms
+    ui_explanation: >-
+      Panther gene orthology. To determine when two genes are orthologous, Panther uses advanced automated algorithms
       that rely only on sequence similarity, evolutionary tree topology, and evolutionary event labeling.
       Curators will manually review the data underlying orthology calls to improve accuracy.
+    source_files:
+    - "RefGenomeOrthologs.tar.gz"
   - subject_categories:
     - "biolink:Gene"
     predicates:
@@ -112,14 +120,14 @@ target_info:
     agent_type:
     - automated_agent
     primary_knowledge_sources:
-      - infores:panther
-    ui_explanation: "Gene membership in Panther orthology family"
+      - "infores:panther"
+    ui_explanation: >-
+      Gene membership in Panther orthology family.  Panther defines protein families using a
+      statistical Hidden Markov Model (HMM) that represents its sequence signature.
+      Individual protein sequences are compared to and scored against these signatures,
+      with those passing a membership threshold being assigned to a family.
     source_files:
-    - RefGenomeOrthologs.tar.gz
-    additional_notes: >-
-      Panther defines protein families using a statistical Hidden Markov Model (HMM) that
-      represents its sequence signature. Individual protein sequences are compared to and
-      scored against these signatures, with those passing a membership threshold being assigned to a family.
+    - "RefGenomeOrthologs.tar.gz"
   node_type_info:
   - node_category: "biolink:Gene"
     source_identifier_types:
@@ -146,5 +154,4 @@ provenance_info:
   - "Chunlei Wu - Phase 2 legacy code expert"
   - "Matt Brush - data modelling"
   artifacts:
-  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1YlpI5bjGNGR5JC9VWxZJ7dd87hS_b4BMZv5geYe2NCk/edit?gid=0#gid=0)"
-  - "Ingest Ticket (https://github.com/NCATSTranslator/Data-Ingest-Coordination-Working-Group/issues/44)"
+  - "Ingest Survey (https://docs.google.com/spreadsheets/d/1YlpI5bjGNGR5JC9VWxZJ7dd87hS_b4BMZv5geYe2NCk/)"
