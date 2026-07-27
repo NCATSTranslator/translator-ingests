@@ -185,14 +185,11 @@
         relevant_files: CTD_chem_go_enriched.tsv.gz, CTD_chem_pathways_enriched.tsv.gz
       - category:  edge_content
         consideration: >-
-          Five CTD chemical-gene interaction aspects have no Biolink aspect mapping in the transform, so records
-          carrying them currently become 'affects' edges with no aspect qualifier (they are counted as unmapped by
-          the transform). Among the single-action records that actually reach the transform these are: "binding"
-          (~10.5K records), "export" (~420), "import" (~185), "reaction" (~5), and "polymerization" (~2). "binding"
-          is the one that matters at scale and has a clean target - biolink:directly_physically_interacts_with,
-          which captures the interaction without asserting an effect on the gene. "export"/"import" could plausibly
-          map to a transport aspect with a direction. Until they are mapped, these edges silently understate what
-          CTD asserts.
+          A few CTD chemical-gene interaction aspects still have no Biolink mapping in the transform, so records
+          carrying them become 'affects' edges with no aspect qualifier (counted as unmapped by the transform).
+          Among the single-action records that reach the transform these are "export" (~420 records), "import"
+          (~185), "reaction" (~5), and "polymerization" (~2). "export"/"import" could plausibly map to a transport
+          aspect with a direction. These are low-volume, but until mapped they silently understate what CTD asserts.
         relevant_files: CTD_chem_gene_ixns.tsv.gz
       - category:  edge_content
         consideration: >-
@@ -321,7 +318,7 @@
         additional_notes:
           - CTD encodes each interaction as an InteractionActions value of the form "<direction>^<aspect>" (e.g. "increases^expression"). The direction becomes the object_direction_qualifier, and the aspect becomes the object_aspect_qualifier. 'qualified_predicate' is only set to 'biolink:causes' when the record carries a direction (increases/decreases) - an "affects^<aspect>" record yields a bare 'affects' edge with an aspect but no direction.
           - The subject/object orientation is not a separate column in CTD - it is recovered from CTD's human-readable Interaction sentence, which is always written as "<subject> <action> ... of <object>". Records whose sentence begins with the chemical produce this Chemical-Gene edge; records beginning with the gene symbol produce the Gene-Chemical edge described below.
-          - A handful of CTD aspects have no Biolink mapping in the transform - most notably "binding" (~10.5K records reaching the transform), plus "export", "import", "reaction", and "polymerization". Records carrying them surface here as 'affects' edges with no aspect qualifier, which understates what CTD asserts. See future considerations.
+          - A few low-volume aspects ("export", "import", "reaction", "polymerization") remain unmapped and surface here as 'affects' edges with no aspect qualifier; see future considerations.
 
       - subject_categories:
           - biolink:Gene
@@ -406,6 +403,32 @@
           - CTD_chem_gene_ixns.tsv.gz
         additional_notes:
           - This is the same "response to substance" content as the Gene-Chemical sensitivity edge above, with the orientation reversed - it is used for records whose Interaction sentence names the chemical as the subject. The same generic biolink:Association caveat applies, so these edges also carry no species context.
+
+      - subject_categories:
+          - biolink:ChemicalEntity
+          - biolink:MolecularMixture
+          - biolink:SmallMolecule
+        predicates:
+          - biolink:directly_physically_interacts_with
+        object_categories:
+          - biolink:Gene
+        qualifiers:
+          - property: biolink:species_context_qualifier
+            value_id_prefixes:
+              - NCBITaxon
+        knowledge_level:
+          - knowledge_assertion
+        agent_type:
+          - manual_agent
+        primary_knowledge_sources:
+          - infores:ctd
+        edge_properties:
+          - biolink:publications
+        ui_explanation: "Source CTD data provides assertions about Chemical-Gene relationships that were manually curated from literature by CTD. The CTD record used to create this edge reports that a chemical physically binds to a particular gene or gene product, without asserting any resulting effect on the gene. This is represented using the Biolink 'directly physically interacts with' predicate, which is symmetric. CTD reports these as its 'binding' interaction aspect (always as 'affects^binding', with no direction), so unlike the other chemical-gene edges these carry no aspect or direction qualifier."
+        source_files:
+          - CTD_chem_gene_ixns.tsv.gz
+        additional_notes:
+          - The subject/object orientation follows CTD's Interaction sentence ("<chemical> binds to <gene>" vs "<gene> protein binds to <chemical>"), as with the other chemical-gene edges. Because the predicate is symmetric the orientation carries no semantic weight, but it is preserved as reported.
 
       - subject_categories:
           - biolink:ChemicalEntity

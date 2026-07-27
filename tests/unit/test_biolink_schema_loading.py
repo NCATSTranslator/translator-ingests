@@ -1,7 +1,9 @@
 """
 Tests for biolink schema loading functionality in validate_biolink_kgx.py
 """
+import os
 import pytest
+from importlib.metadata import version
 from importlib.resources import files
 
 from linkml_runtime.utils.schemaview import SchemaView
@@ -50,3 +52,15 @@ def test_get_biolink_model_toolkit():
        configured with the expected project Biolink Model schema."""
     bmt: Toolkit = get_biolink_model_toolkit()
     assert bmt.get_model_version() == get_current_biolink_version()
+
+
+def test_biolink_model_distribution_version_matches_schema_version():
+    """The BL_VERSION set in translator_ingest/__init__ comes from the installed biolink-model
+       distribution, because reading it is cheap. Ensure that stays equivalent to the schema
+       version recorded in ingest metadata, so for example ORION merges on the version we claim to use."""
+    assert version("biolink-model") == get_current_biolink_version()
+
+
+def test_bl_version_env_var_is_set_for_orion():
+    """ORION reads BL_VERSION at import time to pick the Biolink Model version."""
+    assert os.environ["BL_VERSION"] == get_current_biolink_version()

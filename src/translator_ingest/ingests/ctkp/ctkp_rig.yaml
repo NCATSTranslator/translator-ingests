@@ -71,6 +71,7 @@ target_info:
         - "biolink:ChemicalEntity"
         - "biolink:MolecularMixture"
         - "biolink:SmallMolecule"
+        - "biolink:Procedure"
       predicates:
         - "biolink:in_clinical_trials_for"
       object_categories:
@@ -97,6 +98,7 @@ target_info:
         - "biolink:ChemicalEntity"
         - "biolink:MolecularMixture"
         - "biolink:SmallMolecule"
+        - "biolink:Procedure"
       predicates:
         - "biolink:treats"
       object_categories:
@@ -130,6 +132,11 @@ target_info:
     - node_category: "biolink:SmallMolecule"
       source_identifier_types:
         - "Free text intervention names in AACT - CTKP maps these to identifiers where possible"
+    - node_category: "biolink:Procedure"
+      source_identifier_types:
+        - "Free text intervention names in AACT - CTKP maps these to identifiers where possible"
+      additional_notes:
+        - "Procedure nodes represent non-chemical interventions (e.g. surgical or behavioral procedures) studied in clinical trials."
     - node_category: "biolink:DiseaseOrPhenotypicFeature"
       source_identifier_types:
         - "Free text condition names in AACT - CTKP maps these to identifiers where possible"
