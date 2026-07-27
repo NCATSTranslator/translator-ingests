@@ -2,6 +2,7 @@ import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
+    ChemicalGeneInteractionAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToBiologicalProcessAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
@@ -30,6 +31,7 @@ from translator_ingest.ingests.ctd.ctd import (
     BIOLINK_AFFECTS_SENSITIVITY_TO,
     BIOLINK_INCREASES_SENSITIVITY_TO,
     BIOLINK_DECREASES_SENSITIVITY_TO,
+    BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH,
     BIOLINK_ASSOCIATED_WITH,
     BIOLINK_CAUSES,
     BIOLINK_CORRELATED_WITH,
@@ -230,6 +232,76 @@ def test_exposure_events_with_phenotype(exposure_events_with_phenotype_output):
 
     phenotype = [e for e in entities if isinstance(e, PhenotypicFeature)][0]
     assert phenotype.id == "GO:0006915"
+
+
+@pytest.fixture
+def exposure_events_disease_and_phenotype_output():
+    """A single exposure record can report both a disease outcome and a phenotype outcome."""
+    writer = MockKozaWriter()
+    record = {
+        "exposurestressorid": "D000082",
+        "exposurestressorname": "Acetaminophen",
+        "outcomerelationship": "positive correlation",
+        "diseaseid": "D006505",
+        "diseasename": "Hepatitis",
+        "phenotypeid": "GO:0006915",
+        "phenotypename": "apoptotic process",
+        "reference": "12345678",
+    }
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_exposure_events])
+    )
+    runner.run()
+    return writer.items
+
+
+def test_exposure_events_disease_and_phenotype(exposure_events_disease_and_phenotype_output):
+    # one record -> two edges (chemical->disease and chemical->phenotype), sharing predicate and publication
+    entities = exposure_events_disease_and_phenotype_output
+    associations = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)]
+    assert len(associations) == 2
+    assert {a.object for a in associations} == {"MESH:D006505", "GO:0006915"}
+    for association in associations:
+        assert association.predicate == BIOLINK_POSITIVELY_CORRELATED
+        assert association.subject == "MESH:D000082"
+        assert "PMID:12345678" in association.publications
+
+    assert [e.id for e in entities if isinstance(e, Disease)] == ["MESH:D006505"]
+    assert [e.id for e in entities if isinstance(e, PhenotypicFeature)] == ["GO:0006915"]
+
+
+@pytest.fixture
+def exposure_events_omim_disease_output():
+    """CTD supplies bare disease ids - numeric ones are OMIM, not MeSH."""
+    writer = MockKozaWriter()
+    record = {
+        "exposurestressorid": "D000082",
+        "exposurestressorname": "Acetaminophen",
+        "outcomerelationship": "negative correlation",
+        "diseaseid": "104300",
+        "diseasename": "Alzheimer Disease",
+        "phenotypeid": "",
+        "phenotypename": "",
+        "reference": "12345678",
+    }
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_exposure_events])
+    )
+    runner.run()
+    return writer.items
+
+
+def test_exposure_events_omim_disease(exposure_events_omim_disease_output):
+    entities = exposure_events_omim_disease_output
+    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
+    assert association.object == "OMIM:104300"
+
+    disease = [e for e in entities if isinstance(e, Disease)][0]
+    assert disease.id == "OMIM:104300"
 
 
 @pytest.fixture
@@ -544,6 +616,59 @@ def test_chem_gene_ixns_response_to_substance_chemical_subject():
     assert association.object == "NCBIGene:3630"
 
 
+def test_chem_gene_ixns_binding_chemical_subject():
+    # CTD "affects^binding" -> directly_physically_interacts_with, no aspect/direction qualifier
+    record = {
+        "ChemicalName": "10-deacetylpaclitaxel",
+        "ChemicalID": "C08591",
+        "CasRN": "",
+        "GeneSymbol": "ABCB1",
+        "GeneID": "5243",
+        "GeneForms": "protein",
+        "Organism": "Homo sapiens",
+        "OrganismID": "9606",
+        "Interaction": "10-deacetylpaclitaxel binds to ABCB1 protein",
+        "InteractionActions": "affects^binding",
+        "PubMedIDs": "17171717",
+    }
+    entities = _run_chem_gene(record)
+    assert len(entities) == 3  # chemical, gene, association
+    # it is an interaction association, not an affects/causes or sensitivity edge
+    assert not any(isinstance(e, (ChemicalAffectsGeneAssociation, GeneAffectsChemicalAssociation)) for e in entities)
+    association = [e for e in entities if isinstance(e, ChemicalGeneInteractionAssociation)][0]
+    assert association.predicate == BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH
+    assert association.subject == "MESH:C08591"
+    assert association.object == "NCBIGene:5243"
+    assert association.species_context_qualifier == "NCBITaxon:9606"
+    # binding asserts no effect, so no aspect or direction qualifier
+    assert association.object_aspect_qualifier is None
+    assert association.object_direction_qualifier is None
+    assert association.qualified_predicate is None
+    assert "PMID:17171717" in association.publications
+
+
+def test_chem_gene_ixns_binding_gene_subject():
+    # the gene can be named first ("<gene> protein binds to <chem>"); orientation follows the sentence
+    record = {
+        "ChemicalName": "1,2-oleoylphosphatidylcholine",
+        "ChemicalID": "C012587",
+        "CasRN": "",
+        "GeneSymbol": "LCAT",
+        "GeneID": "3931",
+        "GeneForms": "protein",
+        "Organism": "Homo sapiens",
+        "OrganismID": "9606",
+        "Interaction": "LCAT protein binds to 1,2-oleoylphosphatidylcholine",
+        "InteractionActions": "affects^binding",
+        "PubMedIDs": "18181818",
+    }
+    entities = _run_chem_gene(record)
+    association = [e for e in entities if isinstance(e, ChemicalGeneInteractionAssociation)][0]
+    assert association.predicate == BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH
+    assert association.subject == "NCBIGene:3931"
+    assert association.object == "MESH:C012587"
+
+
 @pytest.fixture
 def chem_gene_ixns_multiple_interactions_output():
     """Test that records with multiple interactions return None."""
@@ -630,11 +755,12 @@ def test_chem_go_enriched(chem_go_output):
 
 @pytest.fixture
 def chem_go_output_weak_p_value():
-    chem_go_record_weak_p_value = chem_go_record.copy()
-    chem_go_record_weak_p_value["PValue"] = "0.001"
+    record = chem_go_record.copy()
+    # the transform filters on CorrectedPValue, not PValue
+    record["CorrectedPValue"] = "0.001"
     writer = MockKozaWriter()
     runner = KozaRunner(
-        data=[],
+        data=[record],
         writer=writer,
         hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
     )
@@ -648,11 +774,11 @@ def test_chem_go_weak_p_value(chem_go_output_weak_p_value):
 
 @pytest.fixture
 def chem_go_output_low_go_level():
-    chem_go_record_weak_p_value = chem_go_record.copy()
-    chem_go_record_weak_p_value["HighestGOLevel"] = "2"
+    record = chem_go_record.copy()
+    record["HighestGOLevel"] = "2"
     writer = MockKozaWriter()
     runner = KozaRunner(
-        data=[],
+        data=[record],
         writer=writer,
         hooks=KozaTransformHooks(transform_record=[transform_chem_go_enriched])
     )

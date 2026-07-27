@@ -10,6 +10,7 @@ import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalAffectsGeneAssociation,
+    ChemicalGeneInteractionAssociation,
     ChemicalEntityToBiologicalProcessAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntityToPathwayAssociation,
@@ -43,6 +44,7 @@ BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_st
 BIOLINK_AFFECTS_SENSITIVITY_TO = "biolink:affects_sensitivity_to"
 BIOLINK_INCREASES_SENSITIVITY_TO = "biolink:increases_sensitivity_to"
 BIOLINK_DECREASES_SENSITIVITY_TO = "biolink:decreases_sensitivity_to"
+BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH = "biolink:directly_physically_interacts_with"
 
 # CTD's "response to substance" interaction action maps to the sensitivity predicates, with the direction
 # carried by the predicate itself (not a qualifier).
@@ -264,6 +266,23 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
             publications=publications,
+        )
+        return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id), Gene(id=gene_id)],
+                              edges=[association])
+
+    # CTD's "binding" action ("<chem> binds to <gene>") "affects^binding" describes a direct physical interaction 
+    # with no asserted effect on the gene, it maps to the symmetric 'directly_physically_interacts_with'.
+    if interaction_aspect == 'binding':
+        association = ChemicalGeneInteractionAssociation(
+            id=entity_id(),
+            subject=subject_id,
+            predicate=BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH,
+            object=object_id,
+            sources=CTD_SOURCES,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            publications=publications,
+            species_context_qualifier=taxon_id,
         )
         return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id), Gene(id=gene_id)],
                               edges=[association])

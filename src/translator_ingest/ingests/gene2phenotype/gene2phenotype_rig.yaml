@@ -5,13 +5,23 @@ name: EBI Gene2Phenotype Reference Ingest Guide
 source_info:
   infores_id: infores:gene2phenotype
   name: Gene2Phenotype
-  description: "EBI's Gene2Phenotype dataset contains high-quality gene-disease associations curated by UK disease domain experts and consultant clinical geneticists. It integrates data on genes, their variants, and related disorders. It is constructed by experts reviewing published literature, and it is primarily an inclusion list to allow targeted filtering of genome-wide data for diagnostic purposes. Each entry associates a gene with a disease, including a confidence level, allelic requirement and molecular mechanism."
+  ## LLM text manually reviewed by CX using:
+  ## - various G2P website pages, mostly https://www.ebi.ac.uk/gene2phenotype/about/project
+  ## - March 2026 publication: https://doi.org/10.1016/j.jmb.2026.169768
+  ## - Newer curation process and terminology paper: https://doi.org/10.1186/s13073-024-01398-1
+  description: >-
+    The Gene2Phenotype (G2P) database is hosted at the European Molecular Biology Laboratory's European Bioinformatics Institute (EMBL-EBI), and its disease panels/datasets are produced and maintained by domain experts (clinicians, clinical scientists, and scientific curators) and overseen by a physician with expertise in that disease domain.
+    Its purpose is to support clinical variant interpretation and genomic diagnosis by providing detailed, expert-curated, clinician-reviewed models of monogenic rare diseases.
+    In its gene-disease associations, the resource includes allelic requirements, molecular mechanism information, variant consequence annotations, confidence assessments, phenotypes, and supporting literature references.
+    Knowledge is generated primarily through manual curation by domain experts, who review publications and evaluate gene-disease validity. For some data, the terminology is standardized to ontology terms.
   citations:
+    - "https://doi.org/10.1016/j.jmb.2026.169768"
     - "https://doi.org/10.1186/s13073-024-01398-1"
     - "https://www.nature.com/articles/s41467-019-10016-3"
   terms_of_use_info:
-    terms_of_use_description: "Unsure, but likely uses EMBL-EBI terms of use (linked in website footer). Currently don't see a formal standard license. Various resource webpages (About -> The G2P Project, Downloads, Publications) say that all data is 'freely available' and to please cite the date accessed/data version and Thorman et al 2019"
     terms_of_use_url: "https://www.ebi.ac.uk/about/terms-of-use/#general"
+    terms_of_use_description: >-
+      Free access with attribution - Source links to general Terms of Use page for EMBL-EBI broadly. Various webpages say that all data is "freely available". Various webpages say to please cite the date accessed/data version and Thorman et al 2019.
   data_access_locations:
     - "Latest data is provided at https://www.ebi.ac.uk/gene2phenotype/download (downloads created on-the-fly)"
     - "Archived static releases provided on the FTP site at https://ftp.ebi.ac.uk/pub/databases/gene2phenotype/G2P_data_downloads/"
@@ -21,7 +31,8 @@ source_info:
     - csv    # on-the-fly downloads
     - other    # FTP static releases are csv.gz
   data_versioning_and_releases: "On-the-fly downloads: creation/download date are the same and can be used for versioning; note that the date in the filename may differ from the date in your timezone. Static releases: creation date (shown on FTP site and in folder/file names) can be used for versioning; releases cut and archived roughly every 1-2 months."
-  # additional_notes:  # (optional, range = string)
+  source_status: maintained_regular_updates
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about Ingested Content
 ingest_info:
@@ -48,9 +59,6 @@ ingest_info:
       filtered_records: "Records with no values in both 'disease mim' and 'disease MONDO' columns"
       rationale: "No IDs to use for disease nodes"
     - file_name: "G2P_all_[date].csv"
-      filtered_records: "Records with NodeNorm mapping failures for the node IDs"
-      rationale: "Failed normalization means that the node would not be connected to other data/nodes in Translator graphs"
-    - file_name: "G2P_all_[date].csv"
       filtered_records: "Records where 'disease mim' value is '188400'"
       rationale: "OMIM:188400 is incorrectly mapped by NodeNorm to a Gene when it's actually a Disease. To avoid creating an incorrect edge, we are temporarily removing rows with this ID from the data."
 
@@ -65,13 +73,11 @@ ingest_info:
         And there's more detail on the gene-disease inheritance pattern ('cross cutting modifier' column).
         (Matt's note) Rich evidence and provenance metadata provided by the source (e.g. type of experiments/methods used to determine the molecular mechanism, and supporting publications)."
   
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-gene2phenotype
-
   edge_type_info:
     - subject_categories:
         - biolink:Gene
@@ -95,10 +101,9 @@ target_info:
       agent_type:
         - manual_agent
       primary_knowledge_sources:
+        ## includes source_record_urls: source has page for each record
         - infores:gene2phenotype
       edge_properties:
-        - biolink:original_subject
-        - biolink:original_object
         - biolink:publications
         - biolink:allelic_requirement
         - biolink:update_date
@@ -106,7 +111,8 @@ target_info:
       ui_explanation: "EBI G2P curators manually determined through the evaluation of different types of evidence that variants of this gene of the indicated form (e.g. loss of function, gain of function, dominant negative) play a causal role in this disease."
       source_files: 
         - "G2P_all_[date].csv"
-      # additional_notes:  # (optional, range = string)
+      additional_notes:
+        - Can trust/have high confidence in edges with 'definitive' or 'strong' gene2phenotype_confidence_category values. Can have medium-high confidence in edges with 'moderate' gene2phenotype_confidence_category value. See https://www.ebi.ac.uk/gene2phenotype/about/terminology#g2p-confidence-section for confidence term definitions and https://doi.org/10.1186/s13073-024-01398-1 for more info on the curation process and terminology. 
 
   node_type_info:
     - node_category: biolink:Gene
@@ -125,7 +131,7 @@ target_info:
     - category: other
       consideration: "Revisit biolink-model spec of allelic_requirement (currently uses a regex pattern to match HP ID syntax, rather than 'base mode of inheritance term and its descendants' or an enumerated list of permissible values)"
 
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 
 # Information about the how the ingest was specified and performed
