@@ -2,7 +2,11 @@ name: "ICEES Reference Ingest Guide"
 #
 # TODO: need the ICEES asthma, ICEES COVID, ICEES DILI, and ICEES PCD source datasets documented here
 #
-#supporting_data_source_info:   CTKP example placeholder - this is NOT ICEES!!!
+# Pertinent infores_id's may include(?):
+#    infores:dili-network-study-data
+#
+### CTKP example placeholder - this is NOT ICEES!!!
+# supporting_data_source_info:
 #  - infores_id: "infores:aact"
 #    name: "Aggregate Analysis of ClinicalTrials.gov (AACT)"
 #    description: >-
@@ -124,6 +128,7 @@ target_info:
       - knowledge_assertion
     agent_type:
       - data_analysis_pipeline  # aggregating clinical data and environmental exposures
+    primary_knowledge)sources:
     edge_properties:
     - "biolink:has_supporting_studies"  #: <- colon eventually needed for this tag
 #      - chi squared statistic
