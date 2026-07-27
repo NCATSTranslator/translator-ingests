@@ -20,7 +20,8 @@ source_info:
   data_formats:
     - csv
   data_versioning_and_releases: "Versioning by number. See https://www.pantherdb.org/data/"
-  additional_notes: null
+  additional_notes:
+    - null
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
@@ -63,17 +64,17 @@ ingest_info:
   future_considerations:
   - category: other
     consideration: "Additional model species may be included in the future."
-  - category: edge_property
+  - category: edge_property_content  # conformance: was 'edge_property'
     consideration: >-
       Are there any useful edge properties / EPC metrics that could be collected
       on orthology edges (e.g. data items output from the sequence alignment /
       phylogenetic analysis) that could be used to score these edges?
-  - category: edge_property
+  - category: edge_property_content  # conformance: was 'edge_property'
     consideration: >-
       Do we want to capture the ortholog type (e.g. "least diverged ortholog",
       "paralog", etc.) or consider additional / more granular predicates 
       (RO has several under 'orthologous to', Biolink has 'xenologous to', 'paralogous to').
-  - category: node_property
+  - category: node_property_content  # conformance: was 'node_property'
     consideration: >-
       Family node properties we might capture: HMM length, member count, others?
 target_info:

@@ -17,7 +17,8 @@ source_info:
   data_formats:
     - tsv
   data_versioning_and_releases: "SIDER version 4.1 released in 2015. Updates are irregular and infrequent. Database maintenance is limited."
-  additional_notes: "It may not include the most recent drug approvals or complete adverse event profiles."
+  additional_notes:
+    - "It may not include the most recent drug approvals or complete adverse event profiles."
 
 
 # Information about Ingested Content
@@ -60,7 +61,8 @@ target_info:  # (required, range = TargetInfo)
   edge_type_info:
     - subject_categories:
         - biolink:ChemicalEntity
-      predicate: biolink:has_side_effect
+      predicates:
+        - biolink:has_side_effect
       object_categories:
         - biolink:DiseaseOrPhenotypicFeature
       knowledge_level:

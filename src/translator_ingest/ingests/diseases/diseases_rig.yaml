@@ -82,11 +82,13 @@ target_info:
     - node_category: "biolink:Gene"
       source_identifier_types:
         - "ENSEMBL"
-      additional_notes: "Source uses the ENSP (protein) identifiers from Ensembl"
+      additional_notes:
+        - "Source uses the ENSP (protein) identifiers from Ensembl"
     - node_category: "biolink:Protein"
       source_identifier_types:
         - "ENSEMBL"
-      additional_notes: "Source uses the ENSP (protein) identifiers from Ensembl"
+      additional_notes:
+        - "Source uses the ENSP (protein) identifiers from Ensembl"
     - node_category: "biolink:Disease"
       source_identifier_types:
         - "DOID"

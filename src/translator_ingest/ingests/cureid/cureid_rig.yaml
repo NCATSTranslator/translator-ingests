@@ -32,18 +32,7 @@ ingest_info:
   included_content:
     - file_name: cureid_data.tsv
       included_records: All records
-      fields_used:
-      - subject_type
-      - subject_final_curie
-      - subject_final_label
-      - object_type
-      - object_final_curie
-      - object_final_label
-      - association_category
-      - biolink_predicate
-      - outcome
-      - pmid
-      - link
+      fields_used: "subject_type, subject_final_curie, subject_final_label, object_type, object_final_curie, object_final_label, association_category, biolink_predicate, outcome, pmid, link"
 
 target_info:
   infores_id: infores:cureid
