@@ -193,7 +193,7 @@ def transform_disease_to_phenotype_edge_record(
         # sex_qualifier = sex_format[sex] if sex in sex_format else None
 
         ## Onset
-        onset = record["onset"] if record["onset"] else None
+        onset_qualifier = record["onset"] if record["onset"] else None
 
         ## Frequency of occurrence
         frequency: Frequency
@@ -230,7 +230,7 @@ def transform_disease_to_phenotype_edge_record(
             object=hpo_id,
             publications=publications,
             has_evidence_of_type=[evidence_code_term],
-            onset_qualifier=onset,
+            onset_qualifier=onset_qualifier,
             frequency_qualifier=frequency.frequency_qualifier,
             sex_qualifier=sex_qualifier,
             has_count=frequency.has_count,
