@@ -1,9 +1,8 @@
-name: "Multiomics Drug Approvals Knowledge Provider (DAKP) Reference Ingest Guide"
+name: "Drug Approvals Knowledge Provider (DAKP) Reference Ingest Guide"
 
 # Upstream sources of data used by DAKP to derive the knowledge that we ingest.
-# DAKP is a "data-derived" KP: the edges we ingest are computed by the Multiomics
-# Drug Approvals pipeline from these upstream sources. The fields below (especially
-# terms_of_use_info) need owner (@gglusman) review/confirmation.
+# DAKP is a "data-derived" KP: the edges we ingest are computed by the 
+# Drug Approvals pipeline from these upstream sources.
 supporting_data_source_info:
   - infores_id: "infores:dailymed"
     name: "DailyMed"
@@ -14,7 +13,7 @@ supporting_data_source_info:
     terms_of_use_info:
       terms_of_use_url: "https://dailymed.nlm.nih.gov/dailymed/"
       terms_of_use_description: >-
-         DailyMed data are freely available and in the public domain. (Owner to confirm exact terms.)
+         DailyMed data are freely available and in the public domain.
     relevant_files:
       - file_name: "DailyMed Structured Product Labeling"
         location: "https://dailymed.nlm.nih.gov/dailymed/"
@@ -24,11 +23,11 @@ supporting_data_source_info:
     description: >-
       FAERS contains adverse event reports, medication error reports, and product quality
       complaints submitted to the FDA. DAKP uses FAERS to derive drug-disease usage
-      relationships and case counts, including off-label use.
+      relationships and case counts, including on-label and off-label use.
     terms_of_use_info:
       terms_of_use_url: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
       terms_of_use_description: >-
-         FAERS data files are in the public domain and freely available for download. (Owner to confirm exact terms.)
+         FAERS data files are in the public domain and freely available for download.
     relevant_files:
       - file_name: "FAERS Quarterly Data Files"
         location: "https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers/fda-adverse-event-reporting-system-faers-quarterly-data-extract-files"
@@ -40,25 +39,24 @@ supporting_data_source_info:
       as the primary knowledge source for drug-contraindication relationships.
     terms_of_use_info:
       terms_of_use_description: >-
-         TODO: Terms of use for MEDI need owner confirmation. Prior draft listed "NA".
-         The contraindication list is distributed via the everycure-org/matrix-indication-list
-         GitHub releases; confirm the applicable license/terms.
+         The contraindication list is distributed via GitHub releases at 
+         https://github.com/everycure-org/matrix-indication-list under CC0-1.0 license.
     relevant_files:
       - file_name: "contraindicationList.xlsx"
         location: "https://github.com/everycure-org/matrix-indication-list/releases/"
-        description: "Contraindications used by DAKP (owner to confirm provenance/relationship to MEDI)"
+        description: "Contraindications used by DAKP"
 
 source_info:
   infores_id: "infores:multiomics-drugapprovals"
-  name: "Multiomics Drug Approvals Knowledge Provider (Multiomics-DAKP)"
+  name: "Drug Approvals Knowledge Provider (DAKP)"
   description: >-
     The Drug Approvals KP (DAKP) provides information on FDA-approved drugs and their approved
-    indications, along with drug usage in the absence of formal FDA approval and drug
-    contraindications. Knowledge is derived by the Multiomics pipeline from DailyMed (FDA
+    indications, along with drug usage regardless of formal FDA approval, and drug
+    contraindications. Knowledge is derived by the DAKP pipeline from DailyMed (FDA
     Structured Product Labeling), the FDA Adverse Event Reporting System (FAERS), and MEDI.
-    Drug-disease treatment edges carry FDA approval status, FDA approval (application) numbers,
+    Drug-disease edges carry FDA approval status, FDA approval (application) numbers,
     supporting evidence identifiers, and adverse-event case counts. DAKP is one of several
-    Multiomics data-derived Knowledge Providers contributing to NCATS Translator.
+    data-derived Knowledge Providers contributing to NCATS Translator.
   citations:
     - "Generating Biomedical Knowledge Graphs from Knowledge Bases, Registries, and Multiomic Data (preprint): https://pmc.ncbi.nlm.nih.gov/articles/PMC11601480/"
   terms_of_use_info:
@@ -74,8 +72,8 @@ source_info:
   data_formats:
     - kgx
   data_versioning_and_releases: >-
-    New versions are released periodically (not on a fixed schedule). The current version is
-    recorded in the manifest file (https://github.com/multiomicsKP/drug_approvals_kp/blob/main/manifest.json)
+    New versions are released periodically (not on a fixed schedule). The current version is recorded
+    in the manifest file (https://github.com/multiomicsKP/drug_approvals_kp/blob/main/manifest.json)
     and embedded in the downloaded file names (e.g. drug_approvals_kg_edges_v{version}.jsonl.gz).
   source_status: maintained_as_needed_updates
 
@@ -85,14 +83,14 @@ ingest_info:
   utility: >-
     DAKP provides curated drug-disease treatment relationships with FDA approval status and
     supporting evidence, which is essential for understanding approved therapeutic uses and
-    clinical evidence. DAKP also provides information on drug use in the absence of FDA approval
+    clinical evidence. DAKP also provides information on drug use regardless of FDA approval
     (including off-label use, with adverse-event case counts) and information on drug
     contraindications. These edge types support Translator treatment-prediction and
     drug-safety reasoning use cases.
   scope: >-
     FDA-approved drugs and their treatment relationships with diseases/phenotypes, including
-    approval status, FDA approval numbers, and supporting evidence; drug use in the absence of
-    FDA approval, with case counts derived from adverse-event reporting; and drug
+    approval status, FDA approval numbers, and supporting evidence; drug use in the presence or 
+    absence of FDA approval, with case counts derived from adverse-event reporting; and drug
     contraindications. Node and edge properties beyond those listed are out of scope.
   relevant_files:
     - file_name: "drug_approvals_kg_edges.jsonl.gz"
@@ -105,7 +103,7 @@ ingest_info:
     - file_name: "drug_approvals_kg_edges.jsonl.gz"
       included_records: >-
         Drug-disease/phenotype edges with predicates biolink:treats (FDA-approved indications),
-        biolink:applied_to_treat (usage without formal approval, from FAERS), and
+        biolink:applied_to_treat (usage with or without formal approval, from FAERS), and
         biolink:contraindicated_in (contraindications). Edges missing subject, object, or
         predicate are skipped.
       fields_used: >-
@@ -168,7 +166,7 @@ target_info:
           In the source data all instances have clinical_approval_status = approved_for_condition.
           FDA_regulatory_approvals is populated from the source 'approvals' field; publications is
           populated from the source 'has_evidence' (DailyMed SPL) identifiers.
-    # 2. Usage-without-approval edges (biolink:applied_to_treat)
+    # 2. Usage edges (biolink:applied_to_treat)
     - subject_categories:
         - "biolink:ChemicalEntity"
         - "biolink:SmallMolecule"
@@ -192,9 +190,9 @@ target_info:
         - "biolink:clinical_approval_status"
         - "biolink:number_of_cases"
       ui_explanation: >-
-        This edge reports that a drug was applied to treat a disease or phenotype in the absence
-        of (or beyond) a formal FDA approval, based on usage observed in FDA Adverse Event
-        Reporting System (FAERS) reports. FAERS is the primary knowledge source; the Multiomics
+        This edge reports that a drug was applied to treat a disease or phenotype with or
+        without formal FDA approval, based on usage observed in FDA Adverse Event
+        Reporting System (FAERS) reports. FAERS is the primary knowledge source; the 
         DAKP pipeline aggregates and manually validates the data. The number_of_cases property
         reports how many FAERS reports support the usage, and clinical_approval_status
         distinguishes approved-for-condition from off-label use. The observational, usage-based
@@ -233,7 +231,7 @@ target_info:
       ui_explanation: >-
         This edge reports that a drug is contraindicated in the presence of a disease or
         condition, based on warnings in FDA approval documents as captured by MEDI. MEDI is the
-        primary knowledge source; the Multiomics DAKP pipeline aggregates and manually validates
+        primary knowledge source; the DAKP pipeline aggregates and manually validates
         the data, with DailyMed as supporting data. The contraindication relationship is
         represented with the Biolink 'contraindicated_in' predicate.
       source_files:
