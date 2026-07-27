@@ -24,8 +24,7 @@ source_info:
     terms_of_use_description: "UNC Health is permitted to provide under 45 C.F.R.\
       \ \xC2\xA7 164.502(d)(2)"
   data_access_locations:
-    - 'https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/ - Automat ICEES
-    Plater loaded KGX jsonl files, plus meta_knowledge_graph.json'
+    - 'https://stars.renci.org/var/plater/bl-4.2.1/icees-kg/8-20-2024/ - Automat ICEES Plater loaded KGX jsonl files, plus meta_knowledge_graph.json'
   data_provision_mechanisms:
     - file_download
   data_formats:
@@ -51,6 +50,7 @@ ingest_info:
     fields_used: id, name, category, equivalent_identifiers
   - file_name: edges.jsonl
     included_records: all
+    # attributes encapsulate rich ICEES Study data
     fields_used: id, subject, predicate, object, primary_knowledge_source, attributes
 target_info:
   edge_type_info:
@@ -87,10 +87,10 @@ target_info:
       - biolink:Drug
       - biolink:GrossAnatomicalStructure"
     qualifiers:
-      - property: biolink:subject_feature_name
+      - property: "biolink:subject_feature_name"
         value_range:
           - "biolink:string"
-      - property: biolink:object_feature_name
+      - property: "biolink:object_feature_name"
         value_range:
           - "biolink:string"
     knowledge_level:
@@ -98,7 +98,7 @@ target_info:
     agent_type:
       - data_analysis_pipeline  # aggregating clinical data and environmental exposures
     edge_properties:
-    - biolink:has_supporting_studies  #: <- semicolon needed for this tag
+    - "biolink:has_supporting_studies"  #: <- colon eventually needed for this tag
 #      - chi squared statistic
 #      - chi squared dof
 #      - chi squared p
@@ -265,6 +265,8 @@ target_info:
     - UMLS
     node_properties:
     - biolink:equivalent_identifiers   # biolink:same_as
+  future_considerations: null
+  additional_notes: null
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, code author"
