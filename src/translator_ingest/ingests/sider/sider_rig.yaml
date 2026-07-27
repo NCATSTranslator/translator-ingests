@@ -3,60 +3,89 @@ name: "SIDER Reference Ingest Guide"
 # Information about the Source of the ingest
 source_info:
   infores_id: infores:sider
+  name: "SIDER (Side Effect Resource)"
   description: >-
-    SIDER contains information on marketed drugs and their recorded adverse drug reactions.
-    The information is extracted from public documents and package inserts. The current version
-    of the database contains data on 1,430 drugs and 5,868 adverse drug reactions.
+    SIDER (Side Effect Resource) is a publicly available database of marketed drugs and their
+    recorded adverse drug reactions (side effects). Side-effect information is extracted from
+    public documents and drug package inserts / product labels, and side-effect terms are mapped
+    to standard medical vocabularies (MedDRA, with UMLS concept identifiers). SIDER groups side
+    effects by drug, and where available also captures the frequency with which a side effect is
+    reported. The most recent release (version 4.1) contains information on 1,430 drugs and 5,868
+    adverse drug reactions. SIDER is developed and maintained at EMBL.
   citations:
     - "Kuhn M, Letunic I, Jensen LJ, Bork P. The SIDER database of drugs and side effects. Nucleic Acids Research. 2016;44(D1):D1075-9. DOI: 10.1093/nar/gkv1075"
-  terms_of_use_info: "Creative Commons Attribution-Noncommercial-Share Alike 4.0 License"
+  terms_of_use_info:
+    license_name: "CC BY-NC-SA 4.0"
+    license_url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    terms_of_use_description: >-
+      SIDER data is released under a Creative Commons Attribution-Noncommercial-Share Alike 4.0
+      License, permitting non-commercial reuse with attribution and share-alike terms.
   data_access_locations:
-    - "http://sideeffects.embl.de/download/"
+    - "SIDER download page - http://sideeffects.embl.de/download/"
   data_provision_mechanisms:
     - file_download
   data_formats:
     - tsv
-  data_versioning_and_releases: "SIDER version 4.1 released in 2015. Updates are irregular and infrequent. Database maintenance is limited."
+  data_versioning_and_releases: >-
+    SIDER version 4.1 was released in 2015 and is the latest release. Updates are irregular and
+    infrequent, and there has been no new release in many years. Versioning uses a simple major.minor
+    scheme (currently 4.1).
+  source_status: not_maintained
   additional_notes:
-    - "It may not include the most recent drug approvals or complete adverse event profiles."
+    - >-
+      As the latest release (4.1) dates from 2015, SIDER may not include recent drug approvals or
+      complete/updated adverse event profiles. Ongoing maintenance appears limited.
 
 
 # Information about Ingested Content
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
-  utility: "Provides drug-adverse drug reaction associations for pharmacovigilance, drug safety analysis, and adverse drug reaction prediction studies."
-  scope: "Covers marketed drugs and their documented adverse drug reactions as found in public documents and package inserts."
+  utility: >-
+    Provides drug to adverse drug reaction (side effect) associations useful for pharmacovigilance,
+    drug safety analysis, and adverse drug reaction prediction studies in Translator use cases.
+  scope: >-
+    Covers marketed drugs and their documented adverse drug reactions as found on drug product labels,
+    as reported by SIDER. This ingest currently takes only the label-specific side effects file and
+    only its MedDRA preferred term (PT) rows.
 
   relevant_files:
     - file_name: meddra_all_label_se.tsv.gz
       location: "http://sideeffects.embl.de/media/download/meddra_all_label_se.tsv.gz"
-      description: "Side effects specifically found on drug labels"
-    - file_name: drug_names.tsv
-      location: "http://sideeffects.embl.de/media/download/drug_names.tsv"
-      description: "Drug identifiers and common names mapping STITCH IDs to drug names"
-    - file_name: meddra.tsv
-      location: "http://sideeffects.embl.de/media/download/meddra.tsv"
-      description: "MedDRA terms and hierarchy information"
-
+      description: >-
+        Side effects specifically found on drug labels, with STITCH compound identifiers, MedDRA
+        concept type (LLT/PT), UMLS concept identifiers, and side-effect names.
 
   included_content:
     - file_name: meddra_all_label_se.tsv.gz
-      included_records: "All records (~63,473 label-specific side effect associations)"
-      fields_used: "STITCH_compound_id_flat, UMLS_concept_id_label, MedDRA_concept_type, UMLS_concept_id_MedDRA, side_effect_name"
+      included_records: "Label-specific side-effect associations whose MedDRA_concept_type is PT (preferred term); duplicate subject-predicate-object triples are collapsed to a single edge."
+      fields_used: "STITCH_compound_id_stereo, MedDRA_concept_type, UMLS_concept_id, side_effect_name"
 
   filtered_content:
     - file_name: meddra_all_label_se.tsv.gz
-      filtered_records: include only MedDRA_concept_type = PT (preferred term)
+      filtered_records: "Records whose MedDRA_concept_type is LLT (lower level term) are excluded; only PT (preferred term) rows are retained."
       rationale: >-
-        from http://sideeffects.embl.de/media/download/README:
-        There is at least one PT for every LLT, but sometimes the PT is the same as the LLT. LLTs are sometimes too detailed, 
-        and therefore you might want to filter for PT."
+        Per the SIDER README (http://sideeffects.embl.de/media/download/README): there is at least
+        one PT for every LLT, but sometimes the PT is the same as the LLT. LLTs are sometimes too
+        detailed, so PT rows are retained to avoid overly granular, redundant side-effect terms.
+
+  future_considerations:
+    - category: edge_property_content
+      consideration: >-
+        Some background exploration suggested that SIDER provides qualitative frequency information
+        about side effects (e.g. terms like 'very common', 'uncommon'), available in the
+        meddra_freq.tsv file. This seems like useful information we should consider capturing as an
+        edge property.
+    - category: node_property_content
+      consideration: >-
+        Chemical (drug) nodes are currently emitted with an identifier only and no name. SIDER's
+        drug_names.tsv file maps STITCH/PubChem compound identifiers to common drug names and could
+        be used to populate biolink:name on the chemical nodes.
+      relevant_files: drug_names.tsv
 
 
 # Information about the Graph Output by the ingest
-target_info:  # (required, range = TargetInfo)
-  infores_id: "infores:translator-sider-kgx"
+target_info:
 
   edge_type_info:
     - subject_categories:
@@ -71,23 +100,47 @@ target_info:  # (required, range = TargetInfo)
         - manual_agent
       primary_knowledge_sources:
         - infores:sider
-      ui_explanation: "SIDER data report side effect information that is extracted from product labels, regulatory documents, and official package inserts - by an automated NLP-based pipeline tuned to parse text, recognize side-effect relationships between drug and condition concepts, and map them to vocabularies such as MedDRA. The SIDER record used here reports that [OBJECT] can have the side effect [SUBJECT]. This is represented in Translator using the [has_side_efect] relationship."
+      ui_explanation: >-
+        SIDER reports side-effect information extracted from drug product labels, regulatory
+        documents, and official package inserts, mapping side-effect terms to standard vocabularies
+        such as MedDRA (with UMLS concept identifiers). The SIDER record used here reports that the
+        drug [SUBJECT] can cause the side effect [OBJECT]. This is represented in Translator using
+        the 'has_side_effect' predicate.
       source_files:
         - meddra_all_label_se.tsv.gz
+      additional_notes:
+        - >-
+          The ingest emits these edges with a knowledge_level of 'knowledge_assertion' and an
+          agent_type of 'manual_agent', matching the values set in the transform code. Note that
+          SIDER itself derives label side effects via an automated (text-mining) extraction pipeline,
+          so whether 'manual_agent' is the most appropriate agent_type (versus 'text_mining_agent')
+          is worth an owner review.
+        - >-
+          Only MedDRA preferred term (PT) rows are ingested, and duplicate drug-side effect triples
+          are collapsed, so each drug-side effect pair yields at most one edge. Edges carry no
+          publications or other edge properties from the source.
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
-      source_identifier_types: PUBCHEM.COMPOUND
-      node_properties:
-        - biolink:name
+      source_identifier_types:
+        - PUBCHEM.COMPOUND
+      additional_notes:
+        - >-
+          Chemical identifiers are derived from SIDER STITCH compound identifiers (CID...), which are
+          stripped to their numeric PubChem Compound id and prefixed with PUBCHEM.COMPOUND. No name
+          is currently set on chemical nodes (see future considerations).
     - node_category: biolink:DiseaseOrPhenotypicFeature
-      source_identifier_types: UMLS
+      source_identifier_types:
+        - UMLS
       node_properties:
         - biolink:name
 
   future_considerations:
-   - category: edge_content
-     consideration: Some background exploration suggested that SIDER provides qualitative frequency info about side effects (e.g. terms like 'very common', 'uncommon'). This seems like useful info we should consider pulling in. 
+    - category: edge_properties
+      consideration: >-
+        Consider capturing SIDER's qualitative side-effect frequency information (e.g. 'very common',
+        'uncommon') as an edge property, if it is added to the ingest (see the ingest content
+        future considerations).
 
 # Information about the how the ingest was specified and performed
 provenance_info:
@@ -97,4 +150,3 @@ provenance_info:
   - "Evan Morris - code support"
   - "Sierra Moxon - data modeling, code support"
   - "Matthew Brush - data modeling, domain expertise"
-
