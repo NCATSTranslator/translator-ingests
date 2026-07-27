@@ -129,7 +129,7 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:RNAProduct
       predicates:
-        - biolink:involved_in
+        - biolink:actively_involved_in
       object_categories:
         - biolink:BiologicalProcess
       knowledge_level:
@@ -145,7 +145,7 @@ target_info:
         - negated
         - has_evidence_of_type
         - publications
-      ui_explanation: "A GO Annotation uses 'involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
+      ui_explanation: "A GO Annotation uses the 'actively_involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
       additional_notes:
         - "varies, depending on mappings from GO evidence codes"
 
@@ -276,18 +276,15 @@ target_info:
     - issue: "Predicate normalization changes some edge types"
       description: |
         After normalization, predicates are transformed as follows:
-        - involved_in → related_to (generalized, no direct Biolink predicate mapping in current normalization output)
         - part_of → has_part (inverted, subject/object swap)
         - active_in → active_in (retained after predicate correction)
         This is documented in predicate_map.json output.
       resolution: "Accepted. The ingest outputs the semantically correct predicates; normalization adjusts for Biolink conventions."
     # Validation produces warnings for domain/range that we accept
-    - issue: "Domain/range validation warnings for related_to and enables"
+    - issue: "Domain/range validation warnings for enables"
       description: |
-        Validation reports ~27k sampled warnings about domain/range constraints:
-        - related_to is broad and can trigger low-specificity domain/range warnings after normalization
+        Validation reports sampled warnings about domain/range constraints:
         - enables expects domain 'physical entity' but subjects are Gene/Protein
-        These occur primarily because normalization maps involved_in edges to related_to.
       resolution: "Accepted as warnings. Edges pass validation; warnings reflect Biolink model strictness."
     # Some GO BP terms become Pathway after normalization
     - issue: "GO Biological Process terms re-categorized as Pathway"
