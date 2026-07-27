@@ -127,7 +127,8 @@ target_info:
       - knowledge_assertion
     agent_type:
       - data_analysis_pipeline  # aggregating clinical data and environmental exposures
-    primary_knowledge)sources:
+    primary_knowledge_sources:
+      - infores:icees-kg
     edge_properties:
     - "biolink:has_supporting_studies"  #: <- colon eventually needed for this tag
 #      - chi squared statistic
@@ -138,8 +139,6 @@ target_info:
 #      - fisher exact p
 #      - log odds ratio
 #      - log odds ratio 95 ci
-    primary_knowledge_sources:
-      - infores:icees-kg
 #    supporting_data_sources:  TODO: to be elaborated by ICEES team
 #      - infores:dili-network-study-data
     ui_explanation: >-
