@@ -16,6 +16,7 @@ from translator_ingest.ingests.goa.goa import (
     QUALIFIER_TO_PREDICATE,
     get_supporting_data_sources,
 )
+from translator_ingest.util.biolink import get_biolink_model_toolkit
 
 
 GOA_RIG_PATH = (
@@ -36,6 +37,23 @@ def _get_goa_rig_predicates() -> set[str]:
     return {predicate for edge_type in edge_type_info for predicate in edge_type["predicates"]}
 
 
+def _get_valid_predicate_curies() -> set[str]:
+    """Return every canonical predicate CURIE (slot_uri) in the pinned Biolink Model.
+
+    Mirrors ``BiolinkValidationPlugin._get_valid_predicates``: predicates are the
+    ``slot_uri`` values of the descendants of ``related to``. A predicate string is
+    only valid on an emitted edge if it matches one of these URIs; alias names such
+    as ``involved in`` resolve via ``get_element`` but never appear as a ``slot_uri``.
+    """
+    toolkit = get_biolink_model_toolkit()
+    valid_uris: set[str] = set()
+    for name in toolkit.get_descendants("related to", reflexive=True, mixin=True):
+        element = toolkit.get_element(name)
+        if element is not None and getattr(element, "slot_uri", None):
+            valid_uris.add(element.slot_uri)
+    return valid_uris
+
+
 def test_goa_predicates_in_code_match_rig() -> None:
     """Ensure GOA transform predicates align with GOA RIG edge predicate definitions."""
     rig_predicates = _get_goa_rig_predicates()
@@ -44,9 +62,27 @@ def test_goa_predicates_in_code_match_rig() -> None:
 
 
 @pytest.mark.parametrize(
+    "predicate",
+    sorted(
+        set(QUALIFIER_TO_PREDICATE.values())
+        | set(ASPECT_TO_PREDICATE.values())
+        | _get_goa_rig_predicates()
+    ),
+)
+def test_goa_predicates_exist_in_biolink_model(predicate: str) -> None:
+    """Every GOA predicate must be a real Biolink slot_uri, not just an alias.
+
+    This is the check that would have caught issue #463: ``biolink:involved_in``
+    is only an alias of ``biolink:actively_involved_in`` and has no slot_uri, so
+    it is rejected here while the canonical predicate passes.
+    """
+    assert predicate in _get_valid_predicate_curies()
+
+
+@pytest.mark.parametrize(
     ("qualifier", "expected_predicate"),
     [
-        ("involved_in", "biolink:involved_in"),
+        ("involved_in", "biolink:actively_involved_in"),
         ("enables", "biolink:enables"),
         ("located_in", "biolink:located_in"),
         ("is_active_in", "biolink:active_in"),
@@ -60,7 +96,7 @@ def test_goa_qualifier_mapping(qualifier: str, expected_predicate: str) -> None:
 
 def test_goa_aspect_fallback_for_biological_process() -> None:
     """Ensure biological process fallback predicate matches GOA RIG."""
-    assert ASPECT_TO_PREDICATE["P"] == "biolink:involved_in"
+    assert ASPECT_TO_PREDICATE["P"] == "biolink:actively_involved_in"
 
 
 @pytest.mark.parametrize(
@@ -400,7 +436,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "1b86df80-3be7-4160-a5f7-ff5fee6ab875",
             "subject": "NCBIGene:7534",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0001525",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.automated_agent,
@@ -412,7 +448,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "3a899606-d1ed-488e-b1ae-14f1c8a9bbd9",
             "subject": "NCBIGene:29082",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0016236",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
             "agent_type": AgentTypeEnum.manual_agent,
@@ -424,7 +460,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "4b0ddb2c-04b4-4c6e-899b-96b16e64efdb",
             "subject": "UniProtKB:A0M8Q6",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0002250",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.manual_agent,
@@ -436,7 +472,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "28182f19-9776-4538-a27c-36460c4a4d38",
             "subject": "NCBIGene:7471",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0045165",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
@@ -448,7 +484,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "0553359b-4a11-5817-b2e2-5ef1801d0ce7",
             "subject": "NCBIGene:102553861",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0140507",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
@@ -460,7 +496,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "bfa31a13-f3a2-4f41-b3ed-6712d9327d63",
             "subject": "NCBIGene:643641",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0008150",
             "knowledge_level": KnowledgeLevelEnum.not_provided,
             "agent_type": AgentTypeEnum.not_provided,
@@ -916,7 +952,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "000013d2-281c-5bb0-a0d7-619f4dcf6d93",
             "subject": "NCBIGene:24585",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0006942",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.automated_agent,
@@ -928,7 +964,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "fe9de6b5-bb24-488b-a880-1eac92c9d80b",
             "subject": "NCBIGene:66983",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0001546",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
             "agent_type": AgentTypeEnum.manual_agent,
@@ -940,7 +976,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "9ea07fc8-b38c-4e5a-9c21-3e2ec2679c0f",
             "subject": "NCBIGene:75613",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0060261",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.manual_agent,
@@ -952,7 +988,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "bea22260-7d99-4246-ae09-0a1ce021fec7",
             "subject": "NCBIGene:405219",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0050911",
             "knowledge_level": KnowledgeLevelEnum.prediction,
             "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
@@ -964,7 +1000,7 @@ EDGE_FIXTURES = [
         "params": {
             "id": "0966d200-2c53-40ac-9047-d3734b29f49a",
             "subject": "NCBIGene:102637107",
-            "predicate": "biolink:involved_in",
+            "predicate": "biolink:actively_involved_in",
             "object": "GO:0008150",
             "knowledge_level": KnowledgeLevelEnum.not_provided,
             "agent_type": AgentTypeEnum.not_provided,
