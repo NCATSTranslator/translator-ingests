@@ -355,6 +355,9 @@ target_info:
         - >-
           Kept as its own edge type because a UI explanation that fits a causal or affects edge does
           not fit an identity assertion. This is the smallest edge type in the ingest.
+        - >-
+          biolink:NamedThing appears here as a transient placeholder for endpoints the transform
+          could not type, not as a real category. See the notes on the biolink:NamedThing node type.
 
     # 4. Everything else, emitted as a plain biolink:Association with no qualifiers (1,699,378).
     - subject_categories:
@@ -429,7 +432,11 @@ target_info:
           Subject/object categories are assigned by the transform from the CURIE prefix using
           PREFIX_TO_CLASS, and any endpoint whose prefix is not recognized is emitted as
           biolink:NamedThing. About 65 percent of emitted nodes take that fallback, most of them
-          UMLS CUIs. Final categories may differ after downstream node normalization.
+          UMLS CUIs. biolink:NamedThing is listed above because it is what the transform emits, but
+          it is a transient placeholder rather than a real category: it is the root Biolink class,
+          so it asserts nothing about the endpoint, and node normalization resolves every one of
+          them, leaving zero biolink:NamedThing nodes in the delivered graph. Read the specific
+          categories in this list as the informative ones.
         - >-
           Supporting text snippets are retained under has_supporting_studies, then has_study_results,
           then supporting_text, as TextMiningStudyResult objects. There is no top-level
@@ -488,16 +495,25 @@ target_info:
         - DrugCentral
       additional_notes:
         - >-
-          This is the fallback category for endpoints whose identifier prefix PREFIX_TO_CLASS does
-          not map to a specific Biolink class. It is the largest node type in the ingest, covering
-          about 65 percent of emitted nodes, and UMLS is by far the largest prefix within it.
-          SemMedDB is built on UMLS Metathesaurus concepts, so any concept that RTX-KG2 could not
-          map to an external ontology arrives as a UMLS CUI and lands here.
+          This is a transient fallback category, not a real node type in the delivered graph. It is
+          recorded here because it is what the transform emits and because its size is a useful
+          measure of how much type information this ingest is missing, but no node keeps this
+          category downstream.
         - >-
-          Downstream normalization typically reassigns these nodes to more specific categories such
-          as SmallMolecule, Drug, MolecularMixture, Cell, OrganismTaxon, Procedure, Behavior,
-          PopulationOfIndividualOrganisms, or InformationContentEntity. Those are post-normalization
+          It is the largest node type the ingest emits, covering about 65 percent of emitted nodes,
+          and UMLS is by far the largest prefix within it. SemMedDB is built on UMLS Metathesaurus
+          concepts, and RTX-KG2 strips the UMLS semantic types, so any concept KG2 could not map to
+          an external ontology arrives as a bare UMLS CUI that PREFIX_TO_CLASS cannot type.
+        - >-
+          Node normalization resolves all of them. In a full run of this ingest, zero nodes carried
+          biolink:NamedThing after normalization, and they were reassigned to categories such as
+          SmallMolecule, OrganismTaxon, Procedure, Drug, MolecularMixture, Cell, Behavior,
+          PopulationOfIndividualOrganisms, and InformationContentEntity. Those are post-normalization
           categories and are not assigned by this ingest.
+        - >-
+          Recovering real types at ingest time rather than relying on normalization would require
+          the UMLS semantic types that KG2 strips, which is one of the main arguments for the raw
+          SemMedDB re-ingest described in ingest_info.future_considerations.
 
   future_considerations:
     - category: predicates
