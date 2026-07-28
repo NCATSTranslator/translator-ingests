@@ -130,15 +130,15 @@ target_info:
     primary_knowledge_sources:
       - infores:icees-kg
     edge_properties:
-    - "biolink:has_supporting_studies"  #: <- colon eventually needed for this tag
-#      - chi squared statistic
-#      - chi squared dof
-#      - chi squared p
-#      - total sample size
-#      - fisher exact odds ratio
-#      - fisher exact p
-#      - log odds ratio
-#      - log odds ratio 95 ci
+      - "biolink:has_supporting_studies"
+      - "biolink:chi_squared_statistic"
+      - "biolink:chi_squared_dof"
+      - "biolink:chi_squared_p"
+      - "biolink:total_sample_size"
+      - "biolink:fisher_exact_odds_ratio"
+      - "biolink:fisher_exact_p"
+      - "biolink:log_odds_ratio"
+      - "biolink:log_odds_ratio_95_ci"
 #    supporting_data_sources:  TODO: to be elaborated by ICEES team
 #      - infores:dili-network-study-data
     ui_explanation: >-
