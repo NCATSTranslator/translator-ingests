@@ -119,6 +119,11 @@ ingest_info:
       inferred over a G-D associated type with the value "MENDELIAN"
     fields_used: ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id
   filtered_content:
+    - file_name: phenotype.hpoa
+      filtered_records: >-
+        Negated edges from phenotype.hpoa (i.e. edges with qualifier field value 'NOT').
+      rationale: >-
+        Negated edge associations are not included as a matter of general policy within Translator at present.
     - file_name: genes_to_disease.txt
       filtered_records: >-
         Records where we determine that the reported G-P association was inferred
@@ -188,7 +193,6 @@ target_info:
       supporting_data_sources:
         - infores:hpo
       edge_properties:
-        - "biolink:negated"
         - "biolink:publications"
         - "biolink:has_evidence_of_type"
         - "biolink:has_count"
@@ -202,8 +206,7 @@ target_info:
         is observed to manifest in a particular Disease, and may include information about
         the frequency and/or biological context (e.g. sex, onset, frequency) of this manifestation.
         This relationship is represented using the Biolink 'has phenotype' predicate -
-        with optional qualifiers describing frequency/context information where provided,
-        as well as, the 'negated' property to indicate that the Phenotype is not observed.
+        with optional qualifiers describing frequency/context information where provided.
       source_files:
         - phenotype.hpoa
       additional_notes: null
@@ -346,6 +349,10 @@ target_info:
         Should we consider creating support paths in our data/graphs, 
         for the G-D-P hops over which HPO infers G-P associations?
         (e.g. `GENE1 -causes-> DISEASE1 -has_phenotype-> PHENO1 ---->  GENE1 -causes-> PHENO1`)
+    - category: spoq_pattern
+      consideration: >-
+        Negated edges from phenotype.hpoa (i.e. edges with qualifier field value 'NOT') are filtered
+        out in the current ingest, but could be easily re-introduced at a later date, should they be of interest.
   additional_notes:
     - >
       The HPOA ingest of the Disease.node_properties.inheritance value is currently thought to be mildly
