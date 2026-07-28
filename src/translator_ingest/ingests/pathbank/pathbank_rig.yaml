@@ -15,13 +15,18 @@ source_info:
     per-pathway PWML (XML) archive.
   citations:
     - "Wishart DS, et al. PathBank: a comprehensive pathway database for model organisms. Nucleic Acids Res. 2020 Jan 8;48(D1):D470-D478. https://doi.org/10.1093/nar/gkz861"
+    - "Wishart DS, et al. PathBank 2.0 - the pathway database for model organism metabolomics. Nucleic Acids Res. 2024 Jan 5;52(D1):D654-D662. https://doi.org/10.1093/nar/gkad1041"
     - "Downloads page: https://pathbank.org/downloads"
   terms_of_use_info:
     terms_of_use_url: "https://pathbank.org/about"
     terms_of_use_description: >-
-      PathBank does not publish a formal open-source license alongside its downloads; the About and
-      Downloads pages provide reuse and citation guidance. TODO: owner to confirm the applicable license
-      / terms of use before publication.
+      The PathBank About page states that the database is made available under the Open Database License.
+      The same page adds conditions that are more restrictive than ODbL alone: use or re-distribution of
+      the data, in whole or in part, for commercial purposes requires explicit permission of the authors,
+      and users who download significant portions of the database are asked to cite the PathBank
+      publication.
+    license_name: "Open Database License (ODbL)"
+    license_url: "https://opendatacommons.org/licenses/odbl/"
   data_access_locations:
     - "All downloads: https://pathbank.org/downloads"
   data_provision_mechanisms:
@@ -30,25 +35,22 @@ source_info:
     - csv
     - xml  # PWML is an XML-based markup format, parsed here with xmltodict
   data_versioning_and_releases: >-
-    PathBank does not publish an explicit, regularly-scheduled release version. Treat each pull as a dated
-    snapshot; the downloads page lists 'Generated On' timestamps and large per-format archives. The ingest
-    derives its version string from the most recent file modification date of the pathways CSV and PWML
-    archives (see get_latest_version in pathbank.py).
-  source_status: unknown
-  additional_notes:
-    - >-
-      TODO (owner decision): source_status is set to 'unknown' pending confirmation of PathBank's current
-      maintenance/update cadence. PathBank remains online and serves downloadable archives with
-      'Generated On' timestamps, but no regular release schedule is published and the primary publication
-      dates to 2020. Owner (@bazarkua) should confirm whether 'maintained_as_needed_updates' or another
-      value is more accurate.
+    PathBank does not publish an explicit, regularly-scheduled release version. Each pull is a dated
+    snapshot, and the downloads page lists a 'Generated On' timestamp per archive. The ingest derives its
+    version string from the most recent file modification date of the pathways CSV and PWML archives (see
+    get_latest_version in pathbank.py). Note that the two archives used here have not been regenerated
+    since 2019 (pathways CSV 'Aug 15 2019', PWML 'Sep 12 2019', 110,234 PWML files), so the derived version
+    currently resolves to 2019-09-13. That file count corresponds to PathBank 1.0. The PathBank 2.0 content
+    described in the 2024 publication (over 600,000 pathways) is served through the website but is not
+    present in these bulk download archives.
+  source_status: maintained_as_needed_updates
 
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
   utility: >-
-    Comprehensive pathway membership and mechanistic process data (reactions, transports, interactions,
-    complex composition, localization) for Translator reasoning and pathway-centric analytics.
+    Comprehensive pathway membership and mechanistic process data (reactions, interactions, complex
+    composition, localization) for Translator reasoning and pathway-centric analytics.
   scope: >-
     This ingest uses only two inputs: the master pathways CSV for biolink:Pathway nodes and the PWML
     archive for entities, processes, and edges. Other formats available from PathBank (BioPAX, SBML, SBGN,
@@ -68,7 +70,7 @@ ingest_info:
       fields_used: "SMPDB ID, PW ID, Name, Subject, Description"
     - file_name: "pathbank_all_pwml.zip"
       included_records: "All PWML pathway files (PW*.pwml)."
-      fields_used: "entities (compounds, proteins, complexes, nucleic acids, element collections, bounds), processes (reactions, transports, interactions), participants (inputs/outputs), enzymes/transporters, localization (subcellular compartments/tissues)"
+      fields_used: "entities (compounds, proteins, complexes, nucleic acids, element collections, bounds), processes (reactions, interactions), participants (inputs/outputs), reaction enzymes, localization (subcellular compartments/tissues)"
 
   # Note: filtered_content is omitted because all records from the included files
   # (pathbank_pathways.csv and PWML files) are used without record-level filtering.
