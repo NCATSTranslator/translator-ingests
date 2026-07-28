@@ -69,24 +69,24 @@ ingest_info:
 
   included_content:
     - file_name: "goa_human.gaf.gz"
-      included_records: "All records for NCBITaxon:9606 (Taxon column filter). No evidence-code or aspect filtering is applied; negated (NOT) annotations are retained and represented explicitly."
+      included_records: "Records whose Taxon column exactly matches one of taxon:9606, taxon:10090, or taxon:10116; in practice this file contributes the NCBITaxon:9606 (human) records. No evidence-code or aspect filtering is applied; negated (NOT) annotations are retained and represented explicitly."
       fields_used: "DB, DB_Object_ID, DB_Object_Symbol, Qualifier, GO_ID, DB_Reference, Evidence_Code, Aspect, DB_Object_Name, DB_Object_Type, Taxon, Assigned_By"
     - file_name: "mgi.gaf.gz"
-      included_records: "All records for NCBITaxon:10090 (Taxon column filter). No evidence-code or aspect filtering is applied; negated (NOT) annotations are retained and represented explicitly."
+      included_records: "Records matching the same shared taxon inclusion list; in practice this file contributes the NCBITaxon:10090 (mouse) records, as every row is taxon:10090. No evidence-code or aspect filtering is applied; negated (NOT) annotations are retained and represented explicitly."
       fields_used: "DB, DB_Object_ID, DB_Object_Symbol, Qualifier, GO_ID, DB_Reference, Evidence_Code, Aspect, DB_Object_Name, DB_Object_Type, Taxon, Assigned_By"
     - file_name: "rgd.gaf.gz"
-      included_records: "All records for NCBITaxon:10116 (Taxon column filter). No evidence-code or aspect filtering is applied; negated (NOT) annotations are retained and represented explicitly."
+      included_records: "Records matching the same shared taxon inclusion list; in practice this file contributes the NCBITaxon:10116 (rat) records, as every row is taxon:10116. No evidence-code or aspect filtering is applied; negated (NOT) annotations are retained and represented explicitly."
       fields_used: "DB, DB_Object_ID, DB_Object_Symbol, Qualifier, GO_ID, DB_Reference, Evidence_Code, Aspect, DB_Object_Name, DB_Object_Type, Taxon, Assigned_By"
 
   filtered_content:
     - file_name: "goa_human.gaf.gz"
-      filtered_records: "DB_Reference values that are not PMIDs (e.g. GO_REF, ISBN, Reactome, and other non-PMID references) are dropped from the publications edge property. Records whose DB source is not recognized in the DB-to-Biolink-class mapping are skipped entirely."
-      rationale: "Only PMIDs are retained as publications for citation quality/consistency; records from unmapped source databases cannot be reliably typed to a Biolink subject category."
+      filtered_records: "Rows whose Taxon column is not exactly taxon:9606, taxon:10090, or taxon:10116 are dropped by the Koza taxon filter. Because the filter is an exact match on the raw column, multi-organism rows such as 'taxon:9606|taxon:562' never match and are excluded (851 rows in the current release). DB_Reference values that are not PMIDs (e.g. GO_REF, ISBN, Reactome, and other non-PMID references) are dropped from the publications edge property. Records whose DB source is not recognized in the DB-to-Biolink-class mapping are skipped entirely."
+      rationale: "The ingest is scoped to human, mouse, and rat. Multi-organism annotations (typically host-pathogen interactions) are excluded because the edge would need a second taxon that the current model does not represent. Only PMIDs are retained as publications for citation quality/consistency; records from unmapped source databases cannot be reliably typed to a Biolink subject category."
     - file_name: "mgi.gaf.gz"
-      filtered_records: "Same as goa_human.gaf.gz: non-PMID DB_Reference values are excluded from the publications property, and records from unrecognized DB sources are skipped."
+      filtered_records: "The same shared taxon filter applies, but no rows are dropped by it: every row is taxon:10090. Non-PMID DB_Reference values are excluded from the publications property, and records from unrecognized DB sources are skipped."
       rationale: "Only PMIDs are retained as publications; records from unmapped source databases cannot be reliably typed to a Biolink subject category."
     - file_name: "rgd.gaf.gz"
-      filtered_records: "Same as goa_human.gaf.gz: non-PMID DB_Reference values are excluded from the publications property, and records from unrecognized DB sources are skipped."
+      filtered_records: "The same shared taxon filter applies, but no rows are dropped by it: every row is taxon:10116. Non-PMID DB_Reference values are excluded from the publications property, and records from unrecognized DB sources are skipped."
       rationale: "Only PMIDs are retained as publications; records from unmapped source databases cannot be reliably typed to a Biolink subject category."
 
   future_considerations:
@@ -103,8 +103,6 @@ ingest_info:
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-goa-kgx
-
   edge_type_info:
     - subject_categories:
         - biolink:Gene
@@ -153,7 +151,9 @@ target_info:
         - "supporting_data_sources are populated per edge from the GAF Assigned_By field only when it maps to a known upstream provider; not every edge will carry one."
 
     - subject_categories:
-        - biolink:MacromolecularComplex
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:RNAProduct
       predicates:
         - biolink:contributes_to
       object_categories:
@@ -191,6 +191,7 @@ target_info:
         - rgd.gaf.gz
       additional_notes:
         - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
+        - "Subject categories follow the GAF DB column via the DB_TO_BIOLINK_CLASS mapping in goa.py. contributes_to records come only from UniProtKB, MGI, RGD, and RNAcentral, so the subject is always a gene product. The macromolecular complex is the context the gene product contributes within, carried by the GO term, not the subject of the edge."
 
     - subject_categories:
         - biolink:Gene
@@ -227,15 +228,15 @@ target_info:
         molecular function plays an integral role in that process. It was created from a GO annotation using the
         'involved_in' relation, or by aspect-based fallback when no qualifier is present. The GO evidence code on
         the source annotation determines the edge's knowledge level and agent type. The relationship is
-        represented here with the Biolink 'involved_in' predicate.
+        represented here with the Biolink 'actively_involved_in' predicate.
       source_files:
         - goa_human.gaf.gz
         - mgi.gaf.gz
         - rgd.gaf.gz
-      ui_explanation: "A GO Annotation uses the 'actively_involved_in' predicate when a gene product's molecular function plays an integral role in the reported biological process."
       additional_notes:
         - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
-        - "When the GAF Qualifier is absent or unrecognized, the predicate is assigned from the Aspect (P -> involved_in) via the ASPECT_TO_PREDICATE fallback in goa.py."
+        - "The GAF 'involved_in' qualifier maps to biolink:actively_involved_in rather than biolink:involved_in, because the latter is an alias with no slot_uri and produced edges carrying an unknown predicate."
+        - "When the GAF Qualifier is absent or unrecognized, the predicate is assigned from the Aspect (P -> actively_involved_in) via the ASPECT_TO_PREDICATE fallback in goa.py. Every record in the three ingested files currently carries a recognized qualifier, so this fallback is a safety net rather than a routine path."
 
     - subject_categories:
         - biolink:Gene
@@ -286,7 +287,7 @@ target_info:
         - rgd.gaf.gz
       additional_notes:
         - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
-        - "This edge type consolidates the six upstream-effect predicates from the GAF Qualifier column, per data-modeling guidance to merge edge types that share provenance and subject/object categories. Owner review: the multivalued predicates listed here are siblings under a common 'acts upstream of' family rather than a single predicate plus strict descendants; confirm this grouping is acceptable or split as needed."
+        - "This edge type consolidates the six upstream-effect predicates from the GAF Qualifier column, per data-modeling guidance to merge edge types that share provenance and subject/object categories. The grouping satisfies the multivalued-predicate rule: biolink:acts_upstream_of is the ancestor of the other five, which are its descendants in the Biolink Model."
 
     - subject_categories:
         - biolink:Gene
@@ -295,7 +296,92 @@ target_info:
         - biolink:RNAProduct
       predicates:
         - biolink:active_in
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - knowledge_assertion
+        - prediction
+        - not_provided
+      agent_type:
+        - manual_agent
+        - automated_agent
+        - manual_validation_of_automated_agent
+        - not_provided
+      primary_knowledge_sources:
+        - infores:goa
+      supporting_data_sources:
+        - infores:mgi
+        - infores:rgd
+        - infores:reactome
+        - infores:intact
+        - infores:go-cam
+      edge_properties:
+        - biolink:negated
+        - biolink:has_evidence_of_type
+        - biolink:publications
+      ui_explanation: >-
+        This edge asserts that a gene or gene product carries out its molecular function in a particular cellular
+        component (GO Aspect C). It was created from a GO annotation using the 'is_active_in' relation, which GOA
+        uses to state where a gene product is active rather than merely where it has been observed. The GO evidence
+        code on the source annotation determines the edge's knowledge level and agent type. The relationship is
+        represented here with the Biolink 'active_in' predicate.
+      source_files:
+        - goa_human.gaf.gz
+        - mgi.gaf.gz
+        - rgd.gaf.gz
+      additional_notes:
+        - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
+        - "Both the 'is_active_in' and 'active_in' GAF qualifiers map to biolink:active_in; only 'is_active_in' occurs in the three ingested files."
+
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+        - biolink:RNAProduct
+      predicates:
         - biolink:located_in
+      object_categories:
+        - biolink:CellularComponent
+      knowledge_level:
+        - knowledge_assertion
+        - prediction
+        - not_provided
+      agent_type:
+        - manual_agent
+        - automated_agent
+        - manual_validation_of_automated_agent
+        - not_provided
+      primary_knowledge_sources:
+        - infores:goa
+      supporting_data_sources:
+        - infores:mgi
+        - infores:rgd
+        - infores:reactome
+        - infores:intact
+        - infores:go-cam
+      edge_properties:
+        - biolink:negated
+        - biolink:has_evidence_of_type
+        - biolink:publications
+      ui_explanation: >-
+        This edge asserts that a gene or gene product is stably located in a cellular component (GO Aspect C). It
+        was created from a GO annotation using the 'located_in' relation, which records where the gene product
+        resides without claiming that it performs its molecular function there. The GO evidence code on the source
+        annotation determines the edge's knowledge level and agent type. The relationship is represented here with
+        the Biolink 'located_in' predicate.
+      source_files:
+        - goa_human.gaf.gz
+        - mgi.gaf.gz
+        - rgd.gaf.gz
+      additional_notes:
+        - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
+        - "located_in is also the Aspect C fallback predicate (C -> located_in) applied by ASPECT_TO_PREDICATE in goa.py when the GAF Qualifier is absent or unrecognized."
+
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:MacromolecularComplex
+      predicates:
         - biolink:colocalizes_with
       object_categories:
         - biolink:CellularComponent
@@ -321,20 +407,19 @@ target_info:
         - biolink:has_evidence_of_type
         - biolink:publications
       ui_explanation: >-
-        This edge relates a gene or gene product to a cellular component (GO Aspect C). GOA provides several
-        cellular-component relations that were consolidated into this edge type: 'active_in' (the location where a
-        gene product carries out its molecular function), 'located_in' (stable localization to a component), and
-        'colocalizes_with' (transient or partial co-localization). When no qualifier is present, the predicate is
-        assigned from the Aspect (C -> located_in). The GO evidence code on the source annotation determines the
-        edge's knowledge level and agent type. The relationship is represented with the corresponding Biolink
-        predicate.
+        This edge asserts that a gene or gene product transiently or partially co-localizes with a cellular
+        component (GO Aspect C), a weaker claim than stable localization. It was created from a GO annotation using
+        the 'colocalizes_with' relation. The GO evidence code on the source annotation determines the edge's
+        knowledge level and agent type. The relationship is represented here with the Biolink 'colocalizes_with'
+        predicate, which is symmetric and so should be read as an association between the two entities rather than
+        as a directed claim about the subject.
       source_files:
         - goa_human.gaf.gz
         - mgi.gaf.gz
         - rgd.gaf.gz
       additional_notes:
         - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
-        - "This edge type consolidates the cellular-component predicate family. Owner review: active_in, located_in, and colocalizes_with are related but not a strict predicate-plus-descendants set; confirm grouping or split as needed."
+        - "biolink:RNAProduct is omitted here because no colocalizes_with record in the three ingested files comes from RNAcentral, unlike the active_in and located_in edge types."
 
     - subject_categories:
         - biolink:Gene
@@ -343,7 +428,7 @@ target_info:
       predicates:
         - biolink:part_of
       object_categories:
-        - biolink:MacromolecularComplex
+        - biolink:CellularComponent
       knowledge_level:
         - knowledge_assertion
         - prediction
@@ -366,10 +451,10 @@ target_info:
         - biolink:has_evidence_of_type
         - biolink:publications
       ui_explanation: >-
-        This edge asserts that a gene or gene product is part of a macromolecular complex. It was created from a
-        GO annotation using the 'part_of' relation against an Aspect C (cellular component) term that represents a
-        complex. The GO evidence code on the source annotation determines the edge's knowledge level and agent
-        type. The relationship is represented here with the Biolink 'part_of' predicate. (Note: downstream
+        This edge asserts that a gene or gene product is part of a cellular component (GO Aspect C), such as a
+        protein-containing complex or a larger subcellular structure. It was created from a GO annotation using the
+        'part_of' relation. The GO evidence code on the source annotation determines the edge's knowledge level and
+        agent type. The relationship is represented here with the Biolink 'part_of' predicate. (Note: downstream
         normalization may invert part_of to has_part; see target additional_notes.)
       source_files:
         - goa_human.gaf.gz
@@ -377,6 +462,7 @@ target_info:
         - rgd.gaf.gz
       additional_notes:
         - "Knowledge level and agent type vary per edge based on the GO evidence code of the source annotation. The ECO code is captured on each edge via has_evidence_of_type."
+        - "Every part_of record in the three ingested files is Aspect C, and the GO node class is chosen from the Aspect alone in goa.py, so the emitted object is always biolink:CellularComponent. Some of these GO terms denote macromolecular complexes; re-categorizing them is left to downstream node normalization rather than being asserted by this ingest."
 
   node_type_info:
     - node_category: biolink:Gene
@@ -426,31 +512,6 @@ target_info:
         - "GO (Aspect P, re-categorized by downstream normalization)"
       additional_notes:
         - "Not assigned by the ingest itself: downstream Babel/node normalization re-categorizes a subset of GO biological-process terms (~403 observed) as Pathway. Documented here so the resulting node category is expected rather than surprising."
-        - "Gene Ontology IDs (Aspect P, re-categorized by normalization)"
-
-  # Manual QA 1: Document known post-normalization behaviors and accepted warnings
-  known_issues:
-    # Predicate normalization inverts or generalizes some edges. This is expected behavior
-    # from the Babel/normalization pipeline, not a bug in the GOA ingest.
-    - issue: "Predicate normalization changes some edge types"
-      description: |
-        After normalization, predicates are transformed as follows:
-        - part_of → has_part (inverted, subject/object swap)
-        - active_in → active_in (retained after predicate correction)
-        This is documented in predicate_map.json output.
-      resolution: "Accepted. The ingest outputs the semantically correct predicates; normalization adjusts for Biolink conventions."
-    # Validation produces warnings for domain/range that we accept
-    - issue: "Domain/range validation warnings for enables"
-      description: |
-        Validation reports sampled warnings about domain/range constraints:
-        - enables expects domain 'physical entity' but subjects are Gene/Protein
-      resolution: "Accepted as warnings. Edges pass validation; warnings reflect Biolink model strictness."
-    # Some GO BP terms become Pathway after normalization
-    - issue: "GO Biological Process terms re-categorized as Pathway"
-      description: |
-        Normalization re-categorizes approximately 403 GO terms from BiologicalProcess
-        to Pathway. This is handled by the node normalizer based on GO term semantics.
-      resolution: "Accepted. Added Pathway to node_type_info to document this behavior."
 
   future_considerations:
     - category: qualifiers
@@ -458,7 +519,7 @@ target_info:
     - category: node_properties
       consideration: "If we ingest taxon info for gene nodes, we may need Biolink Model updates: in_taxon is currently modeled as a predicate and species_context_qualifier as an edge property, but there is no dedicated taxon node property."
     - category: spoq_pattern
-      consideration: "Initial edge-type consolidation was completed for the upstream and cellular-component predicate families. Monitor whether further consolidation (or, conversely, splitting to satisfy the strict predicate-plus-descendants rule for multivalued predicates) is warranted after the next production validation run."
+      consideration: "The six upstream-effect predicates are consolidated into one edge type because acts_upstream_of is their common ancestor, while the cellular-component relations are split into separate active_in, located_in, and colocalizes_with edge types because they are siblings across different Biolink branches rather than a predicate plus its descendants. Monitor whether further consolidation is warranted if the Biolink predicate hierarchy changes."
 
   additional_notes:
     - "Known post-normalization behavior: downstream Babel/normalization can transform some predicates - e.g. involved_in may be generalized to related_to, and part_of may be inverted to has_part (with subject/object swap). This is expected normalization behavior, not a defect in the GOA ingest, which emits the semantically correct source predicates. See predicate_map.json in ingest output."
@@ -469,9 +530,8 @@ target_info:
 # Information about how the ingest was specified and performed
 provenance_info:
   contributions:
-    - "Adilbek Bazarkulov: code author"
+    - "Adilbek Bazarkulov: code author, domain expertise"
     - "Evan Morris: code support"
-    - "Adilbek Bazarkulov: code support, domain expertise"
     - "Sierra Moxon: data modeling, domain expertise"
     - "Matthew Brush: data modeling, domain expertise"
   artifacts:
