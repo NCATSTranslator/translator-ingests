@@ -27,8 +27,17 @@ bmt = get_biolink_model_toolkit()
 def get_latest_version() -> str:
     return "2026-06-29"  # Temporary placeholder version
 
-
+# Subject and object nodes will be duplicated so we cache them
 _ohdc_nodes: dict[str, NamedThing] = {}
+
+def _resolve_node(identifier: str, name: str) -> NamedThing:
+    if identifier in _ohdc_nodes:
+        return _ohdc_nodes[identifier]
+    else:
+        # TODO: need to be more clever here to resolve node category to something more useful
+        node_found = NamedThing(id=identifier, name=name)
+        _ohdc_nodes[identifier] = node_found
+        return node_found
 
 @koza.transform()
 def transform_ohdc_ingest(
@@ -51,6 +60,23 @@ def transform_ohdc_ingest(
         # open the OHD@Carolina CSV file
         with open('unc_omop_2018_2022_kg.csv', newline="") as fp:
             reader = csv.DictReader(fp)
-            for row in reader:
+            for record in reader:
                 # TODO: process each row of the CSV file
+                #
+
+                #
+                # subject = record["subject"]
+                # subject_name = record["subject_name"]
+                # object = record["object"]
+                # object_name = record["object_name"]
+                # predicate = record["predicate"]
+                # chi_squared_p_value = record["chi_squared_p_value"]
+                # log_odds_ratio = record["log_odds_ratio"]
+                # log_odds_ratio_95_ci = record["log_odds_ratio_95_ci"]
+                # score = record["score"]
+                # total_sample_size = record["total_sample_size"]
+
+                # This value is a constant in the input data: infores:openhealthdata-carolina
+                # primary_knowledge_source = record["primary_knowledge_source"]
+
                 yield KnowledgeGraph(nodes=[], edges=[])
