@@ -16,7 +16,7 @@ source_info:
     - file_download
   data_formats:
     - csv
-    - pwml
+    - other  # conformance: was 'pwml'
   data_versioning_and_releases: "Treat each pull as a dated snapshot; downloads list 'Generated On' timestamps and large per-format archives."
 
 ingest_info:
@@ -56,7 +56,8 @@ target_info:
   edge_type_info:
     - subject_categories:
         - biolink:Pathway
-      predicate: biolink:has_participant
+      predicates:
+        - biolink:has_participant
       object_categories:
         - biolink:SmallMolecule
         - biolink:Protein
@@ -77,7 +78,8 @@ target_info:
         
     - subject_categories:
         - biolink:MolecularActivity
-      predicate: biolink:has_input
+      predicates:
+        - biolink:has_input
       object_categories:
         - biolink:SmallMolecule
         - biolink:Protein
@@ -96,7 +98,8 @@ target_info:
         
     - subject_categories:
         - biolink:MolecularActivity
-      predicate: biolink:has_output
+      predicates:
+        - biolink:has_output
       object_categories:
         - biolink:SmallMolecule
         - biolink:Protein
@@ -115,7 +118,8 @@ target_info:
         
     - subject_categories:
         - biolink:MacromolecularComplex
-      predicate: biolink:catalyzes
+      predicates:
+        - biolink:catalyzes
       object_categories:
         - biolink:MolecularActivity
       knowledge_level:
@@ -130,7 +134,8 @@ target_info:
         
     - subject_categories:
         - biolink:MacromolecularComplex
-      predicate: biolink:has_part
+      predicates:
+        - biolink:has_part
       object_categories:
         - biolink:Protein
       knowledge_level:
@@ -146,7 +151,8 @@ target_info:
     - subject_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
-      predicate: biolink:regulates
+      predicates:
+        - biolink:regulates
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
@@ -175,7 +181,8 @@ target_info:
     - subject_categories:
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      predicate: biolink:affects
+      predicates:
+        - biolink:affects
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
@@ -206,7 +213,8 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      predicate: biolink:physically_interacts_with
+      predicates:
+        - biolink:physically_interacts_with
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -227,7 +235,8 @@ target_info:
         - biolink:MacromolecularComplex
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
-      predicate: biolink:interacts_with
+      predicates:
+        - biolink:interacts_with
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
@@ -245,7 +254,8 @@ target_info:
         
     - subject_categories:
         - biolink:Pathway
-      predicate: biolink:occurs_in
+      predicates:
+        - biolink:occurs_in
       object_categories:
         - biolink:CellularComponent
         - biolink:AnatomicalEntity
@@ -265,44 +275,53 @@ target_info:
       source_identifier_types:
         - "Preferred: SMPDB pathway IDs from pathbank_pathways.csv (emitted as SMPDB:<id>)"
         - "Fallback: PathBank PW IDs from pathbank_pathways.csv (emitted as PathBank:PW<id> when SMPDB is missing)"
-      additional_notes: "When SMPDB is present, the PW identifier is stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/Pathway/"
+      additional_notes:
+        - "When SMPDB is present, the PW identifier is stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/Pathway/"
     - node_category: biolink:SmallMolecule
       source_identifier_types:
         - "Preferred: ChEBI, DrugBank, KEGG.COMPOUND identifiers from PWML when available (emitted as primary id)"
         - "Fallback: PathBank compound IDs (emitted as PathBank:Compound_<id>)"
-      additional_notes: "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/SmallMolecule/"
+      additional_notes:
+        - "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/SmallMolecule/"
     - node_category: biolink:Protein
       source_identifier_types:
         - "Preferred: UniProtKB identifiers from PWML when available (emitted as primary id)"
         - "Fallback: PathBank protein IDs (emitted as PathBank:Protein_<id>)"
-      additional_notes: "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/Protein/"
+      additional_notes:
+        - "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/Protein/"
     - node_category: biolink:MacromolecularComplex
       source_identifier_types:
         - "PathBank protein complex IDs (emitted as PathBank:ProteinComplex_<id>)"
-      additional_notes: "Complexes are composed of proteins (linked via biolink:has_part edges). Biolink class reference: https://biolink.github.io/biolink-model/MacromolecularComplex/"
+      additional_notes:
+        - "Complexes are composed of proteins (linked via biolink:has_part edges). Biolink class reference: https://biolink.github.io/biolink-model/MacromolecularComplex/"
     - node_category: biolink:NucleicAcidEntity
       source_identifier_types:
         - "Preferred: ChEBI identifiers from PWML when available (emitted as primary id)"
         - "Fallback: PathBank nucleic acid IDs (emitted as PathBank:NucleicAcid_<id>)"
-      additional_notes: "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/NucleicAcidEntity/"
+      additional_notes:
+        - "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/NucleicAcidEntity/"
     - node_category: biolink:MolecularActivity
       source_identifier_types:
         - "Preferred when available: EC identifiers from PWML reaction ec-number fields (emitted as EC:<id>)"
         - "Fallback: PathBank reaction IDs (emitted as PathBank:Reaction_<id>)"
-      additional_notes: "Reactions are represented as MolecularActivity nodes with has_input and has_output edges. Biolink class reference: https://biolink.github.io/biolink-model/MolecularActivity/"
+      additional_notes:
+        - "Reactions are represented as MolecularActivity nodes with has_input and has_output edges. Biolink class reference: https://biolink.github.io/biolink-model/MolecularActivity/"
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
         - "Bounds: PathBank bound IDs (emitted as PathBank:Bound_<id>)"
         - "Element collections: external identifiers when available (ChEBI, UniProtKB, KEGG.COMPOUND) emitted as primary id, otherwise PathBank:ElementCollection_<id>"
-      additional_notes: "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/ChemicalEntity/"
+      additional_notes:
+        - "Non-primary identifiers are stored in node xref for traceability. Biolink class reference: https://biolink.github.io/biolink-model/ChemicalEntity/"
     - node_category: biolink:CellularComponent
       source_identifier_types:
         - "GO (Gene Ontology) identifiers for subcellular locations (e.g., GO:0005737 for Cytoplasm)"
-      additional_notes: "Subcellular compartments extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/CellularComponent/"
+      additional_notes:
+        - "Subcellular compartments extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/CellularComponent/"
     - node_category: biolink:AnatomicalEntity
       source_identifier_types:
         - "BTO (BRENDA Tissue Ontology) identifiers for tissues (e.g., BTO:0000759 for Liver)"
-      additional_notes: "Tissues and anatomical entities extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/AnatomicalEntity/"
+      additional_notes:
+        - "Tissues and anatomical entities extracted from PWML data. Biolink class reference: https://biolink.github.io/biolink-model/AnatomicalEntity/"
 
   future_considerations:  # (optional, multivalued, range = FutureModelingConsiderations) Notes on possible changes/additions to modeling in future iteration of the ingest
     - category: spoq_pattern

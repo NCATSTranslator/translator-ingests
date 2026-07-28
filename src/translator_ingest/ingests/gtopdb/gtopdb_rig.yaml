@@ -92,13 +92,13 @@ target_info:
         - biolink:Protein
       qualifiers:
         - property: biolink:qualified_predicate
-          value_enumerations:
+          value_enumeration:
               - causes
         - property: biolink:object_aspect_qualifier
-          value_enumerations:
+          value_enumeration:
               - activity
         - property: biolink:object_direction_qualifier
-          value_enumerations:
+          value_enumeration:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
@@ -110,7 +110,8 @@ target_info:
       edge_properties:
         - biolink:publications
       ui_explanation: TO DO
-      additional_notes: "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
+      additional_notes:
+        - "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -122,13 +123,13 @@ target_info:
         - biolink:Protein
       qualifiers:
         - property: biolink:qualified_predicate
-          value_enumerations:
+          value_enumeration:
               - causes
         - property: biolink:object_aspect_qualifier
-          value_enumerations:
+          value_enumeration:
               - activity
         - property: biolink:object_direction_qualifier
-          value_enumerations:
+          value_enumeration:
             - downregulated
             - upregulated
         - property: biolink:causal_mechanism_qualifier
@@ -140,7 +141,8 @@ target_info:
       edge_properties:
         - biolink:publications
       ui_explanation: TO DO
-      additional_notes: "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
+      additional_notes:
+        - "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -160,7 +162,8 @@ target_info:
       edge_properties:
         - biolink:publications
       ui_explanation: TO DO
-      additional_notes: "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+      additional_notes:
+        - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
 
 
   node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
@@ -179,7 +182,7 @@ target_info:
       source_identifier_types:
         - "UniProt"
   future_considerations:
-    - category: node_content
+    - category: node_properties  # conformance: was 'node_content'
       consideration: "Considering future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
 
 # Information about the how the ingest was specified and performed

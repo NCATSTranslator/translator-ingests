@@ -8,7 +8,8 @@ from orion import KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, generate_
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, atomic_copy_directory
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
+from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, next_release_version, \
+    current_iso_date
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, IngestFileName, \
     write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -156,7 +157,8 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
     latest_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / "latest"
     atomic_copy_directory(release_dir, latest_dir)
 
-    # Write latest release metadata
+    # Write latest release metadata, stamping the date the release was made
+    merged_graph_metadata.release_date = current_iso_date()
     release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source
     release_dir.mkdir(parents=True, exist_ok=True)
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,
@@ -240,9 +242,18 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
     biolink_version = list(biolink_versions)[0]
     babel_version = list(babel_versions)[0]
 
+    # Read the previous release version (if any) to determine the next semantic version
+    previous_release_metadata_path = get_versioned_file_paths(
+        IngestFileType.LATEST_RELEASE_FILE, PipelineMetadata(source=graph_id)
+    )
+    previous_release_version = None
+    if previous_release_metadata_path.exists():
+        with previous_release_metadata_path.open("r") as previous_release_file:
+            previous_release_version = PipelineMetadata.from_dict(json.load(previous_release_file)).release_version
+
     # Generate a build version based on the build versions of all source graphs
     build_version = hashlib.md5("".join(sorted(graph_source_versions)).encode()).hexdigest()[:12]
-    release_version = datetime.datetime.now().strftime("%Y_%m_%d")
+    release_version = next_release_version(previous_release_version)
     data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
 
     # TODO - this should probably use a different kind of Metadata object, PipelineMetadata is designed for one ingest
@@ -253,6 +264,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> tuple[P
         babel_version=babel_version,
         biolink_version=biolink_version,
         build_version=build_version,
+        build_date=current_iso_date(),
         release_version=release_version,
         data=data_path,
     )

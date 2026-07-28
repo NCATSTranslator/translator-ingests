@@ -15,16 +15,25 @@ supporting_data_source_info:
 source_info:
   infores_id: "infores:geneticskp"
   name: "GeneticsKP"
-  description: "GeneticsKP provides gene-disease associations derived from GWAS data using MAGMA analysis. It integrates genetic evidence from genome-wide association studies to identify genes associated with various diseases and traits."
+  description: >-
+    GeneticsKP is a Translator Knowledge Provider that surfaces gene-disease and gene-phenotype
+    associations derived from genome-wide association study (GWAS) data. Associations are computed
+    using MAGMA (Multi-marker Analysis of GenoMic Annotation), a gene-level statistical method that
+    aggregates variant-level GWAS summary statistics into gene-based association scores. GeneticsKP
+    packages these MAGMA-derived associations as a KGX knowledge graph, providing statistically
+    grounded genetic evidence linking genes to diseases and phenotypic traits that can be combined
+    with other knowledge sources in Translator. This ingest is a passthrough of the pre-computed
+    GeneticsKP KGX graph, validating and re-serializing its nodes and edges to Biolink Model form.
   terms_of_use_info:
     terms_of_use_description: "Freely available"
   data_access_locations:
-    - "Data is provided as a checked-in tar.gz file in the translator-ingests repository"
+    - "Data is provided as a pre-computed KGX tar.gz file (genetics_magma.tar.gz) sourced from GeneticsKP"
   data_provision_mechanisms:
     - file_download
   data_formats:
     - kgx
-  data_versioning_and_releases: "Static version based on MAGMA analysis"
+  data_versioning_and_releases: "Static, pre-computed release based on a single MAGMA analysis; not versioned on a fixed schedule."
+  source_status: unknown
 
 ingest_info:
   ingest_categories:
@@ -44,7 +53,6 @@ ingest_info:
       fields_used: "Node identifiers, labels, categories"
 
 target_info:
-  infores_id: "infores:translator-geneticskp-kgx"
   edge_type_info:
     - subject_categories:
         - "biolink:Gene"
@@ -57,7 +65,17 @@ target_info:
         - statistical_association
       agent_type:
         - computational_model
-      ui_explanation: "The 'genetically_associated_with' predicate indicates that genetic variation in this gene is statistically associated with the disease or phenotype based on MAGMA analysis of GWAS data."
+      primary_knowledge_sources:
+        - "infores:geneticskp"
+      ui_explanation: >-
+        This edge asserts that genetic variation in the subject gene is statistically associated
+        with the object disease or phenotypic feature. The association is derived from MAGMA
+        (Multi-marker Analysis of GenoMic Annotation), which aggregates variant-level GWAS summary
+        statistics into a gene-level association score. Because the knowledge is produced by a
+        statistical model rather than manual curation, these edges carry a knowledge level of
+        'statistical_association' and an agent type of 'computational_model'. This ingest passes the
+        pre-computed GeneticsKP KGX edges through with minimal transformation, attributing
+        infores:geneticskp as the primary knowledge source.
 
   node_type_info:
     - node_category: "biolink:Gene"
