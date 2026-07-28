@@ -25,7 +25,7 @@ source_info:
       This ingest does not consume the NLM distribution directly; it consumes a derived SemMedDB
       edge slice that RTX-KG2 redistributes from its public 'rtx-kg2-public' S3 bucket. Open
       question for the license assessment (tracked to Shilpa per issue #435): the terms under
-      which the RTX-KG2-redistributed slice may be re-used, and whether the UMLS Metathesaurus
+      which the RTX-KG2-redistributed slice may be reused, and whether the UMLS Metathesaurus
       License still governs downstream Translator use of the derived edges.
     license_name: "UMLS Metathesaurus License Agreement"
   data_access_locations:
