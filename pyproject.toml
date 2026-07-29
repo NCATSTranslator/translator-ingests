@@ -43,7 +43,7 @@ dev = [
     "nbclassic",
     "jupyter_contrib_nbextensions",
     "jsonlines",
-    "resource-ingest-guide-schema",
+    "resource-ingest-guide-schema>=0.1.5",
     # Documentation dependencies
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",

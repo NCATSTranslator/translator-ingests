@@ -35,17 +35,7 @@ ingest_info:
   included_content:
   - file_name: null
     included_records: Homo sapien-related entries only
-    fields_used:
-      - BindingDB Reactant_set_id
-      - BindingDB MonomerID
-      - PubChem CID
-      - Target Name
-      - Target Source Organism According to Curator or DataSource
-      - UniProt (SwissProt) Primary ID of Target Chain 1
-      - Curation/DataSource
-      - Article DOI
-      - PMID
-      - Patent Number
+    fields_used: "BindingDB Reactant_set_id, BindingDB MonomerID, PubChem CID, Target Name, Target Source Organism According to Curator or DataSource, UniProt (SwissProt) Primary ID of Target Chain 1, Curation/DataSource, Article DOI, PMID, Patent Number"
       # The value of this data field can be synthesized from the monomerid and the target name
       # - Link to Ligand-Target Pair in BindingDB
       #
@@ -78,7 +68,8 @@ ingest_info:
       between a ligand and its target.
     relevant_files:
     - BindingDB_All_{version}_tsv.zip
-  additional_notes: null
+  additional_notes:
+    - null
 target_info:
   infores_id: null
   edge_type_info:
@@ -86,10 +77,12 @@ target_info:
     - biolink:ChemicalEntity
     predicates:
     - biolink:directly_physically_interacts_with
-    object:
+    object_categories:
     - biolink:Protein
-    knowledge_level: knowledge_assertion
-    agent_type: manual_agent
+    knowledge_level:
+      - knowledge_assertion
+    agent_type:
+      - manual_agent
     edge_properties:
     - biolink:publications
   node_type_info:
@@ -102,7 +95,8 @@ target_info:
   future_considerations:
   - category: null
     consideration: null
-  additional_notes: null
+  additional_notes:
+    - null
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"
