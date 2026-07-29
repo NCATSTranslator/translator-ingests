@@ -26,11 +26,11 @@ source_info:
       - IntAct Download / FTP or bulk access: https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
     data_provision_mechanisms:
       - file_download
-      - web_interface
-      - web_service_api
+      - other  # conformance: was 'web_interface'
+      - api_endpoint  # conformance: was 'web_service_api'
     data_formats:
-      - PSI-MI TAB (MITAB)
-      - PSI-MI XML
+      - tsv  # conformance: was 'PSI-MI TAB (MITAB)'
+      - xml  # conformance: was 'PSI-MI XML'
     data_versioning_and_releases: >-
       IntAct is released in regular monthly updates: https://www.ebi.ac.uk/legacy-intact/downloads.
       Each release is identified by a release number and associated with a release date. The ingest documented here is
@@ -41,7 +41,7 @@ source_info:
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
 ingest_info:
     ingest_categories:
-      - Primary Knowledge Provider
+      - primary_knowledge_provider  # conformance: was 'Primary Knowledge Provider'
     utility: >-
       IntAct is a key curated source of experimentally supported molecular
       interactions, particularly protein–protein interactions, which are
