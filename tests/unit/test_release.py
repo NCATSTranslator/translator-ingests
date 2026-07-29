@@ -1,4 +1,4 @@
-"""Tests for the release write path (release_ingest)."""
+"""Tests for the release write path (release_ingest) and the release archive format."""
 import datetime
 import json
 
@@ -6,7 +6,14 @@ import pytest
 
 import translator_ingest.release
 import translator_ingest.util.storage.local as local_storage
-from translator_ingest.release import release_ingest
+from translator_ingest.release import (
+    RELEASE_EDGES_FILENAME,
+    RELEASE_GRAPH_METADATA_FILENAME,
+    RELEASE_NODES_FILENAME,
+    create_compressed_tar,
+    extract_compressed_tar,
+    release_ingest,
+)
 from translator_ingest.util.metadata import PipelineMetadata
 
 # Version fields used to build the on-disk directory tree. The merge directory path is derived
@@ -124,3 +131,47 @@ def test_release_ingest_same_build_is_noop(release_env):
     release_ingest(SOURCE)
 
     assert _read_latest_release(releases_path)["release_version"] == "1.0.0"
+
+
+NODES = '{"id": "MONDO:0005148", "name": "type 2 diabetes mellitus"}\n'
+EDGES = '{"subject": "MONDO:0005148", "predicate": "biolink:treated_by", "object": "CHEBI:6801"}\n'
+GRAPH_METADATA = {"name": SOURCE, "version": "1.0.0"}
+
+
+def _write_kgx_files(directory, include_edges: bool = True):
+    """Write the build files that go into a release archive, in create_compressed_tar's argument order."""
+    directory.mkdir(parents=True, exist_ok=True)
+    nodes_file = directory / "merged_nodes.jsonl"
+    nodes_file.write_text(NODES)
+    edges_file = directory / "merged_edges.jsonl"
+    if include_edges:
+        edges_file.write_text(EDGES)
+    graph_metadata_file = directory / RELEASE_GRAPH_METADATA_FILENAME
+    graph_metadata_file.write_text(json.dumps(GRAPH_METADATA))
+    return nodes_file, edges_file, graph_metadata_file
+
+
+@pytest.mark.parametrize("include_edges", [True, False])
+def test_compressed_tar_round_trip(tmp_path, include_edges):
+    """Release archives must read back unchanged, because merged graphs are built from them.
+
+    Build file names (merged_nodes.jsonl) are normalized to release names (nodes.jsonl) inside the archive, and a
+    nodes-only source produces an archive with no edges file at all.
+    """
+    nodes_file, edges_file, graph_metadata_file = _write_kgx_files(tmp_path / "build", include_edges=include_edges)
+    archive_path = tmp_path / f"{SOURCE}.tar.zst"
+
+    create_compressed_tar(nodes_file=nodes_file,
+                          edges_file=edges_file,
+                          graph_metadata_path=graph_metadata_file,
+                          output_path=archive_path)
+    # the staging directory a merge extracts into does not exist beforehand
+    extracted = tmp_path / "staging" / SOURCE
+    extract_compressed_tar(archive_path, extracted)
+
+    assert (extracted / RELEASE_NODES_FILENAME).read_text() == NODES
+    assert json.loads((extracted / RELEASE_GRAPH_METADATA_FILENAME).read_text()) == GRAPH_METADATA
+    if include_edges:
+        assert (extracted / RELEASE_EDGES_FILENAME).read_text() == EDGES
+    else:
+        assert not (extracted / RELEASE_EDGES_FILENAME).exists()

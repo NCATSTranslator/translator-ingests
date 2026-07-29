@@ -3,72 +3,165 @@ import json
 import pytest
 
 from translator_ingest import merging
-from translator_ingest.merging import _get_source_release_metadata
+from translator_ingest.merging import _extract_release_kgx_files, _get_shared_version, _read_source_release_metadata
+from translator_ingest.release import (
+    RELEASE_EDGES_FILENAME,
+    RELEASE_GRAPH_METADATA_FILENAME,
+    RELEASE_NODES_FILENAME,
+    create_compressed_tar,
+)
 from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.storage.local import IngestFileName
+
+# A source release with everything the merge requires of it.
+COMPLETE_RELEASE_METADATA = {
+    "release_version": "1.0.0",
+    "build_version": "abc123",
+    "biolink_version": "4.2.6",
+    "babel_version": "2025jul10",
+    "data": "https://example.org/releases/some_source/1.0.0/",
+}
 
 
-def _point_release_lookup_at(monkeypatch, release_file):
-    """Redirect the merge module's release-file lookup to a controlled path.
-
-    _get_source_release_metadata locates a source's latest-release.json via
-    get_versioned_file_paths; here we point that at a temp file so the three
-    branches (missing / invalid / valid) can be exercised without a real
-    releases directory.
-    """
-    monkeypatch.setattr(merging, "get_versioned_file_paths", lambda file_type, pipeline_metadata: release_file)
+@pytest.fixture
+def releases_path(tmp_path, monkeypatch):
+    """Redirect both the release metadata lookup and the release archive lookup at a temp releases directory."""
+    monkeypatch.setattr("translator_ingest.util.storage.local.INGESTS_RELEASES_PATH", tmp_path)
+    monkeypatch.setattr(merging, "INGESTS_RELEASES_PATH", tmp_path)
+    return tmp_path
 
 
-def _write_release(release_file, **fields):
-    """Write a latest-release.json for a source, matching how real release files are serialized."""
-    release_file.write_text(json.dumps(PipelineMetadata(**fields).get_release_metadata()))
-
-
-def test_missing_release_file_returns_none(tmp_path, monkeypatch):
-    """A source with no release file (e.g. a node-only source) is referenced by its build, not a release."""
-    _point_release_lookup_at(monkeypatch, tmp_path / "latest-release.json")  # never created
-    build_metadata = PipelineMetadata(source="node_only_source", build_version="abc123")
-
-    assert _get_source_release_metadata("node_only_source", build_metadata) is None
-
-
-def test_release_missing_version_raises(tmp_path, monkeypatch):
-    """A release file that exists but has no release_version is a corrupt release and must fail loudly."""
-    release_file = tmp_path / "latest-release.json"
-    _write_release(release_file, source="some_source", build_version="abc123", release_version=None)
-    _point_release_lookup_at(monkeypatch, release_file)
-    build_metadata = PipelineMetadata(source="some_source", build_version="abc123")
-
-    with pytest.raises(ValueError, match="missing a release_version"):
-        _get_source_release_metadata("some_source", build_metadata)
-
-
-def test_release_build_mismatch_raises(tmp_path, monkeypatch):
-    """If the source was rebuilt since its latest release, the build files no longer match the release we'd cite."""
-    release_file = tmp_path / "latest-release.json"
-    _write_release(release_file, source="some_source", build_version="OLD_build", release_version="2026_01_01")
-    _point_release_lookup_at(monkeypatch, release_file)
-    build_metadata = PipelineMetadata(source="some_source", build_version="NEW_build")
-
-    with pytest.raises(ValueError, match="rebuilt since its latest release"):
-        _get_source_release_metadata("some_source", build_metadata)
-
-
-def test_release_matching_build_is_returned(tmp_path, monkeypatch):
-    """When the release corresponds to the current build, its metadata is returned for use in the merge."""
-    release_file = tmp_path / "latest-release.json"
-    _write_release(
-        release_file,
-        source="some_source",
-        build_version="abc123",
-        release_version="2026_01_01",
-        data="https://example.org/releases/some_source/2026_01_01/",
+def write_latest_release_metadata(releases_path, source: str, **metadata_fields) -> None:
+    """Write a source's latest-release.json the way release_ingest does."""
+    source_dir = releases_path / source
+    source_dir.mkdir(parents=True, exist_ok=True)
+    release_metadata = PipelineMetadata(source=source, **metadata_fields)
+    (source_dir / IngestFileName.LATEST_RELEASE_FILE).write_text(
+        json.dumps(release_metadata.get_release_metadata())
     )
-    _point_release_lookup_at(monkeypatch, release_file)
-    build_metadata = PipelineMetadata(source="some_source", build_version="abc123")
 
-    result = _get_source_release_metadata("some_source", build_metadata)
 
-    assert result is not None
-    assert result.release_version == "2026_01_01"
-    assert result.build_version == "abc123"
-    assert result.data == "https://example.org/releases/some_source/2026_01_01/"
+def write_release_archive(releases_path, source: str, release_version: str, include_edges: bool = True) -> None:
+    """Create a real release archive for a source, as release_ingest does via create_compressed_tar."""
+    release_dir = releases_path / source / release_version
+    release_dir.mkdir(parents=True, exist_ok=True)
+
+    nodes_file = release_dir / "source_nodes.jsonl"
+    nodes_file.write_text('{"id": "MONDO:0005148"}\n')
+    edges_file = release_dir / "source_edges.jsonl"
+    if include_edges:
+        edges_file.write_text('{"subject": "MONDO:0005148", "object": "CHEBI:6801"}\n')
+    graph_metadata_file = release_dir / RELEASE_GRAPH_METADATA_FILENAME
+    graph_metadata_file.write_text(json.dumps({"name": source}))
+
+    create_compressed_tar(nodes_file=nodes_file,
+                          edges_file=edges_file,
+                          graph_metadata_path=graph_metadata_file,
+                          output_path=release_dir / f"{source}.tar.zst")
+
+
+def test_missing_release_metadata_raises(releases_path):
+    """A source with no release cannot be merged - merges are built from releases, so this must fail loudly."""
+    with pytest.raises(IOError, match="Could not find latest release metadata for some_source"):
+        _read_source_release_metadata("some_source")
+
+
+@pytest.mark.parametrize("missing_field", sorted(COMPLETE_RELEASE_METADATA))
+def test_incomplete_release_metadata_raises(releases_path, missing_field):
+    """Everything the merged graph metadata cites about a source must be present in its release metadata."""
+    incomplete_metadata = {**COMPLETE_RELEASE_METADATA, missing_field: None}
+    write_latest_release_metadata(releases_path, "some_source", **incomplete_metadata)
+
+    with pytest.raises(ValueError, match=f"must have a valid {missing_field}"):
+        _read_source_release_metadata("some_source")
+
+
+def test_complete_release_metadata_is_returned(releases_path):
+    """A complete release is returned so the merge can cite its version and release URL."""
+    write_latest_release_metadata(releases_path, "some_source", **COMPLETE_RELEASE_METADATA)
+
+    release_metadata = _read_source_release_metadata("some_source")
+
+    assert release_metadata.source == "some_source"
+    assert release_metadata.release_version == "1.0.0"
+    assert release_metadata.build_version == "abc123"
+    assert release_metadata.data == "https://example.org/releases/some_source/1.0.0/"
+
+
+@pytest.mark.parametrize("version_field", ["biolink_version", "babel_version"])
+def test_shared_version_returned_when_sources_agree(version_field):
+    """Sources built with the same versions can merge, and the shared version is used for the merged graph."""
+    source_releases = {
+        "source_a": PipelineMetadata(source="source_a", biolink_version="4.2.6", babel_version="2025jul10"),
+        "source_b": PipelineMetadata(source="source_b", biolink_version="4.2.6", babel_version="2025jul10"),
+    }
+
+    assert _get_shared_version(source_releases, version_field) == getattr(source_releases["source_a"], version_field)
+
+
+def test_single_source_version_is_shared():
+    """A single source trivially agrees with itself."""
+    source_releases = {"source_a": PipelineMetadata(source="source_a", biolink_version="4.2.6")}
+
+    assert _get_shared_version(source_releases, "biolink_version") == "4.2.6"
+
+
+@pytest.mark.parametrize("version_field", ["biolink_version", "babel_version"])
+def test_diverging_versions_raise(version_field):
+    """A merged graph whose sources disagree on Biolink or Babel version is incoherent and must not be built."""
+    source_releases = {
+        "source_a": PipelineMetadata(source="source_a", biolink_version="4.2.6", babel_version="2025jul10"),
+        "source_b": PipelineMetadata(source="source_b", biolink_version="4.2.6", babel_version="2025jul10"),
+    }
+    setattr(source_releases["source_b"], version_field, "some_other_version")
+
+    with pytest.raises(ValueError, match=f"All sources must have the same {version_field}"):
+        _get_shared_version(source_releases, version_field)
+
+
+def test_extract_release_kgx_files(releases_path, tmp_path):
+    """The KGX files a merge reads are extracted out of each source's compressed release archive."""
+    write_release_archive(releases_path, "some_source", "1.0.0")
+    release_metadata = PipelineMetadata(source="some_source", release_version="1.0.0")
+    staging_directory = tmp_path / "staging"
+
+    files_to_merge = _extract_release_kgx_files("some_source", release_metadata, staging_directory)
+
+    extraction_directory = staging_directory / "some_source"
+    assert files_to_merge == [str(extraction_directory / RELEASE_NODES_FILENAME),
+                              str(extraction_directory / RELEASE_EDGES_FILENAME)]
+    assert (extraction_directory / RELEASE_NODES_FILENAME).read_text() == '{"id": "MONDO:0005148"}\n'
+
+
+def test_extract_release_kgx_files_nodes_only(releases_path, tmp_path):
+    """Nodes-only sources have no edges file in their release, so only their nodes file is merged."""
+    write_release_archive(releases_path, "nodes_only_source", "1.0.0", include_edges=False)
+    release_metadata = PipelineMetadata(source="nodes_only_source", release_version="1.0.0")
+    staging_directory = tmp_path / "staging"
+
+    files_to_merge = _extract_release_kgx_files("nodes_only_source", release_metadata, staging_directory)
+
+    extraction_directory = staging_directory / "nodes_only_source"
+    assert files_to_merge == [str(extraction_directory / RELEASE_NODES_FILENAME)]
+    assert not (extraction_directory / RELEASE_EDGES_FILENAME).exists()
+
+
+def test_extract_release_kgx_files_uses_release_version_from_metadata(releases_path, tmp_path):
+    """The release named in a source's metadata is the one merged, even when newer releases exist on disk."""
+    write_release_archive(releases_path, "some_source", "1.0.0")
+    write_release_archive(releases_path, "some_source", "2.0.0", include_edges=False)
+    release_metadata = PipelineMetadata(source="some_source", release_version="1.0.0")
+
+    files_to_merge = _extract_release_kgx_files("some_source", release_metadata, tmp_path / "staging")
+
+    # 1.0.0 has edges, 2.0.0 does not, so the edges file confirms which release was extracted
+    assert len(files_to_merge) == 2
+
+
+def test_missing_release_archive_raises(releases_path, tmp_path):
+    """Release metadata pointing at a release with no archive is an error, not an empty merge."""
+    write_latest_release_metadata(releases_path, "some_source", **COMPLETE_RELEASE_METADATA)
+    release_metadata = PipelineMetadata(source="some_source", release_version="1.0.0")
+
+    with pytest.raises(IOError, match="Could not find the release archive for some_source"):
+        _extract_release_kgx_files("some_source", release_metadata, tmp_path / "staging")

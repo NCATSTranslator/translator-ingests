@@ -13,9 +13,6 @@ ifeq ($(origin SOURCES), undefined)
 SOURCES := $(shell $(RUN) python -m translator_ingest.graphs sources $(GRAPH_ID))
 endif
 
-# Sources that only produce nodes. Derived from configuration in ingests/{source}/{source}.yaml.
-NODES_ONLY_SOURCES := $(shell $(RUN) python -m translator_ingest.ingest_config nodes-only $(SOURCES))
-
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
 # Clear OVERWRITE if explicitly set to "false" or "False"
@@ -205,7 +202,7 @@ merge-all:
 
 .PHONY: release
 release:
-	@$(MAKE) -j $(words $(filter-out $(NODES_ONLY_SOURCES),$(SOURCES))) $(addprefix release-,$(filter-out $(NODES_ONLY_SOURCES),$(SOURCES)))
+	@$(MAKE) -j $(words $(SOURCES)) $(addprefix release-,$(SOURCES))
 	@$(RUN) python src/translator_ingest/release.py --summary
 
 .PHONY: release-%
