@@ -1,91 +1,101 @@
 # ReferenceIngestGuide schema based content.
-  name:  BGee Ingest Guide
+  name: Bgee Resource Ingest Guide
 
-# Information about upstream sources of data that are used by an ingested source to derive the knowledge that we ingest.
-  source_info: 
-    infores_id: infores:bgee 
-    name: 
-    description: "Bgee is a database for retrieval and comparison of gene expression patterns across multiple animal species. It provides an intuitive answer to the question 'where is a gene expressed?' and supports research in cancer and agriculture, as well as evolutionary biology."
-    citations:   
-        - "Frederic B Bastian, Julien Roux, Anne Niknejad, Aurélie Comte, Sara S Fonseca Costa, Tarcisio Mendes de Farias, Sébastien Moretti, Gilles Parmentier, Valentine Rech de Laval, Marta Rosikiewicz, Julien Wollbrett, Amina Echchiki, Angélique Escoriza, Walid H Gharib, Mar Gonzales-Porta, Yohan Jarosz, Balazs Laurenczy, Philippe Moret, Emilie Person, Patrick Roelli, Komal Sanjeev, Mathieu Seppey, Marc Robinson-Rechavi, The Bgee suite: integrated curated expression atlas and comparative transcriptomics in animals, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D831–D847, https://doi.org/10.1093/nar/gkaa793"
-    terms_of_use_info: # (required, range = TermsOfUseInfo)
-        terms_of_use_url: https://www.bgee.org/about/ 
-        terms_of_use_description: You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission. 
-        license_name: CC0 # (optional, range = string)
-        license_url: https://creativecommons.org/publicdomain/zero/1.0/
-    data_formats:  
-      - tsv  # conformance: was 'tsv.gz'
-    data_provision_mechanisms:  
-      - file_download
-    data_versioning_and_releases:  v15.0
-    
 # Information about the Source of the data ingest
   source_info:  # (required, range = SourceInformation)
-    infores_id: infores:bgee 
-    name:   
-    description:  "Bgee is a database for retrieval and comparison of gene expression patterns across multiple animal species. It provides an intuitive answer to the question 'where is a gene expressed?' and supports research in cancer and agriculture, as well as evolutionary biology."
-    citations:   
-        - "Frederic B Bastian, Julien Roux, Anne Niknejad, Aurélie Comte, Sara S Fonseca Costa, Tarcisio Mendes de Farias, Sébastien Moretti, Gilles Parmentier, Valentine Rech de Laval, Marta Rosikiewicz, Julien Wollbrett, Amina Echchiki, Angélique Escoriza, Walid H Gharib, Mar Gonzales-Porta, Yohan Jarosz, Balazs Laurenczy, Philippe Moret, Emilie Person, Patrick Roelli, Komal Sanjeev, Mathieu Seppey, Marc Robinson-Rechavi, The Bgee suite: integrated curated expression atlas and comparative transcriptomics in animals, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D831–D847, https://doi.org/10.1093/nar/gkaa793"
+    infores_id: infores:bgee
+    name: Bgee
+    description: >-
+      Bgee is a database for retrieval and comparison of gene expression patterns across multiple animal
+      species. It provides an intuitive answer to the question "where is a gene expressed?" and supports
+      research in cancer and agriculture, as well as evolutionary biology. Bgee is built exclusively from
+      curated "normal" (healthy wild-type) expression data - RNA-Seq, single-cell RNA-Seq, Affymetrix
+      microarrays, in situ hybridization, and ESTs - which are uniformly reprocessed and integrated to
+      produce present/absent expression calls for genes in anatomical entities (and developmental stages)
+      across species, each with an associated confidence level and expression rank/score.
+    citations:
+      - "Frederic B Bastian, Julien Roux, Anne Niknejad, Aurélie Comte, Sara S Fonseca Costa, Tarcisio Mendes de Farias, Sébastien Moretti, Gilles Parmentier, Valentine Rech de Laval, Marta Rosikiewicz, Julien Wollbrett, Amina Echchiki, Angélique Escoriza, Walid H Gharib, Mar Gonzales-Porta, Yohan Jarosz, Balazs Laurenczy, Philippe Moret, Emilie Person, Patrick Roelli, Komal Sanjeev, Mathieu Seppey, Marc Robinson-Rechavi, The Bgee suite: integrated curated expression atlas and comparative transcriptomics in animals, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D831-D847, https://doi.org/10.1093/nar/gkaa793"
     terms_of_use_info: # (required, range = TermsOfUseInfo)
-        terms_of_use_url: https://www.bgee.org/about/ 
-        terms_of_use_description: You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission. 
-        license_name: CC0 # (optional, range = string)
-        license_url: https://creativecommons.org/publicdomain/zero/1.0/
-    data_formats:  
-      - tsv  # conformance: was 'tsv.gz'
-    data_provision_mechanisms:  
+      terms_of_use_url: https://www.bgee.org/about/
+      terms_of_use_description: You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission.
+      license_name: CC0
+      license_url: https://creativecommons.org/publicdomain/zero/1.0/
+    data_access_locations:
+      - "Bgee expression call downloads - https://www.bgee.org/ftp/current/download/calls/expr_calls/ (per-species gene expression call TSV files, one file per species)"
+      - "Bgee gene expression calls download page - https://www.bgee.org/download/gene-expression-calls (human-facing download portal with per-species links and documentation)"
+      - "Bgee release manifest - https://www.bgee.org/ftp/release_v2.tsv (tab-delimited manifest whose 'release' field the ingest reads to determine the current source version)"
+    data_provision_mechanisms:
       - file_download
-    data_versioning_and_releases:  v15.0
-    data_access_locations:  # DANIEL TO DO  (required, multivalued, range = string) Each value should include a url, and optional description of what is provided at that location.
-     - 
-    additional_notes:  
+    data_formats:
+      - tsv
+    data_versioning_and_releases: >-
+      Bgee issues numbered releases (e.g. v15.0, ingested here) on an irregular, as-needed cadence rather than
+      on a fixed schedule. The ingest downloads from the "current" release path and reads the release version
+      from the manifest file at https://www.bgee.org/ftp/release_v2.tsv.
+    source_status: maintained_as_needed_updates
+    additional_notes:
+      - "bgee.org returns HTTP 403 for the default Python urllib User-Agent, so the ingest sends a browser-like User-Agent when fetching the release manifest to determine the current version."
 
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
-  ingest_info:  
-    ingest_categories:  
+  ingest_info:
+    ingest_categories:
       - primary_knowledge_provider
-    utility: >- 
-      The information provided by Bgee gives us insight into how gene expression is located within specific cell lines and
-      anatomical locations across a multitude of organisms.
+    utility: >-
+      The information provided by Bgee gives us insight into where genes are expressed - within specific cell
+      types and anatomical locations - across a multitude of organisms. These gene-to-tissue/cell expression
+      assertions support Translator query and reasoning use cases that need to know the anatomical and cellular
+      context of gene activity.
     scope: >-
-      Gene expression in specific UBERON and CL curies. Provides various metrics to help researchers assess veracity of each call.
+      Curated "present" gene expression calls linking genes to UBERON anatomical entities and CL cell types,
+      restricted to high-confidence, strongly-signaled calls. Currently limited to human, mouse, and rat, and
+      to the presence of expression only. Bgee provides various metrics (expression rank, expression score, FDR)
+      that are used here to filter to the most reliable calls.
 
-    relevant_files:  
-      - file_name:  Homo_sapiens_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Homo sapiens (human) gene expression information.
-      - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Rattus norvegicus (brown rat) gene expression information.
-      - file_name:  Mus_musculus_expr_simple.tsv.gz
-        location:  https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls
-        description:  Mus musculus (house mouse) gene expression information.
-    included_content:  
-      - file_name:  Homo_sapiens_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
-      - file_name:  Mus_musculus_expr_simple.tsv.gz
-        included_records:  
-        fields_used: GeneID, Genename, AnatomicalentityID, Anatomicalentityname, Expression, Callquality, FDR, Expressionscore, Expressionrank  
+    relevant_files:
+      - file_name: Homo_sapiens_expr_simple.tsv.gz
+        location: https://www.bgee.org/ftp/current/download/calls/expr_calls/Homo_sapiens_expr_simple.tsv.gz
+        description: Homo sapiens (human) gene expression calls.
+      - file_name: Rattus_norvegicus_expr_simple.tsv.gz
+        location: https://www.bgee.org/ftp/current/download/calls/expr_calls/Rattus_norvegicus_expr_simple.tsv.gz
+        description: Rattus norvegicus (brown rat) gene expression calls.
+      - file_name: Mus_musculus_expr_simple.tsv.gz
+        location: https://www.bgee.org/ftp/current/download/calls/expr_calls/Mus_musculus_expr_simple.tsv.gz
+        description: Mus musculus (house mouse) gene expression calls.
+    included_content:
+      - file_name: Homo_sapiens_expr_simple.tsv.gz
+        included_records: >-
+          Rows where Expression is "present" and the call passes the confidence filters (Expression rank < 10000,
+          Expression score > 70, FDR < 0.05). Each included row asserts that a gene is expressed in a given
+          anatomical entity (UBERON) or cell type (CL) in human.
+        fields_used: "Gene ID, Anatomical entity ID, Expression, Call quality, FDR, Expression score, Expression rank"
+      - file_name: Rattus_norvegicus_expr_simple.tsv.gz
+        included_records: >-
+          Rows where Expression is "present" and the call passes the confidence filters (Expression rank < 10000,
+          Expression score > 70, FDR < 0.05). Each included row asserts that a gene is expressed in a given
+          anatomical entity (UBERON) or cell type (CL) in rat.
+        fields_used: "Gene ID, Anatomical entity ID, Expression, Call quality, FDR, Expression score, Expression rank"
+      - file_name: Mus_musculus_expr_simple.tsv.gz
+        included_records: >-
+          Rows where Expression is "present" and the call passes the confidence filters (Expression rank < 10000,
+          Expression score > 70, FDR < 0.05). Each included row asserts that a gene is expressed in a given
+          anatomical entity (UBERON) or cell type (CL) in mouse.
+        fields_used: "Gene ID, Anatomical entity ID, Expression, Call quality, FDR, Expression score, Expression rank"
 
-    filtered_content: 
-      - file_name:  Homo_sapiens_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious are filtered. 
-      - file_name:  Rattus_norvegicus_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious are filtered.
-      - file_name:  Mus_musculus_expr_simple.tsv.gz
-        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' == \"absent\""
-        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious are filtered.  
+    filtered_content:
+      - file_name: Homo_sapiens_expr_simple.tsv.gz
+        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' != \"present\" (i.e. \"absent\" calls)"
+        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious, and all "absent" (not-expressed) calls, are filtered.
+      - file_name: Rattus_norvegicus_expr_simple.tsv.gz
+        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' != \"present\" (i.e. \"absent\" calls)"
+        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious, and all "absent" (not-expressed) calls, are filtered.
+      - file_name: Mus_musculus_expr_simple.tsv.gz
+        filtered_records: "'Expression rank' >= 10,000 OR 'Expression score' <= 70 OR 'FDR' >= 0.05 OR 'Expression' != \"present\" (i.e. \"absent\" calls)"
+        rationale: We are specifically targeting gene expression calls which are strongly signaled and highly probable. Any calls which have a low score or are potentially spurious, and all "absent" (not-expressed) calls, are filtered.
 
-    future_considerations:  
-      - category:  edge_content
-        consideration:  Filter some organisms which are already filtered by Monarch. In general, explore prior Monarch ingest of this source to see what we can learn/borrow. And reach out to F. Bastian to get a better undrestanding of the source and its utility for Translator use cases. 
-        relevant_files:  Caenorhabditis_elegans_expr_simple.tsv.gz, Danio_rerio_expr_simple.tsv.gz, Drosophila_melanogaster_expr_simple.tsv.gz, Mus_musculus_expr_simple.tsv.gz, Rattus_norvegicus_expr_simple.tsv.gz, Xenopus_laevis_expr_simple.tsv.gz
+    future_considerations:
+      - category: edge_content
+        consideration: Filter some organisms which are already filtered by Monarch. In general, explore prior Monarch ingest of this source to see what we can learn/borrow. And reach out to F. Bastian to get a better understanding of the source and its utility for Translator use cases.
+        relevant_files: Caenorhabditis_elegans_expr_simple.tsv.gz, Danio_rerio_expr_simple.tsv.gz, Drosophila_melanogaster_expr_simple.tsv.gz, Mus_musculus_expr_simple.tsv.gz, Rattus_norvegicus_expr_simple.tsv.gz, Xenopus_laevis_expr_simple.tsv.gz
       - category: edge_content
         consideration: Add in more model organisms. [Danio_rerio_expr_simple.tsv.gz Danio rerio (zebra fish), Xenopus_laevis_expr_simple.tsv.gz Xenopus laevis (African clawed frog), Drosophila_melanogaster_expr_simple.tsv.gz Drosophila melanogaster (fruit fly), Caenorhabditis_elegans_expr_simple.tsv.gz Caenorhabditis elegans (roundworm), Canis_lupus_familiaris_expr_simple.tsv.gz Canis lupus familiaris (dog), Bos_taurus_expr_simple.tsv.gz Bos taurus (cattle), Sus_scrofa_expr_simple.tsv.gz Sus scrofa (wild boar), Gallus_gallus_expr_simple.tsv.gz Gallus gallus (red junglefowl)].
         relevant_files: Danio_rerio_expr_simple.tsv.gz, Xenopus_laevis_expr_simple.tsv.gz, Drosophila_melanogaster_expr_simple.tsv.gz, Caenorhabditis_elegans_expr_simple.tsv.gz, Canis_lupus_familiaris_expr_simple.tsv.gz, Bos_taurus_expr_simple.tsv.gz, Sus_scrofa_expr_simple.tsv.gz, Gallus_gallus_expr_simple.tsv.gz
@@ -93,64 +103,72 @@
         consideration: Add qualifying developmental stage information.
         relevant_files: all
       - category: edge_content
-        consideration: Add edges describing over/under expression of genes in specific tissues.  And info indicating when a gene is ubiquitously expressed.  
+        consideration: Add edges describing over/under expression of genes in specific tissues. And info indicating when a gene is ubiquitously expressed.
         relevant_files: all
-      - category: edge_property_content  # conformance: was 'edge_properties'
-        consideration: Add in incorporation of Expressionrank, Expressionscore, and FDR as edge properties.   
+      - category: edge_property_content
+        consideration: Add in incorporation of Expression rank, Expression score, and FDR as edge properties. These values are currently used only for filtering and are not emitted on the output edges.
         relevant_files: all
-      - category:  edge_content
-        consideration: Learn about meaning/utility of scores, and consider applying filters to focus on subset that is most meaningful/useful for Translator.   
-        relevant_files: all      
- 
+      - category: edge_content
+        consideration: Learn about meaning/utility of scores, and consider applying filters to focus on subset that is most meaningful/useful for Translator.
+        relevant_files: all
+
 # Information about the Graph Output by the ingest
-  target_info:  
-    infores_id:  infores:translator-bgee-kgx
-    edge_type_info: 
-      - subject_categories: 
+  target_info:
+    edge_type_info:
+      - subject_categories:
           - biolink:Gene
-        predicates: 
-          - predicate: biolink:expressed_in
+        predicates:
+          - biolink:expressed_in
         object_categories:
           - biolink:AnatomicalEntity
           - biolink:Cell
-          - biolink:GrossAnatomicalStructure
-        knowledge_level:  
+        knowledge_level:
           - knowledge_assertion
         agent_type:
           - automated_agent
         primary_knowledge_sources:
           - infores:bgee
-        edge_properties: 
-          - FDR
-          - Expressionrank
-          - Expressionscore
-        ui_explanation: "Bgee data provide Gene–Tissue/Stage expression assertions generated by uniformly reprocessing healthy RNA-Seq, microarray, EST, and in situ hybridization datasets, applying statistical thresholds to call expression presence/absence within experiments, and integrating evidence across studies and data types - followed by ontology-based propagation - to produce a single consensus expression call with an associated confidence level."   # Placeholder
+        ui_explanation: >-
+          Bgee data provide Gene-Tissue/Cell expression assertions generated by uniformly reprocessing healthy
+          RNA-Seq, single-cell RNA-Seq, microarray, EST, and in situ hybridization datasets, applying statistical
+          thresholds to call expression presence/absence within experiments, and integrating evidence across
+          studies and data types - followed by ontology-based propagation - to produce a single consensus
+          expression call with an associated confidence level. This ingest keeps only high-confidence "present"
+          calls and represents each as a Gene 'expressed_in' AnatomicalEntity (UBERON) or Cell (CL) edge.
         source_files:
           - Homo_sapiens_expr_simple.tsv.gz
           - Rattus_norvegicus_expr_simple.tsv.gz
           - Mus_musculus_expr_simple.tsv.gz
         additional_notes:
-          - "BGee edges included incdicate a strong association between a specific gene expression and a given anatomical region in an organism."
+          - "Bgee edges included indicate a strong association between the expression of a specific gene and a given anatomical entity or cell type in an organism."
+          - "The ingest assigns biolink:Cell to object identifiers with a CL: prefix and biolink:AnatomicalEntity to those with a UBERON: prefix; no other object categories are assigned by the transform. Downstream normalization may reassign some UBERON identifiers to more specific categories (e.g. biolink:GrossAnatomicalStructure)."
+          - "No edge properties are currently emitted. Bgee's Expression rank, Expression score, and FDR are used only to filter to high-confidence calls; capturing them as edge properties is noted under future considerations."
 
-    node_type_info:  
-      - node_category: biolink:Gene  
-        source_identifier_types: 
+    node_type_info:
+      - node_category: biolink:Gene
+        source_identifier_types:
           - "ENSEMBL"
-      - node_category: biolink:Cell  
-        source_identifier_types:  
-          - "CL"
-      - node_category: biolink:AnatomicalEntity 
+      - node_category: biolink:Cell
         source_identifier_types:
-          - "UBERON"
-      - node_category: biolink:GrossAnatomicalStructure
+          - "CL"
+      - node_category: biolink:AnatomicalEntity
         source_identifier_types:
           - "UBERON"
 
+    future_considerations:
+      - category: edge_properties
+        consideration: >-
+          Attach Bgee's Expression rank, Expression score, and FDR to each edge as edge properties, to convey the
+          strength and confidence of each expression call. These values are currently used only for filtering.
+      - category: qualifiers
+        consideration: >-
+          Add developmental-stage context (and potentially anatomical/species context) as edge qualifiers once
+          stage information is ingested, so that expression calls can be scoped to a life stage.
 
 # Information about how the ingest was specified and performed
-  provenance_info: 
-    contributions:  
-      - "Daniel korn: code author"
+  provenance_info:
+    contributions:
+      - "Daniel Korn: code author"
       - "Kevin Schaper: code support"
       - "Evan Morris: code support"
       - "Sierra Moxon: code support"
