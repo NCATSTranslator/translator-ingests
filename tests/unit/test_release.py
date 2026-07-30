@@ -133,6 +133,25 @@ def test_release_ingest_same_build_is_noop(release_env):
     assert _read_latest_release(releases_path)["release_version"] == "1.0.0"
 
 
+def test_release_ingest_nodes_only_source(release_env, tmp_path):
+    """Nodes-only ingests are released like any other source, so merges can be built from their releases.
+
+    They have no merged_edges.jsonl, which must not stop the release or put an empty edges file in the archive.
+    """
+    write_latest_build, releases_path = release_env
+    next(tmp_path.rglob("merged_edges.jsonl")).unlink()
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+
+    release_ingest(SOURCE)
+
+    assert _read_latest_release(releases_path)["release_version"] == "1.0.0"
+    extracted = tmp_path / "extracted"
+    extract_compressed_tar(releases_path / SOURCE / "1.0.0" / f"{SOURCE}.tar.zst", extracted)
+    assert (extracted / RELEASE_NODES_FILENAME).exists()
+    assert (extracted / RELEASE_GRAPH_METADATA_FILENAME).exists()
+    assert not (extracted / RELEASE_EDGES_FILENAME).exists()
+
+
 NODES = '{"id": "MONDO:0005148", "name": "type 2 diabetes mellitus"}\n'
 EDGES = '{"subject": "MONDO:0005148", "predicate": "biolink:treated_by", "object": "CHEBI:6801"}\n'
 GRAPH_METADATA = {"name": SOURCE, "version": "1.0.0"}
