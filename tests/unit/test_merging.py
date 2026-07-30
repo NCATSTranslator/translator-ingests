@@ -3,7 +3,12 @@ import json
 import pytest
 
 from translator_ingest import merging
-from translator_ingest.merging import _extract_release_kgx_files, _get_shared_version, _read_source_release_metadata
+from translator_ingest.merging import (
+    SHARED_SOURCE_RELEASE_METADATA,
+    _extract_release_kgx_files,
+    _get_shared_metadata_value,
+    _read_source_release_metadata,
+)
 from translator_ingest.release import (
     RELEASE_EDGES_FILENAME,
     RELEASE_GRAPH_METADATA_FILENAME,
@@ -88,35 +93,53 @@ def test_complete_release_metadata_is_returned(releases_path):
     assert release_metadata.data == "https://example.org/releases/some_source/1.0.0/"
 
 
-@pytest.mark.parametrize("version_field", ["biolink_version", "babel_version"])
-def test_shared_version_returned_when_sources_agree(version_field):
-    """Sources built with the same versions can merge, and the shared version is used for the merged graph."""
-    source_releases = {
-        "source_a": PipelineMetadata(source="source_a", biolink_version="4.2.6", babel_version="2025jul10"),
-        "source_b": PipelineMetadata(source="source_b", biolink_version="4.2.6", babel_version="2025jul10"),
-    }
+def _agreeing_source_releases() -> dict[str, PipelineMetadata]:
+    """Two sources built and normalized identically, which is the precondition for merging them."""
+    shared = dict(biolink_version="4.2.6",
+                  babel_version="2025jul10",
+                  node_normalizer_version="2.4.1",
+                  normalization_code_version="1.4.0",
+                  normalization_conflation=True,
+                  normalization_strict=True)
+    return {"source_a": PipelineMetadata(source="source_a", **shared),
+            "source_b": PipelineMetadata(source="source_b", **shared)}
 
-    assert _get_shared_version(source_releases, version_field) == getattr(source_releases["source_a"], version_field)
+
+@pytest.mark.parametrize("metadata_field", SHARED_SOURCE_RELEASE_METADATA)
+def test_shared_value_returned_when_sources_agree(metadata_field):
+    """Sources built and normalized the same way can merge, and the merged graph inherits those values."""
+    source_releases = _agreeing_source_releases()
+
+    shared_value = _get_shared_metadata_value(source_releases, metadata_field)
+
+    assert shared_value == getattr(source_releases["source_a"], metadata_field)
 
 
-def test_single_source_version_is_shared():
+def test_single_source_value_is_shared():
     """A single source trivially agrees with itself."""
     source_releases = {"source_a": PipelineMetadata(source="source_a", biolink_version="4.2.6")}
 
-    assert _get_shared_version(source_releases, "biolink_version") == "4.2.6"
+    assert _get_shared_metadata_value(source_releases, "biolink_version") == "4.2.6"
 
 
-@pytest.mark.parametrize("version_field", ["biolink_version", "babel_version"])
-def test_diverging_versions_raise(version_field):
-    """A merged graph whose sources disagree on Biolink or Babel version is incoherent and must not be built."""
-    source_releases = {
-        "source_a": PipelineMetadata(source="source_a", biolink_version="4.2.6", babel_version="2025jul10"),
-        "source_b": PipelineMetadata(source="source_b", biolink_version="4.2.6", babel_version="2025jul10"),
-    }
-    setattr(source_releases["source_b"], version_field, "some_other_version")
+@pytest.mark.parametrize("metadata_field, diverging_value", [
+    ("biolink_version", "4.2.7"),
+    ("babel_version", "2025sep1"),
+    # Same Babel data, but resolved by a different Node Normalizer API or different ORION normalization code,
+    # so identifiers can not be assumed to have been resolved the same way.
+    ("node_normalizer_version", "2.5.0"),
+    ("normalization_code_version", "1.5.0"),
+    # Mixing these produces a graph that is only conflated, or only strictly filtered, in places.
+    ("normalization_conflation", False),
+    ("normalization_strict", False),
+])
+def test_diverging_values_raise(metadata_field, diverging_value):
+    """Sources that disagree on Biolink or on how they were normalized must not be merged together."""
+    source_releases = _agreeing_source_releases()
+    setattr(source_releases["source_b"], metadata_field, diverging_value)
 
-    with pytest.raises(ValueError, match=f"All sources must have the same {version_field}"):
-        _get_shared_version(source_releases, version_field)
+    with pytest.raises(ValueError, match=f"All sources must have the same {metadata_field}"):
+        _get_shared_metadata_value(source_releases, metadata_field)
 
 
 def test_extract_release_kgx_files(releases_path, tmp_path):

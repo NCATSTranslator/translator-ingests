@@ -171,6 +171,14 @@ REQUIRED_SOURCE_RELEASE_METADATA = ("release_version",
                                     "babel_version",
                                     "data")
 
+# Metadata every source of a merged graph must agree on, and which the merged graph inherits. Sources must be
+# built against the same Biolink Model and normalized identically to be merged correctly.
+SHARED_SOURCE_RELEASE_METADATA = ("biolink_version",
+                                  "babel_version",
+                                  "node_normalizer_version",
+                                  "normalization_code_version",
+                                  "normalization_conflation")
+
 
 def _read_source_release_metadata(source: str) -> PipelineMetadata:
     """Read the latest release metadata for one of the sources of a merged graph.
@@ -201,20 +209,24 @@ def _read_source_release_metadata(source: str) -> PipelineMetadata:
     return release_metadata
 
 
-def _get_shared_version(source_releases: dict[str, PipelineMetadata], version_field: str) -> str:
-    """Return the value of version_field shared by every source, raising if the sources disagree.
+def _get_shared_metadata_value(source_releases: dict[str, PipelineMetadata], metadata_field: str):
+    """Return the value of metadata_field shared by every source, raising if the sources disagree.
 
-    A merged graph is only coherent if all of its sources were built with the same Biolink Model and Babel versions.
+    A merged graph is only coherent if all of its sources were built against the same Biolink Model and normalized
+    the same way. Nodes from sources normalized differently can not be assumed to refer to the same things.
 
     Args:
         source_releases: release metadata for each source of a merged graph, keyed by source id
-        version_field: name of the PipelineMetadata version attribute that must be shared
+        metadata_field: name of the PipelineMetadata attribute that must be shared
+
+    Returns:
+        The value of metadata_field, which every source shares.
     """
-    versions = {getattr(release_metadata, version_field) for release_metadata in source_releases.values()}
-    if len(versions) > 1:
-        logger.error(f"Sources do not have consistent {version_field}s: {versions}")
-        raise ValueError(f"All sources must have the same {version_field}. Found: {versions}")
-    return versions.pop()
+    values = {getattr(release_metadata, metadata_field) for release_metadata in source_releases.values()}
+    if len(values) > 1:
+        logger.error(f"Sources do not have consistent {metadata_field}s: {values}")
+        raise ValueError(f"All sources must have the same {metadata_field}. Found: {values}")
+    return values.pop()
 
 
 def _extract_release_kgx_files(source: str, release_metadata: PipelineMetadata, staging_directory: Path) -> list[str]:
@@ -259,8 +271,9 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     # Read the latest release metadata for every source, which determines which release of each source is merged.
     source_releases = {source: _read_source_release_metadata(source) for source in sources}
 
-    biolink_version = _get_shared_version(source_releases, "biolink_version")
-    babel_version = _get_shared_version(source_releases, "babel_version")
+    # Validate that the sources agree on everything they must, and carry those values onto the merged graph.
+    shared_metadata = {metadata_field: _get_shared_metadata_value(source_releases, metadata_field)
+                       for metadata_field in SHARED_SOURCE_RELEASE_METADATA}
 
     # Identify the released graphs the merged graph is built from (hasPart in the graph metadata).
     kgx_sources = [{"@id": release_metadata.data,
@@ -292,12 +305,11 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
 
     # TODO - this should probably use a different kind of Metadata object, PipelineMetadata is designed for one ingest
-    # Create PipelineMetadata for the merged graph.
-    # other PipelineMetadata attributes like conflation / strict are per-source and don't apply to a merge.
+    # Create PipelineMetadata for the merged graph. Metadata the sources share (Biolink and normalization versions
+    # and settings) describes the merged graph too; the rest, like source_version, is per-source and stays unset.
     merged_graph_metadata = PipelineMetadata(
         source=graph_id,
-        babel_version=babel_version,
-        biolink_version=biolink_version,
+        **shared_metadata,
         build_version=build_version,
         build_date=current_iso_date(),
         release_version=release_version,
