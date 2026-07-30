@@ -63,7 +63,7 @@ define HELP
 │     validate            Validate all sources in data/                        │
 │     validate-single     Validate only specified sources                      │
 │     release             Generate releases for the specified sources          │
-│     merge               Merge specified sources into one KG                  │
+│     merge               Merge released sources into one KG                   │
 │     merge-all           Merge every graph declared in graphs.yaml            │
 │                                                                              │
 │     test                Run all tests                                        │
@@ -107,6 +107,9 @@ define HELP
 │     # Make releases only for specified sources                               │
 │     make release SOURCES="ctd go_cam goa"                                    │
 │                                                                              │
+│     # Multisource KGs are built from source releases. The following          │
+│     # examples rely on releases already existing.                            │
+│     #                                                                        │
 │     # Build and release the default multisource KG (translator_kg)           │
 │     make merge                                                               │
 │     # Build and release the KG translator_kg_open (declared in graphs.yaml)  │
