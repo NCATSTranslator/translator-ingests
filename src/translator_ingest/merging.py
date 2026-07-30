@@ -9,7 +9,7 @@ from orion import KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, generate_
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, extract_compressed_tar, atomic_copy_directory, \
-    RELEASE_NODES_FILENAME, RELEASE_EDGES_FILENAME, RELEASE_GRAPH_METADATA_FILENAME
+    generate_release_summary, RELEASE_NODES_FILENAME, RELEASE_EDGES_FILENAME, RELEASE_GRAPH_METADATA_FILENAME
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, next_release_version, \
     current_iso_date
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
@@ -462,6 +462,9 @@ def main(graph_id, sources, overwrite):
         logger.info(f"Latest release already up to date for {graph_id}, build: {merged_graph_metadata.build_version}")
     else:
         generate_merged_graph_release(merged_graph_metadata)
+
+    # Merged graphs release themselves, so refresh the summary here to include this graph.
+    generate_release_summary()
 
 
 if __name__ == "__main__":
