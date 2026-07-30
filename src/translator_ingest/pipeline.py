@@ -5,7 +5,6 @@ import time
 import shutil
 
 from dataclasses import is_dataclass, asdict
-from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
@@ -518,10 +517,10 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         name=pipeline_metadata.source,
         description="A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
                     ", Biolink Model, and Node Normalizer.",
-        license="MIT",
+        license="",
         url=storage_url,
         version=pipeline_metadata.build_version,
-        date_created=datetime.now().strftime("%Y_%m_%d"),
+        date_created=current_iso_date(),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.babel_version,
         knowledge_sources=[data_source_info]
