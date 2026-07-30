@@ -1,6 +1,7 @@
 import click
 import json
 import hashlib
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -121,10 +122,6 @@ def create_merged_graph_compressed_tar(merged_graph_metadata: PipelineMetadata):
 
     tar_filename = f"{graph_id}.tar.zst"
     tar_path = release_version_dir / tar_filename
-
-    if tar_path.exists():
-        logger.info(f"Compressed archive already exists: {tar_path}")
-        return
 
     logger.info(f"Creating compressed archive {tar_filename}...")
     nodes_file = release_version_dir / RELEASE_NODES_FILENAME
@@ -314,69 +311,68 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
 
     logger.info(f"Graph {graph_id} versioned, release version: {release_version}, build version: {build_version}")
     output_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version
-    nodes_output_file = output_dir / RELEASE_NODES_FILENAME
-    edges_output_file = output_dir / RELEASE_EDGES_FILENAME
-    if not overwrite and (nodes_output_file.exists() and edges_output_file.exists()):
-        logger.info(f"Graph {graph_id} ({build_version}) already exists..")
-    else:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        # Releases are compressed, so the KGX files of each source are extracted into a staging directory for the
-        # merge, then discarded. Staging goes alongside the releases so it lands on the same volume.
-        with tempfile.TemporaryDirectory(dir=Path(INGESTS_RELEASES_PATH),
-                                         prefix=f".merge_staging_{graph_id}_") as staging_directory:
-            graph_spec = GraphSpec(
-                graph_id=graph_id,
-                graph_name=graph_id,
-                graph_description="",
-                graph_url=data_path,
-                graph_version=release_version,
-                graph_output_format="jsonl",
-                # NOTE: merge_strategy=DONT_MERGE really means don't merge edges, nodes are always merged.
-                # We already merged edges for every ingest and don't have overlapping
-                # primary-knowledge-sources, so we don't need to merge edges here.
-                sources=[SubGraphSource(id=source,
-                                        file_paths=_extract_release_kgx_files(source,
-                                                                              release_metadata,
-                                                                              Path(staging_directory)),
-                                        graph_version=release_metadata.release_version,
-                                        merge_strategy=KGXFileMerger.DONT_MERGE)
-                         for source, release_metadata in source_releases.items()],
-                subgraphs=[],
-            )
-            file_merger = KGXFileMerger(
-                graph_spec=graph_spec,
-                output_directory=str(output_dir),
-                nodes_output_filename=RELEASE_NODES_FILENAME,
-                edges_output_filename=RELEASE_EDGES_FILENAME,
-                save_memory=True
-            )
-            file_merger.merge()
-            merge_metadata = file_merger.get_merge_metadata()
+    if output_dir.exists():
+        # Anything already in the output directory is left over from a merge that crashed before recording its release.
+        # Just delete it because it might not match what we're trying to build now.
+        logger.warning(f"Discarding output of an incomplete previous merge of {graph_id}: {output_dir}")
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
 
-        if "merge_error" in merge_metadata:
-            logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
-        else:
-            metadata_output = output_dir / "merge-metadata.json"
-            with open(metadata_output, "w") as metadata_file:
-                metadata_file.write(json.dumps(merge_metadata, indent=4))
+    # Releases are compressed, so the KGX files of each source are extracted into a staging directory for the
+    # merge, then discarded. Staging goes alongside the releases so it lands on the same volume.
+    with tempfile.TemporaryDirectory(dir=Path(INGESTS_RELEASES_PATH),
+                                     prefix=f".merge_staging_{graph_id}_") as staging_directory:
+        graph_spec = GraphSpec(
+            graph_id=graph_id,
+            graph_name=graph_id,
+            graph_description="",
+            graph_url=data_path,
+            graph_version=release_version,
+            graph_output_format="jsonl",
+            # NOTE: merge_strategy=DONT_MERGE really means don't merge edges, nodes are always merged.
+            # We already merged edges for every ingest and don't have overlapping
+            # primary-knowledge-sources, so we don't need to merge edges here.
+            sources=[SubGraphSource(id=source,
+                                    file_paths=_extract_release_kgx_files(source,
+                                                                          release_metadata,
+                                                                          Path(staging_directory)),
+                                    graph_version=release_metadata.release_version,
+                                    merge_strategy=KGXFileMerger.DONT_MERGE)
+                     for source, release_metadata in source_releases.items()],
+            subgraphs=[],
+        )
+        file_merger = KGXFileMerger(
+            graph_spec=graph_spec,
+            output_directory=str(output_dir),
+            nodes_output_filename=RELEASE_NODES_FILENAME,
+            edges_output_filename=RELEASE_EDGES_FILENAME,
+            save_memory=True
+        )
+        file_merger.merge()
+        merge_metadata = file_merger.get_merge_metadata()
+
+    if "merge_error" in merge_metadata:
+        logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
+    else:
+        metadata_output = output_dir / "merge-metadata.json"
+        with open(metadata_output, "w") as metadata_file:
+            metadata_file.write(json.dumps(merge_metadata, indent=4))
 
     # Generate graph metadata after successful merge
     merge_graph_metadata(pipeline_metadata=merged_graph_metadata, knowledge_sources=knowledge_sources,
-                         kgx_sources=kgx_sources, overwrite=overwrite)
+                         kgx_sources=kgx_sources)
 
     return merged_graph_metadata
 
 def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
                          knowledge_sources: list[KGXKnowledgeSource],
-                         kgx_sources: list[dict],
-                         overwrite: bool = False):
+                         kgx_sources: list[dict]):
     """Generate graph metadata for a merged graph.
 
     Args:
         pipeline_metadata: PipelineMetadata instance for the merged graph
         knowledge_sources: KGXKnowledgeSource metadata for the upstream knowledge sources of the merge (isBasedOn)
         kgx_sources: metadata identifying the released graphs the merged graph is built from (hasPart)
-        overwrite: Whether to overwrite existing metadata
     """
     graph_id = pipeline_metadata.source
     release_version = pipeline_metadata.release_version
@@ -388,13 +384,6 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
     merged_graph_nodes = merged_graph_dir / RELEASE_NODES_FILENAME
     merged_graph_edges = merged_graph_dir / RELEASE_EDGES_FILENAME
     graph_metadata_file_path = merged_graph_dir / RELEASE_GRAPH_METADATA_FILENAME
-    if graph_metadata_file_path.exists():
-        if not overwrite:
-            logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. Exiting...")
-            return
-        else:
-            logger.info(f"Graph metadata file already exists: {graph_metadata_file_path}. "
-                        f"OVERWRITE mode enabled, overwriting...")
 
     release_url = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}"
     source_metadata = KGXGraphMetadata(
@@ -402,7 +391,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
         name=graph_id,
         description="A merged knowledge graph built for the NCATS Biomedical Data Translator project using "
                     "Translator-Ingests, Biolink Model, and Node Normalizer.",
-        license="MIT",
+        license="",
         url=release_url,
         version=release_version,
         date_created=current_iso_date(),
