@@ -353,10 +353,11 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
 
     if "merge_error" in merge_metadata:
         logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
-    else:
-        metadata_output = output_dir / "merge-metadata.json"
-        with open(metadata_output, "w") as metadata_file:
-            metadata_file.write(json.dumps(merge_metadata, indent=4))
+        raise RuntimeError(f"Merge failed for {graph_id}: {merge_metadata['merge_error']}")
+
+    metadata_output = output_dir / "merge-metadata.json"
+    with open(metadata_output, "w") as metadata_file:
+        metadata_file.write(json.dumps(merge_metadata, indent=4))
 
     # Generate graph metadata after successful merge
     merge_graph_metadata(pipeline_metadata=merged_graph_metadata, knowledge_sources=knowledge_sources,
