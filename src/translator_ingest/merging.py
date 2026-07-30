@@ -319,9 +319,9 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     output_dir.mkdir(parents=True)
 
     # Releases are compressed, so the KGX files of each source are extracted into a staging directory for the
-    # merge, then discarded. Staging goes alongside the releases so it lands on the same volume.
-    with tempfile.TemporaryDirectory(dir=Path(INGESTS_RELEASES_PATH),
-                                     prefix=f".merge_staging_{graph_id}_") as staging_directory:
+    # merge, then discarded. Staging lives inside the output directory, so it is on the same volume as the files
+    # being written, and anything a killed merge leaves behind is cleaned up with the rest of that directory.
+    with tempfile.TemporaryDirectory(dir=output_dir, prefix="staging_") as staging_directory:
         graph_spec = GraphSpec(
             graph_id=graph_id,
             graph_name=graph_id,
