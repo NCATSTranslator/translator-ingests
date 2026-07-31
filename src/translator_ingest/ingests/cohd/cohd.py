@@ -10,10 +10,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
-from bmt.pydantic import (
-    entity_id,
-    get_node_class
-)
+from bmt.pydantic import get_node_class
+from translator_ingest.util.transform_utils import entity_id
 
 import koza
 from koza.model.graphs import KnowledgeGraph

@@ -12,8 +12,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 from translator_ingest.util.biolink import INFORES_INTACT
 from translator_ingest.util.http_utils import get_ftp_modify_date
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
+
+INTACT_SOURCES = build_association_knowledge_sources(primary=INFORES_INTACT)
 
 # Allowed interaction types as per RIG documentation
 ALLOWED_INTERACTION_TYPES = {
@@ -408,7 +411,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
         predicate=predicate,
         object=entity_b.id,
         publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_INTACT),
+        sources=INTACT_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
