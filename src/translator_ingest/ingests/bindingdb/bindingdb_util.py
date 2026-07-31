@@ -2,7 +2,7 @@
 Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
-from typing import Optional, Any
+from typing import Any
 from pathlib import Path
 from zipfile import ZipFile
 from math import log10
@@ -283,7 +283,7 @@ def filter_affinity_values(
 def get_cohd_supporting_study(
         edge_id: str,
         attribute_list: list[str]
-)->Optional[dict[str, Study]]:
+)-> dict[str, Study] | None:
     """
     Parsing of the embedded 'attributes' of COHD edge
     into instances of COHD StudyResult, then
@@ -291,7 +291,7 @@ def get_cohd_supporting_study(
 
     :param edge_id: String identifier for the edge
     :param attribute_list: List of Study Results consisting of slot-indexed values, like result statistics.
-    :return: Optional[dict[str, Study]] is a dictionary fragment with the 'study id' as key and a Study as value.
+    :return: dict[str, Study] | None is a dictionary fragment with the 'study id' as key and a Study as value.
              The method returns None if no such Study record can be resolved.
     """
     if not attribute_list:
@@ -306,7 +306,7 @@ def get_cohd_supporting_study(
 
     # Current iteration assumes only a single supporting data set identifier to be extracted
     # from within the list of attributes embedded inside the study results list for this edge
-    study_id: Optional[str] = None
+    study_id: str | None = None
 
     study_results: list = []
     sa: dict
@@ -338,9 +338,9 @@ def get_cohd_supporting_study(
     }
 
 
-def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
+def get_affinity_measurements(record: dict[str, Any]) -> list[AffinityMeasurement] | None:
     affinity_parameter: ape
-    measurements: Optional[list[AffinityMeasurement]] = None
+    measurements: list[AffinityMeasurement] | None = None
     for affinity_parameter, column in AFFINITY_PARAMETERS.items():
         if column in record and record[column]:
             value: str = record[column]
