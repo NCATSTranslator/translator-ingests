@@ -1,45 +1,44 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-import polars as pl
+from typing import Any
 
 import koza
+import polars as pl
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
     ChemicalEntity,
-    AffinityMeasurement,
     ChemicalGeneInteractionAssociation,
-    Protein,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    Protein,
 )
-from translator_ingest.util.biolink import build_association_knowledge_sources
-from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
-    extract_bindingdb_columns_polars,
-    process_publications,
-    filter_affinity_values,
-    get_affinity_measurements,
-
-    CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
-    LINK_TO_LIGAND_TARGET_PAIR, web_string,
-    MONOMER_ID,
-    TARGET_NAME,
-    SOURCE_ORGANISM,
     AFFINITY_PARAMETERS,
-    CURATION_DATASOURCE,
-    PUBCHEM_CID,
-    UNIPROT_ID,
-    PUBLICATION,
-    SUPPORTING_DATA_ID,
-    REACTANT_SET_ID,
     ARTICLE_DOI,
-    PMID,
-    PATENT_NUMBER,
+    CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
+    CURATION_DATASOURCE,
+    LINK_TO_LIGAND_TARGET_PAIR,
     MISSING_PUBS,
-    ROWS_MISSING_AFFINITY
+    MONOMER_ID,
+    PATENT_NUMBER,
+    PMID,
+    PUBCHEM_CID,
+    PUBLICATION,
+    REACTANT_SET_ID,
+    ROWS_MISSING_AFFINITY,
+    SOURCE_ORGANISM,
+    SUPPORTING_DATA_ID,
+    TARGET_NAME,
+    UNIPROT_ID,
+    extract_bindingdb_columns_polars,
+    filter_affinity_values,
+    process_publications,
+    web_string,
 )
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
@@ -104,7 +103,7 @@ def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
             )
     for tag, value in koza_transform.transform_metadata.items():
         koza_transform.log(
-            msg=f"{str(tag)}: {value}.",
+            msg=f"{tag!s}: {value}.",
             level="WARNING"
         )
 
@@ -231,7 +230,7 @@ def transform_bindingdb_by_record(
 
     # Measurements of the molecular interaction affinity of
     # chemical 'subject' to gene product target 'object'
-    affinity_measurements: list[AffinityMeasurement] | None = get_affinity_measurements(record)
+    affinity_measurements: list[AffinityMeasurement] | None = get_bindingdb_assay_study(record)
 
     # Sources
     target_label = web_string(target_name)
