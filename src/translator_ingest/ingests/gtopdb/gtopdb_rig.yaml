@@ -6,11 +6,14 @@ source_info:
   infores_id: infores:gtopdb
   name: The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb)
   description: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb; https://www.guidetopharmacology.org) is an open-access, expert-curated, online
-database that provides succinct overviews and key references for pharmacological targets and their recommended experimental ligands. It
-includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies. GtoPdb) was established
-and developed by the International Union of Basic and Clinical Pharmacology (IUPHAR) and the British Pharmacological Society (BPS).
+database by the International Union of Basic and Clinical Pharmacology (IUPHAR), the British Pharmacological Society (BPS), and the University of Edinburgh, with contributions from an international network of expert scientific advisors
+that provides succinct overviews and key references for pharmacological targets and their recommended experimental ligands.
 It originated from the IUPHAR-DB, a former resource focused on receptors and channels that was first compiled in 2003 and from the
-BPS‘ Guide to Receptors and Channels’, a compendium of a wider range of targets than those originally covered in IUPHAR-DB"
+BPS‘ Guide to Receptors and Channels’, a compendium of a wider range of targets than those originally covered in IUPHAR-DB
+Its goal is to provide an authoritative reference describing the pharmacological interactions between drugs and their molecular targets, supporting pharmacology research, drug discovery, target identification, and biomedical knowledge integration.
+The database contains curated information on approved drugs, experimental ligands, molecular targets, mechanisms of action, quantitative pharmacological data, endogenous ligands, clinical indications, and target classifications.
+It includes over 3039 protein targets and 12,163 ligand molecules, including approved drugs, small molecules, peptides and antibodies."
+  source_status: maintained_regular_updates
   citations:
     - "Harding SD, Armstrong JF, Faccenda E, Southan C, Alexander SPH, Davenport AP, Spedding M, Davies JA. (2023) The IUPHAR/BPS Guide to PHARMACOLOGY in 2024. Nucl. Acids Res. 2024; 52(D1):D1438-D1449. doi:10.1093/nar/gkad944. [Full text]. PMID: 37897341."
   terms_of_use_info:
@@ -55,9 +58,10 @@ ingest_info:
   included_content:
     - file_name: "interactions.csv"
       # MHB: Content of the included_records field above is not really what we look for here. See suggested text below - confirm its accuracy. Qi: Confirmed, thanks for adding an example!
-      included_records: No filtering. Records for all species included.  Note however that records in the data describe results of a single published experiment. In our ingest records with the same ligand, target, and type + action are merged into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge.
+      included_records: "No filtering. Records for all species included.  Note however that records in the data describe results of a single published experiment. In our ingest records with the same ligand, target, and type + action are merged into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge."
       fields_used: "Ligand, Target, Ligand ID, Target UniProt ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"
+      included_records: "Mapping between the GtoPdb internal ligand ID and the Translator prefered PubChem CID identifiers"
       fields_used: 'Ligand ID, PubChem CID'
 
   filtered_content:
@@ -66,8 +70,9 @@ ingest_info:
     #   rationale: "Only include records with Human in Species"
 
   future_considerations:
-    - category: edge_content
-      consideration: "Leverage the value of the ENDOGENOUS column to inform when to use regulates predicate and upregulates/downregulates direction qualifier values."
+    ## Qi's review comment: Implemented already, so no longer future considerations
+    # - category: edge_content
+    #   consideration: "Leverage the value of the ENDOGENOUS column to inform when to use regulates predicate and upregulates/downregulates direction qualifier values."
     - category: edge_content
       consideration: "Consider ingest the file 'approved_drug_primary_target_interactions.csv' which contains approved drugs detailed interactions list"
     - category: edge_content
@@ -79,7 +84,6 @@ ingest_info:
 ## based on https://github.com/biolink/biolink-model/blob/master/predicate_mapping.yaml
 # MHB: The mapping for GtpoP db is here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142  This is what you should be using - not the predicate-mapping file you reference above.
 target_info:
-  infores_id: infores:translator-gtopdb
 
   edge_type_info:
     - subject_categories:
@@ -102,14 +106,16 @@ target_info:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range: biolink:CausalMechanismQualifierEnum
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:translator-gtopdb
       edge_properties:
         - biolink:publications
-      ui_explanation: TO DO
+      ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides causal relationships where a ChemicalEntity, MolecularMixture, or Small molecular can affects (increase or decrease) a protein"
       additional_notes:
         - "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
 
@@ -133,14 +139,16 @@ target_info:
             - downregulated
             - upregulated
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range: biolink:CausalMechanismQualifierEnum
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:translator-gtopdb
       edge_properties:
         - biolink:publications
-      ui_explanation: TO DO
+      ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides causal relationships where a ChemicalEntity, MolecularMixture, or Small molecular can regulates (up- or down-) a protein"
       additional_notes:
         - "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
 
@@ -154,14 +162,16 @@ target_info:
         - biolink:Protein
       qualifiers:
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range: biolink:CausalMechanismQualifierEnum
       knowledge_level:
         - knowledge_assertion
+      primary_knowledge_sources:
+        - infores:translator-gtopdb
       agent_type:
         - manual_agent
       edge_properties:
         - biolink:publications
-      ui_explanation: TO DO
+      ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides causal relationships where a ChemicalEntity, MolecularMixture, or Small molecular can influence a protein, potentially through direct physical interation mechanisms."
       additional_notes:
         - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
 
