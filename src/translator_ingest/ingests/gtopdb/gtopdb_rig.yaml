@@ -191,9 +191,28 @@ target_info:
         - manual_agent
       edge_properties:
         - biolink:publications
-      ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides a default relationships where a ChemicalEntity, MolecularMixture, or Small molecular can influence a protein as "related to" when both action and type of the realtionship are unknown."
+      ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides default relationships where a ChemicalEntity, MolecularMixture, or Small molecular can influence a protein as "related to" when both action and type of the realtionship are unknown."
       additional_notes:
-        - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+        - "this separate related_to edge is created when the TYPE + ACTION values are both null values. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+    # - subject_categories:
+    #     - biolink:ChemicalEntity
+    #     - biolink:MolecularMixture
+    #     - biolink:SmallMolecule
+    #   predicates:
+    #     - biolink:related_to
+    #   object_categories:
+    #     - biolink:Protein
+    #   knowledge_level:
+    #     - knowledge_assertion
+    #   primary_knowledge_sources:
+    #     - infores:gtopdb
+    #   agent_type:
+    #     - manual_agent
+    #   edge_properties:
+    #     - biolink:publications
+    #   ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides a default relationships where a ChemicalEntity, MolecularMixture, or Small molecular can influence a protein as "related to" when both action and type of the realtionship are unknown."
+    #   additional_notes:
+    #     - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
 
   node_type_info:                                     ## MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
                                                       ## Qi: implemented as desired
