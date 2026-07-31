@@ -65,9 +65,43 @@ ingest_info:
 target_info:
   edge_type_info:
     - subject_categories:
-        - biolink:Gene
         - biolink:Protein
         # - biolink:Proteinfamily
+      predicates:
+        - biolink:regulates
+      object_categories:
+        - biolink:Protein
+        # - biolink:Proteinfamily
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+              - biolink:causes
+        - property: biolink:object_aspect_qualifier
+          value_enumeration:
+              - activity_or_abundance
+              - activity
+              - abundance
+              - expression
+              - stability
+        - property: biolink:object_direction_qualifier
+          value_enumeration:
+            - downregulated
+            - upregulated
+        - property: biolink:species_context_qualifier
+          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
+      ## MHB: edge properties need to include "biolink" prefix.; QW: fixed, thanks for pointing this out!
+      edge_properties:
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
+      ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule"
+    - subject_categories:
         ## As discussed with Matt, for initial ingest we skipped complex nodes
         ## Note to Qi: There is a separate SIGNOR_complexes.csv which has the detail of each complex ID, e.g., SIGNOR-C14;IKK-complex;"O14920	  O15111	  Q9Y6K9"
         # - biolink:MacromolecularComplex
@@ -76,7 +110,6 @@ target_info:
       predicates:
         - biolink:regulates
       object_categories:
-        - biolink:Gene
         - biolink:Protein
         # - biolink:Proteinfamily
         ## Qi - review comment: Currently, no complex as object node
@@ -115,7 +148,7 @@ target_info:
         - biolink:publications
         - biolink:has_confidence_score
         - biolink:supporting_text
-      ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule or complex / small molecule to 'regulate' another complex / protein / protein family / smallmolecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
+      ui_explanation: "Signor records indicate complex / small molecule to 'regulate' another complex / protein / protein family / smallmolecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
     ## Qi review comment: not in the initial ingestion as of 02/2026
     # - subject_categories:
     #     - biolink:Protein
@@ -140,12 +173,12 @@ target_info:
     #   ui_explanation: "Signor records indicate the protein to be 'form complex' another complex - which maps best to the Biolink predicate 'part of' with additional directional qualifier."
     - subject_categories:
         - biolink:ChemicalEntity
-        - biolink:Drug
+        ## Qi's comment: comment out to be consistent with RIG
+        # - biolink:Drug
         - biolink:SmallMolecule
       predicates:
         - biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
-        - biolink:Gene
         - biolink:Protein
         # - biolink:MacromolecularComplex
         # - biolink:Proteinfamily
