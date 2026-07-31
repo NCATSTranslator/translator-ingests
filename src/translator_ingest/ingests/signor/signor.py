@@ -6,7 +6,8 @@ from typing import Any, Iterable
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     Protein,
-    MacromolecularComplex,
+    ## Qi's comment: comment out since currently not implemented
+    # MacromolecularComplex,
     NamedThing,
     ## necessary associations and interactions
     Association,
