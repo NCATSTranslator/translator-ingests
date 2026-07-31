@@ -258,13 +258,14 @@ def _extract_release_kgx_files(source: str, release_metadata: PipelineMetadata, 
     return [str(nodes_file)] + ([str(edges_file)] if edges_file.exists() else [])
 
 
-def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> PipelineMetadata:
+def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> PipelineMetadata | None:
     """Use ORION to merge the latest releases of multiple sources together into a single KGX output.
     Note that this process skips writing files to the data/storage directory and immediately generates a release,
     unlike single_merge and single-ingest merges done by the pipeline.
 
     Returns:
-        The merged graph's PipelineMetadata.
+        The merged graph's PipelineMetadata, or None if the latest release is already of this build, in which case
+        nothing was merged and there is no new release to generate.
     """
     logger.info(f"Merging {graph_id}. Sources: {sources}.")
 
@@ -274,6 +275,40 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     # Validate that the sources agree on everything they must, and carry those values onto the merged graph.
     shared_metadata = {metadata_field: _get_shared_metadata_value(source_releases, metadata_field)
                        for metadata_field in SHARED_SOURCE_RELEASE_METADATA}
+
+    # Generate a build version based on the build versions of all source graphs. This identifies exactly what the 
+    # merged graph would be made of, and is what is checked against the existing releases to see if this build 
+    # already exists. The semantic release versions don't matter until it's determined we need a new one.
+    source_build_versions = sorted(release_metadata.build_version for release_metadata in source_releases.values())
+    build_version = hashlib.md5("".join(source_build_versions).encode()).hexdigest()[:12]
+
+    # TODO - this should probably use a different kind of Metadata object, PipelineMetadata is designed for one ingest
+    # Create PipelineMetadata for the merged graph. Metadata the sources share (Biolink and normalization versions
+    # and settings) describes the merged graph too; the rest, like source_version, is per-source and stays unset.
+    merged_graph_metadata = PipelineMetadata(
+        source=graph_id,
+        **shared_metadata,
+        build_version=build_version,
+        build_date=current_iso_date(),
+    )
+
+    # Check if the latest release already has this build version
+    if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
+        logger.info(f"Graph {graph_id} latest release is already current (build: {build_version}). Skipping merge.")
+        return None
+
+    # Read the previous release version (if any) to determine the next semantic version
+    previous_release_metadata_path = get_versioned_file_paths(
+        IngestFileType.LATEST_RELEASE_FILE, PipelineMetadata(source=graph_id)
+    )
+    previous_release_version = None
+    if previous_release_metadata_path.exists():
+        with previous_release_metadata_path.open("r") as previous_release_file:
+            previous_release_version = PipelineMetadata.from_dict(json.load(previous_release_file)).release_version
+    release_version = next_release_version(previous_release_version)
+    data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
+    merged_graph_metadata.release_version = release_version
+    merged_graph_metadata.data = data_path
 
     # Identify the released graphs the merged graph is built from (hasPart in the graph metadata).
     kgx_sources = [{"@id": release_metadata.data,
@@ -288,38 +323,6 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
         data_source_info = get_kgx_source_from_rig(source)
         data_source_info.version = release_metadata.source_version
         knowledge_sources.append(data_source_info)
-
-    # Read the previous release version (if any) to determine the next semantic version
-    previous_release_metadata_path = get_versioned_file_paths(
-        IngestFileType.LATEST_RELEASE_FILE, PipelineMetadata(source=graph_id)
-    )
-    previous_release_version = None
-    if previous_release_metadata_path.exists():
-        with previous_release_metadata_path.open("r") as previous_release_file:
-            previous_release_version = PipelineMetadata.from_dict(json.load(previous_release_file)).release_version
-
-    # Generate a build version based on the build versions of all source graphs
-    source_build_versions = sorted(release_metadata.build_version for release_metadata in source_releases.values())
-    build_version = hashlib.md5("".join(source_build_versions).encode()).hexdigest()[:12]
-    release_version = next_release_version(previous_release_version)
-    data_path = f"{INGESTS_RELEASES_URL}/{graph_id}/{release_version}/"
-
-    # TODO - this should probably use a different kind of Metadata object, PipelineMetadata is designed for one ingest
-    # Create PipelineMetadata for the merged graph. Metadata the sources share (Biolink and normalization versions
-    # and settings) describes the merged graph too; the rest, like source_version, is per-source and stays unset.
-    merged_graph_metadata = PipelineMetadata(
-        source=graph_id,
-        **shared_metadata,
-        build_version=build_version,
-        build_date=current_iso_date(),
-        release_version=release_version,
-        data=data_path,
-    )
-
-    # Check if the latest release already has this build version
-    if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
-        logger.info(f"Graph {graph_id} latest release is already current (build: {build_version}). Skipping merge.")
-        return merged_graph_metadata
 
     logger.info(f"Graph {graph_id} versioned, release version: {release_version}, build version: {build_version}")
     output_dir = Path(INGESTS_RELEASES_PATH) / graph_id / release_version
@@ -469,9 +472,9 @@ def main(graph_id, sources, overwrite):
         graph_id, sources=list(sources), overwrite=overwrite
     )
 
-    # Generate latest release metadata for the merged graph
-    if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
-        logger.info(f"Latest release already up to date for {graph_id}, build: {merged_graph_metadata.build_version}")
+    # Generate the release for the merged graph, unless merge determined there was nothing new to build
+    if merged_graph_metadata is None:
+        logger.info(f"Latest release already up to date for {graph_id}.")
     else:
         generate_merged_graph_release(merged_graph_metadata)
 
