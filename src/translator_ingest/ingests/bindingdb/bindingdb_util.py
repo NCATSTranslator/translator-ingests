@@ -9,8 +9,8 @@ from zipfile import ZipFile
 
 import koza
 import polars as pl
-from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as bre
-from biolink_model.datamodel.pydanticmodel_v2 import Study
+from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as bre, ProteinLigandAssayResult
+from biolink_model.datamodel.pydanticmodel_v2 import Study, QuantityValue
 
 from translator_ingest.util.transform_utils import entity_id
 
@@ -293,53 +293,35 @@ def get_affinity_measurements(record: dict[str, Any]) -> list[AffinityMeasuremen
 
 
 def get_bindingdb_assay_study(
+        publication_id: str,
         edge_id: str,
-        attribute_list: list[str]
+        record: dict[str, Any]
 )-> dict[str, Study] | None:
     """
-    Parsing of the embedded 'attributes' of COHD edge
-    into instances of COHD StudyResult, then
-    embedded in its Study object, which is returned.
+    Parsing BindingDb record fields for ligand-protein affinities
+    and enzymatic interactions, into a ProteinLigandAssayResult
 
+    :param publication_id: String identifier for the publication serving as the 'Study' source of the edge
     :param edge_id: String identifier for the edge
-    :param attribute_list: List of Study Results consisting of slot-indexed values, like result statistics.
+    :param record: dict[str, Any] BindingDb record including edge associated data for ligand-protein interactions.
     :return: dict[str, Study] | None is a dictionary fragment with the 'study id' as key and a Study as value.
-             The method returns None if no such Study record can be resolved.
+                                The method returns None if no such Study record can be resolved.
     """
-    study_attributes: list[dict[str, Any]] = [
-        entry for entry in all_attributes
-        if entry["attribute_type_id"] == "biolink:has_supporting_study_result"
-    ]
-
-    # Current iteration assumes only a single supporting data set identifier to be extracted
-    # from within the list of attributes embedded inside the study results list for this edge
-    study_id: str | None = None
-
-    study_results: list = []
-    sa: dict
-    for sa in study_attributes:
-        # extract the first instance of the COHD dataset ID seen
-        if study_id is None:
-            sra: list[dict[str,Any]] = sa.get("attributes",[])
-            if sra:
-                sds = [
-                    attribute["value"] for attribute in sra
-                    if attribute.get("attribute_type_id",None) == "biolink:supporting_data_set"
-                ]
-                study_id = sds[0] if sds else None
-
-
-        node_class: type[NamedThing] = get_node_class(node_id=edge_id, categories=[sa["value_type_id"]], bmt=bmt)
-        study_result = node_class(id=edge_id, name=sa["value"])
-        study_results.append(study_result)
-
-    if study_id is None:
-        # fall back study_id is the infores?
-        study_id = "infores:cohd"
+    assay_result: ProteinLigandAssayResult = ProteinLigandAssayResult(
+        id = edge_id,  # TODO: each assay is tied to its edge id(?) or should this rather be a hash of the SPO?
+        pKd = None,
+        pKi = None,
+        pIC50 = None,
+        pEC50 = None,
+        pAC50 = None,
+        pXC50 = None,
+        pKon = None,
+        pKoff = None
+    )
 
     return {
-        study_id: Study(
-            id=study_id,
-            has_study_results=study_results
+        publication_id: Study(
+            id=publication_id,
+            has_study_results=[assay_result]
         )
     }
