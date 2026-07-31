@@ -11,6 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalGeneInteractionAssociation,
     KnowledgeLevelEnum,
     Protein,
+    Study
 )
 from koza.model.graphs import KnowledgeGraph
 
@@ -63,7 +64,12 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     PUBCHEM_AID,
     PATENT_NUMBER,
     MISSING_PUBS,
-    ROWS_MISSING_AFFINITY
+    ROWS_MISSING_AFFINITY,
+    extract_bindingdb_columns_polars,
+    filter_affinity_values,
+    process_publications,
+    web_string,
+    get_bindingdb_assay_study
 )
 
 from translator_ingest.util.biolink import build_association_knowledge_sources
@@ -225,7 +231,8 @@ def transform_bindingdb_by_record(
     :param record: Individual BindingDb records to be processed.
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
-    # Nodes
+    # Node Data
+
     pubchem_id = record.get(PUBCHEM_CID, "")
     if not pubchem_id:
         koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
@@ -255,12 +262,16 @@ def transform_bindingdb_by_record(
         in_taxon_label=taxon_label
     )
 
-    # Publications
-    publications = [record[PUBLICATION]]
+    # Edge Data
+    edge_id: str = entity_id()
 
-    # Measurements of the molecular interaction affinity of
-    # chemical 'subject' to gene product target 'object'
-    affinity_measurements: list[AffinityMeasurement] | None = get_bindingdb_assay_study(record)
+    # Publication associated with specific BindingDb result
+    publication = record[PUBLICATION]
+
+    # dict[str, Study] describing measurements of the
+    # molecular interaction affinity or enzymatic
+    # interactions of the ligand to a target protein
+    bindingdb_assay: dict[str, Study] | None = get_bindingdb_assay_study(publication, edge_id, record)
 
     # Sources
     target_label = web_string(target_name)
@@ -272,14 +283,13 @@ def transform_bindingdb_by_record(
         supporting=supporting_data
     )
 
-    # Edge
     association = ChemicalGeneInteractionAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,
-        has_affinity=affinity_measurements,
-        publications=publications,
+        has_supporting_studies=bindingdb_assay if bindingdb_assay else None,
+        publications=[publication],
         sources=sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
