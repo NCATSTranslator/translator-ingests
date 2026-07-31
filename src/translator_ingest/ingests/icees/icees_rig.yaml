@@ -1,31 +1,19 @@
 name: "ICEES Reference Ingest Guide"
-#
-# TODO: need the ICEES asthma, ICEES COVID, ICEES DILI, and ICEES PCD source datasets documented here
-#
-# Pertinent infores_id's may include(?):
-#    infores:dili-network-study-data
-#
-### CTKP example placeholder - this is NOT ICEES!!!
-# supporting_data_source_info:
-#  - infores_id: "infores:aact"
-#    name: "Aggregate Analysis of ClinicalTrials.gov (AACT)"
-#    description: >-
-#      AACT is a publicly available, relational database containing all information (protocol and result
-#      data elements) about every study registered in ClinicalTrials.gov. It is maintained by the Clinical
-#      Trials Transformation Initiative (CTTI) and is derived from researcher submissions to ClinicalTrials.gov.
-#    terms_of_use_info:
-#      terms_of_use_url: "https://aact.ctti-clinicaltrials.org/documentation/346"
-#      terms_of_use_description: >-
-#        Freely available, with suggested acknowledgement of the source.
-#        See https://aact.ctti-clinicaltrials.org/documentation/346.
-#    relevant_files:
-#      - file_name: "yyyymmdd_export_ctgov.zip"
-#        location: "https://aact.ctti-clinicaltrials.org/downloads"
-#        description: >-
-#          Pipe-delimited text files used to import AACT data into any database or analysis tool.
-#          Each file corresponds to a table in the AACT database schema.
-# END OF CTKP EXAMPLE
-#
+supporting_data_source_info:
+ - infores_id: "infores:icees"
+   name: "Inventory of Supporting Data used for ICEES"
+   description: >-
+     This entry is a proxy entry pointing to the inventory of ICEES supporting data
+     for RIG documentation purposes, to be systematically further elaborated in the future.
+   terms_of_use_info:
+     terms_of_use_url: "https://github.com/NCATSTranslator/Translator-All/wiki/ICEES#supporting-data-sources"
+     terms_of_use_description: >-
+       URL to inventory of ICEES supporting data sources, each entry linking out to terms of use details.
+   relevant_files:
+     - file_name: "Unspecified at this time"
+       location: "https://github.com/NCATSTranslator/Translator-All/wiki/ICEES#supporting-data-sources"
+       description: >-
+         URL to inventory of ICEES supporting data sources, each entry linking out to data download details.
 source_info:
   infores_id: infores:icees-kg
   name: Integrated Clinical and Environmental Exposures Service (ICEES)
@@ -139,8 +127,8 @@ target_info:
       - "biolink:fisher_exact_p"
       - "biolink:log_odds_ratio"
       - "biolink:log_odds_ratio_95_ci"
-#    supporting_data_sources:  TODO: to be elaborated by ICEES team
-#      - infores:dili-network-study-data
+    supporting_data_sources:
+      - infores:infores:icees
     ui_explanation: >-
       Observed relationships between clinical characteristics and
       environmental exposures, indexed against associated studies.
