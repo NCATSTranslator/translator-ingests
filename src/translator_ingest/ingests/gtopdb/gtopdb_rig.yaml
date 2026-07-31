@@ -154,7 +154,7 @@ target_info:
       additional_notes:
         - "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
 
-    - subject_categories:
+      - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
         - biolink:SmallMolecule
@@ -198,7 +198,7 @@ target_info:
         additional_notes:
           - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
 
-  node_type_info:                                     # MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
+  node_type_info:                                     ## MHB: Note that we want to use the Pubchem CID here for all chemical entities - not SIDs (SIDs are too granular).  Vlado says the ligands.tsv file may have a mapping you can use to map SIDs to CIDs, and use CIDs on your nodes.
                                                       ## Qi: implemented as desired
     - node_category: biolink:ChemicalEntity
       source_identifier_types:
