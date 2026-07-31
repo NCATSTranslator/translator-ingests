@@ -119,7 +119,6 @@ target_info:
       ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides causal relationships where a ChemicalEntity, MolecularMixture, or Small molecular can affects (increase or decrease) a protein"
       additional_notes:
         - "Decision between increased/decreased based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE. Records in the source data describe interactions demonstrated in specific experiments.  Records with the same ligand, target, and type + action are aggregated into a single edge, and metadata from each merged record (publications) combined into a list and attached to the edge. Examples of sets of records that should get merged can be found at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
-
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
@@ -153,7 +152,6 @@ target_info:
       ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides causal relationships where a ChemicalEntity, MolecularMixture, or Small molecular can regulates (up- or down-) a protein"
       additional_notes:
         - "Decision between up vs down regulated based on combination of type and action columns in gtopdb. Decision about 'affects' vs 'regulates' predicate based on whether ENDOGENOUS = TRUE or FALSE"
-
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
@@ -177,7 +175,6 @@ target_info:
       ui_explanation: "The IUPHAR/BPS Guide to PHARMACOLOGY (GtoPdb) database provides causal relationships where a ChemicalEntity, MolecularMixture, or Small molecular can influence a protein, potentially through direct physical interation mechanisms."
       additional_notes:
         - "this separate directly_physically_interacts edge is created when the TYPE + ACTION values in the source data report a mechanism that implies a direct physical interaciton is occurring. The mapping table here indicates when an additional physically_interacts_with edge is created: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
-
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
