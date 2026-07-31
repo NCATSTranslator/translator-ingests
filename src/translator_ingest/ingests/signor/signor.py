@@ -156,7 +156,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         confidence_score = record["SCORE"]
 
         list_ppi_accept_effects = ['up-regulates', 'up-regulates activity', 'up-regulates quantity', 'up-regulates quantity by expression', 'up-regulates quantity by stabilization', 'down-regulates', 'down-regulates activity', 'down-regulates quantity', 'down-regulates quantity by destabilization', 'down-regulates quantity by repression']
-        list_pci_accept_effects = ['form complex']
+        ## Qi's comment: comment out since complex related edges are not enabled
+        # list_pci_accept_effects = ['form complex']
 
         ## initialize variables to hold information
         ## on whether an edge should use BIOLINK_AFFECTS and increased/decreased (if Endogenous == False)
@@ -299,9 +300,10 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["EFFECT"] == 'down-regulates quantity by repression':
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
             object_direction_qualifier = current_direction_mapping[1]
-        elif record["EFFECT"] == 'form complex':
-            object_aspect_qualifier = None
-            object_direction_qualifier = None
+        ## Qi's comment: comment out since complex related edges are not enabled
+        # elif record["EFFECT"] == 'form complex':
+        #     object_aspect_qualifier = None
+        #     object_direction_qualifier = None
         elif record["EFFECT"] == 'unknown':
             object_aspect_qualifier = None
             object_direction_qualifier = None
