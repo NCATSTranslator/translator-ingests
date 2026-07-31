@@ -1,7 +1,6 @@
 from typing import Iterable, Any
 
 import koza
-import requests
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -20,11 +19,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RNAProduct,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_GOA, INFORES_INTACT
-
-# Constants
-GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
+from translator_ingest.util.http_utils import get_geneontology_release_version
 
 # Supporting source mapping based on GOA `Assigned_By` field.
 # We only map values with clear upstream source identity.
@@ -41,18 +39,7 @@ ASSIGNED_BY_TO_SUPPORTING_INFORES = {
 
 def get_latest_version() -> str:
     """Fetch the current GOA release version from the public metadata endpoint."""
-    try:
-        response = requests.get(GOA_RELEASE_METADATA_URL, timeout=10)
-        response.raise_for_status()
-        metadata = response.json()
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Unable to retrieve GOA release metadata from {GOA_RELEASE_METADATA_URL}") from exc
-
-    version = metadata.get("date")
-    if not version:
-        raise RuntimeError(f"GOA metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field")
-
-    return version
+    return get_geneontology_release_version()
 
 
 # Dynamic category assignments from Biolink pydantic models
@@ -95,7 +82,7 @@ QUALIFIER_TO_PREDICATE = {
     "enables": "biolink:enables",
     "located_in": "biolink:located_in",
     "part_of": "biolink:part_of",
-    "involved_in": "biolink:involved_in",
+    "involved_in": "biolink:actively_involved_in",
     "contributes_to": "biolink:contributes_to",
     "colocalizes_with": "biolink:colocalizes_with",
     "is_active_in": "biolink:active_in",
@@ -111,7 +98,7 @@ QUALIFIER_TO_PREDICATE = {
 
 # Fallback mapping for aspect-based predicates (used when the qualifier is not recognized)
 ASPECT_TO_PREDICATE = {
-    "P": "biolink:involved_in",  # Biological Process
+    "P": "biolink:actively_involved_in",  # Biological Process
     "F": "biolink:enables",  # Molecular Function
     "C": "biolink:located_in",  # Cellular Component
 }

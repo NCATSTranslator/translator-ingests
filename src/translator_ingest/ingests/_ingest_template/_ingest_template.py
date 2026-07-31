@@ -1,4 +1,3 @@
-import uuid
 import koza
 import pandas as pd
 from typing import Any, Iterable
@@ -13,7 +12,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_CTD
 
 # !!! README First !!!
@@ -26,6 +26,11 @@ from translator_ingest.util.biolink import INFORES_CTD
 # "ingest_all", and "transform_ingest_all_streaming". Tags should be declared as keys in the readers section of ingest
 # yaml files, then included with the (tag="tag_id") syntax as parameters in corresponding koza decorators.
 
+# It is good practice to generate the "sources" property for Associations (edges) just once if it will not vary from
+# edge to edge. You can use a constant like this, specific to your ingest, and apply it to edges (see usage below).
+# Here build_association_knowledge_sources is used, a helper function that properly instantiates "sources" with
+# RetrievalSource objects for simple use cases.
+INGEST_TEMPLATE_SOURCES = build_association_knowledge_sources(primary=INFORES_CTD)
 
 # Always implement a function that returns a string representing the latest version of the source data.
 # Ideally, this is the version provided by the knowledge source, directly associated with a specific data download.
@@ -111,7 +116,7 @@ def transform_ingest_by_record(koza: koza.KozaTransform, record: dict[str, Any])
         predicate="biolink:related_to",
         object=disease.id,
         publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=INGEST_TEMPLATE_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
@@ -130,11 +135,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=chemical.id,
             predicate="biolink:related_to",
             object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
+            sources=INGEST_TEMPLATE_SOURCES,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )
@@ -153,11 +158,11 @@ def transform_ingest_all_streaming(
         chemical = ChemicalEntity(id="MESH:" + record["ChemicalID"], name=record["ChemicalName"])
         disease = Disease(id=record["DiseaseID"], name=record["DiseaseName"])
         association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-            id=str(uuid.uuid4()),
+            id=entity_id(),
             subject=chemical.id,
             predicate="biolink:related_to",
             object=disease.id,
-            primary_knowledge_source=INFORES_CTD,
+            sources=INGEST_TEMPLATE_SOURCES,
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
         )

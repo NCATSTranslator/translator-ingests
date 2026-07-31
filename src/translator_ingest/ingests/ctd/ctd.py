@@ -1,29 +1,38 @@
+import re
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
-import requests # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
+import requests
+import yaml
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalAffectsGeneAssociation,
+    ChemicalGeneInteractionAssociation,
     ChemicalEntityToBiologicalProcessAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntityToPathwayAssociation,
+    Association,
     Disease,
     DirectionQualifierEnum,
     Gene,
+    GeneAffectsChemicalAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     Pathway,
     PhenotypicFeature,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_CTD
 
-from bs4 import BeautifulSoup # noqa: F401 (Unused; because we have short term hardcoding for get_latest_version())
 from koza.model.graphs import KnowledgeGraph
 
+
+CTD_SOURCES = build_association_knowledge_sources(primary=INFORES_CTD)
 
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_CAUSES = "biolink:causes"
@@ -31,8 +40,19 @@ BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 BIOLINK_CORRELATED_WITH = "biolink:correlated_with"
 BIOLINK_POSITIVELY_CORRELATED = "biolink:positively_correlated_with"
 BIOLINK_NEGATIVELY_CORRELATED = "biolink:negatively_correlated_with"
-
 BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT = "biolink:treats_or_applied_or_studied_to_treat"
+BIOLINK_AFFECTS_SENSITIVITY_TO = "biolink:affects_sensitivity_to"
+BIOLINK_INCREASES_SENSITIVITY_TO = "biolink:increases_sensitivity_to"
+BIOLINK_DECREASES_SENSITIVITY_TO = "biolink:decreases_sensitivity_to"
+BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH = "biolink:directly_physically_interacts_with"
+
+# CTD's "response to substance" interaction action maps to the sensitivity predicates, with the direction
+# carried by the predicate itself (not a qualifier).
+SENSITIVITY_PREDICATES = {
+    "affects": BIOLINK_AFFECTS_SENSITIVITY_TO,
+    "increases": BIOLINK_INCREASES_SENSITIVITY_TO,
+    "decreases": BIOLINK_DECREASES_SENSITIVITY_TO,
+}
 
 CHEM_TO_DISEASE_PREDICATES = {
     "therapeutic": BIOLINK_TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT,
@@ -44,32 +64,45 @@ EXPOSURE_EVENTS_PREDICATES = {
     "negative correlation": BIOLINK_NEGATIVELY_CORRELATED
 }
 
-
 # !!! !!! README !!! !!!
-# CTD implemented a CAPTCHA (ALTCHA) on ctdbase.org, which breaks dependable programmatic access for determining
-# the version and for automated downloads. If possible, open a browser, pass the CAPTCHA, and download manually.
-# When version discovery fails, the pipeline can fall back to a previously successful build: copy a prior CTD
-# tree under data/ including latest-build.json so the pipeline uses that source_version.
-#
-# We no longer scrape https://ctdbase.org/about/dataStatus.go for "Data Status: <Month> <Year>" because the HTML
-# is behind CAPTCHA and returns a bot wall instead of the real page. Bump the hardcoded return below when CTD
-# releases a new public data drop you intend to track (string must match how you name data/<ctd>/<version>/).
-
+# CTD implemented a CAPTCHA (ALTCHA) on ctdbase.org, which broke dependable programmatic access for determining
+# the version they publish from their website https://ctdbase.org/about/dataStatus.go. Here is a workaround which
+# accesses a path that is not currently blocked by the CAPTCHA.
 def get_latest_version() -> str:
     """Return the CTD data release label used as ``source_version`` in the pipeline.
 
-    Former implementation fetched ``dataStatus.go`` and parsed ``#pgheading``; that no longer works site-wide due
-    to CAPTCHA. Update the literal when you adopt a newer CTD export.
+    Scrapes the html at https://ctdbase.org/reports/ (which is not behind CAPTCHA currently)
+    and returns the latest modify date for the files included in this ingest,
+    formatted as ``Month_Year`` (e.g. ``March_2026``).
     """
-    return "January_2026"
 
-    # --- Previous scrape (broken behind CAPTCHA; kept for reference) ---
-    # html_page: requests.Response = requests.get("http://ctdbase.org/about/dataStatus.go")
-    # resp: BeautifulSoup = BeautifulSoup(html_page.content, "html.parser")
-    # version_header: BeautifulSoup.Tag = resp.find(id="pgheading")
-    # if version_header is not None:
-    #     return version_header.text.split(":")[1].strip().replace(" ", "_")
-    # raise RuntimeError('Could not determine latest version for CTD, "pgheading" header was missing...')
+    # The /reports/ page is formatted like an apache autoindex, we can use this regex to extract the file date
+    # Apache autoindex row: <a href="FILE">label</a>   DD-Mon-YYYY HH:MM   SIZE
+    reports_regex = re.compile(r'<a href="([^"]+)">[^<]+</a>\s+(\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2})')
+
+    # Get the file names for the files we download
+    with open(Path(__file__).parent / "download.yaml") as f:
+        entries = yaml.safe_load(f) or []
+        download_file_names = {e["url"].split('/')[-1] for e in entries}
+
+    # parse the /reports/ page and find all the dates associated with the relevant files
+    response = requests.get("https://ctdbase.org/reports/")
+    response.raise_for_status()
+    dates = [
+        datetime.strptime(date_str, "%d-%b-%Y %H:%M")
+        for href, date_str in reports_regex.findall(response.text)
+        if href in download_file_names
+    ]
+    if not dates:
+        raise RuntimeError("Could not determine latest CTD version from https://ctdbase.org/reports/")
+
+    # error if any are missing
+    missing = download_file_names - {href for href, _ in reports_regex.findall(response.text)}
+    if missing:
+        raise RuntimeError(f"CTD /reports/ missing expected files: {missing}")
+
+    # return the most recently updated date as the version
+    return max(dates).strftime("%B_%Y")
 
 @koza.transform_record(tag="chemicals_diseases")
 def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
@@ -89,7 +122,7 @@ def transform_chemical_to_disease(koza: koza.KozaTransform, record: dict[str, An
         subject=chemical.id,
         predicate=predicate,
         object=disease.id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent
     )
@@ -130,7 +163,7 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=disease_id,
-                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                sources=CTD_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.statistical_association,
                 agent_type=AgentTypeEnum.manual_agent
         )
@@ -147,7 +180,7 @@ def transform_exposure_events(koza: koza.KozaTransform, record: dict[str, Any]) 
                 subject=exposure_chemical_id,
                 predicate=predicate,
                 object=phenotype_id,
-                sources=build_association_knowledge_sources(primary=INFORES_CTD),
+                sources=CTD_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.statistical_association,
                 agent_type=AgentTypeEnum.manual_agent
         )
@@ -185,8 +218,75 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
     interaction = interactions[0]
     interaction_direction, interaction_aspect = interaction.split("^")
 
-    predicate = BIOLINK_AFFECTS
-    qualified_predicate = BIOLINK_CAUSES
+    # CTD builds the human-readable Interaction sentence as "<subject> <action> ... of <object>",
+    # This direction is per-record, not per-aspect: e.g. "<chem> results in increased expression of <gene>" is
+    # chemical->gene, while "<gene> protein results in increased transport of <chem>" is gene->chemical. The aspect
+    # and direction qualifiers always describe the object, so they attach correctly once the orientation is set.
+    interaction_sentence = record['Interaction']
+    chemical_name = record['ChemicalName']
+    gene_symbol = record['GeneSymbol']
+    chemical_is_subject = interaction_sentence.startswith(chemical_name)
+    gene_is_subject = interaction_sentence.startswith(gene_symbol)
+    if chemical_is_subject and gene_is_subject:
+        # There are some records where one name is a subset of the other (e.g. chem "NAD" vs gene "NADK");
+        # So the startswith check triggers for both entities. Currently, there are only 6 of these and the
+        # longer string is always the real subject but this could result in bugs in the future.
+        #
+        # Note that this sounds really dumb, but it actually is hard to disambiguate them, see this example:
+        #   ChemicalName: SIRT3 inhibitor 3-TYP
+        #   GeneSymbol:   SIRT3
+        #   Interaction:  SIRT3 inhibitor 3-TYP results in decreased expression of SIRT3 protein
+        chemical_is_subject = len(chemical_name) >= len(gene_symbol)
+        gene_is_subject = not chemical_is_subject
+    if not (chemical_is_subject or gene_is_subject):
+        # the sentence starts with neither entity, meaning it describes a multi-entity interaction
+        # (e.g. "[<chem> results in ... of <intermediate>] which results in ... of <gene>") that we can't
+        # split into a single self-contained edge, so drop it like the multi-action records above.
+        return None
+
+    subject_id, object_id = (chemical_id, gene_id) if chemical_is_subject else (gene_id, chemical_id)
+    publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
+
+    # CTD's "response to substance" action describes susceptibility ("... affects/increases/decreases the
+    # susceptibility to ..."), which Biolink models with the (affects|increases|decreases)_sensitivity_to
+    # predicates rather than an affects+aspect qualifier - the direction is carried by the predicate itself.
+    # No Biolink chemical<->gene association class accepts these predicates, so a generic Association is used;
+    # this means the species/taxon context can't be attached the way it is on the affects/causes edges below.
+    if interaction_aspect == 'response to substance':
+        sensitivity_predicate = SENSITIVITY_PREDICATES.get(interaction_direction)
+        if sensitivity_predicate is None:
+            koza.transform_metadata['unmapped_chem_gene_ixns'].add(interaction)
+            return None
+        association = Association(
+            id=entity_id(),
+            subject=subject_id,
+            predicate=sensitivity_predicate,
+            object=object_id,
+            sources=CTD_SOURCES,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            publications=publications,
+        )
+        return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id), Gene(id=gene_id)],
+                              edges=[association])
+
+    # CTD's "binding" action ("<chem> binds to <gene>") "affects^binding" describes a direct physical interaction 
+    # with no asserted effect on the gene, it maps to the symmetric 'directly_physically_interacts_with'.
+    if interaction_aspect == 'binding':
+        association = ChemicalGeneInteractionAssociation(
+            id=entity_id(),
+            subject=subject_id,
+            predicate=BIOLINK_DIRECTLY_PHYSICALLY_INTERACTS_WITH,
+            object=object_id,
+            sources=CTD_SOURCES,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+            publications=publications,
+            species_context_qualifier=taxon_id,
+        )
+        return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id), Gene(id=gene_id)],
+                              edges=[association])
+
     object_direction_qualifier = None
     object_aspect_qualifier = None
 
@@ -297,15 +397,14 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         case _:
             koza.transform_metadata['unmapped_chem_gene_ixns'].add(interaction)
 
-    publications = [f'PMID:{pmid}' for pmid in record['PubMedIDs'].split('|')]
-
-    association = ChemicalAffectsGeneAssociation(
+    # The predicate is always affects/causes; only the subject/object orientation (decided above) differs.
+    association_class = ChemicalAffectsGeneAssociation if chemical_is_subject else GeneAffectsChemicalAssociation
+    association = association_class(
         id=entity_id(),
-        subject=chemical_id,
-        predicate=predicate,
-        object=gene_id,
-        qualified_predicate=qualified_predicate,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        subject=subject_id,
+        predicate=BIOLINK_AFFECTS,
+        object=object_id,
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
@@ -315,6 +414,8 @@ def transform_chem_gene_ixns(koza: koza.KozaTransform, record: dict[str, Any]) -
         association.object_aspect_qualifier = object_aspect_qualifier
     if object_direction_qualifier:
         association.object_direction_qualifier = object_direction_qualifier
+        # qualified_predicate (causes) only applies when the effect has a direction (increased/decreased)
+        association.qualified_predicate = BIOLINK_CAUSES
 
     return KnowledgeGraph(nodes=[ChemicalEntity(id=chemical_id),
                                  Gene(id=gene_id)],
@@ -339,7 +440,7 @@ def transform_chem_go_enriched(koza: koza.KozaTransform, record: dict[str, Any])
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=go_term,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -366,7 +467,7 @@ def transform_chem_pathways_enriched(koza: koza.KozaTransform, record: dict[str,
         subject=chemical_id,
         predicate=BIOLINK_ASSOCIATED_WITH,
         object=pathway_id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.statistical_association,
         agent_type=AgentTypeEnum.data_analysis_pipeline,
         p_value=p_value,
@@ -422,7 +523,7 @@ def transform_pheno_term_ixns(koza: koza.KozaTransform, record: dict[str, Any]) 
         subject=chemical_id,
         predicate=BIOLINK_AFFECTS,
         object=phenotype_id,
-        sources=build_association_knowledge_sources(primary=INFORES_CTD),
+        sources=CTD_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,

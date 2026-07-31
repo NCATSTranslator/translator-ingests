@@ -1,0 +1,30 @@
+name: CURE ID Ingest Guide
+
+readers:
+  ingest_all:
+    format: "csv"
+    delimiter: "\t"
+    header_mode: infer
+    header_prefix: "#"
+    files:
+      - "cureid_data.tsv"
+    columns:
+      - subject_label_original
+      - subject_label
+      - subject_type
+      - subject_final_label
+      - subject_final_curie
+      - subject_missing_final
+      - predicate_raw
+      - biolink_predicate
+      - association_category
+      - object_label_original
+      - object_label
+      - object_type
+      - object_final_label
+      - object_final_curie
+      - object_missing_final
+      - report_id
+      - pmid
+      - link
+      - outcome
