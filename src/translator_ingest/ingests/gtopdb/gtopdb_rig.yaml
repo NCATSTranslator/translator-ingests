@@ -231,7 +231,7 @@ target_info:
   future_considerations:
     - category: node_properties  # conformance: was 'node_content'
       consideration: "Considering future new biolink node types: stimulus and fusion protein for more accurate mapping into Biolink model"
-    - category: node_category
+    - category: node_properties
       consideration: "Considering future implementation of separation of those three node categories: biolink:ChemicalEntity, biolink:MolecularMixture, biolink:SmallMolecule before mapping with their PubChem CID identifiers"
 
 # Information about the how the ingest was specified and performed
