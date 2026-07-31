@@ -1,4 +1,4 @@
-from typing import Optional, Any, Iterable
+from typing import Any, Iterable
 from datetime import datetime
 from pathlib import Path
 import polars as pl
@@ -231,12 +231,12 @@ def transform_bindingdb_by_record(
 
     # Measurements of the molecular interaction affinity of
     # chemical 'subject' to gene product target 'object'
-    affinity_measurements: Optional[list[AffinityMeasurement]] = get_affinity_measurements(record)
+    affinity_measurements: list[AffinityMeasurement] | None = get_affinity_measurements(record)
 
     # Sources
     target_label = web_string(target_name)
     supporting_data_id = record[SUPPORTING_DATA_ID]
-    supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
+    supporting_data: list[str] | None = [supporting_data_id] if supporting_data_id else None
     source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
     sources = build_association_knowledge_sources(
         primary=("infores:bindingdb",[source_record_url]),
