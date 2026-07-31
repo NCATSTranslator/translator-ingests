@@ -27,7 +27,7 @@ dependencies = [
     "robokop-orion",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
-    "zstandard>=0.25.0"
+    "zstandard>=0.25.0",
 ]
 
 [project.scripts]
@@ -67,8 +67,8 @@ target-version = ["py312"]
 package = true
 
 [tool.uv.sources]
-biolink-model = { git = "https://github.com/biolink/biolink-model.git", rev = "master" }
 bmt = { git = "https://github.com/biolink/biolink-model-toolkit.git", rev = "master" }
+biolink-model = { git = "https://github.com/biolink/biolink-model", branch = "convert-affinity-measurement-to-study-result-model" }
 
 [tool.uv-dynamic-versioning]
 vcs = "git"
