@@ -26,12 +26,7 @@ SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
 
 # Ignoring pKon and pKoff for now - since they
 # are not concentration-driven affinity parameters
-AFFINITY_PARAMETERS = {
-    ape.pKi: "Ki (nM)",
-    ape.pIC50: "IC50 (nM)",
-    ape.pKd: "Kd (nM)",
-    ape.pEC50: "EC50 (nM)",
-}
+AFFINITY_PARAMETERS = {"pKi": "Ki (nM)", "pIC50": "IC50 (nM)", "pKd": "Kd (nM)", "pEC50": "EC50 (nM)"}
 
 # An upper filter threshold of 1.0e-6 (1 micromole)
 # (equal to a negative base 10 logarithm value of 6)
@@ -257,10 +252,9 @@ def filter_affinity_values(
     return df
 
 
-def get_affinity_measurements(record: dict[str, Any]) -> list[AffinityMeasurement] | None:
-    affinity_parameter: ape
-    measurements: list[AffinityMeasurement] | None = None
-    for affinity_parameter, column in AFFINITY_PARAMETERS.items():
+def get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue]:
+    measurements: dict[str, QuantityValue] = {}
+    for parameter, column in AFFINITY_PARAMETERS.items():
         if record.get(column):
             value: str = record[column]
             value = value.strip()
@@ -277,18 +271,15 @@ def get_affinity_measurements(record: dict[str, Any]) -> list[AffinityMeasuremen
             # Adjust BindingDb nominal nanomolar values to actual float values then transform
             # to a linearized negative base 10 logarithm ("pK") value in which a higher
             # real value represents higher binding affinity at lower ligand concentrations
-            affinity = -log10(float(value)*nM)
+            has_numeric_value = -log10(float(value)*nM)
 
-            affinity_measurement = AffinityMeasurement(
-                id=entity_id(),
-                affinity_parameter=affinity_parameter,
-                affinity=affinity,
+            measurement = QuantityValue(
+                # has_unit=?  TODO: not quite sure what unit to report here
+                has_numeric_value=has_numeric_value,
                 has_binary_relation=has_binary_relation
             )
-            if measurements is None:
-                measurements = [affinity_measurement]
-            else:
-                measurements.append(affinity_measurement)
+            measurements[parameter]= measurement
+
     return measurements
 
 
@@ -296,7 +287,7 @@ def get_bindingdb_assay_study(
         publication_id: str,
         edge_id: str,
         record: dict[str, Any]
-)-> dict[str, Study] | None:
+)-> dict[str, Study]:
     """
     Parsing BindingDb record fields for ligand-protein affinities
     and enzymatic interactions, into a ProteinLigandAssayResult
@@ -308,15 +299,8 @@ def get_bindingdb_assay_study(
                                 The method returns None if no such Study record can be resolved.
     """
     assay_result: ProteinLigandAssayResult = ProteinLigandAssayResult(
-        id = edge_id,  # TODO: each assay is tied to its edge id(?) or should this rather be a hash of the SPO?
-        pKd = None,
-        pKi = None,
-        pIC50 = None,
-        pEC50 = None,
-        pAC50 = None,
-        pXC50 = None,
-        pKon = None,
-        pKoff = None
+        id=edge_id,
+        **get_affinity_measurements(record),
     )
 
     return {

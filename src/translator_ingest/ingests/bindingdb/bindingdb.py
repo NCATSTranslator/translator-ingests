@@ -11,7 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalGeneInteractionAssociation,
     KnowledgeLevelEnum,
     Protein,
-    Study
+    Study,
 )
 from koza.model.graphs import KnowledgeGraph
 
@@ -35,9 +35,9 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     UNIPROT_ID,
     extract_bindingdb_columns_polars,
     filter_affinity_values,
+    get_bindingdb_assay_study,
     process_publications,
     web_string,
-    get_bindingdb_assay_study
 )
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
@@ -144,6 +144,7 @@ def prepare_bindingdb_data(
     """
     # As of December 2025, the BindingDB input file is
     # assumed to be a Zipfile archive with a single file inside
+    assert koza_transform.input_files_dir is not None
     data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
 
     # Directly read and extract useful columns from the original
@@ -237,7 +238,7 @@ def transform_bindingdb_by_record(
     # dict[str, Study] describing measurements of the
     # molecular interaction affinity or enzymatic
     # interactions of the ligand to a target protein
-    bindingdb_assay: dict[str, Study] | None = get_bindingdb_assay_study(publication, edge_id, record)
+    bindingdb_assay: dict[str, Study] = get_bindingdb_assay_study(publication, edge_id, record)
 
     # Sources
     target_label = web_string(target_name)
