@@ -2,17 +2,16 @@
 Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
-from typing import Any
-from pathlib import Path
-from zipfile import ZipFile
 from math import log10
-import polars as pl
+from pathlib import Path
+from typing import Any
+from zipfile import ZipFile
+
 import koza
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    AffinityParameterEnum as ape,
-    AffinityMeasurement,
-    BinaryRelationEnum as bre
-)
+import polars as pl
+from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as bre
+from biolink_model.datamodel.pydanticmodel_v2 import Study
+
 from translator_ingest.util.transform_utils import entity_id
 
 #
@@ -140,23 +139,22 @@ def extract_bindingdb_columns_polars(
     :param target_taxa: Target species to be included in extracted BindingDB data.
     :return: A Polars DataFrame containing BindingDB data rows with only specified columns.
     """
-    with ZipFile(data_archive_path) as z:
-        with z.open("BindingDB_All.tsv") as datafile:
-            df = (
-                pl.scan_csv(
-                    datafile,
-                    separator="\t",
-                    has_header=True,  # header_mode: 0 means that the first row is the header
-                    schema_overrides=SCHEMA_OVERRIDES,
-                    # not ideal to skip problematic BindingDB data rows, but if
-                    # most of the other data can be read, we still make progress
-                    ignore_errors=True
-                )
-                # CRITICAL: Only select the required columns - massive performance gain
-                .select(columns)
-                # Execute the optimized query
-                .collect()
+    with ZipFile(data_archive_path) as z, z.open("BindingDB_All.tsv") as datafile:
+        df = (
+            pl.scan_csv(
+                datafile,
+                separator="\t",
+                has_header=True,  # header_mode: 0 means that the first row is the header
+                schema_overrides=SCHEMA_OVERRIDES,
+                # not ideal to skip problematic BindingDB data rows, but if
+                # most of the other data can be read, we still make progress
+                ignore_errors=True
             )
+            # CRITICAL: Only select the required columns - massive performance gain
+            .select(columns)
+            # Execute the optimized query
+            .collect()
+        )
 
     # Filtering to only human targets
     if SOURCE_ORGANISM in columns:
@@ -280,69 +278,12 @@ def filter_affinity_values(
 
     return df
 
-def get_cohd_supporting_study(
-        edge_id: str,
-        attribute_list: list[str]
-)-> dict[str, Study] | None:
-    """
-    Parsing of the embedded 'attributes' of COHD edge
-    into instances of COHD StudyResult, then
-    embedded in its Study object, which is returned.
-
-    :param edge_id: String identifier for the edge
-    :param attribute_list: List of Study Results consisting of slot-indexed values, like result statistics.
-    :return: dict[str, Study] | None is a dictionary fragment with the 'study id' as key and a Study as value.
-             The method returns None if no such Study record can be resolved.
-    """
-    if not attribute_list:
-        return None
-
-    all_attributes: list[dict[str, Any]] = parse_attributes(attribute_list)
-
-    study_attributes: list[dict[str, Any]] = [
-        entry for entry in all_attributes
-        if entry["attribute_type_id"] == "biolink:has_supporting_study_result"
-    ]
-
-    # Current iteration assumes only a single supporting data set identifier to be extracted
-    # from within the list of attributes embedded inside the study results list for this edge
-    study_id: str | None = None
-
-    study_results: list = []
-    sa: dict
-    for sa in study_attributes:
-        # extract the first instance of the COHD dataset ID seen
-        if study_id is None:
-            sra: list[dict[str,Any]] = sa.get("attributes",[])
-            if sra:
-                sds = [
-                    attribute["value"] for attribute in sra
-                    if attribute.get("attribute_type_id",None) == "biolink:supporting_data_set"
-                ]
-                study_id = sds[0] if sds else None
-
-
-        node_class: type[NamedThing] = get_node_class(node_id=edge_id, categories=[sa["value_type_id"]], bmt=bmt)
-        study_result = node_class(id=edge_id, name=sa["value"], **{})
-        study_results.append(study_result)
-
-    if study_id is None:
-        # fall back study_id is the infores?
-        study_id = "infores:cohd"
-
-    return {
-        study_id: Study(
-            id=study_id,
-            has_study_results=study_results
-        )
-    }
-
 
 def get_affinity_measurements(record: dict[str, Any]) -> list[AffinityMeasurement] | None:
     affinity_parameter: ape
     measurements: list[AffinityMeasurement] | None = None
     for affinity_parameter, column in AFFINITY_PARAMETERS.items():
-        if column in record and record[column]:
+        if record.get(column):
             value: str = record[column]
             value = value.strip()
             has_binary_relation: bre
@@ -371,3 +312,56 @@ def get_affinity_measurements(record: dict[str, Any]) -> list[AffinityMeasuremen
             else:
                 measurements.append(affinity_measurement)
     return measurements
+
+
+def get_bindingdb_assay_study(
+        edge_id: str,
+        attribute_list: list[str]
+)-> dict[str, Study] | None:
+    """
+    Parsing of the embedded 'attributes' of COHD edge
+    into instances of COHD StudyResult, then
+    embedded in its Study object, which is returned.
+
+    :param edge_id: String identifier for the edge
+    :param attribute_list: List of Study Results consisting of slot-indexed values, like result statistics.
+    :return: dict[str, Study] | None is a dictionary fragment with the 'study id' as key and a Study as value.
+             The method returns None if no such Study record can be resolved.
+    """
+    study_attributes: list[dict[str, Any]] = [
+        entry for entry in all_attributes
+        if entry["attribute_type_id"] == "biolink:has_supporting_study_result"
+    ]
+
+    # Current iteration assumes only a single supporting data set identifier to be extracted
+    # from within the list of attributes embedded inside the study results list for this edge
+    study_id: str | None = None
+
+    study_results: list = []
+    sa: dict
+    for sa in study_attributes:
+        # extract the first instance of the COHD dataset ID seen
+        if study_id is None:
+            sra: list[dict[str,Any]] = sa.get("attributes",[])
+            if sra:
+                sds = [
+                    attribute["value"] for attribute in sra
+                    if attribute.get("attribute_type_id",None) == "biolink:supporting_data_set"
+                ]
+                study_id = sds[0] if sds else None
+
+
+        node_class: type[NamedThing] = get_node_class(node_id=edge_id, categories=[sa["value_type_id"]], bmt=bmt)
+        study_result = node_class(id=edge_id, name=sa["value"])
+        study_results.append(study_result)
+
+    if study_id is None:
+        # fall back study_id is the infores?
+        study_id = "infores:cohd"
+
+    return {
+        study_id: Study(
+            id=study_id,
+            has_study_results=study_results
+        )
+    }
