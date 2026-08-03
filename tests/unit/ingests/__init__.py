@@ -134,7 +134,7 @@ def _validate_pydantic_collection(
     if isinstance(expected, dict) and isinstance(returned, dict):
         # better iterate, if more than one expected item
         found: list[bool] = []
-        for key, value in expected.items():
+        for key in expected:
             if key not in returned:
                 # All expected keys must be somewhere
                 # in the returned dictionary, which essentially
