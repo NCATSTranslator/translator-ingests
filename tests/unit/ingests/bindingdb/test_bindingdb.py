@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import koza
 import polars as pl
@@ -158,6 +158,8 @@ def test_prepare_bindingdb_data(
     # an iterable sequence of records, where duplication in the
     # original assay records is removed, merging into a single edge...
     records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+
+    # Sanity check, never expected but cleans up the unit test logic
     assert records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
 
     expected_records: set[int] = {1, 2, 4, 5, 9, 10}
@@ -458,8 +460,8 @@ def test_prepare_bindingdb_data(
 def test_ingest_transform(
     mock_koza_transform: koza.KozaTransform,
     test_record: dict,
-    result_nodes: Optional[list],
-    result_edge: Optional[dict],
+    result_nodes: list | None,
+    result_edge: dict | None
 ):
     # sanity check: each test iteration should start without any metadata
     mock_koza_transform.transform_metadata.clear()
