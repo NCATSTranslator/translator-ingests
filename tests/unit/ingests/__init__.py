@@ -296,7 +296,8 @@ def validate_transform_result(
         else:
             assert False, "Unexpected null result from the **`@koza.transform_record`** decorated method call!"
     else:
-        # but one or the other of nodes and edges could still be empty, but the test would go on
+        # but one or the other of (expected_)nodes and (expected_)edges
+        # could still be empty, but the test should still continue
         nodes: Iterable[NamedThing] = result.nodes if result.nodes is not None else []
         assert (nodes and expected_nodes is not None) or (not nodes and expected_nodes is None), \
             "Unexpected number of nodes returned by record transformation!"
