@@ -7,16 +7,15 @@ expected content in node and edge slots, with test expectations defined by const
 'expected_nodes', 'expected_edge', expected_no_of_edges, 'node_test_slots' and 'association_test_slots'
 """
 
-import pytest
-from typing import Iterable, Any, Union, Iterator
+from collections.abc import Iterable, Iterator
+from typing import Any
 
 import koza
-from koza.transform import Mappings
+import pytest
+from biolink_model.datamodel.pydanticmodel_v2 import Association, NamedThing
 from koza.io.writer.writer import KozaWriter
 from koza.model.graphs import KnowledgeGraph
-from koza.transform import Record
-
-from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Association
+from koza.transform import Mappings, Record
 
 
 class MockKozaWriter(KozaWriter):
@@ -55,15 +54,15 @@ class MockKozaTransform(koza.KozaTransform):
 
     @property
     def data(self) -> Iterator[Record]:
-        record: Record = dict()
+        record: Record = {}
         yield record
 
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = dict()
-    return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
+    mappings: Mappings = {}
+    return MockKozaTransform(extra_fields={}, writer=writer, mappings=mappings)
 
 
 def _compare_slot_values(returned_value, expected_value):
@@ -110,7 +109,7 @@ def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
 
 
 def _validate_pydantic_collection(
-    expected: Union[dict[str, Any],list[dict[str, Any]]],
+    expected: dict[str, Any] | list[dict[str, Any]],
     returned: list | dict,
 ) -> bool:
     """
@@ -242,7 +241,7 @@ def _found_edge(
         expected_edge_list: list[dict],
         target_slots: tuple[str,...]
 ) -> tuple[bool, list[str] | None]:
-    error_messages: list[str] = list()
+    error_messages: list[str] = []
     for expected_edge in expected_edge_list:
         error_msg: str | None = _match_edge(returned_edge, expected_edge, target_slots)
         if error_msg is None:
@@ -313,7 +312,7 @@ def validate_transform_result(
         # for uniformity in checking details, we convert the
         # expected_nodes to a list of node content dictionaries
         # if 'node' is not a string, it needs to be a dictionary otherwise this fails!
-        expected_nodes_list: list[dict[str, Any]] = list()
+        expected_nodes_list: list[dict[str, Any]] = []
         for node in expected_nodes:
             if isinstance(node, str):
                 # might alone be checking for the node identifiers (simplest check)
@@ -357,7 +356,7 @@ def validate_transform_result(
         # Only 'expected_no_of_edges' is expected to be returned?
         assert len(transformed_edges) == expected_no_of_edges
 
-        expected_edge_list: list[dict] = list()
+        expected_edge_list: list[dict] = []
         if isinstance(expected_edges, list):
             # Blissfully assume that a list of edge slot=value dictionaries was specified
             expected_edge_list.extend(expected_edges)
