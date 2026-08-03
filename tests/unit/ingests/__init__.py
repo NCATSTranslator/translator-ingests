@@ -305,7 +305,6 @@ def validate_transform_result(
 
         # Convert the 'nodes' Iterable NamedThing content into
         # a list of Python dictionaries by comprehension
-        node: NamedThing
         transformed_nodes: list[dict[str, Any]] = [dict(node) for node in nodes]
 
         # if nodes are returned, then are they the expected ones?
@@ -313,16 +312,16 @@ def validate_transform_result(
         # expected_nodes to a list of node content dictionaries
         # if 'node' is not a string, it needs to be a dictionary otherwise this fails!
         expected_nodes_list: list[dict[str, Any]] = []
-        for node in expected_nodes:
-            if isinstance(node, str):
+        for test_node in expected_nodes:
+            if isinstance(test_node, str):
                 # might alone be checking for the node identifiers (simplest check)
-                expected_nodes_list.append({"id": node})
-            elif isinstance(node, dict):
+                expected_nodes_list.append({"id": test_node})
+            elif isinstance(test_node, dict):
                 # otherwise we're expecting a dictionary
                 # of node property=value pairs to match
-                expected_nodes_list.append(node)
+                expected_nodes_list.append(test_node)
             else:
-                assert False, f"Unexpected value type in the list of expected nodes: '{node!s}'"
+                assert False, f"Unexpected value type in the list of expected nodes: '{test_node!s}'"
 
         for node_property in node_test_slots:
             for expected_node in expected_nodes_list:
