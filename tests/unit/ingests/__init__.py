@@ -135,7 +135,7 @@ def _validate_pydantic_collection(
         # better iterate, if more than one expected item
         found: list[bool] = []
         for key, value in expected.items():
-            if key not in returned.keys():
+            if key not in returned:
                 # All expected keys must be somewhere
                 # in the returned dictionary, which essentially
                 # tests if expected.key == returned.key ...
