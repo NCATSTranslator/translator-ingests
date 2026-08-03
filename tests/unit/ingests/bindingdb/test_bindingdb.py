@@ -1,44 +1,58 @@
-from typing import Optional, Any
-import pytest
 from pathlib import Path
-import polars as pl
-
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    AffinityMeasurement,
-    ChemicalGeneInteractionAssociation,
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
-    RetrievalSource,
-    ResourceRoleEnum,
-)
+from typing import Any, Optional
 
 import koza
-from koza.transform import Mappings
+import polars as pl
+import pytest
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
+    ChemicalGeneInteractionAssociation,
+    KnowledgeLevelEnum,
+    QuantityValue,
+    ResourceRoleEnum,
+    RetrievalSource,
+)
 from koza.io.writer.writer import KozaWriter
+from koza.transform import Mappings
 
-from tests.unit.ingests import (
-    validate_transform_result,
-    MockKozaWriter,
-    MockKozaTransform
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
+from tests.unit.ingests.bindingdb.sample_data import (
+    BINDINGDB_RECORD_WITH_A_US_PATENT,
+    CASPASE1_KD_RECORD,
+    CASPASE1_RECORD_WITH_DOI,
+    CASPASE1_WEAK_KON_RECORD,
+    CASPASE3_KI_RECORD,
+    RECORD_MISSING_FIELD_1,
+    RECORD_MISSING_FIELD_2,
+    RECORD_MISSING_FIELD_1,
+    RECORD_MISSING_FIELD_2,
+    CASPASE3_KI_RECORD,
+    CASPASE1_KD_RECORD,
+    CASPASE1_WEAK_KON_RECORD,
+    CASPASE1_RECORD_WITH_DOI,
+    BINDINGDB_RECORD_WITH_A_US_PATENT,
+    PUBCHEM_RECORD,
 )
 
 # from translator_ingest import INGESTS_DATA_PATH
-
 from translator_ingest.ingests.bindingdb.bindingdb import (
+    on_begin_ingest_by_record,
     on_end_ingest_by_record,
     prepare_bindingdb_data,
-    transform_bindingdb_by_record, on_begin_ingest_by_record
+    transform_bindingdb_by_record,
 )
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
-    REACTANT_SET_ID,
+    AFFINITY_PARAMETERS,
     LIGAND_SMILES,
-    TARGET_NAME,
+    PUBLICATION,
+    REACTANT_SET_ID,
+    ROWS_MISSING_AFFINITY,
     SOURCE_ORGANISM,
     CURATION_DATASOURCE,
     PUBLICATION,
     SUPPORTING_DATA_ID,
-    ROWS_MISSING_AFFINITY,
-    AFFINITY_PARAMETERS,
+    TARGET_NAME,
+    filter_affinity_values,
     get_affinity_measurements,
     filter_affinity_values
 )
@@ -49,8 +63,7 @@ from tests.unit.ingests.bindingdb.sample_data import (
     CASPASE1_KD_RECORD,
     CASPASE1_WEAK_KON_RECORD,
     CASPASE1_RECORD_WITH_DOI,
-    BINDINGDB_RECORD_WITH_A_US_PATENT,
-    PUBCHEM_RECORD
+    BINDINGDB_RECORD_WITH_A_US_PATENT
 )
 
 
@@ -80,30 +93,30 @@ from tests.unit.ingests.bindingdb.sample_data import (
         )
     ]
 )
-def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[str,float,str]):
-    result: Optional[list[AffinityMeasurement]] = get_affinity_measurements(test_record)
+def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[str,float,str] | None):
+    result:  dict[str, QuantityValue] = get_affinity_measurements(test_record)
     if expected is None:
-        assert result is None
+        assert result == {}
     else:
-        assert result is not None, "Unexpected null result from get_affinity_measurements?"
-        affinity_measurement: AffinityMeasurement = result[0]
-        assert affinity_measurement.affinity_parameter == expected[0]
-        assert affinity_measurement.affinity == expected[1]
-        assert affinity_measurement.has_binary_relation == expected[2]
+        assert result, "Unexpected empty result from get_affinity_measurements?"
+        assert expected[0] in result
+        value: QuantityValue = result[expected[0]]
+        assert value.has_numeric_value == expected[1]
+        assert value.has_binary_relation == expected[2]
 
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = dict()
+    mappings: Mappings = {}
     return MockKozaTransform(
-        extra_fields=dict(),
+        extra_fields={},
         writer=writer,
         mappings=mappings,
         transform_metadata={},
         # Swap in the following code for temporary debugging using the real data file
         # input_files_dir=INGESTS_DATA_PATH / "bindingdb"  # Path(__file__).resolve().parent
-        input_files_dir = Path(__file__).resolve().parent
+        input_files_dir=Path(__file__).resolve().parent,
     )
 
 
