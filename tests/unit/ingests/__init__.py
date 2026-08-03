@@ -322,7 +322,7 @@ def validate_transform_result(
                 # of node property=value pairs to match
                 expected_nodes_list.append(node)
             else:
-                assert False, f"Unexpected value type in the list of expected nodes: '{str(node)}'"
+                assert False, f"Unexpected value type in the list of expected nodes: '{node!s}'"
 
         for node_property in node_test_slots:
             for expected_node in expected_nodes_list:
