@@ -335,11 +335,9 @@ def validate_transform_result(
                 # at least one entry in the expected nodes. This kind of logic allows us
                 # to do a lightweight sampling of results, to call the transform successful.
                 assert any(
-                    [
-                        _compare_slot_values(returned_node[node_property], expected_node_value)
+                    _compare_slot_values(returned_node[node_property], expected_node_value)
                         for returned_node in transformed_nodes
                         if node_property in returned_node
-                    ]
                 ), (
                     f"Expected node value '{expected_node_value}' for slot '{node_property}'"
                     f" not returned in transformed list of nodes: '{transformed_nodes}' "
