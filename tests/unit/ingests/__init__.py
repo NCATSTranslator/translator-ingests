@@ -130,49 +130,53 @@ def _validate_pydantic_collection(
                      are Pydantic model instances
     :return: True if at least one instance satisfies all expected field values
     """
-    # check if two dictionary collections are being matched...
-    if isinstance(expected, dict) and isinstance(returned, dict):
-        # better iterate, if more than one expected item
-        found: list[bool] = []
-        for key in expected:
-            if key not in returned:
-                # All expected keys must be somewhere
-                # in the returned dictionary, which essentially
-                # tests if expected.key == returned.key ...
-                return False
-            returned_item = returned[key]
-            expected_item = expected[key]
-
-            # ...then one-on-one match attempted of the body of the items
-            found.append(_item_matches_expected(returned_item, expected_item))
-
-        # since I'm matching all expected against
-        # returned, then I need to match all of them?
-        return all(found)
-
-    elif isinstance(returned, list):
-
-        items = returned
-        if isinstance(expected, list):
-            # matching a list of expected instances?
+    
+    if isinstance(expected, dict):
+        if isinstance(returned, dict):
+            # Two dictionary collections are being matched...
+            # better iterate, if more than one expected item
             found: list[bool] = []
-            for entry in expected:
-                found.append(any(_item_matches_expected(item, entry) for item in items))
-
+            for key in expected:
+                if key not in returned:
+                    # All expected keys must be somewhere
+                    # in the returned dictionary, which essentially
+                    # tests if expected.key == returned.key ...
+                    return False
+                returned_item = returned[key]
+                expected_item = expected[key]
+    
+                # ...then one-on-one match attempted of the body of the items
+                found.append(_item_matches_expected(returned_item, expected_item))
+    
             # since I'm matching all expected against
             # returned, then I need to match all of them?
             return all(found)
 
-        else:
+        elif isinstance(returned, list):
             # perhaps just one expected (dictionary) entry
             # to match against a simple list of return values?
-            for item in items:
+            for item in returned:
                 if _item_matches_expected(item, expected):
                     return True
             return False
-    else:
-        # just comparing a simple returned item against simple expected value
-        return _item_matches_expected(returned, expected)
+            
+    elif isinstance(expected, list):
+
+        if isinstance(returned, dict):
+            return any(_item_matches_expected(returned, expected_entry) for expected_entry in expected)
+
+        elif isinstance(returned, list):
+            # matching a list of expected instances?
+            found: list[bool] = []
+            for entry in expected:
+                found.append(any(_item_matches_expected(item, entry) for item in returned))
+            # since I'm matching all expected against
+            # returned, then I need to match all of them?
+            return all(found)
+
+    # unsure what conditions would force this return, but...
+    # keep the logic happy by assuming failure at this point
+    return False
 
 
 def _match_edge(
