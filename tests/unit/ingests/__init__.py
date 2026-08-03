@@ -8,7 +8,7 @@ expected content in node and edge slots, with test expectations defined by const
 """
 
 import pytest
-from typing import Optional, Iterable, Any, Union, Iterator
+from typing import Iterable, Any, Union, Iterator
 
 import koza
 from koza.transform import Mappings
@@ -180,7 +180,7 @@ def _match_edge(
         returned_edge: dict,
         expected_edge: dict,
         target_slots: tuple[str,...]
-) -> Optional[str]:
+) -> str | None:
     # We only bother with a comparison if the slot is included in both the
     # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
     # and in the list of slots in the 'expected_edge' test data.
@@ -241,10 +241,10 @@ def _found_edge(
     returned_edge: dict,
         expected_edge_list: list[dict],
         target_slots: tuple[str,...]
-) -> tuple[bool, Optional[list[str]]]:
+) -> tuple[bool, list[str] | None]:
     error_messages: list[str] = list()
     for expected_edge in expected_edge_list:
-        error_msg: Optional[str] = _match_edge(returned_edge, expected_edge, target_slots)
+        error_msg: str | None = _match_edge(returned_edge, expected_edge, target_slots)
         if error_msg is None:
             # Success! We found at least one match with expectation...
             return True, None
@@ -261,11 +261,11 @@ def _found_edge(
 
 def validate_transform_result(
     result: KnowledgeGraph | None,
-    expected_nodes: Optional[list],
-    expected_edges: Optional[dict] | list[dict],
+    expected_nodes: list | None,
+    expected_edges: dict | list[dict] | None,
     expected_no_of_edges: int = 1,
-    node_test_slots: Optional[tuple[str,...]] = ("id",),
-    edge_test_slots: Optional[tuple[str,...]] = None,
+    node_test_slots: tuple[str,...] | None = ("id",),
+    edge_test_slots: tuple[str,...] | None = None
 ):
     """
     A generic method for testing the result of a single
@@ -367,6 +367,6 @@ def validate_transform_result(
 
         for returned_edge in transformed_edges:
             found: bool
-            error_messages: Optional[list[str]]
+            error_messages: list[str] | None
             found, error_messages = _found_edge(returned_edge, expected_edge_list, edge_test_slots)
             assert found, "\n".join(list(error_messages)) if error_messages else "No edges matched expected values?"
