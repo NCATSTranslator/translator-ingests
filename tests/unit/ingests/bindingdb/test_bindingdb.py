@@ -118,7 +118,7 @@ ASSOCIATION_TEST_SLOTS = (
     "predicate",
     "object",
     "publications",
-    "has_affinity",
+    "has_supporting_studies",
     "sources",
     "knowledge_level",
     "agent_type",
