@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -111,7 +111,7 @@ def get_latest_version() -> str:
     # of BindingDb data is made at the start of each month,
     # so we use the heuristic of a date function to return
     # this candidate 'latest release' value.
-    return datetime.today().strftime("%Y%m")
+    return datetime.now(UTC).strftime("%Y%m")
 
 
 @koza.on_data_begin()
