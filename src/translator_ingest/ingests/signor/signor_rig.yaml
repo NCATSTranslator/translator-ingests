@@ -18,6 +18,9 @@ source_info:
   data_formats:
     - csv
   data_versioning_and_releases: "No consistent cadence for releases, but on average there are 1-2 releases each month. Versioning is based on the month and year of the release. Releases page / change log: https://signor.uniroma2.it/downloads.php"
+  source_status: maintained_regular_updates
+  additional_notes:
+    - "SIGNOR does not currently offer a reliable way to download the latest release or determine the current version programmatically, so the ingest downloads a static snapshot from a RENCI-hosted copy and reports a static version (see get_latest_version() in signor.py). Version detection should be revisited if SIGNOR's programmatic access is fixed."
 
 # Information about Ingested Content
 ingest_info:
@@ -58,8 +61,6 @@ ingest_info:
 ## Information about the Graph Output by the ingest
 ## SIGNOR causual mechanism mapping (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16))
 target_info:
-  infores_id: infores:translator-signor
-
   edge_type_info:
     - subject_categories:
         - biolink:Gene
@@ -95,7 +96,8 @@ target_info:
             - downregulated
             - upregulated
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns,
         - property: biolink:species_context_qualifier
@@ -104,6 +106,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
       ## MHB: edge properties need to include "biolink" prefix.; QW: fixed, thanks for pointing this out!
       edge_properties:
         - biolink:publications
@@ -161,7 +165,8 @@ target_info:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
@@ -170,10 +175,12 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
       edge_properties:
-        - publications
-        - has_confidence_score
-        - supporting_text
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
       ui_explanation: "Signor records indicate the chemical to be 'affects' another protein / complex / proteinfamily / small molecule - which maps best to the Biolink predicate 'affects' with additional directional qualifier."
     - subject_categories:
         - biolink:Protein
@@ -201,7 +208,8 @@ target_info:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
@@ -210,6 +218,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
       edge_properties:               # MHB: edge properties need to include "biolink" prefix.; QW: fixed
         - biolink:publications
         - biolink:has_confidence_score
@@ -238,7 +248,8 @@ target_info:
             - increased
             - decreased
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
@@ -247,11 +258,13 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
       edge_properties:           # MHB: edge properties need to include "biolink" prefix.; QW: fixed
         - biolink:publications
         - biolink:has_confidence_score
         - biolink:supporting_text
-      ui_explanation: "When the mechanism implies a physical interaction, the ingestion create a separate 'physically_interacts_with' edge in addition to the affects/regulates edge (e.g. 'binding') "
+      ui_explanation: "Signor records a causal relationship in which a small molecule regulates another small molecule / chemical entity - which maps best to the Biolink predicate 'affects'. These records are curated from literature by SIGNOR and represented as a ChemicalEntity-to-ChemicalEntity association; direction and aspect qualifiers are not applied to this edge type in the current ingest."
     - subject_categories:
         - biolink:Protein
         # - biolink:Proteinfamily
@@ -259,7 +272,7 @@ target_info:
         - biolink:SmallMolecule
         - biolink:ChemicalEntity
       predicates:
-        - biolink:directly_physically_interacts        # MHB: this is now plural ('predicates'), and takes a list/array. Also, change to directly_physically_interacts with (see mappings here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=0#gid=0&range=D16)
+        - biolink:directly_physically_interacts_with
       object_categories:
         - biolink:Protein
         # - biolink:Proteinfamily
@@ -268,7 +281,8 @@ target_info:
         - biolink:ChemicalEntity
       qualifiers:
         - property: biolink:causal_mechanism_qualifier
-          value_range: CausalMechanismQualifierEnum
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
         - property: biolink:anatomical_context_qualifier
           value_description: UBERON or Cell Ontology terms, to represent data in the SIGNOR CELL_DATA and TISSUE_DATA columns.
         - property: biolink:species_context_qualifier
@@ -277,6 +291,8 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
       edge_properties:                # MHB: edge properties need to include "biolink" prefix. QW: fixed
         - biolink:publications
         - biolink:has_confidence_score
