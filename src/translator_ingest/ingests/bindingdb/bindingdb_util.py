@@ -12,8 +12,6 @@ import polars as pl
 from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as bre, ProteinLigandAssayResult
 from biolink_model.datamodel.pydanticmodel_v2 import Study, QuantityValue
 
-from translator_ingest.util.transform_utils import entity_id
-
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
 #
@@ -156,7 +154,7 @@ def extract_bindingdb_columns_polars(
         )
 
     koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    koza_transform.log(df.columns)
+    koza_transform.log(str(df.columns))
 
     return df
 
