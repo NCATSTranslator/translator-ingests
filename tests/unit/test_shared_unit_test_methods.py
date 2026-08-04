@@ -1,8 +1,6 @@
 """
 These unit tests vet a few test fringe cases of the tests/unit/ingests/__init__.py methods
 """
-from typing import Optional
-
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import AgentTypeEnum, Association, KnowledgeLevelEnum, NamedThing
 from koza.model.graphs import KnowledgeGraph
@@ -147,10 +145,10 @@ def test_incorrect_number_of_validate_transform_results():
 )
 def test_validate_transform_results_exceptions(
     query_result: KnowledgeGraph | None,
-    expected_nodes: Optional[list],
-    expected_edges: Optional[dict] | list[dict],
-    node_test_slots: Optional[tuple[str,...]],
-    edge_test_slots: Optional[tuple[str,...]],
+    expected_nodes: list | None,
+    expected_edges: dict | list[dict] | None,
+    node_test_slots: tuple[str,...] | None,
+    edge_test_slots: tuple[str,...] | None
 ):
     with pytest.raises(AssertionError):
         validate_transform_result(
