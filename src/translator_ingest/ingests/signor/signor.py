@@ -105,6 +105,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         & (source_agg_df['object_category'].str.lower() != 'stimulus')
     ]
 
+    ## Remove those rows with category in complex for this iteration of deployment, will comeback in later phase to ingest complex knowledge_assertion
+    source_agg_df = source_agg_df[
+        (source_agg_df['subject_category'].str.lower() != 'complex')
+        & (source_agg_df['object_category'].str.lower() != 'complex')
+    ]
+
     ## only drop rows missing fields required to build a valid record
     required_cols = ['subject_name', 'object_name', 'IDA', 'IDB']
 
