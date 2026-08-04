@@ -9,8 +9,8 @@ from zipfile import ZipFile
 
 import koza
 import polars as pl
-from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as bre, ProteinLigandAssayResult
-from biolink_model.datamodel.pydanticmodel_v2 import Study, QuantityValue
+from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as BRE
+from biolink_model.datamodel.pydanticmodel_v2 import ProteinLigandAssayResult, QuantityValue, Study
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
@@ -256,15 +256,15 @@ def get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue
         if record.get(column):
             value: str = record[column]
             value = value.strip()
-            has_binary_relation: bre
+            has_binary_relation: BRE
             if value.startswith("<"):
                 value = value[1:]
-                has_binary_relation = bre.less_than
+                has_binary_relation = BRE.less_than
             elif value.startswith(">"):
                 value = value[1:]
-                has_binary_relation = bre.greater_than
+                has_binary_relation = BRE.greater_than
             else:
-                has_binary_relation = bre.equal_to
+                has_binary_relation = BRE.equal_to
 
             # Adjust BindingDb nominal nanomolar values to actual float values then transform
             # to a linearized negative base 10 logarithm ("pK") value in which a higher
