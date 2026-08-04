@@ -16,7 +16,9 @@ from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.icees.icees import (
+    on_begin_ingest_nodes,
     transform_icees_node,
+    on_begin_ingest_edges,
     transform_icees_edge,
 )
 
@@ -275,6 +277,8 @@ def test_transform_icees_nodes(
         test_record: dict,
         result_nodes: Optional[list]
 ):
+    on_begin_ingest_nodes(mock_koza_transform)
+    
     validate_transform_result(
         result=transform_icees_node(mock_koza_transform, test_record),
         expected_nodes=result_nodes,
@@ -348,7 +352,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -405,7 +409,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -460,7 +464,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -526,7 +530,7 @@ def test_transform_icees_nodes(
                     }
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.not_provided
+                "agent_type": AgentTypeEnum.data_analysis_pipeline
             },
             (
                 "subject_feature_name",
@@ -541,9 +545,13 @@ def test_transform_icees_edges(
         result_edge: dict,
         qualifiers: tuple
 ):
+    on_begin_ingest_nodes(mock_koza_transform)
+
     # The edge ingest needs the node categories cached from the corresponding node ingests
     transform_icees_node(mock_koza_transform, test_nodes[0])
     transform_icees_node(mock_koza_transform, test_nodes[1])
+
+    on_begin_ingest_edges(mock_koza_transform)
 
     validate_transform_result(
         result=transform_icees_edge(mock_koza_transform, test_edge_record),
@@ -572,7 +580,7 @@ EDGE_FIXTURES = [
             "predicate": "biolink:positively_correlated_with",
             "object": "MONDO:0007079",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            "agent_type": AgentTypeEnum.not_provided,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": _ICEES_SOURCES,
         },
     },
@@ -584,7 +592,7 @@ EDGE_FIXTURES = [
             "predicate": "biolink:positively_correlated_with",
             "object": "MONDO:0007079",
             "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            "agent_type": AgentTypeEnum.not_provided,
+            "agent_type": AgentTypeEnum.data_analysis_pipeline,
             "sources": _ICEES_SOURCES,
         },
     },
