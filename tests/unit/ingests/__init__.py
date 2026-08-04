@@ -187,6 +187,11 @@ def _match_edge(
     # We only bother with a comparison if the slot is included in both the
     # 'returned_edge' datum (as defined by the Biolink Pydantic data model)
     # and in the list of slots in the 'expected_edge' test data.
+
+    # Sanity check: don't put any expected_edge test data slot that isn't in target slots?
+    assert all(association_slot in target_slots for association_slot in expected_edge), \
+    "Sample expected edge data has slot field(s) unexpected in list of validation 'edge_test_slots'"
+
     for association_slot in target_slots:
         if association_slot in returned_edge and association_slot in expected_edge:
 

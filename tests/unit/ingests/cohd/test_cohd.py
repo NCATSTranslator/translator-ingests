@@ -663,7 +663,6 @@ def test_transform_cohd_nodes(
             {
                 # A very general edge category for now: see ingest transform commentary
                 "category": ["biolink:Association"],
-                "provided_by": ["infores:cohd"],
                 "subject": "SNOMEDCT:60108003",
                 "predicate": "biolink:positively_correlated_with",
                 "object": "CPT:73540",

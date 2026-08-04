@@ -2,15 +2,10 @@
 These unit tests vet a few test fringe cases of the tests/unit/ingests/__init__.py methods
 """
 from typing import Optional
-import pytest
 
+import pytest
+from biolink_model.datamodel.pydanticmodel_v2 import AgentTypeEnum, Association, KnowledgeLevelEnum, NamedThing
 from koza.model.graphs import KnowledgeGraph
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,
-    Association,
-    KnowledgeLevelEnum,
-    AgentTypeEnum
-)
 
 from tests.unit.ingests import validate_transform_result
 
@@ -38,6 +33,7 @@ TEST_EDGE_2 = Association(
 
 TEST_EDGE_3 = Association(
     id=TEST_ENTITY_ID_1,
+    category=["biolink:Association"],
     subject=TEST_ENTITY_ID_1,
     predicate="biolink:related_to",
     object=TEST_ENTITY_ID_2,
@@ -45,7 +41,7 @@ TEST_EDGE_3 = Association(
     agent_type=AgentTypeEnum.not_provided
 )
 
-TEST_SLOTS = ("id",)
+TEST_SLOTS = ("id","category","subject","predicate","object","knowledge_level","agent_type")
 
 
 def test_validate_transform_results():
