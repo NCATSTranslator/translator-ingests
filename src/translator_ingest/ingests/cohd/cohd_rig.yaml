@@ -1,18 +1,66 @@
-name: Columbia Open Health Data
+name: Columbia Open Health Data (COHD) Reference Ingest Guide
+
+# COHD is a data-derived source: it computes co-occurrence statistics from upstream
+# clinical/EHR data. The following upstream sources supply the data COHD derives its
+# knowledge from. NOTE (RIG reviewer): the terms_of_use_info and relevant_files entries
+# below are best-effort and need owner (@RichardBruskiewich) confirmation - see PR body.
 supporting_data_source_info:
+- infores_id: "infores:columbia-cdw-ehr-data"
+  name: "Columbia University Irving Medical Center's clinical data warehouse (CDW)"
+  description: >-
+    The electronic health record (EHR) clinical data warehouse at Columbia University
+    Irving Medical Center. This is the primary patient-level data source from which COHD's
+    concept counts and patient prevalence (frequency) statistics are derived, covering both
+    inpatient and outpatient data.
+  terms_of_use_info:
+    # TODO (owner): confirm terms of use for the underlying CDW/EHR data.
+    terms_of_use_description: >-
+      Protected/restricted-access clinical (EHR) data. The underlying patient-level data is
+      not publicly available; only privacy-protected aggregate statistics are released via COHD
+      (concepts and concept pairs with count <= 10 are excluded, and counts are randomized via a
+      Poisson distribution).
+  relevant_files:
+    # TODO (owner): the CDW is an internal EHR data warehouse, not a distributed file. Location
+    # below is the institutional site, provided to satisfy the required 'location' field.
+    - file_name: "Columbia CDW EHR data (not publicly distributed)"
+      location: "https://www.cumc.columbia.edu/"
+      description: >-
+        Internal EHR clinical data warehouse queried to compute COHD concept counts and
+        co-occurrence frequencies.
+- infores_id: "infores:omop-ohdsi"
+  name: >-
+    Observational Medical Outcomes Partnership (OMOP) /
+    Observational Health Data Sciences and Informatics (OHDSI)
+  description: >-
+    The OMOP Common Data Model and standardized OHDSI vocabularies. COHD codes its clinical
+    concepts (conditions, procedures, drug exposures) by their standard OMOP concept IDs.
+  terms_of_use_info:
+    terms_of_use_url: "https://chime.ucsf.edu/observational-medical-outcomes-partnership-omop"
+  relevant_files:
+    # TODO (owner): confirm the specific OMOP/OHDSI vocabulary artifact(s) relied upon.
+    - file_name: "OMOP CDM standardized vocabularies / concept IDs"
+      location: "https://athena.ohdsi.org/"
+      description: >-
+        OHDSI Athena vocabulary repository providing the OMOP standard concept IDs used to
+        code COHD clinical concepts.
 - infores_id: "infores:automat-ubergraph"
   name: Automat Ubergraph
   description: >-
     A graph representation of Ubergraph, an integration of ontologies
     including GO, CHEBI, Uberon, and HPO.
-- infores_id: "infores:columbia-cdw-ehr-data"
-  name: "Columbia University Irving Medical Center's clinical data warehouse"
-- infores_id: "omop-ohdsi"
-  name: >-
-    Observational Medical Outcomes Partnership 
-    Observational Health Data Sciences and Informatics
   terms_of_use_info:
-    terms_of_use_url: "https://chime.ucsf.edu/observational-medical-outcomes-partnership-omop"
+    # TODO (owner): confirm whether Automat Ubergraph is genuinely an upstream data source for
+    # this COHD ingest, and its terms of use. Ubergraph integrates open ontologies (GO, CHEBI,
+    # Uberon, HPO).
+    terms_of_use_description: >-
+      Ubergraph aggregates openly licensed community ontologies (GO, CHEBI, Uberon, HPO).
+      Specific terms of use for the Automat Ubergraph service have not been confirmed.
+  relevant_files:
+    - file_name: "Automat Ubergraph"
+      location: "https://automat.renci.org/ubergraph/"
+      description: >-
+        RENCI Automat graph representation of Ubergraph.
+
 source_info:
   infores_id: infores:cohd
   name: "Columbia Open Health Data (COHD)"
@@ -22,74 +70,88 @@ source_info:
     drug exposures, and patient demographics, and the co-occurrence frequencies
     between them. Count and frequency data were derived from the
     Columbia University Irving Medical Center's OHDSI database including inpatient
-    and outpatient data. Counts are the number of patients with the concept, e.g., 
-    diagnosed with a condition, exposed to a drug, or who had a procedure. 
+    and outpatient data. Counts are the number of patients with the concept, e.g.,
+    diagnosed with a condition, exposed to a drug, or who had a procedure.
     Frequencies are the number of patients with the concept divided by the total number
     of patients in the dataset. Clinical concepts (e.g., conditions, procedures, drugs)
-    are coded by their standard concept ID in the OMOP Common Data Model. 
+    are coded by their standard concept ID in the OMOP Common Data Model.
     To protect patient privacy, all concepts and pairs of concepts where
-    the count ≤ 10 were excluded, and counts were randomized by the Poisson distribution.
+    the count <= 10 were excluded, and counts were randomized by the Poisson distribution.
+    This ingest consumes the Phase 2 COHD clinical knowledge provider KGX 'nodes' and 'edges'
+    JSONL files, which report positively/negatively correlated concept pairs.
   citations:
     - https://www.nature.com/articles/sdata2018273
     - https://github.com/NCATSTranslator/NCATSTranslator.github.io/raw/master/presentations/Translator_2020_Kick-Off_Presentation-Clinical_Data_Services.pdf
     - https://github.com/NCATSTranslator/Translator-All/wiki/COHD-KP
   terms_of_use_info:
-    terms_of_use_url: null
-    terms_of_use_description: null
-    license name: null
-    license url: null
-  data_access_locations: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
+    # TODO (owner): confirm the license / terms of use for the COHD data release itself.
+    terms_of_use_description: >-
+      COHD releases only privacy-protected aggregate counts and frequencies derived from
+      protected EHR data. The specific license/terms of use for the released COHD data files
+      have not been confirmed; the source Nature Scientific Data descriptor is available under
+      CC BY 4.0.
+  data_access_locations:
+    - "https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl"
+    - "https://stars.renci.org/var/data_services/cohd_2/cohd_edges.jsonl"
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - json  # conformance: was 'jsonl'
+    - kgx
   data_versioning_and_releases: "2024-11-25"  # last Phase 2 release of COHD
+  # source_status chosen as 'not_maintained' based on 2024-11-25 being the "last Phase 2 release
+  # of COHD" (see get_latest_version() in cohd.py). TODO (owner): confirm - set to
+  # 'maintained_as_needed_updates' or 'unknown' if COHD releases are still expected.
+  source_status: not_maintained
   additional_notes:
-    - null
+    - >-
+      Data are consumed as pre-computed Phase 2 KGX JSONL files hosted on the RENCI stars server,
+      rather than fetched directly from a live COHD API.
+
 ingest_info:
   ingest_categories:
-  - aggregation_interpreter
+  - translator_knowledge_creator
   utility: >-
-    Real clinical data from patients diagnosed with a condition, exposed to a drug, or who had a procedure.
-  scope: Clinical correlations of patients to treatments.
+    COHD provides statistical co-occurrence associations between clinical concepts (conditions,
+    drugs, procedures) computed from real-world patient electronic health records. This
+    real-world-evidence signal complements curated/mechanistic sources and is useful for
+    Translator hypothesis generation and prioritization (e.g. drug-disease and disease-disease
+    associations grounded in observed clinical prevalence).
+  scope: >-
+    Positively and negatively correlated concept pairs (diseases, drugs, chemicals) derived from
+    Columbia University EHR data via COHD. Demographic concepts and second-level study-result
+    ("EPC") attributes are not yet ingested.
   relevant_files:
   - file_name: cohd_nodes.jsonl
-    location: https://stars.renci.org/var/data_services/cohd_2
+    location: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
     description: KGX jsonl file of KGX 'nodes' data from Phase 2 COHD clinical knowledge provider activities.
   - file_name: cohd_edges.jsonl
-    location: https://stars.renci.org/var/data_services/cohd_2
+    location: https://stars.renci.org/var/data_services/cohd_2/cohd_edges.jsonl
     description: KGX jsonl file of KGX 'edges' data from Phase 2 COHD clinical knowledge provider activities.
   included_content:
   - file_name: cohd_nodes.jsonl
-    included_records: all
-    fields_used: id, name, category
+    included_records: All node records.
+    fields_used: id, name, categories, attributes
   - file_name: cohd_edges.jsonl
-    included_records: all
-    fields_used: id, subject, predicate, object, score, sources
-#  filtered_content:
-#  - file_name: null
-#    filtered_records: null
-#    rationale: null
+    included_records: All edge records.
+    fields_used: subject, predicate, object, score, sources, attributes
   future_considerations:
   - category: node_property_content
-    consideration:  >-
-      The contents of the COHD 'attributes' field are not yet processed by the ingestion pipeline.
-      For example, these attributes cross-correlate concepts with related resources.
-    relevant_files:
-      - cohd_nodes.jsonl
+    consideration: >-
+      The contents of the COHD 'attributes' field are not yet fully processed by the ingestion
+      pipeline. For example, these attributes cross-correlate concepts with related resources.
+    relevant_files: cohd_nodes.jsonl
   - category: edge_property_content
     consideration: >-
-      The contents of the COHD 'attributes' field are not yet processed by the ingestion pipeline.
-      For example, these attributes describe supporting studies, thus providing valuable 
+      The contents of the COHD 'attributes' field are not yet fully processed by the ingestion
+      pipeline. For example, these attributes describe supporting studies, thus providing valuable
       evidence annotation which should be added to the COHD knowledge graph.
-    relevant_files:
-      - cohd_edges.jsonl
-  additional_notes:
-    - null
+    relevant_files: cohd_edges.jsonl
+  additional_notes: null
+
 target_info:
-  infores_id: infores:cohd
+  # target_info.infores_id intentionally omitted (deprecated per June 2026 RIG review guidance).
   edge_type_info:
-  - subject:
+  - subject_categories:
     - biolink:Disease
     - biolink:Drug
     - biolink:ChemicalEntity
@@ -97,58 +159,117 @@ target_info:
     - biolink:MolecularMixture
     predicates:
     - biolink:positively_correlated_with
+    object_categories:
+    - biolink:Disease
+    - biolink:Drug
+    - biolink:ChemicalEntity
+    - biolink:SmallMolecule
+    - biolink:MolecularMixture
+    knowledge_level:
+    - statistical_association
+    agent_type:
+    - data_analysis_pipeline
+    primary_knowledge_sources:
+    - infores:cohd
+    supporting_data_sources:
+    # TODO (owner): confirm supporting data source(s) reported on edges. The EHR/CDW data is the
+    # underlying source of the co-occurrence counts.
+    - infores:columbia-cdw-ehr-data
+    edge_properties:
+    - biolink:has_confidence_score
+    - biolink:has_supporting_studies
+    ui_explanation: >-
+      COHD observed these two clinical concepts (e.g. a condition, drug exposure, or procedure)
+      co-occurring in patient electronic health records more often than expected. Counts and
+      patient prevalence (frequency) were computed by an automated data-analysis pipeline over the
+      Columbia University Irving Medical Center OMOP/OHDSI clinical database (inpatient and
+      outpatient). This positive statistical association is represented with the Biolink
+      'positively_correlated_with' predicate. Because the edge reflects an observed statistical
+      correlation in real-world clinical data - not a curated or mechanistic claim - it is assigned
+      a 'statistical_association' knowledge level and 'data_analysis_pipeline' agent type. To
+      protect patient privacy, concepts and pairs with count <= 10 were excluded and counts were
+      randomized via a Poisson distribution.
+    source_files:
+    - cohd_edges.jsonl
+  - subject_categories:
+    - biolink:Disease
+    - biolink:Drug
+    - biolink:ChemicalEntity
+    - biolink:SmallMolecule
+    - biolink:MolecularMixture
+    predicates:
     - biolink:negatively_correlated_with
     object_categories:
     - biolink:Disease
-    - biolink:SmallMolecule
     - biolink:Drug
-    - biolink:MolecularMixture
     - biolink:ChemicalEntity
+    - biolink:SmallMolecule
+    - biolink:MolecularMixture
     knowledge_level:
-      - statistical_association
+    - statistical_association
     agent_type:
-      - data_analysis_pipeline
+    - data_analysis_pipeline
+    primary_knowledge_sources:
+    - infores:cohd
+    supporting_data_sources:
+    # TODO (owner): confirm supporting data source(s) reported on edges.
+    - infores:columbia-cdw-ehr-data
     edge_properties:
-    - has_confidence_score
-    - has_supporting_studies
+    - biolink:has_confidence_score
+    - biolink:has_supporting_studies
+    ui_explanation: >-
+      COHD observed these two clinical concepts (e.g. a condition, drug exposure, or procedure)
+      co-occurring in patient electronic health records less often than expected. Counts and
+      patient prevalence (frequency) were computed by an automated data-analysis pipeline over the
+      Columbia University Irving Medical Center OMOP/OHDSI clinical database (inpatient and
+      outpatient). This negative statistical association is represented with the Biolink
+      'negatively_correlated_with' predicate. Because the edge reflects an observed statistical
+      correlation in real-world clinical data - not a curated or mechanistic claim - it is assigned
+      a 'statistical_association' knowledge level and 'data_analysis_pipeline' agent type. To
+      protect patient privacy, concepts and pairs with count <= 10 were excluded and counts were
+      randomized via a Poisson distribution.
+    source_files:
+    - cohd_edges.jsonl
   node_type_info:
   - node_category: biolink:Disease
     source_identifier_types:
     - DOID
     - UMLS
     node_properties:
-    - name
+    - biolink:name
   - node_category: biolink:SmallMolecule
     source_identifier_types:
     - UNII
     - CHEBI
     node_properties:
-    - name
+    - biolink:name
   - node_category: biolink:Drug
     source_identifier_types:
     - RXCUI
     node_properties:
-    - name
+    - biolink:name
   - node_category: biolink:MolecularMixture
     source_identifier_types:
     - CHEBI
     node_properties:
-    - name
+    - biolink:name
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
     - MESH
     - UNII
     - CHEBI
     node_properties:
-    - name
-    - xref
-  future_considerations:  # (optional, multivalued, range = FutureContentConsiderations) Content additions/changes to consider for future iterations.
-    - category: edge_properties  # conformance: was 'edge_property_content'
-      consideration: >-
-        Second level ("EPC") study result attributes from the Phase 2 source edge jsonl file are not yet being ingested.
-      relevant_files:  cohd_edges.jsonl
+    - biolink:name
+    - biolink:xref
+  future_considerations:
+  - category: edge_properties
+    consideration: >-
+      Second level ("EPC") study result attributes from the Phase 2 source edge jsonl file are
+      not yet being ingested (e.g. supporting study statistics carried in the COHD 'attributes'
+      field). Consider ingesting these as StudyResult evidence on the edges.
+
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, code author"
-  - "Kara Fecho: domain expertise"
+  - "Kara Fecho - domain expertise"
   - "Matthew Brush - data modeling, domain expertise"
