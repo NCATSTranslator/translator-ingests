@@ -306,7 +306,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["EFFECT"] == 'down-regulates quantity by repression':
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
             object_direction_qualifier = current_direction_mapping[1]
-        # Qi's comment: comment out since complex related edges are not enabled
+        # Qi's comment: don't comment out although we are excluding complex node for this iteration
         elif record["EFFECT"] == 'form complex':
             object_aspect_qualifier = None
             object_direction_qualifier = None
