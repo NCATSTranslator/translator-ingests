@@ -184,7 +184,7 @@ def test_disease_to_phenotype_node_transform(
                 "biocuration": "HPO:skoehler[2012-11-16]",
             },
             # This is not a 'P' record, so it should be skipped
-            None,
+            None
         ),
         (  # Query 1 - An 'aspect' == 'P' record processed
             {
@@ -206,7 +206,7 @@ def test_disease_to_phenotype_node_transform(
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                # "negated": False,  # removed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
                 "object": "HP:0001249",
                 # Although "OMIM:117650" is recorded above as
                 # a reference, it is not used as a publication
@@ -225,7 +225,7 @@ def test_disease_to_phenotype_node_transform(
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
-            },
+            }
         ),
         (  # Query 2 - Another 'aspect' == 'P' record processed
             {
@@ -244,26 +244,28 @@ def test_disease_to_phenotype_node_transform(
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
-            {
-                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
-                "subject": "OMIM:117650",
-                "predicate": "biolink:has_phenotype",
-                "negated": True,
-                "object": "HP:0001545",
-                "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
-                "sex_qualifier": None,
-                "onset_qualifier": None,
-                "has_percentage": None,
-                "has_quotient": None,
-                "frequency_qualifier": "HP:0040283",
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+            # Negated edges now suppressed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
+            None
+            # {
+            #     "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+            #     "subject": "OMIM:117650",
+            #     "predicate": "biolink:has_phenotype",
+            #     "negated": True,
+            #     "object": "HP:0001545",
+            #     "publications": [],
+            #     "has_evidence_of_type": ["ECO:0000304"],
+            #     "sex_qualifier": None,
+            #     "onset_qualifier": None,
+            #     "has_percentage": None,
+            #     "has_quotient": None,
+            #     "frequency_qualifier": "HP:0040283",
+            #     "sources": [
+            #         {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+            #         {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+            #     ],
+            #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            #     "agent_type": AgentTypeEnum.manual_agent,
+            # }
         ),
         (  # Query 3 - Same 'aspect' == 'P' record but lacking any frequency qualifier
             {
@@ -286,7 +288,7 @@ def test_disease_to_phenotype_node_transform(
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                # "negated": False, # removed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
                 "object": "HP:0001545",
                 "publications": [],
                 "has_evidence_of_type": ["ECO:0000304"],
@@ -301,7 +303,7 @@ def test_disease_to_phenotype_node_transform(
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
-            },
+            }
         )
     ],
 )
