@@ -12,8 +12,6 @@ import polars as pl
 from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as bre, ProteinLigandAssayResult
 from biolink_model.datamodel.pydanticmodel_v2 import Study, QuantityValue
 
-from translator_ingest.util.transform_utils import entity_id
-
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
 #
