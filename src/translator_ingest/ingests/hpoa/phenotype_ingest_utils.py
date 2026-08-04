@@ -4,7 +4,7 @@ HPOA processing utility methods
 from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, AgentTypeEnum
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
@@ -46,12 +46,17 @@ def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
-evidence_to_eco: dict = {
-    "IEA": "ECO:0000501",  # "inferred from electronic annotation",
-    "PCS": "ECO:0006017",  # "published clinical study evidence",
-    "TAS": "ECO:0000304",  # "traceable author statement",
-    "ICE": "ECO:0006019",
-}  # "individual clinical experience evidence"
+evidence_mappings: dict = {
+
+    # "inferred from electronic annotation"
+    "IEA": ("ECO:0000501",AgentTypeEnum.text_mining_agent),
+
+    # "published clinical study evidence"
+    "PCS": ("ECO:0006017",AgentTypeEnum.manual_agent),
+
+    # "traceable author statement"
+    "TAS": ("ECO:0000304",AgentTypeEnum.manual_validation_of_automated_agent)
+}
 
 # Sex (right now both all uppercase and all lowercase
 sex_format: dict = {"male": "male", "MALE": "male", "female": "female", "FEMALE": "female"}
@@ -167,11 +172,14 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
                     # assume a ratio
                     ratio_parts = frequency_field.split("/")
                     assert (
-                        len(ratio_parts) == 2
+                        len(ratio_parts) == 2 and
+                        ratio_parts[0].isdigit() and
+                        ratio_parts[1] is not None and
+                        ratio_parts[1].isdigit()
                     ), f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
-                    has_count = int(ratio_parts[0])
-                    has_total = int(ratio_parts[1])
-                    quotient = round(float(has_count / has_total), 2)
+                    has_count: int = int(ratio_parts[0])
+                    has_total: int = int(ratio_parts[1])
+                    quotient: float = round(float(has_count / has_total), 2)
                     percentage = round(quotient * 100.0, 1)
 
                 # This should map onto a non-null HPO term
