@@ -132,7 +132,6 @@ target_info:
       additional_notes:
         - "The choice between increased/decreased direction is based on the combination of the Type and Action columns in GtoPdb. The choice between the 'affects' and 'regulates' predicate is based on whether ENDOGENOUS = FALSE (affects) or TRUE (regulates). Records in the source data describe interactions demonstrated in specific experiments; records with the same ligand, target, and Type + Action are aggregated into a single edge, and publications from each merged record are combined into a list and attached to the edge. Examples of record sets that should get merged are documented at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
         - "The causal_mechanism_qualifier value depends on the Type + Action combination and is drawn from the Biolink CausalMechanismQualifierEnum (e.g. agonism, partial_agonism, inverse_agonism, antagonism, inhibition, competitive_inhibition, irreversible_inhibition, activation, potentiation, positive/negative/mixed_allosteric_modulation, molecular_channel_blockage, gating_inhibition, antibody_agonism, antibody_inhibition)."
-
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
@@ -176,7 +175,6 @@ target_info:
         - ligands.csv
       additional_notes:
         - "The choice between up- vs down-regulated direction is based on the combination of the Type and Action columns in GtoPdb. The choice between the 'affects' and 'regulates' predicate is based on whether ENDOGENOUS = FALSE (affects) or TRUE (regulates)."
-
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
@@ -187,6 +185,8 @@ target_info:
         - biolink:Protein
       knowledge_level:
         - knowledge_assertion
+      primary_knowledge_sources:
+        - infores:gtopdb
       agent_type:
         - manual_agent
       primary_knowledge_sources:
