@@ -10,7 +10,9 @@ source_info:
     - "https://doi.org/10.1093/nar/gkad1040"
   terms_of_use_info:
     terms_of_use_url: "https://dgidb.org/about/overview/data-accessibility"
-    terms_of_use_description: "According to the webpage on 'Data Accessibility', '[t]he data used in DGIdb is all open access and where possible made available as raw data dumps in the downloads section.' However, according to the 2024 paper, DGIdb 'aggregate[s] content from...sources with varying content licenses'; and the DGIdb downloads page says 'some of the data sources we import may have restrictions that prevent us from redistributing them'."
+    terms_of_use_description: >-
+      According to https://github.com/dgidb/dgidb-v5/issues/620, 'the data is available under CC0 license terms (except where imported sources have restrictions)'.
+      And according to the 2024 paper, DGIdb 'aggregate[s] content from...sources with varying content licenses'; and the DGIdb downloads page says 'some of the data sources we import may have restrictions that prevent us from redistributing them'.
   data_access_locations:
   - "Downloads page: https://dgidb.org/downloads"
   data_provision_mechanisms:
@@ -20,7 +22,8 @@ source_info:
   data_formats:
     - tsv
   data_versioning_and_releases: "DGIdb updates 1-2 times a year since 2021 (based on the raw data dump table in https://dgidb.org/downloads). Versioning is by date (year-month abbrev.) but 2024-Dec also has a semantic version number in its header."
-  # additional_notes:  # (optional, range = string)
+  source_status: maintained_as_needed_updates
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about Ingested Content
 ingest_info:
@@ -47,6 +50,8 @@ ingest_info:
 
   future_considerations:
   # (required, range = ContentCategoryEnum: edge_content | node_property_content | edge_property_content | other)
+    - category: other
+      consideration: "Filter out chemical IDs that normalize to Protein (seen in KGX summary report and graph-metadata file). Based on a quick look at normalization-metadata.json, it looks like 1 original DRUGBANK ID normalizes to NCBIGene. And possibly other original RXCUI and DRUGBANK IDs normalize to undesired categories, based on the namespaces they normalized to."
     - category: node_property_content
       consideration: "interactions.tsv has some columns that could be ingested as node properties: drug_is_approved, drug_is_immunotherapy, drug_is_antineoplastic, drug_specificity_score, gene_specificity_score. However, we may want to use a different resource that's updated more frequently or has more coverage."
       relevant_files: "interactions.tsv"
@@ -55,11 +60,11 @@ ingest_info:
       relevant_files: "genes.tsv, drugs.tsv"
     - category: other
       consideration: "According to others that worked with DGIdb in the past, there's a way to load a local database that has more information. However, I looked at the Github instructions for recreating the database locally, and I don't think this can be easily/automatically done by the Translator ingest pipeline."
-  # additional_notes:  # (optional, range = string)
+  # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-dgidb
+  ## NO source_record_urls: see additional_notes for more info
   edge_type_info:
     ## PLAIN INTERACTS_WITH EDGES
     - subject_categories:
@@ -100,8 +105,6 @@ target_info:
         - biolink:publications    ## for specific underlying sources
         - biolink:dgidb_interaction_score    ## temp attribute!
         - biolink:dgidb_evidence_score       ## temp attribute!
-        - biolink:original_subject
-        - biolink:original_object        
       ui_explanation: "Source DGIdb aggregates drug-gene interaction statements of different types (e.g. 'antagonist', blocker', inhibitor', 'unknown') from several external knowledgebases. An automated algorithm assigns an 'interaction score' to each unique drug-gene pair across aggregated records. In performing this aggregation and 'meta-assessment', DGIdb makes its own implicit claims about each interaction, which are captured in Translator edges. The record(s) used to create this particular edge have a DGIdb 'interaction_type' that is empty or explicitly reported as 'other/unknown' - and thus assert only that an interaction of some type is occurring. This relationship is represented using the broadly-scoped Biolink 'interacts with' predicate."
       source_files:
         - interactions.tsv
@@ -152,8 +155,6 @@ target_info:
         - biolink:publications    ## for specific underlying sources
         - biolink:dgidb_interaction_score    ## temp attribute! currently not on inferred edges
         - biolink:dgidb_evidence_score       ## temp attribute! currently not on inferred edges
-        - biolink:original_subject
-        - biolink:original_object
       ui_explanation: "Source DGIdb aggregates drug-gene interaction statements of different types (e.g. 'antagonist', blocker', inhibitor', 'unknown') from several external knowledgebases. An automated algorithm assigns an 'interaction score' to each unique drug-gene pair across aggregated records. In performing this aggregation and 'meta-assessment', DGIdb makes its own implicit claims about each interaction, which are captured in Translator edges. The record(s) used to create this particular edge have a DGIdb 'interaction_type' that explicitly states an interaction (e.g. 'binder'), or necessarily implies that a physical-interaction is occurring (e.g. 'agonist', 'antibody', 'blocker', 'inhibitor', 'inverse agonist'). This relationship is represented using the Biolink 'directly physically interacts with' predicate, with qualifiers that report the interaction mechanism when provided (e.g. 'binding')."
       source_files:
         - interactions.tsv
@@ -217,8 +218,6 @@ target_info:
         - biolink:publications    ## for specific underlying sources
         - biolink:dgidb_interaction_score    ## temp attribute! currently not on some edges
         - biolink:dgidb_evidence_score       ## temp attribute! currently not on some edges
-        - biolink:original_subject
-        - biolink:original_object
       ui_explanation: "Source DGIdb aggregates drug-gene interaction statements of different types (e.g. 'antagonist', blocker', inhibitor', 'unknown') from several external knowledgebases. An automated algorithm assigns an 'interaction score' to each unique drug-gene pair across aggregated records. In performing this aggregation and 'meta-assessment', DGIdb makes its own implicit claims about each interaction, which are captured in Translator edges. The record(s) used to create this particular edge have a DGIDb 'interaction_type' that indicates a specific type of effect the drug has on the activity or abundance of a gene/protein, and often the direction of the effect (e.g. that it causes increased activity of the gene/protein, or decreased stability of the gene/protein). These causal relationships are represented using the Biolink 'affects' predicate, with qualifiers capturing additional detail about the aspect and direction of the effect, and a causal mechanism where provided."
       source_files:
         - interactions.tsv
@@ -238,7 +237,7 @@ target_info:
         - "ENSEMBL"    ## ENSG
       # node_properties:  # (optional, multivalued, range = URIorCURIE)
       #   -
-      # additional_notes:  # (optional, range = string)
+      # additional_notes:  # (optional, multivalued, range = string)
 
   future_considerations:  # Notes on possible changes/additions to modeling in future iteration of the ingest
     - category: spoq_pattern
@@ -249,7 +248,8 @@ target_info:
       consideration: "Matt said underlying-source licensing and data overlap with 'directly-ingested' resources are not concerns because DGIdb is an 'interpreter' and can be set as the primary source (with the underlying sources set to supporting data providers or publications). HOWEVER, if we are directly ingesting all underlying sources for an edge, the DGIdb edge then seems like extraneous duplication."
 
   additional_notes:
-    - "(1) Edge provenance: primary source is DGIdb, and the underlying sources are supporting data providers or publications. (2) We couldn't generate links to DGIdb interaction webpages because they use an ID that looks random or like a hash (and links to the drug or gene can currently be generated but wouldn't be specific to the edge)."
+    - "Edge provenance: primary source is DGIdb, and the underlying sources are supporting data providers or publications"
+    - "We couldn't generate source_record_urls to DGIdb interaction webpages because they use an ID that looks random or like a hash. And links to the drug or gene can currently be generated but wouldn't be specific to the edge."
 
 # Information about how the ingest was specified and performed
 provenance_info:
