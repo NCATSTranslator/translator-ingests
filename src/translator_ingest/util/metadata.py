@@ -36,6 +36,10 @@ class PipelineMetadata:
     normalization_strict: bool = True
     # merging_code_version: version of the ORION code that performs the merging process.
     merging_code_version: str | None = None
+    # filter_code_version: content hash of a source's optional post-normalization filter
+    # (ingests/{source}/filtering/). None for sources without a filter, so their build
+    # identity and directory layout are unaffected.
+    filter_code_version: str | None = None
     biolink_version: str | None = None
     # build_version: a composite version representing all the dependencies which should be considered when determining
     # whether the pipeline needs to be run, or if an ingest was already fully completed
@@ -80,6 +84,10 @@ class PipelineMetadata:
             self.merging_code_version,
             self.biolink_version,
         ]
+        # only sources with a post-normalization filter contribute this segment, so
+        # every other source keeps a byte-identical build identity
+        if self.filter_code_version is not None:
+            versions.append(f"filter_{self.filter_code_version}")
         return "_".join(versions)
 
     def get_release_metadata(self) -> Dict[str, Any]:

@@ -1,6 +1,5 @@
 """SemMedDB ingest: KG2 pre-processed edges -> Biolink Model associations."""
 
-import os
 from typing import Any
 
 import koza
@@ -52,12 +51,6 @@ PREDICATE_REMAP: dict[str, str] = {
 }
 
 GENETIC_VARIANT_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_variant_form
-
-PUBLICATIONS_CAP_THRESHOLD = 200
-MAX_PUBLICATIONS_PER_STRATEGY = 100  # up to 2x this many total (score + recency)
-PUBLICATIONS_CAP_ENABLED: bool = (
-    os.environ.get("SEMMEDDB_UNCAPPED", "").lower() not in ("1", "true", "yes")
-)
 
 BTE_EXCLUDED_ORIGINAL_PREDICATES: frozenset[str] = frozenset({
     "compared_with",
@@ -174,65 +167,6 @@ def _has_bte_excluded_predicate(kg2_ids: list[str]) -> bool:
     return False
 
 
-def _pub_min_score(
-    pmid: str,
-    publications_info: dict[str, dict[str, str]],
-) -> float:
-    """Return the minimum of subject/object scores for a PMID (higher = more confident)."""
-    info = publications_info.get(pmid, {})
-    subj = float(info.get("subject score", 0) or 0)
-    obj = float(info.get("object score", 0) or 0)
-    return min(subj, obj)
-
-
-def _pub_year(
-    pmid: str,
-    publications_info: dict[str, dict[str, str]],
-) -> int:
-    """Return the 4-digit publication year for a PMID, or 0 if unavailable."""
-    date: str = publications_info.get(pmid, {}).get("publication date", "") or ""
-    try:
-        return int(date[:4]) if date else 0
-    except ValueError:
-        return 0
-
-
-def _cap_publications(
-    publications: list[str],
-    publications_info: dict[str, dict[str, str]],
-) -> tuple[list[str], dict[str, dict[str, str]]]:
-    """Cap publications to avoid oversized edges (some SemMedDB edges have 60k+ PMIDs).
-
-    Keeps the union of:
-    - top MAX_PUBLICATIONS_PER_STRATEGY by confidence (min of subject/object score)
-    - top MAX_PUBLICATIONS_PER_STRATEGY by recency (publication year)
-
-    Returns trimmed (publications, publications_info).
-    """
-    if len(publications) <= PUBLICATIONS_CAP_THRESHOLD:
-        return publications, publications_info
-
-    top_by_score = set(
-        sorted(
-            publications,
-            key=lambda p: _pub_min_score(p, publications_info),
-            reverse=True,
-        )[:MAX_PUBLICATIONS_PER_STRATEGY]
-    )
-    top_by_recency = set(
-        sorted(
-            publications,
-            key=lambda p: _pub_year(p, publications_info),
-            reverse=True,
-        )[:MAX_PUBLICATIONS_PER_STRATEGY]
-    )
-    kept = top_by_score | top_by_recency
-    return (
-        [p for p in publications if p in kept],
-        {k: v for k, v in publications_info.items() if k in kept},
-    )
-
-
 def _extract_supporting_studies(
     publications_info: dict[str, dict[str, str]],
 ) -> dict[str, Study] | None:
@@ -294,7 +228,6 @@ _STATE_DEFAULTS: dict[str, int] = {
     "domain_range_exclusion_skipped": 0,
     "low_publication_count_skipped": 0,
     "bte_excluded_predicate_skipped": 0,
-    "publications_capped": 0,
     "qualifier_stripped_invalid_domain_range": 0,
 }
 
@@ -326,7 +259,6 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
         ("domain_range_exclusion_skipped", "Domain/range exclusion skipped", "INFO"),
         ("low_publication_count_skipped", "Low publication count skipped", "INFO"),
         ("bte_excluded_predicate_skipped", "BTE-excluded predicate skipped", "INFO"),
-        ("publications_capped", "Publications capped to top-N by score+recency", "INFO"),
         (
             "qualifier_stripped_invalid_domain_range",
             "Qualifier stripped (aspect/endpoint mismatch, see Feedback#1213)",
@@ -494,12 +426,6 @@ def transform_semmeddb_edge(
     publications_info: dict[str, dict[str, str]] = record.get(
         "publications_info", {},
     )
-
-    if PUBLICATIONS_CAP_ENABLED and len(publications) > PUBLICATIONS_CAP_THRESHOLD:
-        koza.state["publications_capped"] += 1
-        publications, publications_info = _cap_publications(
-            publications, publications_info,
-        )
 
     predicate = PREDICATE_REMAP.get(predicate, predicate)
 
