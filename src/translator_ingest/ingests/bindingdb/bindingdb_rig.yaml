@@ -2,17 +2,22 @@ name: BindingDb
 source_info:
   infores_id: infores:bindingdb
   name: BindingDb
-  description: The Binding Database ("BindingDb") is a public, web-accessible database
-    of measured binding affinities, focusing chiefly on the interactions of protein
-    considered to be drug-targets with small, drug-like molecules. As of July 31,
-    2021, BindingDB contains thousands of dataset Entries, each with a DOI,
-    containing millions of binding assay results for thousands of protein targets
-    assayed against over a million distinct small molecule ligands. 
+  description: >-
+    BindingDB is developed and maintained by researchers at the University of California, San Diego,
+    with support from the U.S. National Institutes of Health.  Its purpose is to provide a publicly
+    accessible repository of experimentally measured binding interactions between small molecules and
+    biological macromolecules to support drug discovery, medicinal chemistry, chemical biology, and
+    computational modeling. The database contains quantitative binding affinity measurements,
+    protein–ligand interactions, assay descriptions, chemical structures, target information, and
+    associated literature references. The knowledge is generated primarily through expert manual curation
+    of peer-reviewed scientific publications reporting experimentally determined binding measurements,
+    supplemented by integration of selected data from other public resources and automated data processing
+    pipelines that standardize chemical structures, protein identifiers, and assay metadata.
   citations:
     - https://doi.org/10.1093/nar/gkae1075
   terms_of_use_info:
     terms_of_use_description: >-
-      All data and download files in bindingDB are freely
+      All data and download files in BindingDB are freely
       available under a 'Creative Commons BY 3.0' license.
   data_access_locations:
     - BindingDb bulk downloads - https://www.bindingdb.org/rwd/bind/downloads/
@@ -23,9 +28,10 @@ source_info:
   data_versioning_and_releases: >-
     Regular releases at the start of each month date stamped with the
     year and month of the release (i.e. 202511), incorporated into the data file name.
+  source_status: maintained_regular_updates
 ingest_info:
   ingest_categories:
-  - null
+  - aggregation_interpreter
   utility: null
   scope: null
   relevant_files:
