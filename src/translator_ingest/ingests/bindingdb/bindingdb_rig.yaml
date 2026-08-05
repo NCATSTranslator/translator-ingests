@@ -3,14 +3,13 @@ supporting_data_source_info:
   - infores_id: infores:chembl
     name: ChEMBL
     description: >-
-      a manually knowledge_assertion database of bioactive molecules with drug-like properties.
+      Aa manually knowledge_assertion database of bioactive molecules with drug-like properties.
     terms_of_use_info:
-      terms_of_use_url: null
-      terms_of_use_description: null
+      terms_of_use_url: "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing"
+      terms_of_use_description: "Creative Commons Attribution-Share Alike 3.0 Unported License"
     relevant_files:
       - file_name: "unknown"
-        location: "unknown"
-        description: null
+        location: "https://www.ebi.ac.uk/chembl/"
   - infores_id: infores:drug-design
     name: "Drug Design Data Resource"
     description: >-
@@ -18,12 +17,11 @@ supporting_data_source_info:
       of computer-aided drug discovery through the interchange of high quality
       protein-ligand datasets.
     terms_of_use_info:
-      terms_of_use_url: https://drugdesigndata.org/
-      terms_of_use_description: null
+      terms_of_use_url: https://drugdesigndata.org/links/terms
+#      terms_of_use_description: null
     relevant_files:
-      - file_name: "unknown"
-        location: "unknown"
-        description: null
+      - file_name: "various"
+        location: "https://drugdesigndata.org/about/datasets"
   - infores_id: infores:ki-database
     name: null
     description: null
@@ -33,11 +31,10 @@ supporting_data_source_info:
     relevant_files:
       - file_name: "unknown"
         location: "unknown"
-        description: null
   - infores_id: infores:pubchem
     name: "PubChem"
     description: >-
-      an open chemistry database at the National Institutes of Health (NIH),
+      An open chemistry database at the National Institutes of Health (NIH),
       mostly contains small molecules, but also larger molecules such as nucleotides,
       carbohydrates, lipids, peptides, and chemically-modified macromolecules
     terms_of_use_info:
@@ -46,7 +43,6 @@ supporting_data_source_info:
     relevant_files:
       - file_name: "unknown"
         location: "unknown"
-        description: null
   - infores_id: infores:taylor-research-group-ucsd
     name: "Taylor Research Group UCSD"
     description: null
@@ -56,17 +52,18 @@ supporting_data_source_info:
     relevant_files:
       - file_name: "unknown"
         location: "unknown"
-        description: null
   - infores_id: infores:uspto-patent
-    name: "United States Patent"
-    description: null
+    name: "United States Patent and Trademark Office (USPTO)"
+    description: >-
+      The USPTO is the federal agency that grants patents, registers trademarks,
+      and advises the Administration, through the Secretary of Commerce,
+      on intellectual property policy.
     terms_of_use_info:
-      terms_of_use_url: null
-      terms_of_use_description: null
+      terms_of_use_url: https://www.uspto.gov/terms-use-uspto-websites
+#      terms_of_use_description: null
     relevant_files:
-      - file_name: "unknown"
-        location: "unknown"
-        description: null
+      - file_name: "various"
+        location: "See https://www.uspto.gov/using-usptogov/accessibility-uspto-website"
 source_info:
   infores_id: infores:bindingdb
   name: BindingDb
@@ -105,7 +102,9 @@ ingest_info:
   utility: >-
     Translator researchers are interested in biological interactions between chemicals and
     proteins, including drug-target interactions. BindingDb provides broad access to such data.
-  scope: null
+  scope: >-
+    Only a strict subset of BindingDb ligand to target (protein) interaction data
+    including basic affinity assay data is captured, for human and mainstream model organisms.
   relevant_files:
   - file_name: BindingDB_All_{version}_tsv.zip
     location: https://www.bindingdb.org/rwd/bind/downloads/
