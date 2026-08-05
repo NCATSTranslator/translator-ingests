@@ -93,13 +93,18 @@ target_info:
       - infores:uspto-patent
     edge_properties:
     - biolink:publications
-    - biolink:has_affinity
+    - biolink:has_supporting_studies
+    - biolink:has_study_results
+    - biolink:pKi
+    - biolink:pIC50
+    - biolink:pKd
+    - biolink:pEC50
     ui_explanation: TO DO
     source_files:
       - BindingDB_All_{version}_tsv.zip
     additional_notes: >-
       BindingDB provides generates chemical-protein interaction statements based on
-      manual curation from the literature, or import from external knowledgebases.
+      manual curation from the literature, or import from external knowledge bases.
       Records include details about experiment supporting each interaction,
       including binding/affinity metrics. The source tsv may therefore include >1 row
       for a given chemical-protein interaction.  Translator's ingest collapses records
