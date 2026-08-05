@@ -8,8 +8,8 @@ supporting_data_source_info:
       terms_of_use_url: null
       terms_of_use_description: null
     relevant_files:
-      - file_name: null
-        location: null
+      - file_name: "unknown"
+        location: "unknown"
         description: null
   - infores_id: infores:drug-design
     name: "Drug Design Data Resource"
@@ -21,8 +21,8 @@ supporting_data_source_info:
       terms_of_use_url: https://drugdesigndata.org/
       terms_of_use_description: null
     relevant_files:
-      - file_name: null
-        location: null
+      - file_name: "unknown"
+        location: "unknown"
         description: null
   - infores_id: infores:ki-database
     name: null
@@ -31,8 +31,8 @@ supporting_data_source_info:
       terms_of_use_url: null
       terms_of_use_description: null
     relevant_files:
-      - file_name: null
-        location: null
+      - file_name: "unknown"
+        location: "unknown"
         description: null
   - infores_id: infores:pubchem
     name: "PubChem"
@@ -44,8 +44,8 @@ supporting_data_source_info:
       terms_of_use_url: null
       terms_of_use_description: null
     relevant_files:
-      - file_name: null
-        location: null
+      - file_name: "unknown"
+        location: "unknown"
         description: null
   - infores_id: infores:taylor-research-group-ucsd
     name: "Taylor Research Group UCSD"
@@ -54,8 +54,8 @@ supporting_data_source_info:
       terms_of_use_url: null
       terms_of_use_description: null
     relevant_files:
-      - file_name: null
-        location: null
+      - file_name: "unknown"
+        location: "unknown"
         description: null
   - infores_id: infores:uspto-patent
     name: "United States Patent"
@@ -64,8 +64,8 @@ supporting_data_source_info:
       terms_of_use_url: null
       terms_of_use_description: null
     relevant_files:
-      - file_name: null
-        location: null
+      - file_name: "unknown"
+        location: "unknown"
         description: null
 source_info:
   infores_id: infores:bindingdb
@@ -102,7 +102,9 @@ source_info:
 ingest_info:
   ingest_categories:
   - aggregation_interpreter
-  utility: null
+  utility: >-
+    Translator researchers are interested in biological interactions between chemicals and
+    proteins, including drug-target interactions. BindingDb provides broad access to such data.
   scope: null
   relevant_files:
   - file_name: BindingDB_All_{version}_tsv.zip
@@ -111,21 +113,10 @@ ingest_info:
   included_content:
   - file_name: BindingDB_All_{version}_tsv.zip
     included_records: Homo sapien-related entries only
-    fields_used:
-      - BindingDB Reactant_set_id
-      - BindingDB MonomerID
-      - PubChem CID
-      - Target Name
-      - Target Source Organism According to Curator or DataSource
-      - UniProt (SwissProt) Primary ID of Target Chain 1
-      - Curation/DataSource
-      - Article DOI
-      - PMID
-      - Patent Number
-      - Ki (nM)
-      - IC50 (nM)
-      - Kd (nM)
-      - EC50 (nM)
+    fields_used: >-
+      BindingDB Reactant_set_id, BindingDB MonomerID, PubChem CID, Target Name,
+      Target Source Organism According to Curator or DataSource, UniProt (SwissProt) Primary ID of Target Chain 1,
+      Curation/DataSource, Article DOI, PMID, Patent Number, Ki (nM), IC50 (nM), Kd (nM), EC50 (nM)
   filtered_content:
     - file_name:  BindingDB_All_{version}_tsv.zip
       filtered_records: >-
@@ -146,8 +137,7 @@ ingest_info:
       which a ligand binds and dissociates from a protein.
       The ratio of Koff/Kon is Kd, the binding affinity
       between a ligand and its target.
-    relevant_files:
-    - BindingDB_All_{version}_tsv.zip
+    relevant_files: "BindingDB_All_{version}_tsv.zip"
   additional_notes: null
 target_info:
   edge_type_info:
@@ -184,19 +174,20 @@ target_info:
       binding data from the scientific literature.
     source_files:
       - BindingDB_All_{version}_tsv.zip
-    additional_notes: >-
-      BindingDB provides generates chemical-protein interaction statements based on
-      manual curation from the literature, or import from external knowledge bases.
-      Records include details about experiment supporting each interaction,
-      including binding/affinity metrics. The source tsv may therefore include >1 row
-      for a given chemical-protein interaction.  Translator's ingest collapses records
-      with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
-      into a single edge, and aggregates metadata across contributing records
-      (e.g. a list of all supporting publications, all supporting data sources
-      across contributing BindingDB records).  Consortium expert (V.Dancik) indicated that
-      BindingDB does some QA/filtering of binding assay records it imports to ensure that it only
-      includes those with affinity metrics suggesting a bona fide physical interaction
-      is occurring - which is why we use the "biolink:physically_interacts_with" predicate.
+    additional_notes:
+      - |
+        BindingDB provides generates chemical-protein interaction statements based on
+        manual curation from the literature, or import from external knowledge bases.
+        Records include details about experiment supporting each interaction,
+        including binding/affinity metrics. The source tsv may therefore include >1 row
+        for a given chemical-protein interaction.  Translator's ingest collapses records
+        with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
+        into a single edge, and aggregates metadata across contributing records
+        (e.g. a list of all supporting publications, all supporting data sources
+        across contributing BindingDB records).  Consortium expert (V.Dancik) indicated that
+        BindingDB does some QA/filtering of binding assay records it imports to ensure that it only
+        includes those with affinity metrics suggesting a bona fide physical interaction
+        is occurring - which is why we use the "biolink:physically_interacts_with" predicate.
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
@@ -204,10 +195,10 @@ target_info:
   - node_category: biolink:Protein
     source_identifier_types:
     - UniProtKB
-  future_considerations:
-  - category: null
-    consideration: null
-  additional_notes: null
+#  future_considerations:
+#  - category: null
+#    consideration: null
+#  additional_notes: null
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"
