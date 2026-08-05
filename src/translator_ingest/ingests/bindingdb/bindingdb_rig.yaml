@@ -151,14 +151,16 @@ ingest_info:
   additional_notes: null
 target_info:
   edge_type_info:
-  - subject:
-    - biolink:ChemicalEntity
+  - subject_categories:
+      - biolink:ChemicalEntity
     predicates:
-    - biolink:directly_physically_interacts_with
-    object:
-    - biolink:Protein
-    knowledge_level: knowledge_assertion
-    agent_type: manual_agent
+      - biolink:directly_physically_interacts_with
+    object_categories:
+      - biolink:Protein
+    knowledge_level:
+      - knowledge_assertion
+    agent_type:
+      - manual_agent
     primary_knowledge_sources:
       - infores:bindingdb
     supporting_data_sources:
@@ -176,7 +178,10 @@ target_info:
     - biolink:pIC50
     - biolink:pKd
     - biolink:pEC50
-    ui_explanation: TO DO
+    ui_explanation: >-
+      BindingDB reports quantitative protein–ligand binding affinities and interaction data,
+      generated primarily through expert manual curation of experimentally measured
+      binding data from the scientific literature.
     source_files:
       - BindingDB_All_{version}_tsv.zip
     additional_notes: >-
@@ -188,10 +193,10 @@ target_info:
       with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
       into a single edge, and aggregates metadata across contributing records
       (e.g. a list of all supporting publications, all supporting data sources
-      across contributing BindingDB records).  Vlado indicated that BindingDB does
-      some QA/filtering of binding assay records it imports to ensure that it only
+      across contributing BindingDB records).  Consortium expert (V.Dancik) indicated that
+      BindingDB does some QA/filtering of binding assay records it imports to ensure that it only
       includes those with affinity metrics suggesting a bona fide physical interaction
-      is occurring - which is why we use the biolink:physically_interacts_with predicate.
+      is occurring - which is why we use the "biolink:physically_interacts_with" predicate.
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
