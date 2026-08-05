@@ -1,4 +1,72 @@
 name: BindingDb
+supporting_data_source_info:
+  - infores_id: infores:chembl
+    name: ChEMBL
+    description: >-
+      a manually knowledge_assertion database of bioactive molecules with drug-like properties.
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: null
+        location: null
+        description: null
+  - infores_id: infores:drug-design
+    name: "Drug Design Data Resource"
+    description: >-
+      The Drug Design Data Resource (D3R) aims to advance the technology
+      of computer-aided drug discovery through the interchange of high quality
+      protein-ligand datasets.
+    terms_of_use_info:
+      terms_of_use_url: https://drugdesigndata.org/
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: null
+        location: null
+        description: null
+  - infores_id: infores:ki-database
+    name: null
+    description: null
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: null
+        location: null
+        description: null
+  - infores_id: infores:pubchem
+    name: "PubChem"
+    description: >-
+      an open chemistry database at the National Institutes of Health (NIH),
+      mostly contains small molecules, but also larger molecules such as nucleotides,
+      carbohydrates, lipids, peptides, and chemically-modified macromolecules
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: null
+        location: null
+        description: null
+  - infores_id: infores:taylor-research-group-ucsd
+    name: "Taylor Research Group UCSD"
+    description: null
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: null
+        location: null
+        description: null
+  - infores_id: infores:uspto-patent
+    name: "United States Patent"
+    description: null
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: null
+        location: null
+        description: null
 source_info:
   infores_id: infores:bindingdb
   name: BindingDb
@@ -16,9 +84,11 @@ source_info:
   citations:
     - https://doi.org/10.1093/nar/gkae1075
   terms_of_use_info:
+    terms_of_use_url: "https://fairsharing.org/FAIRsharing.3b36hk/"
     terms_of_use_description: >-
       All data and download files in BindingDB are freely
       available under a 'Creative Commons BY 3.0' license.
+      BindingDb is a FairSharing resource.
   data_access_locations:
     - BindingDb bulk downloads - https://www.bindingdb.org/rwd/bind/downloads/
   data_provision_mechanisms:
