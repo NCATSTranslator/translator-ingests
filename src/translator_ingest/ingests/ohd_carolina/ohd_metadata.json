@@ -1,0 +1,117 @@
+{
+  "graph_id": "OHD_Carolina_Automat",
+  "graph_name": "Open Health Data @ Carolina",
+  "graph_description": "Open Health Data @ Carolina provides access to counts and frequencies (i.e., EHR prevalence) of conditions, procedures, drug exposures, and patient demographics, and the co-occurrence frequencies between them.",
+  "graph_url": "https://github.com/NCATSTranslator/Translator-All/wiki/Open-Health-Data-at-Carolina",
+  "graph_version": "f627ebbefd242454",
+  "sources": [
+    {
+      "source_id": "OHD-Carolina",
+      "source_version": "2024-11-18",
+      "parsing_version": "1.0",
+      "supplementation_version": "1.1",
+      "normalization_scheme": {
+        "node_normalization_version": "2.3.26",
+        "edge_normalization_version": "v4.2.6-rc5",
+        "normalization_code_version": "1.4",
+        "conflation": false,
+        "strict": true
+      },
+      "release_version": "fbb48cd061daff6a",
+      "merge_strategy": null,
+      "edge_merging_attributes": null,
+      "edge_id_addition": false,
+      "normalization_version": "2.3.26_v4.2.6-rc5_1.4_strict",
+      "id": "OHD-Carolina",
+      "name": "",
+      "description": "",
+      "url": "",
+      "attribution": "",
+      "citation": "",
+      "full_citation": "",
+      "license": "",
+      "contentUrl": "",
+      "normalized_nodes.jsonl": {
+        "nodes": 27356
+      },
+      "normalized_edges.jsonl": {
+        "edges": 23240326
+      }
+    }
+  ],
+  "subgraphs": [],
+  "build_status": "stable",
+  "build_time": "09-28-25 04:09:59",
+  "build_error": null,
+  "final_node_count": 27356,
+  "final_edge_count": 22732570,
+  "merged_nodes": 0,
+  "merged_edges": 507756,
+  "unmerged_edge_count": 0,
+  "qc_results": {
+    "pass": true,
+    "warnings": {},
+    "errors": {},
+    "primary_knowledge_sources": [
+      "infores:openhealthdata-carolina"
+    ],
+    "aggregator_knowledge_sources": [],
+    "predicate_totals": {
+      "biolink:positively_correlated_with": 22352823,
+      "biolink:negatively_correlated_with": 379747
+    },
+    "predicates_by_knowledge_source": {
+      "infores:openhealthdata-carolina": {
+        "biolink:positively_correlated_with": 22352823,
+        "biolink:negatively_correlated_with": 379747
+      }
+    },
+    "edges_with_publications": {},
+    "edge_properties": [
+      "agent_type",
+      "knowledge_level",
+      "log_odds_ratio",
+      "log_odds_ratio_95_ci",
+      "object",
+      "original_object",
+      "original_subject",
+      "p_value",
+      "predicate",
+      "primary_knowledge_source",
+      "score",
+      "subject",
+      "total_sample_size"
+    ],
+    "node_curie_prefixes": {
+      "RXCUI": 13555,
+      "UMLS": 8181,
+      "MONDO": 3269,
+      "CHEBI": 1083,
+      "HP": 823,
+      "UNII": 136,
+      "NCIT": 110,
+      "EFO": 62,
+      "DRUGBANK": 58,
+      "PUBCHEM.COMPOUND": 50,
+      "NCBITaxon": 8,
+      "DOID": 8,
+      "MESH": 5,
+      "CHEMBL.COMPOUND": 4,
+      "GTOPDB": 1,
+      "NCBIGene": 1,
+      "KEGG.COMPOUND": 1,
+      "OMIM": 1
+    },
+    "node_properties": [
+      "category",
+      "description",
+      "equivalent_identifiers",
+      "id",
+      "information_content",
+      "name"
+    ],
+    "invalid_edges_due_to_predicate_and_node_types": 0,
+    "invalid_edges_due_to_missing_primary_ks": 0
+  },
+  "neo4j_dump": "https://robokop.renci.org/graphs/OHD_Carolina_Automat/f627ebbefd242454/graph_f627ebbefd242454.db.dump"
+}
