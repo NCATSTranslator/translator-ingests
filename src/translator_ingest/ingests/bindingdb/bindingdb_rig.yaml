@@ -74,7 +74,6 @@ ingest_info:
     - BindingDB_All_{version}_tsv.zip
   additional_notes: null
 target_info:
-  infores_id: infores:translator-bindingdb-kgx
   edge_type_info:
   - subject:
     - biolink:ChemicalEntity
@@ -88,7 +87,9 @@ target_info:
       - infores:bindingdb
     supporting_data_sources:
       - infores:chembl
+      - infores:drug-design
       - infores:ki-database
+      - infores:pubchem
       - infores:taylor-research-group-ucsd
       - infores:uspto-patent
     edge_properties:
