@@ -80,23 +80,29 @@ target_info:
       - infores:uspto-patent
     edge_properties:
     - biolink:publications
-    - biolink:has_affinity
+    - biolink:has_supporting_studies
+    - biolink:has_study_results
+    - biolink:pKi
+    - biolink:pIC50
+    - biolink:pKd
+    - biolink:pEC50
     ui_explanation: TO DO
     source_files:
       - BindingDB_All_{version}_tsv.zip
     additional_notes: >-
-      BindingDB provides chemical-protein interaction statements based on
-      manual curation from the literature, or import from external knowledgebases.
-      Records include details about experiment supporting each interaction,
-      including binding/affinity metrics. The source tsv may therefore include >1 row
-      for a given chemical-protein interaction.  Translator's ingest collapses records
-      with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
-      into a single edge, and aggregates metadata across contributing records
-      (e.g. a list of all supporting publications, all supporting data sources
-      across contributing BindingDB records).  Vlado indicated that BindingDB does
-      some QA/filtering of binding assay records it imports to ensure that it only
-      includes those with affinity metrics suggesting a bona fide physical interaction
-      is occurring - which is why we use the 'biolink:physically_interacts_with' predicate.
+      - |
+        BindingDB provides generates chemical-protein interaction statements based on
+        manual curation from the literature, or import from external knowledge bases.
+        Records include details about experiment supporting each interaction,
+        including binding/affinity metrics. The source tsv may therefore include >1 row
+        for a given chemical-protein interaction.  Translator's ingest collapses records
+        with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
+        into a single edge, and aggregates metadata across contributing records
+        (e.g. a list of all supporting publications, all supporting data sources
+        across contributing BindingDB records).  Vlado indicated that BindingDB does
+        some QA/filtering of binding assay records it imports to ensure that it only
+        includes those with affinity metrics suggesting a bona fide physical interaction
+        is occurring - which is why we use the 'biolink:physically_interacts_with' predicate.
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
