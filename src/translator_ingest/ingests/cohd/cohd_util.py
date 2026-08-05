@@ -1,11 +1,12 @@
 """
 This file contains utility functions for COHD data processing
 """
-from typing import Optional, Any
 from json import loads
+from typing import Any, Optional
 
-from biolink_model.datamodel.pydanticmodel_v2 import Study, NamedThing
+from biolink_model.datamodel.pydanticmodel_v2 import NamedThing, Study
 from bmt.pydantic import get_node_class
+
 from translator_ingest.util.biolink import get_biolink_model_toolkit
 
 bmt = get_biolink_model_toolkit()
