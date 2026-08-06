@@ -1,52 +1,113 @@
 name: Drug-Repurposing Hub Reference Ingest Guide
 
-source_info: 
+# Information about the Source of the ingest data
+source_info:
   infores_id: infores:drug-repurposing-hub
+  name: Drug Repurposing Hub
   description: >-
     The Drug Repurposing Hub is a curated and annotated collection of FDA-approved drugs, clinical trial drugs,
-    and selected pre-clinical tool compounds. Because the compounds are annotated and well characterized, the 
-    collection is a novel tool to explore known biological targets and pathways, and a powerful way to discover 
-    new biological insights, better understand disease mechanisms, and discover new activities of existing molecules. 
-    
+    and selected pre-clinical tool compounds, produced by the Broad Institute. Each compound is annotated with
+    its clinical development status, mechanism of action, known protein target(s), disease area, and disease
+    indication(s). Because the compounds are annotated and well characterized, the collection serves as a tool
+    to explore known biological targets and pathways, and a way to discover new biological insights, better
+    understand disease mechanisms, and identify new activities of existing molecules.
   citations:
-    - Corsello SM, Bittker JA, Liu Z, Gould J, McCarren P, Hirschman JE, Johnston SE, Vrcic A, Wong B, Khan M, Asiedu J, Narayan R, Mader CC, Subramanian A, Golub TR. The Drug Repurposing Hub: a next-generation drug library and information resource. Nature Medicine. 23, 405–408 (2017).
-  terms_of_use_info: 
-      license_name: "The Repurposing Hub compound metadata (including compound names, structures, targets, mechanisms, and indications) are made available under the permissive CC-BY 4.0 license. Restrictions: The Drug Repurposing Hub data is provided for non-commercial use only."
-      license_url: https://repo-hub.broadinstitute.org/repurposing#about
-  data_access_locations: 
+    - "Corsello SM, Bittker JA, Liu Z, Gould J, McCarren P, Hirschman JE, Johnston SE, Vrcic A, Wong B, Khan M, Asiedu J, Narayan R, Mader CC, Subramanian A, Golub TR. The Drug Repurposing Hub: a next-generation drug library and information resource. Nature Medicine. 23, 405-408 (2017). https://doi.org/10.1038/nm.4306"
+  terms_of_use_info:
+    license_name: "CC BY 4.0"
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    terms_of_use_url: https://repo-hub.broadinstitute.org/repurposing#about
+    terms_of_use_description: >-
+      The Repurposing Hub compound metadata (compound names, structures, targets, mechanisms, and indications)
+      are made available under the permissive CC BY 4.0 license. The source additionally states that the data
+      is provided for non-commercial use only.
+  data_access_locations:
     - https://repo-hub.broadinstitute.org/repurposing#download-data
-  data_provision_mechanisms: 
+  data_provision_mechanisms:
     - file_download
-  data_formats: 
+  data_formats:
     - tsv
-  data_versioning_and_releases: "irregular, Latest version: 8/19/2025, Archived versions: 3/24/2020 | 9/7/2018 | 5/16/2018 | 3/27/2017"
+  data_versioning_and_releases: >-
+    Releases are irregular and not on a fixed cadence. Latest version: 8/19/2025.
+    Archived versions: 3/24/2020, 9/7/2018, 5/16/2018, 3/27/2017.
+  source_status: maintained_as_needed_updates
+  additional_notes:
+    - >-
+      The ingest currently pins the 20200324 drug-annotation file and the 20240610 sample-annotation file
+      (see download.yaml). A future iteration should move to the latest 2025-08-19 release.
 
-
+# Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
-  utility: powerful way to discover new biological insights, better understand disease mechanisms, and discover new activities of existing molecules.
-  scope: FDA-approved drugs, clinical trial drugs, and selected pre-clinical tool compounds
+  utility: >-
+    Provides manually curated compound-to-target, compound-to-disease-indication, and compound-to-chemical-role
+    annotations for a well-characterized library of approved, clinical-stage, and pre-clinical compounds. This
+    supports Translator drug repurposing, mechanism-of-action, and treatment-prediction use cases.
+  scope: >-
+    FDA-approved drugs, clinical trial drugs, and selected pre-clinical tool compounds, annotated with mechanism
+    of action, protein target(s), clinical phase, disease area, and disease indication(s).
 
-  relevant_files: 
-    - file_name: repo-drug-annotation-20200324.txt
-      location: https://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20200324.txt
+  relevant_files:
+    - file_name: repo-drug-annotation.txt
+      location: http://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20200324.txt
+      description: >-
+        One row per compound, providing curated annotations including clinical phase, mechanism of action,
+        protein target(s), disease area, and disease indication(s). Source of all edges in this ingest.
+    - file_name: repo-sample-annotation.txt
+      location: http://repo-hub.broadinstitute.org/public/data/repo-sample-annotation-20240610.txt
+      description: >-
+        One row per compound sample, providing compound identity information (PubChem CID, InChIKey, vendor
+        name). Used to assign identifiers to the chemical (subject) nodes that the drug-annotation edges attach to.
 
   included_content:
-    - file_name: repo-drug-annotation-20200324.txt
-      included_records: all rows
+    - file_name: repo-drug-annotation.txt
+      included_records: >-
+        All compound rows whose pert_iname matches a sample loaded from repo-sample-annotation.txt and that
+        yield at least one target or indication association.
       fields_used: pert_iname, clinical_phase, moa, target, disease_area, indication
+    - file_name: repo-sample-annotation.txt
+      included_records: >-
+        All sample rows that resolve to a chemical identifier (a numeric PubChem CID, or a valid InChIKey when
+        no CID is present).
+      fields_used: pert_iname, InChIKey, vendor_name, pubchem_cid
 
+  filtered_content:
+    - file_name: repo-sample-annotation.txt
+      filtered_records: >-
+        Rows with neither a numeric PubChem CID nor a valid InChIKey (failing the InChIKey format regex).
+      rationale: These samples cannot be assigned a resolvable chemical identifier, so no node can be created.
+    - file_name: repo-drug-annotation.txt
+      filtered_records: >-
+        Rows whose pert_iname does not match a loaded sample, and rows that produce no target or indication edge.
+      rationale: >-
+        Without a matching identified compound, or without at least one mappable target/indication, no edge can
+        be created. Indications not present in indications_config.json and target gene symbols not present in
+        target_config.json (unmappable to HGNC) are skipped.
 
+  future_considerations:
+    - category: node_property_content
+      consideration: >-
+        The 'disease_area' field is read from the source but not currently emitted as a node property (the
+        assignment is commented out as a TODO in create_disease_association / the chemical node build). Consider
+        adding it as a node property once a suitable Biolink slot (or a registered attribute) is available.
+      relevant_files: repo-drug-annotation.txt
+    - category: edge_property_content
+      consideration: >-
+        clinical_approval_status and max_research_phase are computed via clinical_approval_map and
+        research_phase_map but are currently commented out as TODOs; wire them onto the treatment edges as edge
+        properties in a future iteration.
+      relevant_files: repo-drug-annotation.txt
+
+# Information about the Graph Output by the ingest
 target_info:
-  infores_id: infores:translator-drug-repurposing-hub
-
   edge_type_info:
+    # Compound -> protein target (mechanism of action)
     - subject_categories:
+        - biolink:ChemicalEntity
         - biolink:SmallMolecule
         - biolink:MolecularMixture
-        - biolink:ChemicalEntity
-      predicates: 
+      predicates:
         - biolink:affects
       object_categories:
         - biolink:Gene
@@ -54,38 +115,75 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
+      primary_knowledge_sources:
+        - infores:drug-repurposing-hub
       edge_properties:
-        - mechanism_of_action_description             # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation?
-      ui_explanation: mechanism of action, target information
+        - biolink:description
+      ui_explanation: >-
+        The Drug Repurposing Hub provides manually curated annotations of the known protein target(s) and
+        mechanism of action for each compound in its library. This edge was created from a compound's curated
+        'target' gene-symbol annotation (mapped to an HGNC gene), with the compound's curated mechanism-of-action
+        ('moa') text captured on the edge as its description. Because the target is a curated assertion rather
+        than a statistical or computational inference, it is represented using the Biolink 'affects' predicate
+        with a knowledge_assertion knowledge level and manual_agent agent type.
+      source_files:
+        - repo-drug-annotation.txt
+        - repo-sample-annotation.txt
+      additional_notes:
+        - >-
+          The subject nodes are created as biolink:ChemicalEntity by the ingest (identified by PubChem CID or
+          InChIKey); downstream normalization may reassign them to biolink:SmallMolecule or
+          biolink:MolecularMixture. The mechanism-of-action text is currently stored in the generic
+          biolink:description slot; see future considerations regarding a dedicated mechanism_of_action property.
 
+    # Compound -> disease indication
     - subject_categories:
+        - biolink:ChemicalEntity
         - biolink:SmallMolecule
         - biolink:MolecularMixture
-        - biolink:ChemicalEntity
       predicates:
         - biolink:treats
         - biolink:treats_or_applied_or_studied_to_treat
         - biolink:in_clinical_trials_for
-        - biolink:ameliorates_condition
         - biolink:in_preclinical_trials_for
+        - biolink:ameliorates_condition
         - biolink:diagnoses
       object_categories:
         - biolink:DiseaseOrPhenotypicFeature
-        - biolink:OrganismTaxon
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
-        - mechanism_of_action_description
-        - clinical_approval_status
-        - max_research_phase
-      ui_explanation: drug indication
+      primary_knowledge_sources:
+        - infores:drug-repurposing-hub
+      ui_explanation: >-
+        The Drug Repurposing Hub provides manually curated annotations of the disease indication(s) for each
+        compound, along with the compound's highest clinical development phase. This edge was created from a
+        compound's curated 'indication' annotation, mapped to a disease/phenotype term. The specific Biolink
+        predicate is selected from the curated feature/action of the annotation combined with the compound's
+        clinical_phase: launched drugs use 'treats'; compounds in clinical or pre-clinical study use
+        'in_clinical_trials_for' or 'in_preclinical_trials_for'; withdrawn or unspecified-phase compounds use
+        the broad 'treats_or_applied_or_studied_to_treat'; and annotations curated as ameliorative or diagnostic
+        use 'ameliorates_condition' or 'diagnoses' respectively. All are curated assertions
+        (knowledge_assertion / manual_agent).
+      source_files:
+        - repo-drug-annotation.txt
+        - repo-sample-annotation.txt
+      additional_notes:
+        - >-
+          The object node is created as biolink:DiseaseOrPhenotypicFeature by the ingest regardless of the source
+          indication's identifier system; identifiers are heterogeneous (predominantly MONDO and HP, with NCIT,
+          DOID, EFO, NCBITaxon, and others), so downstream normalization may reassign some objects (e.g. an
+          NCBITaxon-identified indication to biolink:OrganismTaxon). The listed predicates are not a single
+          predicate-plus-descendants hierarchy; per schema guidance they should eventually be decomposed into
+          separate EdgeType objects (see future considerations). No edge properties are currently emitted on these
+          edges: clinical_approval_status and max_research_phase are computed but commented out as TODOs in the code.
 
+    # Compound -> chemical role / drug category
     - subject_categories:
+        - biolink:ChemicalEntity
         - biolink:SmallMolecule
         - biolink:MolecularMixture
-        - biolink:ChemicalEntity
       predicates:
         - biolink:has_chemical_role
       object_categories:
@@ -94,60 +192,89 @@ target_info:
         - knowledge_assertion
       agent_type:
         - manual_agent
-      edge_properties:
-        - mechanism_of_action_description
-        - clinical_approval_status
-        - max_research_phase
-      ui_explanation: drug categpry
+      primary_knowledge_sources:
+        - infores:drug-repurposing-hub
+      ui_explanation: >-
+        The Drug Repurposing Hub annotates some compounds with a functional role or drug category (e.g.
+        'antiseptic', 'contrast agent', 'antiviral') rather than a specific disease indication. When a compound's
+        curated 'indication' annotation denotes such a role, it is represented as a 'has_chemical_role' edge
+        linking the compound to a chemical-role concept (typically a ChEBI or NCIT term). This is a curated
+        assertion (knowledge_assertion / manual_agent).
+      source_files:
+        - repo-drug-annotation.txt
+        - repo-sample-annotation.txt
+      additional_notes:
+        - >-
+          The object is created as biolink:ChemicalEntity with a ChEBI or NCIT identifier; clinical_phase-derived
+          edge properties do not apply to these role edges (none are emitted).
 
   node_type_info:
-
-    - node_category: ChemicalEntity
-      source_identifier_types: 
-        - PubChem
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - PUBCHEM.COMPOUND
+        - INCHIKEY
         - CHEBI
+        - NCIT
       node_properties:
         - biolink:name
         - biolink:synonym
-        - disease_area                 # MHB: has this been added to the attributes.yaml file so it ahs a biolink prefix and will pass validation? 
+        - biolink:xref
+      additional_notes:
+        - >-
+          Compound (subject) nodes are identified by PubChem CID (PUBCHEM.COMPOUND) or InChIKey, and carry name,
+          synonym (from the sample vendor name when distinct), and xref (InChIKey) properties. Chemical-role
+          (object) nodes of has_chemical_role edges are also created as biolink:ChemicalEntity, identified by ChEBI
+          or NCIT, and carry a name. Downstream normalization may reassign some compound nodes to
+          biolink:SmallMolecule or biolink:MolecularMixture.
 
-    - node_category: DiseaseOrPhenotypicFeature
-      source_identifier_types: 
+    - node_category: biolink:DiseaseOrPhenotypicFeature
+      source_identifier_types:
         - MONDO
+        - HP
+        - NCIT
+        - DOID
+        - EFO
+        - NCBITaxon
       node_properties:
         - biolink:name
+      additional_notes:
+        - >-
+          Disease/indication identifiers are heterogeneous; the most common prefixes are MONDO and HP, followed by
+          NCIT, with a long tail (DOID, EFO, NCBITaxon, OMIT, SNOMED, Orphanet, and others).
 
-    - node_category: Gene
-      source_identifier_types: 
+    - node_category: biolink:Gene
+      source_identifier_types:
         - HGNC
       node_properties:
+        - biolink:name
         - biolink:symbol
-
-    - node_category: MolecularMixture
-      source_identifier_types: 
-        - PubChem
-      node_properties:
-        - biolink:name
-        - biolink:synonym
-        - disease_area
-
-    - node_category: SmallMolecule
-      source_identifier_types: 
-        - PubChem
-      node_properties:
-        - biolink:name
-        - biolink:synonym
-        - disease_area
 
   future_considerations:
     - category: qualifiers
-      consideration: "map mechanism description text to qualifiers (e.g. 'serine protease inhibitor' => 'causal_mechanism_qualifier: inhibition'"
+      consideration: >-
+        Map mechanism-of-action description text to qualifiers on the compound-affects-gene edges
+        (e.g. 'serine protease inhibitor' => causal_mechanism_qualifier: inhibition).
+    - category: predicates
+      consideration: >-
+        Decompose the compound-to-disease-indication edge type into separate EdgeType objects, since its
+        predicates (treats, treats_or_applied_or_studied_to_treat, in_clinical_trials_for,
+        in_preclinical_trials_for, ameliorates_condition, diagnoses) are not a single predicate-plus-descendants
+        hierarchy as required by the schema for a shared EdgeType.
+    - category: edge_properties
+      consideration: >-
+        Emit the currently-computed-but-commented-out clinical_approval_status and max_research_phase as edge
+        properties on treatment edges, and consider a dedicated mechanism_of_action property (registered in the
+        attributes catalog with a biolink prefix) in place of the generic biolink:description slot for
+        compound-affects-gene edges.
 
-
+# Information about how the ingest was specified and performed
 provenance_info:
   contributions:
-  - "Vlado Dancik - code author, domain expertise"
-  - "Kevin Schaper - code support"
-  - "Evan Morris - code support"
-  - "Sierra Moxon - data modeling, code support"
-  - "Matthew Brush - data modeling, domain expertise"
+    - "Vlado Dancik: code author, domain expertise"
+    - "Kevin Schaper: code support"
+    - "Evan Morris: code support"
+    - "Sierra Moxon: data modeling, code support"
+    - "Matthew Brush: data modeling, domain expertise"
+  artifacts:
+    - "RIG review sub-issue: https://github.com/NCATSTranslator/translator-ingests/issues/419"
+    - "RIG review epic: https://github.com/NCATSTranslator/translator-ingests/issues/407"

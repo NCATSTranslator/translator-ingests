@@ -1,0 +1,30 @@
+Assigning classifications to genes
+
+The assignment is based on the phylogenetic trees where the gene is located.  The annotation of the subfamilies are used for the gene.
+
+Format of tab-delimited classification file:
+1) Gene Identifier (format:  organism|gene id source:gene id|protein id source:protein id)
+	Example:
+	XENTR|ENSEMBL:ENSXETG00000001299|ENSEMBL:ENSXETP00000002787
+	HUMAN|ENSEMBL:ENSG00000197601|UniProtKB:Q8WVX9
+2) Protein ID - currently empty. The protein ids can be retrieved from above
+3) PANTHER SF ID – for example, PTHR12213:SF6.  ":SF" indicates the subfamily ID
+4) PANTHER Family Name
+5) PANTHER Subfamily Name
+6) PANTHER Molecular function
+7) PANTHER Biological process
+8) Cellular components:  PANTHER GO slim cellular component terms assigned to families and subfamilies
+9) Protein class:  PANTHER protein class terms assigned to families and subfamilies
+10) Pathway
+Example Molecular function (the same format applies to biological process, cellular component and protein class)
+transferase activity#GO:0016740;enzyme regulator activity#GO:0030234;protein binding#GO:0005515
+Example Pathway:
+Inflammation mediated by chemokine and cytokine signaling pathway#Inflammation mediated by chemokine and cytokine signaling pathway#P00031>Integrin#Integrin#P00853;Integrin signalling pathway#Integrin signalling pathway#P00034>Integrin  alpha#Integrin alpha#P00941
+
+The format of the pathway information is: pathway_long_name#pathway_short_name#pathway_accession>component_long_name#component_short_name#component_accession
+
+Explanation of pathway accessions:
+Gxxxxx   Gene or RNA
+Pxxxxx   Protein
+Sxxxxx   small molecules
+Uxxxxx   others, such as "unknown", etc.

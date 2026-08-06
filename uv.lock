@@ -356,7 +356,7 @@ dev = [
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "nbclassic" },
     { name = "pytest", specifier = ">=8.4.1" },
-    { name = "resource-ingest-guide-schema" },
+    { name = "resource-ingest-guide-schema", specifier = ">=0.1.5" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
@@ -2904,7 +2904,7 @@ wheels = [
 
 [[package]]
 name = "resource-ingest-guide-schema"
-version = "0.1.3"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -2913,9 +2913,9 @@ dependencies = [
     { name = "linkml-runtime" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/76/2d43a740849592f649c566500197019f248a1509c7458d5ba5334f4ca108/resource_ingest_guide_schema-0.1.3.tar.gz", hash = "sha256:1802d5eb0c335807c312d136dc580bf1fb7aea4403d48e7b3b6329927643ac0a", size = 2414423, upload-time = "2026-01-26T20:58:57.369Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/16/a8b30ac3e399dc5525532e0563959cb2059d1bbb84b5ccc34be52510bdc2/resource_ingest_guide_schema-0.1.5.tar.gz", hash = "sha256:2df384cb52d16034da65449402f8f2451b59c2e80e79e4c448dc9884c23233d7", size = 2465766, upload-time = "2026-07-09T15:23:16.714Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/c5/f184c4d43260c9ec193571c4819fffcb222ddfa2e52c468ba0397e20a887/resource_ingest_guide_schema-0.1.3-py3-none-any.whl", hash = "sha256:86a95607a7b584bc086ee9d66599f9225f1870283c65b87833ef02726909e2ae", size = 14906, upload-time = "2026-01-26T20:58:55.722Z" },
+    { url = "https://files.pythonhosted.org/packages/35/04/01e49294c5e1c350ca14fc57017dd57d93e35db37cb822945946a5f784b3/resource_ingest_guide_schema-0.1.5-py3-none-any.whl", hash = "sha256:568cb2834a060d72a538410cf0488ac8cd56cd97dcf1de4bdbb889fd94069bdd", size = 22151, upload-time = "2026-07-09T15:23:15.553Z" },
 ]
 
 [[package]]

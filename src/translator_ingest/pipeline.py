@@ -24,7 +24,7 @@ from orion.normalization import get_current_node_norm_version, get_current_babel
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
+from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, current_iso_date
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -672,6 +672,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         return
 
     pipeline_metadata.build_version = pipeline_metadata.generate_build_version()
+    pipeline_metadata.build_date = current_iso_date()
     if is_graph_metadata_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Graph metadata already completed for {pipeline_metadata.source} ({pipeline_metadata.source_version})."
