@@ -5,9 +5,7 @@ import pytest
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    Protein,
-    AgentTypeEnum,
-    KnowledgeLevelEnum,
+    Protein
 )
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter
@@ -18,7 +16,6 @@ from translator_ingest.ingests.string.string import (
 )
 from translator_ingest.ingests.string.string_utils import (
     ALWAYS_PREDICATE,
-    COMBINED_SCORE_THRESHOLD,
     CONDITIONAL_CHANNEL_PREDICATES,
     DEFAULT_THRESHOLDS,
     EDGE_KL_AT,
