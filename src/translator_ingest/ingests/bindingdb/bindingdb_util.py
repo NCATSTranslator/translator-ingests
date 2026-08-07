@@ -10,7 +10,11 @@ from zipfile import ZipFile
 import koza
 import polars as pl
 from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as BRE
-from biolink_model.datamodel.pydanticmodel_v2 import ProteinLigandAssayResult, QuantityValue, Study
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    QuantityValue,
+    Study,
+    ProteinLigandAssayResult
+)
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
