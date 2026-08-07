@@ -187,9 +187,9 @@ def transform_string_ppi(
 
     edges = [
         make_string_ppi_edge(
-            subject_id, pred, object_id,
+            subject_id, pred, score, object_id,
             *EDGE_KL_AT[pred],
         )
-        for pred, _ in new_edges
+        for pred, score in new_edges
     ]
     return KnowledgeGraph(nodes=[subject_node, object_node], edges=edges)

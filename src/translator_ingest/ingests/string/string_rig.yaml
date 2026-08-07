@@ -37,8 +37,8 @@ source_info:
       license_name: CC BY 4.0
       license_url: https://creativecommons.org/licenses/by/4.0/
     data_access_locations:
-      - STRING downloads: https://stringdb-downloads.org/
-      - STRING main site: https://string-db.org/
+      - "STRING data downloads: https://stringdb-downloads.org/"
+      - "STRING main site: https://string-db.org/"
     data_provision_mechanisms:
       - file_download
       - other  # conformance: was 'web_interface'
@@ -49,11 +49,8 @@ source_info:
       STRING uses dotted version numbers (currently v12.0). The version is published at
       https://string-db.org/api/json/version and is embedded in download URLs (e.g. "protein.links.v12.0/").
       "get_latest_version()" resolves the version dynamically from this endpoint.
-
     source_status:
-      maintained_as_regular_updates
-
-# Information about Ingested Content
+      maintained_regular_updates
 ingest_info:
     ingest_categories:
       - primary_knowledge_provider  # conformance: was 'Primary Knowledge Provider'
@@ -74,7 +71,6 @@ ingest_info:
         (3) an additional "biolink:coexpressed_with" edge when the coexpression channel score exceeds the
             coexpression threshold (cutoff TBD, pending Vlado's recommendation),
             carrying the coexpression score as "stringdb_coexpression_score".
-      PENDING BLOCKERS: (A) biolink PR for association_basis_qualifier enum {Statistical, Genetic, Functional};
       (B) attributes.yaml PR for the three stringdb_* edge properties; (C) Vlado's threshold recommendations.
     relevant_files:
       - file_name: 9606.protein.links.full.v12.0.txt.gz
@@ -182,19 +178,18 @@ ingest_info:
           carry only the ENSEMBL ID as their identifier; biolink validation flags this with INFO-level missing
           recommended name warnings on every node.
         relevant_files: 9606.protein.info.v12.0.txt.gz, 9606.protein.aliases.v12.0.txt.gz
-    additional_notes: >-
-      Current scope: STRING protein–protein functional associations for human, mouse, and rat. Three edge types
-      are emitted per qualifying pair: (1) always-present "associated_with + association_basis_qualifier:Functional"
-      for all pairs with combined_score > 700, carrying stringdb_combined_score; (2) conditional
-      "directly_physically_interacts_with" when the experiments channel exceeds a threshold (TBD, Vlado's
-      recommendation pending), carrying stringdb_experimental_score; (3) conditional "coexpressed_with" when
-      the coexpression channel exceeds a threshold (TBD), carrying stringdb_coexpression_score.
-      Prior predicate model (ORION-aligned per-channel predicates: physically_interacts_with, coexpressed_with,
-      interacts_with, gene_fusion_with, genetically_interacts_with, related_to) is superseded; see
-      CHANGELOG 2026-07-17. STITCH protein–chemical edges developed alongside this ingest but split out for a
-      later effort; preserved on the stitch-ingest branch (see CHANGELOG 2026-05-28).
-
-# Information about the Graph Output by the ingest task
+    additional_notes:
+      - >
+        Current scope: STRING protein–protein functional associations for human, mouse, and rat. Three edge types
+        are emitted per qualifying pair: (1) always-present "associated_with + association_basis_qualifier:Functional"
+        for all pairs with combined_score > 700, carrying stringdb_combined_score; (2) conditional
+        "directly_physically_interacts_with" when the experiments channel exceeds a threshold (TBD, Vlado's
+        recommendation pending), carrying stringdb_experimental_score; (3) conditional "coexpressed_with" when
+        the coexpression channel exceeds a threshold (TBD), carrying stringdb_coexpression_score.
+        Prior predicate model (ORION-aligned per-channel predicates: physically_interacts_with, coexpressed_with,
+        interacts_with, gene_fusion_with, genetically_interacts_with, related_to) is superseded; see
+        CHANGELOG 2026-07-17. STITCH protein–chemical edges developed alongside this ingest but split out for a
+        later effort; preserved on the stitch-ingest branch (see CHANGELOG 2026-05-28).
 target_info:
     edge_type_info:
       # Decisions from 2026-07-10 and 2026-07-17 Biolink/STRING calls. See CHANGELOG 2026-07-17.
@@ -204,36 +199,33 @@ target_info:
       #   2. directly_physically_interacts_with (conditional on experiments channel threshold, TBD)
       #   3. coexpressed_with (conditional on coexpression channel threshold, TBD)
       #
-      # PENDING BLOCKERS (implementation gated on external PRs + analysis):
-      #   A. biolink PR (Matt): association_basis_qualifier enum {Statistical, Genetic, Functional}
-      #   B. attributes.yaml PR (Matt / Sierra): stringdb_combined_score, stringdb_experimental_score,
-      #      stringdb_coexpression_score edge properties
+      # BLOCKER (implementation gated on external PRs + analysis):
       #   C. Vlado: recommend experiments + coexpression channel cutoffs
       #
       # Prior ORION-aligned per-channel predicate model (5 edge types, combined_score > 500) superseded.
-
       - subject_categories:
           - biolink:Protein
         predicates:
           - biolink:associated_with
         object_categories:
           - biolink:Protein
-        # PENDING BLOCKER A: association_basis_qualifier enum (Matt's biolink PR).
-        # Intended qualifier: association_basis_qualifier = Functional
         qualifiers:
-          - property: association_basis_qualifier
-            value: Functional
-          - property: species_context_qualifier
+          - property: biolink:association_basis_qualifier
+            value_enumeration:
+              - functional
+          - property: biolink:species_context_qualifier
             value_enumeration:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        # PENDING BLOCKER B: stringdb_combined_score edge property (attributes.yaml PR).
         edge_properties:
           - stringdb_combined_score
-        knowledge_level: [knowledge_assertion]   # tentative; exact value TBD
-        agent_type: [data_analysis_pipeline]     # 7-17-26 call: "automated agent"; exact biolink enum TBD
-        primary_knowledge_sources: [infores:string]
+        knowledge_level:
+          - knowledge_assertion     # tentative; exact value TBD
+        agent_type:
+          - data_analysis_pipeline  # 7-17-26 call: "automated agent"; exact biolink enum TBD
+        primary_knowledge_sources:
+          - "infores:string"
         ui_explanation: >-
           Emitted for every protein pair whose STRING combined_score exceeds 700 (high-confidence cutoff).
           The association_basis_qualifier:Functional qualifier encodes STRING's core claim: these proteins
@@ -246,7 +238,6 @@ target_info:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
           - 10116.protein.links.full.v12.0.txt.gz
-
       - subject_categories:
           - biolink:Protein
         predicates:
@@ -259,13 +250,15 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        # PENDING BLOCKER B: stringdb_experimental_score edge property (attributes.yaml PR).
         # PENDING BLOCKER C: threshold value (Vlado's recommendation).
         edge_properties:
           - stringdb_experimental_score
-        knowledge_level: [knowledge_assertion]   # per 7-17-26 call
-        agent_type: [data_analysis_pipeline]     # 7-17-26 call: "automated agent"; exact biolink enum TBD
-        primary_knowledge_sources: [infores:string]
+        knowledge_level:
+          - knowledge_assertion     # per 7-17-26 call
+        agent_type:
+          - data_analysis_pipeline  # 7-17-26 call: "automated agent"; exact biolink enum TBD
+        primary_knowledge_sources:
+          - "infores:string"
         ui_explanation: >-
           Emitted in addition to the associated_with edge when STRING's experiments channel score exceeds
           the experimental evidence threshold (cutoff TBD: Vlado's recommendation pending). The experiments
@@ -289,13 +282,15 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        # PENDING BLOCKER B: stringdb_coexpression_score edge property (attributes.yaml PR).
         # PENDING BLOCKER C: threshold value (Vlado's recommendation).
         edge_properties:
           - stringdb_coexpression_score
-        knowledge_level: [statistical_association]  # per 7-17-26 call
-        agent_type: [data_analysis_pipeline]         # per 7-17-26 call
-        primary_knowledge_sources: [infores:string]
+        knowledge_level:
+          - statistical_association  # per 7-17-26 call
+        agent_type:
+          - data_analysis_pipeline   # per 7-17-26 call
+        primary_knowledge_sources:
+          - "infores:string"
         ui_explanation: >-
           Emitted in addition to the associated_with edge when STRING's coexpression channel score exceeds
           the coexpression threshold (cutoff TBD: Vlado's recommendation pending). The coexpression channel
@@ -307,7 +302,6 @@ target_info:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
           - 10116.protein.links.full.v12.0.txt.gz
-
     node_type_info:
       - node_category: biolink:Protein
         # Source identifier types reflect the canonical post-normalization identifier
@@ -333,15 +327,15 @@ target_info:
           ingest pattern (Kevin Schaper, 2026-05) and the Translator NodeNormalizer's expectations, without
           forcing a gene-centric reshape of the graph. NodeNormalizer resolution verified at 98.5% (human),
           100% (mouse), 98% (rat) on sample probes.
-
-# Information about how the ingest task was specified and performed
 provenance_info:
     contributions:
-      - Kenneth Huellas-Bruskiewicz: ingest owner, code author
-      - Richard Bruskiewich: data modeling, code co-author
+      - "Kenneth Huellas-Bruskiewicz - ingest owner, code author"
+      - "Richard Bruskiewich - data modelling, code co-author"
+      - "Matt Brush - data modeling, domain expertise"
+      - "Sierra Moxon - data modeling, domain expertise"
     artifacts:
-      - Ingest Survey: https://docs.google.com/spreadsheets/d/13Q4uJ90UFCXyXZMuhgtm1nREGtIIMsfDEgb4jpkgRIA/edit?gid=0#gid=0
-      - Ingest Ticket: https://github.com/NCATSTranslator/translator-ingests/issues/377
-      - Monarch STRING code reference: https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
-      - ORION STRING code reference: https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
-      - Automat STRING-DB knowledge provider (RENCI) endpoint: https://automat.renci.org/string-db/
+      - "Ingest Survey: https://docs.google.com/spreadsheets/d/13Q4uJ90UFCXyXZMuhgtm1nREGtIIMsfDEgb4jpkgRIA/edit?gid=0#gid=0"
+      - "Ingest Ticket: https://github.com/NCATSTranslator/translator-ingests/issues/377"
+      - "Monarch STRING code reference: https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py"
+      - "ORION STRING code reference: https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py"
+      - "Automat STRING-DB knowledge provider (RENCI) endpoint: https://automat.renci.org/string-db/"

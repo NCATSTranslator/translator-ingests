@@ -12,6 +12,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+from biolink_model.datamodel.pydanticmodel_v2 import AssociationBasisEnum as ABE
 
 from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_STRING
 from translator_ingest.util.transform_utils import entity_id
@@ -43,8 +44,6 @@ COEXPRESSION_THRESHOLD = 750
 # Encodes STRING's core claim: these proteins participate in a shared biological program
 # (process, pathway, reaction, complex, or expression program).
 #
-# PENDING BLOCKER A: association_basis_qualifier:Functional qualifier to be added once
-# Matt's biolink PR lands (association_basis_qualifier enum {Statistical, Genetic, Functional}).
 ALWAYS_PREDICATE = "biolink:associated_with"
 
 # Channel-specific conditional edges. Each fires independently when its channel score
@@ -182,7 +181,7 @@ def passes_combined_score(
 def edges_for_row(
     record: dict[str, Any],
     thresholds: dict[str, int] | None = None,
-) -> list[tuple[str, int | None]]:
+) -> list[tuple[str, int]]:
     """
     Return the list of (predicate, channel_score_or_None) tuples to emit for one
     STRING ".full" row under the 2026-07-17 edge model.
@@ -190,8 +189,7 @@ def edges_for_row(
     Always includes (ALWAYS_PREDICATE, combined_score). Additionally, includes
     channel-specific edges when their scores exceed the per-channel threshold.
     The channel score is returned alongside each conditional predicate for a later
-    attachment as a score property (PENDING BLOCKER B: attributes.yaml PR for
-    stringdb_experimental_score / stringdb_coexpression_score).
+    attachment as a score property.
 
     >>> row = {"combined_score": "800", "experiments": "0", "coexpression": "0"}
     >>> edges_for_row(row)
@@ -225,7 +223,7 @@ def edges_for_row(
     """
     resolved = thresholds if thresholds is not None else DEFAULT_THRESHOLDS
     combined = int(str(record.get("combined_score", 0)))
-    result: list[tuple[str, int | None]] = [(ALWAYS_PREDICATE, combined)]
+    result: list[tuple[str, int]] = [(ALWAYS_PREDICATE, combined)]
     for channel, predicate in CONDITIONAL_CHANNEL_PREDICATES.items():
         raw = record.get(channel)
         if raw is None:
@@ -243,6 +241,7 @@ def edges_for_row(
 def make_string_ppi_edge(
     subject_id: str,
     predicate: str,
+    score: int,
     object_id: str,
     knowledge_level: KnowledgeLevelEnum,
     agent_type: AgentTypeEnum,
@@ -253,13 +252,6 @@ def make_string_ppi_edge(
 
     Uses PREDICATE_TO_ASSOCIATION_CLASS for the dispatch; raises AssertionError
     for unknown predicates.
-
-    Edge score properties (stringdb_combined_score / stringdb_experimental_score /
-    stringdb_coexpression_score) are PENDING BLOCKER B (attributes.yaml PR) and
-    are not yet attached here.
-
-    TODO: association_basis_qualifier:Functional on the associated_with edge is
-          awaits merging of Matt's biolink PR 1771) thus is not yet added as an Association slot.
     """
     assert predicate in PREDICATE_TO_ASSOCIATION_CLASS, f"Unknown predicate: {predicate!r}"
     association_cls = PREDICATE_TO_ASSOCIATION_CLASS[predicate]
@@ -268,6 +260,10 @@ def make_string_ppi_edge(
         subject=subject_id,
         predicate=predicate,
         object=object_id,
+        association_basis_qualifier=ABE.functional if predicate == "biolink:associated_with" else None,
+        stringdb_combined_score = score if predicate == "biolink:associated_with" else None,
+        stringdb_experimental_score = score if predicate == "biolink:directly_physically_interacts_with" else None,
+        stringdb_coexpression_score = score if predicate == "biolink:coexpressed_with" else None,
         sources=STRING_SOURCES,
         knowledge_level=knowledge_level,
         agent_type=agent_type,
