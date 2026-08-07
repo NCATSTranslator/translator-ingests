@@ -1,14 +1,16 @@
 """Unit tests for STRING ingest helpers and transform."""
+from pathlib import Path
 
 import pytest
 
 import koza
+from koza.transform import Mappings
+from koza.io.writer.writer import KozaWriter
 
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    Protein
-)
+from biolink_model.datamodel.pydanticmodel_v2 import Protein
+from biolink_model.datamodel.pydanticmodel_v2 import AssociationBasisEnum as ABE
 
-from tests.unit.ingests import MockKozaTransform, MockKozaWriter
+from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 from translator_ingest.ingests.string.string import (
     get_latest_version,
@@ -26,6 +28,8 @@ from translator_ingest.ingests.string.string_utils import (
     resolve_thresholds,
     sorted_pair_key,
 )
+
+TEST_DATA_DIR = Path(__file__).resolve().parent
 
 
 def _full_row(
@@ -287,6 +291,8 @@ def test_transform_emits_associated_with_above_threshold(mock_koza, p1, p2, expe
     edges = list(result.edges)
     assert len(edges) >= 1
     assert edges[0].predicate == "biolink:associated_with"
+    assert edges[0].association_basis_qualifier == ABE.functional
+    assert edges[0].stringdb_combined_score == 750
 
     for node in result.nodes:
         assert node.category == ["biolink:Protein"]
@@ -315,6 +321,11 @@ def test_transform_experiments_fires_directly_physically_interacts_with(mock_koz
     predicates = {e.predicate for e in result.edges}
     assert "biolink:directly_physically_interacts_with" in predicates
     assert "biolink:associated_with" in predicates
+    stringdb_experimental_score = {
+                     e.stringdb_experimental_score for e in result.edges
+                     if e.predicate == "biolink:directly_physically_interacts_with"
+    }
+    assert stringdb_experimental_score == 800
 
 
 def test_transform_coexpression_fires_coexpressed_with(mock_koza):
@@ -327,7 +338,11 @@ def test_transform_coexpression_fires_coexpressed_with(mock_koza):
     predicates = {e.predicate for e in result.edges}
     assert "biolink:coexpressed_with" in predicates
     assert "biolink:associated_with" in predicates
-
+    stringdb_coexpression_score = {
+                     e.stringdb_coexpression_score for e in result.edges
+                     if e.predicate == "biolink:coexpressed_with"
+    }
+    assert stringdb_coexpression_score == 800
 
 def test_transform_both_channels_fire(mock_koza):
     """Both channels above threshold yields all three edge types."""
