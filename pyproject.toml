@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
-    "biolink-model==4.4.2",
+    "biolink-model==4.4.4",
     "bmt>=1.4.8",
     "click>=8.0.0",
     "codespell>=2.4.1",
