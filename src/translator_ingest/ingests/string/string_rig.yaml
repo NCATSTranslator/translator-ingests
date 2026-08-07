@@ -318,15 +318,16 @@ target_info:
         node_properties:
           - in_taxon
           - equivalent_identifiers
-        additional_notes: >-
-          Protein nodes use STRING's native identifiers — ENSEMBL protein IDs that vary by species: ENSP (human),
-          ENSMUSP (mouse), ENSRNOP (rat). The leading "{NCBI Taxon ID}." prefix is stripped and the result is prefixed
-          with "ENSEMBL:". Each node carries "in_taxon" derived from the row's taxon prefix, and (when a
-          STRING to Entrez mapping exists) "equivalent_identifiers" listing one or more "NCBIGene:" CURIEs.
-          This explicit equivalence is the hybrid design choice that aligns with both Monarch's gene-endpoint
-          ingest pattern (Kevin Schaper, 2026-05) and the Translator NodeNormalizer's expectations, without
-          forcing a gene-centric reshape of the graph. NodeNormalizer resolution verified at 98.5% (human),
-          100% (mouse), 98% (rat) on sample probes.
+        additional_notes:
+          - |
+            Protein nodes use STRING's native identifiers — ENSEMBL protein IDs that vary by species: ENSP (human),
+            ENSMUSP (mouse), ENSRNOP (rat). The leading "{NCBI Taxon ID}." prefix is stripped and the result is prefixed
+            with "ENSEMBL:". Each node carries "in_taxon" derived from the row's taxon prefix, and (when a
+            STRING to Entrez mapping exists) "equivalent_identifiers" listing one or more "NCBIGene:" CURIEs.
+            This explicit equivalence is the hybrid design choice that aligns with both Monarch's gene-endpoint
+            ingest pattern (Kevin Schaper, 2026-05) and the Translator NodeNormalizer's expectations, without
+            forcing a gene-centric reshape of the graph. NodeNormalizer resolution verified at 98.5% (human),
+            100% (mouse), 98% (rat) on sample probes.
 provenance_info:
     contributions:
       - "Kenneth Huellas-Bruskiewicz - ingest owner, code author"
