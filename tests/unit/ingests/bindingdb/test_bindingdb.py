@@ -49,21 +49,10 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     ROWS_MISSING_AFFINITY,
     SOURCE_ORGANISM,
     CURATION_DATASOURCE,
-    PUBLICATION,
     SUPPORTING_DATA_ID,
     TARGET_NAME,
     filter_affinity_values,
     get_affinity_measurements,
-    filter_affinity_values
-)
-from tests.unit.ingests.bindingdb.sample_data import (
-    RECORD_MISSING_FIELD_1,
-    RECORD_MISSING_FIELD_2,
-    CASPASE3_KI_RECORD,
-    CASPASE1_KD_RECORD,
-    CASPASE1_WEAK_KON_RECORD,
-    CASPASE1_RECORD_WITH_DOI,
-    BINDINGDB_RECORD_WITH_A_US_PATENT
 )
 
 
@@ -203,7 +192,7 @@ def test_prepare_bindingdb_data(
 
         elif test_record[REACTANT_SET_ID] == 9:
             expected_records.remove(9)
-            # Row 9 has Ki=90 (in range) and IC50=50000 
+            # Row 9 has Ki=90 (in range) and IC50=50000
             # (out of range for 10,000 nM (10 micromolar) threshold);
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
