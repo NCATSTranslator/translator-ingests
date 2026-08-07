@@ -277,7 +277,6 @@ target_info:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
           - 10116.protein.links.full.v12.0.txt.gz
-
       - subject_categories:
           - biolink:Protein
         predicates:
@@ -313,7 +312,7 @@ target_info:
       - node_category: biolink:Protein
         # Source identifier types reflect the canonical post-normalization identifier
         # set on Protein nodes in the merged Translator graph (as seen on Automat's
-        # STRING-DB KP). The ingest itself emits "ENSEMBL" as the node id and
+        # STRING-DB KP). The ingest script itself emits "ENSEMBL" as the node id and
         # populates "equivalent_identifiers" with "NCBIGene" CURIEs from the
         # entrez_2_string mapping file. UniProtKB and PR equivalents are filled in
         # downstream by the Translator NodeNormalizer (~98.5% of human ENSPs resolve;
@@ -343,6 +342,6 @@ provenance_info:
     artifacts:
       - Ingest Survey: https://docs.google.com/spreadsheets/d/13Q4uJ90UFCXyXZMuhgtm1nREGtIIMsfDEgb4jpkgRIA/edit?gid=0#gid=0
       - Ingest Ticket: https://github.com/NCATSTranslator/translator-ingests/issues/377
-      - Monarch STRING reference: https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
-      - ORION STRING reference: https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
-      - Automat STRING-DB knowledge provider (RENCI): https://automat.renci.org/string-db/
+      - Monarch STRING code reference: https://github.com/monarch-initiative/string-ingest/blob/main/src/protein_links.py
+      - ORION STRING code reference: https://github.com/RobokopU24/ORION/blob/master/parsers/STRING/src/loadSTRINGDB.py
+      - Automat STRING-DB knowledge provider (RENCI) endpoint: https://automat.renci.org/string-db/
