@@ -1,45 +1,50 @@
-from typing import Optional, Any, Iterable
-from datetime import datetime
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-import polars as pl
+from typing import Any
 
 import koza
+import polars as pl
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
     ChemicalEntity,
-    AffinityMeasurement,
     ChemicalGeneInteractionAssociation,
-    Protein,
     KnowledgeLevelEnum,
-    AgentTypeEnum
+    Protein,
+    Study,
 )
-from translator_ingest.util.biolink import build_association_knowledge_sources
-from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
+    web_string,
     extract_bindingdb_columns_polars,
     process_publications,
     filter_affinity_values,
-    get_affinity_measurements,
-
-    CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
-    LINK_TO_LIGAND_TARGET_PAIR, web_string,
+    get_bindingdb_assay_study,
+    REACTANT_SET_ID,
     MONOMER_ID,
+    PUBCHEM_CID,
     TARGET_NAME,
     SOURCE_ORGANISM,
-    AFFINITY_PARAMETERS,
-    CURATION_DATASOURCE,
-    PUBCHEM_CID,
     UNIPROT_ID,
-    PUBLICATION,
-    SUPPORTING_DATA_ID,
-    REACTANT_SET_ID,
+    CURATION_DATASOURCE,
     ARTICLE_DOI,
     PMID,
+    PUBCHEM_AID,
     PATENT_NUMBER,
+
+    PUBLICATION,
+    SUPPORTING_DATA_ID,
+
+    AFFINITY_PARAMETERS,
+    ROWS_MISSING_AFFINITY,
+    CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
+    LINK_TO_LIGAND_TARGET_PAIR,
     MISSING_PUBS,
-    ROWS_MISSING_AFFINITY
 )
+
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 BINDINGDB_COLUMNS = (
     REACTANT_SET_ID,
@@ -51,6 +56,7 @@ BINDINGDB_COLUMNS = (
     CURATION_DATASOURCE,
     ARTICLE_DOI,
     PMID,
+    PUBCHEM_AID,
     PATENT_NUMBER
 ) + tuple(AFFINITY_PARAMETERS.values())
 
@@ -76,7 +82,7 @@ def get_latest_version() -> str:
     # of BindingDb data is made at the start of each month,
     # so we use the heuristic of a date function to return
     # this candidate 'latest release' value.
-    return datetime.today().strftime("%Y%m")
+    return datetime.now(UTC).strftime("%Y%m")
 
 
 @koza.on_data_begin()
@@ -104,7 +110,7 @@ def on_end_ingest_by_record(koza_transform: koza.KozaTransform) -> None:
             )
     for tag, value in koza_transform.transform_metadata.items():
         koza_transform.log(
-            msg=f"{str(tag)}: {value}.",
+            msg=f"{tag!s}: {value}.",
             level="WARNING"
         )
 
@@ -123,7 +129,7 @@ def prepare_bindingdb_data(
     @koza.prepare_data decorated method to perform a simple consolidation of such
     edges across rows, returning a single edge per unique ligand-target pair.
 
-    This polars-based consolidates duplicate assay records for the same
+    This polars-based method consolidates duplicate assay records for the same
     ligand-target pair using polars' efficient grouping and aggregation.
 
     Possible performance improvements over the original implementation:
@@ -143,6 +149,7 @@ def prepare_bindingdb_data(
     """
     # As of December 2025, the BindingDB input file is
     # assumed to be a Zipfile archive with a single file inside
+    assert koza_transform.input_files_dir is not None
     data_archive_path: Path = koza_transform.input_files_dir / "BindingDB.zip"
 
     # Directly read and extract useful columns from the original
@@ -196,7 +203,8 @@ def transform_bindingdb_by_record(
     :param record: Individual BindingDb records to be processed.
     :return: KnowledgeGraph object containing nodes and edges for the record.
     """
-    # Nodes
+    # Node Data
+
     pubchem_id = record.get(PUBCHEM_CID, "")
     if not pubchem_id:
         koza_transform.transform_metadata["rows_missing_pubchem_id"] += 1
@@ -226,31 +234,34 @@ def transform_bindingdb_by_record(
         in_taxon_label=taxon_label
     )
 
-    # Publications
-    publications = [record[PUBLICATION]]
+    # Edge Data
+    edge_id: str = entity_id()
 
-    # Measurements of the molecular interaction affinity of
-    # chemical 'subject' to gene product target 'object'
-    affinity_measurements: Optional[list[AffinityMeasurement]] = get_affinity_measurements(record)
+    # Publication associated with specific BindingDb result
+    publication = record[PUBLICATION]
+
+    # dict[str, Study] describing measurements of the
+    # molecular interaction affinity or enzymatic
+    # interactions of the ligand to a target protein
+    bindingdb_assay: dict[str, Study] = get_bindingdb_assay_study(publication, edge_id, record)
 
     # Sources
     target_label = web_string(target_name)
     supporting_data_id = record[SUPPORTING_DATA_ID]
-    supporting_data: Optional[list[str]] = [supporting_data_id] if supporting_data_id else None
+    supporting_data: list[str] | None = [supporting_data_id] if supporting_data_id else None
     source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
     sources = build_association_knowledge_sources(
         primary=("infores:bindingdb",[source_record_url]),
         supporting=supporting_data
     )
 
-    # Edge
     association = ChemicalGeneInteractionAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,
-        has_affinity=affinity_measurements,
-        publications=publications,
+        has_supporting_studies=bindingdb_assay if bindingdb_assay else None,
+        publications=[publication],
         sources=sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,

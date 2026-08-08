@@ -1,19 +1,91 @@
 name: BindingDb
+supporting_data_source_info:
+  - infores_id: infores:chembl
+    name: ChEMBL
+    description: >-
+      Aa manually knowledge_assertion database of bioactive molecules with drug-like properties.
+    terms_of_use_info:
+      terms_of_use_url: "https://chembl.gitbook.io/chembl-interface-documentation/about#data-licensing"
+      terms_of_use_description: "Creative Commons Attribution-Share Alike 3.0 Unported License"
+    relevant_files:
+      - file_name: "unknown"
+        location: "https://www.ebi.ac.uk/chembl/"
+  - infores_id: infores:drug-design
+    name: "Drug Design Data Resource"
+    description: >-
+      The Drug Design Data Resource (D3R) aims to advance the technology
+      of computer-aided drug discovery through the interchange of high quality
+      protein-ligand datasets.
+    terms_of_use_info:
+      terms_of_use_url: https://drugdesigndata.org/links/terms
+#      terms_of_use_description: null
+    relevant_files:
+      - file_name: "various"
+        location: "https://drugdesigndata.org/about/datasets"
+  - infores_id: infores:ki-database
+    name: null
+    description: null
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: "unknown"
+        location: "unknown"
+  - infores_id: infores:pubchem
+    name: "PubChem"
+    description: >-
+      An open chemistry database at the National Institutes of Health (NIH),
+      mostly contains small molecules, but also larger molecules such as nucleotides,
+      carbohydrates, lipids, peptides, and chemically-modified macromolecules
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: "unknown"
+        location: "unknown"
+  - infores_id: infores:taylor-research-group-ucsd
+    name: "Taylor Research Group UCSD"
+    description: null
+    terms_of_use_info:
+      terms_of_use_url: null
+      terms_of_use_description: null
+    relevant_files:
+      - file_name: "unknown"
+        location: "unknown"
+  - infores_id: infores:uspto-patent
+    name: "United States Patent and Trademark Office (USPTO)"
+    description: >-
+      The USPTO is the federal agency that grants patents, registers trademarks,
+      and advises the Administration, through the Secretary of Commerce,
+      on intellectual property policy.
+    terms_of_use_info:
+      terms_of_use_url: https://www.uspto.gov/terms-use-uspto-websites
+#      terms_of_use_description: null
+    relevant_files:
+      - file_name: "various"
+        location: "See https://www.uspto.gov/using-usptogov/accessibility-uspto-website"
 source_info:
-  infores_id: infores:bindingdb
+  infores_id: "infores:bindingdb"
   name: BindingDb
-  description: The Binding Database ("BindingDb") is a public, web-accessible database
-    of measured binding affinities, focusing chiefly on the interactions of protein
-    considered to be drug-targets with small, drug-like molecules. As of July 31,
-    2021, BindingDB contains thousands of dataset Entries, each with a DOI,
-    containing millions of binding assay results for thousands of protein targets
-    assayed against over a million distinct small molecule ligands.
+  description: >-
+    BindingDB is developed and maintained by researchers at the University of California, San Diego,
+    with support from the U.S. National Institutes of Health.  Its purpose is to provide a publicly
+    accessible repository of experimentally measured binding interactions between small molecules and
+    biological macromolecules to support drug discovery, medicinal chemistry, chemical biology, and
+    computational modeling. The database contains quantitative binding affinity measurements,
+    protein–ligand interactions, assay descriptions, chemical structures, target information, and
+    associated literature references. The knowledge is generated primarily through expert manual curation
+    of peer-reviewed scientific publications reporting experimentally determined binding measurements,
+    supplemented by integration of selected data from other public resources and automated data processing
+    pipelines that standardize chemical structures, protein identifiers, and assay metadata.
   citations:
     - https://doi.org/10.1093/nar/gkae1075
   terms_of_use_info:
+    terms_of_use_url: "https://fairsharing.org/FAIRsharing.3b36hk/"
     terms_of_use_description: >-
-      All data and download files in bindingDB are freely
+      All data and download files in BindingDB are freely
       available under a 'Creative Commons BY 3.0' license.
+      BindingDb is a FairSharing resource.
   data_access_locations:
     - BindingDb bulk downloads - https://www.bindingdb.org/rwd/bind/downloads/
   data_provision_mechanisms:
@@ -23,68 +95,99 @@ source_info:
   data_versioning_and_releases: >-
     Regular releases at the start of each month date stamped with the
     year and month of the release (i.e. 202511), incorporated into the data file name.
+  source_status: maintained_regular_updates
 ingest_info:
   ingest_categories:
-  - null
-  utility: null
-  scope: null
+  - aggregation_interpreter
+  utility: >-
+    Translator researchers are interested in biological interactions between chemicals and
+    proteins, including drug-target interactions. BindingDb provides broad access to such data.
+  scope: >-
+    Only a strict subset of BindingDb ligand to target (protein) interaction data
+    including basic affinity assay data is captured, for human and mainstream model organisms.
   relevant_files:
   - file_name: BindingDB_All_{version}_tsv.zip
     location: https://www.bindingdb.org/rwd/bind/downloads/
     description: All data in BindingdDB
   included_content:
-  - file_name: null
+  - file_name: BindingDB_All_{version}_tsv.zip
     included_records: Homo sapien-related entries only
-    fields_used: "BindingDB Reactant_set_id, BindingDB MonomerID, PubChem CID, Target Name, Target Source Organism According to Curator or DataSource, UniProt (SwissProt) Primary ID of Target Chain 1, Curation/DataSource, Article DOI, PMID, Patent Number"
-      # The value of this data field can be synthesized from the monomerid and the target name
-      # - Link to Ligand-Target Pair in BindingDB
-      #
-      # The next round of data collection may include:
-      #
-      # - Ki (nM)- C9
-      # - IC50 (nM)- C10
-      # - Kd (nM)- C11
-      # - EC50 (nM)- C12
-      # - kon (M-1-s-1)- C13
-      # - koff (s-1)- C14
-      # - pH
-      # - Temp(C)
+    fields_used: >-
+      BindingDB Reactant_set_id, BindingDB MonomerID, PubChem CID, Target Name,
+      Target Source Organism According to Curator or DataSource, UniProt (SwissProt) Primary ID of Target Chain 1,
+      Curation/DataSource, Article DOI, PMID, Patent Number, Ki (nM), IC50 (nM), Kd (nM), EC50 (nM)
+  filtered_content:
+    - file_name:  BindingDB_All_{version}_tsv.zip
+      filtered_records: >-
+        The records are currently filtered out based upon
+        'Ki','IC50','Kd' and 'EC50' having values below 10 micromolar.
+      rationale:  >-
+        The units of these kinetic parameters are nM. 
+        Lower values imply stronger binding affinity
+        or functional effects. Imposing a threshold
+        focuses on the most relevant interactions.
+        For Ki, IC50, EC50, the value relates to
+        the concentration of ligand (or drug) 
+        needed to inhibit 50% of enzyme activity.
   future_considerations:
   - category: edge_content
     consideration: >-
-      The records could be filtered out based upon:
-      'Ki','IC50','Kd','EC50','kon','koff'
-      having values below some threshold (e.g., 10,000nm ?)
-      The units of these kinetic parameters are nM. 
-      Lower values imply stronger binding affinity
-      or functional effects. Imposing a threshold
-      focuses on the most relevant interactions.
-      For Ki, IC50, EC50, the value relates to
-      the concentration of ligand (or drug) 
-      needed to inhibit 50% of enzyme activity.
       Kon and Koff rates are, respectively, the rate
       which a ligand binds and dissociates from a protein.
       The ratio of Koff/Kon is Kd, the binding affinity
       between a ligand and its target.
     relevant_files:
-    - BindingDB_All_{version}_tsv.zip
-  additional_notes:
-    - null
+    - "BindingDB_All_{version}_tsv.zip"
+  additional_notes: null
 target_info:
-  infores_id: null
   edge_type_info:
-  - subject:
-    - biolink:ChemicalEntity
+  - subject_categories:
+      - biolink:ChemicalEntity
     predicates:
-    - biolink:directly_physically_interacts_with
+      - biolink:directly_physically_interacts_with
     object_categories:
-    - biolink:Protein
+      - biolink:Protein
     knowledge_level:
       - knowledge_assertion
     agent_type:
       - manual_agent
+    primary_knowledge_sources:
+      - infores:bindingdb
+    supporting_data_sources:
+      - infores:chembl
+      - infores:drug-design
+      - infores:ki-database
+      - infores:pubchem
+      - infores:taylor-research-group-ucsd
+      - infores:uspto-patent
     edge_properties:
     - biolink:publications
+    - biolink:has_supporting_studies
+    - biolink:has_study_results
+    - biolink:pKi
+    - biolink:pIC50
+    - biolink:pKd
+    - biolink:pEC50
+    ui_explanation: >-
+      BindingDB reports quantitative protein–ligand binding affinities and interaction data,
+      generated primarily through expert manual curation of experimentally measured
+      binding data from the scientific literature.
+    source_files:
+      - "BindingDB_All_{version}_tsv.zip"
+    additional_notes:
+      - |
+        BindingDB generates chemical-protein interaction statements based on
+        manual curation from the literature, or import from external knowledge bases.
+        Records include details about experiment supporting each interaction,
+        including binding/affinity metrics. The source tsv may therefore include >1 row
+        for a given chemical-protein interaction.  Translator's ingest collapses records
+        with the same chemical ligand (Pubchem CID) and protein target (Uniprot id)
+        into a single edge, and aggregates metadata across contributing records
+        (e.g. a list of all supporting publications, all supporting data sources
+        across contributing BindingDB records).  Consortium expert (V.Dancik) indicated that
+        BindingDB does some QA/filtering of binding assay records it imports to ensure that it only
+        includes those with affinity metrics suggesting a bona fide physical interaction
+        is occurring - which is why we use the "biolink:physically_interacts_with" predicate.
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
@@ -92,11 +195,10 @@ target_info:
   - node_category: biolink:Protein
     source_identifier_types:
     - UniProtKB
-  future_considerations:
-  - category: null
-    consideration: null
-  additional_notes:
-    - null
+#  future_considerations:
+#  - category: null
+#    consideration: null
+#  additional_notes: null
 provenance_info:
   contributions:
   - "Richard Bruskiewich - data modeling, domain expertise, code author"

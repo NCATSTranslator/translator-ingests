@@ -2,18 +2,19 @@
 Utility methods for BindingDB input and parsing.
 Adapted from sample code prototyped by CLAUDE.ai
 """
-from typing import Optional, Any
-from pathlib import Path
-from zipfile import ZipFile
 from math import log10
-import polars as pl
+from pathlib import Path
+from typing import Any
+from zipfile import ZipFile
+
 import koza
+import polars as pl
+from biolink_model.datamodel.pydanticmodel_v2 import BinaryRelationEnum as BRE
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    AffinityParameterEnum as ape,
-    AffinityMeasurement,
-    BinaryRelationEnum as bre
+    QuantityValue,
+    Study,
+    ProteinLigandAssayResult
 )
-from translator_ingest.util.transform_utils import entity_id
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
@@ -27,18 +28,14 @@ SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
 
 # Ignoring pKon and pKoff for now - since they
 # are not concentration-driven affinity parameters
-AFFINITY_PARAMETERS = {
-    ape.pKi: "Ki (nM)",
-    ape.pIC50: "IC50 (nM)",
-    ape.pKd: "Kd (nM)",
-    ape.pEC50: "EC50 (nM)",
-}
+AFFINITY_PARAMETERS = {"pKi": "Ki (nM)", "pIC50": "IC50 (nM)", "pKd": "Kd (nM)", "pEC50": "EC50 (nM)"}
 
-# An upper filter threshold of 1.0e-6 (1 micromole)
-# (equal to a negative base 10 logarithm value of 6)
-# is specified, which is 1,000 (1.0e+3) times the recorded
-# 1.0e-9 (nanoMolar) units of the BindingDb dataset values
-AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
+# The specified upper filter threshold is 10 micromoles
+# (that is, 1.0e-5, equal to 10.0 x 1.0e-6) which has a
+# negative base 10 logarithm value of 5. Since BindingDb
+# values are recorded in nanoMolar (1.0e-9) units, then
+# 10,000 (1.0e+4) nanomolar is the upper bound threshold.
+AFFINITY_FILTER_UPPER_BOUND = 1.0e+4
 
 ROWS_MISSING_AFFINITY = "rows_missing_affinity"
 
@@ -50,6 +47,7 @@ nM = 1.0e-9
 CURATION_DATASOURCE = "Curation/DataSource"
 ARTICLE_DOI = "Article DOI"
 PMID = "PMID"
+PUBCHEM_AID="PubChem AID"
 PATENT_NUMBER = "Patent Number"
 PUBCHEM_CID = "PubChem CID"
 UNIPROT_ID = "UniProt (SwissProt) Primary ID of Target Chain 1"
@@ -138,23 +136,22 @@ def extract_bindingdb_columns_polars(
     :param target_taxa: Target species to be included in extracted BindingDB data.
     :return: A Polars DataFrame containing BindingDB data rows with only specified columns.
     """
-    with ZipFile(data_archive_path) as z:
-        with z.open("BindingDB_All.tsv") as datafile:
-            df = (
-                pl.scan_csv(
-                    datafile,
-                    separator="\t",
-                    has_header=True,  # header_mode: 0 means that the first row is the header
-                    schema_overrides=SCHEMA_OVERRIDES,
-                    # not ideal to skip problematic BindingDB data rows, but if
-                    # most of the other data can be read, we still make progress
-                    ignore_errors=True
-                )
-                # CRITICAL: Only select the required columns - massive performance gain
-                .select(columns)
-                # Execute the optimized query
-                .collect()
+    with ZipFile(data_archive_path) as z, z.open("BindingDB_All.tsv") as datafile:
+        df = (
+            pl.scan_csv(
+                datafile,
+                separator="\t",
+                has_header=True,  # header_mode: 0 means that the first row is the header
+                schema_overrides=SCHEMA_OVERRIDES,
+                # not ideal to skip problematic BindingDB data rows, but if
+                # most of the other data can be read, we still make progress
+                ignore_errors=True
             )
+            # CRITICAL: Only select the required columns - massive performance gain
+            .select(columns)
+            # Execute the optimized query
+            .collect()
+        )
 
     # Filtering to only human targets
     if SOURCE_ORGANISM in columns:
@@ -163,7 +160,7 @@ def extract_bindingdb_columns_polars(
         )
 
     koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-    koza_transform.log(df.columns)
+    koza_transform.log(str(df.columns))
 
     return df
 
@@ -188,6 +185,13 @@ def process_publications(
             pl.concat_str([
                 pl.lit("uspto-patent:"),
                 pl.col(PATENT_NUMBER).str.replace("US", "")
+            ])
+        )
+        .when(pl.col(PUBCHEM_AID).is_not_null())
+        .then(
+            pl.concat_str([
+                pl.lit("pubchem.aid:"),
+                pl.col(PUBCHEM_AID).str.replace("aid", "")
             ])
         )
         .when(pl.col(ARTICLE_DOI).is_not_null())
@@ -215,11 +219,13 @@ def filter_affinity_values(
 
     Two-stage filtering:
     1. Null out individual affinity column values that fall outside
-       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND.
+       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND,
+       except for PubChem records (identified by CURATION_DATASOURCE == "PubChem"),
+       which are only subject to the lower bound (value > 0).
     2. Remove rows where all affinity columns are null (either
        originally missing or nulled by range filtering).
 
-    Values may contain relational prefixes (``<``, ``>``) which are
+    Values may contain relational prefixes ("<", ">") which are
     stripped before numeric comparison.
 
     :param koza_transform: Ingest context for recording filter metadata.
@@ -228,7 +234,15 @@ def filter_affinity_values(
     """
     initial_count = df.height
 
-    # Stage 1: null out individual values outside bounds
+    # PubChem assay records use a different concentration scale and are
+    # exempt from the upper-bound filter; only the lower bound (> 0) applies.
+    is_pubchem = (
+        pl.col(CURATION_DATASOURCE).eq("PubChem")
+        if CURATION_DATASOURCE in df.columns
+        else pl.lit(False)
+    )
+
+    # Stage 1: null out individual BindingDb nanoMolar values outside bounds
     bound_exprs = []
     for col_name in AFFINITY_PARAMETERS.values():
         parsed = (
@@ -236,9 +250,12 @@ def filter_affinity_values(
             .str.strip_chars("<> ")
             .cast(pl.Float64, strict=False)
         )
-        in_range = parsed.gt(0.0) & parsed.le(AFFINITY_FILTER_UPPER_BOUND)
+        above_zero = parsed.gt(0.0)
+        within_upper_bound = parsed.le(AFFINITY_FILTER_UPPER_BOUND)
+        # PubChem records bypass the upper bound; all others require full range
+        passes_filter = above_zero & (within_upper_bound | is_pubchem)
         bound_exprs.append(
-            pl.when(in_range)
+            pl.when(passes_filter)
             .then(pl.col(col_name))
             .otherwise(None)
             .alias(col_name)
@@ -259,36 +276,60 @@ def filter_affinity_values(
     return df
 
 
-def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
-    affinity_parameter: ape
-    measurements: Optional[list[AffinityMeasurement]] = None
-    for affinity_parameter, column in AFFINITY_PARAMETERS.items():
-        if column in record and record[column]:
+def get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue]:
+    measurements: dict[str, QuantityValue] = {}
+    for parameter, column in AFFINITY_PARAMETERS.items():
+        if record.get(column):
             value: str = record[column]
             value = value.strip()
-            has_binary_relation: bre
+            has_binary_relation: BRE
             if value.startswith("<"):
                 value = value[1:]
-                has_binary_relation = bre.less_than
+                has_binary_relation = BRE.less_than
             elif value.startswith(">"):
                 value = value[1:]
-                has_binary_relation = bre.greater_than
+                has_binary_relation = BRE.greater_than
             else:
-                has_binary_relation = bre.equal_to
+                has_binary_relation = BRE.equal_to
 
-            # Adjust BindingDb nominal nanomolar values to actual float values then transform
-            # to a linearized negative base 10 logarithm ("pK") value in which a higher
+            # Adjust BindingDb nominal nanomolar values to the actual float value, then transform
+            # it to a linearized negative base 10 logarithm ("pK") value in which a higher
             # real value represents higher binding affinity at lower ligand concentrations
-            affinity = -log10(float(value)*nM)
+            has_numeric_value = -log10(float(value)*nM)
 
-            affinity_measurement = AffinityMeasurement(
-                id=entity_id(),
-                affinity_parameter=affinity_parameter,
-                affinity=affinity,
+            measurement = QuantityValue(
+                # has_unit=?  TODO: not quite sure what unit to report here
+                has_numeric_value=has_numeric_value,
                 has_binary_relation=has_binary_relation
             )
-            if measurements is None:
-                measurements = [affinity_measurement]
-            else:
-                measurements.append(affinity_measurement)
+            measurements[parameter]= measurement
+
     return measurements
+
+
+def get_bindingdb_assay_study(
+        publication_id: str,
+        edge_id: str,
+        record: dict[str, Any]
+)-> dict[str, Study]:
+    """
+    Parsing BindingDb record fields for ligand-protein affinities
+    and enzymatic interactions, into a ProteinLigandAssayResult
+
+    :param publication_id: String identifier for the publication serving as the 'Study' source of the edge
+    :param edge_id: String identifier for the edge
+    :param record: dict[str, Any] BindingDb record including edge associated data for ligand-protein interactions.
+    :return: dict[str, Study] | None is a dictionary fragment with the 'study id' as key and a Study as value.
+                                The method returns None if no such Study record can be resolved.
+    """
+    assay_result: ProteinLigandAssayResult = ProteinLigandAssayResult(
+        id=edge_id,
+        **get_affinity_measurements(record),
+    )
+
+    return {
+        publication_id: Study(
+            id=publication_id,
+            has_study_results=[assay_result]
+        )
+    }
