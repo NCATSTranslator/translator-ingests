@@ -65,7 +65,7 @@ supporting_data_source_info:
       - file_name: "various"
         location: "See https://www.uspto.gov/using-usptogov/accessibility-uspto-website"
 source_info:
-  infores_id: infores:bindingdb
+  infores_id: "infores:bindingdb"
   name: BindingDb
   description: >-
     BindingDB is developed and maintained by researchers at the University of California, San Diego,
