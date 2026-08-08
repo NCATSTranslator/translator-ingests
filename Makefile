@@ -33,7 +33,7 @@ endif
 # (truncation can leave a substring that looks like a misspelling of a longer word),
 # (3) acronyms and external vocabulary tokens in analysis cells add more noise.
 # Prefer spell-checking .py, .yaml, and prose docs instead.
-CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
+CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb,**/eda
 
 # Include additional makefiles
 include rig.Makefile

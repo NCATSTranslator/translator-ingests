@@ -1,0 +1,14 @@
+channel,dominant_rows,dominant_pct
+textmining,3663344,26.6369
+textmining_transferred,3606600,26.2243
+experiments_transferred,3044884,22.1399
+coexpression_transferred,1544396,11.2296
+coexpression,790212,5.7458
+database,311608,2.2658
+homology,306304,2.2272
+cooccurence,234892,1.7079
+database_transferred,212388,1.5443
+experiments,19318,0.1405
+neighborhood_transferred,14816,0.1077
+fusion,4154,0.0302
+neighborhood,0,0.0000

@@ -3,9 +3,19 @@ STRING protein–protein interaction ingest (human, mouse, rat).
 
 Reads STRING's '{taxon}.protein.links.full.v12.0.txt.gz' (16 columns: 7
 evidence channels + 6 orthology-transferred variants + combined_score) and emits
-per-channel biolink predicates between 'Protein' nodes, following ORION's
-STRING parser. See [CHANGELOG.md](./CHANGELOG.md) and
-[string_rig.yaml](./string_rig.yaml) for scope, rationale, and alternatives.
+three edge types per qualifying protein pair, following the 2026-07-17 call decisions:
+
+  1. biolink:associated_with + association_basis_qualifier:Functional (always, combined_score > 700)
+  2. biolink:directly_physically_interacts_with (conditional on experiments channel, TBD threshold)
+  3. biolink:coexpressed_with (conditional on coexpression channel, TBD threshold)
+
+Pending blockers before full implementation:
+  A. biolink PR (Matt): association_basis_qualifier enum {Statistical, Genetic, Functional}
+  B. attributes.yaml PR (Matt/Sierra): stringdb_combined_score, stringdb_experimental_score,
+     stringdb_coexpression_score edge properties
+  C. Vlado: recommend experiments + coexpression channel cutoffs
+
+See CHANGELOG.md for full design rationale. See string_rig.yaml for the graph specification.
 
 Note: the STITCH protein–chemical sibling ingest task ('stitch_pcl' tag) was
 developed alongside this STRING ingest task but has been split out of this PR for a
@@ -33,17 +43,18 @@ from translator_ingest.ingests.string.string_utils import (
     load_string_to_entrez_mapping,
     passes_combined_score,
     parse_string_protein_id,
-    predicates_for_row,
+    edges_for_row,
     sorted_pair_key,
-    knowledge_level_and_agent_type_for_row,
     make_string_ppi_edge,
-    MI_PREDICATE
+    resolve_thresholds,
+    EDGE_KL_AT,
+    DEFAULT_THRESHOLDS,
 )
 
 
 STRING_VERSION_API_URL = "https://string-db.org/api/json/version"
 
-# Filename of the STRING ↔ Entrez gene-ID mapping (universal across species).
+# Filename of the STRING to Entrez gene-ID mapping (universal across species).
 # Downloaded by download.yaml into 'koza.input_files_dir'. Loaded once at the
 # start of the transform to populate 'equivalent_identifiers' on Protein nodes.
 ENTREZ_MAPPING_FILENAME = "all_organisms.entrez_2_string.tsv"
@@ -70,17 +81,28 @@ def get_latest_version() -> str:
 @koza.on_data_begin(tag="string_ppi")
 def on_data_begin_string_ppi(koza_transform: koza.KozaTransform) -> None:
     """
-    Load the STRING ↔ Entrez mapping into 'koza_transform.state["string_to_entrez"]'
+    Load the STRING to Entrez mapping into 'koza_transform.state["string_to_entrez"]'
     once per 'string_ppi' transform run. Used by 'transform_string_ppi' to
     populate 'equivalent_identifiers' on Protein nodes with their NCBIGene
     equivalents.
 
-    Tests bypass this hook by setting 'koza_transform.state["string_to_entrez"]'
-    directly to a small fixture dict.
+    Also resolves the canonical per-channel thresholds for this run: defaults
+    (DEFAULT_THRESHOLDS) overlaid with any 'transform.channel_thresholds' block
+    declared in string.yaml (surfaced via 'koza_transform.extra_fields', mirroring
+    the go_cam ingest). Stashed in state so the per-row transform reads a single
+    resolved dict rather than re-parsing config per record.
+
+    Tests bypass this hook by setting 'koza_transform.state["thresholds"]'
+    directly to a small fixture dict; they may likewise inject
+    'koza_transform.state["thresholds"]' to exercise per-channel tuning (the
+    transform falls back to DEFAULT_THRESHOLDS when it is absent).
     """
     assert koza_transform.input_files_dir is not None, "Koza Transform 'input_files_dir' variable cannot be null!"
     mapping_path = Path(koza_transform.input_files_dir) / ENTREZ_MAPPING_FILENAME
     koza_transform.state["string_to_entrez"] = load_string_to_entrez_mapping(mapping_path)
+    koza_transform.state["thresholds"] = resolve_thresholds(
+        koza_transform.extra_fields.get("channel_thresholds")
+    )
 
 
 @koza.transform_record(tag="string_ppi")
@@ -89,59 +111,63 @@ def transform_string_ppi(
 ) -> KnowledgeGraph | None:
     """
     Transform one row of STRING's 'protein.links.full.v12.0.txt.gz' file into two
-    'Protein' nodes and one or more per-channel edges.
+    'Protein' nodes and one to three edges per the 2026-07-17 edge model.
 
-    Predicate selection follows ORION's STRING parser: any evidence channel whose
-    score exceeds 'CHANNEL_HIGH_CONF_THRESHOLD' (750) fires the channel's
-    corresponding predicate (see 'CHANNEL_PREDICATES'). If no channel exceeds
-    the high-confidence threshold but the row passes the combined_score gate
-    (>500), a single fallback 'physically_interacts_with' edge is emitted.
-    Up to 6 edges per pair (one per fired predicate); typically 1–2.
+    Edge emission:
+      - always: biolink:associated_with (combined_score > 700)
+      - conditional: biolink:directly_physically_interacts_with (experiments > threshold)
+      - conditional: biolink:coexpressed_with (coexpression > threshold)
 
-    Each edge carries a per-row knowledge_level / agent_type derived from the
-    dominant evidence channel (see 'knowledge_level_and_agent_type_for_row').
+    KL/AT is fixed per edge type (not row-derived for this iteration).
+    See EDGE_KL_AT in string_utils.py.
 
-    Dedup is per (sorted_pair, predicate), so multiple predicates can fire for the
-    same pair without colliding, while symmetric duplicate rows still collapse.
+    PENDING BLOCKER A: association_basis_qualifier:Functional not yet attached to
+    associated_with edges (requires Matt's biolink PR).
+
+    PENDING BLOCKER B: stringdb_combined_score / stringdb_experimental_score /
+    stringdb_coexpression_score not yet attached as edge properties (requires
+    attributes.yaml PR from Matt/Sierra).
+
+    PENDING BLOCKER C: experiments and coexpression thresholds are placeholder
+    values (750) pending Vlado's recommendations.
+
+    Dedup is per (sorted_pair, predicate), so multiple predicates can coexist
+    on the same pair without colliding, while symmetric duplicate rows collapse.
     """
-    # NOTE: the combined_score > 500 gate is also applied as a reader-level filter
-    # in string.yaml (the production path — Koza skips sub-threshold rows before
-    # they reach here). This guard keeps the transform correct when called
-    # directly in unit tests, where rows aren't pre-filtered.
-    if not passes_combined_score(record["combined_score"]):
+    thresholds = koza_transform.state.get("thresholds") or DEFAULT_THRESHOLDS
+
+    # The combined_score gate is also applied as a reader-level filter in
+    # string.yaml (the production efficiency path). This guard keeps the
+    # transform correct in unit tests where rows aren't pre-filtered.
+    if not passes_combined_score(record["combined_score"], thresholds["combined_score"]):
         return None
 
     subject_id, subject_taxon = parse_string_protein_id(record["protein1"])
     object_id, object_taxon = parse_string_protein_id(record["protein2"])
 
-    # STRING's per-organism link files only contain intra-species pairs.
-    # Catch corrupt or cross-species rows loudly.
     if subject_taxon != object_taxon:
         raise ValueError(
             f"Cross-species pair in STRING row: {record['protein1']!r} vs {record['protein2']!r}"
         )
 
-    predicates = predicates_for_row(record)
+    # Collect (predicate, channel_score) pairs for this row. Always has at
+    # least the associated_with entry; may add directly_physically_interacts_with
+    # and/or coexpressed_with when the corresponding channels fire.
+    row_edges = edges_for_row(record, thresholds)
 
     # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
-    # and grows with the number of unique (pair, predicate) tuples — bounded by
-    # the above-threshold edge count (~1-2M for human PPI). If memory becomes a
-    # constraint at the full multi-organism scale, swap for an on-disk set (sqlite)
-    # or an integer-keyed roaring bitmap; the key is already a hashable tuple.
+    # and grows with the number of unique (pair, predicate) tuples.
     seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
-    new_predicates: list[MI_PREDICATE] = [
-        p for p in predicates
-        if sorted_pair_key(subject_id, object_id, p) not in seen_pairs
+    new_edges = [
+        (pred, score)
+        for pred, score in row_edges
+        if sorted_pair_key(subject_id, object_id, pred) not in seen_pairs
     ]
-    if not new_predicates:
+    if not new_edges:
         return None
-    for p in new_predicates:
-        seen_pairs.add(sorted_pair_key(subject_id, object_id, p))
+    for pred, _ in new_edges:
+        seen_pairs.add(sorted_pair_key(subject_id, object_id, pred))
 
-    # Look up NCBIGene equivalents from the entrez_2_string mapping. Loaded
-    # at transform start by on_data_begin; tests may inject a fixture dict.
-    # Missing entries are normal (some STRING proteins have no Entrez mapping;
-    # downstream NodeNormalizer still resolves most of them via UniProtKB).
     entrez_map: dict[str, list[str]] = koza_transform.state.get("string_to_entrez", {})
     subject_equivalents = entrez_map.get(record["protein1"]) or None
     object_equivalents = entrez_map.get(record["protein2"]) or None
@@ -159,11 +185,11 @@ def transform_string_ppi(
         equivalent_identifiers=object_equivalents,
     )
 
-    # KL/AT is a row-level property (derived from the dominant evidence channel),
-    # shared by all edges emitted from this row.
-    knowledge_level, agent_type = knowledge_level_and_agent_type_for_row(record)
     edges = [
-        make_string_ppi_edge(subject_id, predicate, object_id, knowledge_level, agent_type)
-        for predicate in new_predicates
+        make_string_ppi_edge(
+            subject_id, pred, score, object_id,
+            *EDGE_KL_AT[pred],
+        )
+        for pred, score in new_edges
     ]
     return KnowledgeGraph(nodes=[subject_node, object_node], edges=edges)
