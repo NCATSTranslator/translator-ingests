@@ -321,11 +321,11 @@ def test_transform_experiments_fires_directly_physically_interacts_with(mock_koz
     predicates = {e.predicate for e in result.edges}
     assert "biolink:directly_physically_interacts_with" in predicates
     assert "biolink:associated_with" in predicates
-    stringdb_experimental_score = {
+    stringdb_experimental_scores = [
          e.stringdb_experimental_score for e in result.edges
          if e.predicate == "biolink:directly_physically_interacts_with"
-    }
-    assert stringdb_experimental_score == 800
+    ]
+    assert any(score == 800 for score in stringdb_experimental_scores)
 
 
 def test_transform_coexpression_fires_coexpressed_with(mock_koza):
@@ -338,11 +338,11 @@ def test_transform_coexpression_fires_coexpressed_with(mock_koza):
     predicates = {e.predicate for e in result.edges}
     assert "biolink:coexpressed_with" in predicates
     assert "biolink:associated_with" in predicates
-    stringdb_coexpression_score = {
+    stringdb_coexpression_scores = [
                      e.stringdb_coexpression_score for e in result.edges
                      if e.predicate == "biolink:coexpressed_with"
-    }
-    assert stringdb_coexpression_score == 800
+    ]
+    assert any(score == 800 for score in stringdb_coexpression_scores)
 
 def test_transform_both_channels_fire(mock_koza):
     """Both channels above threshold yields all three edge types."""
