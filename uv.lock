@@ -175,23 +175,15 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.4.2"
+version = "4.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "beautifulsoup4" },
-    { name = "click" },
-    { name = "curies" },
-    { name = "linkml" },
     { name = "linkml-runtime" },
-    { name = "path" },
-    { name = "prefixmaps" },
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "stringcase" },
+    { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/51/c1911e3c34f53eefd6939083fbfba0ee02d070b6a261461f814f2ba644bd/biolink_model-4.4.2.tar.gz", hash = "sha256:c69ccb9fd8cbd9935b36a4aec578a4c5ee8a3c39d75eb4d9495ded6cf205c39b", size = 3784369, upload-time = "2026-05-22T19:09:21.851Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/f6/0691b06fd1f258d1c1e5e3cdd8293c2c9beed12a2d956ecfaa7280e58694/biolink_model-4.4.4.tar.gz", hash = "sha256:100e84f6ea05c22d8333a8d478f0a4e6b8036ff2afbc5e116a6dc286a06deeb4", size = 4042819, upload-time = "2026-08-10T23:34:47.678Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/63/545021b6c7162e2b6711d71f267cbab618598c1730e5de95a9d8c302adc1/biolink_model-4.4.2-py3-none-any.whl", hash = "sha256:939083a7f9c9ebe0fe580e6e02a9d01642825a85041be804e0e39a33fabc98d4", size = 336628, upload-time = "2026-05-22T19:09:18.783Z" },
+    { url = "https://files.pythonhosted.org/packages/62/de/a81e071f0aa904cb2e787b26f35e3d3e4c76db23eb22f4a663867bccd387/biolink_model-4.4.4-py3-none-any.whl", hash = "sha256:320ca2d83672e7cc24184cf2f2a415d755273c56f236128712ec457b2cf83c8b", size = 360399, upload-time = "2026-08-10T23:34:46.031Z" },
 ]
 
 [[package]]
@@ -324,7 +316,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "biolink-model", specifier = "==4.4.2" },
+    { name = "biolink-model", specifier = "==4.4.4" },
     { name = "bmt", specifier = ">=1.4.8" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "codespell", specifier = ">=2.4.1" },
@@ -346,7 +338,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "biolink-model", specifier = "==4.4.2" },
+    { name = "biolink-model", specifier = "==4.4.4" },
     { name = "black", specifier = ">=24.1.0" },
     { name = "codespell", specifier = ">=2.2.0" },
     { name = "jsonlines" },
@@ -465,14 +457,14 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.1.8"
+version = "8.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593, upload-time = "2024-12-21T18:38:44.339Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/d4/81420972a676e8ffea40450d8c8c92943e7218a78fe9b64359836cc9876b/click-8.4.2.tar.gz", hash = "sha256:9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6", size = 338000, upload-time = "2026-06-24T17:45:15.148Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/d4/7ebdbd03970677812aac39c869717059dbb71a4cfc033ca6e5221787892c/click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2", size = 98188, upload-time = "2024-12-21T18:38:41.666Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/e2/79c688af8b210d232694e31e59da9f6ec747bae31c3f5946e4e9b98860d5/click-8.4.2-py3-none-any.whl", hash = "sha256:e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76", size = 119243, upload-time = "2026-06-24T17:45:13.73Z" },
 ]
 
 [[package]]
@@ -1575,7 +1567,7 @@ wheels = [
 
 [[package]]
 name = "linkml"
-version = "1.10.0"
+version = "1.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "antlr4-python3-runtime" },
@@ -1603,14 +1595,14 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/57/e480d016c94ac1dcfeccde3fd751fa1464545e3de2446c9ebf9fe66dd393/linkml-1.10.0.tar.gz", hash = "sha256:ca70bba1474bc7de37edd33005a8a556d4718190584ab2c88f7c46d090477d55", size = 334216, upload-time = "2026-02-25T17:13:32.086Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/26/38e7340959cd4a87bfe5403cfcf5311d9fe2ff4382fa00e96008a1342760/linkml-1.11.1.tar.gz", hash = "sha256:2f6774e13628270cadaeecda3313db0437ecc15cd44ee35c6c2655dbe31c8524", size = 374853, upload-time = "2026-05-20T17:05:42.359Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b3/54/0d01e407b3b8657cb1a58031e3f23e7039d26338173a130a3be30fdd8e0b/linkml-1.10.0-py3-none-any.whl", hash = "sha256:2d4934f000977489352307336267a8a4270de3156187c3394d542a0a4b8130e5", size = 434438, upload-time = "2026-02-25T17:13:29.068Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/fb/3068f649cc436be915f51b2f5ac0656c83dc9bcc6d4f8940633e295042c0/linkml-1.11.1-py3-none-any.whl", hash = "sha256:d1bbb97a8b1ea4a99b145007875733a5e5e89b3acfe3e9d1e369fa4a582990ed", size = 483751, upload-time = "2026-05-20T17:05:38.663Z" },
 ]
 
 [[package]]
 name = "linkml-runtime"
-version = "1.10.0"
+version = "1.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -1627,9 +1619,9 @@ dependencies = [
     { name = "rdflib" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/3d/031e2e8ef7ca872340fb7b7102cfd1fe4a0b329dc04ff694ad9ec6ccaddc/linkml_runtime-1.10.0.tar.gz", hash = "sha256:899889d584ce8056c5c44512b2d247bdc84a8484c3aa228aeb2db283e3a9d2ec", size = 589957, upload-time = "2026-02-25T17:13:34.034Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/7c/36332b49226f37d05d0dbfa4fb1c8017963d62ae722102c9c11c1f530696/linkml_runtime-1.11.1.tar.gz", hash = "sha256:e71300b596c4f35aeccd9dca096806678402213dbdb2c5e8e68f507e21320754", size = 556549, upload-time = "2026-05-20T17:05:43.633Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/2d/6ab4127bb9aa6e3b54ad5d81fd0c0c12e4d1a80300f2bfdac8f2e18f9d17/linkml_runtime-1.10.0-py3-none-any.whl", hash = "sha256:b7caf806e1b49bf62005d8f398b070c282742c5f6626469fdc1660add0c9da58", size = 584001, upload-time = "2026-02-25T17:13:30.603Z" },
+    { url = "https://files.pythonhosted.org/packages/63/1d/600b0dd24aa61f03d35293a2e9a4695add1e94c03d8701436fb52d5daf4f/linkml_runtime-1.11.1-py3-none-any.whl", hash = "sha256:b22c77d8fd920d0f4f43a6ece31393dc0b28bb47790f3e1c114210318c36b3da", size = 654566, upload-time = "2026-05-20T17:05:40.526Z" },
 ]
 
 [[package]]
@@ -2198,15 +2190,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d4/de/53e0bcf53d13e005bd8c92e7855142494f41171b34c2536b86187474184d/parso-0.8.5.tar.gz", hash = "sha256:034d7354a9a018bdce352f48b2a8a450f05e9d6ee85db84764e9b6bd96dafe5a", size = 401205, upload-time = "2025-08-23T15:15:28.028Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/16/32/f8e3c85d1d5250232a5d3477a2a28cc291968ff175caeadaf3cc19ce0e4a/parso-0.8.5-py2.py3-none-any.whl", hash = "sha256:646204b5ee239c396d040b90f9e272e9a8017c630092bf59980beb62fd033887", size = 106668, upload-time = "2025-08-23T15:15:25.663Z" },
-]
-
-[[package]]
-name = "path"
-version = "17.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/dd/52/a7bdd5ef8488977d354b7915d1e75009bebbd04f73eff14e52372d5e9435/path-17.1.1.tar.gz", hash = "sha256:2dfcbfec8b4d960f3469c52acf133113c2a8bf12ac7b98d629fa91af87248d42", size = 50528, upload-time = "2025-07-27T20:40:23.79Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/50/11c9ee1ede64b45d687fd36eb8768dafc57afc78b4d83396920cfd69ed30/path-17.1.1-py3-none-any.whl", hash = "sha256:ec7e136df29172e5030dd07e037d55f676bdb29d15bfa09b80da29d07d3b9303", size = 23936, upload-time = "2025-07-27T20:40:22.453Z" },
 ]
 
 [[package]]
