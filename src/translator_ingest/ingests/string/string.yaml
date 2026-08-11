@@ -8,8 +8,6 @@ metadata:
     for human, mouse, and rat, with per-channel biolink predicates.
   rights: 'https://string-db.org/cgi/access'
 
-transform:
-  code: string.py
   # Canonical per-channel score thresholds — the single source of truth for the
   # filter strategy. string.py reads these via KozaTransform.extra_fields (same
   # mechanism as the go_cam ingest) and applies them per row; a channel's
