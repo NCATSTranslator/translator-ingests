@@ -5,6 +5,13 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-08-11
+
+* Incorporated 'associated_basis_qualifier' and various 'string_*' scores from Biolink 4.4.4
+* Removed complexity of parameterized channel-specific thresholds (just use fixed defaults)
+* Removed 'resolve_thresholds' and 'passes_combined_score' methods
+* All unit tests adjusted accordingly
+
 ## 2026-07-17 — New edge model: `associated_with` + qualifier, raise threshold to 700, drop per-channel predicates
 
 **Context.** Two community calls (2026-07-10 channel semantics review; 2026-07-17 decision call) re-evaluated

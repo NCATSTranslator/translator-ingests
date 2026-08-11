@@ -48,19 +48,15 @@ ALWAYS_PREDICATE = "biolink:associated_with"
 
 # Channel-specific conditional edges. Each fires independently when its channel score
 # clears the per-channel threshold. See string.yaml channel_thresholds for values.
-# PENDING BLOCKER C: exact thresholds pending Vlado's recommendations.
 CONDITIONAL_CHANNEL_PREDICATES: dict[str, str] = {
     "experiments":  "biolink:directly_physically_interacts_with",
     "coexpression": "biolink:coexpressed_with",
 }
 
 # Canonical default thresholds for one complete run.
-# `resolve_thresholds()` merges these with any per-channel overrides
-# from string.yaml's `transform.channel_thresholds` block.
 DEFAULT_THRESHOLDS: dict[str, int] = {
-    "combined_score": COMBINED_SCORE_THRESHOLD,
     "experiments":    EXPERIMENTS_THRESHOLD,
-    "coexpression":   COEXPRESSION_THRESHOLD,
+    "coexpression":   COEXPRESSION_THRESHOLD
 }
 
 # KL/AT is fixed per edge type rather than row-derived.
@@ -92,27 +88,6 @@ PREDICATE_TO_ASSOCIATION_CLASS: dict[str, type[Association]] = {
 }
 
 STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
-
-
-def resolve_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, int]:
-    """
-    Merge per-channel threshold overrides (from string.yaml
-    'transform.channel_thresholds', surfaced via KozaTransform.extra_fields) on
-    top of DEFAULT_THRESHOLDS. Values are coerced to int so YAML strings compare
-    numerically. Unknown keys are kept (a channel not in CONDITIONAL_CHANNEL_PREDICATES
-    is harmless — nothing reads it), letting the config stay forward-compatible.
-
-    >>> resolve_thresholds() == DEFAULT_THRESHOLDS
-    True
-    >>> resolve_thresholds({"experiments": "800", "combined_score": 600})["experiments"]
-    800
-    >>> resolve_thresholds({"combined_score": 600})["combined_score"]
-    600
-    """
-    merged = dict(DEFAULT_THRESHOLDS)
-    if overrides:
-        merged.update({str(k): int(v) for k, v in overrides.items()})
-    return merged
 
 
 # Note on identifier scheme: for the three Translator-target taxa (human / mouse / rat),
@@ -152,31 +127,7 @@ def parse_string_protein_id(string_id: str) -> tuple[str, str]:
     return f"ENSEMBL:{ensp}", taxon_curie
 
 
-def passes_combined_score(
-    combined_score: str | int, threshold: int = COMBINED_SCORE_THRESHOLD
-) -> bool:
-    """
-    Whether a row's combined_score exceeds the inclusion threshold.
-
-    Uses strict greater-than (">"), matching STRING's web-UI convention where
-    the slider value is the lower exclusive bound.
-
-    >>> passes_combined_score("710")
-    True
-    >>> passes_combined_score("700")
-    False
-    >>> passes_combined_score("699")
-    False
-    >>> passes_combined_score(999)
-    True
-    """
-    return int(combined_score) > threshold
-
-
-def edges_for_row(
-    record: dict[str, Any],
-    thresholds: dict[str, int] | None = None,
-) -> list[tuple[str, int]]:
+def edges_for_row(record: dict[str, Any]) -> list[tuple[str, int]]:
     """
     Return the list of (predicate, channel_score_or_None) tuples to emit for one
     STRING ".full" row under the 2026-07-17 edge model.
@@ -209,14 +160,7 @@ def edges_for_row(
     >>> row = {"combined_score": "800", "experiments": "750", "coexpression": "750"}
     >>> edges_for_row(row)
     [('biolink:associated_with', 800)]
-
-    Per-channel override lowers the experiments threshold to surface the edge.
-
-    >>> row = {"combined_score": "800", "experiments": "800", "coexpression": "0"}
-    >>> edges_for_row(row, thresholds={"experiments": 700, "coexpression": 750, "combined_score": 700})
-    [('biolink:associated_with', 800), ('biolink:directly_physically_interacts_with', 800)]
     """
-    resolved = thresholds if thresholds is not None else DEFAULT_THRESHOLDS
     combined = int(str(record.get("combined_score", 0)))
     result: list[tuple[str, int]] = [(ALWAYS_PREDICATE, combined)]
     for channel, predicate in CONDITIONAL_CHANNEL_PREDICATES.items():
@@ -227,7 +171,7 @@ def edges_for_row(
             score = int(str(raw))
         except (TypeError, ValueError):
             continue
-        threshold = resolved.get(channel, EXPERIMENTS_THRESHOLD)
+        threshold = DEFAULT_THRESHOLDS.get(channel, EXPERIMENTS_THRESHOLD)
         if score > threshold:
             result.append((predicate, score))
     return result

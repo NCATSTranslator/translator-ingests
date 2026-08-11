@@ -41,14 +41,12 @@ from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.string.string_utils import (
     load_string_to_entrez_mapping,
-    passes_combined_score,
     parse_string_protein_id,
     edges_for_row,
     sorted_pair_key,
     make_string_ppi_edge,
-    resolve_thresholds,
     EDGE_KL_AT,
-    DEFAULT_THRESHOLDS,
+    COMBINED_SCORE_THRESHOLD
 )
 
 
@@ -85,24 +83,10 @@ def on_data_begin_string_ppi(koza_transform: koza.KozaTransform) -> None:
     once per 'string_ppi' transform run. Used by 'transform_string_ppi' to
     populate 'equivalent_identifiers' on Protein nodes with their NCBIGene
     equivalents.
-
-    Also resolves the canonical per-channel thresholds for this run: defaults
-    (DEFAULT_THRESHOLDS) overlaid with any 'transform.channel_thresholds' block
-    declared in string.yaml (surfaced via 'koza_transform.extra_fields', mirroring
-    the go_cam ingest). Stashed in state so the per-row transform reads a single
-    resolved dict rather than re-parsing config per record.
-
-    Tests bypass this hook by setting 'koza_transform.state["thresholds"]'
-    directly to a small fixture dict; they may likewise inject
-    'koza_transform.state["thresholds"]' to exercise per-channel tuning (the
-    transform falls back to DEFAULT_THRESHOLDS when it is absent).
     """
     assert koza_transform.input_files_dir is not None, "Koza Transform 'input_files_dir' variable cannot be null!"
     mapping_path = Path(koza_transform.input_files_dir) / ENTREZ_MAPPING_FILENAME
     koza_transform.state["string_to_entrez"] = load_string_to_entrez_mapping(mapping_path)
-    koza_transform.state["thresholds"] = resolve_thresholds(
-        koza_transform.extra_fields.get("channel_thresholds")
-    )
 
 
 @koza.transform_record(tag="string_ppi")
@@ -121,25 +105,13 @@ def transform_string_ppi(
     KL/AT is fixed per edge type (not row-derived for this iteration).
     See EDGE_KL_AT in string_utils.py.
 
-    PENDING BLOCKER A: association_basis_qualifier:Functional not yet attached to
-    associated_with edges (requires Matt's biolink PR).
-
-    PENDING BLOCKER B: stringdb_combined_score / stringdb_experimental_score /
-    stringdb_coexpression_score not yet attached as edge properties (requires
-    attributes.yaml PR from Matt/Sierra).
-
-    PENDING BLOCKER C: experiments and coexpression thresholds are placeholder
-    values (750) pending Vlado's recommendations.
-
     Dedup is per (sorted_pair, predicate), so multiple predicates can coexist
     on the same pair without colliding, while symmetric duplicate rows collapse.
     """
-    thresholds = koza_transform.state.get("thresholds") or DEFAULT_THRESHOLDS
-
     # The combined_score gate is also applied as a reader-level filter in
     # string.yaml (the production efficiency path). This guard keeps the
     # transform correct in unit tests where rows aren't pre-filtered.
-    if not passes_combined_score(record["combined_score"], thresholds["combined_score"]):
+    if not int(record["combined_score"]) > COMBINED_SCORE_THRESHOLD:
         return None
 
     subject_id, subject_taxon = parse_string_protein_id(record["protein1"])
@@ -153,7 +125,7 @@ def transform_string_ppi(
     # Collect (predicate, channel_score) pairs for this row. Always has at
     # least the associated_with entry; may add directly_physically_interacts_with
     # and/or coexpressed_with when the corresponding channels fire.
-    row_edges = edges_for_row(record, thresholds)
+    row_edges = edges_for_row(record)
 
     # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
     # and grows with the number of unique (pair, predicate) tuples.

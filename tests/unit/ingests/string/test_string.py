@@ -4,13 +4,11 @@ from pathlib import Path
 import pytest
 
 import koza
-from koza.transform import Mappings
-from koza.io.writer.writer import KozaWriter
 
 from biolink_model.datamodel.pydanticmodel_v2 import Protein
 from biolink_model.datamodel.pydanticmodel_v2 import AssociationBasisEnum as ABE
 
-from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
+from tests.unit.ingests import MockKozaWriter, MockKozaTransform
 
 from translator_ingest.ingests.string.string import (
     get_latest_version,
@@ -19,13 +17,10 @@ from translator_ingest.ingests.string.string import (
 from translator_ingest.ingests.string.string_utils import (
     ALWAYS_PREDICATE,
     CONDITIONAL_CHANNEL_PREDICATES,
-    DEFAULT_THRESHOLDS,
     EDGE_KL_AT,
     edges_for_row,
     load_string_to_entrez_mapping,
     parse_string_protein_id,
-    passes_combined_score,
-    resolve_thresholds,
     sorted_pair_key,
 )
 
@@ -109,28 +104,6 @@ def test_parse_string_protein_id_rejects_unsupported_taxon():
 def test_parse_string_protein_id_rejects_malformed(string_id):
     with pytest.raises(ValueError):
         parse_string_protein_id(string_id)
-
-
-@pytest.mark.parametrize(
-    "score,expected",
-    [
-        ("952", True),   # high confidence
-        ("710", True),   # just above the boundary
-        ("701", True),   # one above the boundary
-        ("700", False),  # at the boundary; strict greater-than
-        ("699", False),  # just below
-        ("0", False),    # zero
-        (952, True),     # accepts int too
-    ],
-)
-def test_passes_combined_score(score, expected):
-    assert passes_combined_score(score) is expected
-
-
-def test_passes_combined_score_custom_threshold():
-    assert passes_combined_score("400", threshold=300) is True
-    assert passes_combined_score("400", threshold=400) is False
-    assert passes_combined_score("400", threshold=500) is False
 
 
 @pytest.mark.parametrize(
@@ -237,18 +210,6 @@ def test_edges_for_row_carries_channel_score():
     by_pred = {p: s for p, s in result}
     assert by_pred["biolink:associated_with"] == 850
     assert by_pred["biolink:directly_physically_interacts_with"] == 820
-
-
-def test_edges_for_row_per_channel_threshold_override():
-    """A thresholds dict overrides individual channels independently."""
-    row = {"combined_score": "800", "experiments": "760", "coexpression": "0"}
-    # Default (750): 760 > 750 → fires.
-    assert "biolink:directly_physically_interacts_with" in [
-        p for p, _ in edges_for_row(row)
-    ]
-    # Raised to 800: 760 is not > 800 → does not fire.
-    lowered = edges_for_row(row, thresholds={"experiments": 800, "coexpression": 750, "combined_score": 700})
-    assert "biolink:directly_physically_interacts_with" not in [p for p, _ in lowered]
 
 
 def test_edges_for_row_non_predicate_channels_never_fire():
@@ -466,16 +427,6 @@ def test_transform_rejects_cross_species_pair(mock_koza):
 # ──── Configurable per-channel threshold tests ───────────────────────────────
 
 
-def test_resolve_thresholds_defaults_and_overrides():
-    """No overrides → the canonical defaults; overrides coerced to int and merged."""
-    assert resolve_thresholds() == DEFAULT_THRESHOLDS
-    assert resolve_thresholds(None) == DEFAULT_THRESHOLDS
-    merged = resolve_thresholds({"experiments": "800", "combined_score": 600})
-    assert merged["experiments"] == 800          # string coerced to int
-    assert merged["combined_score"] == 600
-    assert merged["coexpression"] == DEFAULT_THRESHOLDS["coexpression"]  # untouched
-
-
 def test_transform_default_thresholds_no_channel_fire(mock_koza):
     """With channel scores at 0 and combined_score just above 700, only
     associated_with is emitted (no conditional channel fires)."""
@@ -484,27 +435,6 @@ def test_transform_default_thresholds_no_channel_fire(mock_koza):
     )
     assert result is not None and result.edges is not None
     assert [e.predicate for e in result.edges] == ["biolink:associated_with"]
-
-
-def test_transform_respects_injected_per_channel_thresholds(mock_koza):
-    """Lowering the experiments threshold via injected state surfaces the
-    directly_physically_interacts_with edge."""
-    mock_koza.state["thresholds"] = resolve_thresholds({"experiments": 700})
-    result = transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=800, experiments=750)
-    )
-    assert result is not None and result.edges is not None
-    predicates = {e.predicate for e in result.edges}
-    assert "biolink:directly_physically_interacts_with" in predicates
-
-
-def test_transform_respects_injected_combined_score_gate(mock_koza):
-    """The combined_score gate is read from the resolved thresholds too: raising
-    it drops a row that the default gate would have kept."""
-    mock_koza.state["thresholds"] = resolve_thresholds({"combined_score": 900})
-    assert transform_string_ppi(
-        mock_koza, _full_row(H1, H2, combined_score=750, experiments=800)
-    ) is None
 
 
 # ──── Entrez mapping tests ────────────────────────────────────────────────────
