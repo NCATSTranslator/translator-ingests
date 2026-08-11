@@ -204,9 +204,6 @@ target_info:
       #   2. directly_physically_interacts_with (conditional on experiments channel threshold, TBD)
       #   3. coexpressed_with (conditional on coexpression channel threshold, TBD)
       #
-      # BLOCKER (implementation gated on external PRs + analysis):
-      #   C. Vlado: recommend experiments + coexpression channel cutoffs
-      #
       # Prior ORION-aligned per-channel predicate model (5 edge types, combined_score > 500) superseded.
       - subject_categories:
           - biolink:Protein
@@ -261,7 +258,6 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        # PENDING BLOCKER C: threshold value (Vlado's recommendation).
         edge_properties:
           - stringdb_experimental_score
         knowledge_level:
@@ -302,7 +298,6 @@ target_info:
               - NCBITaxon:9606
               - NCBITaxon:10090
               - NCBITaxon:10116
-        # PENDING BLOCKER C: threshold value (Vlado's recommendation).
         edge_properties:
           - stringdb_coexpression_score
         knowledge_level:
