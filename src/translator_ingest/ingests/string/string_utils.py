@@ -63,24 +63,19 @@ DEFAULT_THRESHOLDS: dict[str, int] = {
     "coexpression":   COEXPRESSION_THRESHOLD,
 }
 
-# KL/AT is fixed per edge type rather than row-derived for this iteration.
-# Per the 2026-07-17 call: "on first pass I don't think we want to get into this —
-# just use automated agent, knowledge assertion."
-# TODO: finalize KL/AT values once the group confirms the exact biolink enum entries.
-# ("automated agent" was specified but is not a current AgentTypeEnum value;
-#  data_analysis_pipeline is the nearest equivalent for an automated scoring pipeline.)
+# KL/AT is fixed per edge type rather than row-derived.
 EDGE_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
     "biolink:associated_with": (
-        KnowledgeLevelEnum.knowledge_assertion,
+        KnowledgeLevelEnum.statistical_association,
         AgentTypeEnum.data_analysis_pipeline,
     ),
     "biolink:directly_physically_interacts_with": (
-        KnowledgeLevelEnum.knowledge_assertion,
-        AgentTypeEnum.data_analysis_pipeline,
+        KnowledgeLevelEnum.observation,
+        AgentTypeEnum.automated_agent,
     ),
     "biolink:coexpressed_with": (
-        KnowledgeLevelEnum.statistical_association,
-        AgentTypeEnum.data_analysis_pipeline,
+        KnowledgeLevelEnum.prediction,
+        AgentTypeEnum.computational_model,
     ),
 }
 

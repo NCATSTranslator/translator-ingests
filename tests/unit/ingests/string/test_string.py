@@ -322,8 +322,8 @@ def test_transform_experiments_fires_directly_physically_interacts_with(mock_koz
     assert "biolink:directly_physically_interacts_with" in predicates
     assert "biolink:associated_with" in predicates
     stringdb_experimental_score = {
-                     e.stringdb_experimental_score for e in result.edges
-                     if e.predicate == "biolink:directly_physically_interacts_with"
+         e.stringdb_experimental_score for e in result.edges
+         if e.predicate == "biolink:directly_physically_interacts_with"
     }
     assert stringdb_experimental_score == 800
 

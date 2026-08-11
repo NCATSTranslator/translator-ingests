@@ -58,7 +58,7 @@ source_info:
       maintained_regular_updates
 ingest_info:
     ingest_categories:
-      - primary_knowledge_provider  # conformance: was 'Primary Knowledge Provider'
+      - aggregation_interpreter
     utility: >-
       STRING provides a broad protein–protein functional association graph derived from multiple evidence channels,
       supplying Translator reasoning with interaction and coexpression data for proteins across human,
@@ -226,11 +226,17 @@ target_info:
         edge_properties:
           - stringdb_combined_score
         knowledge_level:
-          - knowledge_assertion     # tentative; exact value TBD
+          - statistical_association
         agent_type:
           - data_analysis_pipeline  # 7-17-26 call: "automated agent"; exact biolink enum TBD
         primary_knowledge_sources:
           - "infores:string"
+        supporting_data_sources:
+          - "infores:kegg"
+          - "infores:reactome"
+          - "infores:ebi-complex-portal"  # https://www.ebi.ac.uk/complexportal/home
+          - "infores:metacyc"
+          - "infores:go"
         ui_explanation: >-
           Emitted for every protein pair whose STRING combined_score exceeds 700 (high-confidence cutoff).
           The association_basis_qualifier:Functional qualifier encodes STRING's core claim: these proteins
@@ -259,11 +265,20 @@ target_info:
         edge_properties:
           - stringdb_experimental_score
         knowledge_level:
-          - knowledge_assertion     # per 7-17-26 call
+          - observation
         agent_type:
-          - data_analysis_pipeline  # 7-17-26 call: "automated agent"; exact biolink enum TBD
+          # normalized score from weighted summation
+          # of retrieved experimental data (not a full data analysis?)
+          - automated_agent
         primary_knowledge_sources:
           - "infores:string"
+        supporting_data_sources:
+          - "infore:biogrid"
+          - "infores:mint"    # https://mint.bio.uniroma2.it/
+          - "infores:dip"     # https://dip.doe-mbi.ucla.edu/dip/Main.cgi
+          - "infores:intact"  # https://www.ebi.ac.uk/intact/
+          - "infores:pdb"
+          - "infores:kegg"
         ui_explanation: >-
           Emitted in addition to the associated_with edge when STRING's experiments channel score exceeds
           the experimental evidence threshold (cutoff TBD: Vlado's recommendation pending). The experiments
@@ -291,11 +306,16 @@ target_info:
         edge_properties:
           - stringdb_coexpression_score
         knowledge_level:
-          - statistical_association  # per 7-17-26 call
+          - prediction
         agent_type:
-          - data_analysis_pipeline   # per 7-17-26 call
+          - computational_model
         primary_knowledge_sources:
           - "infores:string"
+        supporting_data_sources:
+          - "infores:ncbi-geo"   # https://ncbi.nlm.nih.gov/geo/
+          - "infores:proteomehd" # https://proteomehd.net/
+          - "infores:hpa"        # https://www.proteinatlas.org/
+          - "infores:ebi-pride"  # https://www.ebi.ac.uk/pride/
         ui_explanation: >-
           Emitted in addition to the associated_with edge when STRING's coexpression channel score exceeds
           the coexpression threshold (cutoff TBD: Vlado's recommendation pending). The coexpression channel
