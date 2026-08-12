@@ -9,12 +9,6 @@ three edge types per qualifying protein pair, following the 2026-07-17 call deci
   2. biolink:directly_physically_interacts_with (conditional on experiments channel, TBD threshold)
   3. biolink:coexpressed_with (conditional on coexpression channel, TBD threshold)
 
-Pending blockers before full implementation:
-  A. biolink PR (Matt): association_basis_qualifier enum {Statistical, Genetic, Functional}
-  B. attributes.yaml PR (Matt/Sierra): stringdb_combined_score, stringdb_experimental_score,
-     stringdb_coexpression_score edge properties
-  C. Vlado: recommend experiments + coexpression channel cutoffs
-
 See CHANGELOG.md for full design rationale. See string_rig.yaml for the graph specification.
 
 Note: the STITCH protein–chemical sibling ingest task ('stitch_pcl' tag) was
@@ -125,6 +119,7 @@ def transform_string_ppi(
     # Collect (predicate, channel_score) pairs for this row. Always has at
     # least the associated_with entry; may add directly_physically_interacts_with
     # and/or coexpressed_with when the corresponding channels fire.
+    # includes the ALWAYS edge with the combined score
     row_edges = edges_for_row(record)
 
     # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
