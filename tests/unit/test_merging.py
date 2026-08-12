@@ -1,6 +1,7 @@
 import json
 
 import pytest
+import yaml
 
 from translator_ingest import merging
 from translator_ingest.merging import (
@@ -8,6 +9,8 @@ from translator_ingest.merging import (
     _extract_release_kgx_files,
     _get_shared_metadata_value,
     _read_source_release_metadata,
+    generate_merged_graph_release,
+    merge,
 )
 from translator_ingest.release import (
     RELEASE_EDGES_FILENAME,
@@ -22,12 +25,19 @@ from translator_ingest.util.storage.local import IngestFileName
 COMPLETE_RELEASE_METADATA = {
     "release_version": "1.0.0",
     "build_version": "abc123",
-    "biolink_version": "4.2.6",
+    "biolink_version": "v4.4.4",
     "babel_version": "2025jul10",
     "node_normalizer_version": "2.4.1",
     "normalization_code_version": "1.4.0",
     "data": "https://example.org/releases/some_source/1.0.0/",
 }
+
+RELEASE_NODES = [{"id": "MONDO:0005148", "name": "type 2 diabetes mellitus", "category": ["biolink:Disease"]},
+                 {"id": "CHEBI:6801", "name": "metformin", "category": ["biolink:ChemicalEntity"]}]
+RELEASE_EDGE = {"subject": "MONDO:0005148",
+                "predicate": "biolink:treated_by",
+                "object": "CHEBI:6801",
+                "primary_knowledge_source": "infores:some-source"}
 
 
 @pytest.fixture
@@ -54,10 +64,10 @@ def write_release_archive(releases_path, source: str, release_version: str, incl
     release_dir.mkdir(parents=True, exist_ok=True)
 
     nodes_file = release_dir / "source_nodes.jsonl"
-    nodes_file.write_text('{"id": "MONDO:0005148"}\n')
+    nodes_file.write_text("".join(f"{json.dumps(node)}\n" for node in RELEASE_NODES))
     edges_file = release_dir / "source_edges.jsonl"
     if include_edges:
-        edges_file.write_text('{"subject": "MONDO:0005148", "object": "CHEBI:6801"}\n')
+        edges_file.write_text(json.dumps(RELEASE_EDGE) + "\n")
     graph_metadata_file = release_dir / RELEASE_GRAPH_METADATA_FILENAME
     graph_metadata_file.write_text(json.dumps({"name": source}))
 
@@ -153,7 +163,8 @@ def test_extract_release_kgx_files(releases_path, tmp_path):
     extraction_directory = staging_directory / "some_source"
     assert files_to_merge == [str(extraction_directory / RELEASE_NODES_FILENAME),
                               str(extraction_directory / RELEASE_EDGES_FILENAME)]
-    assert (extraction_directory / RELEASE_NODES_FILENAME).read_text() == '{"id": "MONDO:0005148"}\n'
+    extracted_nodes = (extraction_directory / RELEASE_NODES_FILENAME).read_text().splitlines()
+    assert [json.loads(node) for node in extracted_nodes] == RELEASE_NODES
 
 
 def test_extract_release_kgx_files_nodes_only(releases_path, tmp_path):
@@ -188,3 +199,55 @@ def test_missing_release_archive_raises(releases_path, tmp_path):
 
     with pytest.raises(IOError, match="Could not find the release archive for some_source"):
         _extract_release_kgx_files("some_source", release_metadata, tmp_path / "staging")
+
+@pytest.fixture
+def merged_graph_sources(releases_path, monkeypatch):
+    """Two released sources, complete with archives and rig files, ready to be merged into a graph."""
+    parser_path = releases_path / "ingests"
+    monkeypatch.setattr("translator_ingest.util.metadata.INGESTS_PARSER_PATH", parser_path)
+
+    sources = ["source_a", "source_b"]
+    for source in sources:
+        write_latest_release_metadata(releases_path, source,
+                                      **{**COMPLETE_RELEASE_METADATA, "build_version": f"{source}_build"})
+        write_release_archive(releases_path, source, "1.0.0")
+        rig_dir = parser_path / source
+        rig_dir.mkdir(parents=True)
+        (rig_dir / f"{source}_rig.yaml").write_text(
+            yaml.dump({"name": source, "source_info": {"description": f"{source} description"}})
+        )
+    return sources
+
+
+def test_merge_produces_a_release_of_its_sources(releases_path, merged_graph_sources):
+    """A merge of released sources produces a versioned merged graph citing the releases it was built from."""
+    merged_graph_metadata = merge("test_graph", merged_graph_sources)
+
+    assert merged_graph_metadata.source == "test_graph"
+    # First release of this graph, inheriting the values its sources agreed on.
+    assert merged_graph_metadata.release_version == "1.0.0"
+    assert merged_graph_metadata.biolink_version == COMPLETE_RELEASE_METADATA["biolink_version"]
+    assert merged_graph_metadata.babel_version == COMPLETE_RELEASE_METADATA["babel_version"]
+
+    output_dir = releases_path / "test_graph" / "1.0.0"
+    assert (output_dir / RELEASE_NODES_FILENAME).exists()
+    assert (output_dir / RELEASE_EDGES_FILENAME).exists()
+    assert (output_dir / "merge-metadata.json").exists()
+
+    # hasPart identifies the released graphs the merged graph is made of
+    graph_metadata = json.loads((output_dir / RELEASE_GRAPH_METADATA_FILENAME).read_text())
+    assert sorted(part["name"] for part in graph_metadata["hasPart"]) == merged_graph_sources
+
+
+def test_merge_skips_when_latest_release_is_already_this_build(releases_path, merged_graph_sources):
+    """Re-merging unchanged sources is a no-op, so a merged graph is not re-released for the same build."""
+    first_merge = merge("test_graph", merged_graph_sources)
+    generate_merged_graph_release(first_merge)
+
+    assert merge("test_graph", merged_graph_sources) is None
+
+
+def test_merge_fails_fast_on_an_unreleased_source(merged_graph_sources):
+    """A source that was never released cannot be merged, and the error names the source to release."""
+    with pytest.raises(IOError, match="Create a release for never_released before attempting to merge it"):
+        merge("test_graph", merged_graph_sources + ["never_released"])
