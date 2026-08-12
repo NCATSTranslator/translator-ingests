@@ -169,6 +169,8 @@ REQUIRED_SOURCE_RELEASE_METADATA = ("release_version",
                                     "build_version",
                                     "biolink_version",
                                     "babel_version",
+                                    "node_normalizer_version",
+                                    "normalization_code_version",
                                     "data")
 
 # Metadata every source of a merged graph must agree on, and which the merged graph inherits. Sources must be
@@ -276,8 +278,8 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     shared_metadata = {metadata_field: _get_shared_metadata_value(source_releases, metadata_field)
                        for metadata_field in SHARED_SOURCE_RELEASE_METADATA}
 
-    # Generate a build version based on the build versions of all source graphs. This identifies exactly what the 
-    # merged graph would be made of, and is what is checked against the existing releases to see if this build 
+    # Generate a build version based on the build versions of all source graphs. This identifies exactly what the
+    # merged graph would be made of, and is what is checked against the existing releases to see if this build
     # already exists. The semantic release versions don't matter until it's determined we need a new one.
     source_build_versions = sorted(release_metadata.build_version for release_metadata in source_releases.values())
     build_version = hashlib.md5("".join(source_build_versions).encode()).hexdigest()[:12]

@@ -24,6 +24,8 @@ COMPLETE_RELEASE_METADATA = {
     "build_version": "abc123",
     "biolink_version": "4.2.6",
     "babel_version": "2025jul10",
+    "node_normalizer_version": "2.4.1",
+    "normalization_code_version": "1.4.0",
     "data": "https://example.org/releases/some_source/1.0.0/",
 }
 
@@ -99,8 +101,7 @@ def _agreeing_source_releases() -> dict[str, PipelineMetadata]:
                   babel_version="2025jul10",
                   node_normalizer_version="2.4.1",
                   normalization_code_version="1.4.0",
-                  normalization_conflation=True,
-                  normalization_strict=True)
+                  normalization_conflation=True)
     return {"source_a": PipelineMetadata(source="source_a", **shared),
             "source_b": PipelineMetadata(source="source_b", **shared)}
 
@@ -129,9 +130,8 @@ def test_single_source_value_is_shared():
     # so identifiers can not be assumed to have been resolved the same way.
     ("node_normalizer_version", "2.5.0"),
     ("normalization_code_version", "1.5.0"),
-    # Mixing these produces a graph that is only conflated, or only strictly filtered, in places.
+    # Mixing conflation settings produces a graph that is only conflated in places.
     ("normalization_conflation", False),
-    ("normalization_strict", False),
 ])
 def test_diverging_values_raise(metadata_field, diverging_value):
     """Sources that disagree on Biolink or on how they were normalized must not be merged together."""
