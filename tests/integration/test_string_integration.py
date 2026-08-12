@@ -221,14 +221,16 @@ def test_ppi_no_duplicate_edges_by_pair_and_predicate(koza_output):
 
 
 def test_ppi_knowledge_level_varies_by_edge_type(koza_output):
-    """associated_with uses knowledge_assertion; coexpressed_with uses
-    statistical_association — so the output should contain both."""
+    """
+    The "associated with" predicate uses the "statistical_association" knowledge_level;
+    the "coexpressed_with" predicate uses"prediction" — so the output should contain both.
+    """
     _, edges = _ppi_partition(*_load_all(koza_output))
     kls = {e["knowledge_level"] for e in edges}
     # If coexpressed_with edges are present (coexpression channel fires in fixtures)
     # we expect statistical_association to appear. Only assert knowledge_assertion
     # since associated_with always fires.
-    assert "knowledge_assertion" in kls, f"knowledge_assertion missing: {kls}"
+    assert "statistical_association" in kls, f"knowledge_assertion missing: {kls}"
 
 
 # ──── output-wide assertions ─────────────────────────────────────────────────
