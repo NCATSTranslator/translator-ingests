@@ -1,7 +1,9 @@
 """Utilities for handling download.yaml files and version substitution."""
 
+import json
 import tempfile
 import yaml
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Optional, Union
 
@@ -60,6 +62,31 @@ def record_download_metadata(
         f"Recorded download of {len(report.downloaded)} file(s) for {pipeline_metadata.source} "
         f"at {source_metadata_path}."
     )
+
+
+def get_recorded_download_date(pipeline_metadata: PipelineMetadata) -> Optional[str]:
+    """
+    Return the downloaded_at timestamp recorded in the source's source-metadata.json.
+
+    This reads back the timestamp persisted by record_download_metadata, which is only refreshed
+    when a real fetch occurred, so it reflects when the source data was genuinely last retrieved
+    (preserved across cache-hit reruns). Returns None if unavailable.
+
+    Args:
+        pipeline_metadata: Metadata identifying the source and version.
+
+    Returns:
+        The recorded ISO 8601 timestamp, or None if unavailable.
+    """
+    source_metadata_path = get_versioned_file_paths(
+        file_type=IngestFileType.SOURCE_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+    if not source_metadata_path.exists():
+        return None
+    try:
+        return json.loads(source_metadata_path.read_text()).get("downloaded_at")
+    except (JSONDecodeError, OSError):
+        return None
 
 
 def substitute_version_in_download_yaml(
