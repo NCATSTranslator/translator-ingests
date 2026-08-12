@@ -165,8 +165,8 @@ def test_ppi_produces_nodes_and_edges(koza_output):
     nodes, edges = _ppi_partition(*_load_all(koza_output))
     # 199 data rows × 3 species, with combined_score > 700 filter: expect
     # fewer edges than the old threshold=500 run. Range is loose.
-    assert len(edges) > 0, f"no PPI edges produced"
-    assert len(nodes) > 0, f"no PPI nodes produced"
+    assert len(edges) > 0, "no PPI edges produced"
+    assert len(nodes) > 0, "no PPI nodes produced"
 
 
 def test_ppi_always_predicate_present(koza_output):
