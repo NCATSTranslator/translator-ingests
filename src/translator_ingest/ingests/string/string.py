@@ -135,7 +135,7 @@ def transform_string_ppi(
     for pred, _ in new_edges:
         seen_pairs.add(sorted_pair_key(subject_id, object_id, pred))
 
-    entrez_map: dict[str, list[str]] = koza_transform.state.get("string_to_entrez", {})
+    entrez_map: dict[str, list[str]] = koza_transform.state.setdefault("string_to_entrez", {})
     subject_equivalents = entrez_map.get(record["protein1"]) or None
     object_equivalents = entrez_map.get(record["protein2"]) or None
 
