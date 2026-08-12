@@ -124,16 +124,16 @@ def transform_string_ppi(
 
     # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
     # and grows with the number of unique (pair, predicate) tuples.
-    seen_pairs: set = koza_transform.state.setdefault("seen_pairs", set())
+    seen_edges: set = koza_transform.state.setdefault("seen_edges", set())
     new_edges = [
         (pred, score)
         for pred, score in row_edges
-        if sorted_pair_key(subject_id, object_id, pred) not in seen_pairs
+        if sorted_pair_key(subject_id, object_id, pred) not in seen_edges
     ]
     if not new_edges:
         return None
     for pred, _ in new_edges:
-        seen_pairs.add(sorted_pair_key(subject_id, object_id, pred))
+        seen_edges.add(sorted_pair_key(subject_id, object_id, pred))
 
     entrez_map: dict[str, list[str]] = koza_transform.state.setdefault("string_to_entrez", {})
     subject_equivalents = entrez_map.get(record["protein1"]) or None
