@@ -8,25 +8,6 @@ metadata:
     for human, mouse, and rat, with per-channel biolink predicates.
   rights: 'https://string-db.org/cgi/access'
 
-  # Canonical per-channel score thresholds — the single source of truth for the
-  # filter strategy. string.py reads these via KozaTransform.extra_fields (same
-  # mechanism as the go_cam ingest) and applies them per row; a channel's
-  # predicate fires only when its score exceeds the value below. Each channel is
-  # an INDEPENDENTLY tunable knob. Defaults reproduce the historical
-  # ORION-aligned behavior (per-channel 750, combined 500); annotations cite the
-  # EDA distribution (eda/reports/) that justifies each value.
-  #
-  # NOTE on semantics: an "include the row if ANY channel clears its own
-  # threshold" rule is an OR across per-column comparisons, which Koza's
-  # declarative `filters:` (AND-only, see koza/utils/row_filter.py) cannot
-  # express — so this per-channel logic lives in string.py, not in `filters:`.
-  channel_thresholds:
-    # TODO: replace experiments and coexpression thresholds with Vlado's
-    # recommendations (pending 2026-07-17 call AI action).
-    experiments:    750   # placeholder — Vlado to recommend; fires directly_physically_interacts_with
-    coexpression:   750   # placeholder — Vlado to recommend; fires coexpressed_with
-    combined_score: 700   # row-inclusion gate (STRING high-confidence cutoff; raised from 500)
-
 readers:
   # STRING protein–protein interactions. The transform function lives in
   # string.py decorated with @koza.transform_record(tag="string_ppi").
