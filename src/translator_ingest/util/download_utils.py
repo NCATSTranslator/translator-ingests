@@ -3,6 +3,7 @@
 import json
 import tempfile
 import yaml
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Optional, Union
 
@@ -69,7 +70,7 @@ def get_recorded_download_date(pipeline_metadata: PipelineMetadata) -> Optional[
 
     This reads back the timestamp persisted by record_download_metadata, which is only refreshed
     when a real fetch occurred, so it reflects when the source data was genuinely last retrieved
-    (preserved across cache-hit reruns). Returns None if no source-metadata.json exists.
+    (preserved across cache-hit reruns). Returns None if unavailable.
 
     Args:
         pipeline_metadata: Metadata identifying the source and version.
@@ -82,7 +83,10 @@ def get_recorded_download_date(pipeline_metadata: PipelineMetadata) -> Optional[
     )
     if not source_metadata_path.exists():
         return None
-    return json.loads(source_metadata_path.read_text()).get("downloaded_at")
+    try:
+        return json.loads(source_metadata_path.read_text()).get("downloaded_at")
+    except (JSONDecodeError, OSError):
+        return None
 
 
 def substitute_version_in_download_yaml(
