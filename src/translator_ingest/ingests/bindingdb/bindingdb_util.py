@@ -311,7 +311,7 @@ def get_bindingdb_assay_study(
         publication_id: str,
         edge_id: str,
         record: dict[str, Any]
-)-> dict[str, Study]:
+)-> dict[str, Study] | None:
     """
     Parsing BindingDb record fields for ligand-protein affinities
     and enzymatic interactions, into a ProteinLigandAssayResult
@@ -322,14 +322,18 @@ def get_bindingdb_assay_study(
     :return: dict[str, Study] | None is a dictionary fragment with the 'study id' as key and a Study as value.
                                 The method returns None if no such Study record can be resolved.
     """
-    assay_result: ProteinLigandAssayResult = ProteinLigandAssayResult(
-        id=edge_id,
-        **get_affinity_measurements(record),
-    )
-
-    return {
-        publication_id: Study(
-            id=publication_id,
-            has_study_results=[assay_result]
+    affinity_measurements: dict[str, QuantityValue] = get_affinity_measurements(record)
+    if not affinity_measurements:
+        return None
+    else:
+        assay_result: ProteinLigandAssayResult = ProteinLigandAssayResult(
+            id=edge_id,
+            **get_affinity_measurements(record),
         )
-    }
+
+        return {
+            publication_id: Study(
+                id=publication_id,
+                has_study_results=[assay_result]
+            )
+        }

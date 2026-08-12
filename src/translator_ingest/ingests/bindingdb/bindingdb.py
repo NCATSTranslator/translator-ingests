@@ -243,7 +243,7 @@ def transform_bindingdb_by_record(
     # dict[str, Study] describing measurements of the
     # molecular interaction affinity or enzymatic
     # interactions of the ligand to a target protein
-    bindingdb_assay: dict[str, Study] = get_bindingdb_assay_study(publication, edge_id, record)
+    bindingdb_assay_study: dict[str, Study] | None = get_bindingdb_assay_study(publication, edge_id, record)
 
     # Sources
     target_label = web_string(target_name)
@@ -260,7 +260,7 @@ def transform_bindingdb_by_record(
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,
-        has_supporting_studies=bindingdb_assay if bindingdb_assay else None,
+        has_supporting_studies=bindingdb_assay_study,
         publications=[publication],
         sources=sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
