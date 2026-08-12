@@ -2,7 +2,14 @@
 
   source_info:
     infores_id: infores:chembl
-    description: "ChEMBL is a manually curated database of bioactive molecules with drug-like properties. It brings together chemical, bioactivity and genomic data to aid the translation of genomic information into effective new drugs."
+    description: >-
+      ChEMBL is a large-scale, manually curated database of bioactive molecules with drug-like
+      properties, maintained by the European Bioinformatics Institute (EMBL-EBI). It brings together
+      chemical, bioactivity, and genomic data to aid the translation of genomic information into
+      effective new drugs. ChEMBL captures curated drug mechanisms of action, quantitative bioactivity
+      measurements from assays reported in the literature, drug metabolism relationships, and the protein
+      target composition of complexes and families. Molecules are identified by ChEMBL compound IDs and
+      targets by ChEMBL target IDs (mapped to UniProtKB where applicable).
     citations:
       - "Barbara Zdrazil, Eloy Felix, Fiona Hunter, Emma J Manners, James Blackshaw, Sybilla Corbett, Marleen de Veij, Harris Ioannidis, David Mendez Lopez, Juan F Mosquera, Maria Paula Magarinos, Nicolas Bosc, Ricardo Arcila, Tevik Kizilören, Anna Gaulton, A Patrícia Bento, Melissa. F Adasme, Pater Monecke, Gregory A Landrum, Andrew R Leach. Nucleic Acids Res. 2023: gkad1004. doi: 10.1093/nar/gkad1004"
       - "Davies M, Nowotka M, Papadatos G, Dedman N, Gaulton A, Atkinson F, Bellis L, Overington JP. Nucleic Acids Res. 2015; 43(W1):W612-20, doi: 10.1093/nar/gkv352"
@@ -18,7 +25,11 @@
       - mysql
       - postgresql
       - sqlite
-    data_versioning_and_releases: semiannual
+    data_versioning_and_releases: >-
+      ChEMBL is released roughly twice per year (approximately semiannual). Releases are versioned with an
+      incrementing integer (e.g. ChEMBL 36). This ingest targets ChEMBL 36. Release notes and the latest
+      distribution are available at https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/
+    source_status: maintained_regular_updates
 
   ingest_info:
     ingest_categories:
@@ -49,27 +60,43 @@
       - file_name: chembl_36_sqlite.tar.gz
         filtered_records: "Gene targets - removed targets that cannot be mapped to genes (like cell-lines)"
         rationale: "targets that cannot be mapped to genes"
+      - file_name: chembl_36_sqlite.tar.gz
+        filtered_records: "Bioactivity records that are not flagged as 'Active' and lack an action_type, and any activity record whose (molecule, target, action) already corresponds to a curated drug_mechanism record (mec_id is not null) or has already been emitted, are excluded."
+        rationale: "Only bioactivities with a clear activity outcome are retained; records already represented by a curated drug mechanism edge are dropped to avoid duplicate edges, and repeated (chemical, target, action) combinations are deduplicated."
+
+    future_considerations:
+      - category: edge_property_content
+        consideration: "ChEMBL drug mechanism and bioactivity records carry descriptive detail - binding site name/comment, mechanism-of-action description and comment, selectivity comment, mutation and mutation accession, and assay description - that is currently held as TODOs in the transform code and not yet emitted as edge properties, pending suitable Biolink Model slots."
+        relevant_files: chembl_36_sqlite.tar.gz
+      - category: edge_property_content
+        consideration: "Quantitative bioactivity values from the activities table (standard_type, standard_value, standard_units, pchembl_value) are used to select and characterize edges but are not yet represented as edge properties. Consider capturing them to support potency-aware queries."
+        relevant_files: chembl_36_sqlite.tar.gz
+      - category: node_property_content
+        consideration: "Molecule routes of delivery (derived from the oral/parenteral/topical flags) and additional molecule_dictionary properties (e.g. max_phase, therapeutic_flag, first_approval, withdrawn_flag) are computed or available but not yet emitted as node properties, pending suitable Biolink slots."
+        relevant_files: chembl_36_sqlite.tar.gz
+      - category: edge_content
+        consideration: "An enzyme/context qualifier linking metabolism edges to the mediating enzyme is computed in code but not yet attached, pending Biolink support for the relevant statement-level qualifier."
+        relevant_files: chembl_36_sqlite.tar.gz
 
   target_info:
-    infores_id: "infores:translator-chembl-kgx"
     edge_type_info:
 
       # ChemicalAffectsGeneAssociation: chemical affects gene/protein target
       - subject_categories:
-          - ChemicalEntity
+          - biolink:ChemicalEntity
         predicates:
           - biolink:affects
         object_categories:
-          - Protein
-          - ProteinFamily
-          - MacromolecularComplex
-          - NucleicAcidEntity
-          - MolecularEntity
-          - MolecularActivity
-          - SmallMolecule
-          - CellularComponent
-          - CellularOrganism
-          - CellLine
+          - biolink:Protein
+          - biolink:ProteinFamily
+          - biolink:MacromolecularComplex
+          - biolink:NucleicAcidEntity
+          - biolink:MolecularEntity
+          - biolink:MolecularActivity
+          - biolink:SmallMolecule
+          - biolink:CellularComponent
+          - biolink:CellularOrganism
+          - biolink:CellLine
         qualifiers:
           - property: "biolink:qualified_predicate"
             value_enumeration:
@@ -97,24 +124,28 @@
         agent_type:
           - manual_agent
           - automated_agent
+        primary_knowledge_sources:
+          - infores:chembl
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-        ui_explanation: "Drug mechanisms and bioactivities where a chemical affects a gene or protein target"
+        ui_explanation: "This edge asserts that a chemical affects a gene or protein target, based on ChEMBL's manually curated drug mechanisms of action and, in some cases, curated bioactivity measurements. The specific ChEMBL 'mechanism of action' (e.g. 'agonist', 'inhibitor', 'stabiliser') determines the qualified predicate and the aspect, direction, and causal-mechanism qualifiers applied to the edge (e.g. an inhibitor causes decreased activity via inhibition). Edges from curated drug mechanisms are manually curated by ChEMBL; edges derived from autocurated bioactivity assays are marked as automated."
+        source_files:
+          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "The 'mechanism' reported by ChEMBL determines the type of edge created. For mechanisms that imply an effect of the chemical on the target (e.g. 'agonist', 'inhibitor', 'stabiliser'), an 'affects' edge with appropriate qualifiers is created. A full mapping of ChEMBL mechanisms to Biolink predicate and qualifier combinations can be found in chembl_qualifiers.json."
 
       # GeneAffectsChemicalAssociation: gene/protein target affects chemical
       - subject_categories:
-          - Protein
-          - MacromolecularComplex
-          - NucleicAcidEntity
-          - MolecularEntity
-          - SmallMolecule
+          - biolink:Protein
+          - biolink:MacromolecularComplex
+          - biolink:NucleicAcidEntity
+          - biolink:MolecularEntity
+          - biolink:SmallMolecule
         predicates:
           - biolink:affects
         object_categories:
-          - ChemicalEntity
+          - biolink:ChemicalEntity
         qualifiers:
           - property: "biolink:qualified_predicate"
             value_enumeration:
@@ -135,30 +166,35 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
+          - automated_agent
+        primary_knowledge_sources:
+          - infores:chembl
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-        ui_explanation: "Drug mechanisms where a gene or protein (e.g. enzyme) affects a chemical (e.g. hydrolysis, oxidation, reduction)"
+        ui_explanation: "This edge asserts that a gene or protein (for example an enzyme) acts on and chemically transforms a chemical, based on ChEMBL's curated drug mechanisms and bioactivities. It is created for ChEMBL mechanisms where the protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'proteolytic enzyme', 'reducing agent', 'methylating agent'). The gene/protein is the subject and the chemical the object; object aspect and direction qualifiers describe what happens to the chemical (e.g. increased hydrolysis or oxidation)."
+        source_files:
+          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "For mechanisms where the gene/protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'reducing agent'), the gene is the subject and the chemical is the object. The object_aspect_qualifier and object_direction_qualifier describe what happens to the chemical."
 
       # ChemicalGeneInteractionAssociation: direct physical interactions and untyped interactions
       - subject_categories:
-          - ChemicalEntity
+          - biolink:ChemicalEntity
         predicates:
           - biolink:directly_physically_interacts_with
           - biolink:interacts_with
         object_categories:
-          - Protein
-          - ProteinFamily
-          - MacromolecularComplex
-          - NucleicAcidEntity
-          - MolecularEntity
-          - MolecularActivity
-          - SmallMolecule
-          - CellularComponent
-          - CellularOrganism
-          - CellLine
+          - biolink:Protein
+          - biolink:ProteinFamily
+          - biolink:MacromolecularComplex
+          - biolink:NucleicAcidEntity
+          - biolink:MolecularEntity
+          - biolink:MolecularActivity
+          - biolink:SmallMolecule
+          - biolink:CellularComponent
+          - biolink:CellularOrganism
+          - biolink:CellLine
         qualifiers:
           - property: "biolink:causal_mechanism_qualifier"
             value_range:
@@ -176,21 +212,26 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
+          - automated_agent
+        primary_knowledge_sources:
+          - infores:chembl
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-        ui_explanation: "Drug mechanisms where the mechanism implies a direct physical interaction (e.g. binding, chelation, crosslinking, sequestration)"
+        ui_explanation: "This edge asserts a direct physical interaction between a chemical and a gene/protein target, based on ChEMBL's curated drug mechanisms and bioactivities. It is created for ChEMBL mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent', 'sequestering agent'), using the 'directly physically interacts with' predicate. ChEMBL mechanisms classified as 'OTHER', where no specific interaction type is known, produce the more generic 'interacts_with' edge."
+        source_files:
+          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "For mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent'), a 'directly_physically_interacts_with' edge is created. Mechanisms classified as 'OTHER' produce an 'interacts_with' edge."
 
       # MacromolecularMachineHasSubstrateAssociation: substrate relationships
       - subject_categories:
-          - Protein
-          - ProteinFamily
+          - biolink:Protein
+          - biolink:ProteinFamily
         predicates:
           - biolink:has_substrate
         object_categories:
-          - ChemicalEntity
+          - biolink:ChemicalEntity
         qualifiers:
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
@@ -203,34 +244,42 @@
         agent_type:
           - manual_agent
           - automated_agent
+        primary_knowledge_sources:
+          - infores:chembl
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-        ui_explanation: "Substrate relationships from ChEMBL drug mechanisms and bioactivities"
+        ui_explanation: "This edge asserts that a protein or protein family acts on a chemical as its substrate, based on ChEMBL drug mechanisms and bioactivities where the ChEMBL mechanism is 'substrate'. The protein/protein family is the subject and the chemical substrate is the object. Edges from curated drug mechanisms are manual; edges derived from autocurated bioactivity assays are marked as automated."
+        source_files:
+          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
 
       # AnatomicalEntityHasPartAnatomicalEntityAssociation: complex/family composition
       - subject_categories:
-          - MacromolecularComplex
-          - ProteinFamily
-          - MolecularActivity
-          - Protein
+          - biolink:MacromolecularComplex
+          - biolink:ProteinFamily
+          - biolink:MolecularActivity
+          - biolink:Protein
         predicates:
           - biolink:has_part
         object_categories:
-          - Protein
+          - biolink:Protein
         knowledge_level:
           - knowledge_assertion
         agent_type:
           - manual_agent
-        ui_explanation: "Component information from ChEMBL"
+        primary_knowledge_sources:
+          - infores:chembl
+        ui_explanation: "This edge describes the protein composition of a ChEMBL target that is a complex, protein family, or selectivity/interaction group, asserting that the target 'has part' a particular constituent protein. It is derived from ChEMBL's curated target-to-component mappings (target_components and component_sequences), where each protein component of a complex or family target is linked to that target."
+        source_files:
+          - "chembl_36_sqlite.tar.gz (target_dictionary, target_components, component_sequences tables)"
 
       # ChemicalEntityToChemicalEntityAssociation: metabolism
       - subject_categories:
-          - ChemicalEntity
+          - biolink:ChemicalEntity
         predicates:
           - biolink:has_metabolite
         object_categories:
-          - ChemicalEntity
+          - biolink:ChemicalEntity
         qualifiers:
           - property: "biolink:species_context_qualifier"
             value_id_prefixes:
@@ -240,25 +289,26 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
+        primary_knowledge_sources:
+          - infores:chembl
         edge_properties:
           - biolink:publications
-        ui_explanation: "Metabolism information from ChEMBL"
+        ui_explanation: "This edge asserts that a chemical (a drug or substrate) has a particular metabolite, based on ChEMBL's manually curated drug metabolism records. It links a substrate chemical to its metabolite; where the parent drug differs from the metabolized substrate, an additional edge from the parent drug to the metabolite is also created. A species context qualifier records the organism in which the metabolic conversion was observed."
+        source_files:
+          - "chembl_36_sqlite.tar.gz (metabolism, compound_records, compound_structures, metabolism_refs tables)"
 
     node_type_info:
 
-      - node_category: CellLine
+      - node_category: biolink:CellLine
         source_identifier_types:
           - ChEMBL
-
-      - node_category: CellularComponent
+      - node_category: biolink:CellularComponent
         source_identifier_types:
           - ChEMBL
-
-      - node_category: CellularOrganism
+      - node_category: biolink:CellularOrganism
         source_identifier_types:
           - ChEMBL
-
-      - node_category: ChemicalEntity
+      - node_category: biolink:ChemicalEntity
         source_identifier_types:
           - ChEMBL
         node_properties:
@@ -268,24 +318,19 @@
           - chembl_black_box_warning
           - chembl_natural_product
           - chembl_prodrug
-
-      - node_category: MacromolecularComplex
+      - node_category: biolink:MacromolecularComplex
         source_identifier_types:
           - ChEMBL
-
-      - node_category: MolecularActivity
+      - node_category: biolink:MolecularActivity
         source_identifier_types:
           - ChEMBL
-
-      - node_category: MolecularEntity
+      - node_category: biolink:MolecularEntity
         source_identifier_types:
           - ChEMBL
-
-      - node_category: NucleicAcidEntity
+      - node_category: biolink:NucleicAcidEntity
         source_identifier_types:
           - ChEMBL
-
-      - node_category: Protein
+      - node_category: biolink:Protein
         source_identifier_types:
           - ChEMBL
           - UniProtKB
@@ -293,14 +338,20 @@
           - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
-
-      - node_category: ProteinFamily
+      - node_category: biolink:ProteinFamily
+        source_identifier_types:
+          - ChEMBL
+      - node_category: biolink:SmallMolecule
         source_identifier_types:
           - ChEMBL
 
-      - node_category: SmallMolecule
-        source_identifier_types:
-          - ChEMBL
+    future_considerations:
+      - category: edge_properties
+        consideration: "Add descriptive edge properties for drug mechanism and bioactivity edges (mechanism-of-action description, selectivity comment, binding site, mutation, assay description) once corresponding Biolink Model slots exist; these are currently TODOs in the transform code."
+      - category: qualifiers
+        consideration: "Attach an enzyme/context qualifier to metabolism (has_metabolite) edges to record the mediating enzyme, once Biolink supports the relevant statement-level qualifier."
+      - category: edge_properties
+        consideration: "Consider capturing quantitative bioactivity values (e.g. pchembl_value, standard_value/units) as edge properties on chemical-target edges derived from the activities table."
 
   provenance_info:
     contributions:

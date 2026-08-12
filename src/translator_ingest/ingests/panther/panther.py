@@ -80,7 +80,7 @@ def transform_gene_to_gene_orthology(
 ) -> KnowledgeGraph | None:
     """
     Transform a pre-processed Panther orthology record into a
-    Biolink Model-compliant gene to gene orthology knowledge graph statement.
+    Biolink Model-compliant gene-to-gene orthology knowledge graph statement.
 
     Records are expected to contain pre-processed fields from prepare_panther_data:
     gene_a_id, gene_b_id, ncbitaxon_a, ncbitaxon_b, gene_family_id.
