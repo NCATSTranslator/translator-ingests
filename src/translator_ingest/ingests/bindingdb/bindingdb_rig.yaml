@@ -136,8 +136,7 @@ ingest_info:
       which a ligand binds and dissociates from a protein.
       The ratio of Koff/Kon is Kd, the binding affinity
       between a ligand and its target.
-    relevant_files:
-    - "BindingDB_All_{version}_tsv.zip"
+    relevant_files: "BindingDB_All_{version}_tsv.zip"
   additional_notes: null
 target_info:
   edge_type_info:
