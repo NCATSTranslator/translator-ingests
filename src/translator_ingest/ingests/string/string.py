@@ -119,11 +119,11 @@ def transform_string_ppi(
     # Collect (predicate, channel_score) pairs for this row. Always has at
     # least the associated_with entry; may add directly_physically_interacts_with
     # and/or coexpressed_with when the corresponding channels fire.
-    # includes the ALWAYS edge with the combined score
+    # Always includes at least one ALWAYS edge, with the STRING combined score
     row_edges = edges_for_row(record)
 
-    # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state
-    # and grows with the number of unique (pair, predicate) tuples.
+    # Per-pair-per-predicate dedup. The dedup set lives on koza_transform.state and
+    # grows with the number of unique (concept nodes (S,O or O,S), predicate) 3-tuples.
     seen_edges: set = koza_transform.state.setdefault("seen_edges", set())
     new_edges = [
         (pred, score)
