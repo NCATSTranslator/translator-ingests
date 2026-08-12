@@ -233,15 +233,15 @@ def _match_edge(
             elif isinstance(expected_slot_value, dict):
                 if not _validate_pydantic_collection(expected_slot_value, reasv):
                     return (
-                        f"Expected fields {expected_slot_value!r} not found in any returned "
+                        f"Expected fields {expected_slot_value!r} not found in any returned " +
                         f"'{association_slot}' entry in '{reasv!r}'"
                     )
             else:
                 # Scalar value test
                 if reasv != expected_slot_value:
                     return (
-                        f"Value '{expected_slot_value!r}' "
-                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
+                        f"Value '{expected_slot_value!r}' " +
+                        f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
                     )
 
     # If we got to here, then success!
