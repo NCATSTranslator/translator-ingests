@@ -93,16 +93,19 @@ def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
         if not hasattr(item, field):
             return False
         actual = getattr(item, field)
-        if isinstance(value
-                , list) and value and isinstance(value[0], dict):
-            # Nested Pydantic collection: each expected sub-dict must be
-            # satisfied by at least one element in the actual sub-collection.
-            if not actual:
-                return False
-            for sub in value:
-                if not _validate_pydantic_collection(sub, actual):
+        if isinstance(value, list):
+            if value and isinstance(value[0], dict):
+                # Nested Pydantic collection: each expected sub-dict must be
+                # satisfied by at least one element in the actual sub-collection.
+                if not actual:
                     return False
-        else:
+                for sub in value:
+                    if not _validate_pydantic_collection(sub, actual):
+                        return False
+        elif isinstance(value, dict):
+            if not _item_matches_expected(actual, value):
+                return False
+        else: # maybe just a scalar?
             if actual != value:
                 return False
     return True
@@ -130,7 +133,7 @@ def _validate_pydantic_collection(
                      are Pydantic model instances
     :return: True if at least one instance satisfies all expected field values
     """
-    
+
     if isinstance(expected, dict):
         if isinstance(returned, dict):
             # Two dictionary collections are being matched...
@@ -144,10 +147,10 @@ def _validate_pydantic_collection(
                     return False
                 returned_item = returned[key]
                 expected_item = expected[key]
-    
+
                 # ...then one-on-one match attempted of the body of the items
                 found.append(_item_matches_expected(returned_item, expected_item))
-    
+
             # since I'm matching all expected against
             # returned, then I need to match all of them?
             return all(found)
@@ -159,7 +162,7 @@ def _validate_pydantic_collection(
                 if _item_matches_expected(item, expected):
                     return True
             return False
-            
+
     elif isinstance(expected, list):
 
         if isinstance(returned, dict):
@@ -190,7 +193,8 @@ def _match_edge(
 
     # Sanity check: don't put any expected_edge test data slot that isn't in target slots?
     assert all(association_slot in target_slots for association_slot in expected_edge), \
-    "Sample expected edge data has slot field(s) unexpected in list of validation 'edge_test_slots'"
+    (f"Sample expected edge data slots '{','.join(expected_edge.keys())}' "
+     f"are not a strict subset of target slots '{','.join(target_slots)}'")
 
     for association_slot in target_slots:
         if association_slot in returned_edge and association_slot in expected_edge:
@@ -229,30 +233,19 @@ def _match_edge(
             elif isinstance(expected_slot_value, dict):
                 if not _validate_pydantic_collection(expected_slot_value, reasv):
                     return (
-                        f"Expected fields {expected_slot_value!r} not found in any returned "
+                        f"Expected fields {expected_slot_value!r} not found in any returned " +
                         f"'{association_slot}' entry in '{reasv!r}'"
                     )
             else:
                 # Scalar value test
                 if reasv != expected_slot_value:
                     return (
-                        "Unexpected value type for "
-                        + f"{expected_value!r} for slot '{slot}'"
+                        f"Value '{expected_slot_value!r}' " +
+                        f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
                     )
-    elif isinstance(expected_value, dict):
-        if not _validate_pydantic_collection(expected_value, reasv):
-            return (
-                f"Expected fields {expected_value!r} not found in any returned "
-                f"'{slot}' entry in '{reasv!r}'"
-            )
-    else:
-        # Scalar value test.
-        if reasv != expected_value:
-            return (
-                f"Value '{expected_value!r}' "
-                + f"for slot '{slot}' not equal to returned edge value '{reasv!r}'?"
-            )
 
+    # If we got to here, then success!
+    # No errors were reported?
     return None
 
 
@@ -367,8 +360,8 @@ def validate_transform_result(
     if edges and expected_edges is not None and edge_test_slots is not None:
 
         # Convert the 'edges' Iterable Association content
-        # into a list of Python dictionaries by comprehension
-        transformed_edges: list[dict[str, Any]] = [dict(edge) for edge in edges]
+        # into a list by comprehension
+        transformed_edges = [dict(edge) for edge in edges]
 
         # Check contents of edge(s) returned.
         # Only 'expected_no_of_edges' is expected to be returned?
@@ -377,12 +370,10 @@ def validate_transform_result(
         expected_edge_list: list[dict] = []
         if isinstance(expected_edges, list):
             # Blissfully assume that a list of edge slot=value dictionaries was specified
-            expected_edge_list = expected_edges
-        elif isinstance(expected_edges, dict):
-            # Blissfully assume just a single edge slot=value dictionary was specified
-            expected_edge_list = [expected_edges]
+            expected_edge_list.extend(expected_edges)
         else:
-            assert False, f"Unexpected value type in the list of expected edges: '{str(expected_edges)}'"
+            # Blissfully assume just a single edge slot=value dictionary was specified
+            expected_edge_list.append(expected_edges)
 
         for returned_edge in transformed_edges:
             found: bool
