@@ -41,7 +41,7 @@ from translator_ingest.util.biolink import INFORES_HPOA
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_hpoa_association_sources,
-    evidence_mappings,
+    get_evidence_and_agent,
     sex_format,
     sex_to_pato,
     Frequency,
@@ -213,11 +213,9 @@ def transform_disease_to_phenotype_edge_record(
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
             frequency = phenotype_frequency_to_hpo_term(record["frequency"])
 
-        # Evidence Code Ontology ("ECO") term translated
-        # to ECO class CURIE based on HPO documentation
-        # and mapped onto a given agent_type
-        evidence_code = record["evidence"]
-        evidence_code_term, agent_type = evidence_mappings[evidence_code]
+        # Evidence Code Ontology ("ECO") term translated to ECO class CURIE
+        # based on HPO documentation and mapped onto a given agent_type
+        evidence_of_type, agent_type = get_evidence_and_agent(record.get("evidence"))
 
         ## Publications
         references: str = record["reference"]
@@ -229,7 +227,6 @@ def transform_disease_to_phenotype_edge_record(
         ## Filter out NCBI web publication endpoints
         publications = [p for p in publications if not p.startswith("http")]
 
-
         # Association/Edge
         association = DiseaseToPhenotypicFeatureAssociation(
             id=entity_id(),
@@ -238,7 +235,7 @@ def transform_disease_to_phenotype_edge_record(
             # negated=negated,
             object=hpo_id,
             publications=publications,
-            has_evidence_of_type=[evidence_code_term],
+            has_evidence_of_type=evidence_of_type,
             onset_qualifier=onset_qualifier,
             frequency_qualifier=frequency.frequency_qualifier,
             sex_qualifier=sex_qualifier,
@@ -408,12 +405,9 @@ def transform_gene_to_phenotype_record(
         # ...otherwise leave as is
         pass
 
-    # Evidence Code Ontology ("ECO") term, inherited
-    # from the phenotype.hpoa entry, translated
-    # to ECO class CURIE based on HPO documentation
-    # and mapped onto a given agent_type
-    evidence_code = record["evidence"]
-    evidence_code_term, agent_type = evidence_mappings[evidence_code]
+    # Evidence Code Ontology ("ECO") term, inherited from the phenotype.hpoa entry, translated
+    # to ECO class CURIE based on HPO documentation and mapped onto a given agent_type
+    evidence_of_type, agent_type = get_evidence_and_agent(record.get("evidence"))
 
     publications = [pub.strip() for pub in str(record["publications"]).split(";")] if record["publications"] else []
 
@@ -423,7 +417,7 @@ def transform_gene_to_phenotype_record(
         predicate=GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
         object=hpo_id,
         publications=publications,
-        has_evidence_of_type=[evidence_code_term],
+        has_evidence_of_type=evidence_of_type,
         qualified_predicate="biolink:causes",
         subject_form_or_variant_qualifier=VE.genetic_variant_form,
         disease_context_qualifier=dis_id,

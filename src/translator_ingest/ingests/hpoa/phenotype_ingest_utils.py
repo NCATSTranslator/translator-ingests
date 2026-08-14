@@ -46,17 +46,23 @@ def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
-evidence_mappings: dict = {
+_evidence_mappings: dict = {
 
     # "inferred from electronic annotation"
-    "IEA": ("ECO:0000501",AgentTypeEnum.text_mining_agent),
+    "IEA": (["ECO:0000501"],AgentTypeEnum.text_mining_agent),
 
     # "published clinical study evidence"
-    "PCS": ("ECO:0006017",AgentTypeEnum.manual_agent),
+    "PCS": (["ECO:0006017"],AgentTypeEnum.manual_agent),
 
     # "traceable author statement"
-    "TAS": ("ECO:0000304",AgentTypeEnum.manual_validation_of_automated_agent)
+    "TAS": (["ECO:0000304"],AgentTypeEnum.manual_validation_of_automated_agent)
 }
+
+def get_evidence_and_agent(evidence_tag: str | None) -> tuple[list[str]|None,AgentTypeEnum]:
+    if evidence_tag is None or evidence_tag not in _evidence_mappings:
+        return None, AgentTypeEnum.not_provided
+    else:
+        return _evidence_mappings[evidence_tag]
 
 # Sex (right now both all uppercase and all lowercase
 sex_format: dict = {"male": "male", "MALE": "male", "female": "female", "FEMALE": "female"}
