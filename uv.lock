@@ -330,7 +330,7 @@ requires-dist = [
     { name = "codespell", specifier = ">=2.4.1" },
     { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "hatchling" },
-    { name = "kghub-downloader", specifier = ">=0.4.5" },
+    { name = "kghub-downloader", specifier = ">=0.5.0" },
     { name = "koza", specifier = ">=2.4.0" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "openpyxl" },
@@ -1520,7 +1520,7 @@ wheels = [
 
 [[package]]
 name = "kghub-downloader"
-version = "0.4.5"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -1534,9 +1534,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/53/acb17d107f4f8a1ba3796dab30ddc13004e456ca76153903751e48e2c98e/kghub_downloader-0.4.5.tar.gz", hash = "sha256:87534ddbfc9090603ed79eefd59ac67c90c16e1a96aa273ab5a82df159438a9b", size = 14274, upload-time = "2026-04-07T22:22:46.443Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a8/62/dd24f935470bdbd6dd2b5df2362c1bae0e53dc55202c6dbfba35fe848653/kghub_downloader-0.5.0.tar.gz", hash = "sha256:c4f38a6f50e57354416c2151de6582fc16cc91144c6312071771a6a3bf953fef", size = 14726, upload-time = "2026-07-09T22:37:44.124Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/db/9ac95a37b24bea980ef067c162894955ec13e0fa99b5e45372a201972a33/kghub_downloader-0.4.5-py3-none-any.whl", hash = "sha256:dc1b479dd3848990766d91ad69e0ca692f0c5d82c2e3b2aa305d0fb37eacda85", size = 15572, upload-time = "2026-04-07T22:22:45.594Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/f8/650fedf75cf16ef29c9b6ecf51e340c0b1438d6a9e62d8066e2a939eca78/kghub_downloader-0.5.0-py3-none-any.whl", hash = "sha256:a34b207cd1b826b8982dfc99b013006a17259280cb9f176c56594a7d92e1f0bd", size = 16091, upload-time = "2026-07-09T22:37:43.263Z" },
 ]
 
 [[package]]
