@@ -16,7 +16,7 @@ INGESTS_DIRECTORY = Path(__file__).parent.parent.parent / "translator_ingest" / 
 
 def load_template(template_path):
     """Load the RIG template from the YAML file."""
-    with open(template_path, "r") as f:
+    with open(template_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -49,7 +49,7 @@ def create_rig(infores_id, rig_name, output_path, template_path):
         template["source_info"]["additional_notes"] = f"RIG created on {datetime.now().strftime('%Y-%m-%d')}"
 
     # Write the new RIG file
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         yaml.dump(template, f, default_flow_style=False, sort_keys=False, indent=2)
 
     click.echo(f"Created new RIG: {output_path}")

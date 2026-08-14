@@ -124,7 +124,7 @@ def get_kgx_source_from_rig(source: str) -> KGXKnowledgeSource:
     if not rig_yaml_file.exists():
         raise FileNotFoundError(f"Rig YAML file not found for {source}")
 
-    with rig_yaml_file.open("r") as rig_file:
+    with rig_yaml_file.open("r", encoding="utf-8") as rig_file:
         rig_data = yaml.safe_load(rig_file)
         rig_name = rig_data.get("name", source)
         rig_source_info = rig_data["source_info"]
