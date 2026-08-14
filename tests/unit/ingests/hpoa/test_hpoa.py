@@ -207,7 +207,7 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
+                "agent_type": AgentTypeEnum.text_mining_agent,
             }
         ),
         (  # Query 2 - Another 'aspect' == 'P' record processed
@@ -247,7 +247,7 @@ def test_disease_to_phenotype_node_transform(
             #         {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
             #     ],
             #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            #     "agent_type": AgentTypeEnum.manual_agent,
+            #     "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             # }
         ),
         (  # Query 3 - Same 'aspect' == 'P' record but lacking any frequency qualifier
