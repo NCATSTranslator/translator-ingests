@@ -25,8 +25,10 @@ BGEE_SOURCES = build_association_knowledge_sources(primary=INFORES_BGEE)
 def get_latest_version() -> str:
     """Get version from the manifest file"""
     latest_release_url = "https://www.bgee.org/ftp/release_v2.tsv"
+    # bgee.org returns HTTP 403 for the default Python urllib User-Agent, so send a browser-like one.
+    request = urllib.request.Request(latest_release_url, headers={"User-Agent": "Mozilla/5.0"})
     try:
-        with urllib.request.urlopen(latest_release_url) as response:
+        with urllib.request.urlopen(request) as response:
             response_text = response.read().decode('utf8')
             reader = list(csv.DictReader(response_text.splitlines(),delimiter='\t'))
             version = reader[0]['release']

@@ -43,7 +43,6 @@ graphs:
       - semmeddb
       - sider
       - signor
-      - string
       - tmkp
       - ttd
       - ubergraph

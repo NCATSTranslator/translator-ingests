@@ -35,7 +35,8 @@ source_info:
   data_versioning_and_releases: >-
      GitHub managed releases at https://github.com/obophenotype/human-phenotype-ontology/releases
      No consistent cadence for releases. Versioning is based on the month and year of the release.
-  additional_notes: null
+  additional_notes:
+    - null
 ingest_info:
   ingest_categories:
   - primary_knowledge_provider
@@ -115,7 +116,8 @@ ingest_info:
       Mendelian diseases where the Gene is individually causal for the disease
       and all of its phenotypes.
     relevant_files: genes_to_phenotype.txt
-  additional_notes: null
+  additional_notes:
+    - null
 target_info:
   infores_id: "infores:translator-hpo-annotations"
   edge_type_info:
@@ -162,7 +164,8 @@ target_info:
         with optional qualifiers describing frequency/context information where provided.
       source_files:
         - phenotype.hpoa
-      additional_notes: null
+      additional_notes:
+        - null
     - subject_categories:
       - "biolink:Gene"
       predicates:
@@ -199,7 +202,8 @@ target_info:
         of the gene that participates in these relationships, not the Gene in general.
       source_files:
         - genes_to_disease.txt
-      additional_notes: null
+      additional_notes:
+        - null
     - subject_categories:
       - "biolink:Gene"
       predicates:
@@ -241,7 +245,8 @@ target_info:
         causing the Phenotype (not the Gene in general)."
       source_files:
         - genes_to_phenotype.txt
-      additional_notes: null
+      additional_notes:
+        - null
   node_type_info:
   - node_category: "biolink:Disease"
     source_identifier_types:
@@ -250,17 +255,20 @@ target_info:
       - "DECIPHER"
     node_properties:
     - "biolink:inheritance"
-    additional_notes: null
+    additional_notes:
+      - null
   - node_category: "biolink:PhenotypicFeature"
     source_identifier_types:
       - "HP"
     node_properties: null
-    additional_notes: null
+    additional_notes:
+      - null
   - node_category: "biolink:Gene"
     source_identifier_types:
       - "NCBIGene"
     node_properties: null
-    additional_notes: null
+    additional_notes:
+      - null
   future_considerations:
     - category: spoq_pattern
       consideration: >-

@@ -16,7 +16,7 @@ dependencies = [
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
     "hatchling",
-    "kghub-downloader>=0.4.5",
+    "kghub-downloader>=0.5.0",
     "koza>=2.4.0",
     "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
@@ -44,7 +44,7 @@ dev = [
     "nbclassic",
     "jupyter_contrib_nbextensions",
     "jsonlines",
-    "resource-ingest-guide-schema",
+    "resource-ingest-guide-schema>=0.1.5",
     # Documentation dependencies
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
