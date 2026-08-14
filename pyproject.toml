@@ -39,7 +39,7 @@ dev = [
     "black>=24.1.0",
     "codespell>=2.2.0",
     # Temporarily pin ruff to 0.14.14 to avoid ruff dependency being
-    # upgraded to a later release triggering alot of ruff code errors
+    # upgraded to a later release triggering many ruff code errors
     # "ruff>=0.12.8",
     "ruff==0.14.14",
     # for CX notebook support: I use an old version that works with extensions
