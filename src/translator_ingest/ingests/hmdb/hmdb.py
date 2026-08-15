@@ -3,7 +3,9 @@ Human Metabolome Database (HMDB) data ingest script.
 Derived from https://github.com/RobokopU24/ORION/blob/master/parsers/hmdb/src/loadHMDB.py
 with modifications as required from other KPs identified by the Phase 2 ingest survey
 """
-from typing import Any, Iterable
+from typing import Any
+
+from collections.abc import Iterable
 from pathlib import Path
 
 # import re
@@ -92,7 +94,7 @@ def transform_hmdb_ingest(
                 el: E_Tree.Element = E_Tree.fromstring(record)
 
                 # get the metabolite element
-                metabolite_accession: E_Tree.Element = el.find('accession')
+                metabolite_accession: E_Tree.Element | None = el.find('accession')
 
                 # did we get a good value?
                 if metabolite_accession is not None and metabolite_accession.text is not None:
@@ -100,7 +102,7 @@ def transform_hmdb_ingest(
                     metabolite_id = f"HMDB:{metabolite_accession.text}"
 
                     # get the metabolite name element
-                    metabolite_name: E_Tree.Element = el.find('name')
+                    metabolite_name: E_Tree.Element | None = el.find('name')
 
                     # did we get a good value?
                     if metabolite_name is not None and metabolite_name.text is not None:

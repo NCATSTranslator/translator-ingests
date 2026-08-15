@@ -1,6 +1,5 @@
 import pytest
 
-from typing import Optional
 from pathlib import Path
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
@@ -19,9 +18,9 @@ from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKo
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = dict()
+    mappings: Mappings = {}
     return MockKozaTransform(
-        extra_fields=dict(),
+        extra_fields={},
         writer=writer,
         mappings=mappings,
         transform_metadata={},
@@ -114,8 +113,8 @@ ASSOCIATION_TEST_SLOTS = (
 )
 def test_hmdb_ingest_transform(
     mock_koza_transform: koza.KozaTransform,
-    result_nodes: Optional[list],
-    result_edge: Optional[dict]
+    result_nodes: list,
+    result_edge: dict
 ):
     on_begin_hmdb_ingest(mock_koza_transform)
 
