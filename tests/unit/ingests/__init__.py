@@ -250,12 +250,12 @@ def _match_edge(
 
 
 def _found_edge(
-    returned_edge: dict,
-        expected_edge_list: list[dict],
-        target_slots: tuple[str,...]
+    expected_edge: dict,
+    returned_edges: list[dict],
+    target_slots: tuple[str,...]
 ) -> tuple[bool, list[str] | None]:
     error_messages: list[str] = []
-    for expected_edge in expected_edge_list:
+    for returned_edge in returned_edges:
         error_msg: str | None = _match_edge(returned_edge, expected_edge, target_slots)
         if error_msg is None:
             # Success! We found at least one match with expectation...
@@ -375,8 +375,8 @@ def validate_transform_result(
             # Blissfully assume just a single edge slot=value dictionary was specified
             expected_edge_list.append(expected_edges)
 
-        for returned_edge in transformed_edges:
+        for expected_edge in expected_edge_list:
             found: bool
             error_messages: list[str] | None
-            found, error_messages = _found_edge(returned_edge, expected_edge_list, edge_test_slots)
+            found, error_messages = _found_edge(expected_edge, transformed_edges, edge_test_slots)
             assert found, "\n".join(list(error_messages)) if error_messages else "No edges matched expected values?"
