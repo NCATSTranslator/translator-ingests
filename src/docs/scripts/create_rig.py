@@ -40,9 +40,6 @@ def create_rig(infores_id, rig_name, output_path, template_path):
     # Set the target infores_id based on the source (optional but commonly done)
     if "target_info" not in template:
         template["target_info"] = {}
-    # TODO: should this now be something like
-    #       "infores:translator-ctd-kgx" instead of just "'"infores:ctd"?
-    template["target_info"]["infores_id"] = infores_id
 
     # Add the creation timestamp in additional_notes if not present
     if "additional_notes" not in template["source_info"]:
