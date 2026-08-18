@@ -13,6 +13,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
+    RetrievalSource,
+    ResourceRoleEnum,
     Study,
     TextMiningStudyResult,
 )
@@ -896,3 +898,83 @@ class TestPredicateRemap:
 
     def test_only_treats_is_remapped(self):
         assert len(PREDICATE_REMAP) == 1
+
+
+# ---------------------------------------------------------------------------
+# Pydantic roundtrip edge fixtures
+# ---------------------------------------------------------------------------
+
+TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:text-mining-provider-targeted",
+        resource_id="infores:text-mining-provider-targeted",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-1",
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+        },
+    },
+    {
+        "association_class": GeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-2",
+            "subject": "HGNC:11477",
+            "predicate": "biolink:associated_with",
+            "object": "MONDO:0005148",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-3",
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+            "object": "MONDO:0008315",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToGeneAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-4",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:200",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

@@ -13,7 +13,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
-    AnatomicalEntityHasPartAnatomicalEntityAssociation
+    AnatomicalEntityHasPartAnatomicalEntityAssociation,
+    ChemicalGeneInteractionAssociation,
+    MacromolecularMachineHasSubstrateAssociation,
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -515,6 +517,10 @@ def get_association_class(association_type: str):
         return ChemicalAffectsGeneAssociation
     if association_type == "GeneAffectsChemicalAssociation":
         return GeneAffectsChemicalAssociation
+    if association_type == "ChemicalGeneInteractionAssociation":
+        return ChemicalGeneInteractionAssociation
+    if association_type == "MacromolecularMachineHasSubstrateAssociation":
+        return MacromolecularMachineHasSubstrateAssociation
     return None
 
 
@@ -542,14 +548,25 @@ def get_association(koza, record, action_type_map):
         if association_class is None:
             koza.log(f" Unknown association class for action type {record['action_type']}", level="WARNING")
             return [], []
-            # Create association
+
+        # For GeneAffectsChemicalAssociation and MacromolecularMachineHasSubstrateAssociation
+        # the gene/protein is the subject and the chemical is the object;
+        # the mutation qualifier describes the gene.
+        if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation"):
+            subject_id = target.id
+            object_id = chemical.id
+        else:
+            subject_id = chemical.id
+            object_id = target.id
+
         association = association_class(
                 id=entity_id(),
-                subject=chemical.id,
+                subject=subject_id,
                 predicate=predicate,
-                object=target.id,
+                object=object_id,
                 species_context_qualifier = species_context_qualifier,
-                object_form_or_variant_qualifier = mutation_qualifier,
+                subject_form_or_variant_qualifier = mutation_qualifier if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
+                object_form_or_variant_qualifier = mutation_qualifier if association_type not in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
                 sources=CHEMBL_SOURCES,
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
@@ -568,17 +585,33 @@ def get_association(koza, record, action_type_map):
     return nodes,edges
 
 
-def get_activity_association(koza: koza.KozaTransform, chemical, target, action_type_map, record: dict[str, Any]) -> ChemicalAffectsGeneAssociation | GeneAffectsChemicalAssociation | None:
+def get_activity_association(koza: koza.KozaTransform, chemical, target, action_type_map, record: dict[str, Any]) -> bm.Association | None:
+    """Build an association for a ChEMBL activity record, respecting the
+    direction implied by the association type in *action_type_map*."""
     species_context_qualifier = get_species_context_qualifier(record)
     anatomical_context_qualifier = record["uberon_id"]
     publications = get_publications(koza, record)
     predicate = action_type_map["predicate"]
+    association_type = action_type_map["association"]
     qualifiers = action_type_map["qualifiers"]
-    association = ChemicalAffectsGeneAssociation(
+
+    association_class = get_association_class(association_type)
+    if association_class is None:
+        koza.log(f" Unknown association class for action type {record['action_type']}", level="WARNING")
+        return None
+
+    if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation"):
+        subject_id = target.id
+        object_id = chemical.id
+    else:
+        subject_id = chemical.id
+        object_id = target.id
+
+    association = association_class(
         id=entity_id(),
-        subject=chemical.id,
+        subject=subject_id,
         predicate=predicate,
-        object=target.id,
+        object=object_id,
         species_context_qualifier = species_context_qualifier,
         anatomical_context_qualifier = [anatomical_context_qualifier] if anatomical_context_qualifier else None,
         sources=CHEMBL_SOURCES,

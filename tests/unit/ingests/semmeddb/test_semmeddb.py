@@ -4,6 +4,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     CausalGeneToDiseaseAssociation,
     ChemicalAffectsGeneAssociation,
+    ChemicalAffectsBiologicalEntityAssociation,
     ChemicalEntity,
     Disease,
     Gene,
@@ -13,6 +14,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     NamedThing,
     Protein,
+    RetrievalSource,
+    ResourceRoleEnum,
     Study,
     TextMiningStudyResult,
 )
@@ -589,3 +592,126 @@ def test_causes_without_disease_or_phenotype_no_variant_qualifier():
     entities = _create_test_runner(record)
     association = [e for e in entities if isinstance(e, Association)][0]
     assert type(association) is Association
+
+
+# ---------------------------------------------------------------------------
+# Pydantic roundtrip edge fixtures
+# ---------------------------------------------------------------------------
+
+TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:semmeddb",
+        resource_id="infores:semmeddb",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:test-semmeddb-1",
+            "subject": "CHEBI:15365",
+            "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+            "object": "MONDO:0005148",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-2",
+            "subject": "CHEBI:15365",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:100",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity",
+            "object_direction_qualifier": "increased",
+        },
+    },
+    {
+        "association_class": GeneAffectsChemicalAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-3",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "CHEBI:15365",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity",
+            "object_direction_qualifier": "decreased",
+        },
+    },
+    {
+        "association_class": GeneToGeneAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-4",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "HGNC:200",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+        },
+    },
+    {
+        "association_class": CausalGeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-5",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:causes",
+            "object": "MONDO:0005148",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-6",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:causes",
+            "object": "HP:0000118",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalAffectsBiologicalEntityAssociation,
+        "params": {
+            "id": "uuid:test-semmeddb-7",
+            "subject": "CHEBI:15365",
+            "predicate": "biolink:affects",
+            "object": "UBERON:0000001",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

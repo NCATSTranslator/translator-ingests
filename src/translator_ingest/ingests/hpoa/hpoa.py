@@ -177,11 +177,20 @@ def transform_disease_to_phenotype_edge_record(
         ## Annotations
 
         ### Predicate negation
+
         negated: bool
         if record["qualifier"] == "NOT":
             negated = True
         else:
             negated = False
+
+        # TODO: Decision taken at DINGO WG meeting of 28-July-2026 to suppress negated edges for now.
+        #       See issue at https://github.com/NCATSTranslator/translator-ingests/issues/474
+        #       Note: the 'negated' field in the DiseaseToPhenotypicFeatureAssociation object build below
+        #       is also commented out, as are the corresponding unit test data (see test_hpoa.py)
+        #
+        if negated:
+            return None
 
         ## Biological gender
         ### female -> PATO:0000383
@@ -222,7 +231,7 @@ def transform_disease_to_phenotype_edge_record(
             id=entity_id(),
             subject=disease_id,
             predicate="biolink:has_phenotype",
-            negated=negated,
+            # negated=negated,
             object=hpo_id,
             publications=publications,
             has_evidence_of_type=[evidence_code_term],

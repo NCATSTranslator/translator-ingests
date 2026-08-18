@@ -6,6 +6,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,    ## ONLY for affects
     ChemicalGeneInteractionAssociation,    ## ONLY for interacts_with
     MacromolecularMachineHasSubstrateAssociation,    ## ONLY for has_substrate
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
 )
 import translator_ingest.util.biolink as util
 
@@ -148,6 +152,132 @@ def test_substrate(substrate):
     assert aggregator.resource_id == util.INFORES_DRUGCENTRAL
     ## no publications
     assert association.publications is None
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_DC_PRIMARY_SOURCES = [
+    RetrievalSource(
+        id="infores:drugcentral",
+        resource_id="infores:drugcentral",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+_HAS_SUBSTRATE_SOURCES = [
+    RetrievalSource(
+        id="infores:wombat-pk",
+        resource_id="infores:wombat-pk",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    ),
+    RetrievalSource(
+        id="infores:drugcentral",
+        resource_id="infores:drugcentral",
+        resource_role=ResourceRoleEnum.aggregator_knowledge_source,
+        upstream_resource_ids=["infores:wombat-pk"],
+    ),
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "86761ead-cdab-491b-ae9c-3f9208f04b3c",
+            "subject": "CHEBI:134716",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:6531",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _DC_PRIMARY_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "6e57d4a3-b421-4cb0-9aa6-b371fdf9b1db",
+            "subject": "CHEBI:132233",
+            "predicate": "biolink:contraindicated_in",
+            "object": "MONDO:0100192",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            "sources": _DC_PRIMARY_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "2424dcdd-80d2-41b6-818a-822e2ad90ad7",
+            "subject": "CHEBI:46295",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0005362",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            "sources": _DC_PRIMARY_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalGeneInteractionAssociation,
+        "params": {
+            "id": "f2072017-2176-48a8-b5c0-c8bb4569197b",
+            "subject": "UNII:DLE8519RWM",
+            "predicate": "biolink:directly_physically_interacts_with",
+            "object": "NCBIGene:81027",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _DC_PRIMARY_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "1d5d5118-295f-45e5-a375-f6c0d6503f37",
+            "subject": "PUBCHEM.COMPOUND:134612761",
+            "predicate": "biolink:diagnoses",
+            "object": "UMLS:C1720505",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            "sources": _DC_PRIMARY_SOURCES,
+        },
+    },
+    {
+        "association_class": MacromolecularMachineHasSubstrateAssociation,
+        "params": {
+            "id": "a5274dc3-b35d-4d43-9deb-cb89d1c6dbd5",
+            "subject": "NCBIGene:6532",
+            "predicate": "biolink:has_substrate",
+            "object": "CHEBI:3646",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HAS_SUBSTRATE_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalGeneInteractionAssociation,
+        "params": {
+            "id": "d0b1f611-5456-44ce-808a-1fb5e8fcec49",
+            "subject": "UNII:OP35X9610Y",
+            "predicate": "biolink:interacts_with",
+            "object": "NCBIGene:2690",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _DC_PRIMARY_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f"{f['association_class'].__name__}_{f['params']['predicate'].split(':')[-1]}",
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
 
 
 ## act_table_full

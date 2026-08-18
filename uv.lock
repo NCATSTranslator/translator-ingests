@@ -175,7 +175,7 @@ wheels = [
 
 [[package]]
 name = "biolink-model"
-version = "4.4.0rc3"
+version = "4.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -189,9 +189,9 @@ dependencies = [
     { name = "requests" },
     { name = "stringcase" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/01/19bbba4c34cdc6123fc475d5ab6e614e82572f79f88eaab8881bb9354cca/biolink_model-4.4.0rc3.tar.gz", hash = "sha256:42af338b432677c8b0d8ee03c00050678b538e00d341c6655df7a3c74c8d90a2", size = 3818297, upload-time = "2026-05-07T22:33:28.095Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/51/c1911e3c34f53eefd6939083fbfba0ee02d070b6a261461f814f2ba644bd/biolink_model-4.4.2.tar.gz", hash = "sha256:c69ccb9fd8cbd9935b36a4aec578a4c5ee8a3c39d75eb4d9495ded6cf205c39b", size = 3784369, upload-time = "2026-05-22T19:09:21.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/48/e90c6449a745323a50068d841a9620af8c7fc53986f0b101d2cd22e1bff0/biolink_model-4.4.0rc3-py3-none-any.whl", hash = "sha256:6b81ee317ceb41bc4d8d9c060c2ed40ec2ed82fd5c173658d5530c358a3565ab", size = 334223, upload-time = "2026-05-07T22:33:26.658Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/63/545021b6c7162e2b6711d71f267cbab618598c1730e5de95a9d8c302adc1/biolink_model-4.4.2-py3-none-any.whl", hash = "sha256:939083a7f9c9ebe0fe580e6e02a9d01642825a85041be804e0e39a33fabc98d4", size = 336628, upload-time = "2026-05-22T19:09:18.783Z" },
 ]
 
 [[package]]
@@ -325,13 +325,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "biolink-model", specifier = "==4.4.0rc3" },
+    { name = "biolink-model", specifier = "==4.4.2" },
     { name = "bmt", specifier = ">=1.4.8" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "codespell", specifier = ">=2.4.1" },
     { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "hatchling" },
-    { name = "kghub-downloader", specifier = ">=0.4.5" },
+    { name = "kghub-downloader", specifier = ">=0.5.0" },
     { name = "koza", specifier = ">=2.4.0" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "openpyxl" },
@@ -348,7 +348,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "biolink-model", specifier = "==4.4.0rc3" },
+    { name = "biolink-model", specifier = "==4.4.2" },
     { name = "black", specifier = ">=24.1.0" },
     { name = "codespell", specifier = ">=2.2.0" },
     { name = "jsonlines" },
@@ -358,7 +358,7 @@ dev = [
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "nbclassic" },
     { name = "pytest", specifier = ">=8.4.1" },
-    { name = "resource-ingest-guide-schema" },
+    { name = "resource-ingest-guide-schema", specifier = ">=0.1.5" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
@@ -1522,7 +1522,7 @@ wheels = [
 
 [[package]]
 name = "kghub-downloader"
-version = "0.4.5"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -1536,9 +1536,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/53/acb17d107f4f8a1ba3796dab30ddc13004e456ca76153903751e48e2c98e/kghub_downloader-0.4.5.tar.gz", hash = "sha256:87534ddbfc9090603ed79eefd59ac67c90c16e1a96aa273ab5a82df159438a9b", size = 14274, upload-time = "2026-04-07T22:22:46.443Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a8/62/dd24f935470bdbd6dd2b5df2362c1bae0e53dc55202c6dbfba35fe848653/kghub_downloader-0.5.0.tar.gz", hash = "sha256:c4f38a6f50e57354416c2151de6582fc16cc91144c6312071771a6a3bf953fef", size = 14726, upload-time = "2026-07-09T22:37:44.124Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/db/9ac95a37b24bea980ef067c162894955ec13e0fa99b5e45372a201972a33/kghub_downloader-0.4.5-py3-none-any.whl", hash = "sha256:dc1b479dd3848990766d91ad69e0ca692f0c5d82c2e3b2aa305d0fb37eacda85", size = 15572, upload-time = "2026-04-07T22:22:45.594Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/f8/650fedf75cf16ef29c9b6ecf51e340c0b1438d6a9e62d8066e2a939eca78/kghub_downloader-0.5.0-py3-none-any.whl", hash = "sha256:a34b207cd1b826b8982dfc99b013006a17259280cb9f176c56594a7d92e1f0bd", size = 16091, upload-time = "2026-07-09T22:37:43.263Z" },
 ]
 
 [[package]]
@@ -2919,7 +2919,7 @@ wheels = [
 
 [[package]]
 name = "resource-ingest-guide-schema"
-version = "0.1.3"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -2928,9 +2928,9 @@ dependencies = [
     { name = "linkml-runtime" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/76/2d43a740849592f649c566500197019f248a1509c7458d5ba5334f4ca108/resource_ingest_guide_schema-0.1.3.tar.gz", hash = "sha256:1802d5eb0c335807c312d136dc580bf1fb7aea4403d48e7b3b6329927643ac0a", size = 2414423, upload-time = "2026-01-26T20:58:57.369Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/16/a8b30ac3e399dc5525532e0563959cb2059d1bbb84b5ccc34be52510bdc2/resource_ingest_guide_schema-0.1.5.tar.gz", hash = "sha256:2df384cb52d16034da65449402f8f2451b59c2e80e79e4c448dc9884c23233d7", size = 2465766, upload-time = "2026-07-09T15:23:16.714Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/c5/f184c4d43260c9ec193571c4819fffcb222ddfa2e52c468ba0397e20a887/resource_ingest_guide_schema-0.1.3-py3-none-any.whl", hash = "sha256:86a95607a7b584bc086ee9d66599f9225f1870283c65b87833ef02726909e2ae", size = 14906, upload-time = "2026-01-26T20:58:55.722Z" },
+    { url = "https://files.pythonhosted.org/packages/35/04/01e49294c5e1c350ca14fc57017dd57d93e35db37cb822945946a5f784b3/resource_ingest_guide_schema-0.1.5-py3-none-any.whl", hash = "sha256:568cb2834a060d72a538410cf0488ac8cd56cd97dcf1de4bdbb889fd94069bdd", size = 22151, upload-time = "2026-07-09T15:23:15.553Z" },
 ]
 
 [[package]]

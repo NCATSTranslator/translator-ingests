@@ -12,15 +12,20 @@ endif
 	$(RUN) python src/docs/scripts/create_rig.py --infores "$(INFORES)" --name "$(NAME)"
 
 # Validate all RIG files against the schema
+# Note: intentionally not wired into `make test`/CI yet - RIGs are being brought
+# into conformance with the released schema first (see conformance sweep).
 validate-rigs:
 	@echo "Validating RIG files against schema..."
-	@for rig_file in src/translator_ingest/ingests/*/*_rig.yaml; do \
+	@SCHEMA=$$($(RUN) python -c "from importlib.resources import files; print(files('resource_ingest_guide_schema').joinpath('schema/resource_ingest_guide_schema.yaml'))"); \
+	fail=0; \
+	for rig_file in src/translator_ingest/ingests/*/*_rig.yaml; do \
 		if [ -f "$$rig_file" ]; then \
 			echo "Validating $$rig_file"; \
-			$(RUN) python -m resource_ingest_guide_schema.cli validate "$$rig_file"; \
+			$(RUN) linkml-validate -s "$$SCHEMA" -C ReferenceIngestGuide "$$rig_file" || fail=1; \
 		fi; \
-	done
-	@echo "✓ All RIG files validated successfully"
+	done; \
+	if [ $$fail -ne 0 ]; then echo "✗ Some RIG files failed validation"; exit 1; fi; \
+	echo "✓ All RIG files validated successfully"
 
 # List all RIG files
 list-rigs:

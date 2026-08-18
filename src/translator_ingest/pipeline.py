@@ -24,7 +24,7 @@ from orion.normalization import get_current_node_norm_version, get_current_babel
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
+from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, current_iso_date
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -36,7 +36,11 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
-from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import (
+    get_recorded_download_date,
+    record_download_metadata,
+    substitute_version_in_download_yaml,
+)
 
 logger = get_logger(__name__)
 
@@ -161,7 +165,7 @@ def download(pipeline_metadata: PipelineMetadata):
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
         logger.info(f"Downloading source data for {pipeline_metadata.source}...")
-        kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        report = kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
         # is a temporary file with versioning resolved but is
@@ -169,6 +173,10 @@ def download(pipeline_metadata: PipelineMetadata):
         if download_yaml_with_version and \
                 download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
+
+    # Record when source data was actually fetched. The timestamp is only refreshed when a real
+    # download happened this run; cache-hit reruns preserve the existing downloaded_at.
+    record_download_metadata(pipeline_metadata, report)
 
 
 # Check if the transform stage was already completed
@@ -614,6 +622,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
+    # Carry the recorded download timestamp (either new or from a previous download) into the
+    # pipeline metadata so it surfaces in the build and release metadata outputs.
+    pipeline_metadata.source_download_date = get_recorded_download_date(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # Transform version is auto-computed as a content hash of the ingest's source files
@@ -672,6 +683,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         return
 
     pipeline_metadata.build_version = pipeline_metadata.generate_build_version()
+    pipeline_metadata.build_date = current_iso_date()
     if is_graph_metadata_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Graph metadata already completed for {pipeline_metadata.source} ({pipeline_metadata.source_version})."

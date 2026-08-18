@@ -161,73 +161,80 @@ def get_genes(
     """
     gene_list: list[tuple[Protein, GeneAffectsChemicalAssociation]] = []
 
-    # get all the proteins
-    proteins: list = el.find('protein_associations').findall('protein')
-
-    # did we get any records?
-    if len(proteins) > 0:
-        # for all the proteins listed
-        for p in proteins:
-            # get the protein id (gene)
-            protein: E_Tree.Element = p.find('uniprot_id')
-
-            if protein is not None and protein.text is not None:
-                # get the type of protein (gene type)
-                protein_type: E_Tree.Element = p.find('protein_type')
-
-                # was the protein type found?
-                if protein_type is not None and protein_type.text is not None:
-
-                    el_name: E_Tree.Element = p.find('name')
-
-                    # was the name found (optional)?
-                    if el_name is not None and el_name.text is not None:
-                        name: str = el_name.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+    protein_associations: E_Tree.Element | None = el.find('protein_associations')
+    
+    if protein_associations is not None:
+        
+        # get all the proteins
+        proteins: list = protein_associations.findall('protein')
+    
+        # did we get any records?
+        if len(proteins) > 0:
+            
+            # for all the proteins listed
+            for p in proteins:
+                # get the protein id (gene)
+                protein: E_Tree.Element | None = p.find('uniprot_id')
+    
+                if protein is not None and protein.text is not None:
+                    # get the type of protein (gene type)
+                    protein_type: E_Tree.Element | None = p.find('protein_type')
+    
+                    # was the protein type found?
+                    if protein_type is not None and protein_type.text is not None:
+    
+                        el_name: E_Tree.Element | None = p.find('name')
+    
+                        # was the name found (optional)?
+                        if el_name is not None and el_name.text is not None:
+                            name: str = el_name.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+                        else:
+                            name: str = ''
+    
+                        protein_id = f"UniProtKB:{protein.text}"
+    
+                        predicate: G2C_PREDICATE
+    
+                        # what type of protein is this?
+                        if protein_type.text.startswith('Enzyme'):
+                            # Enzymes affect the rate of reactions that
+                            # either produce or consume metabolites.
+                            count(koza_transform, tag="Enzymes")
+                            predicate = "biolink:regulates"  # "CTD:affects_abundance_of"
+                            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
+                        elif protein_type.text.startswith('Transport'):
+                            # else it must be a transport protein?
+                            count(koza_transform, tag="Transport proteins")
+                            predicate = "biolink:regulates"  # "CTD:increases_transport_of"
+                            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.transport
+                        else:
+                            # this is a protein type of unknown function
+                            count(koza_transform, tag="Proteins of unknown function")
+                            predicate = "biolink:affects"
+                            object_aspect_qualifier = None
+    
+                        protein_node = Protein(id=protein_id, name=name)
+    
+                        edge = GeneAffectsChemicalAssociation(
+                            id=entity_id(),
+                            subject=protein_id,
+                            predicate=predicate,
+                            object=metabolite_id,
+                            object_aspect_qualifier=object_aspect_qualifier,
+                            sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                            agent_type=AgentTypeEnum.manual_agent
+                        )
+    
+                        gene_list.append( (protein_node, edge) )
                     else:
-                        name: str = ''
-
-                    protein_id = f"UniProtKB:{protein.text}"
-
-                    predicate: G2C_PREDICATE
-
-                    # what type of protein is this?
-                    if protein_type.text.startswith('Enzyme'):
-                        # Enzymes affect the rate of reactions that
-                        # either produce or consume metabolites.
-                        count(koza_transform, tag="Enzymes")
-                        predicate = "biolink:regulates"  # "CTD:affects_abundance_of"
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.abundance
-                    elif protein_type.text.startswith('Transport'):
-                        # else it must be a transport protein?
-                        count(koza_transform, tag="Transport proteins")
-                        predicate = "biolink:regulates"  # "CTD:increases_transport_of"
-                        object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.transport
-                    else:
-                        # this is a protein type of unknown function
-                        count(koza_transform, tag="Proteins of unknown function")
-                        predicate = "biolink:affects"
-                        object_aspect_qualifier = None
-
-                    protein_node = Protein(id=protein_id, name=name)
-
-                    edge = GeneAffectsChemicalAssociation(
-                        id=entity_id(),
-                        subject=protein_id,
-                        predicate=predicate,
-                        object=metabolite_id,
-                        object_aspect_qualifier=object_aspect_qualifier,
-                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent
-                    )
-
-                    gene_list.append( (protein_node, edge) )
+                        count(koza_transform, tag="Missing protein type")
                 else:
-                    count(koza_transform, tag="Missing protein type")
-            else:
-                count(koza_transform, tag='Missing UniProtKB ID')
+                    count(koza_transform, tag='Missing UniProtKB ID')
+        else:
+            count(koza_transform, tag='Missing proteins')
     else:
-        count(koza_transform, tag='Missing proteins')
+        count(koza_transform, tag='Missing protein_associations')
 
     return gene_list
 
@@ -271,69 +278,82 @@ def get_diseases(
 
     disease_list: list[tuple[Disease, DiseaseAssociatedWithResponseToChemicalEntityAssociation]] = []
 
-    # get all the diseases
-    diseases: list = el.find('diseases').findall('disease')
+    disease_elements: E_Tree.Element | None = el.find('diseases')
 
-    # did we get any diseases?
-    if len(diseases) > 0:
-        # for each disease
-        for d in diseases:
-            # We are only interested here in metabolite-associated
-            # diseases mapped to a non-empty OMIM identifier
-            # TODO: are we here missing other non-OMIM registered but
-            #       significant disease mappings with publication support?
-            object_id: E_Tree.Element = d.find('omim_id')
-
-            # did we get a value?
-            if object_id is not None and object_id.text is not None:
-
-                # did we get the name?
-                name: E_Tree.Element = d.find('name')
-
-                # was the name found (optional)?
-                if name is not None and name.text is not None:
-                    name: str = name.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+    if disease_elements is not None:
+            
+        # get all the diseases
+        diseases: list = disease_elements.findall('disease')
+    
+        # did we get any diseases?
+        if len(diseases) > 0:
+            # for each disease
+            for d in diseases:
+                # We are only interested here in metabolite-associated
+                # diseases mapped to a non-empty OMIM identifier
+                # TODO: are we here missing other non-OMIM registered but
+                #       significant disease mappings with publication support?
+                object_id: E_Tree.Element | None = d.find('omim_id')
+    
+                # did we get a value?
+                if object_id is not None and object_id.text is not None:
+    
+                    # did we get the name?
+                    name: E_Tree.Element | None = d.find('name')
+    
+                    # was the name found (optional)?
+                    if name is not None and name.text is not None:
+                        name: str = name.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+                    else:
+                        name: str = ''
+    
+                    references_element: E_Tree.Element | None = d.find('references')
+                    
+                    if references_element is not None:
+                        
+                        # get all the pubmed ids
+                        references: list | None = references_element.findall('reference')
+        
+                        # did we get some good data?
+                        if references is not None and len(references) > 0:
+                            
+                            # storage for the pubmed ids
+                            pmids: list = []
+        
+                            # for each reference get the pubmed id
+                            for r in references:
+                                pmid: E_Tree.Element | None = r.find('pubmed_id')
+                                if pmid is not None and pmid.text is not None:
+                                    pmids.append('PMID:' + pmid.text)
+        
+                            disease_id = f"OMIM:{object_id.text}"
+        
+                            disease_node = Disease(id=disease_id, name=name)
+        
+                            edge = DiseaseAssociatedWithResponseToChemicalEntityAssociation(
+                                id=entity_id(),
+                                subject=disease_id,
+        
+                                # replaces original 'RO:0002610' - correlated_with
+                                predicate="biolink:associated_with_response_to",
+        
+                                object=metabolite_id,
+                                publications=pmids if len(pmids) > 0 else None,
+                                sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                                agent_type=AgentTypeEnum.manual_agent
+                            )
+        
+                            disease_list.append( (disease_node, edge) )
+                        else:
+                            count(koza_transform, tag="Missing references")
+                    else:
+                        count(koza_transform, tag="Missing references section")
                 else:
-                    name: str = ''
-
-                # get all the pubmed ids
-                references: list = d.find('references').findall('reference')
-
-                # did we get some good data?
-                if references is not None and len(references) > 0:
-                    # storage for the pubmed ids
-                    pmids: list = []
-
-                    # for each reference get the pubmed id
-                    for r in references:
-                        pmid: E_Tree.Element = r.find('pubmed_id')
-                        if pmid is not None and pmid.text is not None:
-                            pmids.append('PMID:' + pmid.text)
-
-                    disease_id = f"OMIM:{object_id.text}"
-
-                    disease_node = Disease(id=disease_id, name=name)
-
-                    edge = DiseaseAssociatedWithResponseToChemicalEntityAssociation(
-                        id=entity_id(),
-                        subject=disease_id,
-
-                        # replaces original 'RO:0002610' - correlated_with
-                        predicate="biolink:associated_with_response_to",
-
-                        object=metabolite_id,
-                        publications=pmids if len(pmids) > 0 else None,
-                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent
-                    )
-
-                    disease_list.append( (disease_node, edge) )
-            else:
-                count(koza_transform, tag="Missing disease OMIM ID")
-    else:
-        count(koza_transform, tag="Missing diseases")
-
+                    count(koza_transform, tag="Missing disease OMIM ID")
+        else:
+            count(koza_transform, tag="Missing diseases")
+    
     return disease_list
 
 
@@ -359,55 +379,63 @@ def get_pathways(
     """
     pathway_list: list[tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
 
-    # get the pathways
-    pathways: list = el.find('biological_properties').find('pathways').findall('pathway')
+    biological_properties: E_Tree.Element | None = el.find('biological_properties')
+    if biological_properties is not None:
 
-    # did we find any pathways?
-    if len(pathways) > 0:
-        # for each pathway
-        for p in pathways:
-            # get the pathway id
-            smpdb_id: E_Tree.Element = p.find('smpdb_id')
+        pathways_element: E_Tree.Element | None = biological_properties.find('pathways')
+        if pathways_element is not None:
 
-            # did we get a good value?
-            if id is not None and smpdb_id.text is not None:
-                # get the pathway curie ID
-                pathway_id: str = smpdb_to_curie(smpdb_id.text)
+            # get the pathways
+            pathways: list = pathways_element.findall('pathway')
 
-                # did we get an id. a valid curie here is 16 characters long (SMPDB:SMP1234567)
-                if len(pathway_id) == 16:
+            # did we find any pathways?
+            if len(pathways) > 0:
 
-                    # get the name
-                    name_el: E_Tree.Element = p.find('name')
+                # for each pathway
+                for p in pathways:
 
-                    # did we get a good value (optional)
-                    if name_el is not None and name_el.text is not None:
-                        name: str = name_el.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+                    # get the pathway id
+                    smpdb_id: E_Tree.Element | None = p.find('smpdb_id')
+
+                    # did we get a good value?
+                    if smpdb_id is not None and smpdb_id.text is not None:
+                        # get the pathway curie ID
+                        pathway_id: str = smpdb_to_curie(smpdb_id.text)
+
+                        # did we get an id. a valid curie here is 16 characters long (SMPDB:SMP1234567)
+                        if len(pathway_id) == 16:
+
+                            # get the name
+                            name_el: E_Tree.Element | None = p.find('name')
+
+                            # did we get a good value (optional)
+                            if name_el is not None and name_el.text is not None:
+                                name: str = name_el.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
+                            else:
+                                name: str = ''
+
+                            pathway_node = Pathway(id=pathway_id, name=name)
+
+                            edge = ChemicalEntityToPathwayAssociation(
+                                id=entity_id(),
+                                subject=pathway_id,
+
+                                # replaces original 'RO:0000056' - correlated_with
+                                predicate="biolink:participates_in",
+
+                                object=metabolite_id,
+                                sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                                agent_type=AgentTypeEnum.manual_agent
+                            )
+
+                            pathway_list.append( (pathway_node, edge) )
+                        else:
+                            count(koza_transform, "Invalid pathway SMPDB ID")
                     else:
-                        name: str = ''
-
-                    pathway_node = Pathway(id=pathway_id, name=name)
-
-                    edge = ChemicalEntityToPathwayAssociation(
-                        id=entity_id(),
-                        subject=pathway_id,
-
-                        # replaces original 'RO:0000056' - correlated_with
-                        predicate="biolink:participates_in",
-
-                        object=metabolite_id,
-                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
-                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                        agent_type=AgentTypeEnum.manual_agent
-                    )
-
-                    pathway_list.append( (pathway_node, edge) )
-                else:
-                    count(koza_transform, "Invalid pathway SMPDB ID")
+                        count(koza_transform, "Missing pathway SMPDB ID")
             else:
-                count(koza_transform, "Missing pathway SMPDB ID")
-    else:
-        count(koza_transform, "Missing pathway data")
+                count(koza_transform, "Missing pathway data")
 
     return pathway_list
 

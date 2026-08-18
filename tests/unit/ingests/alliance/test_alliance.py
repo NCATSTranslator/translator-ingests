@@ -14,7 +14,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     CellularComponent,
     GeneToPhenotypicFeatureAssociation,
     GeneToExpressionSiteAssociation,
-    ResourceRoleEnum, GeneToPhenotypicFeaturePredicateEnum,
+    ResourceRoleEnum,
+    GeneToPhenotypicFeaturePredicateEnum,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    RetrievalSource,
 )
 from translator_ingest.ingests.alliance.alliance import (
     transform_phenotype,
@@ -303,3 +307,55 @@ def test_mgi_expression_invalid_stage_filtered(mgi_expression_invalid_stage_row)
     result = transform_expression(None, mgi_expression_invalid_stage_row)
     assoc = result.edges[0]
     assert assoc.stage_qualifier is None
+
+
+# ===== PYDANTIC ROUNDTRIP TESTS =====
+
+TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:agrkb",
+        resource_id="infores:agrkb",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": GeneToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:test-phenotype-1",
+            "subject": "MGI:98834",
+            "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONhas_phenotype,
+            "object": "MP:0001262",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToExpressionSiteAssociation,
+        "params": {
+            "id": "uuid:test-expression-1",
+            "subject": "MGI:98834",
+            "predicate": "biolink:expressed_in",
+            "object": "EMAPA:17524",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
