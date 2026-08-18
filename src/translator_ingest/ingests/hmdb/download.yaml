@@ -2,7 +2,14 @@
 # The download.yaml file format is defined and used by the KGHub Downloader to download files.
 # https://monarch-initiative.github.io/kghub-downloader/
 #
-# Files are saved as `local_name` which must match the file name used in the main ingest yaml (ingest-template.yaml)
+# Files are saved as `local_name` which must match
+# the file name used in the main ingest yaml (ingest-template.yaml)
+#
+# Note that HMDB data downloads require a special API key from the
+# semi-commercial team maintaining the HMDB database. Such a key
+# was issued to Translator (from an R.Bruskiewich inquiry) but
+# has not yet been incorporated into the Translator Ingest system (as of this writing).
+#
 ---
 - url: https://hmdb.ca/system/downloads/current/hmdb_metabolites.zip
   local_name: hmdb_metabolites.zip

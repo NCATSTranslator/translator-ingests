@@ -17,7 +17,11 @@ import xml.etree.cElementTree as E_Tree
 
 import koza
 
-from biolink_model.datamodel.pydanticmodel_v2 import MolecularEntity
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,
+    Association,
+    MolecularEntity
+)
 
 from koza.model.graphs import KnowledgeGraph
 
@@ -26,7 +30,9 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
     get_genes,
     get_diseases,
     get_pathways,
-    get_locations,
+    get_cellular_locations,
+    get_biospecimen_locations,
+    get_tissue_locations,
     initialize_counts,
     count
 )
@@ -83,7 +89,7 @@ def transform_hmdb_ingest(
 
     hmdb_data_archive_path: Path = koza_transform.input_files_dir / "hmdb_metabolites.zip"
 
-    with ZipFile(hmdb_data_archive_path) as zf:
+    with (ZipFile(hmdb_data_archive_path) as zf):
         # open the hmdb xml file
         with zf.open('hmdb_metabolites.xml', 'r') as fp:
             # loop through, filtering for relevant elements
@@ -117,22 +123,31 @@ def transform_hmdb_ingest(
                         # get the nodes and edges for genes
                         genes = get_genes(koza_transform, el, metabolite_id)
 
-                        # get the nodes and edges for metabolite locations
-                        locations = get_locations(koza_transform, el, metabolite_id)
+                        # get the nodes and edges for metabolite cellular locations
+                        cellular_locations = get_cellular_locations(koza_transform, el, metabolite_id)
+
+                        # get the nodes and edges for metabolite biospecimen locations
+                        biospecimen_locations = get_biospecimen_locations(koza_transform, el, metabolite_id)
+
+                        # get the nodes and edges for metabolite tissue locations
+                        tissue_locations = get_tissue_locations(koza_transform, el, metabolite_id)
 
                         # did we get something created?
-                        if pathways or diseases or genes or locations:
-                            nodes: list = []
-                            edges: list = []
+                        if pathways or diseases or genes or \
+                            cellular_locations or biospecimen_locations or tissue_locations:
+                            
+                            nodes: list[NamedThing] = []
+                            edges: list[Association] = []
+                            def _collect(items: list[tuple[NamedThing, Association]]):
+                                nodes.extend([entry[0] for entry in items])
+                                edges.extend([entry[1] for entry in items])
 
-                            nodes.extend([entry[0] for entry in pathways])
-                            edges.extend([entry[1] for entry in pathways])
-                            nodes.extend([entry[0] for entry in diseases])
-                            edges.extend([entry[1] for entry in diseases])
-                            nodes.extend([entry[0] for entry in genes])
-                            edges.extend([entry[1] for entry in genes])
-                            nodes.extend([entry[0] for entry in locations])
-                            edges.extend([entry[1] for entry in locations])
+                            _collect(pathways)
+                            _collect(diseases)
+                            _collect(genes)
+                            _collect(cellular_locations)
+                            _collect(biospecimen_locations)
+                            _collect(tissue_locations)
 
                             # create the common metabolite node and add it to the list
                             nodes.append(

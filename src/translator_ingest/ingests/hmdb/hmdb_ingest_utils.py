@@ -8,10 +8,14 @@ import koza
 import xml.etree.cElementTree as E_Tree
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    NamedThing,
     Protein,
     Disease,
     Pathway,
+    CellularComponent,
+    GrossAnatomicalStructure,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
+    Association,
     GeneAffectsChemicalAssociation,
     DiseaseAssociatedWithResponseToChemicalEntityAssociation,
     ChemicalEntityToPathwayAssociation,
@@ -378,10 +382,12 @@ def get_pathways(
     :return: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]
     """
     pathway_list: list[tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
-
+    
+    # get biological properties
     biological_properties: E_Tree.Element | None = el.find('biological_properties')
     if biological_properties is not None:
 
+        # get the pathway wrapper element
         pathways_element: E_Tree.Element | None = biological_properties.find('pathways')
         if pathways_element is not None:
 
@@ -436,80 +442,157 @@ def get_pathways(
                         count(koza_transform, "Missing pathway SMPDB ID")
             else:
                 count(koza_transform, "Missing pathway data")
+    else:
+        count(koza_transform, "Missing biological properties")
 
     return pathway_list
 
 
-def get_locations(
+def get_cellular_locations(
         koza_transform,
         el,
         metabolite_id
-) -> list[tuple[Pathway, ChemicalEntityToPathwayAssociation]]:
+) -> list[tuple[CellularComponent, Association]]:
     """
-    This method creates edges associating HMDB-reported
-    cellular, biospecimen, and tissue locations of metabolites.
+    This method creates edges associating HMDB-reported locations of metabolites.
 
     :param koza_transform: The koza transform context
     :param el: the root of this XML fragment
     :param metabolite_id: the metabolite id (edge subject)
-    :return: list[Tuple[Pathway, ChemicalEntityToPathwayAssociation]]
+    :return: list[tuple[CellularComponent, Association]]
     """
-    locations_list: list[tuple[Pathway, ChemicalEntityToPathwayAssociation]] = []
+    cellular_locations_list: list[tuple[CellularComponent, Association]] = []
 
-    # get cellular locations
-    cellular_locations: list = el.find('biological_properties').find('cellular_locations').findall('cellular')
+    biological_properties: E_Tree.Element | None = el.find('biological_properties')
+    if biological_properties is not None:
 
-    # get biospecimen locations
-    biospecimen_locations: list = el.find('biological_properties').find('biospecimen_locations').findall('biospecimen')
+        # get cellular locations wrapper element
+        cellular_locations: E_Tree.Element | None = biological_properties.find('cellular_locations')
+        if cellular_locations is not None:
 
-    # get tissue locations
-    tissue_locations: list = el.find('biological_properties').find('tissue_locations').findall('tissue')
+            # get the cellular annotations
+            cellulars: list = cellular_locations.findall('cellular')
+            if len(cellulars) > 0:
+                for c in cellulars:
+                    cellular = str(c).strip()
+                    cellular_id = f"hmdb:{cellular}"
+                    cellular_node = CellularComponent(id=cellular_id, name=cellular)
 
-    # did we find any cellular locations?
-    if len(cellular_locations) > 0:
-        # for each pathway
-        for c in cellular_locations:
-            # get the pathway id
-            smpdb_id: E_Tree.Element = p.find('smpdb_id')
-
-            # did we get a good value?
-            if id is not None and smpdb_id.text is not None:
-                # get the pathway curie ID
-                pathway_id: str = smpdb_to_curie(smpdb_id.text)
-
-                # did we get an id. a valid curie here is 16 characters long (SMPDB:SMP1234567)
-                if len(pathway_id) == 16:
-
-                    # get the name
-                    name_el: E_Tree.Element = p.find('name')
-
-                    # did we get a good value (optional)
-                    if name_el is not None and name_el.text is not None:
-                        name: str = name_el.text.encode('ascii',errors='ignore').decode(encoding="utf-8")
-                    else:
-                        name: str = ''
-
-                    pathway_node = Pathway(id=pathway_id, name=name)
-
-                    edge = ChemicalEntityToPathwayAssociation(
+                    cellular_edge = Association(
                         id=entity_id(),
-                        subject=pathway_id,
-
-                        # replaces original 'RO:0000056' - correlated_with
-                        predicate="biolink:participates_in",
-
+                        subject=cellular_id,
+                        predicate="biolink:located_in",
                         object=metabolite_id,
                         sources=build_association_knowledge_sources(primary="infores:hmdb"),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent
                     )
-
-                    locations_list.append( (pathway_node, edge) )
-                else:
-                    count(koza_transform, "Invalid pathway SMPDB ID")
+                    cellular_locations_list.append((cellular_node, cellular_edge))
             else:
-                count(koza_transform, "Missing pathway SMPDB ID")
+                count(koza_transform, "Missing cellular annotations")
+        else:
+            count(koza_transform, "Missing cellular locations")
     else:
-        count(koza_transform, "Missing pathway data")
+        count(koza_transform, "Missing biological properties")
 
-    return locations_list
+    return cellular_locations_list
+
+
+def get_tissue_locations(
+        koza_transform,
+        el,
+        metabolite_id
+) -> list[tuple[GrossAnatomicalStructure, Association]]:
+    """
+    This method creates edges associating HMDB-reported tissue locations of metabolites.
+
+    :param koza_transform: The koza transform context
+    :param el: the root of this XML fragment
+    :param metabolite_id: the metabolite id (edge subject)
+    :return: list[tuple[GrossAnatomicalStructure, Association]]
+    """
+    tissue_locations_list: list[tuple[GrossAnatomicalStructure, Association]] = []
+
+    biological_properties: E_Tree.Element | None = el.find('biological_properties')
+    if biological_properties is not None:
+
+        # get tissue locations wrapper element
+        tissue_locations: E_Tree.Element | None = biological_properties.find('tissue_locations')
+        if tissue_locations is not None:
+
+            # get the tissue annotations
+            tissues: list = tissue_locations.findall('tissue')
+            if len(tissues) > 0:
+                for t in tissues:
+                    tissue = str(t).strip()
+                    tissue_id = f"hmdb:{tissue}"
+                    tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue)
+
+                    tissue_edge = Association(
+                        id=entity_id(),
+                        subject=tissue_id,
+                        predicate="biolink:located_in",
+                        object=metabolite_id,
+                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent
+                    )
+                    tissue_locations_list.append((tissue_node, tissue_edge))
+            else:
+                count(koza_transform, "Missing tissue annotations")
+        else:
+            count(koza_transform, "Missing tissue locations")
+    else:
+        count(koza_transform, "Missing biological properties")
+
+    return tissue_locations_list
+
+
+def get_biospecimen_locations(
+        koza_transform,
+        el,
+        metabolite_id
+) -> list[tuple[NamedThing, Association]]:
+    """
+    This method creates edges associating HMDB-reported biospecimen locations of metabolites.
+
+    :param koza_transform: The koza transform context
+    :param el: the root of this XML fragment
+    :param metabolite_id: the metabolite id (edge subject)
+    :return: list[tuple[NamedThing, Association]]
+    """
+    biospecimen_locations_list: list[tuple[NamedThing, Association]] = []
+
+    biological_properties: E_Tree.Element | None = el.find('biological_properties')
+    if biological_properties is not None:
+
+        # get biospecimen locations wrapper element
+        biospecimen_locations: E_Tree.Element | None = biological_properties.find('biospecimen_locations')
+        if biospecimen_locations is not None:
+
+            # get the biospecimen annotations
+            biospecimens: list = biospecimen_locations.findall('biospecimen')
+            if len(biospecimens) > 0:
+                for b in biospecimens:
+                    biospecimen = str(b).strip()
+                    biospecimen_id = f"hmdb:{biospecimen}"
+                    biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen)
+    
+                    biospecimen_edge = Association(
+                        id=entity_id(),
+                        subject=biospecimen_id,
+                        predicate="biolink:located_in",
+                        object=metabolite_id,
+                        sources=build_association_knowledge_sources(primary="infores:hmdb"),
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=AgentTypeEnum.manual_agent
+                    )
+                    biospecimen_locations_list.append( (biospecimen_node, biospecimen_edge) )
+            else:
+                count(koza_transform, "Missing biospecimen annotations")
+        else:
+            count(koza_transform, "Missing biospecimen locations")
+    else:
+        count(koza_transform, "Missing biological properties")
+
+    return biospecimen_locations_list
