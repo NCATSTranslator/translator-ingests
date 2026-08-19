@@ -25,7 +25,7 @@ def mock_koza_transform() -> koza.KozaTransform:
         mappings=mappings,
         transform_metadata={},
         # Swap in the following code for temporary debugging using the real data file
-        # input_files_dir=INGESTS_DATA_PATH / "hmdb_metabolites.zip"  # Path(__file__).resolve().parent
+        # input_files_dir=INGESTS_DATA_PATH / "hmdb_metabolites.zip" # Path(__file__).resolve().parent
         input_files_dir = Path(__file__).resolve().parent
     )
 
@@ -73,6 +73,26 @@ ASSOCIATION_TEST_SLOTS = (
                     "id": "HMDB:HMDB0000001",
                     "name": "1-Methylhistidine",
                     "category": ["biolink:MolecularEntity"]
+                },
+                {
+                    "id": "HMDB:Cytoplasm",
+                    "name": "Cytoplasm",
+                    "category": ["biolink:CellularComponent"]
+                },
+                {
+                    "id": "HMDB:Blood",
+                    "name": "Blood",
+                    "category": ["biolink:NamedThing"]
+                },
+                {
+                    "id": "HMDB:Placenta",
+                    "name": "Placenta",
+                    "category": ["biolink:GrossAnatomicalStructure"]
+                },
+                {
+                    "id": "HMDB:HMDB0000001",
+                    "name": "1-Methylhistidine",
+                    "category": ["biolink:MolecularEntity"]
                 }
             ],
             # Captured edge contents, TODO: need to put full HMDB edge data contents here
@@ -96,13 +116,39 @@ ASSOCIATION_TEST_SLOTS = (
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
-
                 {
                     "category": ["biolink:GeneAffectsChemicalAssociation"],
                     "subject": "UniProtKB:Q96KN2",
                     "predicate": "biolink:regulates",
                     "object": "HMDB:HMDB0000001",
                     "object_aspect_qualifier": "abundance",
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                },
+                {
+                    "category": ["biolink:Association"],
+                    "subject": "HMDB:Cytoplasm",
+                    "predicate": "biolink:located_in",
+                    "object": "HMDB:HMDB0000001",
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                },
+                {
+                    "category": ["biolink:Association"],
+                    "subject": "HMDB:Blood",
+                    "predicate": "biolink:located_in",
+                    "object": "HMDB:HMDB0000001",
+                    "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
+                    "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                    "agent_type": AgentTypeEnum.manual_agent,
+                },
+                {
+                    "category": ["biolink:Association"],
+                    "subject": "HMDB:Placenta",
+                    "predicate": "biolink:located_in",
+                    "object": "HMDB:HMDB0000001",
                     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
@@ -129,8 +175,8 @@ def test_hmdb_ingest_transform(
     validate_transform_result(
         result=knowledge_graphs[0],
         expected_nodes=result_nodes,
-        expected_edges=result_edge, # result_edge,
-        expected_no_of_edges = 11, # 11,
+        expected_edges=result_edge,
+        expected_no_of_edges = 19,
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS
     )

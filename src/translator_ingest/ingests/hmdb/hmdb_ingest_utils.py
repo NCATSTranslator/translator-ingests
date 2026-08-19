@@ -474,8 +474,8 @@ def get_cellular_locations(
             cellulars: list = cellular_locations.findall('cellular')
             if len(cellulars) > 0:
                 for c in cellulars:
-                    cellular = str(c).strip()
-                    cellular_id = f"hmdb:{cellular}"
+                    cellular = str(c.text).strip()
+                    cellular_id = f"HMDB:{cellular}"
                     cellular_node = CellularComponent(id=cellular_id, name=cellular)
 
                     cellular_edge = Association(
@@ -524,8 +524,8 @@ def get_tissue_locations(
             tissues: list = tissue_locations.findall('tissue')
             if len(tissues) > 0:
                 for t in tissues:
-                    tissue = str(t).strip()
-                    tissue_id = f"hmdb:{tissue}"
+                    tissue = str(t.text).strip()
+                    tissue_id = f"HMDB:{tissue}"
                     tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue)
 
                     tissue_edge = Association(
@@ -574,8 +574,8 @@ def get_biospecimen_locations(
             biospecimens: list = biospecimen_locations.findall('biospecimen')
             if len(biospecimens) > 0:
                 for b in biospecimens:
-                    biospecimen = str(b).strip()
-                    biospecimen_id = f"hmdb:{biospecimen}"
+                    biospecimen = str(b.text).strip()
+                    biospecimen_id = f"HMDB:{biospecimen}"
                     biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen)
     
                     biospecimen_edge = Association(
