@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import re
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -36,6 +37,50 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
+
+
+def _pipe_values(value: Any) -> tuple[str, ...]:
+    """Parse a pipe-delimited source field without inventing identifiers."""
+    if value is None or pd.isna(value):
+        return ()
+    return tuple(part.strip() for part in str(value).split("|") if part.strip())
+
+
+@dataclass(frozen=True)
+class TargetDescriptor:
+    """Source identity and component evidence for one GtoPdb target."""
+
+    source_id: str
+    name: str
+    species: str
+    subunit_ids: tuple[str, ...]
+    gene_symbols: tuple[str, ...]
+    uniprot_ids: tuple[str, ...]
+
+    @classmethod
+    def from_record(cls, record: dict[str, Any]) -> "TargetDescriptor":
+        """Build a target descriptor from a prepared GtoPdb interaction record."""
+        return cls(
+            source_id=str(record.get("target_id") or "").strip(),
+            name=str(record.get("target_name") or record.get("object_name") or "").strip(),
+            species=str(record.get("target_species") or "").strip(),
+            subunit_ids=_pipe_values(record.get("target_subunit_ids")),
+            gene_symbols=_pipe_values(record.get("target_gene_symbols")),
+            uniprot_ids=_pipe_values(record.get("target_uniprot_ids") or record.get("object_id")),
+        )
+
+    @property
+    def is_composite(self) -> bool:
+        """Whether the source target carries evidence for multiple components."""
+        return max(len(self.subunit_ids), len(self.gene_symbols), len(self.uniprot_ids)) > 1
+
+    @property
+    def single_protein_curie(self) -> str | None:
+        """Return a UniProt CURIE only when the source identifies one protein."""
+        if len(self.uniprot_ids) != 1:
+            return None
+        return f"UniProtKB:{self.uniprot_ids[0]}"
+
 
 def get_latest_version() -> str:
     # lacking a better programmatic approach, derive the version from the gtopdb html
@@ -79,8 +124,11 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_df = pd.DataFrame(data)
 
     ## Only select needed columns
-    sele_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action',
-    'Endogenous', 'Ligand Context', 'PubMed ID']
+    sele_cols = [
+        'Target', 'Target ID', 'Target Subunit IDs', 'Target Gene Symbol',
+        'Target UniProt ID', 'Target Species', 'Ligand ID', 'Ligand', 'Type',
+        'Action', 'Endogenous', 'Ligand Context', 'PubMed ID',
+    ]
     source_subset_df = source_df[sele_cols].drop_duplicates()
 
     ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifier from 1102 -> 1102.0
@@ -103,7 +151,11 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         ## use groupby(..., dropna=False) if intend to keep records with missing qualifiers
         source_subset_df.groupby(group_cols, as_index=False, dropna=False)
         .agg({
-            "PubMed ID": lambda x: "|".join(pd.unique(x.dropna().astype(str)))
+            "PubMed ID": lambda x: "|".join(pd.unique(x.dropna().astype(str))),
+            "Target ID": "first",
+            "Target Subunit IDs": "first",
+            "Target Gene Symbol": "first",
+            "Target Species": "first",
             })
     )
 
@@ -111,8 +163,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_agg_df.rename(
         columns={
             "Ligand": "subject_name",
-            "Target": "object_name",
-            "Target UniProt ID": "object_id",
+            "Target": "target_name",
+            "Target ID": "target_id",
+            "Target Subunit IDs": "target_subunit_ids",
+            "Target Gene Symbol": "target_gene_symbols",
+            "Target UniProt ID": "target_uniprot_ids",
+            "Target Species": "target_species",
         },
         inplace=True,
     )
@@ -135,6 +191,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     nodes: list[NamedThing] = []
     edges: list[Association] = []
+    unsupported_composite_count = 0
 
     ## create one-time action list checkers:
     activator_list_with_separate_directly_physically_interacts_with_edge = ['Agonist', 'Binding', 'Full agonist', 'Partial agonist']
@@ -160,6 +217,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
     subunit_specific_list_with_separate_directly_physically_interacts_with_edge = ['Inhibition']
 
     for record in data:
+        target = TargetDescriptor.from_record(record)
+        if target.is_composite:
+            unsupported_composite_count += 1
+            continue
+
         object_direction_qualifier = None
         object_aspect_qualifier = None
         predicate = "None"
@@ -167,9 +229,15 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         association = None
         causal_mechanism_qualifier = None
 
-        # seems all subjects are chemical entity, and all objects are proteins
+        # Single-protein targets retain the existing protein-level model. Composite
+        # targets are excluded above until their source-defined target nodes can be
+        # preserved through normalization.
         subject = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record["subject_id"], name=record["subject_name"])
-        object = Protein(id="UniProtKB:" + record["object_id"], name=record["object_name"])
+        raw_uniprot_id = record.get("target_uniprot_ids") or record.get("object_id") or ""
+        object = Protein(
+            id=target.single_protein_curie or f"UniProtKB:{raw_uniprot_id}",
+            name=target.name,
+        )
 
         ## Obtain the publications information
         publications = [f"PMID:{p}" for p in record["PubMed ID"].split("|")] if record["PubMed ID"] else None
@@ -1092,5 +1160,13 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 nodes.append(subject)
                 nodes.append(object)
                 edges.append(association)
+
+    if unsupported_composite_count:
+        record_word = "record" if unsupported_composite_count == 1 else "records"
+        koza.log(
+            f"Excluded {unsupported_composite_count} GtoPdb interaction {record_word} "
+            "with an unsupported composite target; no compound UniProt CURIE was emitted.",
+            level="WARNING",
+        )
 
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
