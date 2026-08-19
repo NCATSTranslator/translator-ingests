@@ -77,6 +77,10 @@ those component-level interactions.
 
 ### Considering an external complex mapping
 
+The executable [complex-target mapping EDA](gtopdb_complex_target_eda.ipynb)
+quantifies the current release's composite-target scope, compares policy
+consequences, and generates a candidate-mapping curation worklist.
+
 An external complex resource can be useful to **validate or enrich** a GtoPdb
 composite target, including finding a stable complex CURIE. It must not replace
 the source target identity by assumption.
