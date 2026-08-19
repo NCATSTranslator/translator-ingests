@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from translator_ingest.ingests.gtopdb.gtopdb import TargetDescriptor, prepare, transform_ingest_all
-from translator_ingest.ingests.gtopdb.rules import resolve_rule
+from translator_ingest.ingests.gtopdb.rules import RULES, resolve_rule
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
@@ -69,6 +69,12 @@ def test_legacy_type_fallbacks_remain_explicit(type_value, action_value, polarit
 
 def test_unknown_type_action_pair_has_no_rule():
     assert resolve_rule("unknown type", "unknown action") is None
+
+
+def test_flat_rule_dictionary_is_the_registration_source():
+    assert RULES[("Agonist", "Inverse agonist")] == resolve_rule(
+        "Agonist", "Inverse agonist"
+    )
 
 
 def test_prepare_preserves_source_target_fields(tmp_path):
