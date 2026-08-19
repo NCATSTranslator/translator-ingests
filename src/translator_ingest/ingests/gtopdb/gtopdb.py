@@ -1,42 +1,86 @@
-import koza
-import pandas as pd
-import requests
-import re
-from bs4 import BeautifulSoup
+"""GtoPdb ingest preparation and graph emission."""
+
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any, Iterable
 
+from bs4 import BeautifulSoup
+import koza
 from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.biolink import build_association_knowledge_sources
-from translator_ingest.util.transform_utils import entity_id
-from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
-
+import pandas as pd
+import requests
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    # Gene,
-    Protein,
-    ChemicalEntity,
-    NamedThing,
+    AgentTypeEnum,
     Association,
     ChemicalAffectsGeneAssociation,
-    GeneOrGeneProductOrChemicalEntityAspectEnum,
-    PairwiseMolecularInteraction,
+    ChemicalEntity,
     DirectionQualifierEnum,
+    GeneOrGeneProductOrChemicalEntityAspectEnum,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
+    NamedThing,
+    PairwiseMolecularInteraction,
+    Protein,
 )
 
-from translator_ingest.util.biolink import (
-    INFORES_GTOPDB
-)
+from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
+from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
+
 
 GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
 
-# adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
+
+LIGAND_ID_COLUMN = "Ligand ID"
+PUBCHEM_ID_COLUMN = "PubChem CID"
+PUBLICATIONS_COLUMN = "PubMed ID"
+
+SOURCE_COLUMNS = (
+    "Target",
+    "Target ID",
+    "Target Subunit IDs",
+    "Target Gene Symbol",
+    "Target UniProt ID",
+    "Target Species",
+    LIGAND_ID_COLUMN,
+    "Ligand",
+    "Type",
+    "Action",
+    "Endogenous",
+    "Ligand Context",
+    PUBLICATIONS_COLUMN,
+)
+
+GROUP_COLUMNS = (
+    "Target",
+    "Target UniProt ID",
+    LIGAND_ID_COLUMN,
+    "Ligand",
+    "Type",
+    "Action",
+    "Endogenous",
+)
+
+TARGET_METADATA_COLUMNS = (
+    "Target ID",
+    "Target Subunit IDs",
+    "Target Gene Symbol",
+    "Target Species",
+)
+
+PREPARED_COLUMN_RENAMES = {
+    "Ligand": "subject_name",
+    "Target": "target_name",
+    "Target ID": "target_id",
+    "Target Subunit IDs": "target_subunit_ids",
+    "Target Gene Symbol": "target_gene_symbols",
+    "Target UniProt ID": "target_uniprot_ids",
+    "Target Species": "target_species",
+}
 
 
 def _pipe_values(value: Any) -> tuple[str, ...]:
@@ -83,159 +127,87 @@ class TargetDescriptor:
 
 
 def get_latest_version() -> str:
-    # lacking a better programmatic approach, derive the version from the gtopdb html
-    html_page: requests.Response = requests.get('https://www.guidetopharmacology.org/download.jsp')
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    """Derive the GtoPdb release version from its download page."""
+    response = requests.get("https://www.guidetopharmacology.org/download.jsp")
+    soup = BeautifulSoup(response.content, "html.parser")
+    version_tag = soup.find("b", string=re.compile("Downloads are from the *"))
+    if version_tag is None:
+        raise RuntimeError("Could not find the GtoPdb download version text.")
 
-    # we expect the html to contain version text like 'Downloads are from the 2025.4 version.'
-    # the following should extract the version from it (2025.4)
-    search_text = 'Downloads are from the *'
-    b_tag: BeautifulSoup.Tag = resp.find('b', string=re.compile(search_text))
-    if len(b_tag) > 0:
-        html_value = b_tag.text
-        html_value = html_value[len(search_text) - 1:]  # remove the 'Downloads are from the' part
-        source_version = html_value.split(' version')[0]  # remove the ' version.' part
-        return source_version
+    version_text = version_tag.text
+    return version_text[len("Downloads are from the "):].split(" version")[0]
 
-    raise RuntimeError('Could not find the "Downloads are from the" text in the html to find the latest version.')
+
+def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
+    """Load the source Ligand ID to PubChem CID crosswalk."""
+    ligands = pd.read_csv(
+        input_files_dir / "ligands.csv",
+        skiprows=1,
+        dtype={LIGAND_ID_COLUMN: str, PUBCHEM_ID_COLUMN: str},
+    )
+    return dict(
+        zip(
+            ligands[LIGAND_ID_COLUMN].astype(str).str.strip(),
+            ligands[PUBCHEM_ID_COLUMN].astype(str).str.strip(),
+        )
+    )
+
+
+def _join_publications(values: pd.Series) -> str:
+    """Combine distinct source publication cells in their input order."""
+    return "|".join(pd.unique(values.dropna().astype(str)))
+
+
+def _prepare_interactions(
+    data: Iterable[dict[str, Any]],
+    ligand_mapping: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Aggregate source rows and retain source target metadata for emission."""
+    source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
+    source = source.astype({LIGAND_ID_COLUMN: "string", "Target UniProt ID": "string"})
+    source = source.dropna(subset=["Target UniProt ID", LIGAND_ID_COLUMN])
+
+    aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
+    aggregations.update({column: "first" for column in TARGET_METADATA_COLUMNS})
+    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
+    prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
+    prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
+    prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
+    return prepared.to_dict(orient="records")
+
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
-def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Prepare GtoPdb interactions for record-level graph transformation."""
+    return _prepare_interactions(data, _load_ligand_mapping(Path(koza.input_files_dir)))
 
-    ## used for debugging only
-    ## check whether the mapping tag is in the same execution context
-    # print("STATE KEYS:", koza.state.keys())
-    # print("MAPPING SIZE:", len(koza.state.get("pubchem_id_mapping_dict", {})))
 
-    ## Load ligands mapping CSV directly
-    ## skip the metadata row
-    ## Specify that 'Ligand ID' and "PubChem CID" should be read as a string
-    ligands_file_path = Path(koza.input_files_dir) / "ligands.csv"
-    mapping_df = pd.read_csv(ligands_file_path, skiprows = 1, dtype={'Ligand ID': str, 'PubChem CID': str})
-    ## used for debugging only
-    # print("Mapping CSV columns:", mapping_df.columns.tolist())
+def _publication_list(value: str | None) -> list[str] | None:
+    """Convert the source's pipe-delimited publication field into PubMed CURIEs."""
+    if not value:
+        return None
+    return [f"PMID:{pmid}" for pmid in value.split("|")]
 
-    mapping_dict = dict(zip(
-        mapping_df["Ligand ID"].astype(str).str.strip(),
-        mapping_df["PubChem CID"].astype(str).str.strip()
-    ))
 
-    ## convert the input dataframe into pandas df format
-    source_df = pd.DataFrame(data)
-
-    ## Only select needed columns
-    sele_cols = [
-        'Target', 'Target ID', 'Target Subunit IDs', 'Target Gene Symbol',
-        'Target UniProt ID', 'Target Species', 'Ligand ID', 'Ligand', 'Type',
-        'Action', 'Endogenous', 'Ligand Context', 'PubMed ID',
-    ]
-    source_subset_df = source_df[sele_cols].drop_duplicates()
-
-    ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifier from 1102 -> 1102.0
-    source_subset_df = source_subset_df.astype({
-        "Ligand ID": "string",
-        "Target UniProt ID": "string"
-    })
-
-    ## debugging usage
-    # koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
-
-    ## Drop nan values
-    source_subset_df = source_subset_df.dropna(subset=["Target UniProt ID", "Ligand ID"])
-
-    ## Implement logic to aggregate source records into a single edge based on SPO + qualifier pair (subject_name, subject_category, object_name, object_category, MECHANISM, EFFECT, DIRECT)
-    group_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action', 'Endogenous']
-
-    source_agg_df = (
-        ## In pandas, groupby() drops rows with NA in any grouping key by default, which can silently discard interaction rows (and makes downstream Type/Action is None handling unreachable).
-        ## use groupby(..., dropna=False) if intend to keep records with missing qualifiers
-        source_subset_df.groupby(group_cols, as_index=False, dropna=False)
-        .agg({
-            "PubMed ID": lambda x: "|".join(pd.unique(x.dropna().astype(str))),
-            "Target ID": "first",
-            "Target Subunit IDs": "first",
-            "Target Gene Symbol": "first",
-            "Target Species": "first",
-            })
+def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple[ChemicalEntity, Protein]:
+    """Create the single-protein node pair used by the current projection."""
+    subject = ChemicalEntity(
+        id=f"PUBCHEM.COMPOUND:{record['subject_id']}",
+        name=record["subject_name"],
     )
-
-    ## rename those columns into desired format, note we need to obtain "pubchem CID" as subject id from "Ligand ID"
-    source_agg_df.rename(
-        columns={
-            "Ligand": "subject_name",
-            "Target": "target_name",
-            "Target ID": "target_id",
-            "Target Subunit IDs": "target_subunit_ids",
-            "Target Gene Symbol": "target_gene_symbols",
-            "Target UniProt ID": "target_uniprot_ids",
-            "Target Species": "target_species",
-        },
-        inplace=True,
+    raw_uniprot_id = record.get("target_uniprot_ids") or record.get("object_id") or ""
+    object = Protein(
+        id=target.single_protein_curie or f"UniProtKB:{raw_uniprot_id}",
+        name=target.name,
     )
-
-    ## avoid mismatching by converting string ids into integer IDs
-    source_agg_df["subject_id"] = (
-        source_agg_df["Ligand ID"]
-        .astype(str)
-        .str.strip()
-        .map(mapping_dict)
-    )
-
-    ## drop NA of those dont find a mapping
-    source_agg_df = source_agg_df.dropna(subset=["subject_id"])
-
-    return source_agg_df.drop_duplicates().to_dict(orient="records")
+    return subject, object
 
 
-@koza.transform(tag="gtopdb_interaction_parsing")
-def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    """Transform prepared GtoPdb records through declarative Type/Action rules."""
-    nodes: list[NamedThing] = []
-    edges: list[Association] = []
-    unsupported_composite_count = 0
-
-    for record in data:
-        target = TargetDescriptor.from_record(record)
-        if target.is_composite:
-            unsupported_composite_count += 1
-            continue
-
-        rule = resolve_rule(record["Type"], record["Action"])
-        if rule is None or rule.skip:
-            continue
-
-        subject = ChemicalEntity(
-            id="PUBCHEM.COMPOUND:" + record["subject_id"],
-            name=record["subject_name"],
-        )
-        raw_uniprot_id = record.get("target_uniprot_ids") or record.get("object_id") or ""
-        object = Protein(
-            id=target.single_protein_curie or f"UniProtKB:{raw_uniprot_id}",
-            name=target.name,
-        )
-        publications = [f"PMID:{pmid}" for pmid in record["PubMed ID"].split("|")] if record["PubMed ID"] else None
-
-        primary = _build_primary_association(subject, object, record["Endogenous"], rule)
-        emitted_edges = [primary]
-        if rule.physical_interaction:
-            emitted_edges.append(_build_physical_interaction(subject, object))
-
-        if publications:
-            for edge in emitted_edges:
-                edge.publications = publications
-
-        nodes.extend((subject, object))
-        edges.extend(emitted_edges)
-
-    if unsupported_composite_count:
-        record_word = "record" if unsupported_composite_count == 1 else "records"
-        koza.log(
-            f"Excluded {unsupported_composite_count} GtoPdb interaction {record_word} "
-            "with an unsupported composite target; no compound UniProt CURIE was emitted.",
-            level="WARNING",
-        )
-
-    return [KnowledgeGraph(nodes=nodes, edges=edges)]
+def _attach_publications(edges: list[Association], publications: list[str] | None) -> None:
+    """Attach shared publications to every edge emitted for one source record."""
+    if publications:
+        for edge in edges:
+            edge.publications = publications
 
 
 def _build_primary_association(
@@ -303,3 +275,57 @@ def _build_physical_interaction(subject: ChemicalEntity, object: Protein) -> Pai
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
+
+
+def _edges_for_record(
+    subject: ChemicalEntity,
+    object: Protein,
+    endogenous: str,
+    rule: InteractionRule,
+    publications: list[str] | None,
+) -> list[Association]:
+    """Build every graph edge emitted for one supported source record."""
+    edges: list[Association] = [_build_primary_association(subject, object, endogenous, rule)]
+    if rule.physical_interaction:
+        edges.append(_build_physical_interaction(subject, object))
+    _attach_publications(edges, publications)
+    return edges
+
+
+@koza.transform(tag="gtopdb_interaction_parsing")
+def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    """Transform prepared GtoPdb records through declarative Type/Action rules."""
+    nodes: list[NamedThing] = []
+    edges: list[Association] = []
+    unsupported_composite_count = 0
+
+    for record in data:
+        target = TargetDescriptor.from_record(record)
+        if target.is_composite:
+            unsupported_composite_count += 1
+            continue
+
+        rule = resolve_rule(record["Type"], record["Action"])
+        if rule is None or rule.skip:
+            continue
+
+        subject, object = _nodes_for_record(record, target)
+        emitted_edges = _edges_for_record(
+            subject,
+            object,
+            record["Endogenous"],
+            rule,
+            _publication_list(record[PUBLICATIONS_COLUMN]),
+        )
+        nodes.extend((subject, object))
+        edges.extend(emitted_edges)
+
+    if unsupported_composite_count:
+        record_word = "record" if unsupported_composite_count == 1 else "records"
+        koza.log(
+            f"Excluded {unsupported_composite_count} GtoPdb interaction {record_word} "
+            "with an unsupported composite target; no compound UniProt CURIE was emitted.",
+            level="WARNING",
+        )
+
+    return [KnowledgeGraph(nodes=nodes, edges=edges)]

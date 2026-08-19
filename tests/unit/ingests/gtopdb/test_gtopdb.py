@@ -2,8 +2,16 @@ import json
 from pathlib import Path
 
 import pytest
+import pandas as pd
 
-from translator_ingest.ingests.gtopdb.gtopdb import TargetDescriptor, prepare, transform_ingest_all
+from translator_ingest.ingests.gtopdb.gtopdb import (
+    TargetDescriptor,
+    _load_ligand_mapping,
+    _publication_list,
+    get_latest_version,
+    prepare,
+    transform_ingest_all,
+)
 from translator_ingest.ingests.gtopdb.rules import RULES, resolve_rule
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -108,6 +116,71 @@ def test_prepare_preserves_source_target_fields(tmp_path):
     assert prepared[0]["target_subunit_ids"] == "373|374"
     assert prepared[0]["target_gene_symbols"] == "HTR3A|HTR3B"
     assert prepared[0]["target_uniprot_ids"] == "P46098|O95264"
+
+
+def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path):
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
+    )
+    context = RecordingContext()
+    context.input_files_dir = tmp_path
+    base = {
+        "Target": "example target",
+        "Target ID": "1",
+        "Target Subunit IDs": "",
+        "Target Gene Symbol": "GENE",
+        "Target UniProt ID": "P08588",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": None,
+        "Action": None,
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "123",
+    }
+    duplicate = base | {"PubMed ID": "123"}
+    distinct_publication = base | {"PubMed ID": "456"}
+
+    prepared = list(prepare(context, [base, duplicate, distinct_publication]))
+
+    assert len(prepared) == 1
+    assert prepared[0]["PubMed ID"] == "123|456"
+    assert prepared[0]["target_id"] == "1"
+    assert pd.isna(prepared[0]["Type"])
+    assert pd.isna(prepared[0]["Action"])
+
+
+def test_load_ligand_mapping_and_publication_list(tmp_path):
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
+    )
+
+    assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
+    assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
+    assert _publication_list("") is None
+
+
+@pytest.mark.parametrize(
+    ("page", "expected"),
+    [
+        ("<b>Downloads are from the 2026.2 version.</b>", "2026.2"),
+        ("<p>No release information</p>", None),
+    ],
+)
+def test_get_latest_version_parses_or_rejects_download_page(monkeypatch, page, expected):
+    class Response:
+        content = page.encode()
+
+    monkeypatch.setattr(
+        "translator_ingest.ingests.gtopdb.gtopdb.requests.get", lambda _: Response()
+    )
+
+    if expected is None:
+        with pytest.raises(RuntimeError, match="download version text"):
+            get_latest_version()
+    else:
+        assert get_latest_version() == expected
 
 
 class RecordingContext:
