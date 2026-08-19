@@ -9,13 +9,15 @@ OLS_SEARCH = "https://www.ebi.ac.uk/ols4/api/search"
 
 UBERON_NORMALIZATION = {
     "csf": "cerebrospinal fluid",
+    "cerebrospinal fluid (csf)": "cerebrospinal fluid",
     "faeces": "feces"
 }
 
 def _normalize_uberon_query(query):
     return UBERON_NORMALIZATION.get(query.lower(), query)
 
-# Not sure how large a cache is appropriate here, but it's likely a small set of terms accessed per run'
+# Not sure how large a cache is appropriate here,
+# but it's likely a small set of terms accessed per run
 @lru_cache
 def lookup_uberon(query: str):
 
