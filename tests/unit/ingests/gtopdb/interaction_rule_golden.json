@@ -1,0 +1,4786 @@
+[
+  {
+    "type": "Activator",
+    "action": "Activation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Activation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "binding",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "binding",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Full agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Full agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Partial agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "partial_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Partial agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "partial_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Positive",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Positive",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Potentiation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Activator",
+    "action": "Potentiation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Activation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Activation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Biased agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "biased_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Biased agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "biased_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Full agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Full agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Inverse agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inverse_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Inverse agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inverse_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Irreversible agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Irreversible agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Mixed",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "mixed_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Mixed",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "mixed_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Negative",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Agonist",
+    "action": "Negative",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Agonist",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Partial agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "partial_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Partial agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "partial_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Unknown",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Agonist",
+    "action": "Unknown",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Activation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Activation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "activation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Antagonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Antagonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Biased agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "biased_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Biased agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "biased_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Biphasic",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "biphasic_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Biphasic",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "biphasic_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Full agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Full agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Inverse agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inverse_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Inverse agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inverse_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Mixed",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "mixed_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Mixed",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "mixed_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Negative",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "negative_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Negative",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "negative_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Neutral",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Neutral",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Partial agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "partial_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Partial agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "partial_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Positive",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "positive_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Positive",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "positive_allosteric_modulation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Potentiation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Allosteric modulator",
+    "action": "Potentiation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Antagonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Antagonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Inverse agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inverse_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Inverse agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inverse_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Irreversible inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "irreversible_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Irreversible inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "irreversible_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Mixed",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Mixed",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Non-competitive",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "non_competitive_antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Non-competitive",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "non_competitive_antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antagonist",
+    "action": "Partial agonist",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Antagonist",
+    "action": "Partial agonist",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Antibody",
+    "action": "Agonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "antibody_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Agonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "antibody_agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Antagonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antibody_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Antagonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antibody_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "binding",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "binding",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antibody_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antibody_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Antibody",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Antagonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Antagonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Pore blocker",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Channel blocker",
+    "action": "Pore blocker",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Fusion protein",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Fusion protein",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Fusion protein",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Fusion protein",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "molecular_channel_blockage",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Antagonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Antagonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Pore blocker",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Pore blocker",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Slows inactivation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Slows inactivation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Voltage-dependent inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Gating inhibitor",
+    "action": "Voltage-dependent inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "gating_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Antagonist",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Antagonist",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Competitive",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "competitive_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Competitive",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "competitive_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Feedback inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "feedback_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Feedback inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "feedback_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Irreversible inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "irreversible_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Irreversible inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "irreversible_inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Non-competitive",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "non_competitive_antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Non-competitive",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "non_competitive_antagonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Unknown",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Inhibitor",
+    "action": "Unknown",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "None",
+    "action": "Binding",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "None",
+    "action": "Binding",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "None",
+    "action": "Competitive",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "None",
+    "action": "Competitive",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "None",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "None",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "None",
+    "action": "None",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "Association",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:related_to",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "None",
+    "action": "None",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "Association",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:related_to",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "None",
+    "action": "Potentiation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "None",
+    "action": "Potentiation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Subunit-specific",
+    "action": "Inhibition",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "decreased",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Subunit-specific",
+    "action": "Inhibition",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "downregulated",
+        "causal_mechanism_qualifier": "inhibition",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Subunit-specific",
+    "action": "Mixed",
+    "endogenous": "FALSE",
+    "edges": []
+  },
+  {
+    "type": "Subunit-specific",
+    "action": "Mixed",
+    "endogenous": "TRUE",
+    "edges": []
+  },
+  {
+    "type": "Subunit-specific",
+    "action": "Potentiation",
+    "endogenous": "FALSE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "increased",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "Subunit-specific",
+    "action": "Potentiation",
+    "endogenous": "TRUE",
+    "edges": [
+      {
+        "class": "ChemicalAffectsGeneAssociation",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity",
+        "object_direction_qualifier": "upregulated",
+        "causal_mechanism_qualifier": "potentiation",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      }
+    ]
+  }
+]
