@@ -1,4 +1,5 @@
 import json
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,18 @@ from translator_ingest.ingests.gtopdb.gtopdb import (
     prepare,
     transform_ingest_all,
 )
-from translator_ingest.ingests.gtopdb.rules import RULES, resolve_rule
+from translator_ingest.ingests.gtopdb.rules import (
+    ACTIVATION,
+    AGONISM,
+    ANTAGONISM,
+    INHIBITION,
+    NEUTRAL_PHYSICAL,
+    RELATED,
+    RULES,
+    SKIP,
+    TYPE_FALLBACKS,
+    resolve_rule,
+)
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
@@ -79,10 +91,30 @@ def test_unknown_type_action_pair_has_no_rule():
     assert resolve_rule("unknown type", "unknown action") is None
 
 
-def test_flat_rule_dictionary_is_the_registration_source():
-    assert RULES[("Agonist", "Inverse agonist")] == resolve_rule(
+def test_canonical_rules_and_nested_lookup_are_the_registration_source():
+    assert RULES["Activator"]["Activation"] is ACTIVATION
+    assert RULES["Agonist"]["Agonist"] is AGONISM
+    assert RULES["Agonist"]["Inverse agonist"] == resolve_rule(
         "Agonist", "Inverse agonist"
     )
+
+
+def test_canonical_rules_are_immutable_and_mapping_inventory_is_explicit():
+    canonical_rules = (
+        ACTIVATION,
+        AGONISM,
+        ANTAGONISM,
+        INHIBITION,
+        SKIP,
+        RELATED,
+        NEUTRAL_PHYSICAL,
+    )
+    for rule in canonical_rules:
+        with pytest.raises(FrozenInstanceError):
+            rule.skip = True
+
+    assert sum(len(actions) for actions in RULES.values()) == 77
+    assert set(TYPE_FALLBACKS) == {"Activator", "Inhibitor"}
 
 
 def test_prepare_preserves_source_target_fields(tmp_path):
