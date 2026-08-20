@@ -31,7 +31,6 @@ def test_generic_exact_match_lookup(query:str, ontology:str, expected:str):
     ],
 )
 def test_go_exact_match_lookup(query:str, expected:str):
-    # GO exact_match==False, but we're testing exact_match=True here
     check_match(query, expected, lookup_go(query))
 
 
