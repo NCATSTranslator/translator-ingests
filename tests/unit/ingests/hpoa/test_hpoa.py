@@ -5,8 +5,17 @@ from os.path import join, abspath, dirname
 from loguru import logger
 from pathlib import Path
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum, \
-    GeneToPhenotypicFeaturePredicateEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    GeneToPhenotypicFeaturePredicateEnum,
+    DiseaseToPhenotypicFeatureAssociation,
+    CausalGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
+    GeneToPhenotypicFeatureAssociation,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 
 import koza
 from koza.transform import Mappings
@@ -158,7 +167,7 @@ def test_disease_to_phenotype_node_transform(
                 "biocuration": "HPO:skoehler[2012-11-16]",
             },
             # This is not a 'P' record, so it should be skipped
-            None,
+            None
         ),
         (  # Query 1 - An 'aspect' == 'P' record processed
             {
@@ -180,7 +189,7 @@ def test_disease_to_phenotype_node_transform(
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                # "negated": False,  # removed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
                 "object": "HP:0001249",
                 # Although "OMIM:117650" is recorded above as
                 # a reference, it is not used as a publication
@@ -199,7 +208,7 @@ def test_disease_to_phenotype_node_transform(
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
-            },
+            }
         ),
         (  # Query 2 - Another 'aspect' == 'P' record processed
             {
@@ -218,26 +227,28 @@ def test_disease_to_phenotype_node_transform(
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
-            {
-                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
-                "subject": "OMIM:117650",
-                "predicate": "biolink:has_phenotype",
-                "negated": True,
-                "object": "HP:0001545",
-                "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
-                "sex_qualifier": None,
-                "onset_qualifier": None,
-                "has_percentage": None,
-                "has_quotient": None,
-                "frequency_qualifier": "HP:0040283",
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+            # Negated edges now suppressed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
+            None
+            # {
+            #     "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+            #     "subject": "OMIM:117650",
+            #     "predicate": "biolink:has_phenotype",
+            #     "negated": True,
+            #     "object": "HP:0001545",
+            #     "publications": [],
+            #     "has_evidence_of_type": ["ECO:0000304"],
+            #     "sex_qualifier": None,
+            #     "onset_qualifier": None,
+            #     "has_percentage": None,
+            #     "has_quotient": None,
+            #     "frequency_qualifier": "HP:0040283",
+            #     "sources": [
+            #         {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+            #         {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+            #     ],
+            #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            #     "agent_type": AgentTypeEnum.manual_agent,
+            # }
         ),
         (  # Query 3 - Same 'aspect' == 'P' record but lacking any frequency qualifier
             {
@@ -260,7 +271,7 @@ def test_disease_to_phenotype_node_transform(
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                # "negated": False, # removed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
                 "object": "HP:0001545",
                 "publications": [],
                 "has_evidence_of_type": ["ECO:0000304"],
@@ -275,7 +286,7 @@ def test_disease_to_phenotype_node_transform(
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
-            },
+            }
         )
     ],
 )
@@ -354,7 +365,7 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
             ],
             # Captured edge contents
             {
-                "category": ["biolink:CorrelatedGeneToDiseaseAssociation"],
+                "category": ["biolink:GeneToDiseaseAssociation"],
                 "subject": "NCBIGene:6505",
                 "predicate": "biolink:associated_with",
                 "object": "OMIM:615232",
@@ -594,3 +605,79 @@ def test_gene_to_phenotype_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS,
     )
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_HPOA_SOURCES = [
+    RetrievalSource(
+        id="infores:hpo-annotations",
+        resource_id="infores:hpo-annotations",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": DiseaseToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-1",
+            "subject": "OMIM:117650",
+            "predicate": "biolink:has_phenotype",
+            "object": "HP:0001249",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+    {
+        "association_class": CausalGeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-2",
+            "subject": "NCBIGene:64170",
+            "predicate": "biolink:associated_with",
+            "object": "OMIM:212050",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-3",
+            "subject": "NCBIGene:6505",
+            "predicate": "biolink:associated_with",
+            "object": "OMIM:615232",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:hpoa-test-4",
+            "subject": "NCBIGene:8086",
+            "predicate": GeneToPhenotypicFeaturePredicateEnum.biolinkCOLONassociated_with,
+            "object": "HP:0000252",
+            "knowledge_level": KnowledgeLevelEnum.logical_entailment,
+            "agent_type": AgentTypeEnum.automated_agent,
+            "sources": _HPOA_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

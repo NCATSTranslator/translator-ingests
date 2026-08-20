@@ -2,7 +2,7 @@
 import koza
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_EBI_G2P
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,

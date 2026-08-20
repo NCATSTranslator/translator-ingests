@@ -25,7 +25,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     PhenotypicFeature,
     DiseaseToPhenotypicFeatureAssociation,
     CausalGeneToDiseaseAssociation,
-    CorrelatedGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
     ChemicalOrGeneOrGeneProductFormOrVariantEnum as VE,
     GeneToPhenotypicFeatureAssociation,
     KnowledgeLevelEnum,
@@ -33,7 +33,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from translator_ingest.util.github import GitHubReleases
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_HPOA
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
@@ -46,6 +47,8 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_qualified_predicate,
     hpo_to_mode_of_inheritance,
 )
+
+HPOA_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA)
 
 
 def get_latest_version() -> str:
@@ -174,11 +177,20 @@ def transform_disease_to_phenotype_edge_record(
         ## Annotations
 
         ### Predicate negation
+
         negated: bool
         if record["qualifier"] == "NOT":
             negated = True
         else:
             negated = False
+
+        # TODO: Decision taken at DINGO WG meeting of 28-July-2026 to suppress negated edges for now.
+        #       See issue at https://github.com/NCATSTranslator/translator-ingests/issues/474
+        #       Note: the 'negated' field in the DiseaseToPhenotypicFeatureAssociation object build below
+        #       is also commented out, as are the corresponding unit test data (see test_hpoa.py)
+        #
+        if negated:
+            return None
 
         ## Biological gender
         ### female -> PATO:0000383
@@ -219,7 +231,7 @@ def transform_disease_to_phenotype_edge_record(
             id=entity_id(),
             subject=disease_id,
             predicate="biolink:has_phenotype",
-            negated=negated,
+            # negated=negated,
             object=hpo_id,
             publications=publications,
             has_evidence_of_type=[evidence_code_term],
@@ -275,7 +287,7 @@ def transform_gene_to_disease_record(
             **{},
         )
     elif qualified_predicate == "biolink:contributes_to":
-        association = CorrelatedGeneToDiseaseAssociation(
+        association = GeneToDiseaseAssociation(
             id=entity_id(),
             subject=gene_id,
             predicate="biolink:associated_with",
@@ -407,7 +419,7 @@ def transform_gene_to_phenotype_record(
         has_total=frequency.has_total,
         disease_context_qualifier=dis_id,
         publications=publications,
-        sources=build_association_knowledge_sources(primary=INFORES_HPOA),
+        sources=HPOA_SOURCES,
         knowledge_level=KnowledgeLevelEnum.logical_entailment,
         agent_type=AgentTypeEnum.automated_agent,
         **{},

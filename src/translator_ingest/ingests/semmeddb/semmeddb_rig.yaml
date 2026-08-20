@@ -1,42 +1,85 @@
-name: SemMedDB Minimal Reference Ingest Guide (RIG)
+name: SemMedDB Resource Ingest Guide (RIG)
 
 source_info:
   infores_id: infores:semmeddb
   name: Semantic MEDLINE Database (SemMedDB)
-  description: "Literature-derived semantic predications extracted by SemRep from PubMed; this RIG documents a post-processed RTX-KG2 edges subset rather than a raw MySQL ingest."
+  description: >-
+    SemMedDB is a repository of semantic predications (subject-predicate-object triples)
+    extracted by the SemRep natural-language-processing system from titles and abstracts in
+    PubMed/MEDLINE. Produced by the U.S. National Library of Medicine, it captures assertions
+    about biomedical entities (drugs, diseases, genes, anatomy, procedures, phenotypes, etc.)
+    together with the sentences and PMIDs that support them, and is widely used for
+    literature-based hypothesis generation. This RIG documents an ingest of a post-processed
+    SemMedDB edge slice redistributed by the RTX-KG2 project, not a raw ingest of the NLM
+    SemMedDB MySQL distribution. RTX-KG2 has already projected SemMedDB predications into
+    Biolink-shaped edges (Biolink predicate, publications, publications_info, kg2_ids, optional
+    qualifiers, domain_range_exclusion flag); this pipeline transforms that slice with Koza.
+  citations:
+    - "Kilicoglu H, Shin D, Fiszman M, Rosemblat G, Rindflesch TC. SemMedDB: a PubMed-scale repository of semantic predications. Bioinformatics. 2012 Dec 1;28(23):3158-60. PMID: 23044550"
+  terms_of_use_info:
+    terms_of_use_url: "https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html"
+    terms_of_use_description: >-
+      SemMedDB is distributed by the U.S. National Library of Medicine as part of the Semantic
+      Knowledge Representation (SKR) resources and its use is subject to acceptance of the UMLS
+      Metathesaurus License Agreement (SemMedDB is derived from UMLS Metathesaurus concepts).
+      This ingest does not consume the NLM distribution directly; it consumes a derived SemMedDB
+      edge slice that RTX-KG2 redistributes from its public 'rtx-kg2-public' S3 bucket. Open
+      question for the license assessment (tracked to Shilpa per issue #435): the terms under
+      which the RTX-KG2-redistributed slice may be reused, and whether the UMLS Metathesaurus
+      License still governs downstream Translator use of the derived edges.
+    license_name: "UMLS Metathesaurus License Agreement"
   data_access_locations:
     - >-
       SemMedDB (original NLM source behind SemRep; not the file this ingest reads directly):
       https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/SemMedDB_download.html
     - >-
-      RTX-KG2 public SemMedDB edges slice (gzipped JSONL — this is what translator-ingests downloads):
+      RTX-KG2 public SemMedDB edges slice (gzipped JSONL - this is what this ingest downloads):
       https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
-      RTX-KG2 has already projected SemMedDB predications into Biolink-shaped edges (predicate, publications,
-      publications_info, kg2_ids, optional qualifiers, domain_range_exclusion). This pipeline transforms
-      that slice with Koza; it does not ingest raw SemMedDB MySQL dumps.
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - jsonl
-  data_versioning_and_releases: "Versioning inherited from the RTX-KG2 snapshot built from SemMedDB VER43-era releases."
+    - json  # source slice is JSON Lines (.jsonl); 'json' is the closest DataFormatEnum value
+  data_versioning_and_releases: >-
+    NLM released SemMedDB periodically, versioned as VER<NN>. The final release is
+    semmedVER43_2024_R, processed through May 8, 2024. This ingest is pinned to the SemMedDB
+    content captured in the RTX-KG2 kg2.10.3 snapshot (SemMedDB VER43-era content), and the
+    effective version reported by the ingest is 'semmeddb-2023-kg2.10.3'. Because the upstream
+    source is retired, the only remaining source of version change is a new RTX-KG2 snapshot
+    build, not a new SemMedDB release.
+  source_status: not_maintained
+  additional_notes:
+    - >-
+      SemMedDB is retired. The NLM download page states that these tools "will no longer be
+      maintained as of December 31, 2024", and describes semmedVER43_2024_R (processed through
+      May 8, 2024) as the final update for the SemMedDB database. No further SemMedDB releases
+      are expected, so this ingest documents a frozen source.
+    - >-
+      The NLM pages linked above are served from a '/temp/' path, which is a link-rot risk for a
+      resource that is no longer maintained. The NLM download page itself points to an Internet
+      Archive capture as the long-term reference.
 
 ingest_info:
   ingest_categories:
     - primary_knowledge_provider
-  utility: "Large-scale literature-derived relationships suitable for hypothesis generation and cross-graph enrichment with evidence-bearing edges."
-  scope: "Edges taken directly from RTX-KG2's SemMedDB slice (nodes.jsonl/edges.jsonl), restricted to a selected predicate set and evidence-bearing records."
+  utility: >-
+    Large-scale, literature-derived relationships spanning many biomedical entity types, suitable
+    for hypothesis generation, cross-graph enrichment, and pathfinder-style reasoning where
+    evidence-bearing (publication-supported) edges are valuable even when individually noisy.
+  scope: >-
+    Edges taken from RTX-KG2's SemMedDB slice, restricted to a selected set of 20 Biolink
+    predicates and to evidence-bearing records (more than 3 supporting publications), with
+    additional filtering to remove low-value predicates, domain/range-incoherent edges, and
+    upstream-dropped predicates. Nodes are emitted only for the subject/object endpoints of
+    included edges.
 
   relevant_files:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
-      location: >-
-        https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
-        (downloaded via semmeddb/download.yaml; decompressed JSONL is the Koza reader input)
-      description: "KGX-compatible edges with Biolink predicates, literature evidence, kg2_ids, and optional qualifiers."
-    - file_name: "kg2.10.3-semmeddb-nodes.jsonl (conceptual / transform output)"
-      location: >-
-        Not a separate download for this ingest; subject/object nodes are emitted by the transform from edge
-        endpoints (PREFIX_TO_CLASS). A full KG2 graph build may ship a companion nodes file elsewhere on rtx-kg2-public.
-      description: "Nodes correspond to CURIEs appearing on included edges after typing by prefix."
+      location: "https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz"
+      description: >-
+        KGX-compatible edges with Biolink predicates, literature evidence (publications,
+        publications_info), kg2_ids, optional qualifiers, and a domain_range_exclusion flag.
+        Downloaded via semmeddb/download.yaml; the decompressed JSONL is the Koza reader input.
+        This is the only file downloaded by this ingest.
 
   included_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
@@ -45,7 +88,7 @@ ingest_info:
       # derives_from, exacerbates_condition, manifestation_of, close_match) were previously
       # filtered out but are kept by BTE and have legitimate biomedical value.
       included_records: >-
-        Edges whose Biolink predicate is in the selected set (20 predicates):
+        Edges whose Biolink predicate is in the selected set of 20 predicates:
         biolink:affects, biolink:causes, biolink:close_match, biolink:coexists_with,
         biolink:derives_from, biolink:diagnoses, biolink:disrupts, biolink:exacerbates_condition,
         biolink:has_input, biolink:has_part, biolink:interacts_with, biolink:located_in,
@@ -59,8 +102,8 @@ ingest_info:
         PRECEDES, PREDISPOSES, PREVENTS, PROCESS_OF, PRODUCES, SAME_AS,
         STIMULATES, TREATS, USES, XREF.
         During transform, biolink:preventative_for_condition is remapped to
-        biolink:treats_or_applied_or_studied_to_treat.
-      # AB: updated fields_used to reflect actual fields consumed after refactor.
+        biolink:treats_or_applied_or_studied_to_treat, leaving 19 distinct output predicates.
+      # AB: fields_used reflects actual fields consumed after refactor.
       # Removed negated, subject_novelty, object_novelty (not present in KG2 data; dead code removed).
       # Added qualified_predicate, qualified_object_aspect, qualified_object_direction (qualifier pass-through).
       # Added kg2_ids (used to filter BTE-excluded original predicates).
@@ -68,9 +111,6 @@ ingest_info:
         subject, predicate, object, publications, publications_info,
         domain_range_exclusion, kg2_ids,
         qualified_predicate, qualified_object_aspect, qualified_object_direction
-    - file_name: "kg2.10.3-semmeddb-nodes.jsonl"
-      included_records: "Only nodes referenced by included edges."
-      fields_used: "id, name, category, xrefs (as available)"
 
   filtered_content:
     # AB: BTE-excluded original predicates are now filtered via kg2_ids parsing.
@@ -86,104 +126,251 @@ ingest_info:
         considers them non-informative for knowledge graph use.
       rationale: "Align with BTE filtering of low-value predicates hidden inside biolink:related_to."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Predicates dropped by the original RTX-KG2 ingest: SEMMEDDB:MEASUREMENT_OF, SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, SEMMEDDB:VERB."
-      rationale: "These predicates are removed upstream by KG2 before we receive the data."
-    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges with 3 or fewer publications"
+      filtered_records: "Edges with 3 or fewer supporting publications."
       rationale: "Ensure each edge has meaningful literature support; singleton text-mining extractions are noisy."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges where domain_range_exclusion is True"
+      filtered_records: "Edges where the KG2 domain_range_exclusion flag is True."
       rationale: "Remove semantically incoherent subject/object type combinations flagged by KG2."
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: >-
+        Qualifier triples (not whole edges) are stripped when an activity-like aspect
+        (activity, activity_or_abundance, abundance) is applied to an edge whose subject or
+        object is not a Gene, Protein, or ChemicalEntity. The edge is still emitted as a plain
+        biolink:affects Association with its literature evidence preserved; only the qualifier
+        is dropped.
+      rationale: >-
+        Per NCATSTranslator/Feedback#1213, KG2 emits chemical -> phenotype/disease/anatomy edges
+        qualified as 'causes activity_or_abundance increased', which downstream reasoners chain on
+        to produce nonsensical 'X has increased activity caused by Y' inferences.
     # AB: Publication cap ported from semmeddb_pmid_cap branch (#342).
     # Some SemMedDB edges have 60k+ PMIDs, producing massive output rows.
-    # Only triggers for edges with >200 PMIDs (rare extreme cases).
-    # We keep the union of the top-100-by-confidence and top-100-by-recency
-    # (at most ~200 total). Confidence = min(subject_score, object_score);
-    # recency = 4-digit publication year.
-    # Set env var SEMMEDDB_UNCAPPED=1 to produce an uncapped build.
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: >-
         For edges with more than 200 publications, the publication list is trimmed
         to the union of top-100 by confidence score (min of subject/object score) and
         top-100 by recency (publication year), yielding at most ~200 PMIDs per edge.
-        This only affects rare extreme cases (some edges have 60k+ PMIDs).
-        Disabled when SEMMEDDB_UNCAPPED=1 environment variable is set.
+        This only affects rare extreme cases (some edges have 60k+ PMIDs) and is disabled
+        when the SEMMEDDB_UNCAPPED=1 environment variable is set.
       rationale: "Prevent oversized edges while retaining the most informative publications by two orthogonal strategies. Configurable for uncapped builds."
 
-  # KNOWN ISSUES AND WARNINGS (Manual QA 1 fixes)
-  # We document stuff that might look weird but is expected behavior.
-  known_issues:
-    # Issue 1: Domain and range warnings from Biolink validation
-    # SemMedDB is a text-mining database. It extracts relationships from scientific papers.
-    # Sometimes the extracted subject or object doesn't match what Biolink expects for
-    # certain predicates. For example:
-    #   - treats_or_applied_or_studied_to_treat expects a drug/chemical as subject
-    #     but sometimes we get Procedure, Protein, Gene, or Device
-    #   - predisposes_to_condition expects drug/chemical as subject
-    #     but sometimes we get Disease, Gene, or Phenotype
-    #   - Object types like Cohort, Cell, or PopulationOfIndividualOrganisms
-    #     appear where Disease or PhenotypicFeature is expected
-    #
-    # We keep these edges because they still have scientific value from the literature.
-    # The validation warnings are expected and documented here so people know about them.
-    - issue: "Domain/range constraint violations in validation"
-      description: "Around 10,000+ warnings show up during Biolink validation. This happens because SemMedDB text mining extracts relationships that don't always fit Biolink's strict domain/range rules. For example, a paper might say 'surgery treats diabetes' but Biolink expects only drugs to treat diseases. We keep these edges because they are real findings from scientific papers. The warnings are expected behavior, not bugs."
-      affected_predicates:
-        - "biolink:treats_or_applied_or_studied_to_treat"
-        - "biolink:predisposes_to_condition"
-      common_mismatched_subjects:
-        - "biolink:Procedure"
-        - "biolink:Protein"
-        - "biolink:Gene"
-        - "biolink:Device"
-        - "biolink:Disease"
-        - "biolink:InformationContentEntity"
-      common_mismatched_objects:
-        - "biolink:Cohort"
-        - "biolink:Cell"
-        - "biolink:PopulationOfIndividualOrganisms"
-      resolution: "Accepted as expected warnings. Data is kept because it has scientific value from literature."
+  future_considerations:
+    - category: edge_property_content
+      consideration: >-
+        Expand SemMedDB evidence payloads (supporting snippets, evidence/publication counts, and
+        per-publication confidence scores) as richer edge properties after validating downstream
+        UI and KG constraints.
+      relevant_files: "kg2.10.3-semmeddb-edges.jsonl"
+    - category: other
+      consideration: >-
+        Evaluate re-ingesting from raw SemMedDB (rather than the KG2-derived slice) to recover
+        fields stripped by KG2 - negated statements, subject/object novelty, subject/object
+        semantic types, and node names. This would enable negation filtering, novelty thresholds,
+        BTE-parity per-metatriple publication-count thresholds (which require semantic types),
+        and node labeling.
+      relevant_files: "kg2.10.3-semmeddb-edges.jsonl"
 
-    # Issue 2: original_json property in KGX summary
-    - issue: "KGX summary shows original_json property not in output"
-      description: "The KGX summary report lists original_json as an edge property, but this property is not in the final normalized_edges.jsonl file. This is normal KGX behavior - the property exists in intermediate processing but gets stripped during normalization."
-      resolution: "Expected behavior from KGX tooling. No action needed."
-
-    # AB: Issue 3: qualifier aspect mismatch with BTE.
-    # KG2 uses "activity" for stimulates/inhibits but BTE uses "activity_or_abundance" uniformly.
-    # Per DINGO call 2026-03-31, we pass KG2 qualifier values as-is rather than remapping.
-    - issue: "Qualifier object_aspect_qualifier differs from BTE for stimulates/inhibits"
-      description: >-
-        KG2 maps stimulates and inhibits to object_aspect_qualifier=activity, while BTE
-        maps all three (stimulates, inhibits, augments) to activity_or_abundance. Only
-        augments matches between KG2 and BTE. This is a known divergence accepted per
-        DINGO call decision (2026-03-31) to pass through KG2 qualifier values as-is.
-      resolution: "Accepted divergence. KG2 qualifiers passed through without remapping."
-
-    # AB: Issue 4: KG2 strips several SemMedDB fields we cannot recover.
-    # negated, subject_novelty, object_novelty, subject_semtype, object_semtype,
-    # subject_name, object_name are all absent from the KG2 pre-processed file.
-    # This means we cannot replicate BTE's per-metatriple publication thresholds
-    # (which require semantic types) or negation filtering.
-    - issue: "Missing fields in KG2 pre-processed data"
-      description: >-
-        The KG2 pre-processed file strips negated, subject_novelty, object_novelty,
-        subject_semtype, object_semtype, subject_name, and object_name. This prevents
-        us from filtering negated statements, applying novelty thresholds, or using
-        BTE's per-metatriple publication count thresholds (which require semantic types).
-        Resolving this would require a re-ingest from raw SemMedDB data.
-      resolution: "Known limitation of KG2-based approach. Documented for future consideration."
+  additional_notes:
+    # Known issues / expected behaviors (Manual QA fixes) - captured here because the schema has
+    # no dedicated 'known_issues' slot.
+    - >-
+      Upstream context, not a filter applied by this ingest: RTX-KG2 drops SEMMEDDB:MEASUREMENT_OF,
+      SEMMEDDB:METHOD_OF, SEMMEDDB:NOM, SEMMEDDB:PREP, and SEMMEDDB:VERB before publishing the edge
+      slice, so those predications never reach this pipeline and cannot be recovered from the
+      downloaded file.
+    - >-
+      Domain/range constraint violations are expected. SemMedDB is a text-mining source, so
+      extracted subject/object types do not always fit Biolink's strict domain/range rules
+      (e.g. 'surgery treats diabetes'). Roughly 10,000+ Biolink validation warnings result,
+      chiefly on biolink:treats_or_applied_or_studied_to_treat and biolink:predisposes_to_condition
+      where subjects such as Procedure, Protein, Gene, Device, Disease, or InformationContentEntity
+      and objects such as Cohort, Cell, or PopulationOfIndividualOrganisms appear. These edges are
+      retained because they carry real literature evidence; the warnings are expected, not bugs.
+    - >-
+      The KGX summary report may list an 'original_json' edge property that is absent from the
+      final normalized output. This is normal KGX behavior - the property exists in intermediate
+      processing but is stripped during normalization.
+    - >-
+      Qualifier object_aspect_qualifier values diverge from BTE for stimulates/inhibits: KG2 uses
+      'activity' while BTE uses 'activity_or_abundance' (only 'augments' matches). Per the DINGO
+      call decision (2026-03-31), KG2 qualifier values are passed through as-is rather than remapped.
+    - >-
+      KG2 pre-processing strips several SemMedDB fields we cannot recover (negated, subject_novelty,
+      object_novelty, subject_semtype, object_semtype, subject_name, object_name). This prevents
+      negation filtering, novelty thresholds, and BTE's per-metatriple publication-count thresholds.
+      Resolving this would require a re-ingest from raw SemMedDB data (see future considerations).
 
 target_info:
-  infores_id: infores:translator-semmeddb-kgx
-
+  # Edge types are split by what the transform actually does differently, following the routing in
+  # _build_association in semmeddb.py, rather than one block per Biolink predicate. Every edge here
+  # shares the same provenance (SemRep text mining over PubMed, redistributed by RTX-KG2), the same
+  # knowledge level, and the same agent type, so predicate-by-predicate splitting would produce
+  # near-identical blocks. What genuinely differs between edges is the qualifier payload, the
+  # emitted Association subclass, and the subject/object categories that follow from them, which is
+  # what these four edge types capture. Counts below are from a full transform run of the
+  # semmeddb-2023-kg2.10.3 slice (1,725,595 edges).
   edge_type_info:
-    - predicates:
-        # AB: expanded to all 19 output predicates (20 YAML entries minus
-        # preventative_for_condition which gets remapped to treats_or_applied_or_studied_to_treat).
+
+    # 1. Qualified biolink:affects edges (23,513). Both endpoints are constrained to activity- or
+    #    abundance-bearing entities by the aspect check in _aspect_target_is_valid.
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:affects
+      object_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:ChemicalEntity
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+            - biolink:causes
+          value_description: >-
+            Pass-through from KG2. biolink:causes is the only value observed in the ingested slice.
+        - property: biolink:object_aspect_qualifier
+          value_range:
+            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+          value_enumeration:
+            - activity
+          value_description: >-
+            Pass-through from KG2. 'activity' is the only value observed in the ingested slice.
+            The transform also recognizes 'activity_or_abundance' and 'abundance' as activity-like
+            aspects, but KG2 does not emit them for SemMedDB. Activity-like aspects are stripped
+            when either endpoint is not a Gene, Protein, or ChemicalEntity, which is why this edge
+            type carries only those three categories (see NCATSTranslator/Feedback#1213).
+        - property: biolink:object_direction_qualifier
+          value_range:
+            - biolink:DirectionQualifierEnum
+          value_enumeration:
+            - increased
+            - decreased
+          value_description: "Pass-through from KG2. Both values occur in roughly equal proportion."
+      knowledge_level:
+        - not_provided
+      agent_type:
+        - text_mining_agent
+      primary_knowledge_sources:
+        - infores:semmeddb
+      edge_properties:
+        - biolink:publications
+        - biolink:has_supporting_studies
+      ui_explanation: >-
+        This edge reports that one entity changes the activity of another, as stated in the
+        biomedical literature. It comes from a SemMedDB predication that SemRep extracted
+        automatically from PubMed titles and abstracts, originally recorded with a 'stimulates',
+        'inhibits', or 'augments' relation, which is represented here as a biolink:affects edge
+        carrying a direction qualifier (increased or decreased). Because the assertion is produced
+        by automated text mining rather than by curation or experiment, the knowledge level is
+        'not provided' and the agent type is 'text mining agent'. The cited publications are the
+        sentences the assertion was extracted from, not independent confirmation of it.
+      source_files:
+        - "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
+      additional_notes:
+        - >-
+          Routed at transform time to ChemicalAffectsGeneAssociation, GeneAffectsChemicalAssociation,
+          GeneToGeneAssociation, or ChemicalAffectsBiologicalEntityAssociation as a fallback, chosen
+          by subject/object entity type so the structured qualifier fields survive pydantic
+          model_dump() serialization.
+        - >-
+          When an activity-like aspect is applied to an edge whose subject or object is not a Gene,
+          Protein, or ChemicalEntity, the qualifiers are stripped and the edge is emitted as a plain
+          biolink:affects Association instead, which places it in the unqualified edge type below.
+
+    # 2. biolink:causes edges from a gene or protein to a disease or phenotype (2,470).
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+      predicates:
+        - biolink:causes
+      object_categories:
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+      qualifiers:
+        - property: biolink:subject_form_or_variant_qualifier
+          value_range:
+            - biolink:ChemicalOrGeneOrGeneProductFormOrVariantEnum
+          value_enumeration:
+            - genetic_variant_form
+          value_description: >-
+            Set by the transform, not passed through from KG2. Applied to every edge of this type to
+            record that the causal claim is about a variant form of the gene rather than the
+            wild-type gene.
+      knowledge_level:
+        - not_provided
+      agent_type:
+        - text_mining_agent
+      primary_knowledge_sources:
+        - infores:semmeddb
+      edge_properties:
+        - biolink:publications
+        - biolink:has_supporting_studies
+      ui_explanation: >-
+        This edge reports that a gene or gene product causes a disease or phenotype, as stated in
+        the biomedical literature. It comes from a SemMedDB predication that SemRep extracted
+        automatically from PubMed titles and abstracts. The subject is qualified as a genetic
+        variant form, because a causal claim of this shape is about a variant of the gene rather
+        than the normal gene product. Because the assertion is produced by automated text mining
+        rather than by curation or experiment, the knowledge level is 'not provided' and the agent
+        type is 'text mining agent'.
+      source_files:
+        - "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
+      additional_notes:
+        - >-
+          Routed to CausalGeneToDiseaseAssociation for disease objects and to
+          GeneToPhenotypicFeatureAssociation for phenotype objects. biolink:causes edges with any
+          other subject/object combination carry no qualifier and fall into the unqualified edge
+          type below.
+
+    # 3. biolink:close_match (234). Identity mapping rather than a biological claim.
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:ChemicalEntity
+        - biolink:NamedThing
+      predicates:
+        - biolink:close_match
+      object_categories:
+        - biolink:Gene
+        - biolink:ChemicalEntity
+        - biolink:NamedThing
+      knowledge_level:
+        - not_provided
+      agent_type:
+        - text_mining_agent
+      primary_knowledge_sources:
+        - infores:semmeddb
+      edge_properties:
+        - biolink:publications
+        - biolink:has_supporting_studies
+      ui_explanation: >-
+        This edge reports that two concepts were referred to interchangeably in the biomedical
+        literature. It comes from a SemMedDB 'SAME_AS' predication that SemRep extracted
+        automatically from PubMed titles and abstracts. Unlike the other SemMedDB edge types, this
+        is a statement about naming and identity rather than about biology, so it should be read as
+        weak evidence that two terms denote the same thing, not as a curated identifier mapping.
+      source_files:
+        - "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
+      additional_notes:
+        - >-
+          Kept as its own edge type because a UI explanation that fits a causal or affects edge does
+          not fit an identity assertion. This is the smallest edge type in the ingest.
+        - >-
+          biolink:NamedThing appears here as a transient placeholder for endpoints the transform
+          could not type, not as a real category. See the notes on the biolink:NamedThing node type.
+
+    # 4. Everything else, emitted as a plain biolink:Association with no qualifiers (1,699,378).
+    - subject_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:ChemicalEntity
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+        - biolink:AnatomicalEntity
+        - biolink:NamedThing
+      predicates:
         - biolink:affects
         - biolink:causes
-        - biolink:close_match
         - biolink:coexists_with
         - biolink:derives_from
         - biolink:diagnoses
@@ -200,6 +387,14 @@ target_info:
         - biolink:produces
         - biolink:related_to
         - biolink:treats_or_applied_or_studied_to_treat
+      object_categories:
+        - biolink:Gene
+        - biolink:Protein
+        - biolink:ChemicalEntity
+        - biolink:Disease
+        - biolink:PhenotypicFeature
+        - biolink:AnatomicalEntity
+        - biolink:NamedThing
       knowledge_level:
         - not_provided
       agent_type:
@@ -207,94 +402,158 @@ target_info:
       primary_knowledge_sources:
         - infores:semmeddb
       edge_properties:
-        - publications
-        - has_supporting_studies
-        - subject_form_or_variant_qualifier
-        - original_subject
-        - original_object
-        - sources
-        # AB: qualifier fields now passed through from KG2 data.
-        # These appear on edges where the original SemMedDB predicate was
-        # stimulates, inhibits, or augments (all mapped to biolink:affects by KG2).
-        # The qualifier values preserve the original semantic distinction that would
-        # otherwise be lost in the collapse to biolink:affects.
-        - qualified_predicate
-        - object_aspect_qualifier
-        - object_direction_qualifier
-      # AB: updated association categories. Records with qualifiers route to specific
-      # Biolink Association subclasses based on subject/object entity types to ensure
-      # structured qualifier fields survive pydantic model_dump() serialization.
-      association_categories:
-        - biolink:Association
-        - biolink:CausalGeneToDiseaseAssociation
-        - biolink:GeneToPhenotypicFeatureAssociation
-        - biolink:ChemicalAffectsGeneAssociation
-        - biolink:GeneAffectsChemicalAssociation
-        - biolink:GeneRegulatesGeneAssociation
-        - biolink:ChemicalAffectsBiologicalEntityAssociation
-      notes:
-        - "Supporting text snippets are retained in has_supporting_studies -> has_study_results -> supporting_text; there is no top-level supporting_text edge property."
-        - "Qualifier fields (qualified_predicate, object_aspect_qualifier, object_direction_qualifier) appear only on biolink:affects edges derived from stimulates, inhibits, or augments."
-      ui_explanation: "SemMedDB data are generated by an automated text-mining agent that extracts relationships from biomedical literature. The record represents text evidence that [SUBJECT] and [OBJECT] were reported with [RELATIONSHIP] in the source literature."
+        - biolink:publications
+        - biolink:has_supporting_studies
+      ui_explanation: >-
+        This edge reports that two entities were stated to be related in the biomedical literature,
+        with the specific relationship shown by the predicate. It comes from a SemMedDB predication
+        that SemRep extracted automatically from PubMed titles and abstracts, and the cited
+        publications are the sentences the assertion was extracted from. Because the assertion is
+        produced by automated text mining rather than by curation or experiment, the knowledge level
+        is 'not provided' and the agent type is 'text mining agent'. Individual edges can be noisy,
+        so these are most useful in aggregate or as supporting evidence rather than on their own.
       source_files:
-        - kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)
+        - "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
+      additional_notes:
+        - >-
+          This edge type carries a broad multivalued predicate list rather than a predicate plus its
+          descendants. Splitting it further would produce 18 near-identical blocks, because all of
+          these edges share one provenance chain, one knowledge level, one agent type, and one
+          transform path, and the prefix-based node typing gives them broadly the same subject and
+          object categories. The three edge types above were separated out because they genuinely
+          differ in qualifier payload, Association subclass, and category range. See
+          target_info.future_considerations.
+        - >-
+          biolink:affects and biolink:causes appear both here and in the qualified edge types above.
+          An edge lands here when the record carried no qualified_predicate, or when its qualifiers
+          were stripped by the aspect check, or when a biolink:causes edge does not run from a gene
+          or protein to a disease or phenotype.
+        - >-
+          Subject/object categories are assigned by the transform from the CURIE prefix using
+          PREFIX_TO_CLASS, and any endpoint whose prefix is not recognized is emitted as
+          biolink:NamedThing. About 65 percent of emitted nodes take that fallback, most of them
+          UMLS CUIs. biolink:NamedThing is listed above because it is what the transform emits, but
+          it is a transient placeholder rather than a real category: it is the root Biolink class,
+          so it asserts nothing about the endpoint, and node normalization resolves every one of
+          them, leaving zero biolink:NamedThing nodes in the delivered graph. Read the specific
+          categories in this list as the informative ones.
+        - >-
+          Supporting text snippets are retained under has_supporting_studies, then has_study_results,
+          then supporting_text, as TextMiningStudyResult objects. There is no top-level
+          supporting_text edge property.
 
-  # Node types we see in the output
-  # This is a diverse set because SemMedDB covers many biomedical concepts
+  # Node types emitted by this ingest, as assigned by the transform (PREFIX_TO_CLASS).
+  # Downstream node normalization commonly reassigns these to more specific categories
+  # (e.g. SmallMolecule, Drug, MolecularMixture, Cell, OrganismTaxon, Procedure, Behavior,
+  # PopulationOfIndividualOrganisms, and many others) - see additional_notes on biolink:NamedThing.
   node_type_info:
-    - node_category: biolink:SmallMolecule
-    - node_category: biolink:Drug
-    - node_category: biolink:ChemicalEntity
-    - node_category: biolink:MolecularMixture
-    - node_category: biolink:ChemicalMixture
-    - node_category: biolink:Cell
-    - node_category: biolink:Disease
-    - node_category: biolink:ComplexMolecularMixture
-    - node_category: biolink:PhenotypicFeature
-    - node_category: biolink:BiologicalProcess
-    - node_category: biolink:MolecularActivity
-    - node_category: biolink:CellularComponent
     - node_category: biolink:Gene
-    - node_category: biolink:OrganismTaxon
+      source_identifier_types:
+        - NCBIGene
+        - HGNC
+        - ENSEMBL
+      additional_notes:
+        - >-
+          NCBIGene accounts for nearly all gene nodes, with a small number of HGNC. ENSEMBL is
+          mapped by PREFIX_TO_CLASS but does not occur in the ingested slice.
     - node_category: biolink:Protein
-    - node_category: biolink:GrossAnatomicalStructure
+      source_identifier_types:
+        - UniProtKB
+        - PR
+      additional_notes:
+        - >-
+          All protein nodes in the ingested slice are UniProtKB. PR is mapped by PREFIX_TO_CLASS but
+          does not occur.
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - CHEBI
+        - DRUGBANK
+    - node_category: biolink:Disease
+      source_identifier_types:
+        - MONDO
+        - DOID
+    - node_category: biolink:PhenotypicFeature
+      source_identifier_types:
+        - HP
     - node_category: biolink:AnatomicalEntity
-    - node_category: biolink:Polypeptide
-    - node_category: biolink:InformationContentEntity
-    - node_category: biolink:Procedure
-    - node_category: biolink:Behavior
-    - node_category: biolink:Agent
-    - node_category: biolink:Activity
-    - node_category: biolink:Device
-    - node_category: biolink:Cohort
-    - node_category: biolink:PopulationOfIndividualOrganisms
-    - node_category: biolink:Phenomenon
-    - node_category: biolink:GenomicEntity
-    - node_category: biolink:BiologicalEntity
-    - node_category: biolink:Publication
-    - node_category: biolink:NucleicAcidEntity
-    - node_category: biolink:ClinicalAttribute
-    - node_category: biolink:PhysicalEntity
-    - node_category: biolink:DiseaseOrPhenotypicFeature
-    - node_category: biolink:Human
-    - node_category: biolink:Event
-    - node_category: biolink:PhysiologicalProcess
+      source_identifier_types:
+        - UBERON
+    - node_category: biolink:NamedThing
+      source_identifier_types:
+        - UMLS
+        - MESH
+        - NCBITaxon
+        - GO
+        - UNII
+        - PUBCHEM.COMPOUND
+        - NCIT
+        - RXCUI
+        - CL
+        - EFO
+        - OMIM
+        - CHEMBL.COMPOUND
+        - DrugCentral
+      additional_notes:
+        - >-
+          This is a transient fallback category, not a real node type in the delivered graph. It is
+          recorded here because it is what the transform emits and because its size is a useful
+          measure of how much type information this ingest is missing, but no node keeps this
+          category downstream.
+        - >-
+          It is the largest node type the ingest emits, covering about 65 percent of emitted nodes,
+          and UMLS is by far the largest prefix within it. SemMedDB is built on UMLS Metathesaurus
+          concepts, and RTX-KG2 strips the UMLS semantic types, so any concept KG2 could not map to
+          an external ontology arrives as a bare UMLS CUI that PREFIX_TO_CLASS cannot type.
+        - >-
+          Node normalization resolves all of them. In a full run of this ingest, zero nodes carried
+          biolink:NamedThing after normalization, and they were reassigned to categories such as
+          SmallMolecule, OrganismTaxon, Procedure, Drug, MolecularMixture, Cell, Behavior,
+          PopulationOfIndividualOrganisms, and InformationContentEntity. Those are post-normalization
+          categories and are not assigned by this ingest.
+        - >-
+          Recovering real types at ingest time rather than relying on normalization would require
+          the UMLS semantic types that KG2 strips, which is one of the main arguments for the raw
+          SemMedDB re-ingest described in ingest_info.future_considerations.
 
-future_considerations:
-  - category: edge_properties
-    consideration: "Expand SemMedDB evidence payloads (supporting snippets, evidence counts, and confidence scores) after validating downstream UI and KG constraints."
-  # AB: if we ever move to a raw SemMedDB ingest, we could recover negated statements,
-  # novelty scores, semantic types (for per-metatriple thresholds), and node names.
-  - category: data_source
-    consideration: "Evaluate re-ingesting from raw SemMedDB to recover fields stripped by KG2 (negated, novelty, semantic types, node names) and enable full BTE-parity filtering."
+  future_considerations:
+    - category: predicates
+      consideration: >-
+        The plain-Association edge type still carries 18 predicates in one multivalued list rather
+        than a predicate plus its descendants. Splitting it per predicate was measured against the
+        data and rejected for now: six of those predicates already use all seven subject and object
+        categories, and every one of them has a NamedThing endpoint on a large share of its edges,
+        so per-predicate blocks would repeat the same categories, provenance, and UI explanation 18
+        times. Revisit if node typing becomes richer than CURIE-prefix matching, since tighter
+        per-predicate category pairings would then be derivable and the split would carry real
+        information.
+    - category: qualifiers
+      consideration: >-
+        KG2 object_aspect_qualifier values are passed through as-is and diverge from BTE, which uses
+        activity_or_abundance for stimulates and inhibits where KG2 uses activity. Confirmed as
+        intended per the DINGO call decision of 2026-03-31. Revisit if a canonical cross-source
+        qualifier mapping is adopted.
+    - category: node_properties
+      consideration: >-
+        Node names/labels are stripped upstream by KG2, so emitted nodes carry identifiers but no
+        source-provided names. Revisit if a raw SemMedDB re-ingest is adopted (see ingest_info
+        future considerations).
+    - category: other
+      consideration: >-
+        Record infores:rtx-kg2 as an aggregator_knowledge_source on every edge. This ingest does not
+        read the NLM distribution. It reads RTX-KG2's projection of it, and KG2 chose the Biolink
+        predicate, assembled publications_info, set the domain_range_exclusion flag, and produced the
+        qualifiers that are passed through here, all of which is aggregation work that the current
+        provenance does not record. Not applied yet because it changes emitted edges and needs a
+        change to build_association_knowledge_sources usage in semmeddb.py, so it is left for a
+        data-modeling decision rather than being folded into this RIG review.
 
 provenance_info:
   contributions:
-      - "Erica Wood: code author"
-      - "Evan Morris: code support"
-      - "Adilbek Bazarkulov: code support, domain expertise"
-      - "Sierra Moxon: data modeling, domain expertise"
-      - "Matthew Brush: data modeling, domain expertise"
+    - "Adilbek Bazarkulov: code author, domain expertise"
+    - "Erica Wood: upstream RTX-KG2 SemMedDB processing that produces the ingested edge slice"
+    - "Evan Morris: code support"
+    - "Sierra Moxon: data modeling, domain expertise"
+    - "Matthew Brush: data modeling, domain expertise"
   artifacts:
     - "SemMedDB overview: https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html"
     - "Biolink Model (schema): https://github.com/biolink/biolink-model"

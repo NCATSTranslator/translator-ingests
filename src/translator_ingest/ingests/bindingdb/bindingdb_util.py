@@ -13,7 +13,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AffinityMeasurement,
     BinaryRelationEnum as bre
 )
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out

@@ -2,10 +2,9 @@
 TMKP (Text Mining Knowledge Provider) ingest.
 
 This ingest processes text-mined assertions from the Translator Text Mining Provider.
-Data comes as tar.gz archives containing:
-- nodes.tsv: Entity information
-- edges.tsv: Relationships between entities
-- content_metadata.json: Biolink class and slot mappings
+Data is provided as individual gzipped KGX files:
+- nodes.tsv.gz: Entity information
+- edges.tsv.gz: Relationships between entities
 
 """
 
@@ -28,17 +27,23 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Association,
     ChemicalAffectsGeneAssociation,
-    CorrelatedGeneToDiseaseAssociation,
+    GeneToDiseaseAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    GeneRegulatesGeneAssociation,
+    GeneToGeneAssociation,
     Study,
     TextMiningStudyResult,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     ChemicalOrGeneOrGeneProductFormOrVariantEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_TEXT_MINING_KP, get_biolink_model_toolkit
+
+TMKP_DEFAULT_SOURCES = build_association_knowledge_sources(
+    primary=INFORES_TEXT_MINING_KP,
+    supporting=["infores:pubmed"],
+)
 
 
 # Remap predicates from source to canonical Biolink form.
@@ -82,9 +87,9 @@ BIOLINK_CLASS_MAP = {
 # Map edge types to association classes
 ASSOCIATION_MAP = {
     "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
-    "biolink:GeneToDiseaseAssociation": CorrelatedGeneToDiseaseAssociation,
+    "biolink:GeneToDiseaseAssociation": GeneToDiseaseAssociation,
     "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
-    "biolink:GeneRegulatoryRelationship": GeneRegulatesGeneAssociation,
+    "biolink:GeneRegulatoryRelationship": GeneToGeneAssociation,
 }
 
 # Track edges skipped due to invalid subject/object prefixes (for reporting)
@@ -111,6 +116,29 @@ def _get_id_prefix(curie: str) -> str:
     if ":" in curie:
         return curie.split(":")[0]
     return ""
+
+
+def _normalize_publication_id(pub_id: str) -> str:
+    """
+    Normalize a publication identifier to a Biolink-resolvable CURIE.
+
+    TMKP source data emits bare PMC identifiers like ``PMC6211782`` without
+    a CURIE prefix.
+
+    >>> _normalize_publication_id("PMC6211782")
+    'PMC:PMC6211782'
+    >>> _normalize_publication_id("PMID:31388901")
+    'PMID:31388901'
+    >>> _normalize_publication_id("PMC:PMC6211782")
+    'PMC:PMC6211782'
+    >>> _normalize_publication_id("")
+    ''
+    """
+    if ":" in pub_id:
+        return pub_id
+    if pub_id.startswith("PMC"):
+        return f"PMC:{pub_id}"
+    return pub_id
 
 
 @lru_cache(maxsize=128)
@@ -246,7 +274,7 @@ def get_skipped_edges_summary() -> Dict[str, int]:
 
 def get_latest_version() -> str:
     """Return the latest version identifier for TMKP data."""
-    return "tmkp-2023-03-05"
+    return "tmkp-2024-09-07"
 
 
 def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> None:
@@ -272,7 +300,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         # Strip "biolink:" prefix if present to get the actual slot name
         slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
 
-        if slot_name == "supporting_study_result":
+        if slot_name == "has_supporting_study_result":
             # Create TextMiningStudyResult object
             tm_result = TextMiningStudyResult(
                 id=value,
@@ -288,7 +316,7 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                 if nested_type == "biolink:supporting_text":
                     tm_result.supporting_text = [nested_value] if nested_value else []
                 elif nested_type == "biolink:supporting_document":
-                    tm_result.xref = [nested_value] if nested_value else []
+                    tm_result.xref = [_normalize_publication_id(nested_value)] if nested_value else []
                 elif nested_type == "biolink:supporting_text_located_in":
                     tm_result.supporting_text_section_type = nested_value
                 elif nested_type == "biolink:extraction_confidence_score":
@@ -325,10 +353,9 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
         elif slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
-                # publications field expects a list, but TMKP sends pipe-separated strings
-                # Multiple attributes (supporting_publications, supporting_document) may map here
                 if biolink_slot == "publications":
-                    new_pubs = value.split("|") if isinstance(value, str) else (value or [])
+                    raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
+                    new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
                     existing = getattr(association, biolink_slot) or []
                     setattr(association, biolink_slot, existing + new_pubs)
                 else:
@@ -432,31 +459,11 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # as defaults: primary predicate 'affects', qualified predicate 'contributes_to', with
     # subject_form_or_variant_qualifier defaulting to 'modified_form' if not already set
     # by the source data (which may provide e.g. 'loss_of_function_variant_form').
-    if (
-        assoc_class == CorrelatedGeneToDiseaseAssociation
-        and predicate == "biolink:contributes_to"
-    ):
+    if assoc_class == GeneToDiseaseAssociation and predicate == "biolink:contributes_to":
         assoc_kwargs["predicate"] = "biolink:affects"
         assoc_kwargs.setdefault("qualified_predicate", "biolink:contributes_to")
         assoc_kwargs.setdefault("subject_form_or_variant_qualifier", MODIFIED_FORM)
 
-    # For GeneRegulatesGeneAssociation, default qualified_predicate to the predicate if not set
-    if assoc_class == GeneRegulatesGeneAssociation and "qualified_predicate" not in assoc_kwargs:
-        assoc_kwargs["qualified_predicate"] = predicate
-
-    # For GeneRegulatesGeneAssociation, require object_aspect_qualifier and object_direction_qualifier.
-    if assoc_class == GeneRegulatesGeneAssociation:
-        # If either qualifier is missing, skip the edge to avoid semantic errors.
-        if "object_aspect_qualifier" not in assoc_kwargs or "object_direction_qualifier" not in assoc_kwargs:
-            logger.warning(
-                "Skipping GeneRegulatesGeneAssociation edge due to missing qualifiers: "
-                f"object_aspect_qualifier={assoc_kwargs.get('object_aspect_qualifier')}, "
-                f"object_direction_qualifier={assoc_kwargs.get('object_direction_qualifier')}. "
-                "These qualifiers are required for semantic correctness."
-            )
-            return None
-
-    # Create association with all fields
     association = assoc_class(**assoc_kwargs)
 
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
@@ -465,10 +472,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         parse_attributes(attributes, association)
     else:
         # No attributes - set default sources
-        association.sources = build_association_knowledge_sources(
-            primary=INFORES_TEXT_MINING_KP,
-            supporting=["infores:pubmed"]
-        )
+        association.sources = TMKP_DEFAULT_SOURCES
 
     # Create nodes for subject and object
     nodes = []

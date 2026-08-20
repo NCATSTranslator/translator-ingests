@@ -1,5 +1,8 @@
 name: semmeddb
-metadata: !include './metadata.yaml'
+metadata:
+  ingest_title: 'SemMedDB'
+  description: 'Literature-derived semantic predications extracted by SemRep from PubMed'
+  rights: 'https://lhncbc.nlm.nih.gov/temp/SemRep_SemMedDB_SKR/dbinfo.html'
 
 readers:
   filter_edges:

@@ -5,12 +5,18 @@ source_info:
   infores_id: infores:text-mining-provider-targeted
   name: Text Mining Knowledge Provider (TMKP)
   description: |
-    The Text Mining Knowledge Provider (TMKP) is a Translator knowledge provider that extracts
-    biomedical assertions from scientific literature using advanced text mining techniques.
-    It processes PubMed abstracts and full-text articles to identify relationships between
-    biological entities such as chemicals, genes, diseases, and phenotypes. The system uses
-    natural language processing and machine learning approaches to extract high-confidence
-    assertions about how these entities interact.
+    The UC Denver Text Mining Knowledge Provider (TMKP) is developed by researchers at the
+    University of Colorado Anschutz Medical Campus as a Knowledge Provider within the NCATS
+    Biomedical Data Translator. It makes knowledge extracted from the biomedical literature
+    available in a standardized knowledge graph format supporting translational research,
+    hypothesis generation, and federated querying across Translator resources. It provides
+    literature-derived associations among biomedical entities (genes, diseases, chemicals,
+    phenotypes, biological processes, etc.) represented as semantic relationships with
+    supporting provenance. Knowledge is generated through automated text mining and natural
+    language processing over PubMed abstracts and, where available, full text: named entity
+    recognition, entity normalization, relation extraction, and machine learning identify and
+    structure relationships, which are mapped to standardized biomedical ontologies and exposed
+    with provenance linking each assertion to its supporting publications.
   citations:
     - https://github.com/NCATSTranslator/Text-Mining-Provider-Roadmap
   terms_of_use_info:
@@ -21,10 +27,9 @@ source_info:
   data_provision_mechanisms:
     - file_download
   data_formats:
-    - tar.gz
-    - tsv
-    - json
-  data_versioning_and_releases: "Periodic releases managed through Google Cloud Storage. Version dates included in file paths."
+    - tsv  # conformance: was 'tsv.gz'
+  data_versioning_and_releases: "Periodic releases managed through Google Cloud Storage. Versioning is tracked via the last-modified date on the published files."
+  source_status: maintained_regular_updates
 
 # Information about Ingested Content
 ingest_info:
@@ -34,45 +39,44 @@ ingest_info:
   scope: "Covers text-mined relationships between chemicals, genes/proteins, diseases, and phenotypes extracted from PubMed literature. Each assertion includes supporting evidence from the source text and publication metadata."
 
   relevant_files:
-    - file_name: targeted_assertions.tar.gz
-      location: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/2023-03-05/
-      description: Archive containing nodes.tsv, edges.tsv, and content_metadata.json
+    - file_name: nodes.tsv.gz
+      location: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/
+      description: Gzipped TSV of biological entities (chemicals, proteins, diseases, phenotypes)
+    - file_name: edges.tsv.gz
+      location: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/
+      description: Gzipped TSV of text-mined assertions between entities
 
   included_content:
-    - file_name: nodes.tsv
+    - file_name: nodes.tsv.gz
       included_records: All biological entities (chemicals, proteins, diseases, phenotypes)
       fields_used: id, name, category
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       included_records: All text-mined assertions between entities
       fields_used: subject, predicate, object, qualified_predicate, object_aspect_qualifier, object_direction_qualifier, relation, _attributes
-    - file_name: content_metadata.json
-      included_records: Metadata about available biolink classes and predicates
-      fields_used: nodes, edges
 
   filtered_content:
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       filtered_records: Edges where subject/object ID prefixes violate Biolink Model domain/range constraints. For example, edges like "MONDO:xxx biolink:treats DRUGBANK:yyy" are excluded because the association type expects chemicals as subjects and diseases as objects, not the reverse.
       rationale: "Validation uses BMT to dynamically determine valid ID prefixes for each predicate's domain/range constraints, filtering out semantically invalid edges such as reversed ChemicalToDiseaseOrPhenotypicFeatureAssociation edges where diseases/phenotypes (MONDO, HP prefixes) are incorrectly positioned as subjects."
-    - file_name: edges.tsv
-      filtered_records: GeneRegulatesGeneAssociation edges that lack required qualifiers (object_aspect_qualifier or object_direction_qualifier).
-      rationale: "These qualifiers are required for semantic correctness of regulatory relationships. Edges without them would have ambiguous meaning."
-
   transformed_content:
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       transformation: "Predicate remap: 'biolink:treats' → 'biolink:treats_or_applied_or_studied_to_treat'"
       rationale: "NLP tools cannot reliably distinguish between actual treatment, studied treatment, and applied treatment relationships. The broader predicate accurately represents the uncertainty in text-mined assertions."
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       transformation: "Knowledge level: edges with 'biolink:treats_or_applied_or_studied_to_treat' are assigned knowledge_level='knowledge_assertion' instead of 'not_provided'"
       rationale: "The broad predicate semantics already account for all knowledge levels (hypothesis, assertion, observation), so 'knowledge_assertion' is warranted. All other text-mined predicates remain 'not_provided'."
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       transformation: "EPC pattern: Gene-disease 'biolink:contributes_to' edges are transformed to predicate='biolink:affects', qualified_predicate='biolink:contributes_to', subject_form_or_variant_qualifier='modified_form'. Source edges that already provide predicate='affects' with their own qualifiers pass those qualifiers through unchanged."
       rationale: "Follows the canonical Biolink EPC (Edge Property Constraint) pattern for gene-disease causal relationships. The EPC default uses 'modified_form', but source edges that already arrive pre-qualified (e.g., with 'loss_of_function_variant_form' or 'gain_of_function_variant_form') retain their source qualifiers."
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       transformation: "Qualifier passthrough: all source record fields that are valid slots on the association class are passed through to the output edge. Computed fields (subject, predicate, object, knowledge_level, agent_type, EPC defaults) are not overridden."
       rationale: "Ensures no source qualifiers are silently dropped. The Biolink pydantic model validates that values are valid for each field."
-    - file_name: edges.tsv
+    - file_name: edges.tsv.gz
       transformation: "Attribute mapping: TMKP attribute names are mapped to Biolink slot names (e.g. 'has_evidence_count' → 'evidence_count', 'supporting_publications' → 'publications', 'tmkp_confidence_score' → 'has_confidence_score')"
       rationale: "TMKP uses different naming conventions for some attributes. The ingest maps these to their canonical Biolink Model equivalents so they are recognized by downstream consumers."
+    - file_name: edges.tsv.gz
+      transformation: "Publication ID normalization: bare PMC identifiers (e.g. 'PMC6211782') are normalized to CURIE form ('PMC:PMC6211782')."
+      rationale: "Source TMKP data emits PMC publication IDs without a CURIE prefix. The Biolink Model prefix map registers 'PMC' as a prefix, so downstream consumers (e.g., NodeNormalization) expect the prefixed form for resolution."
 
   future_considerations:
     - category: edge_property_content
@@ -82,15 +86,15 @@ ingest_info:
     - category: edge_content
       consideration: "Approach for one-hop predictions like those described above (whether DINGO creates them at ingest, or re-instate the CQS to create them)."
 
-  additional_notes: |
-    Attributes in the data are encoded as JSON objects that may contain nested attributes
-    representing supporting studies and evidence. The ingest creates Study objects containing
-    TextMiningStudyResult objects to model the nested study result data structure, with
-    supporting text and document references captured in the TextMiningStudyResult objects.
+  additional_notes:
+    - >-
+      Attributes in the data are encoded as JSON objects that may contain nested attributes
+      representing supporting studies and evidence. The ingest creates Study objects containing
+      TextMiningStudyResult objects to model the nested study result data structure, with
+      supporting text and document references captured in the TextMiningStudyResult objects.
 
 # Information about the Graph Output by the ingest
 target_info:
-  infores_id: "infores:text-mining-provider-targeted"
 
   edge_type_info:
     - subject_categories:
@@ -131,11 +135,12 @@ target_info:
         and magnitude qualifiers indicating how the chemical modulates protein activity or abundance.
         Evidence from scientific literature includes supporting text excerpts and publication references.
       source_files:
-        - edges.tsv
-      additional_notes: |
-        Association type: ChemicalAffectsGeneAssociation. The has_supporting_studies property
-        contains Study objects with nested TextMiningStudyResult objects that include supporting
-        text excerpts and publication references.
+        - edges.tsv.gz
+      additional_notes:
+        - >-
+          Association type: ChemicalAffectsGeneAssociation. The has_supporting_studies property
+          contains Study objects with nested TextMiningStudyResult objects that include supporting
+          text excerpts and publication references.
 
     - subject_categories:
         - "biolink:Protein"
@@ -168,15 +173,16 @@ target_info:
         - "biolink:evidence_count"
         - "biolink:has_confidence_score"
       ui_explanation: |
-        Targeted text mining identified gene regulatory relationships where one protein causes
-        changes in another protein's activity or abundance. These edges include required qualifiers
-        indicating the direction and magnitude of the regulatory effect.
+        Targeted text mining identified gene regulatory relationships where one protein affects
+        another protein's activity or abundance. When present, qualifiers indicate the causal
+        direction and the aspect/direction of the regulatory effect.
       source_files:
-        - edges.tsv
-      additional_notes: |
-        Association type: GeneRegulatesGeneAssociation. Requires object_aspect_qualifier and
-        object_direction_qualifier for semantic correctness. Edges lacking these qualifiers are
-        filtered out during processing. All source edges provide qualified_predicate='biolink:causes'.
+        - edges.tsv.gz
+      additional_notes:
+        - >-
+          Association type: GeneToGeneAssociation. Predicate is 'biolink:affects' with optional
+          qualified_predicate='biolink:causes' and object_aspect_qualifier/object_direction_qualifier
+          passed through from the source data when provided.
 
     - subject_categories:
         - "biolink:SmallMolecule"
@@ -207,14 +213,15 @@ target_info:
         The broad predicate reflects that NLP cannot distinguish between actual treatment and
         studied/applied treatment relationships.
       source_files:
-        - edges.tsv
-      additional_notes: |
-        Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source predicate
-        'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat' during
-        ingest because NLP tools cannot reliably distinguish treatment intent. Knowledge level is
-        'knowledge_assertion' because the broad predicate semantics already account for the
-        uncertainty inherent in text-mined data. Source data may contain reversed edges (disease
-        treats chemical) that are filtered out based on Biolink domain/range constraints.
+        - edges.tsv.gz
+      additional_notes:
+        - >-
+          Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Source predicate
+          'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat' during
+          ingest because NLP tools cannot reliably distinguish treatment intent. Knowledge level is
+          'knowledge_assertion' because the broad predicate semantics already account for the
+          uncertainty inherent in text-mined data. Source data may contain reversed edges (disease
+          treats chemical) that are filtered out based on Biolink domain/range constraints.
 
     - subject_categories:
         - "biolink:SmallMolecule"
@@ -243,10 +250,11 @@ target_info:
         Targeted text mining identified that a chemical contributes to a disease or phenotypic
         feature, indicating a causal or risk relationship based on evidence from literature.
       source_files:
-        - edges.tsv
-      additional_notes: |
-        Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Domain/range
-        validation ensures chemicals are subjects and diseases/phenotypes are objects.
+        - edges.tsv.gz
+      additional_notes:
+        - >-
+          Association type: ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation. Domain/range
+          validation ensures chemicals are subjects and diseases/phenotypes are objects.
 
     - subject_categories:
         - "biolink:Protein"
@@ -284,14 +292,15 @@ target_info:
         qualified predicate. The subject_form_or_variant_qualifier indicates the form of the
         protein involved (modified, loss-of-function, or gain-of-function).
       source_files:
-        - edges.tsv
-      additional_notes: |
-        Association type: CorrelatedGeneToDiseaseAssociation. Two code paths produce these edges:
-        (1) Source predicate 'biolink:contributes_to' is transformed to the canonical EPC pattern
-        with subject_form_or_variant_qualifier defaulting to 'modified_form'. (2) Source edges
-        that already arrive with predicate='biolink:affects' and qualified_predicate=
-        'biolink:contributes_to' pass through their source subject_form_or_variant_qualifier
-        (typically 'loss_of_function_variant_form' or 'gain_of_function_variant_form').
+        - edges.tsv.gz
+      additional_notes:
+        - >-
+          Association type: GeneToDiseaseAssociation. Two code paths produce these edges:
+          (1) Source predicate 'biolink:contributes_to' is transformed to the canonical EPC pattern
+          with subject_form_or_variant_qualifier defaulting to 'modified_form'. (2) Source edges
+          that already arrive with predicate='biolink:affects' and qualified_predicate=
+          'biolink:contributes_to' pass through their source subject_form_or_variant_qualifier
+          (typically 'loss_of_function_variant_form' or 'gain_of_function_variant_form').
 
     - subject_categories:
         - "biolink:Protein"
@@ -317,54 +326,57 @@ target_info:
         Targeted text mining identified that a protein/gene affects a disease or phenotypic
         feature, based on linguistic patterns in scientific literature.
       source_files:
-        - edges.tsv
-      additional_notes: |
-        Association type: CorrelatedGeneToDiseaseAssociation. The code uses
-        CorrelatedGeneToDiseaseAssociation rather than GeneToDiseaseAssociation because
-        the base GeneToDiseaseAssociation constrains predicates to only 'contributes_to'
-        or 'associated_with', and does not support 'affects' which is used by TMKP
-        for gene-disease edges.
+        - edges.tsv.gz
+      additional_notes:
+        - "Association type: GeneToDiseaseAssociation."
 
   node_type_info:
     - node_category: "biolink:ChemicalEntity"
       source_identifier_types:
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:Protein"
       source_identifier_types:
         - "UniProtKB"
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:SmallMolecule"
       source_identifier_types:
         - "DRUGBANK"
         - "CHEBI"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:Disease"
       source_identifier_types:
         - "MONDO"
         - "HP"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:MolecularMixture"
       source_identifier_types:
         - "DRUGBANK"
         - "CHEBI"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:PhenotypicFeature"
       source_identifier_types:
         - "HP"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
     - node_category: "biolink:ComplexMolecularMixture"
       source_identifier_types:
         - "DRUGBANK"
       node_properties: null
-      additional_notes: null
+      additional_notes:
+        - null
 
   future_considerations:
     - category: edge_properties
@@ -372,7 +384,8 @@ target_info:
     - category: other
       consideration: "May want to improve ui_explanations for edge types once we understand how the UI will stitch together / display predicates and qualifier values for these edges."
 
-  additional_notes: "All nodes created from edge records are minimal NamedThing placeholders with only an id. Richer node information (names, categories, etc.) comes from the nodes.tsv file via the node transform, or from downstream normalization."
+  additional_notes:
+    - "All nodes created from edge records are minimal NamedThing placeholders with only an id. Richer node information (names, categories, etc.) comes from the nodes.tsv.gz file via the node transform, or from downstream normalization."
 
 # Information about how the ingest was specified and performed
 provenance_info:

@@ -6,36 +6,48 @@ from typing import Any, Iterable
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     Protein,
-    MacromolecularComplex,
+    ## Qi's comment: comment out since currently not implemented
+    # MacromolecularComplex,
     NamedThing,
     ## necessary associations and interactions
     Association,
     GeneRegulatesGeneAssociation,
 <<<<<<< HEAD
+<<<<<<< HEAD
     PairwiseMolecularInteraction,
 =======
     #PairwiseMolecularInteraction,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+    PairwiseGeneToGeneInteraction,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
     GeneAffectsChemicalAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     ChemicalAffectsGeneAssociation,
 <<<<<<< HEAD
+<<<<<<< HEAD
     PairwiseGeneToGeneInteraction,
 =======
     #PairwiseGeneToGeneInteraction,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+    ChemicalGeneInteractionAssociation,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
     ## necessary enums
     CausalMechanismQualifierEnum,
     DirectionQualifierEnum,
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import (
     INFORES_SIGNOR
 )
+
+SIGNOR_SOURCES = build_association_knowledge_sources(primary=INFORES_SIGNOR)
 
 # adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
@@ -64,7 +76,7 @@ def get_latest_version() -> str:
     #
     # also note that currently the file we have on the RENCI server corresponds to a date but that's the download date
     # the actual version is
-    return "2026_March"
+    return "2026_July"
 
 
 @koza.prepare_data(tag="signor_parsing")
@@ -86,10 +98,14 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     source_agg_df = (
 <<<<<<< HEAD
+<<<<<<< HEAD
         source_subset_df.groupby(group_cols, as_index=False)
 =======
         source_subset_df.groupby(group_cols, as_index=False, dropna=False)
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+        source_subset_df.groupby(group_cols, as_index=False, dropna=False)
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
           .agg({
             "PMID": lambda x: "|".join(x.dropna().astype(str)),
             "SENTENCE": lambda x: "|".join(x.dropna().astype(str))
@@ -105,11 +121,14 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     ## remove those rows with category in fusion protein or stimulus from source_df for now, and expecting biolink team to add those new categories
 <<<<<<< HEAD
+<<<<<<< HEAD
     source_agg_df = source_agg_df[(source_agg_df['subject_category'] != 'fusion Protein') & (source_agg_df['object_category'] != 'fusion Protein')]
     source_agg_df = source_agg_df[(source_agg_df['subject_category'] != 'stimulus') & (source_agg_df['object_category'] != 'stimulus')]
 
     return source_agg_df.dropna().drop_duplicates().to_dict(orient="records")
 =======
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
     source_agg_df = source_agg_df[
         (source_agg_df['subject_category'].str.lower() != 'fusion protein')
         & (source_agg_df['object_category'].str.lower() != 'fusion protein')
@@ -119,11 +138,20 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         & (source_agg_df['object_category'].str.lower() != 'stimulus')
     ]
 
+    ## Remove those rows with category in complex for this iteration of deployment, will comeback in later phase to ingest complex knowledge_assertion
+    source_agg_df = source_agg_df[
+        (source_agg_df['subject_category'].str.lower() != 'complex')
+        & (source_agg_df['object_category'].str.lower() != 'complex')
+    ]
+
     ## only drop rows missing fields required to build a valid record
     required_cols = ['subject_name', 'object_name', 'IDA', 'IDB']
 
     return source_agg_df.dropna(subset=required_cols).drop_duplicates().to_dict(orient="records")
+<<<<<<< HEAD
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
 
 
 @koza.transform(tag="signor_parsing")
@@ -171,7 +199,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         confidence_score = record["SCORE"]
 
         list_ppi_accept_effects = ['up-regulates', 'up-regulates activity', 'up-regulates quantity', 'up-regulates quantity by expression', 'up-regulates quantity by stabilization', 'down-regulates', 'down-regulates activity', 'down-regulates quantity', 'down-regulates quantity by destabilization', 'down-regulates quantity by repression']
-        list_pci_accept_effects = ['form complex']
+        ## Qi's comment: comment out since complex related edges are not enabled
+        # list_pci_accept_effects = ['form complex']
 
         ## initialize variables to hold information
         ## on whether an edge should use BIOLINK_AFFECTS and increased/decreased (if Endogenous == False)
@@ -190,6 +219,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         ## initialize variable to hold information
         ## on which biolink mechanism mapping enum to use based on the column('MECHANISM') from the source filename
+<<<<<<< HEAD
 <<<<<<< HEAD
         current_causual_mechanism_mapping = None
         if record['MECHANISM'] == 'transcriptional regulation':
@@ -281,6 +311,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif not record.get('MECHANISM'):  # catches None, "", or missing key
             current_causual_mechanism_mapping = None
 =======
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
         current_causal_mechanism_mapping = None
         if record['MECHANISM'] == 'transcriptional regulation':
             current_causal_mechanism_mapping = CausalMechanismQualifierEnum.transcriptional_regulation
@@ -370,7 +402,10 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             current_causal_mechanism_mapping = CausalMechanismQualifierEnum.s_nitrosylation
         elif not record.get('MECHANISM'):  # catches None, "", or missing key
             current_causal_mechanism_mapping = None
+<<<<<<< HEAD
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
         else:
             raise NotImplementedError(f'Effect {record["MECHANISM"]} could not be mapped to required qualifiers.')
 
@@ -406,6 +441,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["EFFECT"] == 'down-regulates quantity by repression':
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
             object_direction_qualifier = current_direction_mapping[1]
+        # Qi's comment: don't comment out although we are excluding complex node for this iteration
         elif record["EFFECT"] == 'form complex':
             object_aspect_qualifier = None
             object_direction_qualifier = None
@@ -432,7 +468,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
 <<<<<<< HEAD
+<<<<<<< HEAD
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+=======
+                    sources=SIGNOR_SOURCES,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -441,7 +481,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
                     ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causual_mechanism_mapping,
+                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -451,6 +491,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
+<<<<<<< HEAD
 =======
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
@@ -486,17 +527,22 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
                     sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+=======
+                    sources=SIGNOR_SOURCES,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
+<<<<<<< HEAD
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
 
                 if publications and association_1 is not None and association_2 is not None:
                     association_1.publications = publications
@@ -520,7 +566,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -530,10 +576,14 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_direction_qualifier = object_direction_qualifier,
                     ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
 <<<<<<< HEAD
+<<<<<<< HEAD
                     # causal_mechanism_qualifier = current_causual_mechanism_mapping,
 =======
                     # causal_mechanism_qualifier = current_causal_mechanism_mapping,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                 )
@@ -550,6 +600,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     nodes.append(object)
                     edges.append(association)
 
+<<<<<<< HEAD
         elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
 <<<<<<< HEAD
             subject = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
@@ -598,6 +649,45 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     nodes.append(subject)
                     nodes.append(object)
                     edges.append(association)
+=======
+        ## Qi's comment after review: to be consistent with the RIG. Since for complex, the SIGNOR ID is not going to be mapped in Translator system
+        ## Thus we don't need this part of code for now
+        ## uncomment for future development
+
+        # elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
+        #     ## should be protein -> is part_of -> a complex, so no need to reverse the order of subject and object
+        #     subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
+        #     object = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
+        #
+        #     if record["EFFECT"] == 'form complex':
+        #         association = Association(
+        #             id=entity_id(),
+        #             subject=subject.id,
+        #             object=object.id,
+        #             sources=SIGNOR_SOURCES,
+        #             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        #             agent_type=AgentTypeEnum.manual_agent,
+        #             ## five edge attributes
+        #             predicate = "biolink:part_of",
+        #             ## should be missing values for qualified predicate for this combo
+        #             ##qualified_predicate = None,
+        #             # object_aspect_qualifier = object_aspect_qualifier,
+        #             # object_direction_qualifier = object_direction_qualifier,
+        #             # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+        #         )
+        #
+        #         if publications:
+        #             association.publications = publications
+        #         if supporting_text:
+        #             association.supporting_text = supporting_text
+        #         if confidence_score:
+        #             association.has_confidence_score = confidence_score
+        #
+        #         if subject is not None and object is not None and association is not None:
+        #             nodes.append(subject)
+        #             nodes.append(object)
+        #             edges.append(association)
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
 
         elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
@@ -612,7 +702,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -621,37 +711,50 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
 <<<<<<< HEAD
+<<<<<<< HEAD
                     causal_mechanism_qualifier = current_causual_mechanism_mapping,
 =======
                     causal_mechanism_qualifier = current_causal_mechanism_mapping,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 association_2 = PairwiseGeneToGeneInteraction(
 =======
                 association_2 = GeneAffectsChemicalAssociation(
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                association_2 = ChemicalGeneInteractionAssociation(
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
+<<<<<<< HEAD
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                 )
 
                 if publications and association_1 is not None and association_2 is not None:
@@ -676,7 +779,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -685,10 +788,14 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
 <<<<<<< HEAD
+<<<<<<< HEAD
                     causal_mechanism_qualifier = current_causual_mechanism_mapping,
 =======
                     causal_mechanism_qualifier = current_causal_mechanism_mapping,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                     anatomical_context_qualifier = anatomical_context_qualifier,
@@ -719,46 +826,59 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
                     predicate = current_predicate_mapping,
-                    qualified_predicate = BIOLINK_AFFECTS,
+                    qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
+<<<<<<< HEAD
 <<<<<<< HEAD
                     causal_mechanism_qualifier = current_causual_mechanism_mapping,
 =======
                     causal_mechanism_qualifier = current_causal_mechanism_mapping,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                     anatomical_context_qualifier = anatomical_context_qualifier,
                 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 association_2 = PairwiseGeneToGeneInteraction(
 =======
                 association_2 = ChemicalAffectsGeneAssociation(
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                association_2 = ChemicalGeneInteractionAssociation(
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     qualified_predicate = BIOLINK_CAUSES,
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
-                    ## QW: strange the GeneRegulatesGeneAssociation class doesn't support causal_mechanism_qualifier
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
+<<<<<<< HEAD
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                 )
 
                 if publications and association_1 is not None and association_2 is not None:
@@ -783,7 +903,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## five edge attributes in order
@@ -792,10 +912,14 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     object_aspect_qualifier = object_aspect_qualifier,
                     object_direction_qualifier = object_direction_qualifier,
 <<<<<<< HEAD
+<<<<<<< HEAD
                     causal_mechanism_qualifier = current_causual_mechanism_mapping,
 =======
                     causal_mechanism_qualifier = current_causal_mechanism_mapping,
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                    causal_mechanism_qualifier = current_causal_mechanism_mapping,
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     ## additional species and anatomical_context qualifiers if existing in the current association type
                     species_context_qualifier = species_context_qualifier,
                     anatomical_context_qualifier = anatomical_context_qualifier,
@@ -828,7 +952,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = current_predicate_mapping,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
@@ -840,15 +964,19 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 association_2 = PairwiseMolecularInteraction(
 =======
                 association_2 = ChemicalEntityToChemicalEntityAssociation(
 >>>>>>> 89112144f3fe8b2e6bfe502c1f80ef4bc3968338
+=======
+                association_2 = ChemicalEntityToChemicalEntityAssociation(
+>>>>>>> 63b4bf907719137ec19c06e087eb5553fce17813
                     id=entity_id(),
                     subject=subject.id,
                     object=object.id,
                     predicate = "biolink:directly_physically_interacts_with",
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                 )
@@ -876,7 +1004,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     subject=subject.id,
                     object=object.id,
                     predicate = current_predicate_mapping,
-                    sources=build_association_knowledge_sources(primary=INFORES_SIGNOR),
+                    sources=SIGNOR_SOURCES,
                     knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                     agent_type=AgentTypeEnum.manual_agent,
                     ## additional species and anatomical_context qualifiers if existing in the current association type
