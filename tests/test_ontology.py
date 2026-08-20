@@ -2,14 +2,11 @@ import pytest
 
 from translator_ingest.util.ontology import lookup, lookup_go, lookup_mondo, lookup_uberon
 
-def check_exact_match(query: str, expected: str, entry: list[dict[str,str]] | None):
-    assert entry is not None, f"No entry returned for query name: '{query}'"
-    match = entry[0]
+def check_match(query: str, expected: str, match: dict[str,str] | None):
+    assert match is not None, f"No entry returned for query name: '{query}'"
     assert match["id"] == expected, (
         f"Entry '{match!s}' returned for query name: '{query}' did not match expected term '{expected}'"
     )
-    rank = match.get("rank",0)
-    assert rank == 1000, f"Unexpected rank '{rank}' returned for query name: '{match!s}'"
 
 
 @pytest.mark.parametrize(
@@ -19,22 +16,23 @@ def check_exact_match(query: str, expected: str, entry: list[dict[str,str]] | No
     ],
 )
 def test_generic_exact_match_lookup(query:str, ontology:str, expected:str):
-    check_exact_match(query, expected, lookup(query,ontology))
+    check_match(query, expected, lookup(query, ontology))
 
 
 @pytest.mark.parametrize(
     "query,expected",
     [
         ("Cytoplasm", "GO:0005737"),
-        ("cell proliferation","GO:1904898"),
-        ("apoptotic process","GO:0006915"),
-        ("mitochondrion","GO:0005739"),
-        ("DNA binding","GO:0003677")
+        ("cell proliferation", "GO:1904898"),
+        ("apoptotic process", "GO:0006915"),
+        ("apoptosis", "GO:0006915"),
+        ("mitochondrion", "GO:0005739"),
+        ("DNA binding", "GO:0003677"),
     ],
 )
 def test_go_exact_match_lookup(query:str, expected:str):
     # GO exact_match==False, but we're testing exact_match=True here
-    check_exact_match(query, expected, lookup_go(query, exact_match=True))
+    check_match(query, expected, lookup_go(query))
 
 
 @pytest.mark.parametrize(
@@ -47,7 +45,7 @@ def test_go_exact_match_lookup(query:str, expected:str):
     ],
 )
 def test_mondo_exact_match_lookup(query:str, expected:str):
-    check_exact_match(query, expected, lookup_mondo(query))
+    check_match(query, expected, lookup_mondo(query))
 
 
 @pytest.mark.parametrize(
@@ -73,17 +71,4 @@ def test_mondo_exact_match_lookup(query:str, expected:str):
     ],
 )
 def test_uberon_exact_match_lookup(query:str, expected:str):
-    check_exact_match(query, expected, lookup_uberon(query))
-
-#===================== InExact Matches
-
-@pytest.mark.parametrize(
-    "query,expected",
-    [
-        ("apoptosis", "GO:0005737")
-    ],
-)
-def test_go_inexact_ranked_lookup(query:str, expected:str):
-    # Now, testing scenario of exact_match == False
-    entry = lookup_go(query)
-    assert entry is not None, f"No entry returned for query name: '{query}'"
+    check_match(query, expected, lookup_uberon(query))

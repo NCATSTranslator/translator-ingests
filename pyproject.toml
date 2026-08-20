@@ -23,6 +23,7 @@ dependencies = [
     "pandas==2.3.3",    # also installs numpy, used by some ingests
     "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
+    "rapidfuzz",
     "requests",    ## needed for specific ingest
     "robokop-orion==1.3.3",
     "uv-dynamic-versioning>=0.11.2",

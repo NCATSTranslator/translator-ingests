@@ -2,17 +2,16 @@
 A module of utilities for accessing public ontology terms
 using the EBI Ontology Lookup Service (OLS)
 """
-
-# TODO: this initial implementation is primarily exact matching
-#       (with some ad hoc (hard coded) map normalization of some outlier names)
-#       However, some use cases may benefit from inexact matches and scoring of hits.
 from typing import Any
 from functools import lru_cache
 import re
 import requests
+from rapidfuzz import fuzz
 
 OLS_SEARCH = "https://www.ebi.ac.uk/ols4/api/search"
 
+
+# This is just an ad hoc (hard coded) map of some outlier names to canonical terms
 _QUERY_REMAP = {
     "go": {},
     "mondo": {},
@@ -37,7 +36,7 @@ def normalize(text):
     text = re.sub(r'\s+', ' ', text)
     return text
 
-def rank_candidate(query, candidate)->int:
+def rank_candidate(query, candidate)->tuple[tuple[int, float | int, int], str]:
 
     q = normalize(query)
 
@@ -51,25 +50,67 @@ def rank_candidate(query, candidate)->int:
 
     related_synonyms = {normalize(x) for x in candidate.get("related_synonyms", [])}
 
+    similarity = fuzz.token_set_ratio(q, label)
+
     if q == label:
-        return 100
+        return (100, similarity, -len(label)), "exact match to label"
 
     if q in exact_synonyms:
-        return 90
+        # catches exact matches to any exact synonym
+        return (90, similarity, -len(label)), "exact match to exact synonym"
+    
+    if any(q in es.split() for es in exact_synonyms):
+        # catches exact matches to any distinct words within the exact synonyms
+        return (85, similarity, -len(label)), "exact match to exact synonym word"
 
     if q in related_synonyms:
-        return 80
+        # catches exact matches to any related synonym
+        return (80, similarity, -len(label)), "exact match to related synonym"
+    
+    if any(q in rs.split() for rs in related_synonyms):
+        # catches exact matches to any distinct words within the related synonyms
+        return (75, similarity, -len(label)), "exact match to related synonym word"
 
     if q in narrow_synonyms:
-        return 70
+        # catches exact matches to any narrow synonym
+        return (70, similarity, -len(label)), "exact match to narrow synonym"
+
+    if any(q in ns.split() for ns in narrow_synonyms):
+        # catches exact matches to any distinct words within the narrow synonyms
+        return (65, similarity, -len(label)), "exact match to narrow synonym word"
 
     if q in broad_synonyms:
-        return 60
+        # catches exact matches to any broad synonym
+        return (60, similarity, -len(label)), "exact match to broad synonym"
+    
+    if any(q in bs.split() for bs in broad_synonyms):
+        # catches exact matches to any distinct words within the broad synonyms
+        return (55, similarity, -len(label)), "exact match to broad synonym word"
 
     if q in label:
-        return 50
+        # catches partial matches to any substring within the canonical label
+        return (50, similarity, -len(label)), "partial match to label"
 
-    return 0
+    if any(q in es for es in exact_synonyms):
+        # catches partial substring matches to any exact synonym
+        return (45, similarity, -len(label)), "partial match to exact synonym"
+
+    if any(q in rs for rs in related_synonyms):
+        # catches partial substring matches to any related synonym
+        return (40, similarity, -len(label)), "partial match to related synonym"
+
+    if any(q in ns for ns in narrow_synonyms):
+        # catches partial substring matches to any narrow synonym
+        return (35, similarity, -len(label)), "partial match to narrow synonym"
+
+    if any(q in bs for bs in broad_synonyms):
+        # catches partial substring matches to any broad synonym
+        return (30, similarity, -len(label)), "partial match to broad synonym"
+
+    if similarity > 60:
+        return (25, similarity, -len(label)), "fuzzy match to label"
+
+    return (0, similarity, -len(label)), "poor or no match"
 
 
 def _wrap_result(query: str, ontology:str, entry: dict[str, Any]) -> dict[str, Any]:
@@ -79,22 +120,18 @@ def _wrap_result(query: str, ontology:str, entry: dict[str, Any]) -> dict[str, A
         "label": entry.get("label"),
         "id": entry.get("obo_id"),
         "iri": entry.get("iri"),
-        "rank": 100,
+        "rank": entry.get("rank"),
+        "match_type": entry.get("match_type")
     }
 
 
 @lru_cache(maxsize=10000)
-def lookup(
-        query: str,
-        ontology: str | None = None,
-        exact_match: bool = True
-)->list[dict[str,Any]] | None:
+def lookup(query: str, ontology: str | None = None)->dict[str,Any] | None:
     """
 
     :param query: str, the term to lookup
     :param ontology: str, the ontology to query (e.g., "go", "mondo", "uberon")
-    :param exact_match: bool, if True, only exact match to term label is returned (default: True)
-    :return: list[dict[str, str]] | None, the best match(es), if any, with match metadata
+    :return: dict[str, Any] | None, the best ranked ontology term match, if any, with match metadata
     """
     assert ontology is not None, "Ontology must be specified"
 
@@ -103,7 +140,7 @@ def lookup(
     params = {
         "q": normalized_query,
         "ontology": ontology,
-        "exact": exact_match
+        "exact": "false"
     }
 
     r = requests.get(OLS_SEARCH, params=params)
@@ -114,55 +151,41 @@ def lookup(
     if not candidates:
         return None
 
-    if not exact_match:
-        for candidate in candidates:
-            candidate["rank"] = rank_candidate(query, candidate)
-    
-        sorted_candidates = sorted(candidates, key=lambda x: x["rank"], reverse=True)
+    for candidate in candidates:
+        candidate["rank"], candidate["match_type"]  = rank_candidate(query, candidate)
 
-        ranked = [_wrap_result(query,ontology, c) for c in sorted_candidates]
+    ranked = sorted(candidates, key=lambda x: x["rank"], reverse=True)
 
-    else:
-        best = candidates[0]
-        best["rank"] = 100
-        ranked = [_wrap_result(query,ontology, best)]
-
-    return ranked
+    return _wrap_result(query,ontology, ranked[0])
 
 # Not sure how large the caches should be here, but
 # there are likely only a modest set of terms accessed per run
 
 @lru_cache(maxsize=None)
-def lookup_go(query: str, exact_match: bool = False)->list[dict[str,Any]] | None:
+def lookup_go(query: str)->dict[str,Any] | None:
     """
     Gene Ontology (GO) name to term lookup
     :param query: str, the term to look up
-    :param exact_match: str, if True, only exact match to term label is returned
-                        (default: False to encourage exact matches to GO curated synonyms)
-    :return: list[dict[str, Any]] | None, the best match, if any, with match metadata
+    :return: dict[str, Any] | None, the best match, if any, with match metadata
     """
-    return lookup(query, "go", exact_match=exact_match)
+    return lookup(query, "go")
 
 
 @lru_cache(maxsize=None)
-def lookup_mondo(query: str, exact_match: bool = True)->list[dict[str,Any]] | None:
+def lookup_mondo(query: str)->dict[str,Any] | None:
     """
     Monarch Disease Ontology (MONDO) name to ontology term lookup
     :param query: str, the term to look up
-    :param exact_match: str, if True, only exact match to term label is returned
-                        (default: True to encourage exact matches to canonical MONDO term names)
-    :return: list[dict[str, Any]] | None, the best match, if any, with match metadata
+    :return: dict[str, Any] | None, the best match, if any, with match metadata
     """
-    return lookup(query, "mondo", exact_match=exact_match)
+    return lookup(query, "mondo")
 
 
 @lru_cache(maxsize=None)
-def lookup_uberon(query: str, exact_match: bool = True)->list[dict[str,Any]] | None:
+def lookup_uberon(query: str)->dict[str,Any] | None:
     """
     UBERON name to term lookup
     :param query: str, the term to look up
-    :param exact_match: str, if True, only exact match to term label is returned
-                        (default: True to encourage exact matches to canonical UBERON term names)
-    :return: list[dict[str, Any]] | None, the best match, if any, with match metadata
+    :return: dict[str, Any] | None, the best match, if any, with match metadata
     """
-    return lookup(query, "uberon", exact_match=exact_match)
+    return lookup(query, "uberon")
