@@ -1,16 +1,9 @@
 """
 These unit tests vet a few test fringe cases of the tests/unit/ingests/__init__.py methods
 """
-from typing import Optional
 import pytest
-
+from biolink_model.datamodel.pydanticmodel_v2 import AgentTypeEnum, Association, KnowledgeLevelEnum, NamedThing
 from koza.model.graphs import KnowledgeGraph
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,
-    Association,
-    KnowledgeLevelEnum,
-    AgentTypeEnum
-)
 
 from tests.unit.ingests import validate_transform_result
 
@@ -38,6 +31,7 @@ TEST_EDGE_2 = Association(
 
 TEST_EDGE_3 = Association(
     id=TEST_ENTITY_ID_1,
+    category=["biolink:Association"],
     subject=TEST_ENTITY_ID_1,
     predicate="biolink:related_to",
     object=TEST_ENTITY_ID_2,
@@ -45,7 +39,7 @@ TEST_EDGE_3 = Association(
     agent_type=AgentTypeEnum.not_provided
 )
 
-TEST_SLOTS = ("id",)
+TEST_SLOTS = ("id","category","subject","predicate","object","knowledge_level","agent_type")
 
 
 def test_validate_transform_results():
@@ -151,10 +145,10 @@ def test_incorrect_number_of_validate_transform_results():
 )
 def test_validate_transform_results_exceptions(
     query_result: KnowledgeGraph | None,
-    expected_nodes: Optional[list],
-    expected_edges: Optional[dict] | list[dict],
-    node_test_slots: Optional[tuple[str,...]],
-    edge_test_slots: Optional[tuple[str,...]],
+    expected_nodes: list | None,
+    expected_edges: dict | list[dict] | None,
+    node_test_slots: tuple[str,...] | None,
+    edge_test_slots: tuple[str,...] | None
 ):
     with pytest.raises(AssertionError):
         validate_transform_result(
