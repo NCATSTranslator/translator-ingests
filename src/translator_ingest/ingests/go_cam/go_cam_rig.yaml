@@ -39,7 +39,7 @@ ingest_info:
   included_content:
     - file_name: "5a7e68a100001817.json, etc."
       included_records: "Gene to Gene edges"
-      fields_used: "source, target, causal_predicate"
+      fields_used: "source, target, causal_predicate, causal_predicate_assessed_by, causal_predicate_has_reference, causal_predicate_contributors, source_gene_molecular_function, source_gene_biological_process, source_gene_occurs_in, target_gene_molecular_function, target_gene_biological_process, target_gene_occurs_in, model_info.id, model_info.taxon"
 
   filtered_content:
     - file_name: "GO-CAM models"
@@ -49,10 +49,67 @@ ingest_info:
       filtered_records: "Edges without clear causal predicates"
       rationale: "Only including edges with explicit causal relationship predicates to ensure high-quality causal assertions"
     - file_name: "GO-CAM models"
+      filtered_records: "No records are filtered on model_info.status"
+      rationale: |
+        Deliberate non-filter, recorded here because the opposite looks correct.
+        model_info.status takes the values production, development, internal_test and
+        review, and 'development' reads like draft content. It is not: every
+        Reactome-derived GO-CAM model is flagged 'development', accounting for roughly
+        71% of that bucket, so filtering to production would silently delete the entire
+        infores:reactome knowledge source along with the only edges for which
+        infores:go-cam acts as an aggregator. The status distribution is logged at the
+        end of each transform run so drift is visible release over release. Do not add a
+        status filter without re-checking the status-by-provenance cross-tab first;
+        tests/unit/ingests/go_cam/test_go_cam.py guards this.
+    - file_name: "GO-CAM models"
+      filtered_records: "Reference values that are not PMID or GO_REF publications"
+      rationale: |
+        causal_predicate_has_reference also carries Reactome pathway ids, ISBNs, MGI
+        reference ids and PAINT_REF ids. Reactome ids identify pathway records rather
+        than literature, so they are not emitted as publications; the remainder have no
+        appropriate Biolink publication CURIE here. Dropped values are counted and
+        logged in aggregate rather than discarded silently.
+    - file_name: "GO-CAM models"
+      filtered_records: "Contributor values that are not ORCIDs"
+      rationale: |
+        causal_predicate_contributors is mostly ORCID URLs but also carries opaque
+        curator-group identifiers such as GOC:reactome_curators, which attributes every
+        Reactome-derived edge to a group rather than a person. Those are not
+        publications and are dropped.
+    - file_name: "GO-CAM models"
       filtered_records: "Non-human/mouse models"
       rationale: "Species filtering applied to include only human (NCBITaxon:9606) and mouse (NCBITaxon:10090) models based on model_info.taxon field"
 
   future_considerations:
+    - category: edge_property_content
+      consideration: |
+        model_id was removed from edge_properties: it was declared but never emitted,
+        and no Biolink association slot holds it. The GO-CAM model a statement came from
+        is best expressed as source_record_urls on the infores:go-cam RetrievalSource
+        (https://model.geneontology.org/<id>), which needs the same per-edge sources
+        refactor as the Reactome reference item below.
+    - category: edge_property_content
+      consideration: |
+        Reactome pathway references are still dropped. 2,756 Reactome-derived edges cite
+        a Reactome pathway record as their only reference, and those edges consequently
+        carry no publications at all. They are not literature, so they do not belong in
+        the publications slot; the natural Biolink home is source_record_urls on the
+        infores:reactome RetrievalSource, which requires building the sources list
+        per-edge rather than once per model.
+    - category: edge_property_content
+      consideration: |
+        Only causal_predicate_assessed_by is emitted as has_evidence_of_type. The edge
+        also carries source_gene_product_assessed_by, target_gene_product_assessed_by,
+        and *_biological_process / *_occurs_in variants, which evidence the qualifier
+        annotations rather than the causal claim. Merging them into one evidence list
+        would overstate the evidence behind the edge.
+    - category: edge_property_content
+      consideration: |
+        The causal_predicate_assessed_by, causal_predicate_has_reference and
+        causal_predicate_contributors arrays look co-indexed but are not - 83 edges in
+        the release measured have mismatched lengths - so evidence, reference and
+        curator cannot be reassembled into individual evidence lines. Each is read as an
+        independent set.
     - category: edge_content
       consideration: "Currently, we are excluding GOTerms from the edges. This is just a first pass at the GO-CAMs to get the Gene to Gene edges in place. Future iterations will include the GOTerms, and potentially other edge types."
     - category: node_property_content
@@ -60,7 +117,22 @@ ingest_info:
     - category: edge_property_content
       consideration: "TODO: plenty of work to do here to make edges like this, Biolink compliant past the source, target, and causal_predicate which are mapped in this ingest to 'biolink:subject', 'biolink:object', and the appropriate 'biolink:predicate' respectively. The edge properties are not currently being mapped to Biolink Model edge properties, but this will be done in future iterations."
     - category: edge_content
-      consideration: "handle unmapped causal predicates: ['RO:0002313', 'RO:0002408', 'RO:0002614', 'RO:0012010']"
+      consideration: |
+        Resolved. RO:0012010 ('removes input for') maps to biolink:precedes with a
+        decreased direction; RO:0002313 ('transports or maintains localization of')
+        resolves weakly to biolink:has_participant; RO:0002408 is obsolete in RO and
+        RO:0002614 ('is evidence with support from') is not a causal relation, so both
+        drop their edges. Also dropped: RO:0002418, RO:0004046, RO:0004047 and
+        RO:0002332, which have no sound Biolink target. 17 edges total are dropped in
+        the release measured, each counted and logged with its reason.
+    - category: edge_content
+      consideration: |
+        RO:0002413 'provides input for' is 30% of ingested edges and now maps to
+        biolink:precedes rather than biolink:is_input_of, because biolink:is_input_of
+        maps exactly to a different RO relation (RO:0002352 'input of'). Confirm the
+        intended reading with the GO-CAM team; a dedicated Biolink predicate for
+        'the product of A's activity is a substrate for B's activity' would fit better
+        than either.
     - category: other
       consideration: "Consider including additional species beyond human and mouse in future iterations."
     - category: other
@@ -77,103 +149,690 @@ target_info:
     - subject_categories:
         - biolink:Gene
       predicates:
-        - biolink:directly_positively_regulates
+        - biolink:regulates
       object_categories:
         - biolink:Gene
       knowledge_level:
         - knowledge_assertion
       agent_type:
         - manual_agent
+        - automated_agent
       primary_knowledge_sources:
         - infores:go-cam
         - infores:reactome
       aggregator_knowledge_sources:
         - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
       edge_properties:
-        - model_id
-        - source_gene_molecular_function
-        - source_gene_biological_process
-        - source_gene_occurs_in
-        - target_gene_molecular_function
-        - target_gene_biological_process
-        - target_gene_occurs_in
-      ui_explanation: "GO-CAM models provide explicit causal relationships where one gene product directly positively regulates another gene product's activity."
-    - subject_categories:
-        - biolink:Gene
-      predicates:
-        - biolink:directly_negatively_regulates
-      object_categories:
-        - biolink:Gene
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      primary_knowledge_sources:
-        - infores:go-cam
-        - infores:reactome
-      aggregator_knowledge_sources:
-        - infores:go-cam
-      edge_properties:
-        - model_id
-        - source_gene_molecular_function
-        - source_gene_biological_process
-        - source_gene_occurs_in
-        - target_gene_molecular_function
-        - target_gene_biological_process
-        - target_gene_occurs_in
-      ui_explanation: "GO-CAM models provide explicit causal relationships where one gene product directly negatively regulates another gene product's activity."
-    - subject_categories:
-        - biolink:Gene
-      predicates:
-        - biolink:positively_regulates
-      object_categories:
-        - biolink:Gene
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      primary_knowledge_sources:
-        - infores:go-cam
-        - infores:reactome
-      aggregator_knowledge_sources:
-        - infores:go-cam
-      edge_properties:
-        - model_id
-        - source_gene_molecular_function
-        - source_gene_biological_process
-        - source_gene_occurs_in
-        - target_gene_molecular_function
-        - target_gene_biological_process
-        - target_gene_occurs_in
-      ui_explanation: "GO-CAM models provide causal relationships where one gene product positively regulates another gene product's activity, potentially through indirect mechanisms."
-    - subject_categories:
-        - biolink:Gene
-      predicates:
-        - biolink:negatively_regulates
-      object_categories:
-        - biolink:Gene
-      knowledge_level:
-        - knowledge_assertion
-      agent_type:
-        - manual_agent
-      primary_knowledge_sources:
-        - infores:go-cam
-        - infores:reactome
-      aggregator_knowledge_sources:
-        - infores:go-cam
-      edge_properties:
-        - model_id
-        - source_gene_molecular_function
-        - source_gene_biological_process
-        - source_gene_occurs_in
-        - target_gene_molecular_function
-        - target_gene_biological_process
-        - target_gene_occurs_in
-      ui_explanation: "GO-CAM models provide causal relationships where one gene product negatively regulates another gene product's activity, potentially through indirect mechanisms."
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_range:
+            - biolink:predicate
+          value_enumeration:
+            - biolink:causes
+          value_description: >-
+            Set whenever object_aspect_qualifier and object_direction_qualifier are both
+            present, so the edge reads as one sentence: "<subject> causes <direction>
+            <aspect> of <object>". Follows the convention used by the SIGNOR ingest.
+        - property: biolink:object_aspect_qualifier
+          value_range:
+            - biolink:GeneOrGeneProductOrChemicalEntityAspectEnum
+          value_enumeration:
+            - activity
+          value_description: >-
+            Always "activity", derived from the shape of the gene-product projection
+            rather than defaulted: the projection chain's third leg is "enabled by", so
+            the object is by construction the gene product that enables the regulated
+            activity. RO states the same in prose - RO:0002450 is "...has an activity
+            that positively regulates an activity performed by B".
+        - property: biolink:object_direction_qualifier
+          value_range:
+            - biolink:DirectionQualifierEnum
+          value_enumeration:
+            - increased
+            - decreased
+          value_description: >-
+            Derived from RO's own RO:0004049 "is positive form of" and RO:0004050 "is
+            negative form of" annotations, inherited by subsumption. Absent for
+            RO:0002578 "directly regulates", which RO does not annotate with a direction.
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        One gene product's molecular activity regulates another gene product's activity. The edge reads as a single qualified statement - for example "SPATA18 causes increased activity of PTPMT1" - with the GO qualifiers naming which activity, in which biological process, and in which cellular component.
       additional_notes:
-        - "GO-CAM predicates are mapped to Biolink regulation predicates based on the causal relationship types defined in the Relation Ontology (RO). All edges are manual agent knowledge assertions as GO-CAMs are manually curated models of biological mechanisms. Edge properties preserve the functional context (molecular function, biological process, cellular component) for both source and target genes."
-        - "Most edges have infores:go-cam as their primary knowledge source. Edges derived from Reactome-sourced GO-CAM models (identified by an R-HSA pattern in the model id) instead have infores:reactome as their primary knowledge source, with infores:go-cam serving as an aggregator knowledge source."
-
+        - >-
+          Source RO predicates: RO:0002629 (directly positively regulates), RO:0002630
+          (directly negatively regulates), RO:0002407 (indirectly positively regulates),
+          RO:0002409 (indirectly negatively regulates), RO:0002213 (positively regulates),
+          RO:0002578 (directly regulates). All resolve through the gene-product projection
+          described in target_info.additional_notes.
+        - >-
+          The raw RO term is preserved on original_predicate, so the specific relation
+          behind a biolink:regulates edge is always recoverable from the edge itself.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:precedes
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        One gene product's molecular activity is causally upstream of another's, without a direct regulatory relation being asserted between them.
+      additional_notes:
+        - >-
+          Source RO predicates: RO:0002411 (causally upstream of), RO:0002412 (immediately
+          causally upstream of), RO:0002413 (provides input for), RO:0002304 (causally
+          upstream of, positive effect), RO:0002305 (causally upstream of, negative
+          effect), RO:0012009 (constitutively upstream of), RO:0012010 (removes input
+          for). RO defines no enables/enabled-by property chain for these, so they are
+          resolved directly; RO:0002411 and RO:0002412 are narrow mappings of
+          biolink:precedes, which makes generalizing to it sound.
+        - >-
+          Domain/range caveat: biolink:precedes has domain and range "occurrent", but
+          these edges have a Gene in both slots, so they do not satisfy the predicate's
+          D/R constraint. This is known and accepted for now; see the predicates entry in
+          target_info.future_considerations and
+          https://github.com/biolink/biolink-model/issues/1719.
+        - >-
+          These edges carry no object_direction_qualifier even though RO annotates several
+          of them as positive or negative forms. RO defines RO:0002304 as "the execution
+          of p is required for the execution of q" and RO:0002305 as "the execution of p
+          decreases the execution of q" - the effect is on the execution of a downstream
+          process, not on an activity of the object gene product. After the projection to
+          gene products that process is no longer either endpoint, and Biolink's aspect
+          enum has no value meaning "occurrence of a downstream process", so there is no
+          aspect for a direction to qualify. Emitting one would produce "A precedes B,
+          increased", which does not read. The distinction stays recoverable via
+          original_predicate.
+        - >-
+          RO:0002413 "provides input for" is roughly 30% of ingested edges and is the
+          weakest mapping in this ingest. It is not biolink:is_input_of: that predicate
+          maps exactly to RO:0002352 "input of", whose subject is the material entity
+          consumed and whose object is a process. RO defines RO:0002413 as "p provides
+          input for q iff ... there exists some c such that p has_output c and q has_input
+          c" - the input is a third entity c, which the networkx export does not emit at
+          all. Asserting is_input_of would claim the subject gene is itself consumed by
+          the object gene. Worth raising with the GO-CAM team.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:part_of
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A gene product is part of a larger complex or entity described by the model.
+      additional_notes:
+        - >-
+          Source: BFO:0000050 (part of), a Biolink exact mapping.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:has_part
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A gene product has another entity described by the model as a part.
+      additional_notes:
+        - >-
+          Source: BFO:0000051 (has part), a Biolink exact mapping.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:has_input
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A gene product's molecular activity takes another entity as input.
+      additional_notes:
+        - >-
+          Source: RO:0002233 (has input), a Biolink exact mapping.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:enabled_by
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A molecular activity is enabled by a gene product.
+      additional_notes:
+        - >-
+          Source: RO:0002333 (enabled by), a Biolink exact mapping.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:capable_of
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A gene product is capable of a molecular activity.
+      additional_notes:
+        - >-
+          Source: RO:0002215 (capable of), a Biolink exact mapping.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:has_participant
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A gene product's molecular activity has another entity as a participant.
+      additional_notes:
+        - >-
+          Source: RO:0002313 (transports or maintains localization of), which resolves via its
+          superproperty RO:0000057 "has participant", a Biolink exact mapping. This is a weak
+          generalization and covers very few edges.
   node_type_info:
     - node_category: biolink:Gene
       source_identifier_types:
@@ -183,13 +842,132 @@ target_info:
         - "Gene identifiers from human and mouse models only (NCBITaxon:9606, NCBITaxon:10090)"
 
   future_considerations:
+    - category: predicates
+      consideration: >-
+        Known and accepted: 4,337 of 8,767 emitted edges (49.5%) have a subject or object
+        category that does not satisfy the Biolink predicate's domain/range constraint.
+        biolink:precedes accounts for 4,326 of them - its domain and range are both
+        "occurrent", while GO-CAM gene-to-gene edges have a Gene (a "physical essence") in
+        both slots. The remainder are biolink:has_input (4), biolink:has_participant (4),
+        biolink:enabled_by (2) and biolink:capable_of (1), whose domains are
+        "biological process or activity". This is the same class of violation flagged for
+        the acts_upstream_of family in NCATSTranslator/translator-ingests#339; those
+        predicates are no longer emitted, but the underlying gap is not closed by
+        replacing them. The cause is structural: GO-CAM asserts these relations between
+        molecular activities, the networkx export projects them onto the gene products
+        that enable those activities, and Biolink's process-level predicates carry
+        process-level domain and range. biolink:regulates is the one predicate that both
+        satisfies D/R for Gene-to-Gene and is sanctioned by an RO mapping, and it works
+        precisely because RO defines an "enables o P o 'enabled by'" property chain giving
+        a genuine gene-product-level counterpart. The causally-upstream family has no such
+        chain, so no predicate is both mapping-sanctioned and D/R-valid for it. Resolving
+        this needs Biolink Model changes, tracked at
+        https://github.com/biolink/biolink-model/issues/1719. Deliberately not worked
+        around by choosing a D/R-valid predicate with no mapping support, which would
+        trade a visible violation for an unsupported assertion.
+    - category: predicates
+      consideration: >-
+        RO:0002413 "provides input for" is roughly 30% of ingested edges and currently
+        maps to biolink:precedes, which is sound but weak. Neither biolink:is_input_of
+        (which asserts something false) nor biolink:precedes (which drops the metabolic
+        substrate meaning) captures "the product of A's activity is a substrate for B's
+        activity". Raise with the GO-CAM team; a dedicated predicate may be warranted.
+    - category: edge_properties
+      consideration: >-
+        Only causal_predicate_assessed_by is emitted as has_evidence_of_type. The edge
+        also carries source_gene_product_assessed_by, target_gene_product_assessed_by and
+        the *_biological_process / *_occurs_in variants, which evidence the qualifier
+        annotations rather than the causal claim. Merging them would overstate the
+        evidence behind the edge.
+    - category: edge_properties
+      consideration: >-
+        The causal_predicate_assessed_by, causal_predicate_has_reference and
+        causal_predicate_contributors arrays look co-indexed but are not - 83 edges in
+        the release measured have mismatched lengths - so evidence, reference and curator
+        cannot be reassembled into individual evidence lines. Each is read as an
+        independent set.
+    - category: predicates
+      consideration: >-
+        Predicates that currently drop their edges, with reasons: RO:0002408 is obsolete
+        in RO; RO:0002614 "is evidence with support from" is not a causal relation;
+        RO:0002418, RO:0004046, RO:0004047 and RO:0002332 have no exact or narrow Biolink
+        mapping. 17 edges total in the release measured, each counted and logged.
     - category: other
-      consideration: "Consider including GO Term nodes and their relationships to genes in future iterations"
+      consideration: >-
+        Consider including additional species beyond human, mouse and rat.
     - category: other
-      consideration: "Evaluate modeling of complex regulatory cascades and multi-step pathways"
-    - category: other
-      consideration: "Assess integration with other pathway databases and resources"
-
+      consideration: >-
+        Node normalization currently filters out reactome identifiers and certain
+        UniProtKB isoform ids such as UniProtKB:P0DTD1-PRO_0000449630.
+  additional_notes:
+    - >-
+        All RO-to-Biolink predicate mappings in this ingest were derived from the Relation
+        Ontology and biolink-model rather than from a human reading RO labels. The rules
+        that produced them are recorded in the notes below, and the resulting table is a
+        static map in ro_predicate_mapping.py. Revisit it after an RO or biolink-model
+        release by re-applying those rules to the RO terms the source uses; unit tests
+        assert that every predicate in the table is a real Biolink predicate and that the
+        table matches what the transform emits.
+    - >-
+        Why a projection step is needed. GO-CAM models causal relations between molecular
+        activities, not between genes: a model is a graph of activity instances, each "enabled
+        by" a gene product, with causal edges running activity-to-activity. RO is explicit
+        about this - RO:0002629's alternate label is "directly positively regulates (process to
+        process)". The networkx export flattens each causal edge into a row whose source and
+        target are the gene products, demoting the activities to
+        source_gene_molecular_function and target_gene_molecular_function, but it leaves
+        causal_predicate as the activity-level RO term. Subject and object are swapped from
+        activities to genes while the predicate is not, so the raw row cannot be mapped at face
+        value.
+    - >-
+        Resolution rule 1 - gene-product projection. RO encodes the same projection the
+        export performs, as property chains of the form "enables o P o 'enabled by' -> Q". If P
+        or a superproperty of P is the middle term of such a chain, the chain head Q is mapped
+        to Biolink instead of P. Four such chains exist and are used here: RO:0002211 ->
+        RO:0002448, RO:0002629 -> RO:0002450, RO:0002630 -> RO:0002449, and RO:0002411 ->
+        RO:0002566. This is what turns RO:0002629 (process to process) into RO:0002450 "directly
+        positively regulates activity of", whose rdfs:domain and rdfs:range are both
+        BFO:0000040 material entity, and whose superproperty RO:0002448 has the Biolink exact
+        mapping biolink:regulates.
+    - >-
+        Resolution rule 2 - direct resolution. If no projection chain applies, P itself is
+        resolved by walking up rdfs:subPropertyOf to the nearest superproperty biolink-model
+        maps. Note the RO:0002411 -> RO:0002566 "causally influences" chain is not usable
+        because RO:0002566 has no exact or narrow Biolink mapping, so the causally-upstream
+        family falls through to direct resolution.
+    - >-
+        Resolution rule 3 - only exact and narrow mappings are accepted as targets. A narrow
+        mapping means the RO term is more specific than the Biolink predicate, so generalizing
+        up to it is sound. A broad mapping means the RO term is more general, and asserting the
+        narrower Biolink predicate would claim more than the source says. This is why
+        RO:0002578 "directly regulates" is not emitted as
+        biolink:directly_physically_interacts_with even though biolink-model records the pair:
+        it is recorded as a *broad* mapping, and using it would assert physical interaction
+        where the source asserts regulation.
+    - >-
+        Resolution rule 4 - biolink:related_to is never a mapping target. It carries no
+        reasoning signal, and an edge asserting it is worse than an absent edge because absence
+        is measurable. Predicates with no sound target, and predicates obsolete in RO, cause the
+        edge to be dropped and counted with its reason rather than degraded.
+    - >-
+        Direction derivation. RO annotates directional relations with RO:0004049 "is positive
+        form of" and RO:0004050 "is negative form of"; direction is inherited by subsumption, so
+        if any superproperty of P is a positive form then P has a positive effect. This is how
+        RO:0012010 "removes input for" is known to be negative (via RO:0002305) despite a label
+        that says nothing about direction - deriving direction from labels would get it wrong.
+        No predicate in the table has conflicting positive and negative ancestors.
+    - >-
+        Qualified statements are emitted whole or not at all. biolink:qualified_predicate,
+        biolink:object_aspect_qualifier and biolink:object_direction_qualifier together read as
+        one sentence, "<subject> causes <direction> <aspect> of <object>". A direction on its own
+        leaves "increased what?" unanswered, so a direction is only emitted where the projection
+        supplies an aspect for it to attach to. See the biolink:precedes edge type's notes for
+        the family this excludes and why.
+    - >-
+        Every emitted predicate is validated as a real Biolink predicate through bmt before
+        release; raw RO and BFO CURIEs never appear in the predicate slot. Note that bmt's
+        default schema version is not necessarily the biolink-model version this project pins,
+        so validation uses get_biolink_model_toolkit(), which builds from the installed schema.
 # Information about the how the ingest was specified and performed
 provenance_info:
   contributions:
