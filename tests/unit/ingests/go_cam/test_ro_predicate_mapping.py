@@ -155,3 +155,17 @@ def test_unknown_predicate_is_distinguishable_from_a_known_drop():
 )
 def test_normalize_ro_curie(raw, expected):
     assert normalize_ro_curie(raw) == expected
+
+
+def test_occurs_in_maps_to_the_biolink_exact_mapping():
+    """
+    BFO:0000066 "occurs in" is the Biolink exact mapping of biolink:occurs_in.
+
+    It appears on one edge, and only became visible once rows carrying several causal
+    predicates were split rather than resolved to the first.
+    """
+    mapping = map_causal_predicate("BFO:0000066")
+    assert mapping.predicate == "biolink:occurs_in"
+    assert mapping.qualified_predicate is None
+    assert mapping.object_aspect is None
+    assert mapping.direction is None

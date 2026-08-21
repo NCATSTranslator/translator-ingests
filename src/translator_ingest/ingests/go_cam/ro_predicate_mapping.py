@@ -275,6 +275,16 @@ RO_PREDICATE_MAP: dict[str, CausalPredicateMapping] = {
         ro_label="is evidence with support from",
         provenance="no sound biolink mapping",
     ),
+    # occurs in  (1 edge in the release measured)
+    #   direct via BFO:0000066 (occurs in)
+    "BFO:0000066": CausalPredicateMapping(
+        predicate="biolink:occurs_in",
+        qualified_predicate=None,
+        object_aspect=None,
+        direction=None,
+        ro_label="occurs in",
+        provenance="direct via BFO:0000066 (occurs in)",
+    ),
     # capable of  (1 edges in the release measured)
     #   direct via RO:0002215 (capable of)
     "RO:0002215": CausalPredicateMapping(

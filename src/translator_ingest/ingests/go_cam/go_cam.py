@@ -33,14 +33,25 @@ INFORES_REACTOME = "infores:reactome"
 REFERENCE_SEPARATOR = "|"
 
 # Accepts the PMID spellings actually present in the source: stray leading/trailing
-# whitespace and tabs, lowercase "pmid", and runs of spaces after the colon.
-PMID_PATTERN = re.compile(r"^PMID\s*:\s*(\d+)$", re.IGNORECASE)
+# whitespace and tabs, lowercase "pmid", runs of spaces after the colon, and the doubled
+# colon in "PMID::29523808".
+PMID_PATTERN = re.compile(r"^PMID\s*:+\s*(\d+)$", re.IGNORECASE)
 
 # A reference that is nothing but digits is a bare PubMed id (e.g. "34782749").
 BARE_PMID_PATTERN = re.compile(r"^\d+$")
 
 # Accepts "GO_REF", plus the "GOREF" and "GO:REF" misspellings found in the source.
 GO_REF_PATTERN = re.compile(r"^GO[_:]?REF\s*:\s*(\d+)$", re.IGNORECASE)
+
+# MGI reference ids arrive with the prefix doubled, e.g. "MGI:MGI:4417868".
+MGI_REFERENCE_PATTERN = re.compile(r"^MGI\s*:\s*(?:MGI\s*:\s*)?(\d+)$", re.IGNORECASE)
+
+# PAINT_REF is the GO phylogenetic annotation reference namespace - related to GO_REF but
+# a separate identifier space, so it keeps its own prefix rather than being rewritten.
+PAINT_REF_PATTERN = re.compile(r"^PAINT[_-]?REF\s*:\s*(\d+)$", re.IGNORECASE)
+
+# ISBNs carry hyphens and occasionally a trailing X, so the local part is taken verbatim.
+ISBN_PATTERN = re.compile(r"^ISBN\s*:\s*([0-9Xx][0-9Xx-]*)$", re.IGNORECASE)
 
 # Contributors are mostly ORCID URLs, but GO-CAM also uses opaque curator-group ids
 # such as "GOC:reactome_curators", which are not publications.
@@ -58,6 +69,18 @@ AUTOMATIC_ASSERTION_ECO_TERMS = frozenset({
     "ECO:0000363",  # computational inference used in automatic assertion
     "ECO:0000501",  # evidence used in automatic assertion
 })
+
+# The GO-term qualifier fields, in subject-then-object order. Each maps to a
+# single-valued Biolink qualifier slot, so a field carrying several distinct terms cannot
+# be represented and is omitted rather than arbitrarily narrowed.
+GO_TERM_QUALIFIER_FIELDS = (
+    "source_gene_molecular_function",
+    "source_gene_biological_process",
+    "source_gene_occurs_in",
+    "target_gene_molecular_function",
+    "target_gene_biological_process",
+    "target_gene_occurs_in",
+)
 
 # Reactome-derived edges cite a Reactome pathway record as their reference. Those are
 # not literature, so they belong on the retrieval source rather than in publications.
@@ -199,28 +222,43 @@ def normalize_reference(reference: str) -> Optional[str]:
     >>> normalize_reference("GO:REF:0000008")
     'GO_REF:0000008'
 
-    Everything else is not a publication and is dropped. Reactome values are pathway
-    records rather than literature, ``PAINT_REF`` is a separate namespace from
-    ``GO_REF``, and ISBN and MGI reference ids have no Biolink publication CURIE here:
+    A doubled colon is repaired too:
+
+    >>> normalize_reference("PMID::29523808")
+    'PMID:29523808'
+
+    The other reference namespaces the source uses are kept as publications. MGI arrives
+    with its prefix doubled; PAINT_REF keeps its own prefix rather than being folded into
+    GO_REF, because it is a separate identifier space:
+
+    >>> normalize_reference("MGI:MGI:4417868")
+    'MGI:4417868'
+    >>> normalize_reference("PAINT_REF:12107")
+    'PAINT_REF:12107'
+    >>> normalize_reference("ISBN:0-87901-047-9")
+    'ISBN:0-87901-047-9'
+
+    Reactome values are pathway records rather than literature, so they are not
+    publications - they are carried as source_record_urls instead:
 
     >>> normalize_reference("Reactome:R-HSA-201451") is None
     True
-    >>> normalize_reference("PAINT_REF:12107") is None
-    True
-    >>> normalize_reference("ISBN:0-87901-047-9") is None
-    True
-    >>> normalize_reference("MGI:MGI:4417868") is None
+    >>> normalize_reference("GO:0005515") is None
     True
     """
     token = reference.strip()
     if BARE_PMID_PATTERN.match(token):
         return f"PMID:{token}"
-    pmid_match = PMID_PATTERN.match(token)
-    if pmid_match:
-        return f"PMID:{pmid_match.group(1)}"
-    go_ref_match = GO_REF_PATTERN.match(token)
-    if go_ref_match:
-        return f"GO_REF:{go_ref_match.group(1)}"
+    for pattern, prefix in (
+        (PMID_PATTERN, "PMID"),
+        (GO_REF_PATTERN, "GO_REF"),
+        (MGI_REFERENCE_PATTERN, "MGI"),
+        (PAINT_REF_PATTERN, "PAINT_REF"),
+        (ISBN_PATTERN, "ISBN"),
+    ):
+        match = pattern.match(token)
+        if match:
+            return f"{prefix}:{match.group(1)}"
     return None
 
 
@@ -238,7 +276,7 @@ def extract_references(raw_references: Any) -> tuple[list[str], list[str]]:
     >>> extract_references(["PMID:12345678", "GO_REF:0000024"])
     (['PMID:12345678', 'GO_REF:0000024'], [])
     >>> extract_references("MGI:MGI:5005039 | PMID:21459323")
-    (['PMID:21459323'], ['MGI:MGI:5005039'])
+    (['MGI:5005039', 'PMID:21459323'], [])
     >>> extract_references(["Reactome:R-HSA-201451"])
     ([], ['Reactome:R-HSA-201451'])
     >>> extract_references(None)
@@ -256,6 +294,32 @@ def extract_references(raw_references: Any) -> tuple[list[str], list[str]]:
             else:
                 unrecognized.append(token.strip())
     return list(dict.fromkeys(publications)), list(dict.fromkeys(unrecognized))
+
+
+def unambiguous_value(value: Any) -> Optional[str]:
+    """
+    Return the single value of a GO-CAM field, or None when the field is ambiguous.
+
+    The networkx export collapses several activity-level edges between the same pair of
+    gene products into one row, so a field can carry the *set* of values seen across all
+    of them. The lists are not co-indexed - lengths often disagree - so there is no way
+    to tell which value belongs with which. The destination qualifier slots are
+    single-valued, so rather than assert an arbitrary member of the set, an ambiguous
+    field is left unset.
+
+    >>> unambiguous_value("GO:0140693")
+    'GO:0140693'
+    >>> unambiguous_value(["GO:0140693"])
+    'GO:0140693'
+    >>> unambiguous_value(["GO:0140693", "GO:0140693"])
+    'GO:0140693'
+    >>> unambiguous_value(["GO:0140693", "GO:0140036"]) is None
+    True
+    >>> unambiguous_value(None) is None
+    True
+    """
+    values = as_list(value)
+    return values[0] if len(values) == 1 else None
 
 
 def agent_type_for_evidence(eco_terms: Iterable[str]) -> AgentTypeEnum:
@@ -505,6 +569,7 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
     dropped_references: Counter[str] = Counter()  # Reference values that are not publications
     dropped_evidence: Counter[str] = Counter()  # "assessed_by" values that are not ECO CURIEs
     agent_types_assigned: Counter[str] = Counter()  # Agent type resolved from ECO, for reporting
+    omitted_qualifiers: Counter[str] = Counter()  # GO-term fields left unset because ambiguous
     model_statuses: Counter[str] = Counter()  # GO-CAM model status, reported but not filtered on
 
     nodes_created = dict()
@@ -541,13 +606,16 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         # Process edges with linked validation
         edge: dict
         for edge in model_data.get("edges", []):
-            # Extract values that might be strings or lists
+            # subject and object are never multi-valued in the source; the causal
+            # predicate is. A row carrying several distinct predicates is several
+            # distinct causal claims collapsed into one record, so it becomes one edge
+            # per predicate rather than an arbitrary pick.
             source_id = extract_value(edge.get("source"))
             target_id = extract_value(edge.get("target"))
-            causal_predicate = extract_value(edge.get("causal_predicate"))
+            causal_predicates = as_list(edge.get("causal_predicate"))
 
             # Skip edge if missing required data
-            if not all([source_id, target_id, causal_predicate]):
+            if not (source_id and target_id and causal_predicates):
                 continue
 
             # Skip edge if either node is not in our node lookup
@@ -578,27 +646,11 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             normalized_source_id = node_lookup[source_id]["id"]
             normalized_target_id = node_lookup[target_id]["id"]
 
-            # Resolve the causal predicate against the generated RO/biolink table.
-            # An edge with no sound Biolink target is dropped rather than emitted as
-            # biolink:related_to: a related_to edge carries no reasoning signal, and it
-            # is worse than an absent edge because absence is measurable.
-            predicate_mapping = map_causal_predicate(causal_predicate)
-            if predicate_mapping is None:
-                dropped_predicates[f"{causal_predicate} (not in mapping table)"] += 1
-                continue
-            if predicate_mapping.predicate is None:
-                dropped_predicates[
-                    f"{causal_predicate} ({predicate_mapping.ro_label}): {predicate_mapping.provenance}"
-                ] += 1
-                continue
-            biolink_predicate = predicate_mapping.predicate
-
             # Extract publications: literature references (PMID, GO_REF) plus the
             # ORCIDs of the curators who asserted this causal statement.
             references, unrecognized_references = extract_references(
                 edge.get("causal_predicate_has_reference")
             )
-            dropped_references.update(unrecognized_references)
             publications = references + extract_curator_orcids(
                 edge.get("causal_predicate_contributors")
             )
@@ -609,6 +661,15 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                 edge.get("causal_predicate_has_reference")
             )
             sources = build_sources(model_id, reactome_record_urls)
+
+            # Report only references that went nowhere. Reactome values are rejected as
+            # publications but are kept as source_record_urls, so counting them as
+            # dropped would overstate the loss.
+            dropped_references.update(
+                reference
+                for reference in unrecognized_references
+                if not REACTOME_REFERENCE_PATTERN.match(reference)
+            )
 
             # Evidence backing the causal statement itself. The sibling "*_assessed_by"
             # fields on this edge evidence the qualifier annotations rather than the
@@ -622,45 +683,62 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
             # automatic assertion, which is the only signal in the data that separates
             # curator-authored edges from bulk-imported ones.
             agent_type = agent_type_for_evidence(eco_terms)
-            agent_types_assigned[agent_type.value] += 1
 
-            # Capture GO terms for statement subject and object Gene nodes
-            # molecular activity, biological process and cellular compartmentalization
-            source_gene_molecular_function = extract_value(edge.get("source_gene_molecular_function"))
-            source_gene_biological_process = extract_value(edge.get("source_gene_biological_process"))
-            source_gene_occurs_in = extract_value(edge.get("source_gene_occurs_in"))
-            target_gene_molecular_function = extract_value(edge.get("target_gene_molecular_function"))
-            target_gene_biological_process = extract_value(edge.get("target_gene_biological_process"))
-            target_gene_occurs_in = extract_value(edge.get("target_gene_occurs_in"))
+            # GO terms giving the molecular activity, biological process and cellular
+            # location of each statement participant. A field carrying several distinct
+            # terms is ambiguous - the export collapsed multiple activity-level edges and
+            # the lists are not co-indexed - so it is left unset rather than guessed.
+            qualifier_terms = {}
+            for field in GO_TERM_QUALIFIER_FIELDS:
+                raw = edge.get(field)
+                qualifier_terms[field] = unambiguous_value(raw)
+                if qualifier_terms[field] is None and len(as_list(raw)) > 1:
+                    omitted_qualifiers[field] += 1
 
-            # Create the gene-to-gene association
-            association = GeneToGeneAssociation(
-                id=entity_id(),
-                subject=normalized_source_id,
-                subject_activity_qualifier=source_gene_molecular_function,
-                subject_process_qualifier=source_gene_biological_process,
-                subject_context_qualifier=source_gene_occurs_in,
-                predicate=biolink_predicate,
-                object=normalized_target_id,
-                object_activity_qualifier=target_gene_molecular_function,
-                object_process_qualifier=target_gene_biological_process,
-                object_context_qualifier=target_gene_occurs_in,
-                # These three read as one sentence - "<subject> causes increased
-                # activity of <object>" - and are set together or not at all.
-                qualified_predicate=predicate_mapping.qualified_predicate,
-                object_aspect_qualifier=predicate_mapping.object_aspect,
-                object_direction_qualifier=predicate_mapping.direction,
-                original_subject=source_id,
-                original_predicate=causal_predicate,
-                original_object=target_id,
-                publications=publications if publications else None,
-                has_evidence_of_type=eco_terms if eco_terms else None,
-                sources=sources,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=agent_type,
-            )
+            for causal_predicate in causal_predicates:
+                # Resolve the causal predicate against the RO/biolink table. An edge with
+                # no sound Biolink target is dropped rather than emitted as
+                # biolink:related_to: related_to carries no reasoning signal, and such an
+                # edge is worse than an absent one because absence is measurable.
+                predicate_mapping = map_causal_predicate(causal_predicate)
+                if predicate_mapping is None:
+                    dropped_predicates[f"{causal_predicate} (not in mapping table)"] += 1
+                    continue
+                if predicate_mapping.predicate is None:
+                    dropped_predicates[
+                        f"{causal_predicate} ({predicate_mapping.ro_label}): "
+                        f"{predicate_mapping.provenance}"
+                    ] += 1
+                    continue
 
-            edges.append(association)
+                agent_types_assigned[agent_type.value] += 1
+                edges.append(
+                    GeneToGeneAssociation(
+                        id=entity_id(),
+                        subject=normalized_source_id,
+                        subject_activity_qualifier=qualifier_terms["source_gene_molecular_function"],
+                        subject_process_qualifier=qualifier_terms["source_gene_biological_process"],
+                        subject_context_qualifier=qualifier_terms["source_gene_occurs_in"],
+                        predicate=predicate_mapping.predicate,
+                        object=normalized_target_id,
+                        object_activity_qualifier=qualifier_terms["target_gene_molecular_function"],
+                        object_process_qualifier=qualifier_terms["target_gene_biological_process"],
+                        object_context_qualifier=qualifier_terms["target_gene_occurs_in"],
+                        # These three read as one sentence - "<subject> causes increased
+                        # activity of <object>" - and are set together or not at all.
+                        qualified_predicate=predicate_mapping.qualified_predicate,
+                        object_aspect_qualifier=predicate_mapping.object_aspect,
+                        object_direction_qualifier=predicate_mapping.direction,
+                        original_subject=source_id,
+                        original_predicate=causal_predicate,
+                        original_object=target_id,
+                        publications=publications if publications else None,
+                        has_evidence_of_type=eco_terms if eco_terms else None,
+                        sources=sources,
+                        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                        agent_type=agent_type,
+                    )
+                )
 
         # Yield a KnowledgeGraph for this model if there are any edges
         if edges:
@@ -674,6 +752,13 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
         )
 
     logger.info(f"Agent type resolved from ECO evidence: {dict(agent_types_assigned)}")
+
+    if omitted_qualifiers:
+        logger.info(
+            f"Omitted {sum(omitted_qualifiers.values())} GO-term qualifiers whose source "
+            f"field carried several distinct terms and could not be disambiguated: "
+            f"{dict(omitted_qualifiers)}"
+        )
     logger.info(f"GO-CAM model status distribution (not filtered): {dict(model_statuses)}")
 
     if dropped_references:

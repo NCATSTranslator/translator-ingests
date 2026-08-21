@@ -16,8 +16,10 @@ from translator_ingest.ingests.go_cam.go_cam import (
     extract_curator_orcids,
     extract_evidence_codes,
     extract_references,
+    normalize_id,
     normalize_reference,
     transform_go_cam_models,
+    unambiguous_value,
 )
 
 from tests.unit.ingests import MockKozaWriter
@@ -357,11 +359,16 @@ def test_pydantic_roundtrip(fixture):
         ("GOREF:0000033", "GO_REF:0000033"),
         ("GO:REF:0000008", "GO_REF:0000008"),
         (" GO_REF:0000024", "GO_REF:0000024"),
-        # Not publications
+        # A doubled colon
+        ("PMID::29523808", "PMID:29523808"),
+        # Other reference namespaces the source uses. MGI arrives with its prefix
+        # doubled; PAINT_REF keeps its own prefix rather than folding into GO_REF.
+        ("MGI:MGI:4417868", "MGI:4417868"),
+        ("PAINT_REF:12107", "PAINT_REF:12107"),
+        ("ISBN:0-87901-047-9", "ISBN:0-87901-047-9"),
+        # Not publications: Reactome ids are pathway records, carried as
+        # source_record_urls instead; a GO term in a reference field is a leak.
         ("Reactome:R-HSA-201451", None),
-        ("PAINT_REF:12107", None),
-        ("ISBN:0-87901-047-9", None),
-        ("MGI:MGI:4417868", None),
         ("GO:0005515", None),
         ("", None),
     ],
@@ -374,8 +381,8 @@ def test_normalize_reference(raw, expected):
 def test_extract_references_splits_pipe_delimited_values():
     """A pipe-packed reference must not lose the identifier riding along with it."""
     publications, unrecognized = extract_references("MGI:MGI:5005039 | PMID:21459323")
-    assert publications == ["PMID:21459323"]
-    assert unrecognized == ["MGI:MGI:5005039"]
+    assert publications == ["MGI:5005039", "PMID:21459323"]
+    assert unrecognized == []
 
 
 def test_extract_references_reports_what_it_dropped():
@@ -938,7 +945,7 @@ def test_rig_predicates_match_the_predicates_the_transform_emits():
         "RO:0002413", "RO:0002411", "RO:0002304", "RO:0002305", "RO:0012009", "RO:0012010",
         "RO:0002412", "BFO:0000050", "BFO:0000051", "RO:0002233", "RO:0002215", "RO:0002333",
         "RO:0002313", "RO:0002418", "RO:0002408", "RO:0002332", "RO:0004046", "RO:0004047",
-        "RO:0002614",
+        "RO:0002614", "BFO:0000066",
     ]
     edges = _transform(
         [_model(f"gomodel:{i}", causal_predicate=p) for i, p in enumerate(source_predicates)]
@@ -953,3 +960,171 @@ def test_rig_predicates_match_the_predicates_the_transform_emits():
         f"RIG and code disagree. Only in code: {sorted(emitted - declared)}. "
         f"Only in RIG: {sorted(declared - emitted)}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Multi-valued source fields
+#
+# The networkx export collapses several activity-level edges between the same pair of
+# gene products into one row, so a field can carry the set of values seen across all of
+# them. The lists are not co-indexed, so they cannot be zipped back apart.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("GO:0140693", "GO:0140693"),
+        (["GO:0140693"], "GO:0140693"),
+        # the source repeats a value once per underlying assertion
+        (["GO:0140693", "GO:0140693"], "GO:0140693"),
+        # genuinely ambiguous
+        (["GO:0140693", "GO:0140036"], None),
+        (["GO:0140693", "GO:0140036", "GO:0030674"], None),
+        (None, None),
+        ([], None),
+    ],
+)
+def test_unambiguous_value(raw, expected):
+    assert unambiguous_value(raw) == expected
+
+
+def test_multiple_causal_predicates_become_multiple_edges():
+    """
+    A row with several distinct causal predicates is several claims, not one.
+
+    Taking the first would silently discard the others - including, in real data,
+    negative regulation dropped in favour of a positive claim.
+    """
+    edges = _transform(
+        [_model("gomodel:1", causal_predicate=["RO:0002629", "RO:0002630", "RO:0002411"])]
+    )
+    assert len(edges) == 3
+    assert [e.predicate for e in edges] == [
+        "biolink:regulates",
+        "biolink:regulates",
+        "biolink:precedes",
+    ]
+    assert [e.object_direction_qualifier for e in edges] == ["increased", "decreased", None]
+    # each edge keeps the RO term it came from
+    assert [e.original_predicate for e in edges] == ["RO:0002629", "RO:0002630", "RO:0002411"]
+
+
+def test_repeated_causal_predicate_is_one_edge():
+    """A predicate repeated once per evidence instance is still a single claim."""
+    edges = _transform([_model("gomodel:1", causal_predicate=["RO:0002629", "RO:0002629"])])
+    assert len(edges) == 1
+
+
+def test_split_drops_only_the_unmappable_predicate():
+    """An unmappable predicate in a multi-predicate row does not sink its siblings."""
+    edges = _transform(
+        [_model("gomodel:1", causal_predicate=["RO:0002629", "RO:0002408", "RO:0002411"])]
+    )
+    assert [e.predicate for e in edges] == ["biolink:regulates", "biolink:precedes"]
+
+
+def test_ambiguous_go_qualifier_is_omitted_not_guessed():
+    """
+    An ambiguous GO term is left unset rather than narrowed to an arbitrary member.
+
+    The destination qualifier slots are single-valued, so there is no way to carry both,
+    and picking the first asserts a specific claim the source does not make.
+    """
+    edges = _transform(
+        [
+            _model(
+                "gomodel:1",
+                causal_predicate="RO:0002629",
+                source_gene_molecular_function=["GO:0140693", "GO:0140036"],
+                target_gene_occurs_in=["GO:0005776", "GO:0043232"],
+            )
+        ]
+    )
+    edge = edges[0]
+    assert edge.subject_activity_qualifier is None
+    assert edge.object_context_qualifier is None
+
+
+def test_omission_is_per_field_not_per_edge():
+    """One ambiguous field does not strip the unambiguous ones beside it."""
+    edges = _transform(
+        [
+            _model(
+                "gomodel:1",
+                causal_predicate="RO:0002629",
+                source_gene_molecular_function="GO:0140693",
+                source_gene_occurs_in=["GO:0043232", "GO:0005829"],
+                target_gene_molecular_function="GO:0008962",
+            )
+        ]
+    )
+    edge = edges[0]
+    assert edge.subject_activity_qualifier == "GO:0140693"
+    assert edge.object_activity_qualifier == "GO:0008962"
+    assert edge.subject_context_qualifier is None
+
+
+def test_split_edges_share_the_row_level_qualifiers_and_provenance():
+    """Splitting on predicate does not duplicate or reshuffle the rest of the row."""
+    edges = _transform(
+        [
+            _model(
+                "gomodel:1",
+                causal_predicate=["RO:0002629", "RO:0002411"],
+                source_gene_molecular_function="GO:0140693",
+                causal_predicate_has_reference=["PMID:12345678"],
+                causal_predicate_assessed_by=["ECO:0000314"],
+            )
+        ]
+    )
+    assert len(edges) == 2
+    for edge in edges:
+        assert edge.subject_activity_qualifier == "GO:0140693"
+        assert edge.publications == ["PMID:12345678"]
+        assert edge.has_evidence_of_type == ["ECO:0000314"]
+    # separate statements get separate identifiers
+    assert edges[0].id != edges[1].id
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("MGI:MGI:102463", "MGI:102463"),
+        ("MGI:MGI:1921700", "MGI:1921700"),
+        # already single-prefixed, left alone
+        ("MGI:102463", "MGI:102463"),
+        ("UniProtKB:Q13501", "UniProtKB:Q13501"),
+    ],
+)
+def test_gene_ids_drop_the_doubled_mgi_prefix(raw, expected):
+    """MGI gene ids arrive with the prefix doubled; the graph should carry one."""
+    assert normalize_id(raw) == expected
+
+
+def test_no_doubled_prefix_reaches_the_emitted_graph():
+    """
+    Neither node ids nor edge endpoints may carry MGI:MGI:.
+
+    The raw form is kept on original_subject / original_object as provenance.
+    """
+    model = _model("gomodel:1", causal_predicate="RO:0002629")
+    model["nodes"] = [
+        {"id": "MGI:MGI:102463", "label": "Nfatc2 Mmus"},
+        {"id": "MGI:MGI:1921700", "label": "Test Gene"},
+    ]
+    model["edges"][0]["source"] = "MGI:MGI:102463"
+    model["edges"][0]["target"] = "MGI:MGI:1921700"
+
+    writer = MockKozaWriter()
+    from koza.transform import KozaTransform
+
+    graphs = list(transform_go_cam_models(KozaTransform(writer=writer, extra_fields={}, mappings={}), [model]))
+    nodes = [n for g in graphs for n in g.nodes]
+    edges = [e for g in graphs for e in g.edges]
+
+    assert {n.id for n in nodes} == {"MGI:102463", "MGI:1921700"}
+    assert edges[0].subject == "MGI:102463"
+    assert edges[0].object == "MGI:1921700"
+    # provenance keeps the source spelling
+    assert edges[0].original_subject == "MGI:MGI:102463"

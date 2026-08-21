@@ -62,13 +62,22 @@ ingest_info:
         status filter without re-checking the status-by-provenance cross-tab first;
         tests/unit/ingests/go_cam/test_go_cam.py guards this.
     - file_name: "GO-CAM models"
-      filtered_records: "Reference values that are not PMID or GO_REF publications"
+      filtered_records: "Reactome pathway ids are not emitted as publications"
       rationale: |
-        causal_predicate_has_reference also carries Reactome pathway ids, ISBNs, MGI
-        reference ids and PAINT_REF ids. Reactome ids identify pathway records rather
-        than literature, so they are not emitted as publications; the remainder have no
-        appropriate Biolink publication CURIE here. Dropped values are counted and
-        logged in aggregate rather than discarded silently.
+        causal_predicate_has_reference carries PMIDs, GO_REF, MGI reference ids, ISBNs,
+        PAINT_REF ids and Reactome pathway ids. All except Reactome are emitted as
+        publications, after normalization that repairs the spellings present in the
+        source - whitespace and case, a missing PMID prefix, a doubled colon in
+        "PMID::29523808", the "GOREF"/"GO:REF" misspellings, and MGI's doubled prefix
+        ("MGI:MGI:4417868" becomes "MGI:4417868"). Reactome ids identify pathway records
+        rather than literature, so they are carried as source_record_urls on the
+        infores:reactome retrieval source instead. No reference value is discarded; any
+        that could not be used would be counted and logged in aggregate.
+
+        Note that GO_REF, PAINT_REF and ISBN are not in the Biolink prefix map, so those
+        publication CURIEs will not expand to URLs downstream. They are emitted anyway
+        because dropping a real reference is worse than emitting one whose prefix is not
+        yet registered.
     - file_name: "GO-CAM models"
       filtered_records: "Contributor values that are not ORCIDs"
       rationale: |
@@ -757,6 +766,88 @@ target_info:
     - subject_categories:
         - biolink:Gene
       predicates:
+        - biolink:occurs_in
+      object_categories:
+        - biolink:Gene
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:go-cam
+        - infores:reactome
+      aggregator_knowledge_sources:
+        - infores:go-cam
+      source_files:
+        - go-cam-networkx.tar.gz
+      edge_properties:
+        - has_evidence_of_type
+        - publications
+        - original_predicate
+        - sources
+      qualifiers:
+        - property: biolink:subject_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the subject gene product enables, from
+            source_gene_molecular_function. Present on every edge.
+        - property: biolink:subject_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the subject activity occurs within, from
+            source_gene_biological_process.
+        - property: biolink:subject_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the subject activity occurs in, from
+            source_gene_occurs_in.
+        - property: biolink:object_activity_qualifier
+          value_range:
+            - biolink:MolecularActivity
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO molecular function the object gene product enables, from
+            target_gene_molecular_function. Present on every edge.
+        - property: biolink:object_process_qualifier
+          value_range:
+            - biolink:BiologicalProcess
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO biological process the object activity occurs within, from
+            target_gene_biological_process.
+        - property: biolink:object_context_qualifier
+          value_range:
+            - biolink:CellularComponent
+          value_id_prefixes:
+            - GO
+          value_description: >-
+            The GO cellular component the object activity occurs in, from
+            target_gene_occurs_in.
+      ui_explanation: >-
+        A gene product's molecular activity occurs in a location or context described by
+        the model.
+      additional_notes:
+        - >-
+          Source: BFO:0000066 (occurs in), a Biolink exact mapping. biolink:occurs_in has no
+          domain or range constraint, so it raises no D/R issue. Covers a single edge,
+          from a row that also yields biolink:capable_of and biolink:has_part between
+          the same gene and itself - an artifact of the export collapsing several
+          activity-level assertions onto one gene-to-gene row.
+    - subject_categories:
+        - biolink:Gene
+      predicates:
         - biolink:has_participant
       object_categories:
         - biolink:Gene
@@ -842,14 +933,41 @@ target_info:
         - "Gene identifiers from human and mouse models only (NCBITaxon:9606, NCBITaxon:10090)"
 
   future_considerations:
+    - category: qualifiers
+      consideration: >-
+        Ambiguous GO-term qualifiers are omitted, not guessed. The networkx export
+        collapses several activity-level edges between the same pair of gene products
+        into a single row, so source_gene_molecular_function and its five siblings can
+        carry the set of terms seen across all of them. The lists are not co-indexed -
+        in the release measured, 27 rows have lengths that cannot align, for example
+        causal_predicate with 2 values alongside source_gene_molecular_function with 4 -
+        so there is no way to tell which term belongs with which assertion. The
+        destination qualifier slots are single-valued, so where a field carries more than
+        one distinct term the qualifier is left unset rather than narrowed to an
+        arbitrary member. This affects roughly 500 edges and omits roughly 650 GO terms;
+        the counts are logged per field at the end of each transform run. Revisit if the
+        export gains a co-indexed or per-assertion representation, or if Biolink gains
+        multivalued forms of these qualifier slots - either would let the terms be
+        carried rather than dropped.
+    - category: spoq_pattern
+      consideration: >-
+        Rows carrying several distinct causal_predicate values are split into one edge
+        per predicate rather than resolved to the first. Each distinct RO relation
+        between the same pair of gene products is a separate causal claim, and in the
+        release measured 207 rows carry more than one - in some cases mixing positive and
+        negative regulation, so keeping only the first silently discarded a contradictory
+        claim. Splitting adds roughly 210 edges. The split edges share the row's
+        qualifiers, evidence, publications and sources, because the source provides no
+        way to attribute those to one predicate rather than another; each carries its own
+        RO term on original_predicate.
     - category: predicates
       consideration: >-
-        Known and accepted: 4,337 of 8,767 emitted edges (49.5%) have a subject or object
+        Known and accepted: roughly half of emitted edges have a subject or object
         category that does not satisfy the Biolink predicate's domain/range constraint.
-        biolink:precedes accounts for 4,326 of them - its domain and range are both
+        biolink:precedes accounts for nearly all of them - its domain and range are both
         "occurrent", while GO-CAM gene-to-gene edges have a Gene (a "physical essence") in
-        both slots. The remainder are biolink:has_input (4), biolink:has_participant (4),
-        biolink:enabled_by (2) and biolink:capable_of (1), whose domains are
+        both slots. The remainder are biolink:has_input, biolink:has_participant,
+        biolink:enabled_by and biolink:capable_of, whose domains are
         "biological process or activity". This is the same class of violation flagged for
         the acts_upstream_of family in NCATSTranslator/translator-ingests#339; those
         predicates are no longer emitted, but the underlying gap is not closed by
