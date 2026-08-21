@@ -7,6 +7,8 @@ from typing import Any
 from functools import lru_cache
 import requests
 
+from .file_cache import file_cache
+
 NRS_ENDPOINT = "https://name-resolution-sri.renci.org"
 NRS_LOOKUP = f"{NRS_ENDPOINT}/lookup"
 
@@ -109,6 +111,7 @@ def api_lookup(
     # }
     return ranked[0]
 
+
 @lru_cache(maxsize=10000)
 def cache_lookup(
     query: str,
@@ -118,7 +121,7 @@ def cache_lookup(
     """
     Multi-level cached lookup of ontology term entries whose names best match the query string.
 
-    Typical output is a single entry, with the following keys (from the Translator Name Resolver Service (NRS)):
+    Typical output is a single dictionary with the following keys (from the Translator Name Resolver Service (NRS)):
         curie, label, highlighting, synonyms, taxa, score, clique_identifier_count
 
     :param query: str, the (hopefully normalized?) query concept string to look up
@@ -128,6 +131,9 @@ def cache_lookup(
 
     :return: dict[str, Any] | None, the best ranked ontology term match, if any, with match metadata (as noted above)
     """
-    # TODO: add file caching here
+    if not file_cache.contains(query, ontology, only_taxa):
+        ontology_term = api_lookup(query, ontology, only_taxa)
+        file_cache.save(query, ontology, ontology_term, only_taxa)
+        return ontology_term
 
-    return api_lookup(query, ontology, only_taxa)
+    return file_cache.retrieve(query, ontology, only_taxa)

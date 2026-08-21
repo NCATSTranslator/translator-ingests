@@ -24,3 +24,9 @@ site/
 # Logs
 logs/
 /.claude/
+
+# Transient SQLite journal/WAL sidecar files (the committed *.sqlite3 cache
+# files themselves live under src/translator_ingest/util/ontology/cache/db/)
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
