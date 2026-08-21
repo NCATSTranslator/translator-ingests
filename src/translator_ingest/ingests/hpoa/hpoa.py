@@ -388,7 +388,7 @@ def transform_gene_to_phenotype_record(
         frequency = Frequency()
     else:
         # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-        frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+        frequency = phenotype_frequency_to_hpo_term(koza_transform, record["frequency"])
 
     dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     try:
