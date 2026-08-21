@@ -4,45 +4,17 @@ import pytest
 from translator_ingest.util.ontology import lookup, lookup_go, lookup_mondo, lookup_uberon
 from translator_ingest.util.ontology.cache import cache_lookup
 
+SAMPLE_QUERIES = [
+    ("WRN", "NCBIGene", "NCBITaxon:9606", "NCBIGene:7486", "biolink:Gene"),
+    ("Glucose", "CHEBI", None, "CHEBI:17234", "biolink:SmallMolecule"),
+    ("Cytoplasm", "GO", None, "GO:0005737", "biolink:CellularComponent"),
+    ("Werner Syndrome", "MONDO", None, "MONDO:0010196", "biolink:Disease"),
+    ("Placenta", "UBERON", None, "UBERON:0001987", "biolink:GrossAnatomicalStructure"),
+]
+
 @pytest.mark.parametrize(
     "query,ontology,only_taxa,expected_term,biolink_type",
-    [
-        (
-                "WRN",
-                "NCBIGene",
-                "NCBITaxon:9606",
-                "NCBIGene:7486",
-                "biolink:Gene"
-        ),
-        (
-                "Glucose",
-                "CHEBI",
-                None,
-                "CHEBI:17234",
-                "biolink:SmallMolecule"
-        ),
-        (
-                "Cytoplasm",
-                "GO",
-                None,
-                "GO:0005737",
-                "biolink:CellularComponent"
-        ),
-        (
-                "Werner Syndrome",
-                "MONDO",
-                None,
-                "MONDO:0010196",
-                "biolink:Disease"
-        ),
-        (
-                "Placenta",
-                "UBERON",
-                None,
-                "UBERON:0001987",
-                "biolink:GrossAnatomicalStructure"
-        )
-    ],
+    SAMPLE_QUERIES
 )
 def test_cache_lookup(
         query: str,
@@ -53,6 +25,26 @@ def test_cache_lookup(
 ):
     """Test that the NRS cache retrieval works."""
     match: dict[str, Any] | None = cache_lookup(query=query, ontology=ontology, only_taxa=only_taxa)
+    assert match is not None, "No entry returned for test query"
+    assert "curie" in match, "Entry missing 'curie' key for test query"
+    assert only_taxa is None or only_taxa in match["taxa"], "Taxon not found in entry for test query"
+    assert match["curie"] == expected_term, "Incorrect entry returned for test query"
+    assert match["types"][0] == biolink_type, "Incorrect specific Biolink type returned for test query"
+
+
+@pytest.mark.parametrize(
+    "query,ontology,only_taxa,expected_term,biolink_type",
+    SAMPLE_QUERIES
+)
+def test_lookup(
+        query: str,
+        ontology: str,
+        only_taxa:str|None,
+        expected_term:str,
+        biolink_type:str
+):
+    """Test that the NRS lookup works."""
+    match: dict[str, Any] | None = lookup(query=query, ontology=ontology, only_taxa=only_taxa)
     assert match is not None, "No entry returned for test query"
     assert "curie" in match, "Entry missing 'curie' key for test query"
     assert only_taxa is None or only_taxa in match["taxa"], "Taxon not found in entry for test query"
