@@ -12,16 +12,6 @@ from .file_cache import file_cache
 NRS_ENDPOINT = "https://name-resolution-sri.renci.org"
 NRS_LOOKUP = f"{NRS_ENDPOINT}/lookup"
 
-def _wrap_result(query: str, ontology: str, entry: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "ontology": ontology,
-        "input": query,
-        "label": entry.get("label"),
-        "id": entry.get("obo_id"),
-        "iri": entry.get("iri"),
-        "score": entry.get("score")
-    }
-
 
 def api_lookup(
     query: str,
