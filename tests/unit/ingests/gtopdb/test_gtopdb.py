@@ -6,10 +6,12 @@ import pytest
 import pandas as pd
 
 from translator_ingest.ingests.gtopdb.gtopdb import (
+    TargetClassification,
     TargetDescriptor,
     _load_ligand_mapping,
     _publication_list,
     get_latest_version,
+    multi_species_source_target_ids,
     prepare,
     transform_ingest_all,
 )
@@ -29,7 +31,9 @@ from translator_ingest.ingests.gtopdb.rules import (
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
     ChemicalAffectsGeneAssociation,
+    MacromolecularComplex,
     PairwiseMolecularInteraction,
+    Protein,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     DirectionQualifierEnum,
     CausalMechanismQualifierEnum,
@@ -66,8 +70,105 @@ def test_target_descriptor_preserves_source_identity_and_components():
     assert target.subunit_ids == ("373", "374")
     assert target.gene_symbols == ("HTR3A", "HTR3B")
     assert target.uniprot_ids == ("P46098", "O95264")
-    assert target.is_composite
-    assert target.single_protein_curie is None
+    assert target.classification is TargetClassification.MACROMOLECULAR_COMPLEX
+    assert target.complex_curie == "IUPHARobj:378"
+
+
+@pytest.mark.parametrize(
+    ("record", "classification"),
+    [
+        (
+            {
+                "target_id": "378",
+                "target_name": "5-HT3AB",
+                "target_species": "Human",
+                "target_subunit_ids": "373|374",
+                "target_gene_symbols": "HTR3A|HTR3B",
+                "target_uniprot_ids": "P46098|O95264",
+            },
+            TargetClassification.MACROMOLECULAR_COMPLEX,
+        ),
+        (
+            {
+                "target_id": "2903",
+                "target_name": "claudin 18",
+                "target_species": "Human",
+                "target_subunit_ids": "",
+                "target_gene_symbols": "CLDN18",
+                "target_uniprot_ids": "P56856|P56856-2",
+            },
+            TargetClassification.SINGLE_PROTEIN,
+        ),
+        (
+            {
+                "target_id": "34",
+                "target_name": "AT1 receptor",
+                "target_species": "Rat",
+                "target_subunit_ids": "",
+                "target_gene_symbols": "Agtr1b|Agtr1a",
+                "target_uniprot_ids": "P29089|P25095",
+            },
+            TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
+        ),
+        (
+            {
+                "target_id": "1287",
+                "target_name": "Guanylyl cyclase",
+                "target_species": "Bovine",
+                "target_subunit_ids": "1288|1290",
+                "target_gene_symbols": "",
+                "target_uniprot_ids": "",
+            },
+            TargetClassification.MACROMOLECULAR_COMPLEX,
+        ),
+    ],
+)
+def test_target_descriptor_classifies_components_before_accession_cardinality(record, classification):
+    """Classify complexes independently of multi-species and UniProt evidence."""
+    target = TargetDescriptor.from_record(record)
+
+    assert target.key == (record["target_id"], record["target_species"])
+    assert target.classification is classification
+
+
+def test_multi_species_target_detection_is_independent_of_complex_classification():
+    """Identify source targets with distinct known species without flattening complexes."""
+    human_complex = TargetDescriptor.from_record(
+        {
+            "target_id": "378",
+            "target_name": "5-HT3AB",
+            "target_species": "Human",
+            "target_subunit_ids": "373|374",
+            "target_gene_symbols": "HTR3A|HTR3B",
+            "target_uniprot_ids": "P46098|O95264",
+        }
+    )
+    mouse_complex = TargetDescriptor.from_record(
+        {
+            "target_id": "378",
+            "target_name": "5-HT3AB",
+            "target_species": "Mouse",
+            "target_subunit_ids": "373|374",
+            "target_gene_symbols": "Htr3a|Htr3b",
+            "target_uniprot_ids": "P23979|Q9JHJ5",
+        }
+    )
+    unknown_species = TargetDescriptor.from_record(
+        {
+            "target_id": "378",
+            "target_name": "5-HT3AB",
+            "target_species": "Unknown",
+            "target_subunit_ids": "373|374",
+            "target_gene_symbols": "",
+            "target_uniprot_ids": "",
+        }
+    )
+
+    assert human_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
+    assert mouse_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
+    assert multi_species_source_target_ids(
+        (human_complex, mouse_complex, unknown_species)
+    ) == frozenset({"378"})
 
 
 @pytest.mark.parametrize(
@@ -183,6 +284,45 @@ def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path)
     assert pd.isna(prepared[0]["Action"])
 
 
+def test_prepare_preserves_target_species_descriptors(tmp_path):
+    """Keep source target descriptors separate when their species differ."""
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
+    )
+    context = RecordingContext()
+    context.input_files_dir = tmp_path
+    base = {
+        "Target": "5-HT3AB",
+        "Target ID": "378",
+        "Target Subunit IDs": "373|374",
+        "Target Gene Symbol": "HTR3A|HTR3B",
+        "Target UniProt ID": "P46098|O95264",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "11489465",
+    }
+    mouse = base | {
+        "Target Species": "Mouse",
+        "Target Gene Symbol": "Htr3a|Htr3b",
+        "Target UniProt ID": "P23979|Q9JHJ5",
+    }
+
+    prepared = list(prepare(context, [base, mouse]))
+
+    assert {
+        (record["target_id"], record["target_species"], record["target_uniprot_ids"])
+        for record in prepared
+    } == {
+        ("378", "Human", "P46098|O95264"),
+        ("378", "Mouse", "P23979|Q9JHJ5"),
+    }
+
+
 def test_load_ligand_mapping_and_publication_list(tmp_path):
     (tmp_path / "ligands.csv").write_text(
         '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
@@ -269,7 +409,7 @@ def test_transform_matches_current_source_rule_behavior(case):
     assert [_edge_signature(edge) for edge in graph.edges] == case["edges"]
 
 
-def test_transform_explicitly_excludes_unsupported_composite_targets():
+def test_transform_emits_source_defined_complex_targets():
     context = RecordingContext()
     record = {
         "subject_id": "2244",
@@ -290,15 +430,83 @@ def test_transform_explicitly_excludes_unsupported_composite_targets():
 
     graph = transform_ingest_all(context, [record])[0]
 
-    assert graph.nodes == []
-    assert graph.edges == []
-    assert context.messages == [
+    assert {node.id for node in graph.nodes} == {
+        "PUBCHEM.COMPOUND:2244",
+        "IUPHARobj:378",
+        "UniProtKB:P46098",
+        "UniProtKB:O95264",
+    }
+    assert isinstance(
+        next(node for node in graph.nodes if node.id == "IUPHARobj:378"),
+        MacromolecularComplex,
+    )
+    assert all(
+        isinstance(node, Protein)
+        for node in graph.nodes
+        if node.id in {"UniProtKB:P46098", "UniProtKB:O95264"}
+    )
+    assert {
+        (edge.subject, edge.predicate, edge.object) for edge in graph.edges
+    } == {
+        ("PUBCHEM.COMPOUND:2244", "biolink:affects", "IUPHARobj:378"),
         (
-            "WARNING",
-            "Excluded 1 GtoPdb interaction record with an unsupported composite target; "
-            "no compound UniProt CURIE was emitted.",
-        )
-    ]
+            "PUBCHEM.COMPOUND:2244",
+            "biolink:directly_physically_interacts_with",
+            "IUPHARobj:378",
+        ),
+        ("IUPHARobj:378", "biolink:has_part", "UniProtKB:P46098"),
+        ("IUPHARobj:378", "biolink:has_part", "UniProtKB:O95264"),
+    }
+    assert {
+        edge.predicate: edge.species_context_qualifier
+        for edge in graph.edges
+        if edge.predicate != "biolink:has_part"
+    } == {
+        "biolink:affects": "NCBITaxon:9606",
+        "biolink:directly_physically_interacts_with": "NCBITaxon:9606",
+    }
+    assert all(
+        node.in_taxon == ["NCBITaxon:9606"]
+        for node in graph.nodes
+        if node.id != "PUBCHEM.COMPOUND:2244"
+    )
+    assert context.messages == []
+
+
+def test_transform_omits_components_for_multi_species_source_complexes():
+    """Avoid merging human and mouse target 378 components under IUPHARobj:378."""
+    human = {
+        "subject_id": "2244",
+        "subject_name": "example ligand",
+        "target_id": "378",
+        "target_name": "5-HT3AB",
+        "target_species": "Human",
+        "target_subunit_ids": "373|374",
+        "target_gene_symbols": "HTR3A|HTR3B",
+        "target_uniprot_ids": "P46098|O95264",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "PubMed ID": "11489465",
+    }
+    mouse = human | {
+        "target_species": "Mouse",
+        "target_gene_symbols": "Htr3a|Htr3b",
+        "target_uniprot_ids": "P23979|Q9JHJ5",
+    }
+
+    graph = transform_ingest_all(RecordingContext(), [human, mouse])[0]
+
+    assert {node.id for node in graph.nodes} == {
+        "PUBCHEM.COMPOUND:2244",
+        "IUPHARobj:378",
+    }
+    assert all(edge.predicate != "biolink:has_part" for edge in graph.edges)
+    assert {
+        edge.species_context_qualifier
+        for edge in graph.edges
+        if edge.predicate != "biolink:has_part"
+    } == {"NCBITaxon:9606", "NCBITaxon:10090"}
 
 
 # ── Fixtures: one per edge type declared in gtopdb_rig.yaml / gtopdb.py ────
