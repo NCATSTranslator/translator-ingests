@@ -13,6 +13,7 @@ from translator_ingest.ingests.gtopdb.gtopdb import (
     get_latest_version,
     multi_species_source_target_ids,
     prepare,
+    source_target_species_descriptors,
     transform_ingest_all,
 )
 from translator_ingest.ingests.gtopdb.rules import (
@@ -169,6 +170,9 @@ def test_multi_species_target_detection_is_independent_of_complex_classification
     assert multi_species_source_target_ids(
         (human_complex, mouse_complex, unknown_species)
     ) == frozenset({"378"})
+    assert source_target_species_descriptors(
+        (human_complex, mouse_complex, unknown_species)
+    ) == {"378": {"human": human_complex, "mouse": mouse_complex}}
 
 
 @pytest.mark.parametrize(

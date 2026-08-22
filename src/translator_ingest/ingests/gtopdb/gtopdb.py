@@ -219,10 +219,11 @@ class TargetDescriptor:
         if len(self.subunit_ids) > 1:
             # Source subunits, not UniProt cardinality, establish a complex.
             return TargetClassification.MACROMOLECULAR_COMPLEX
-        if len(self.canonical_uniprot_ids) == 1:
+        canonical_uniprot_ids = self.canonical_uniprot_ids
+        if len(canonical_uniprot_ids) == 1:
             # A pipe-delimited list can contain canonical and isoform accessions.
             return TargetClassification.SINGLE_PROTEIN
-        if len(self.canonical_uniprot_ids) > 1:
+        if len(canonical_uniprot_ids) > 1:
             # Do not turn source groups or paralog alternatives into complexes.
             return TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP
         return TargetClassification.UNMAPPED
@@ -248,8 +249,10 @@ class TargetDescriptor:
         return SPECIES_TO_TAXON.get(species) if species else None
 
 
-def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
-    """Return source target IDs represented for more than one known species.
+def source_target_species_descriptors(
+    targets: Iterable[TargetDescriptor],
+) -> dict[str, dict[str, TargetDescriptor]]:
+    """Index source target descriptors by ID and known species.
 
     Complex membership and multi-species coverage are independent properties:
     a GtoPdb target can be a complex in several species.
@@ -261,16 +264,22 @@ def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> froz
 
     >>> human = TargetDescriptor("378", "5-HT3AB", "Human", (), (), ("P46098",))
     >>> mouse = TargetDescriptor("378", "5-HT3AB", "Mouse", (), (), ("P23979",))
-    >>> multi_species_source_target_ids((human, mouse))
-    frozenset({'378'})
+    >>> sorted(source_target_species_descriptors((human, mouse))["378"])
+    ['human', 'mouse']
     """
-    species_by_source_id: dict[str, set[str]] = {}
+    descriptors: dict[str, dict[str, TargetDescriptor]] = {}
     for target in targets:
         species = _known_species(target.species)
         if target.source_id and species:
-            species_by_source_id.setdefault(target.source_id, set()).add(species)
+            descriptors.setdefault(target.source_id, {})[species] = target
+    return descriptors
+
+
+def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
+    """Return source target IDs represented for more than one known species."""
+    descriptors = source_target_species_descriptors(targets)
     return frozenset(
-        source_id for source_id, species in species_by_source_id.items() if len(species) > 1
+        source_id for source_id, species in descriptors.items() if len(species) > 1
     )
 
 
@@ -517,15 +526,16 @@ def _edges_for_record(
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     """Transform prepared GtoPdb records through declarative Type/Action rules."""
     records = list(data)
-    multi_species_target_ids = multi_species_source_target_ids(
-        TargetDescriptor.from_record(record) for record in records
+    targets = tuple(TargetDescriptor.from_record(record) for record in records)
+    descriptors = source_target_species_descriptors(targets)
+    multi_species_target_ids = frozenset(
+        source_id for source_id, species in descriptors.items() if len(species) > 1
     )
     nodes: list[NamedThing] = []
     edges: list[Association] = []
     unsupported_target_counts: dict[TargetClassification, int] = {}
 
-    for record in records:
-        target = TargetDescriptor.from_record(record)
+    for record, target in zip(records, targets, strict=True):
         if target.classification in {
             TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
             TargetClassification.UNMAPPED,
