@@ -1,5 +1,4 @@
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -54,27 +53,16 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.logging_utils import get_logger
 from translator_ingest.util.transform_utils import entity_id
+from translator_ingest.util.type_coercion import (
+    coerce_record_types,
+    custom_association_class,
+)
+from translator_ingest.util.type_coercion import parse_optional_float  # noqa: F401  (re-export)
 
 INFORES_MOKG = "infores:multiomics-kg"
 MOKG_SOURCES = build_association_knowledge_sources(primary=INFORES_MOKG)
 
 logger = get_logger(__name__)
-
-# A handful of records carry non-numeric artifacts in the stat columns (e.g. a
-# leaked header "Adjusted P-value" or tissue labels like "Liver: Lactate"). Only
-# values matching a real number are converted; everything else is dropped.
-_NUMERIC_RE = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
-
-
-def parse_optional_float(value: Any) -> float | None:
-    """Return float(value) only when value is a real number; otherwise None."""
-    if value is None:
-        return None
-    text = str(value).strip()
-    if not text or not _NUMERIC_RE.fullmatch(text):
-        return None
-    return float(text)
-
 
 # Map node categories to concrete Pydantic classes. MOKG stores `category` as a
 # scalar string. Every category present in the 3.0.0 release resolves to a real
@@ -162,26 +150,12 @@ QUALIFIER_SOURCE_TO_SLOT: dict[str, str] = {
 }
 
 
-# Maps raw edge-record column names to typed numeric biolink slots. Multiple
-# case/spacing variants of the same logical field are listed so that all
-# spellings the MOKG release actually uses route to the same destination slot.
-TYPED_NUMERIC_COLUMN_TO_SLOT: dict[str, str] = {
-    "p value":               "p_value",
-    "P value":               "p_value",
-    "P-value":               "p_value",
-    "p-value":               "p_value",
-    "pvalue":                "p_value",
-    "adjusted p value":      "adjusted_p_value",
-    "Adjusted p value":      "adjusted_p_value",
-    "Adjusted P Value":      "adjusted_p_value",
-    "Adjusted P-value":      "adjusted_p_value",
-    "adj p value":           "adjusted_p_value",
-    "adj.P-value(BH)":       "adjusted_p_value",
-    "adj.P.Val":             "adjusted_p_value",
-    "p.adj":                 "adjusted_p_value",
-    "padj":                  "adjusted_p_value",
-    "relationship strength": "has_confidence_score",
-}
+# Raw edge-record columns are routed onto typed numeric biolink slots by the
+# shared coercion layer (translator_ingest.util.type_coercion): every p/q-value
+# spelling ("p value", "P.Value", "padj", "adj.P.Val", "FDR", ...), the old
+# "relationship strength" name (renamed forward to the custom ``effect_size``
+# slot from biolink PR #1774), and scientific-notation strings all coerce to
+# the float the model expects. No per-column table is kept here anymore.
 
 
 # Edge columns that we copy into `has_attribute: list[str]` as `key=value`
@@ -374,15 +348,22 @@ def _has_attribute_overlay(record: dict[str, Any]) -> list[str]:
     return out
 
 
-def _supporting_text_overlay(record: dict[str, Any]) -> list[str]:
+def _supporting_text_overlay(
+    record: dict[str, Any], claimed_columns: frozenset[str] = frozenset()
+) -> list[str]:
     """Render the study-specific numeric columns as JSON onto `supporting_text`.
 
     Biolink has no slot for the dozens of per-study statistical measurements
     (odds ratio, hazard ratio, IVW, MR-Egger, etc.). Rather than dropping them
     entirely we surface the full payload as a JSON string so downstream
-    consumers can still recover the original values.
+    consumers can still recover the original values. Columns already consumed
+    by the typed coercion layer are excluded so no value appears twice.
     """
-    payload = {column: record[column] for column in SUPPORTING_TEXT_COLUMNS if column in record}
+    payload = {
+        column: record[column]
+        for column in SUPPORTING_TEXT_COLUMNS
+        if column in record and column not in claimed_columns
+    }
     if not payload:
         return []
     return [json.dumps(payload, sort_keys=True, ensure_ascii=False)]
@@ -421,20 +402,10 @@ def _build_qualifier_overlay(
     return typed, generic
 
 
-def _typed_numeric_overlay(record: dict[str, Any]) -> dict[str, float]:
-    """Populate p_value, adjusted_p_value, and has_confidence_score from the
-    case-insensitive set of source columns. The destination slot name is taken
-    from TYPED_NUMERIC_COLUMN_TO_SLOT, so 'Adjusted P Value' lands in
-    `adjusted_p_value` exactly like 'adjusted p value' does.
-    """
-    out: dict[str, float] = {}
-    for source_column, slot_name in TYPED_NUMERIC_COLUMN_TO_SLOT.items():
-        value = parse_optional_float(record.get(source_column))
-        if value is None:
-            continue
-        if slot_name not in out:
-            out[slot_name] = value
-    return out
+def _typed_numeric_overlay(record: dict[str, Any]) -> dict[str, Any]:
+    """Deprecated shim kept for call-site compatibility: typed numeric routing
+    now lives in translator_ingest.util.type_coercion.coerce_record_types."""
+    return coerce_record_types(record).slots
 
 
 def _prune_to_class_fields(
@@ -459,16 +430,19 @@ def _instantiate_association(
     missing required slot, etc.). The fallback keeps every record in the
     ingest instead of silently dropping it.
     """
-    target_cls = PREDICATE_TO_ASSOCIATION_CLASS.get(predicate, Association)
+    target_cls = custom_association_class(
+        PREDICATE_TO_ASSOCIATION_CLASS.get(predicate, Association)
+    )
     pruned = _prune_to_class_fields(edge_props, target_cls)
     try:
         return target_cls(**pruned)
     except ValidationError as exc:
         logger.debug(
             f"Falling back to generic Association for {predicate} "
-            f"({target_cls.__name__} rejected: {exc.errors()[0]['type']})"
+            f"({type(target_cls).__name__} rejected: {exc.errors()[0]['type']})"
         )
-        return Association(**_prune_to_class_fields(edge_props, Association))
+        fallback_cls = custom_association_class(Association)
+        return fallback_cls(**_prune_to_class_fields(edge_props, fallback_cls))
 
 
 def _record_url_to_sources(record: dict[str, Any]) -> list[RetrievalSource] | None:
@@ -519,9 +493,9 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
 
     association_cls = PREDICATE_TO_ASSOCIATION_CLASS.get(predicate, Association)
     typed_qualifiers, generic_qualifiers = _build_qualifier_overlay(record, association_cls)
-    typed_numerics = _typed_numeric_overlay(record)
+    coerced = coerce_record_types(record)
     has_attribute = _has_attribute_overlay(record)
-    supporting_text = _supporting_text_overlay(record)
+    supporting_text = _supporting_text_overlay(record, coerced.claimed_columns)
     sources = _record_url_to_sources(record) or MOKG_SOURCES
 
     publication = record.get("publication")
@@ -540,7 +514,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         "supporting_text": supporting_text or None,
     }
     edge_props.update(typed_qualifiers)
-    edge_props.update(typed_numerics)
+    edge_props.update(coerced.slots)
 
     association = _instantiate_association(predicate, edge_props)
 
