@@ -55,7 +55,11 @@ PREDICATE_REMAP = {
 
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
-# Map TMKP attribute names to Biolink slot names
+# Map TMKP attribute names to Biolink slot names.
+#
+# Every key here must be an attribute name that actually occurs in the release. Entries
+# for names the source never emits are worse than useless: they read as evidence that a
+# field is handled when nothing is being mapped at all.
 TMKP_TO_BIOLINK_SLOT_MAP = {
     # Space case variations (from YAML serialization)
     "has evidence count": "evidence_count",
@@ -64,8 +68,14 @@ TMKP_TO_BIOLINK_SLOT_MAP = {
     "has_evidence_count": "evidence_count",
     "supporting_publications": "publications",
     "supporting_document": "publications",
-    "tmkp_confidence_score": "has_confidence_score",
-    "semmed_agreement_count": "semmed_agreement_count",  # TMKP-specific, no Biolink equivalent
+    # The edge-level aggregate confidence score. TMKP emits this at the top level of the
+    # attribute list as "biolink:extraction_confidence_score" (value_type_id
+    # biolink:ConfidenceLevel), and repeats the same attribute name inside each
+    # has_supporting_study_result for the per-evidence score. Only the top-level one
+    # reaches this map - the nested ones are consumed in the has_supporting_study_result
+    # branch of parse_attributes() and never reach the top-level dispatch, so there is no
+    # collision. The value is the arithmetic mean of the per-evidence scores.
+    "extraction_confidence_score": "has_confidence_score",
 }
 
 # Track which unmapped attributes we've already warned about (to avoid log spam)
@@ -360,6 +370,15 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                     setattr(association, biolink_slot, existing + new_pubs)
                 else:
                     setattr(association, biolink_slot, value)
+            elif biolink_slot not in _warned_unmapped_attrs:
+                # A mapping exists but points at something that is not a slot on this
+                # association class. Without this branch the value is dropped in silence,
+                # which is how the edge-level confidence score went missing unnoticed.
+                logger.warning(
+                    f"TMKP attribute '{attr_type}' is mapped to '{biolink_slot}', which is "
+                    f"not a slot on {type(association).__name__} - value dropped"
+                )
+                _warned_unmapped_attrs.add(biolink_slot)
 
         elif attr_type and attr_type not in _warned_unmapped_attrs:
             # Log warning for truly unrecognized attributes (only once per attribute type)
