@@ -452,13 +452,6 @@ class TestParseAttributes:
         assert "totally_unknown_attr" in _warned_unmapped_attrs
 
     def test_edge_level_confidence_score_is_ingested(self):
-        """The top-level extraction_confidence_score lands on has_confidence_score.
-
-        TMKP emits the edge-level aggregate as "biolink:extraction_confidence_score" at
-        the top of the attribute list. Before this mapping existed the value fell through
-        to the unknown-attribute branch and was dropped, leaving zero of 1.49M edges with
-        a confidence score while the RIG advertised one.
-        """
         attributes = [
             {
                 "attribute_type_id": "biolink:extraction_confidence_score",
@@ -473,12 +466,6 @@ class TestParseAttributes:
         assert "biolink:extraction_confidence_score" not in _warned_unmapped_attrs
 
     def test_edge_level_score_does_not_disturb_per_evidence_scores(self):
-        """Top-level and nested scores share an attribute name but not a code path.
-
-        The nested per-evidence scores are consumed inside the has_supporting_study_result
-        branch, so adding the top-level mapping must not overwrite them or be overwritten
-        by them.
-        """
         attributes = [
             {
                 "attribute_type_id": "biolink:extraction_confidence_score",
@@ -510,11 +497,6 @@ class TestParseAttributes:
         ]
 
     def test_edge_level_score_is_mean_of_per_evidence_scores(self):
-        """Documents the source's aggregation rule, verified across the full release.
-
-        Every sampled edge satisfied this exactly, so a consumer can reconstruct the
-        aggregate from the nested scores if it needs to.
-        """
         nested = [0.99937016, 0.99726415]
         attributes = [
             {
@@ -544,12 +526,6 @@ class TestParseAttributes:
         assert assoc.has_confidence_score == pytest.approx(sum(per_evidence) / len(per_evidence))
 
     def test_out_of_range_confidence_score_is_ingested_unchanged(self):
-        """About 3.9% of source scores exceed 1.0 (max observed 1.5102).
-
-        These originate in TMKP's own per-evidence scores, not in the aggregation. The
-        ingest deliberately does not clamp them: silently rewriting the value would hide
-        an upstream problem from consumers.
-        """
         attributes = [
             {"attribute_type_id": "biolink:extraction_confidence_score", "value": 1.240364}
         ]
@@ -559,12 +535,6 @@ class TestParseAttributes:
         assert assoc.has_confidence_score == pytest.approx(1.240364)
 
     def test_mapping_to_a_nonexistent_slot_warns_instead_of_dropping(self):
-        """A mapping pointing at a non-slot must not vanish in silence.
-
-        This is the failure mode that hid the missing confidence score: the mapped branch
-        checked hasattr() with no else, so a bad mapping target dropped the value without
-        any log line.
-        """
         monkey_key = "attr_with_bad_target"
         TMKP_TO_BIOLINK_SLOT_MAP[monkey_key] = "not_a_real_biolink_slot"
         try:
@@ -577,11 +547,6 @@ class TestParseAttributes:
             del TMKP_TO_BIOLINK_SLOT_MAP[monkey_key]
 
     def test_slot_map_contains_no_dead_entries(self):
-        """Every mapping target must be a real slot on Association.
-
-        The map used to carry 'tmkp_confidence_score' and 'semmed_agreement_count', names
-        the release never emits, which read as evidence the fields were handled.
-        """
         for source_name, biolink_slot in TMKP_TO_BIOLINK_SLOT_MAP.items():
             assert biolink_slot in Association.model_fields, (
                 f"'{source_name}' maps to '{biolink_slot}', which is not a slot on Association"
