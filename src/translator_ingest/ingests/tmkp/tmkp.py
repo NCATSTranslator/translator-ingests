@@ -361,9 +361,6 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                 else:
                     setattr(association, biolink_slot, value)
             elif biolink_slot not in _warned_unmapped_attrs:
-                # A mapping exists but points at something that is not a slot on this
-                # association class. Without this branch the value is dropped in silence,
-                # which is how the edge-level confidence score went missing unnoticed.
                 logger.warning(
                     f"TMKP attribute '{attr_type}' is mapped to '{biolink_slot}', which is "
                     f"not a slot on {type(association).__name__} - value dropped"
