@@ -38,6 +38,7 @@ from translator_ingest.util.type_coercion import (
     EFFECT_TYPE_VALUES,
     coerce_record_types,
     custom_association_class,
+    is_neglog10_column,
     map_effect_type_value,
     parse_optional_float,
     significance_qualifier,
@@ -296,7 +297,6 @@ def test_capital_p_adjusted_p_value_routes_to_adjusted_p_value():
         ("P-value", "p_value"),
         ("pvalue", "p_value"),
         ("P.Value", "p_value"),
-        ("negative log10 p value", "p_value"),
         ("adjusted p value", "adjusted_p_value"),
         ("Adjusted P Value", "adjusted_p_value"),
         ("adj p value", "adjusted_p_value"),
@@ -431,11 +431,126 @@ def test_custom_association_class_extends_only_missing_slots():
     assert custom_association_class(extended) is extended
 
 
+def test_validation_error_fallback_retains_custom_slots():
+    """When the typed subclass rejects an edge (e.g. `biolink:regulates` maps
+    to GeneRegulatesGeneAssociation, which rejects the record), the generic
+    Association fallback must still carry the custom override slots."""
+    from biolink_model.datamodel.pydanticmodel_v2 import Association
+
+    from translator_ingest.ingests.mokg.mokg import _instantiate_association
+
+    association = _instantiate_association(
+        "biolink:regulates",
+        {
+            "id": "edge-1",
+            "subject": "A:1",
+            "predicate": "biolink:regulates",
+            "object": "B:1",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": MOKG_SOURCES,
+            "effect_size": 0.5,
+            "effect_type": "spearmans_rho",
+            "statistical_significance_qualifier": "significant",
+        },
+    )
+    assert type(association).__name__ == "AssociationWithCustomSlots"
+    assert isinstance(association, Association)
+    assert association.effect_size == pytest.approx(0.5)
+    assert association.effect_type == "spearmans_rho"
+    assert association.statistical_significance_qualifier == "significant"
+
+
 def test_study_size_columns_are_not_claimed_for_the_edge():
     """study_size lives on the inlined Study node in the current Biolink Model,
     not on Association, so study-size-like columns stay available to the
     untyped has_attribute overlay."""
     slots, claimed = coerce_record_types({"sample size": 179})
+    assert slots == {}
+    assert claimed == frozenset()
+
+
+@pytest.mark.parametrize(
+    ("column", "is_neglog"),
+    [
+        ("negative log10 p value", True),
+        ("-log10(p)", True),
+        ("neg log10 q value", True),
+        ("p value", False),
+        ("log10 p value", False),  # no negation marker -> ambiguous, not un-logged
+    ],
+)
+def test_neglog10_column_detection(column, is_neglog):
+    assert is_neglog10_column(column) is is_neglog
+
+
+def test_negative_log10_p_value_column_is_unlogged():
+    """-log10(p)=8 means p=1e-8: the slot must hold the recovered p-value, and
+    the significance band must be very strongly significant (not inverted)."""
+    slots, claimed = coerce_record_types({"negative log10 p value": "8.0"})
+    assert slots["p_value"] == pytest.approx(1e-8)
+    assert slots["statistical_significance_qualifier"] == "very_strongly_significant"
+    assert "negative log10 p value" in claimed
+
+
+def test_negative_log10_zero_maps_to_p_one():
+    slots, _ = coerce_record_types({"negative log10 p value": "0"})
+    assert slots["p_value"] == pytest.approx(1.0)
+    assert slots["statistical_significance_qualifier"] == "not_significant"
+
+
+def test_negative_log10_underflows_to_zero_without_error():
+    """Observed max in the 3.0.0 release is ~864; 10**-864 underflows float64
+    to 0.0, which is indistinguishable from p ~ 0 and must not raise."""
+    slots, _ = coerce_record_types({"negative log10 p value": "864.066614351"})
+    assert slots["p_value"] == 0.0
+    assert slots["statistical_significance_qualifier"] == "very_strongly_significant"
+
+
+def test_raw_p_value_column_beats_neglog10_alias():
+    """When both a raw and a negative-log10 p-value column are present, the
+    raw column wins and its value is carried untransformed."""
+    slots, claimed = coerce_record_types({"p value": "0.03", "negative log10 p value": "8.0"})
+    assert slots["p_value"] == pytest.approx(0.03)
+    assert "negative log10 p value" not in claimed
+
+
+def test_unparseable_candidate_does_not_shadow_parseable_alias():
+    """A junk value in one spelling (leaked header, tissue label) must not
+    block a parseable alias spelling of the same statistic."""
+    slots, claimed = coerce_record_types({"p value": "Liver: Lactate", "P-value": "0.03"})
+    assert slots["p_value"] == pytest.approx(0.03)
+    assert "P-value" in claimed
+    assert "p value" not in claimed
+
+
+def test_unhashable_assertion_method_does_not_crash():
+    """A leaked list/dict in the assertion-method column must not raise
+    TypeError from the effect-type cache key."""
+    slots, _ = coerce_record_types(
+        {"relationship strength": "0.5", "assertion method": ["Spearman", "Correlation"]}
+    )
+    assert slots["effect_size"] == pytest.approx(0.5)
+    # str() of the list still resolves the embedded alias.
+    assert slots["effect_type"] == "spearmans_rho"
+
+
+def test_effect_type_falls_back_to_assertion_method_when_metric_column_unmatched():
+    """An effect-type column whose value is outside the enum (e.g. 'ANOVA')
+    does not block the assertion-method fallback."""
+    slots, claimed = coerce_record_types(
+        {
+            "relationship strength": "0.5",
+            "effect type": "ANOVA",
+            "assertion method": "Spearman Correlation",
+        }
+    )
+    assert slots["effect_type"] == "spearmans_rho"
+    assert "effect type" not in claimed
+
+
+def test_unmatched_effect_type_column_is_not_claimed():
+    slots, claimed = coerce_record_types({"effect type": "ANOVA"})
     assert slots == {}
     assert claimed == frozenset()
 

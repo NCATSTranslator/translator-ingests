@@ -167,6 +167,34 @@ SIGNIFICANCE_FLAG_PATTERN: re.Pattern[str] = re.compile(
 )
 
 
+# --- Negative-log10 p-value columns ------------------------------------------------
+# Columns reporting -log10(p) rather than p itself ("negative log10 p value",
+# "-log10(p)"). A negation marker is required: a plain "log10 p value" label
+# is ambiguous about the sign convention, so it stays unrouted and surfaces in
+# the untyped overlays instead of risking an inverted p-value.
+NEGLOG10_PVALUE_PATTERN: re.Pattern[str] = re.compile(
+    r"""
+    (?<![A-Za-z0-9])
+    (?:
+        negative
+        | negated
+        | neg
+        | -
+    )
+    [\s_.\-()]*
+    log10?
+    [\s_.\-()]*
+    (?: p | q )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def is_neglog10_column(name: str) -> bool:
+    """Return True when a column reports -log10(p/q) instead of the raw p/q value."""
+    return bool(NEGLOG10_PVALUE_PATTERN.search(name))
+
+
 def pvalue_target(name: str) -> str | None:
     """Map a column name to its canonical Biolink-compliant target name.
 
@@ -541,7 +569,6 @@ def _effect_type_vocab() -> dict[str, str]:
     return table
 
 
-@lru_cache(maxsize=4096)
 def map_effect_type_value(raw: Any) -> str | None:
     """Map one raw effect-type/metric label to a canonical value, or None when nothing matches.
 
@@ -551,10 +578,18 @@ def map_effect_type_value(raw: Any) -> str | None:
     still resolves to its metric. The Biolink range of ``effect_type`` is the
     enum, so values matching nothing are dropped to ``None`` rather than
     carried through.
+
+    The raw value is stringified before the cached lookup so an unhashable
+    NDJSON value (list/dict leaked into a method column) cannot raise
+    ``TypeError`` from the cache key.
     """
     if raw is None:
         return None
-    text: str = str(raw).strip()
+    return _map_effect_type_text(str(raw).strip())
+
+
+@lru_cache(maxsize=4096)
+def _map_effect_type_text(text: str) -> str | None:
     if not text:
         return None
     table = _effect_type_vocab()
@@ -651,6 +686,8 @@ _NUMERIC_SLOT_COERCERS: dict[str, Any] = {
     "adjusted_p_value": parse_optional_float,
     "effect_size": parse_optional_float,
 }
+# P/q-value slots whose value may arrive as -log10(p) and need un-logging.
+_PVALUE_SLOTS: frozenset[str] = frozenset({"p_value", "adjusted_p_value"})
 
 # Fallback source column for ``effect_type`` when no effect-type-like column is
 # present: the assertion method names the statistical metric ("Spearman
@@ -670,19 +707,28 @@ def _similarity(column: str, target: str) -> float:
     return SequenceMatcher(None, column.lower(), target.replace("_", " ")).ratio()
 
 
+def _ranked_candidates(columns: list[str], target: str) -> list[str]:
+    """Order candidate columns best-first: canonical name wins, then similarity,
+    then record order."""
+    return sorted(columns, key=lambda c: (c != target, -_similarity(c, target), columns.index(c)))
+
+
 def coerce_record_types(record: dict[str, Any]) -> CoercedSlots:
     """Coerce the statistical columns of an edge record onto typed Biolink slots.
 
-    Every column name is classified (:func:`coerced_target`); the best
-    candidate per canonical slot is coerced to the slot's expected type. An
-    exact canonical column always wins over aliases; remaining ties resolve by
-    similarity to the canonical name (difflib standing in for the rapidfuzz
-    ranking Tablassert uses) and then by record order. Only parseable values
-    claim a slot, so a leaked header or tissue label never pollutes a numeric
-    slot - the column simply stays unclaimed for the untyped overlays.
+    Every column name is classified (:func:`coerced_target`); candidates for a
+    canonical slot are visited best-first (an exact canonical column beats
+    aliases; remaining ties resolve by similarity and record order) and the
+    first parseable value claims the slot - a leaked header or tissue label in
+    one spelling never shadows a parseable alias spelling of the same
+    statistic.
 
-    Beside the column-driven slots, two derived slots are populated:
+    Beside the column-driven slots, three derived rules apply:
 
+    * ``-log10(p)`` columns are un-logged (``p = 10**(-x)``) before landing in
+      ``p_value`` / ``adjusted_p_value``. Very large scores underflow float64
+      to ``0.0`` - indistinguishable from ``p ~ 0`` in practice, and the
+      significance band is identical either way.
     * ``statistical_significance_qualifier`` - banded from the raw p-value when
       present, else from the adjusted p-value (class rule: only set when a
       numeric significance slot is populated).
@@ -704,31 +750,41 @@ def coerce_record_types(record: dict[str, Any]) -> CoercedSlots:
     claimed: set[str] = set()
 
     for target, columns in candidates.items():
-        chosen = max(columns, key=lambda c: (_similarity(c, target), -columns.index(c)))
-        if target in _NUMERIC_SLOT_COERCERS:
+        if target not in _NUMERIC_SLOT_COERCERS:
+            continue
+        for chosen in _ranked_candidates(columns, target):
             value = _NUMERIC_SLOT_COERCERS[target](record[chosen])
-            if value is not None:
-                slots[target] = value
-                claimed.add(chosen)
+            if value is None:
+                continue
+            if target in _PVALUE_SLOTS and is_neglog10_column(chosen):
+                value = 10.0 ** (-value)
+            slots[target] = value
+            claimed.add(chosen)
+            break
 
-    # effect_type: classifier columns first, assertion method as fallback.
-    effect_type_columns = candidates.get("effect_type", [])
-    if effect_type_columns:
-        chosen = max(effect_type_columns, key=lambda c: (_similarity(c, "effect_type"), -effect_type_columns.index(c)))
+    # effect_type: classifier columns first, assertion method as fallback when
+    # no metric column maps to the enum.
+    effect_type_value: str | None = None
+    effect_type_claimed: str | None = None
+    for chosen in _ranked_candidates(candidates.get("effect_type", []), "effect_type"):
         mapped = map_effect_type_value(record[chosen])
         if mapped is not None:
-            slots["effect_type"] = mapped
-            claimed.add(chosen)
-    elif record.get(_EFFECT_TYPE_FALLBACK_COLUMN):
-        mapped = map_effect_type_value(record[_EFFECT_TYPE_FALLBACK_COLUMN])
-        if mapped is not None:
-            slots["effect_type"] = mapped
+            effect_type_value = mapped
+            effect_type_claimed = chosen
+            break
+    if effect_type_value is None:
+        effect_type_value = map_effect_type_value(record.get(_EFFECT_TYPE_FALLBACK_COLUMN))
+    if effect_type_value is not None:
+        slots["effect_type"] = effect_type_value
+        if effect_type_claimed is not None:
+            claimed.add(effect_type_claimed)
 
     # Class rule (PR #1774): effect_type may only be populated when effect_size
     # is also populated - the type is meaningless without the value it names.
     if "effect_type" in slots and "effect_size" not in slots:
         slots.pop("effect_type", None)
-        claimed.difference_update(effect_type_columns)
+        if effect_type_claimed is not None:
+            claimed.discard(effect_type_claimed)
 
     # Class rule (PR #1766): the significance qualifier needs a numeric
     # significance slot; prefer the raw p-value, fall back to adjusted.
@@ -750,6 +806,7 @@ __all__ = [
     "custom_association_class",
     "effect_size_target",
     "effect_type_target",
+    "is_neglog10_column",
     "map_effect_type_value",
     "parse_optional_float",
     "parse_optional_int",

@@ -22,7 +22,7 @@ source_info:
 ingest_info:
   ingest_categories:
     - translator_knowledge_creator
-  utility: "MOKG provides literature-derived multi-omics relationships with statistical evidence (adjusted p-value, relationship strength) and disease/anatomical context qualifiers, useful for many Translator query types."
+  utility: "MOKG provides literature-derived multi-omics relationships with typed statistical evidence (p-value, adjusted p-value, effect size with effect type, significance qualifier) and disease/anatomical context qualifiers, useful for many Translator query types."
   scope: "Curated multi-omics associations between biomedical entities (genes, proteins, chemicals, organisms, diseases, etc.)."
   relevant_files:
     - file_name: "MULTIOMICS_KG_3.0.0.nodes.ndjson"
@@ -36,9 +36,11 @@ ingest_info:
       included_records: "All multi-omics assertions, regardless of predicate"
       fields_used: >-
         subject, predicate, object, uuid, publication, sample size, multiple
-        testing correction method, adjusted p value (any case), relationship
-        strength, all 15 biolink qualifier columns, url, contributing
-        contributors, supporting study-specific numeric columns
+        testing correction method, all p/q-value columns (any spelling;
+        negative-log10 columns are un-logged), relationship strength and other
+        effect-size columns, effect type (from metric columns or the assertion
+        method), all 15 biolink qualifier columns, url, contributing
+        contributors, remaining study-specific numeric columns
 
 target_info:
   infores_id: "infores:multiomics-kg"
@@ -87,16 +89,21 @@ target_info:
       agent_type:
         - manual_agent
       ui_explanation: >-
-        MOKG edges report literature-derived multi-omics relationships, with
-        statistical evidence (adjusted p-value, relationship strength) and
-        disease/anatomical context captured in qualifiers. Each predicate
+        MOKG edges report literature-derived multi-omics relationships with
+        typed statistical evidence: p/q-value columns (any spelling;
+        negative-log10 columns are un-logged to p) land on `p_value` /
+        `adjusted_p_value`, effect-size columns (including the legacy
+        `relationship strength`) land on `effect_size` with a companion
+        `effect_type` derived from the metric or assertion method, and the
+        p-value is banded onto `statistical_significance_qualifier`.
+        Disease/anatomical context is captured in qualifiers. Each predicate
         routes to a typed Association subclass when one accepts the literal
         predicate and the record provides the required slot values; otherwise
         the edge falls back to the generic Association. Sample size, multiple
         testing correction method, assertion method, and other ETL metadata
-        are preserved on the `has_attribute` slot, and the dozen
-        study-specific numeric columns (odds ratio, hazard ratio, IVW, MR-Egger)
-        are surfaced as a JSON payload on `supporting_text`.
+        are preserved on the `has_attribute` slot, and the study-specific
+        numeric columns that have no typed slot (lower/upper CI, MR-Egger
+        scores, etc.) are surfaced as a JSON payload on `supporting_text`.
 
 provenance_info:
   contributions:

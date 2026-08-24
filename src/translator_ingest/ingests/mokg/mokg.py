@@ -57,7 +57,6 @@ from translator_ingest.util.type_coercion import (
     coerce_record_types,
     custom_association_class,
 )
-from translator_ingest.util.type_coercion import parse_optional_float  # noqa: F401  (re-export)
 
 INFORES_MOKG = "infores:multiomics-kg"
 MOKG_SOURCES = build_association_knowledge_sources(primary=INFORES_MOKG)
@@ -402,12 +401,6 @@ def _build_qualifier_overlay(
     return typed, generic
 
 
-def _typed_numeric_overlay(record: dict[str, Any]) -> dict[str, Any]:
-    """Deprecated shim kept for call-site compatibility: typed numeric routing
-    now lives in translator_ingest.util.type_coercion.coerce_record_types."""
-    return coerce_record_types(record).slots
-
-
 def _prune_to_class_fields(
     edge_props: dict[str, Any], target_cls: type
 ) -> dict[str, Any]:
@@ -439,7 +432,7 @@ def _instantiate_association(
     except ValidationError as exc:
         logger.debug(
             f"Falling back to generic Association for {predicate} "
-            f"({type(target_cls).__name__} rejected: {exc.errors()[0]['type']})"
+            f"({target_cls.__name__} rejected: {exc.errors()[0]['type']})"
         )
         fallback_cls = custom_association_class(Association)
         return fallback_cls(**_prune_to_class_fields(edge_props, fallback_cls))
