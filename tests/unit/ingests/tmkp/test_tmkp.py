@@ -18,7 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
     TextMiningStudyResult,
 )
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 from koza.runner import KozaRunner, KozaTransformHooks
 
 from tests.unit.ingests import MockKozaWriter
