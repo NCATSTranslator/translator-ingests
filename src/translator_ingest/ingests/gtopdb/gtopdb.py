@@ -1,6 +1,10 @@
 """GtoPdb ingest preparation and graph emission."""
 
 from dataclasses import dataclass
+import koza
+import pandas as pd
+import requests
+import re
 from pathlib import Path
 import re
 from typing import Any, Iterable
@@ -34,7 +38,6 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
-
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
@@ -71,6 +74,33 @@ TARGET_METADATA_COLUMNS = (
     "Target Gene Symbol",
     "Target Species",
 )
+# The interactions file that this ingest downloads; its first line carries the release version.
+GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
+
+# e.g. '"# GtoPdb Version: 2026.2 - published: 2026-06-15"'
+GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
+
+
+def get_latest_version() -> str:
+    """Determine the latest GtoPdb release version.
+
+    The download.jsp web page that used to advertise the version now requires a login, so the version is
+    read from the metadata comment on the first line of the interactions file instead. That file is the
+    same one this ingest downloads, so the version is guaranteed to describe the data actually ingested.
+
+    :return: The GtoPdb version, e.g. '2026.2'
+    :raises RuntimeError: If the version could not be parsed from the file.
+    """
+    with requests.get(GTOPDB_INTERACTIONS_URL, stream=True, timeout=60) as response:
+        response.raise_for_status()
+        first_line = next(response.iter_lines(decode_unicode=True), "")
+
+    match = GTOPDB_VERSION_PATTERN.search(first_line)
+    if match is None:
+        raise RuntimeError(
+            f"Could not parse the GtoPdb version from the first line of {GTOPDB_INTERACTIONS_URL}: {first_line!r}"
+        )
+    return match.group("version")
 
 PREPARED_COLUMN_RENAMES = {
     "Ligand": "subject_name",
