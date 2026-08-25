@@ -1,9 +1,9 @@
 name: 'cohd'
 
 readers:
-  cohd_nodes:
+  concepts:
     files:
-      - 'cohd_concepts.txt'
+      - 'concepts.txt'
     format: "csv"
     delimiter: "\t"
     header_mode: "none"
@@ -14,9 +14,19 @@ readers:
       - 'vocabulary_id'
       - 'concept_class_id'
       - 'concept_code': 'int'
-  cohd_edges:
+  single_concept_counts:
     files:
-      - 'cohd_5year_paired_concepts.txt'
+      - '5year_single_concepts.txt'
+    format: "csv"
+    delimiter: "\t"
+    header_mode: "none"
+    columns:
+      - 'concept_id': 'int'
+      - 'count': 'int'
+      - 'prevalence': 'float'
+  paired_concept_counts:
+    files:
+      - '5year_paired_concepts.txt'
     format: "csv"
     delimiter: "\t"
     header_mode: "none"

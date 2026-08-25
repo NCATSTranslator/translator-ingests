@@ -11,8 +11,9 @@
 #
 ## KGX 'edges' jsonl file
 #- url: https://stars.renci.org/var/data_services/cohd_2/cohd_edges.jsonl
-#  local_name: cohd_edges.jsonl
 
+#  local_name: cohd_edges.jsonl
+################################################################################
 #
 # After some significant team deliberation, it was decided that the original COHD
 # study data should be downloaded and ingested directly from FigShare for ingesting,
@@ -25,6 +26,7 @@
 # dataset posted on 2018-11-22, 02:23 authored by
 # Casey N. Ta, Michel Dumontier, George Hripcsak, Nicholas P. Tatonetti, Chunhua Weng
 #
+################################################################################
 # Concept Nodes
 # =============
 #
@@ -41,15 +43,33 @@
 # concept class id - The OMOP concept class;
 # concept code - The identifier from the source vocabulary for this concept.
 #
+################################################################################
 - url: https://figshare.com/ndownloader/files/12272921
-  local_name: cohd_concepts.txt
-
+  local_name: concepts.txt
+################################################################################
 # Association Edges
 # =================
+# 1,790,431 patients in 5-year data set, for both single and paired concept counts.
 #
+################################################################################
+# Single concept counts from the 5-year data set.
+#
+# File format: tab-delimited table; newline terminated.
+#
+# Columns:
+#
+# concept id - Unique numeric code identifying the concept;
+# count - The number of patients with this concept in this data set;
+# prevalence - The number of patients with this concept divided by the
+#              total number of patients in this data set (1.0 is 100%).
+#
+# The rows are arranged in ascending order by concept id.
+#
+################################################################################
+- url: https://figshare.com/ndownloader/files/12272930
+  local_name: 5year_single_concepts.txt
+################################################################################
 # Paired concept counts from the 5-year data set.
-#
-# 1,790,431 patients in this data set.
 #
 # File format: tab-delimited table; newline terminated.
 #
@@ -63,5 +83,6 @@
 #              i.e., the same two concepts do not appear in two separate rows. The rows are arranged in
 #              ascending order by concept id 1 and concept id 2. Concept id 1 is always the smaller numeric value.
 #
+################################################################################
 - url: https://figshare.com/ndownloader/files/12272924
-  local_name: cohd_5year_paired_concepts.txt
+  local_name: 5year_paired_concepts.txt
