@@ -6,6 +6,7 @@ import pytest
 import pandas as pd
 
 from translator_ingest.ingests.gtopdb.gtopdb import (
+    GTOPDB_VERSION_PATTERN,
     TargetDescriptor,
     _load_ligand_mapping,
     _publication_list,
@@ -37,11 +38,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     RetrievalSource,
     ResourceRoleEnum,
-)
-
-from translator_ingest.ingests.gtopdb.gtopdb import (
-    GTOPDB_VERSION_PATTERN,
-    get_latest_version,
 )
 
 
@@ -196,28 +192,6 @@ def test_load_ligand_mapping_and_publication_list(tmp_path):
     assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
     assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
     assert _publication_list("") is None
-
-
-@pytest.mark.parametrize(
-    ("page", "expected"),
-    [
-        ("<b>Downloads are from the 2026.2 version.</b>", "2026.2"),
-        ("<p>No release information</p>", None),
-    ],
-)
-def test_get_latest_version_parses_or_rejects_download_page(monkeypatch, page, expected):
-    class Response:
-        content = page.encode()
-
-    monkeypatch.setattr(
-        "translator_ingest.ingests.gtopdb.gtopdb.requests.get", lambda _: Response()
-    )
-
-    if expected is None:
-        with pytest.raises(RuntimeError, match="download version text"):
-            get_latest_version()
-    else:
-        assert get_latest_version() == expected
 
 
 class RecordingContext:

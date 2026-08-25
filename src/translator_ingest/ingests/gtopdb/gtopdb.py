@@ -1,15 +1,10 @@
 """GtoPdb ingest preparation and graph emission."""
 
 from dataclasses import dataclass
-import koza
-import pandas as pd
-import requests
-import re
 from pathlib import Path
 import re
 from typing import Any, Iterable
 
-from bs4 import BeautifulSoup
 import koza
 from koza.model.graphs import KnowledgeGraph
 import pandas as pd
@@ -74,33 +69,12 @@ TARGET_METADATA_COLUMNS = (
     "Target Gene Symbol",
     "Target Species",
 )
+
 # The interactions file that this ingest downloads; its first line carries the release version.
 GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
 
 # e.g. '"# GtoPdb Version: 2026.2 - published: 2026-06-15"'
 GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
-
-
-def get_latest_version() -> str:
-    """Determine the latest GtoPdb release version.
-
-    The download.jsp web page that used to advertise the version now requires a login, so the version is
-    read from the metadata comment on the first line of the interactions file instead. That file is the
-    same one this ingest downloads, so the version is guaranteed to describe the data actually ingested.
-
-    :return: The GtoPdb version, e.g. '2026.2'
-    :raises RuntimeError: If the version could not be parsed from the file.
-    """
-    with requests.get(GTOPDB_INTERACTIONS_URL, stream=True, timeout=60) as response:
-        response.raise_for_status()
-        first_line = next(response.iter_lines(decode_unicode=True), "")
-
-    match = GTOPDB_VERSION_PATTERN.search(first_line)
-    if match is None:
-        raise RuntimeError(
-            f"Could not parse the GtoPdb version from the first line of {GTOPDB_INTERACTIONS_URL}: {first_line!r}"
-        )
-    return match.group("version")
 
 PREPARED_COLUMN_RENAMES = {
     "Ligand": "subject_name",
@@ -157,15 +131,25 @@ class TargetDescriptor:
 
 
 def get_latest_version() -> str:
-    """Derive the GtoPdb release version from its download page."""
-    response = requests.get("https://www.guidetopharmacology.org/download.jsp")
-    soup = BeautifulSoup(response.content, "html.parser")
-    version_tag = soup.find("b", string=re.compile("Downloads are from the *"))
-    if version_tag is None:
-        raise RuntimeError("Could not find the GtoPdb download version text.")
+    """Determine the latest GtoPdb release version.
 
-    version_text = version_tag.text
-    return version_text[len("Downloads are from the "):].split(" version")[0]
+    The download.jsp web page that used to advertise the version now requires a login, so the version is
+    read from the metadata comment on the first line of the interactions file instead. That file is the
+    same one this ingest downloads, so the version is guaranteed to describe the data actually ingested.
+
+    :return: The GtoPdb version, e.g. '2026.2'
+    :raises RuntimeError: If the version could not be parsed from the file.
+    """
+    with requests.get(GTOPDB_INTERACTIONS_URL, stream=True, timeout=60) as response:
+        response.raise_for_status()
+        first_line = next(response.iter_lines(decode_unicode=True), "")
+
+    match = GTOPDB_VERSION_PATTERN.search(first_line)
+    if match is None:
+        raise RuntimeError(
+            f"Could not parse the GtoPdb version from the first line of {GTOPDB_INTERACTIONS_URL}: {first_line!r}"
+        )
+    return match.group("version")
 
 
 def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
