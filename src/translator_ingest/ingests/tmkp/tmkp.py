@@ -277,7 +277,11 @@ def get_latest_version() -> str:
     return "tmkp-2024-09-07"
 
 
-def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> None:
+def parse_attributes(
+    attributes: List[Dict[str, Any]],
+    association: Association,
+    protected_slots: frozenset[str] = frozenset(),
+) -> None:
     """
     Parse attribute objects and populate the association with supporting studies and knowledge sources.
 
@@ -288,6 +292,11 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
     - has_supporting_studies: Dict of Study objects containing TextMiningStudyResult objects
     - sources: Knowledge source attribution built from attribute data or defaults
     - Any other direct attributes found in the attribute list
+
+    :param attributes: Parsed '_attributes' objects from a TMKP edge record.
+    :param association: The association to mutate in place.
+    :param protected_slots: Slot names the caller has already determined. Source attributes
+        of the same name are ignored rather than overwriting the computed value.
     """
     text_mining_results: List[TextMiningStudyResult] = []
     primary_source = None
@@ -346,6 +355,10 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                 supporting_sources.extend(value)
             else:
                 supporting_sources.append(value)
+
+        elif slot_name in protected_slots:
+            # ingest already set this slot; the source value should not overwrite it.
+            continue
 
         elif hasattr(association, slot_name):
             setattr(association, slot_name, value)
@@ -475,7 +488,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
     if attributes_json := record.get("_attributes"):
         attributes = json.loads(attributes_json)
-        parse_attributes(attributes, association)
+        parse_attributes(attributes, association, frozenset(assoc_kwargs))
     else:
         # No attributes - set default sources
         association.sources = TMKP_DEFAULT_SOURCES

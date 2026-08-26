@@ -802,6 +802,47 @@ class TestTransformTmkpEdge:
         associations = [i for i in items if isinstance(i, Association)]
         assert associations[0].knowledge_level == KnowledgeLevelEnum.not_provided
 
+    @pytest.mark.parametrize(
+        "predicate,expected_knowledge_level",
+        [
+            ("biolink:treats", KnowledgeLevelEnum.knowledge_assertion),
+            ("biolink:treats_or_applied_or_studied_to_treat", KnowledgeLevelEnum.knowledge_assertion),
+            ("biolink:affects", KnowledgeLevelEnum.not_provided),
+        ],
+    )
+    def test_source_attributes_do_not_overwrite_computed_slots(
+        self, predicate, expected_knowledge_level
+    ):
+        """Computed knowledge_level survives TMKP's own top-level knowledge_level attribute.
+
+        Every TMKP edge carries 'biolink:knowledge_level' = 'not_provided' and
+        'biolink:agent_type' = 'text_mining_agent' as top-level attributes. Both are real
+        slots on Association, so without the protected_slots guard parse_attributes would
+        set them from the source and revert the values transform_tmkp_edge computed.
+        """
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": predicate,
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+            "_attributes": json.dumps(
+                [
+                    {"attribute_type_id": "biolink:knowledge_level", "value": "not_provided"},
+                    {"attribute_type_id": "biolink:agent_type", "value": "text_mining_agent"},
+                    {
+                        "attribute_type_id": "biolink:primary_knowledge_source",
+                        "value": INFORES_TEXT_MINING_KP,
+                    },
+                ]
+            ),
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert associations[0].knowledge_level == expected_knowledge_level
+        assert associations[0].agent_type == AgentTypeEnum.text_mining_agent
+
     def test_gene_disease_contributes_to_gets_epc_pattern(self):
         """Gene-disease 'contributes_to' is transformed to canonical EPC pattern.
 
