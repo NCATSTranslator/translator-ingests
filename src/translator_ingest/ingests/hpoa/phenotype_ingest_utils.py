@@ -187,9 +187,9 @@ def phenotype_frequency_to_hpo_term(koza_transform: koza.KozaTransform, frequenc
                         ratio_parts[1] is not None and
                         ratio_parts[1].isdigit()
                     ), f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
-                    has_count: int = int(ratio_parts[0])
-                    has_total: int = int(ratio_parts[1])
-                    quotient: float = round(float(has_count / has_total), 2)
+                    has_count = int(ratio_parts[0])
+                    has_total = int(ratio_parts[1])
+                    quotient = round(float(has_count / has_total), 2)
                     percentage = round(quotient * 100.0, 1)
 
                 # This should map onto a non-null HPO term
