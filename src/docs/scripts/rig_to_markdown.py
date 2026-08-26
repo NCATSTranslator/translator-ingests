@@ -218,7 +218,7 @@ def main(input_dir, output_dir, file):
             continue  # Skip test file
 
         try:
-            with open(yaml_file, "r") as f:
+            with open(yaml_file, "r", encoding="utf-8") as f:
                 rig_data = yaml.safe_load(f)
 
             # Generate markdown
@@ -227,7 +227,7 @@ def main(input_dir, output_dir, file):
 
             # Write markdown file
             markdown_file = output_path / f"{rig_name}.md"
-            with open(markdown_file, "w") as f:
+            with open(markdown_file, "w", encoding="utf-8") as f:
                 f.write(markdown_content)
 
             click.echo(f"Converted {yaml_file} -> {markdown_file}")

@@ -4,6 +4,9 @@ from pathlib import Path
 from typing import Any
 
 import koza
+from koza.io.writer.writer import KozaWriter
+from koza.transform import Mappings
+
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
@@ -16,8 +19,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ResourceRoleEnum,
     RetrievalSource,
 )
-from koza.io.writer.writer import KozaWriter
-from koza.transform import Mappings
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
 from translator_ingest.ingests.hpoa.hpoa import (
@@ -193,7 +194,7 @@ def test_disease_to_phenotype_node_transform(
                 "qualifier": "",
                 "hpo_id": "HP:0001249",
                 "reference": "OMIM:117650",
-                "evidence": "TAS",
+                "evidence": "IEA",
                 "onset": "",
                 "frequency": "50%",
                 "sex": "",
@@ -211,7 +212,7 @@ def test_disease_to_phenotype_node_transform(
                 # Although "OMIM:117650" is recorded above as
                 # a reference, it is not used as a publication
                 "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0000501"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": 50.0,
@@ -224,7 +225,7 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
+                "agent_type": AgentTypeEnum.text_mining_agent,
             }
         ),
         (  # Query 2 - Another 'aspect' == 'P' record processed
@@ -236,7 +237,7 @@ def test_disease_to_phenotype_node_transform(
                 "qualifier": "NOT",
                 "hpo_id": "HP:0001545",
                 "reference": "OMIM:117650",
-                "evidence": "TAS",
+                "evidence": "PCS",
                 "onset": "",
                 "frequency": "HP:0040283",
                 "sex": "",
@@ -264,7 +265,7 @@ def test_disease_to_phenotype_node_transform(
             #         {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
             #     ],
             #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-            #     "agent_type": AgentTypeEnum.manual_agent,
+            #     "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             # }
         ),
         (  # Query 3 - Same 'aspect' == 'P' record but lacking any frequency qualifier
@@ -302,8 +303,8 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            }
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            },
         )
     ],
 )
@@ -444,6 +445,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         "gene_symbol": "ABCB7",
         "hpo_id": "HP:0002470",
         "hpo_name": "Nonprogressive cerebellar ataxia",
+        "evidence": "PCS",
         "publications": "PMID:26242992;PMID:4045952;PMID:11050011",
         "frequency": "11/11",
         "disease_id": "OMIM:301310",
@@ -466,6 +468,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "AAAS",
                 "hpo_id": "HP:0000252",
                 "hpo_name": "Microcephaly",
+                "evidence": "IEA",
                 "publications": "PMID:11062474",
                 "frequency": "-",
                 "disease_id": "OMIM:231550",
@@ -493,7 +496,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": ["PMID:11062474"],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.text_mining_agent,
             },
         ),
         (  # Query 1 - Full record, with a HPO term defined frequency field value
@@ -502,6 +505,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "AP3B2",
                 "hpo_id": "HP:0001298",
                 "hpo_name": "Encephalopathy",
+                "evidence": "PCS",
                 "publications": "",
                 "frequency": "HP:0040281",
                 "disease_id": "ORPHA:442835",
@@ -529,7 +533,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": [],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
         (  # Query 2 - Full record, with a ratio ("quotient") frequency field value
@@ -538,6 +542,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "CLPP",
                 "hpo_id": "HP:0000013",
                 "hpo_name": "Hypoplasia of the uterus",
+                "evidence": "TAS",
                 "publications": "PMID:23541340",
                 "frequency": "3/9",
                 "disease_id": "OMIM:614129",
@@ -565,7 +570,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": ["PMID:23541340"],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             },
         ),
         (  # Query 3 - Full record, with a percentage frequency field value
@@ -575,6 +580,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "PHOX2B",
                 "hpo_id": "HP:0003005",
                 "hpo_name": "Ganglioneuroma",
+                "evidence": "PCS",
                 "publications": "PMID:23541340;PMID:12345678",
                 "frequency": "5%",
                 "disease_id": "OMIM:613013",
@@ -602,7 +608,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": ["PMID:23541340", "PMID:12345678"],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
     ],
