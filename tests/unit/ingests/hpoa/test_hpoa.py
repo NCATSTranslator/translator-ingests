@@ -4,6 +4,9 @@ from pathlib import Path
 from typing import Any
 
 import koza
+from koza.io.writer.writer import KozaWriter
+from koza.transform import Mappings
+
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
@@ -16,8 +19,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ResourceRoleEnum,
     RetrievalSource,
 )
-from koza.io.writer.writer import KozaWriter
-from koza.transform import Mappings
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
 from translator_ingest.ingests.hpoa.hpoa import (

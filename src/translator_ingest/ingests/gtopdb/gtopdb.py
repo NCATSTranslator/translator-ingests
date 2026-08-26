@@ -2,7 +2,6 @@ import koza
 import pandas as pd
 import requests
 import re
-from bs4 import BeautifulSoup
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -37,22 +36,33 @@ BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
 
+# The interactions file that this ingest downloads; its first line carries the release version.
+GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
+
+# e.g. '"# GtoPdb Version: 2026.2 - published: 2026-06-15"'
+GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
+
+
 def get_latest_version() -> str:
-    # lacking a better programmatic approach, derive the version from the gtopdb html
-    html_page: requests.Response = requests.get('https://www.guidetopharmacology.org/download.jsp')
-    resp: BeautifulSoup = BeautifulSoup(html_page.content, 'html.parser')
+    """Determine the latest GtoPdb release version.
 
-    # we expect the html to contain version text like 'Downloads are from the 2025.4 version.'
-    # the following should extract the version from it (2025.4)
-    search_text = 'Downloads are from the *'
-    b_tag: BeautifulSoup.Tag = resp.find('b', string=re.compile(search_text))
-    if len(b_tag) > 0:
-        html_value = b_tag.text
-        html_value = html_value[len(search_text) - 1:]  # remove the 'Downloads are from the' part
-        source_version = html_value.split(' version')[0]  # remove the ' version.' part
-        return source_version
+    The download.jsp web page that used to advertise the version now requires a login, so the version is
+    read from the metadata comment on the first line of the interactions file instead. That file is the
+    same one this ingest downloads, so the version is guaranteed to describe the data actually ingested.
 
-    raise RuntimeError('Could not find the "Downloads are from the" text in the html to find the latest version.')
+    :return: The GtoPdb version, e.g. '2026.2'
+    :raises RuntimeError: If the version could not be parsed from the file.
+    """
+    with requests.get(GTOPDB_INTERACTIONS_URL, stream=True, timeout=60) as response:
+        response.raise_for_status()
+        first_line = next(response.iter_lines(decode_unicode=True), "")
+
+    match = GTOPDB_VERSION_PATTERN.search(first_line)
+    if match is None:
+        raise RuntimeError(
+            f"Could not parse the GtoPdb version from the first line of {GTOPDB_INTERACTIONS_URL}: {first_line!r}"
+        )
+    return match.group("version")
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:

@@ -4,8 +4,8 @@ from pathlib import Path
 import polars as pl
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    AffinityMeasurement,
     ChemicalGeneInteractionAssociation,
+    QuantityValue,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     RetrievalSource,
@@ -52,14 +52,14 @@ from tests.unit.ingests.bindingdb.sample_data import (
 )
 
 
-# get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
+# get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue]:
 @pytest.mark.parametrize(
     "test_record,expected",
     [
         (   # Query 0
             {},
             None
-        ),
+        ),  # no affinity columns -> no measurements
         (   # Query 1
             RECORD_MISSING_FIELD_1,
             ("pKi", 7.0, "equal_to")
@@ -79,15 +79,20 @@ from tests.unit.ingests.bindingdb.sample_data import (
     ]
 )
 def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[str,float,str]):
-    result: Optional[list[AffinityMeasurement]] = get_affinity_measurements(test_record)
+    """
+    Affinity parameters are now named fields on ProteinLigandAssayResult rather than an
+    enum on a measurement object, so the parser returns a mapping of field name to the
+    QuantityValue carrying the value and its binary relation.
+    """
+    result: dict[str, QuantityValue] = get_affinity_measurements(test_record)
     if expected is None:
-        assert result is None
+        assert not result
     else:
-        assert result is not None, "Unexpected null result from get_affinity_measurements?"
-        affinity_measurement: AffinityMeasurement = result[0]
-        assert affinity_measurement.affinity_parameter == expected[0]
-        assert affinity_measurement.affinity == expected[1]
-        assert affinity_measurement.has_binary_relation == expected[2]
+        parameter, value, binary_relation = expected
+        assert parameter in result, f"Expected {parameter} among {sorted(result)}"
+        measurement: QuantityValue = result[parameter]
+        assert measurement.has_numeric_value == value
+        assert measurement.has_binary_relation == binary_relation
 
 
 @pytest.fixture(scope="package")
@@ -123,7 +128,7 @@ ASSOCIATION_TEST_SLOTS = (
     "predicate",
     "object",
     "publications",
-    "has_affinity",
+    "has_supporting_studies",
     "sources",
     "knowledge_level",
     "agent_type",
@@ -226,13 +231,18 @@ def test_prepare_bindingdb_data(
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P42574",
                 "publications": ["PMID:12408711"],
-                "has_affinity": [
-                    {
-                        "affinity_parameter": "pKi",
-                        "affinity": 7.045757490560675,
-                        "has_binary_relation": "equal_to"
+                "has_supporting_studies": {
+                    "PMID:12408711": {
+                        "has_study_results": [
+                            {
+                                "pKi": QuantityValue(
+                                    has_numeric_value=7.045757490560675,
+                                    has_binary_relation="equal_to",
+                                )
+                            }
+                        ]
                     }
-                ],
+                },
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
@@ -266,13 +276,18 @@ def test_prepare_bindingdb_data(
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
-                "has_affinity": [
-                    {
-                        "affinity_parameter": "pKd",
-                        "affinity": 6.795880017344075,
-                        "has_binary_relation": "less_than"
+                "has_supporting_studies": {
+                    "PMID:12408711": {
+                        "has_study_results": [
+                            {
+                                "pKd": QuantityValue(
+                                    has_numeric_value=6.795880017344075,
+                                    has_binary_relation="less_than",
+                                )
+                            }
+                        ]
                     }
-                ],
+                },
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
@@ -304,7 +319,7 @@ def test_prepare_bindingdb_data(
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
-                "has_affinity": None,
+                "has_supporting_studies": None,
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
@@ -335,13 +350,18 @@ def test_prepare_bindingdb_data(
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
                 ],
-                "has_affinity": [
-                    {
-                        "affinity_parameter": "pEC50",
-                        "affinity": 5.4089353929735005,
-                        "has_binary_relation": "equal_to"
+                "has_supporting_studies": {
+                    "doi:10.1021/jm020230j": {
+                        "has_study_results": [
+                            {
+                                "pEC50": QuantityValue(
+                                    has_numeric_value=5.4089353929735005,
+                                    has_binary_relation="equal_to",
+                                )
+                            }
+                        ]
                     }
-                ],
+                },
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }
@@ -373,13 +393,18 @@ def test_prepare_bindingdb_data(
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:uspto-patent"}
                 ],
-                "has_affinity": [
-                    {
-                        "affinity_parameter": "pIC50",
-                        "affinity": 4.301029995663981,
-                        "has_binary_relation": "greater_than"
+                "has_supporting_studies": {
+                    "uspto-patent:9447092": {
+                        "has_study_results": [
+                            {
+                                "pIC50": QuantityValue(
+                                    has_numeric_value=4.301029995663981,
+                                    has_binary_relation="greater_than",
+                                )
+                            }
+                        ]
                     }
-                ],
+                },
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent
             }

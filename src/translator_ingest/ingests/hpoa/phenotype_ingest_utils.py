@@ -5,6 +5,8 @@ from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, AgentTypeEnum
+import koza
+from biolink_model.datamodel.pydanticmodel_v2 import BaseModel, RetrievalSource
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
@@ -27,7 +29,7 @@ def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
     or from the CURIE namespace of a 'source' string, which is a disease identifier.
 
     :param source_id: HPOA data field value encoding the primary knowledge source
-    :return: Union[list[RetrievalSource], list[str]] of source infores identifiers
+    :return: list[RetrievalSource] of source infores identifiers
     """
     if "medgen" in source_id:
         return HPOA_MEDGEN_OMIM_SOURCES
@@ -46,6 +48,7 @@ def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
+
 _evidence_mappings: dict = {
 
     # "inferred from electronic annotation"
@@ -64,6 +67,7 @@ def get_evidence_and_agent(evidence_tag: str | None) -> tuple[list[str]|None,Age
     else:
         return _evidence_mappings[evidence_tag]
 
+
 # Sex (right now both all uppercase and all lowercase
 sex_format: dict = {"male": "male", "MALE": "male", "female": "female", "FEMALE": "female"}
 
@@ -77,8 +81,8 @@ class FrequencyHpoTerm(BaseModel):
 
     curie: str
     name: str
-    lower: float
-    upper: float
+    lower: float | int
+    upper: float | int
 
 
 class Frequency(BaseModel):
@@ -86,11 +90,11 @@ class Frequency(BaseModel):
     Converts fields to pydantic field declarations
     """
 
-    frequency_qualifier: Optional[str] = None
-    has_percentage: Optional[float] = None
-    has_quotient: Optional[float] = None
-    has_count: Optional[int] = None
-    has_total: Optional[int] = None
+    frequency_qualifier: str | None = None
+    has_percentage: float | int | None = None
+    has_quotient: float | int | None = None
+    has_count: int | None = None
+    has_total: int | None = None
 
 
 # HPO "HP:0040279": representing the frequency of phenotypic abnormalities within a patient cohort.
@@ -114,7 +118,7 @@ hpo_term_to_frequency: dict = {
 }  # Present in 0% of the cases.
 
 
-def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm:
+def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm | None:
     """
     :param hpo_id: Candidate "frequency" HPO ID to be looked up
     :return: FrequencyHpoTerm defined by the HPO ID (if available)
@@ -126,22 +130,22 @@ def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm:
         raise ValueError(f"Invalid HPO ID: {hpo_id}")
 
 
-def map_percentage_frequency_to_hpo_term(percentage: Optional[float]) -> FrequencyHpoTerm:
+def map_percentage_frequency_to_hpo_term(percentage: float | None) -> FrequencyHpoTerm:
     """
     Map phenotypic percentage frequency to a corresponding HPO term corresponding to (HP:0040280 to HP:0040285).
 
-    :param percentage: The float number should be in range 0.0 to 100.0 (otherwise, returns None)
+    :param percentage: float | None, number should be in range 0.0 to 100.0 (otherwise, returns None)
     :return: FrequencyHpoTerm mapping onto the percentage range of the term definition
-    :raise ValueError: when percentage lies outside any valid FrequencyHpoTerm range
+    :raise ValueError: when the percentage lies outside any valid FrequencyHpoTerm range
     """
     if percentage is not None:
         for hpo_id, fht in hpo_term_to_frequency.items():
             if fht.lower <= round(percentage) <= fht.upper:
                 return fht
-    raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage}")
+    raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage or 'None'}")
 
 
-def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency:
+def phenotype_frequency_to_hpo_term(koza_transform: koza.KozaTransform, frequency_field: str | None) -> Frequency:
     """
     Maps a raw frequency field onto an HPO term, for consistency, since **phenotypes.hpoa** file field 8,
     which tracks phenotypic frequency, has variable values.   There are three allowed options for this field:
@@ -155,14 +159,15 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
        with the specified disease were found to have the phenotypic abnormality referred to by the HPO term
        in question in the study referred to by the DB_Reference;
 
-        :param frequency_field: String raw frequency value in one of the three above forms
-        :return: Frequency containing the resolved FrequencyHpoTerm range and/or
-                 interpreted value (empty Frequency object, if not found)
+    :param koza_transform: koza.KozaTransform object
+    :param frequency_field: String raw frequency value in one of the three above forms
+    :return: Frequency containing the resolved FrequencyHpoTerm range and/or
+             interpreted value (empty Frequency object, if not found)
     """
-    quotient: Optional[float] = None
-    percentage: Optional[float] = None
-    has_count: Optional[int] = None
-    has_total: Optional[int] = None
+    quotient: float | int | None = None
+    percentage: float | int | None = None
+    has_count: int | None = None
+    has_total: int | None = None
     if frequency_field:
         try:
 
@@ -183,9 +188,11 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
                         ratio_parts[1] is not None and
                         ratio_parts[1].isdigit()
                     ), f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
-                    has_count: int = int(ratio_parts[0])
-                    has_total: int = int(ratio_parts[1])
-                    quotient: float = round(float(has_count / has_total), 2)
+                    has_count = int(ratio_parts[0])
+                    has_total = int(ratio_parts[1])
+                    assert has_total is not None
+                    quotient = round(float(has_count / has_total), 2)
+
                     percentage = round(quotient * 100.0, 1)
 
                 # This should map onto a non-null HPO term
@@ -193,9 +200,10 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
 
         except Exception as e:
             # the expected ratio is not recognized
-            logger.error(
+            koza_transform.log(
                 "phenotype_frequency_to_hpo_term(): invalid frequency field value "
-                + f"'{frequency_field}' of type {type(frequency_field)}, {type(e)} message: {e}"
+                + f"'{frequency_field}' of type {type(frequency_field).__name__}, {type(e).__name__} message: {e}",
+                level="ERROR"
             )
             return Frequency()
 
@@ -213,7 +221,7 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
         return Frequency()
 
 
-def get_qualified_predicate(original_predicate: str) -> Optional[str]:
+def get_qualified_predicate(original_predicate: str) -> str | None:
     """
     Convert the association column into a Biolink Model predicate
     """
