@@ -8,9 +8,8 @@ and age of onset and frequency (if known).
 The general design of this code comes from the Monarch Initiative, in particular,
 https://github.com/monarch-initiative/monarch-phenotype-profile-ingest
 """
-
-from loguru import logger
-from typing import Optional, Any, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 import duckdb
 
@@ -197,7 +196,7 @@ def transform_disease_to_phenotype_edge_record(
         ## Biological gender
         ### female -> PATO:0000383
         ### male -> PATO:0000384
-        sex: Optional[str] = record["sex"] if record["sex"] else None  # may be translated by local table
+        sex: str | None = record["sex"] if record["sex"] else None  # may be translated by local table
         sex_qualifier = sex_to_pato[sex_format[sex]] if sex and sex in sex_format else None
         # sex_qualifier = sex_format[sex] if sex in sex_format else None
 
@@ -211,7 +210,7 @@ def transform_disease_to_phenotype_edge_record(
             frequency = Frequency()
         else:
             # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-            frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+            frequency = phenotype_frequency_to_hpo_term(koza_transform, record["frequency"])
 
         # Evidence Code Ontology ("ECO") term translated to ECO class CURIE
         # based on HPO documentation and mapped onto a given agent_type
@@ -269,7 +268,7 @@ def transform_gene_to_disease_record(
     gene_id = record["ncbi_gene_id"]
     gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
 
-    qualified_predicate: Optional[str] = get_qualified_predicate(record["association_type"])
+    qualified_predicate: str | None = get_qualified_predicate(record["association_type"])
 
     disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     disease = Disease(id=disease_id, **{})
@@ -391,16 +390,17 @@ def transform_gene_to_phenotype_record(
         frequency = Frequency()
     else:
         # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
-        frequency = phenotype_frequency_to_hpo_term(record["frequency"])
+        frequency = phenotype_frequency_to_hpo_term(koza_transform, record["frequency"])
 
     dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     try:
         # Convert disease identifier to mondo term identifier if possible...
         dis_id = koza_transform.lookup(name=dis_id, map_column="subject_id", map_name="mondo_map")
     except MapItemException:
-        logger.debug(
+        koza_transform.log(
             f"transform_record_gene_to_phenotype() - koza_transform.lookup "
-            f"failure for 'dis_id' field '{str(dis_id)}' in record '{str(record)}' "
+            f"failure for 'dis_id' field '{str(dis_id)}' in record '{str(record)}' ",
+            level="DEBUG"
         )
         # ...otherwise leave as is
         pass

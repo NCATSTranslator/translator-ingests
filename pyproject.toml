@@ -10,11 +10,15 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
-    "biolink-model==4.4.2",
-    "bmt>=1.4.8",
+    "biolink-model==4.4.4",
+    # bmt >=1.5.0 defaults to the biolink-model 4.4.4 schema, matching the pinned
+    # pydantic model above. Older bmt defaults to the 4.2.2 schema, which silently
+    # disagrees with the pydantic classes about which qualifiers a class permits.
+    "bmt>=1.5.0",
     "click>=8.0.0",
     "codespell>=2.4.1",
     "deepdiff>=8.6.1",
+    "duckdb>=1.4.4",    # ChEMBL activities transform pre-joins over the source sqlite via duckdb
     "hatchling",
     "kghub-downloader>=0.5.0",
     "koza>=2.4.0",
@@ -48,7 +52,7 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
-    "biolink-model==4.4.2",
+    "biolink-model==4.4.4",
 ]
 
 [tool.pytest.ini_options]

@@ -127,9 +127,6 @@ def yaml_to_markdown(rig_data, rig_name):
         target = rig_data["target_info"]
         markdown += "## Target Information\n\n"
 
-        if "infores_id" in target:
-            markdown += f"**Target InfoRes ID:** {target['infores_id']}\n\n"
-
         if "edge_type_info" in target and target["edge_type_info"]:
             markdown += "### Edge Types\n\n"
             headers = [
