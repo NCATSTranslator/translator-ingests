@@ -232,16 +232,18 @@ css = [
 
 [[package]]
 name = "bmt"
-version = "1.4.8"
+version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "biolink-model" },
+    { name = "casefy" },
     { name = "deprecation" },
-    { name = "stringcase" },
+    { name = "pyyaml" },
+    { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/c6/a51ac6447d1da20b7680c073a1c99359f8165ec9ee7301606d28891f2cd9/bmt-1.4.8.tar.gz", hash = "sha256:9286dbc83caf61117fbe45eee23308dcdbfaa0413c0514ae9d3505aa9f6a5781", size = 130086, upload-time = "2026-04-14T00:20:08.223Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/11/34a9aa62262bd46a05fcdea9fcb27d81d7c7f650986f2f8bd3379f76850b/bmt-1.5.0.tar.gz", hash = "sha256:f053e83897c8e4d11a5499ff7de3cd1b66b59cd28562ebddf88cb60ad4cec862", size = 137094, upload-time = "2026-08-11T01:07:44.092Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/66/f63997b0db63b7fc4614024584ec65b78550df551ed48019db7ae79f86fa/bmt-1.4.8-py3-none-any.whl", hash = "sha256:cba57f58a2ae85a5f29ab30cac84b7c5032d095741b07e8f252395bbee4ce276", size = 19758, upload-time = "2026-04-14T00:20:06.933Z" },
+    { url = "https://files.pythonhosted.org/packages/13/49/fdf58fd9d5ebbc9970656e2129270fce8aee987bab814662a1179d8cde23/bmt-1.5.0-py3-none-any.whl", hash = "sha256:2a9ca7b3b31102911d3b5e2c5973cb3c8a06334d4ac4ae0afb9df1990622db7c", size = 20429, upload-time = "2026-08-11T01:07:43.214Z" },
 ]
 
 [[package]]
@@ -282,6 +284,7 @@ dependencies = [
     { name = "click" },
     { name = "codespell" },
     { name = "deepdiff" },
+    { name = "duckdb" },
     { name = "hatchling" },
     { name = "kghub-downloader" },
     { name = "koza" },
@@ -317,10 +320,11 @@ dev = [
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
     { name = "biolink-model", specifier = "==4.4.4" },
-    { name = "bmt", specifier = ">=1.4.8" },
+    { name = "bmt", specifier = ">=1.5.0" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "codespell", specifier = ">=2.4.1" },
     { name = "deepdiff", specifier = ">=8.6.1" },
+    { name = "duckdb", specifier = ">=1.4.4" },
     { name = "hatchling" },
     { name = "kghub-downloader", specifier = ">=0.5.0" },
     { name = "koza", specifier = ">=2.4.0" },
@@ -350,6 +354,15 @@ dev = [
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "resource-ingest-guide-schema", specifier = ">=0.1.5" },
     { name = "ruff", specifier = ">=0.12.8" },
+]
+
+[[package]]
+name = "casefy"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/24/9c732e8e3585a1dc621c9c1349e55e87070c95d3c2d57bd8c5083ec8d731/casefy-1.1.0.tar.gz", hash = "sha256:849d6e0f80506fac70ab8e18999a4ca1eb7d8f70941682383d64aa22a7497f8f", size = 123884, upload-time = "2025-03-07T14:36:44.897Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/6a/1766f8c163951a3c9aeb30a4e6f5de9b2eed8389e3906c4cf30fcb475be6/casefy-1.1.0-py3-none-any.whl", hash = "sha256:a3dfcb14d85902d90702db1e9835760237f6a73ec0ae3b7e991ad767513a3cbc", size = 6539, upload-time = "2025-03-07T14:36:37.546Z" },
 ]
 
 [[package]]
@@ -3422,12 +3435,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
 ]
-
-[[package]]
-name = "stringcase"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f3/1f/1241aa3d66e8dc1612427b17885f5fcd9c9ee3079fc0d28e9a3aeeb36fa3/stringcase-1.2.0.tar.gz", hash = "sha256:48a06980661908efe8d9d34eab2b6c13aefa2163b3ced26972902e3bdfd87008", size = 2958, upload-time = "2017-08-06T01:40:57.021Z" }
 
 [[package]]
 name = "terminado"

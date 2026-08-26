@@ -18,7 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Study,
     TextMiningStudyResult,
 )
-from bmt.pydantic import entity_id
+from translator_ingest.util.transform_utils import entity_id
 from koza.runner import KozaRunner, KozaTransformHooks
 
 from tests.unit.ingests import MockKozaWriter
@@ -34,6 +34,7 @@ from translator_ingest.ingests.tmkp.tmkp import (
     _skipped_edges_by_prefix,
     parse_attributes,
     transform_tmkp_edge,
+    TMKP_TO_BIOLINK_SLOT_MAP,
     INFORES_TEXT_MINING_KP,
     PREDICATE_REMAP,
     MODIFIED_FORM,
@@ -449,6 +450,107 @@ class TestParseAttributes:
         parse_attributes(attributes, assoc)
 
         assert "totally_unknown_attr" in _warned_unmapped_attrs
+
+    def test_edge_level_confidence_score_is_ingested(self):
+        attributes = [
+            {
+                "attribute_type_id": "biolink:extraction_confidence_score",
+                "value": 0.9983171550000001,
+                "value_type_id": "biolink:ConfidenceLevel",
+            }
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == pytest.approx(0.9983171550000001)
+        assert "biolink:extraction_confidence_score" not in _warned_unmapped_attrs
+
+    def test_edge_level_score_does_not_disturb_per_evidence_scores(self):
+        attributes = [
+            {
+                "attribute_type_id": "biolink:extraction_confidence_score",
+                "value": 0.9983171550000001,
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.99937016"},
+                ],
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_2",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.99726415"},
+                ],
+            },
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == pytest.approx(0.9983171550000001)
+        results = list(assoc.has_supporting_studies.values())[0].has_study_results
+        assert [r.extraction_confidence_score for r in results] == [
+            pytest.approx(0.99937016),
+            pytest.approx(0.99726415),
+        ]
+
+    def test_edge_level_score_is_mean_of_per_evidence_scores(self):
+        nested = [0.99937016, 0.99726415]
+        attributes = [
+            {
+                "attribute_type_id": "biolink:extraction_confidence_score",
+                "value": sum(nested) / len(nested),
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": str(nested[0])},
+                ],
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_2",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": str(nested[1])},
+                ],
+            },
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        results = list(assoc.has_supporting_studies.values())[0].has_study_results
+        per_evidence = [r.extraction_confidence_score for r in results]
+        assert assoc.has_confidence_score == pytest.approx(sum(per_evidence) / len(per_evidence))
+
+    def test_out_of_range_confidence_score_is_ingested_unchanged(self):
+        attributes = [
+            {"attribute_type_id": "biolink:extraction_confidence_score", "value": 1.240364}
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == pytest.approx(1.240364)
+
+    def test_mapping_to_a_nonexistent_slot_warns_instead_of_dropping(self):
+        monkey_key = "attr_with_bad_target"
+        TMKP_TO_BIOLINK_SLOT_MAP[monkey_key] = "not_a_real_biolink_slot"
+        try:
+            attributes = [{"attribute_type_id": monkey_key, "value": "something"}]
+            assoc = _make_association()
+            parse_attributes(attributes, assoc)
+
+            assert "not_a_real_biolink_slot" in _warned_unmapped_attrs
+        finally:
+            del TMKP_TO_BIOLINK_SLOT_MAP[monkey_key]
+
+    def test_slot_map_contains_no_dead_entries(self):
+        for source_name, biolink_slot in TMKP_TO_BIOLINK_SLOT_MAP.items():
+            assert biolink_slot in Association.model_fields, (
+                f"'{source_name}' maps to '{biolink_slot}', which is not a slot on Association"
+            )
 
 
 # ---------------------------------------------------------------------------
