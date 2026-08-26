@@ -55,7 +55,8 @@ PREDICATE_REMAP = {
 
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
-# Map TMKP attribute names to Biolink slot names
+# Map TMKP attribute names to Biolink slot names.
+
 TMKP_TO_BIOLINK_SLOT_MAP = {
     # Space case variations (from YAML serialization)
     "has evidence count": "evidence_count",
@@ -64,8 +65,7 @@ TMKP_TO_BIOLINK_SLOT_MAP = {
     "has_evidence_count": "evidence_count",
     "supporting_publications": "publications",
     "supporting_document": "publications",
-    "tmkp_confidence_score": "has_confidence_score",
-    "semmed_agreement_count": "semmed_agreement_count",  # TMKP-specific, no Biolink equivalent
+    "extraction_confidence_score": "has_confidence_score",
 }
 
 # Track which unmapped attributes we've already warned about (to avoid log spam)
@@ -360,6 +360,12 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
                     setattr(association, biolink_slot, existing + new_pubs)
                 else:
                     setattr(association, biolink_slot, value)
+            elif biolink_slot not in _warned_unmapped_attrs:
+                logger.warning(
+                    f"TMKP attribute '{attr_type}' is mapped to '{biolink_slot}', which is "
+                    f"not a slot on {type(association).__name__} - value dropped"
+                )
+                _warned_unmapped_attrs.add(biolink_slot)
 
         elif attr_type and attr_type not in _warned_unmapped_attrs:
             # Log warning for truly unrecognized attributes (only once per attribute type)
