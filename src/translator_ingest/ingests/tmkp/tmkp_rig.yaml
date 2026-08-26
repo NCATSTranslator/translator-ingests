@@ -72,7 +72,7 @@ ingest_info:
       transformation: "Qualifier passthrough: all source record fields that are valid slots on the association class are passed through to the output edge. Computed fields (subject, predicate, object, knowledge_level, agent_type, EPC defaults) are not overridden."
       rationale: "Ensures no source qualifiers are silently dropped. The Biolink pydantic model validates that values are valid for each field."
     - file_name: edges.tsv.gz
-      transformation: "Attribute mapping: TMKP attribute names are mapped to Biolink slot names (e.g. 'has_evidence_count' → 'evidence_count', 'supporting_publications' → 'publications', 'tmkp_confidence_score' → 'has_confidence_score')"
+      transformation: "Attribute mapping: TMKP attribute names are mapped to Biolink slot names (e.g. 'has_evidence_count' → 'evidence_count', 'supporting_publications' → 'publications', 'extraction_confidence_score' → 'has_confidence_score'). The edge-level 'biolink:extraction_confidence_score' attribute is the arithmetic mean of the per-evidence extraction scores carried on each nested TextMiningStudyResult; it is present on 100% of source edges. Note that roughly 3.9% of source values exceed 1.0 (observed maximum 1.5102) and are ingested unchanged rather than clamped, so consumers must not assume the score is a probability."
       rationale: "TMKP uses different naming conventions for some attributes. The ingest maps these to their canonical Biolink Model equivalents so they are recognized by downstream consumers."
     - file_name: edges.tsv.gz
       transformation: "Publication ID normalization: bare PMC identifiers (e.g. 'PMC6211782') are normalized to CURIE form ('PMC:PMC6211782')."
