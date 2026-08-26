@@ -63,8 +63,6 @@ TMKP_TO_BIOLINK_SLOT_MAP = {
     "has confidence score": "has_confidence_score",
     # Snake_case variations that need mapping
     "has_evidence_count": "evidence_count",
-    "supporting_publications": "publications",
-    "supporting_document": "publications",
     "extraction_confidence_score": "has_confidence_score",
 }
 
@@ -324,7 +322,10 @@ def parse_attributes(
 
                 if nested_type == "biolink:supporting_text":
                     tm_result.supporting_text = [nested_value] if nested_value else []
-                elif nested_type == "biolink:supporting_document":
+                elif nested_type == "biolink:publications":
+                    # Per-evidence provenance: the document this supporting_text came from.
+                    # Distinct from the edge-level 'biolink:publications' attribute, which
+                    # aggregates these across all evidence items.
                     tm_result.xref = [_normalize_publication_id(nested_value)] if nested_value else []
                 elif nested_type == "biolink:supporting_text_located_in":
                     tm_result.supporting_text_section_type = nested_value
@@ -366,13 +367,7 @@ def parse_attributes(
         elif slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
-                if biolink_slot == "publications":
-                    raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
-                    new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
-                    existing = getattr(association, biolink_slot) or []
-                    setattr(association, biolink_slot, existing + new_pubs)
-                else:
-                    setattr(association, biolink_slot, value)
+                setattr(association, biolink_slot, value)
             elif biolink_slot not in _warned_unmapped_attrs:
                 logger.warning(
                     f"TMKP attribute '{attr_type}' is mapped to '{biolink_slot}', which is "

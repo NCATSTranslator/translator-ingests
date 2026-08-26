@@ -285,7 +285,7 @@ class TestParseAttributes:
                 "value": "tmkp:result_1",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "Drug X treats disease Y."},
-                    {"attribute_type_id": "biolink:supporting_document", "value": "PMID:12345"},
+                    {"attribute_type_id": "biolink:publications", "value": "PMID:12345"},
                     {"attribute_type_id": "biolink:supporting_text_located_in", "value": "abstract"},
                     {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.95"},
                     {"attribute_type_id": "biolink:subject_location_in_text", "value": "42|50"},
@@ -330,47 +330,37 @@ class TestParseAttributes:
         assert result.subject_location_in_text == [42, 50]
 
     def test_tmkp_to_biolink_attribute_mapping(self):
-        """supporting_publications maps to publications via TMKP_TO_BIOLINK_SLOT_MAP."""
+        """has_evidence_count maps to evidence_count via TMKP_TO_BIOLINK_SLOT_MAP."""
         attributes = [
-            {"attribute_type_id": "supporting_publications", "value": "PMID:111|PMID:222"},
+            {"attribute_type_id": "has_evidence_count", "value": 7},
         ]
         assoc = _make_association()
         parse_attributes(attributes, assoc)
 
-        assert assoc.publications == ["PMID:111", "PMID:222"]
+        assert assoc.evidence_count == 7
 
-    def test_publications_accumulation(self):
-        """Multiple attributes mapping to publications merge into one list."""
+    def test_edge_level_publications_are_ingested(self):
+        """The edge-level 'biolink:publications' attribute populates association.publications.
+
+        This is the aggregate list across all evidence items, distinct from the per-evidence
+        nested 'biolink:publications' attribute that populates TextMiningStudyResult.xref.
+        """
         attributes = [
-            {"attribute_type_id": "supporting_publications", "value": "PMID:111"},
-            {"attribute_type_id": "supporting_document", "value": "PMID:222"},
+            {"attribute_type_id": "biolink:publications", "value": ["PMID:111", "PMC:9308958"]},
         ]
         assoc = _make_association()
         parse_attributes(attributes, assoc)
 
-        assert "PMID:111" in assoc.publications
-        assert "PMID:222" in assoc.publications
+        assert assoc.publications == ["PMID:111", "PMC:9308958"]
 
-    def test_bare_pmc_ids_in_publications_are_prefixed(self):
-        """Bare PMC identifiers from source data are normalized to CURIE form."""
-        attributes = [
-            {"attribute_type_id": "supporting_publications", "value": "PMC6211782|PMID:31388901|PMC8208096"},
-        ]
-        assoc = _make_association()
-        parse_attributes(attributes, assoc)
-
-        assert "PMC:PMC6211782" in assoc.publications
-        assert "PMID:31388901" in assoc.publications
-        assert "PMC:PMC8208096" in assoc.publications
-
-    def test_bare_pmc_id_in_supporting_document_is_prefixed(self):
-        """Bare PMC identifier in a nested supporting_document is normalized in xref."""
+    def test_bare_pmc_id_in_nested_publications_is_prefixed(self):
+        """Bare PMC identifier in a nested publications attribute is normalized in xref."""
         attributes = [
             {
                 "attribute_type_id": "biolink:has_supporting_study_result",
                 "value": "tmkp:result_pmc",
                 "attributes": [
-                    {"attribute_type_id": "biolink:supporting_document", "value": "PMC6211782"},
+                    {"attribute_type_id": "biolink:publications", "value": "PMC6211782"},
                 ],
             }
         ]
@@ -584,7 +574,7 @@ class TestTransformTmkpEdge:
                 "value": "tmkp:result_1",
                 "attributes": [
                     {"attribute_type_id": "biolink:supporting_text", "value": "Drug treats disease."},
-                    {"attribute_type_id": "biolink:supporting_document", "value": "PMID:99999"},
+                    {"attribute_type_id": "biolink:publications", "value": "PMID:99999"},
                 ],
             }
         ]
