@@ -16,6 +16,10 @@ FILE_NAME_CHANGES = {
     "testing_data.json": "test-data.json"
 }
 
+RELEASE_NODES_FILENAME = "nodes.jsonl"
+RELEASE_EDGES_FILENAME = "edges.jsonl"
+RELEASE_GRAPH_METADATA_FILENAME = "graph-metadata.json"
+
 
 def atomic_copy_directory(src: Path, dest: Path):
     """Copy a directory to a destination using atomic rename to minimize downtime.
@@ -23,8 +27,9 @@ def atomic_copy_directory(src: Path, dest: Path):
     Uses a temp directory and atomic renames to ensure the destination is always
     valid (either old or new version), with only microseconds of transition time.
 
-    :param src: Source directory to copy
-    :param dest: Destination path (will be overwritten if exists)
+    Args:
+        src: Source directory to copy
+        dest: Destination path (will be overwritten if exists)
     """
     dest_tmp = dest.with_name(f"{dest.name}_new")
     dest_old = dest.with_name(f"{dest.name}_old")
@@ -56,10 +61,25 @@ def create_compressed_tar(nodes_file: Path,
     with open(output_path, 'wb') as fh:
         with cctx.stream_writer(fh) as compressor:
             with tarfile.open(fileobj=compressor, mode='w|') as tar:
-                tar.add(nodes_file, arcname="nodes.jsonl")
+                tar.add(nodes_file, arcname=RELEASE_NODES_FILENAME)
                 if edges_file.exists():
-                    tar.add(edges_file, arcname="edges.jsonl")
-                tar.add(graph_metadata_path, arcname="graph-metadata.json")
+                    tar.add(edges_file, arcname=RELEASE_EDGES_FILENAME)
+                tar.add(graph_metadata_path, arcname=RELEASE_GRAPH_METADATA_FILENAME)
+
+
+def extract_compressed_tar(tar_path: Path, output_directory: Path):
+    """Extract a zstd compressed tar archive created by create_compressed_tar.
+
+    Args:
+        tar_path: Path of the compressed archive to extract
+        output_directory: Directory to extract into, created if it does not already exist
+    """
+    output_directory.mkdir(parents=True, exist_ok=True)
+    dctx = zstd.ZstdDecompressor()
+    with open(tar_path, 'rb') as fh:
+        with dctx.stream_reader(fh) as decompressor:
+            with tarfile.open(fileobj=decompressor, mode='r|') as tar:
+                tar.extractall(path=output_directory, filter='data')
 
 
 def update_graph_metadata_for_release(source_graph_metadata_path: Path,
