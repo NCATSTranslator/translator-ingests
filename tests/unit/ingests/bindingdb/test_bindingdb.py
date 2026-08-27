@@ -1,65 +1,60 @@
-from typing import Optional, Any
-import pytest
 from pathlib import Path
-import polars as pl
-
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    ChemicalGeneInteractionAssociation,
-    QuantityValue,
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
-    RetrievalSource,
-    ResourceRoleEnum,
-)
+from typing import Any
 
 import koza
-from koza.transform import Mappings
+import polars as pl
+import pytest
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
+    ChemicalGeneInteractionAssociation,
+    KnowledgeLevelEnum,
+    QuantityValue,
+    ResourceRoleEnum,
+    RetrievalSource,
+)
 from koza.io.writer.writer import KozaWriter
+from koza.transform import Mappings
 
-from tests.unit.ingests import (
-    validate_transform_result,
-    MockKozaWriter,
-    MockKozaTransform
-)
-
-# from translator_ingest import INGESTS_DATA_PATH
-
-from translator_ingest.ingests.bindingdb.bindingdb import (
-    on_end_ingest_by_record,
-    prepare_bindingdb_data,
-    transform_bindingdb_by_record, on_begin_ingest_by_record
-)
-from translator_ingest.ingests.bindingdb.bindingdb_util import (
-    REACTANT_SET_ID,
-    LIGAND_SMILES,
-    TARGET_NAME,
-    SOURCE_ORGANISM,
-    PUBLICATION,
-    SUPPORTING_DATA_ID,
-    ROWS_MISSING_AFFINITY,
-    AFFINITY_PARAMETERS,
-    get_affinity_measurements,
-    filter_affinity_values
-)
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
 from tests.unit.ingests.bindingdb.sample_data import (
+    BINDINGDB_RECORD_WITH_A_US_PATENT,
+    CASPASE1_KD_RECORD,
+    CASPASE1_RECORD_WITH_DOI,
+    CASPASE1_WEAK_KON_RECORD,
+    CASPASE3_KI_RECORD,
+    PUBCHEM_RECORD,
     RECORD_MISSING_FIELD_1,
     RECORD_MISSING_FIELD_2,
-    CASPASE3_KI_RECORD,
-    CASPASE1_KD_RECORD,
-    CASPASE1_WEAK_KON_RECORD,
-    CASPASE1_RECORD_WITH_DOI,
-    BINDINGDB_RECORD_WITH_A_US_PATENT
+)
+from translator_ingest.ingests.bindingdb.bindingdb import (
+    on_begin_ingest_by_record,
+    on_end_ingest_by_record,
+    prepare_bindingdb_data,
+    transform_bindingdb_by_record,
+)
+from translator_ingest.ingests.bindingdb.bindingdb_util import (
+    AFFINITY_PARAMETERS,
+    CURATION_DATASOURCE,
+    LIGAND_SMILES,
+    PUBLICATION,
+    REACTANT_SET_ID,
+    ROWS_MISSING_AFFINITY,
+    SOURCE_ORGANISM,
+    SUPPORTING_DATA_ID,
+    TARGET_NAME,
+    filter_affinity_values,
+    get_affinity_measurements,
 )
 
 
-# get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue]:
+# get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
 @pytest.mark.parametrize(
     "test_record,expected",
     [
         (   # Query 0
             {},
             None
-        ),  # no affinity columns -> no measurements
+        ),
         (   # Query 1
             RECORD_MISSING_FIELD_1,
             ("pKi", 7.0, "equal_to")
@@ -78,35 +73,30 @@ from tests.unit.ingests.bindingdb.sample_data import (
         )
     ]
 )
-def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[str,float,str]):
-    """
-    Affinity parameters are now named fields on ProteinLigandAssayResult rather than an
-    enum on a measurement object, so the parser returns a mapping of field name to the
-    QuantityValue carrying the value and its binary relation.
-    """
-    result: dict[str, QuantityValue] = get_affinity_measurements(test_record)
+def test_get_affinity_measurements(test_record: dict[str, Any], expected: tuple[str,float,str] | None):
+    result:  dict[str, QuantityValue] = get_affinity_measurements(test_record)
     if expected is None:
-        assert not result
+        assert result == {}
     else:
-        parameter, value, binary_relation = expected
-        assert parameter in result, f"Expected {parameter} among {sorted(result)}"
-        measurement: QuantityValue = result[parameter]
-        assert measurement.has_numeric_value == value
-        assert measurement.has_binary_relation == binary_relation
+        assert result, "Unexpected empty result from get_affinity_measurements?"
+        assert expected[0] in result
+        value: QuantityValue = result[expected[0]]
+        assert value.has_numeric_value == expected[1]
+        assert value.has_binary_relation == expected[2]
 
 
 @pytest.fixture(scope="package")
 def mock_koza_transform() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = dict()
+    mappings: Mappings = {}
     return MockKozaTransform(
-        extra_fields=dict(),
+        extra_fields={},
         writer=writer,
         mappings=mappings,
         transform_metadata={},
         # Swap in the following code for temporary debugging using the real data file
         # input_files_dir=INGESTS_DATA_PATH / "bindingdb"  # Path(__file__).resolve().parent
-        input_files_dir = Path(__file__).resolve().parent
+        input_files_dir=Path(__file__).resolve().parent,
     )
 
 
@@ -147,9 +137,13 @@ def test_prepare_bindingdb_data(
     # bypasses Koza to directly read in the input data file to return
     # an iterable sequence of records, where duplication in the
     # original assay records is removed, merging into a single edge...
-    merged_records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
+    records_iterable = prepare_bindingdb_data(mock_koza_transform, data=[])
 
-    for test_record in merged_records_iterable:
+    # Sanity check, never expected but cleans up the unit test logic
+    assert records_iterable is not None, "Unexpected null result from prepare_bindingdb_data?"
+
+    expected_records: set[int] = {1, 2, 4, 5, 9, 10}
+    for test_record in records_iterable:
         # Record "3" excluded because it duplicates "4" but "4" is the duplicate entry last seen
         # Record "6" excluded because the source organism "Pan troglodytes" is not in the target list of taxa
         # Record "7" excluded because it has no affinity values at all
@@ -157,23 +151,22 @@ def test_prepare_bindingdb_data(
         assert test_record[REACTANT_SET_ID] not in [3, 6, 7, 8], \
             f"Unexpected reactant set ID # {test_record[REACTANT_SET_ID]}"
 
-        # ... but expecting all the other records being tested further
-        assert test_record[REACTANT_SET_ID] in [1, 2, 4, 5, 9], \
-            f"Missing expected reactant set ID # {test_record[REACTANT_SET_ID]}"
-
         # Didn't extract this field (among others...) - column was not needed
         assert LIGAND_SMILES not in test_record
 
         # Check that the publication and supporting data fields are set correctly
         if test_record[REACTANT_SET_ID] == 1:
+            expected_records.remove(1)
             assert test_record[PUBLICATION] == "PMID:12408711"
             assert test_record[SUPPORTING_DATA_ID] is None
 
         elif test_record[REACTANT_SET_ID] == 2:
+            expected_records.remove(2)
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 4:
+            expected_records.remove(4)
             assert test_record[TARGET_NAME] == "Caspase-1b"
             assert test_record[PUBLICATION] == "uspto-patent:9447092"
             assert test_record[SUPPORTING_DATA_ID] == "infores:uspto-patent"
@@ -183,44 +176,56 @@ def test_prepare_bindingdb_data(
             assert test_record["Ki (nM)"] == ">390"
 
         elif test_record[REACTANT_SET_ID] == 5:
+            expected_records.remove(5)
             assert test_record[SOURCE_ORGANISM] == "Mus musculus"
             assert test_record[PUBLICATION] == "doi:10.1021/jm020230j"
             assert test_record[SUPPORTING_DATA_ID] == "infores:ki-database"
 
         elif test_record[REACTANT_SET_ID] == 9:
-            # Row 9 has Ki=90 (in range) and IC50=50000 
-            # (out of range for 1000 nM (1 micromolar) threshold);
+            expected_records.remove(9)
+            # Row 9 has Ki=90 (in range) and IC50=50000
+            # (out of range for 10,000 nM (10 micromolar) threshold);
             # Ki should be retained, IC50 should be nulled out
             assert test_record["Ki (nM)"] == "90"
             assert test_record["IC50 (nM)"] is None
 
+        elif test_record[REACTANT_SET_ID] == 10:
+            expected_records.remove(10)
+            # Row 10 is a PubChem entry with AID
+            # that should be retained with its IC50 parameter
+            # if proper PubChem-specific filtering is done
+            assert test_record[TARGET_NAME] == "Runt-related transcription factor 1"
+            assert test_record["IC50 (nM)"] == "15300"
+            assert test_record[PUBLICATION] == "pubchem.aid:1438"
+            assert test_record[SUPPORTING_DATA_ID] == "infores:pubchem"
+
+    # ... but expecting all the other records being tested further
+    assert not expected_records, \
+        f"Missing expected reactant set ID's in 'merged_records_iterable'  # {expected_records!s}"
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (   # Test record 0: missing field
+        (  # Test record 0: missing field
             RECORD_MISSING_FIELD_1,
             None,  # Should be filtered out
-            None
+            None,
         ),
-        (   # Test record 1: missing field
+        (  # Test record 1: missing field
             RECORD_MISSING_FIELD_2,
             None,  # Should be filtered out
-            None
+            None,
         ),
-        (   # Test record 2: Caspase-3 inhibitor with Ki = 90 nM
+        (  # Test record 2: Caspase-3 inhibitor with Ki = 90 nM
             CASPASE3_KI_RECORD,
             [
-                {
-                    "id": "PUBCHEM.COMPOUND:5327301",
-                    "category": ["biolink:ChemicalEntity"]
-                },
+                {"id": "PUBCHEM.COMPOUND:5327301", "category": ["biolink:ChemicalEntity"]},
                 {
                     "id": "UniProtKB:P42574",
                     "name": "Caspase-3",
                     "category": ["biolink:Protein"],
                     "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
+                    "in_taxon_label": "Homo sapiens",
                 },
             ],
             {
@@ -233,39 +238,37 @@ def test_prepare_bindingdb_data(
                 "publications": ["PMID:12408711"],
                 "has_supporting_studies": {
                     "PMID:12408711": {
+                        "id": "PMID:12408711",
+                        "category": ["biolink:Study"],
                         "has_study_results": [
                             {
-                                "pKi": QuantityValue(
-                                    has_numeric_value=7.045757490560675,
-                                    has_binary_relation="equal_to",
-                                )
+                                "category": ["biolink:ProteinLigandAssayResult"],
+                                "pKi": {  # QuantityValue
+                                    "has_numeric_value": 7.045757490560675,
+                                    "has_binary_relation": "equal_to",
+                                },
                             }
-                        ]
+                        ],
                     }
                 },
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
-                ],
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
         ),
-        (   # Test record 3: Caspase-1 inhibitor with Ki < 160 nM
-                CASPASE1_KD_RECORD,
-                [
-                {
-                    "id": "PUBCHEM.COMPOUND:5327302",
-                    "category": ["biolink:ChemicalEntity"]
-                },
+        (  # Test record 3: Caspase-1 inhibitor with Ki < 160 nM
+            CASPASE1_KD_RECORD,
+            [
+                {"id": "PUBCHEM.COMPOUND:5327302", "category": ["biolink:ChemicalEntity"]},
                 {
                     "id": "UniProtKB:P29466",
                     "name": "Caspase-1",
                     "category": ["biolink:Protein"],
                     "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
+                    "in_taxon_label": "Homo sapiens",
                 },
             ],
-                {
+            {
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
@@ -273,42 +276,40 @@ def test_prepare_bindingdb_data(
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
-                ],
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}],
                 "has_supporting_studies": {
                     "PMID:12408711": {
+                        "id": "PMID:12408711",
+                        "category": ["biolink:Study"],
                         "has_study_results": [
                             {
-                                "pKd": QuantityValue(
-                                    has_numeric_value=6.795880017344075,
-                                    has_binary_relation="less_than",
-                                )
+                                "category": ["biolink:ProteinLigandAssayResult"],
+                                "pKd": {  # QuantityValue
+                                    "has_numeric_value": 6.795880017344075,
+                                    "has_binary_relation": "less_than",
+                                },
                             }
-                        ]
+                        ],
                     }
                 },
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
         ),
-        (       #  Test record 4: Caspase-1 inhibitor with kon = 3900
-                #  (parameter not tracked; no affinity extracted)
-                CASPASE1_WEAK_KON_RECORD,
-                [
-                {
-                    "id": "PUBCHEM.COMPOUND:5327304",
-                    "category": ["biolink:ChemicalEntity"]
-                },
+        (  #  Test record 4: Caspase-1 inhibitor with kon = 3900
+            #  (parameter not tracked; no affinity extracted)
+            CASPASE1_WEAK_KON_RECORD,
+            [
+                {"id": "PUBCHEM.COMPOUND:5327304", "category": ["biolink:ChemicalEntity"]},
                 {
                     "id": "UniProtKB:P29466",
                     "name": "Caspase-1",
                     "category": ["biolink:Protein"],
                     "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
+                    "in_taxon_label": "Homo sapiens",
                 },
             ],
-                {
+            {
                 # Since we are not yet reporting the various activity assays in BindingDb,
                 # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
                 "category": ["biolink:ChemicalGeneInteractionAssociation"],
@@ -316,27 +317,22 @@ def test_prepare_bindingdb_data(
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29466",
                 "publications": ["PMID:12408711"],
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
-                ],
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}],
                 "has_supporting_studies": None,
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
         ),
-        (   # Test record 5: Caspase-1 record with only a DOI publication citation
+        (  # Test record 5: Caspase-1 record with only a DOI publication citation
             CASPASE1_RECORD_WITH_DOI,
             [
-                {
-                    "id": "PUBCHEM.COMPOUND:5327304",
-                    "category": ["biolink:ChemicalEntity"]
-                },
+                {"id": "PUBCHEM.COMPOUND:5327304", "category": ["biolink:ChemicalEntity"]},
                 {
                     "id": "UniProtKB:P29452",
                     "name": "Caspase-1",
                     "category": ["biolink:Protein"],
                     "in_taxon": ["NCBITaxon:10090"],
-                    "in_taxon_label": "Mus musculus"
+                    "in_taxon_label": "Mus musculus",
                 },
             ],
             {
@@ -347,38 +343,36 @@ def test_prepare_bindingdb_data(
                 "predicate": "biolink:directly_physically_interacts_with",
                 "object": "UniProtKB:P29452",
                 "publications": ["doi:10.1021/jm020230j"],
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}
-                ],
+                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"}],
                 "has_supporting_studies": {
                     "doi:10.1021/jm020230j": {
+                        "id": "doi:10.1021/jm020230j",
+                        "category": ["biolink:Study"],
                         "has_study_results": [
                             {
-                                "pEC50": QuantityValue(
-                                    has_numeric_value=5.4089353929735005,
-                                    has_binary_relation="equal_to",
-                                )
+                                "category": ["biolink:ProteinLigandAssayResult"],
+                                "pEC50": {  # QuantityValue
+                                    "has_numeric_value": 5.4089353929735005,
+                                    "has_binary_relation": "equal_to",
+                                },
                             }
-                        ]
+                        ],
                     }
                 },
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
         ),
         (  # Test record 6: BindingDb record with a US Patent citation
             BINDINGDB_RECORD_WITH_A_US_PATENT,
             [
-                {
-                    "id": "PUBCHEM.COMPOUND:71463198",
-                    "category": ["biolink:ChemicalEntity"]
-                },
+                {"id": "PUBCHEM.COMPOUND:71463198", "category": ["biolink:ChemicalEntity"]},
                 {
                     "id": "UniProtKB:P08684",
                     "name": "Cytochrome P450 3A4",
                     "category": ["biolink:Protein"],
                     "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
+                    "in_taxon_label": "Homo sapiens",
                 },
             ],
             {
@@ -391,31 +385,77 @@ def test_prepare_bindingdb_data(
                 "publications": ["uspto-patent:9447092"],
                 "sources": [
                     {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:uspto-patent"}
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:uspto-patent"},
                 ],
                 "has_supporting_studies": {
                     "uspto-patent:9447092": {
+                        "id": "uspto-patent:9447092",
+                        "category": ["biolink:Study"],
                         "has_study_results": [
                             {
-                                "pIC50": QuantityValue(
-                                    has_numeric_value=4.301029995663981,
-                                    has_binary_relation="greater_than",
-                                )
+                                "category": ["biolink:ProteinLigandAssayResult"],
+                                "pIC50": {  # QuantityValue
+                                    "has_numeric_value": 4.301029995663981,
+                                    "has_binary_relation": "greater_than",
+                                },
                             }
-                        ]
+                        ],
                     }
                 },
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent
-            }
-        )
-    ]
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
+        ),
+        (  # Test record 8: PubChem BindingDb record
+            PUBCHEM_RECORD,
+            [
+                {"id": "PUBCHEM.COMPOUND:644735", "category": ["biolink:ChemicalEntity"]},
+                {
+                    "id": "UniProtKB:Q01196",
+                    "name": "Runt-related transcription factor 1",
+                    "category": ["biolink:Protein"],
+                    "in_taxon": ["NCBITaxon:9606"],
+                    "in_taxon_label": "Homo sapiens",
+                },
+            ],
+            {
+                # Since we are not yet reporting the various activity assays in BindingDb,
+                # then it may be premature to publish the edges as "biolink:ChemicalAffectsGeneAssociation"
+                "category": ["biolink:ChemicalGeneInteractionAssociation"],
+                "subject": "PUBCHEM.COMPOUND:644735",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "object": "UniProtKB:Q01196",
+                "publications": ["pubchem.aid:1438"],
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:bindingdb"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:pubchem"},
+                ],
+                "has_supporting_studies": {
+                    "pubchem.aid:1438": {
+                        "id": "pubchem.aid:1438",
+                        "category": ["biolink:Study"],
+                        "has_study_results": [
+                            {
+                                "category": ["biolink:ProteinLigandAssayResult"],
+                                "pIC50": {  # QuantityValue
+                                    "has_numeric_value": 4.815308569182401,
+                                    "has_binary_relation": "equal_to",
+                                },
+                            }
+                        ],
+                    }
+                },
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.manual_agent,
+            },
+        ),
+    ],
 )
 def test_ingest_transform(
     mock_koza_transform: koza.KozaTransform,
     test_record: dict,
-    result_nodes: Optional[list],
-    result_edge: Optional[dict],
+    result_nodes: list | None,
+    result_edge: dict | None
 ):
     # sanity check: each test iteration should start without any metadata
     mock_koza_transform.transform_metadata.clear()
@@ -438,9 +478,9 @@ def test_ingest_transform(
 def affinity_metadata_transform() -> koza.KozaTransform:
     """Separate fixture with mutable metadata for filter_affinity_values tests."""
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = dict()
+    mappings: Mappings = {}
     return MockKozaTransform(
-        extra_fields=dict(),
+        extra_fields={},
         writer=writer,
         mappings=mappings,
         transform_metadata={},
@@ -448,70 +488,114 @@ def affinity_metadata_transform() -> koza.KozaTransform:
     )
 
 
-def _affinity_df(rows: list[dict]) -> pl.DataFrame:
-    """Build a minimal polars DataFrame with affinity columns from row dicts."""
-    columns = {col: [] for col in AFFINITY_PARAMETERS.values()}
+def _affinity_df(rows: list[dict], curation_sources: list[str] | None = None) -> pl.DataFrame:
+    """Build a minimal polars DataFrame with affinity columns from row dicts.
+
+    :param rows: List of dicts keyed by affinity column name.
+    :param curation_sources: Optional list of CURATION_DATASOURCE values (one per row).
+        When provided, a CURATION_DATASOURCE column is added so PubChem-bypass logic
+        in filter_affinity_values can be exercised.
+    """
+    columns: dict[str, list] = {col: [] for col in AFFINITY_PARAMETERS.values()}
     for row in rows:
         for col in columns:
             columns[col].append(row.get(col))
-    schema = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    schema: dict[str, type[pl.DataType]
+    ] = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    if curation_sources is not None:
+        columns[CURATION_DATASOURCE] = curation_sources
+        schema[CURATION_DATASOURCE] = pl.Utf8
     return pl.DataFrame(columns, schema=schema)
 
 
 @pytest.mark.parametrize(
-    "rows,expected_count,expected_filtered,description",
+    "rows,curation_sources,expected_count,expected_filtered,description",
     [
         (
             [{"Ki (nM)": "90"}],
+            None,
             1, 0,
             "single in-range Ki value passes"
         ),
         (
             [{}],
+            None,
             0, 1,
             "row with no affinity values is filtered"
         ),
         (
             [{"IC50 (nM)": "50000"}],
+            None,
             0, 1,
-            "IC50=50000 nM (50 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
+            "IC50=50000 nM (50 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Ki (nM)": "90", "IC50 (nM)": "50000"}],
+            None,
             1, 0,
             "Ki in range keeps row; IC50 out of range is nulled"
         ),
         (
             [{"Ki (nM)": "<500"}],
+            None,
             1, 0,
             "relational prefix '<' is stripped before range check"
         ),
         (
             [{"Ki (nM)": ">2000000"}],
+            None,
             0, 1,
-            "Ki=2000000 nM (2000 micromolar) far exceeds the 1000 nM (1 micromolar) threshold"
+            "Ki=2000000 nM (2000 micromolar) far exceeds the 10,000 nM (10 micromolar) threshold"
         ),
         (
             [{"Kd (nM)": "0"}],
+            None,
             0, 1,
             "Kd=0 excluded by exclusive lower bound"
         ),
         (
-            [{"Kd (nM)": "1000"}, {"Kd (nM)": "2000"}],
+            [{"Kd (nM)": "1000"}, {"Kd (nM)": "11000"}],
+            None,
             1, 1,
-            "Kd=1000 nM (1 micromolar) at upper bound passes; "+
-            "Kd=2000 nM (2 micromolar) exceeds the 1000 nM (1 micromolar) threshold"
+            "Kd=1000 nM (1 micromolar) at upper bound passes; " + \
+                      "Kd=11000 nM (11 micromolar) exceeds the 10,000 nM (10 micromolar) threshold"
+        ),
+        # PubChem records are exempt from the upper-bound filter
+        (
+            [{"IC50 (nM)": "15300"}],
+            ["PubChem"],
+            1, 0,
+            "PubChem record with IC50=15300 nM above threshold is retained (upper-bound exempt)"
+        ),
+        (
+            [{"IC50 (nM)": "50000"}],
+            ["PubChem"],
+            1, 0,
+            "PubChem record with IC50=50000 nM far above threshold is retained (upper-bound exempt)"
+        ),
+        (
+            [{"IC50 (nM)": "0"}],
+            ["PubChem"],
+            0, 1,
+            "PubChem record with IC50=0 is still excluded by the lower bound"
+        ),
+        (
+            [{"IC50 (nM)": "15300"}, {"IC50 (nM)": "50000"}],
+            ["PubChem", "Curated from the literature by BindingDB"],
+            1, 1,
+            "PubChem row with IC50=15300 nM passes; non-PubChem row with IC50=50000 nM is filtered"
         ),
     ]
 )
 def test_filter_affinity_values(
     affinity_metadata_transform: koza.KozaTransform,
     rows: list[dict],
+    curation_sources: list[str] | None,
     expected_count: int,
     expected_filtered: int,
     description: str
 ):
-    df = _affinity_df(rows)
+    df = _affinity_df(rows, curation_sources)
     result = filter_affinity_values(affinity_metadata_transform, df)
     assert result.height == expected_count, description
     actual_filtered = affinity_metadata_transform.transform_metadata.get(ROWS_MISSING_AFFINITY, 0)
