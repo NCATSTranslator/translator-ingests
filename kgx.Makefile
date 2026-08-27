@@ -45,7 +45,7 @@ kgxval-summary-%:
 	mkdir -p "$$workdir/$$SHORTNAME"; \
 	cp "$$NODES_FILE" "$$EDGES_FILE" "$$workdir/$$SHORTNAME/"; \
 	( cd "$$workdir" && uvx --python 3.13 --from 'git+https://github.com/monarch-initiative/kgxval' \
-	many_sources "$$workdir" ); \
+	ingest_summary "$$workdir" ); \
 	xlsx=$$(find "$$workdir/data/output" -name '*.xlsx' | head -1); \
 	if [ -z "$$xlsx" ]; then \
 		echo "Error: kgxval did not produce an .xlsx report"; \
