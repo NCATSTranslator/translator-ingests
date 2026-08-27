@@ -56,13 +56,7 @@ PREDICATE_REMAP = {
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
 # Map TMKP attribute names to Biolink slot names.
-
 TMKP_TO_BIOLINK_SLOT_MAP = {
-    # Space case variations (from YAML serialization)
-    "has evidence count": "evidence_count",
-    "has confidence score": "has_confidence_score",
-    # Snake_case variations that need mapping
-    "has_evidence_count": "evidence_count",
     "extraction_confidence_score": "has_confidence_score",
 }
 

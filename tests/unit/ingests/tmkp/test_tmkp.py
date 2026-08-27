@@ -329,16 +329,6 @@ class TestParseAttributes:
         result = list(assoc.has_supporting_studies.values())[0].has_study_results[0]
         assert result.subject_location_in_text == [42, 50]
 
-    def test_tmkp_to_biolink_attribute_mapping(self):
-        """has_evidence_count maps to evidence_count via TMKP_TO_BIOLINK_SLOT_MAP."""
-        attributes = [
-            {"attribute_type_id": "has_evidence_count", "value": 7},
-        ]
-        assoc = _make_association()
-        parse_attributes(attributes, assoc)
-
-        assert assoc.evidence_count == 7
-
     def test_edge_level_publications_are_ingested(self):
         """The edge-level 'biolink:publications' attribute populates association.publications.
 
