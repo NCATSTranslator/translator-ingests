@@ -7,7 +7,8 @@ from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
-from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
+from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
+                                                  write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -112,6 +113,26 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
     return output_path
 
 
+def get_existing_release_build_version(release_dir: Path) -> str | None:
+    """Return the build version an existing release was made from, or None if there is no release in release_dir.
+
+    Releases made before release-metadata.json was written to every release directory recorded their build version 
+    as the "version" of their graph-metadata.json.
+
+    Args:
+        release_dir: Directory of a single release, which may or may not exist yet
+    """
+    release_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
+    if release_metadata_path.exists():
+        with release_metadata_path.open() as release_metadata_file:
+            return PipelineMetadata.from_dict(json.load(release_metadata_file)).build_version
+    graph_metadata_path = release_dir / RELEASE_GRAPH_METADATA_FILENAME
+    if graph_metadata_path.exists():
+        with graph_metadata_path.open() as graph_metadata_file:
+            return json.load(graph_metadata_file).get("version")
+    return None
+
+
 def release_ingest(source: str):
     # Locate and read the latest build metadata for the source
     latest_build_metadata_file_path = get_versioned_file_paths(
@@ -158,6 +179,18 @@ def release_ingest(source: str):
 
     # Create the release
     release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
+
+    # This prevents issues that could be caused by previous crashes or file manipulation, such as missing or
+    # misleading latest-release metadata, or half completed releases. Here we check that if a release directory 
+    # already exists where we are about to write to that it contains or was supposed to contain the same build.
+    existing_build_version = get_existing_release_build_version(release_dir)
+    if existing_build_version is not None and existing_build_version != release_metadata.build_version:
+        raise ValueError(
+            f"Release {release_version} of {source} already exists and was made from build "
+            f"{existing_build_version}, but build {release_metadata.build_version} is being released. The latest "
+            f"release metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
+        )
+
     create_release(release_metadata,
                    release_dir,
                    release_url=release_url,

@@ -157,6 +157,55 @@ def test_superseded_release_keeps_its_own_metadata(release_env):
     assert _read_release_metadata(releases_path, "latest")["build_version"] == "build2"
 
 
+def test_releasing_a_different_build_into_an_existing_release_raises(release_env):
+    """Losing latest-release.json makes the next release reuse a version number that is already taken.
+
+    The artifacts of an existing release are not rebuilt, so releasing a different build into it would leave the
+    release describing artifacts it was not made from. That must fail rather than half-overwrite the release.
+    """
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    release_ingest(SOURCE)
+
+    (releases_path / SOURCE / "latest-release.json").unlink()
+    write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
+
+    with pytest.raises(ValueError, match="was made from build build1, but build build2 is being released"):
+        release_ingest(SOURCE)
+    # The existing release still describes the build it was actually made from.
+    assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build1"
+
+
+def test_releasing_the_same_build_into_an_existing_release_completes_it(release_env):
+    """Re-releasing the same build after an interrupted run finishes the release instead of failing."""
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    release_ingest(SOURCE)
+
+    # An interrupted release leaves the release directory in place but no latest-release.json.
+    (releases_path / SOURCE / "latest-release.json").unlink()
+    release_ingest(SOURCE)
+
+    assert _read_latest_release(releases_path)["release_version"] == "1.0.0"
+    assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build1"
+
+
+def test_existing_release_without_release_metadata_is_still_detected(release_env):
+    """Releases predating release-metadata.json record their build version in their graph-metadata.json."""
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    release_ingest(SOURCE)
+
+    # Reduce the existing release to what a release made before release-metadata.json existed looks like.
+    (releases_path / SOURCE / "latest-release.json").unlink()
+    (releases_path / SOURCE / "1.0.0" / IngestFileName.RELEASE_METADATA_FILE).unlink()
+    _write_json(releases_path / SOURCE / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME, {"version": "build1"})
+    write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
+
+    with pytest.raises(ValueError, match="was made from build build1, but build build2 is being released"):
+        release_ingest(SOURCE)
+
+
 def test_release_ingest_same_build_is_noop(release_env):
     """Re-releasing an unchanged build does not advance the release version."""
     write_latest_build, releases_path = release_env
