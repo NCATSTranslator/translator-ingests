@@ -149,13 +149,18 @@ def generate_merged_graph_release(merged_graph_metadata: PipelineMetadata):
     # Create compressed tar.zst archive
     create_merged_graph_compressed_tar(merged_graph_metadata)
 
+    # Record the release metadata with the release date
+    merged_graph_metadata.release_date = current_iso_date()
+    write_ingest_file(IngestFileType.RELEASE_METADATA_FILE,
+                      pipeline_metadata=merged_graph_metadata,
+                      data=merged_graph_metadata.get_release_metadata())
+
     # Copy release to "latest" directory
     release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / merged_graph_metadata.release_version
     latest_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source / "latest"
     atomic_copy_directory(release_dir, latest_dir)
 
-    # Write latest release metadata, stamping the date the release was made
-    merged_graph_metadata.release_date = current_iso_date()
+    # Write latest release metadata, the same metadata recorded inside the release directory
     release_dir = Path(INGESTS_RELEASES_PATH) / merged_graph_metadata.source
     release_dir.mkdir(parents=True, exist_ok=True)
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,

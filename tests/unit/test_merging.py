@@ -247,6 +247,26 @@ def test_merge_skips_when_latest_release_is_already_this_build(releases_path, me
     assert merge("test_graph", merged_graph_sources) is None
 
 
+def test_merged_graph_release_records_its_own_metadata(releases_path, merged_graph_sources):
+    """A merged graph records its release metadata beside its artifacts, the same way a source release does."""
+    generate_merged_graph_release(merge("test_graph", merged_graph_sources))
+
+    graph_releases_dir = releases_path / "test_graph"
+    release_metadata = json.loads(
+        (graph_releases_dir / "1.0.0" / IngestFileName.RELEASE_METADATA_FILE).read_text()
+    )
+    assert release_metadata["release_version"] == "1.0.0"
+    assert release_metadata["biolink_version"] == COMPLETE_RELEASE_METADATA["biolink_version"]
+    assert release_metadata["release_date"] is not None
+    # The release directory, the copy of it in latest, and latest-release.json all describe the same release.
+    assert json.loads(
+        (graph_releases_dir / "latest" / IngestFileName.RELEASE_METADATA_FILE).read_text()
+    ) == release_metadata
+    assert json.loads(
+        (graph_releases_dir / IngestFileName.LATEST_RELEASE_FILE).read_text()
+    ) == release_metadata
+
+
 def test_merge_fails_fast_on_an_unreleased_source(merged_graph_sources):
     """A source that was never released cannot be merged, and the error names the source to release."""
     with pytest.raises(IOError, match="Create a release for never_released before attempting to merge it"):
