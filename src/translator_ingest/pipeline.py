@@ -6,7 +6,6 @@ import shutil
 
 from collections.abc import Callable
 from dataclasses import is_dataclass, asdict
-from datetime import datetime
 from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
@@ -39,7 +38,11 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
-from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import (
+    get_recorded_download_date,
+    record_download_metadata,
+    substitute_version_in_download_yaml,
+)
 
 logger = get_logger(__name__)
 
@@ -164,7 +167,7 @@ def download(pipeline_metadata: PipelineMetadata):
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
         logger.info(f"Downloading source data for {pipeline_metadata.source}...")
-        kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        report = kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
         # is a temporary file with versioning resolved but is
@@ -172,6 +175,10 @@ def download(pipeline_metadata: PipelineMetadata):
         if download_yaml_with_version and \
                 download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
+
+    # Record when source data was actually fetched. The timestamp is only refreshed when a real
+    # download happened this run; cache-hit reruns preserve the existing downloaded_at.
+    record_download_metadata(pipeline_metadata, report)
 
 
 # Check if the transform stage was already completed
@@ -614,10 +621,10 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         name=pipeline_metadata.source,
         description="A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
                     ", Biolink Model, and Node Normalizer.",
-        license="MIT",
+        license="",
         url=storage_url,
         version=pipeline_metadata.build_version,
-        date_created=datetime.now().strftime("%Y_%m_%d"),
+        date_created=current_iso_date(),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.babel_version,
         knowledge_sources=[data_source_info]
@@ -710,6 +717,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
+    # Carry the recorded download timestamp (either new or from a previous download) into the
+    # pipeline metadata so it surfaces in the build and release metadata outputs.
+    pipeline_metadata.source_download_date = get_recorded_download_date(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
     # Transform version is auto-computed as a content hash of the ingest's source files

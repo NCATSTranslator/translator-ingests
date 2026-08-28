@@ -29,6 +29,7 @@ class IngestFileType(Enum):
 
 
 class IngestFileName(StrEnum):
+    SOURCE_METADATA = "source-metadata.json"
     TRANSFORM_METADATA = "transform-metadata.json"
     NORMALIZED_NODES = "normalized_nodes.jsonl"
     NORMALIZED_EDGES = "normalized_edges.jsonl"
@@ -49,6 +50,8 @@ class IngestFileName(StrEnum):
 
 
 FILE_PATH_LOOKUP = {
+    IngestFileType.SOURCE_METADATA_FILE: lambda pipeline_metadata: get_source_data_directory(pipeline_metadata)
+    / IngestFileName.SOURCE_METADATA,
     IngestFileType.TRANSFORM_KGX_FILES: lambda pipeline_metadata: __find_transform_kgx_files(
         get_transform_directory(pipeline_metadata)
     ),

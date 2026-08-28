@@ -524,7 +524,7 @@ def main(
                 )
                 sys.exit(1)
 
-            with open(kg_data_path, 'r') as rig_file:
+            with open(kg_data_path, 'r', encoding="utf-8") as rig_file:
                 kg_data = yaml.safe_load(rig_file)
 
             # conservative, in case target_info is already present
@@ -549,14 +549,14 @@ def main(
             )
             sys.exit(1)
 
-        with open(mkg_path, 'r') as mkg_file:
+        with open(mkg_path, 'r', encoding="utf-8") as mkg_file:
             mkg_data = json.load(mkg_file)
             read_mkg_nodes(mkg_data['nodes'], node_info)
             read_mkg_edges(mkg_data['edges'], edge_info, knowledge_level, agent_type)
 
         if output == 'rig':
             rename(kg_data_path, str(kg_data_path)+".original")
-            with open(kg_data_path, 'w') as rig_file:
+            with open(kg_data_path, 'w', encoding="utf-8") as rig_file:
                 if prune_empty:
                     cleaned = prune_empty_fields(kg_data)
                 else:
