@@ -57,15 +57,19 @@ def create_compressed_tar(nodes_file: Path,
                           edges_file: Path,
                           graph_metadata_path: Path,
                           output_path: Path):
-    # Create a zstd compressed tar archive of KGX files
+    # Create a zstd compressed tar archive of KGX files. Compressing a graph can take a while, so the archive is
+    # written to a partial file and renamed into place once it is complete. This prevents unfinished files left
+    # behind by crashes from looking like completed tars.
+    partial_output_path = output_path.with_name(f"{output_path.name}.partial")
     cctx = zstd.ZstdCompressor(level=12)
-    with open(output_path, 'wb') as fh:
+    with open(partial_output_path, 'wb') as fh:
         with cctx.stream_writer(fh) as compressor:
             with tarfile.open(fileobj=compressor, mode='w|') as tar:
                 tar.add(nodes_file, arcname=RELEASE_NODES_FILENAME)
                 if edges_file.exists():
                     tar.add(edges_file, arcname=RELEASE_EDGES_FILENAME)
                 tar.add(graph_metadata_path, arcname=RELEASE_GRAPH_METADATA_FILENAME)
+    partial_output_path.rename(output_path)
 
 
 def extract_compressed_tar(tar_path: Path, output_directory: Path):
