@@ -15,6 +15,7 @@ from translator_ingest.release import (
     release_ingest,
 )
 from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.storage.local import IngestFileName
 
 # Version fields used to build the on-disk directory tree. The merge directory path is derived
 # from these individual fields (not from build_version), so changing only build_version between
@@ -81,6 +82,11 @@ def _read_latest_release(releases_path):
         return json.load(f)
 
 
+def _read_release_metadata(releases_path, release_directory):
+    with (releases_path / SOURCE / release_directory / IngestFileName.RELEASE_METADATA_FILE).open() as f:
+        return json.load(f)
+
+
 def test_release_ingest_first_release(release_env):
     """The first release starts at 1.0.0, stamps release_date, and carries build_date through."""
     write_latest_build, releases_path = release_env
@@ -120,6 +126,35 @@ def test_release_ingest_bumps_patch_for_new_build(release_env):
     assert release_metadata["build_version"] == "build2"
     assert release_metadata["build_date"] == "2026-02-02"
     assert (releases_path / SOURCE / "1.0.1" / f"{SOURCE}.tar.zst").exists()
+
+
+def test_release_records_its_own_metadata(release_env):
+    """A release records its metadata beside its artifacts"""
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+
+    release_ingest(SOURCE)
+
+    release_metadata = _read_release_metadata(releases_path, "1.0.0")
+    assert release_metadata["release_version"] == "1.0.0"
+    assert release_metadata["build_version"] == "build1"
+    # The release directory, the copy of it in latest, and latest-release.json all describe the same release.
+    assert _read_release_metadata(releases_path, "latest") == release_metadata
+    assert _read_latest_release(releases_path) == release_metadata
+
+
+def test_superseded_release_keeps_its_own_metadata(release_env):
+    """An older release stays identifiable after a newer one is made, which latest-release.json alone can not do."""
+    write_latest_build, releases_path = release_env
+
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    release_ingest(SOURCE)
+    write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
+    release_ingest(SOURCE)
+
+    assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build1"
+    assert _read_release_metadata(releases_path, "1.0.1")["build_version"] == "build2"
+    assert _read_release_metadata(releases_path, "latest")["build_version"] == "build2"
 
 
 def test_release_ingest_same_build_is_noop(release_env):

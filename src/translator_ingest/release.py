@@ -148,9 +148,17 @@ def release_ingest(source: str):
 
     # Create the release, bumping the version from the previous release
     release_version = next_release_version(previous_release_version)
-    release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
     release_url = f"{INGESTS_RELEASES_URL}/{source}/{release_version}/"
-    create_release(source,
+    
+    # Populate the new release metadata, stamping the date the release was made
+    release_metadata = latest_build_metadata
+    release_metadata.release_version = release_version
+    release_metadata.release_date = current_iso_date()
+    release_metadata.data = release_url
+
+    # Create the release
+    release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
+    create_release(release_metadata,
                    release_dir,
                    release_url=release_url,
                    nodes_file=nodes_file_path,
@@ -163,28 +171,30 @@ def release_ingest(source: str):
     atomic_copy_directory(release_dir, latest_dir)
     logger.info("Copied release to latest directory")
 
-    # Write the new latest-release-metadata, stamping the date the release was made
-    latest_release_metadata = latest_build_metadata
-    latest_release_metadata.release_version = release_version
-    latest_release_metadata.release_date = current_iso_date()
-    latest_release_metadata.data = release_url
-
+    # Write the new latest-release-metadata, the same metadata recorded inside the release directory
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,
-                      pipeline_metadata=latest_release_metadata,
-                      data=latest_release_metadata.get_release_metadata())
-    logger.info(f"Release files processed for {source}, release version: {latest_release_metadata.release_version}")
+                      pipeline_metadata=release_metadata,
+                      data=release_metadata.get_release_metadata())
+    logger.info(f"Release files processed for {source}, release version: {release_metadata.release_version}")
 
 
-def create_release(source: str,
+def create_release(release_metadata: PipelineMetadata,
                    release_dir: Path,
                    release_url: str,
                    nodes_file: Path,
                    edges_file: Path,
                    graph_metadata_file: Path,
                    files_to_copy: list[Path]):
+    source = release_metadata.source
 
     # Create or locate release directory
     release_dir.mkdir(parents=True, exist_ok=True)
+
+    # Record the metadata of this release alongside its artifacts. latest-release.json only ever describes the
+    # most recent release, so without this the provenance of a release is lost as soon as the next one is made.
+    write_ingest_file(IngestFileType.RELEASE_METADATA_FILE,
+                      pipeline_metadata=release_metadata,
+                      data=release_metadata.get_release_metadata())
 
     # Update graph-metadata.json with release URL (must be done before creating tar)
     release_graph_metadata_path = release_dir / "graph-metadata.json"
