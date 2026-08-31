@@ -7,7 +7,8 @@ from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
-from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
+from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
+                                                  write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -56,15 +57,19 @@ def create_compressed_tar(nodes_file: Path,
                           edges_file: Path,
                           graph_metadata_path: Path,
                           output_path: Path):
-    # Create a zstd compressed tar archive of KGX files
+    # Create a zstd compressed tar archive of KGX files. Compressing a graph can take a while, so the archive is
+    # written to a partial file and renamed into place once it is complete. This prevents unfinished files left
+    # behind by crashes from looking like completed tars.
+    partial_output_path = output_path.with_name(f"{output_path.name}.partial")
     cctx = zstd.ZstdCompressor(level=12)
-    with open(output_path, 'wb') as fh:
+    with open(partial_output_path, 'wb') as fh:
         with cctx.stream_writer(fh) as compressor:
             with tarfile.open(fileobj=compressor, mode='w|') as tar:
                 tar.add(nodes_file, arcname=RELEASE_NODES_FILENAME)
                 if edges_file.exists():
                     tar.add(edges_file, arcname=RELEASE_EDGES_FILENAME)
                 tar.add(graph_metadata_path, arcname=RELEASE_GRAPH_METADATA_FILENAME)
+    partial_output_path.rename(output_path)
 
 
 def extract_compressed_tar(tar_path: Path, output_directory: Path):
@@ -112,6 +117,26 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
     return output_path
 
 
+def get_existing_release_build_version(release_dir: Path) -> str | None:
+    """Return the build version an existing release was made from, or None if there is no release in release_dir.
+
+    Releases made before release-metadata.json was written to every release directory recorded their build version 
+    as the "version" of their graph-metadata.json.
+
+    Args:
+        release_dir: Directory of a single release, which may or may not exist yet
+    """
+    release_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
+    if release_metadata_path.exists():
+        with release_metadata_path.open() as release_metadata_file:
+            return PipelineMetadata.from_dict(json.load(release_metadata_file)).build_version
+    graph_metadata_path = release_dir / RELEASE_GRAPH_METADATA_FILENAME
+    if graph_metadata_path.exists():
+        with graph_metadata_path.open() as graph_metadata_file:
+            return json.load(graph_metadata_file).get("version")
+    return None
+
+
 def release_ingest(source: str):
     # Locate and read the latest build metadata for the source
     latest_build_metadata_file_path = get_versioned_file_paths(
@@ -148,9 +173,29 @@ def release_ingest(source: str):
 
     # Create the release, bumping the version from the previous release
     release_version = next_release_version(previous_release_version)
-    release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
     release_url = f"{INGESTS_RELEASES_URL}/{source}/{release_version}/"
-    create_release(source,
+    
+    # Populate the new release metadata, stamping the date the release was made
+    release_metadata = latest_build_metadata
+    release_metadata.release_version = release_version
+    release_metadata.release_date = current_iso_date()
+    release_metadata.data = release_url
+
+    # Create the release
+    release_dir = Path(INGESTS_RELEASES_PATH) / source / release_version
+
+    # This prevents issues that could be caused by previous crashes or file manipulation, such as missing or
+    # misleading latest-release metadata, or half completed releases. Here we check that if a release directory 
+    # already exists where we are about to write to that it contains or was supposed to contain the same build.
+    existing_build_version = get_existing_release_build_version(release_dir)
+    if existing_build_version is not None and existing_build_version != release_metadata.build_version:
+        raise ValueError(
+            f"Release {release_version} of {source} already exists and was made from build "
+            f"{existing_build_version}, but build {release_metadata.build_version} is being released. The latest "
+            f"release metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
+        )
+
+    create_release(release_metadata,
                    release_dir,
                    release_url=release_url,
                    nodes_file=nodes_file_path,
@@ -163,28 +208,30 @@ def release_ingest(source: str):
     atomic_copy_directory(release_dir, latest_dir)
     logger.info("Copied release to latest directory")
 
-    # Write the new latest-release-metadata, stamping the date the release was made
-    latest_release_metadata = latest_build_metadata
-    latest_release_metadata.release_version = release_version
-    latest_release_metadata.release_date = current_iso_date()
-    latest_release_metadata.data = release_url
-
+    # Write the new latest-release-metadata, the same metadata recorded inside the release directory
     write_ingest_file(IngestFileType.LATEST_RELEASE_FILE,
-                      pipeline_metadata=latest_release_metadata,
-                      data=latest_release_metadata.get_release_metadata())
-    logger.info(f"Release files processed for {source}, release version: {latest_release_metadata.release_version}")
+                      pipeline_metadata=release_metadata,
+                      data=release_metadata.get_release_metadata())
+    logger.info(f"Release files processed for {source}, release version: {release_metadata.release_version}")
 
 
-def create_release(source: str,
+def create_release(release_metadata: PipelineMetadata,
                    release_dir: Path,
                    release_url: str,
                    nodes_file: Path,
                    edges_file: Path,
                    graph_metadata_file: Path,
                    files_to_copy: list[Path]):
+    source = release_metadata.source
 
     # Create or locate release directory
     release_dir.mkdir(parents=True, exist_ok=True)
+
+    # Record the metadata of this release alongside its artifacts. latest-release.json only ever describes the
+    # most recent release, so without this the provenance of a release is lost as soon as the next one is made.
+    write_ingest_file(IngestFileType.RELEASE_METADATA_FILE,
+                      pipeline_metadata=release_metadata,
+                      data=release_metadata.get_release_metadata())
 
     # Update graph-metadata.json with release URL (must be done before creating tar)
     release_graph_metadata_path = release_dir / "graph-metadata.json"
