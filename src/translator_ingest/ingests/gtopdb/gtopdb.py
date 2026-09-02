@@ -181,9 +181,9 @@ def _prepare_interactions(
     source = source.astype({LIGAND_ID_COLUMN: "string", "Target UniProt ID": "string"})
     source = source.dropna(subset=["Target UniProt ID", LIGAND_ID_COLUMN])
 
-    aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
-    aggregations.update({column: "first" for column in TARGET_METADATA_COLUMNS})
-    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
+    prepared = source.groupby(
+        [*GROUP_COLUMNS, *TARGET_METADATA_COLUMNS], as_index=False, dropna=False
+    ).agg({PUBLICATIONS_COLUMN: _join_publications})
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
     prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
