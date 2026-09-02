@@ -1,0 +1,180 @@
+name: Cancer Therapeutics Response Portal (CTRP) Resource Ingest Guide
+
+source_info:
+  infores_id: infores:ctrp
+  name: Cancer Therapeutics Response Portal (CTRP)
+  description: >-
+    The Cancer Therapeutics Response Portal links genetic, lineage, and other cellular
+    features of cancer cell lines to small-molecule sensitivity. CTRP v2.0 measured the
+    response of approximately 860 deeply characterized cancer cell lines to 481 small
+    molecules in its Informer Set. This ingest derives compound-compound statistical
+    associations from the similarity of compounds' area-under-the-curve (AUC) response
+    profiles across the tested cell lines.
+  citations:
+    - "Rees MG, et al. Correlating chemical sensitivity and basal gene expression reveals mechanism of action. Nature Chemical Biology. 2016;12:109-116. PMID: 26656090"
+    - "Seashore-Ludlow B, et al. Harnessing Connectivity in a Large-Scale Small-Molecule Sensitivity Dataset. Cancer Discovery. 2015;5:1210-1223. PMID: 26482930"
+    - "Basu A, et al. An Interactive Resource to Identify Cancer Genetic and Lineage Dependencies Targeted by Small Molecules. Cell. 2013;154:1151-1161. PMID: 23993102"
+  terms_of_use_info:
+    terms_of_use_description: >-
+      CTRP data are made available through the National Cancer Institute CTD2 Network's
+      Open-Access Data Portal, which provides raw sensitivity, enrichment, and supporting
+      data from Broad Institute CTRP. No explicit data license was identified for this
+      release.
+  data_access_locations:
+    - CTRP portal - https://portals.broadinstitute.org/ctrp.v2/
+    - NCI CTD2 Network Open-Access Data Portal - https://ocg.cancer.gov/programs/ctd2/data-portal/
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: >-
+    This ingest is based on the CTRP v2.0 2015 CTD2 Expanded Dataset. The release is
+    versioned in the download directory name, CTRPv2.0_2015_ctd2_ExpandedDataset.
+  source_status: not_maintained
+  additional_notes:
+    - >-
+      The live CTRP portal describes itself as a living resource, but the availability and
+      release cadence of new downloadable bulk datasets have not been confirmed.
+
+ingest_info:
+  ingest_categories:
+    - translator_knowledge_creator
+  utility: >-
+    Similarity of small-molecule response profiles across cancer cell lines can identify
+    compounds with shared or opposing selective sensitivities. These statistically derived
+    associations support hypothesis generation about compound mechanisms and candidate
+    therapeutic relationships.
+  scope: >-
+    Chemical-chemical correlations derived from post-QC CTRP v2.0 AUC measurements. Each
+    pair compares the two compounds' AUC values only in cell-line experiments where both
+    compounds have measurements. Compound identifiers are resolved from CTRP compound
+    metadata through SMILES before the graph is emitted.
+  relevant_files:
+    - file_name: v20.data.curves_post_qc.txt
+      location: https://portals.broadinstitute.org/ctrp.v2/
+      description: >-
+        Post-quality-control compound-cell-line dose-response data. The ingest uses the
+        experiment_id, master_cpd_id, and area_under_curve columns. It is downloaded as
+        CTRPv2.0_2015_ctd2_ExpandedDataset/v20.data.curves_post_qc.txt.
+    - file_name: CTRP v2.0 compound metadata file
+      location: https://portals.broadinstitute.org/ctrp.v2/
+      description: >-
+        CTRP compound metadata containing master_cpd_id and a SMILES representation, used
+        to resolve source compound records to Translator chemical identifiers. Confirm the
+        final downloaded file name and URL during implementation.
+  included_content:
+    - file_name: v20.data.curves_post_qc.txt
+      included_records: >-
+        Compound pairs with at least three shared cell-line AUC measurements and whose
+        robust-z Benjamini-Hochberg FDR-adjusted q-value meets the cutoff selected before
+        implementation. One unordered compound pair is calculated once.
+      fields_used: experiment_id, master_cpd_id, area_under_curve
+    - file_name: CTRP v2.0 compound metadata file
+      included_records: >-
+        Compound records with a SMILES value that can be resolved to a Translator chemical
+        identifier and that participate in at least one retained correlation.
+      fields_used: master_cpd_id, SMILES
+  filtered_content:
+    - file_name: v20.data.curves_post_qc.txt
+      filtered_records: >-
+        Compound pairs with fewer than three shared AUC measurements, pairs whose Pearson
+        correlation cannot be calculated, and pairs that do not meet the selected
+        FDR-adjusted q-value cutoff.
+      rationale: >-
+        At least three shared observations are required for a meaningful Pearson
+        correlation. The significance cutoff controls the volume of statistical
+        associations and excludes correlations that are not robust enough for this ingest.
+    - file_name: CTRP v2.0 compound metadata file
+      filtered_records: >-
+        Compounds lacking SMILES, compounds whose SMILES cannot be mapped to a Translator
+        chemical identifier, and compounds not present in a retained correlation pair.
+      rationale: >-
+        An emitted edge requires resolvable chemical endpoints; unmapped source identifiers
+        cannot be safely exposed as normalized Translator chemical nodes.
+  additional_notes:
+    - >-
+      The correlation workflow calculates Pearson correlations for all unordered compound
+      pairs, transforms them with Fisher z, computes robust z-score p-values using the
+      median absolute deviation, and applies Benjamini-Hochberg FDR correction.
+    - >-
+      Select and document the FDR-adjusted q-value cutoff after assessing the distribution,
+      count, and utility of retained correlations. CTRP v1 reported significant connections
+      at q < 0.01, but that value has not yet been adopted for this v2.0 ingest.
+    - >-
+      Consider retaining Pearson correlation, FDR-adjusted q-value, shared cell-line count,
+      Fisher z statistic, slope, intercept, and RMSE as edge evidence/properties where
+      supported by the ingest metadata model.
+
+target_info:
+  edge_type_info:
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:positively_correlated_with
+      object_categories:
+        - biolink:ChemicalEntity
+      knowledge_level:
+        - statistical_association
+      agent_type:
+        - data_analysis_pipeline
+      primary_knowledge_sources:
+        - infores:ctrp
+      edge_properties:
+        - biolink:has_confidence_score
+        - biolink:has_supporting_studies
+      ui_explanation: >-
+        CTRP measured both chemicals' AUC response profiles across a shared set of cancer
+        cell lines. An automated analysis pipeline found a statistically significant
+        positive Pearson correlation: cell lines more sensitive or resistant to one
+        chemical tended to show a similar response to the other. This is a statistical
+        association that suggests that the chemicals may share a common mechanism of action.
+      source_files:
+        - v20.data.curves_post_qc.txt
+    - subject_categories:
+        - biolink:ChemicalEntity
+      predicates:
+        - biolink:negatively_correlated_with
+      object_categories:
+        - biolink:ChemicalEntity
+      knowledge_level:
+        - statistical_association
+      agent_type:
+        - data_analysis_pipeline
+      primary_knowledge_sources:
+        - infores:ctrp
+      edge_properties:
+        - biolink:has_confidence_score
+        - biolink:has_supporting_studies
+      ui_explanation: >-
+        CTRP measured both chemicals' AUC response profiles across a shared set of cancer
+        cell lines. An automated analysis pipeline found a statistically significant
+        negative Pearson correlation: cell lines more sensitive or resistant to one
+        chemical tended to show an opposing response to the other. This is a statistical
+        association that suggests that the chemicals may share a common mechanism of action.
+      source_files:
+        - v20.data.curves_post_qc.txt
+  node_type_info:
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - SMILES
+      node_properties:
+        - biolink:name
+        - biolink:chemical_formula
+        - biolink:in_taxon
+      additional_notes: >-
+        Source compounds are matched from their SMILES representations to normalized
+        Translator chemical identifiers. The final identifier namespaces and retained node
+        properties will be documented once the resolver and metadata file are selected.
+  additional_notes:
+    - >-
+      Document the chemical identifier resolver, target identifier namespaces, mapping
+      coverage, and final node properties after implementing SMILES-based normalization.
+    - >-
+      Define the final Biolink representation for correlation coefficient, q-value,
+      shared cell-line count, Fisher z statistic, regression coefficients, and RMSE.
+
+provenance_info:
+  contributions:
+    - "Initial CTRP correlation workflow supplied by the CTRP ingest team."
+  artifacts:
+    - "CTRP v2.0 correlation-generation script using v20.data.curves_post_qc.txt."
