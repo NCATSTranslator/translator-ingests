@@ -1,4 +1,31 @@
+import json
+from dataclasses import FrozenInstanceError
+from pathlib import Path
+
 import pytest
+import pandas as pd
+
+from translator_ingest.ingests.gtopdb.gtopdb import (
+    GTOPDB_VERSION_PATTERN,
+    TargetDescriptor,
+    _load_ligand_mapping,
+    _publication_list,
+    get_latest_version,
+    prepare,
+    transform_ingest_all,
+)
+from translator_ingest.ingests.gtopdb.rules import (
+    ACTIVATION,
+    AGONISM,
+    ANTAGONISM,
+    INHIBITION,
+    NEUTRAL_PHYSICAL,
+    RELATED,
+    RULES,
+    SKIP,
+    TYPE_FALLBACKS,
+    resolve_rule,
+)
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
@@ -13,11 +40,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ResourceRoleEnum,
 )
 
-from translator_ingest.ingests.gtopdb.gtopdb import (
-    GTOPDB_VERSION_PATTERN,
-    get_latest_version,
-)
-
 
 GTOPDB_SOURCES = [
     RetrievalSource(
@@ -26,6 +48,237 @@ GTOPDB_SOURCES = [
         resource_role=ResourceRoleEnum.primary_knowledge_source,
     )
 ]
+
+
+def test_target_descriptor_preserves_source_identity_and_components():
+    target = TargetDescriptor.from_record(
+        {
+            "target_id": "378",
+            "target_name": "5-HT3AB",
+            "target_species": "Human",
+            "target_subunit_ids": "373|374",
+            "target_gene_symbols": "HTR3A|HTR3B",
+            "target_uniprot_ids": "P46098|O95264",
+        }
+    )
+
+    assert target.source_id == "378"
+    assert target.species == "Human"
+    assert target.subunit_ids == ("373", "374")
+    assert target.gene_symbols == ("HTR3A", "HTR3B")
+    assert target.uniprot_ids == ("P46098", "O95264")
+    assert target.is_composite
+    assert target.single_protein_curie is None
+
+
+@pytest.mark.parametrize(
+    ("type_value", "action_value", "polarity"),
+    [
+        ("Activator", "future action", "positive"),
+        ("Inhibitor", "future action", "negative"),
+    ],
+)
+def test_legacy_type_fallbacks_remain_explicit(type_value, action_value, polarity):
+    rule = resolve_rule(type_value, action_value)
+
+    assert rule is not None
+    assert rule.polarity == polarity
+    assert rule.mechanism is None
+    assert not rule.physical_interaction
+    assert not rule.skip
+
+
+def test_unknown_type_action_pair_has_no_rule():
+    assert resolve_rule("unknown type", "unknown action") is None
+
+
+def test_canonical_rules_and_nested_lookup_are_the_registration_source():
+    assert RULES["Activator"]["Activation"] is ACTIVATION
+    assert RULES["Agonist"]["Agonist"] is AGONISM
+    assert RULES["Agonist"]["Inverse agonist"] == resolve_rule(
+        "Agonist", "Inverse agonist"
+    )
+
+
+def test_canonical_rules_are_immutable_and_mapping_inventory_is_explicit():
+    canonical_rules = (
+        ACTIVATION,
+        AGONISM,
+        ANTAGONISM,
+        INHIBITION,
+        SKIP,
+        RELATED,
+        NEUTRAL_PHYSICAL,
+    )
+    for rule in canonical_rules:
+        with pytest.raises(FrozenInstanceError):
+            rule.skip = True
+
+    assert sum(len(actions) for actions in RULES.values()) == 77
+    assert set(TYPE_FALLBACKS) == {"Activator", "Inhibitor"}
+
+
+def test_prepare_preserves_source_target_fields(tmp_path):
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
+    )
+    context = RecordingContext()
+    context.input_files_dir = tmp_path
+    source_record = {
+        "Target": "5-HT3AB",
+        "Target ID": "378",
+        "Target Subunit IDs": "373|374",
+        "Target Gene Symbol": "HTR3A|HTR3B",
+        "Target UniProt ID": "P46098|O95264",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "11489465",
+    }
+
+    prepared = list(prepare(context, [source_record]))
+
+    assert len(prepared) == 1
+    assert prepared[0]["target_id"] == "378"
+    assert prepared[0]["target_name"] == "5-HT3AB"
+    assert prepared[0]["target_species"] == "Human"
+    assert prepared[0]["target_subunit_ids"] == "373|374"
+    assert prepared[0]["target_gene_symbols"] == "HTR3A|HTR3B"
+    assert prepared[0]["target_uniprot_ids"] == "P46098|O95264"
+
+
+def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path):
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
+    )
+    context = RecordingContext()
+    context.input_files_dir = tmp_path
+    base = {
+        "Target": "example target",
+        "Target ID": "1",
+        "Target Subunit IDs": "",
+        "Target Gene Symbol": "GENE",
+        "Target UniProt ID": "P08588",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": None,
+        "Action": None,
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "123",
+    }
+    duplicate = base | {"PubMed ID": "123"}
+    distinct_publication = base | {"PubMed ID": "456"}
+
+    prepared = list(prepare(context, [base, duplicate, distinct_publication]))
+
+    assert len(prepared) == 1
+    assert prepared[0]["PubMed ID"] == "123|456"
+    assert prepared[0]["target_id"] == "1"
+    assert pd.isna(prepared[0]["Type"])
+    assert pd.isna(prepared[0]["Action"])
+
+
+def test_load_ligand_mapping_and_publication_list(tmp_path):
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
+    )
+
+    assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
+    assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
+    assert _publication_list("") is None
+
+
+class RecordingContext:
+    def __init__(self):
+        self.messages = []
+
+    def log(self, message: str, level: str = "INFO") -> None:
+        self.messages.append((level, message))
+
+
+def _edge_signature(edge):
+    return {
+        "class": type(edge).__name__,
+        "subject": edge.subject,
+        "predicate": edge.predicate,
+        "object": edge.object,
+        "qualified_predicate": getattr(edge, "qualified_predicate", None),
+        "object_aspect_qualifier": getattr(edge, "object_aspect_qualifier", None),
+        "object_direction_qualifier": getattr(edge, "object_direction_qualifier", None),
+        "causal_mechanism_qualifier": getattr(edge, "causal_mechanism_qualifier", None),
+        "publications": getattr(edge, "publications", None),
+    }
+
+
+INTERACTION_RULE_GOLDEN = json.loads(
+    (Path(__file__).parent / "interaction_rule_golden.json").read_text()
+)
+
+
+@pytest.mark.parametrize(
+    "case",
+    INTERACTION_RULE_GOLDEN,
+    ids=lambda case: f"{case['type']}:{case['action']}:{case['endogenous']}",
+)
+def test_transform_matches_current_source_rule_behavior(case):
+    """Freeze 2026.2 behavior before replacing the Type/Action conditional forest."""
+    record = {
+        "subject_id": "2244",
+        "subject_name": "example ligand",
+        "target_id": "1",
+        "target_name": "example target",
+        "target_species": "Human",
+        "target_subunit_ids": "",
+        "target_gene_symbols": "GENE",
+        "target_uniprot_ids": "P08588",
+        "Type": case["type"],
+        "Action": case["action"],
+        "Endogenous": case["endogenous"],
+        "PubMed ID": "123|456",
+    }
+
+    graph = transform_ingest_all(RecordingContext(), [record])[0]
+
+    assert [_edge_signature(edge) for edge in graph.edges] == case["edges"]
+
+
+def test_transform_explicitly_excludes_unsupported_composite_targets():
+    context = RecordingContext()
+    record = {
+        "subject_id": "2244",
+        "subject_name": "example ligand",
+        "object_id": "P46098|O95264",
+        "object_name": "5-HT3AB",
+        "target_id": "378",
+        "target_name": "5-HT3AB",
+        "target_species": "Human",
+        "target_subunit_ids": "373|374",
+        "target_gene_symbols": "HTR3A|HTR3B",
+        "target_uniprot_ids": "P46098|O95264",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "PubMed ID": "11489465",
+    }
+
+    graph = transform_ingest_all(context, [record])[0]
+
+    assert graph.nodes == []
+    assert graph.edges == []
+    assert context.messages == [
+        (
+            "WARNING",
+            "Excluded 1 GtoPdb interaction record with an unsupported composite target; "
+            "no compound UniProt CURIE was emitted.",
+        )
+    ]
+
 
 # ── Fixtures: one per edge type declared in gtopdb_rig.yaml / gtopdb.py ────
 EDGE_FIXTURES = [
