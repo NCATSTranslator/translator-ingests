@@ -11,9 +11,6 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "beautifulsoup4>=4.14.2",
     "biolink-model==4.4.4",
-    # bmt >=1.5.0 defaults to the biolink-model 4.4.4 schema, matching the pinned
-    # pydantic model above. Older bmt defaults to the 4.2.2 schema, which silently
-    # disagrees with the pydantic classes about which qualifiers a class permits.
     "bmt>=1.5.0",
     "click>=8.0.0",
     "codespell>=2.4.1",
@@ -42,7 +39,10 @@ dev = [
     "pytest>=8.4.1",
     "black>=24.1.0",
     "codespell>=2.2.0",
-    "ruff>=0.12.8",
+    # Temporarily pin ruff to 0.14.14 to avoid ruff dependency being
+    # upgraded to a later release triggering many ruff code errors
+    # "ruff>=0.12.8",
+    "ruff==0.14.14",
     # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
     "jupyter_contrib_nbextensions",
@@ -61,7 +61,7 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = ["*.ipynb"]
+extend-exclude = ["*.ipynb","./src/docs/ingests/*"]
 
 [tool.black]
 line-length = 120
