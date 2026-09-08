@@ -22,7 +22,18 @@ node('transltr-ci-build-node-03-24.04') {
             stage('Checkout') {
                 checkout scm
             }
-            
+
+            // Self-heals the persistent-cache symlink if the workspace was ever wiped,
+            // so a wipe can't silently fall back to re-downloading/re-processing everything.
+            stage('Ensure Persistent Cache') {
+                sh '''
+                    if [ ! -L data ]; then
+                        rm -rf data
+                        ln -s /data/kgx-pipeline-cache/data data
+                    fi
+                '''
+            }
+
             stage('Install Dependencies') {
                 sh 'uv sync'
             }
