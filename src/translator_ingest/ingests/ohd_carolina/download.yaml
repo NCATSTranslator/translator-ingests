@@ -1,0 +1,9 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+# Zip archive of OHD-CAROLINA data (a csv file)
+- url: https://stars.renci.org/var/data_services/ohd/unc_omop_2018_2022_kg.zip
+  local_name: unc_omop_2018_2022_kg.zip
+
