@@ -28,9 +28,10 @@ source_info:
   data_versioning_and_releases: >-
     Based on the FAQ section: content expansion and feature enhancements are announced on the front page.
     Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in
-    October 2024). The ingest derives the source version by scraping the download page
-    (https://www.guidetopharmacology.org/download.jsp), which reports text of the form
-    "Downloads are from the 2025.4 version." Release history is documented at
+    October 2024). The ingest derives the source version from the metadata comment on the first line of
+    https://www.guidetopharmacology.org/DATA/interactions.csv, which reports text of the form
+    "# GtoPdb Version: 2026.2 - published: 2026-06-15". This public data file is also the ingest's interaction
+    source, so version detection does not depend on the login-gated download page. Release history is documented at
     https://www.guidetopharmacology.org/databaseContent.jsp
   source_status: maintained_regular_updates
 
@@ -74,8 +75,6 @@ ingest_info:
   filtered_content: []
 
   future_considerations:
-    - category: edge_content
-      consideration: "Leverage the value of the ENDOGENOUS column to inform when to use the regulates predicate and upregulates/downregulates direction qualifier values."
     - category: edge_content
       consideration: "Consider ingesting the file 'approved_drug_primary_target_interactions.csv', which contains a detailed interactions list for approved drugs."
     - category: edge_content
@@ -185,8 +184,6 @@ target_info:
         - biolink:Protein
       knowledge_level:
         - knowledge_assertion
-      primary_knowledge_sources:
-        - infores:gtopdb
       agent_type:
         - manual_agent
       primary_knowledge_sources:
