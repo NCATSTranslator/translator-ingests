@@ -69,3 +69,26 @@ The task involves the following steps/components:
 - CTD transform code: [ctd.py](./src/translator_ingest/ingests/ctd/ctd.py)
 - [CTD transform documentation](./src/translator_ingest/ingests/ctd/README.md)
 - Unit tests: [test_ctd.py](./tests/unit/ctd/test_ctd.py)
+
+## Source failures on a fresh machine
+
+Version discovery runs before downloading or transforming a source. If discovery
+fails, the pipeline can fall back to that source's local `latest-build.json`.
+A fresh machine has no such fallback: the affected source fails without writing
+a successful build or inventing a version. An old build file does not guarantee
+that the old source data is still downloadable.
+
+By default, `make run` and `make transform` stop scheduling work after a failure;
+parallel jobs already running may still finish. To attempt every independent
+source despite failures, use:
+
+```sh
+make run SOURCES="gtopdb ctd" KEEP_GOING=1
+# The same option is available for transform-only runs:
+make transform SOURCES="gtopdb ctd" KEEP_GOING=1
+```
+
+The command still exits nonzero if any source fails. This option does not turn a
+partial build into a successful release or authorize merging incomplete data.
+It only changes scheduling for source runs; downstream release and merge steps
+retain their existing failure behavior.
