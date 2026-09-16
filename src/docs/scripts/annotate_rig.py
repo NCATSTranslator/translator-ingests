@@ -128,13 +128,13 @@ def main(ingest, rig, tag, value):
 
     try:
         rig_data: dict
-        with open(rig_path, 'r') as r:
+        with open(rig_path, 'r', encoding="utf-8") as r:
             rig_data = yaml.safe_load(r)
             rewrite_property(rig_data, properties,values)
 
         replace(rig_path, str(rig_path)+".original")
 
-        with open(rig_path, 'w') as r:
+        with open(rig_path, 'w', encoding="utf-8") as r:
             yaml.safe_dump(rig_data, r, sort_keys=False)
 
     except Exception as e:
