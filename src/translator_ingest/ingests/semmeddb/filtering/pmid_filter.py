@@ -1,14 +1,26 @@
-"""SemMedDB post-normalization filter: drop publications the LLM PMID-checker rejected.
+"""SemMedDB pre-normalization filter: drop publications the LLM PMID-checker rejected.
 
-Drop a publication when its verdict is ``no`` or ``maybe``; keep ``yes`` and any PMID with no
-verdict (e.g. a paper the checker could not read). The ``maybe`` bucket is dropped for now and
-will be refined in a later second pass. Also drop the matching ``TextMiningStudyResult`` from
+Runs between transform and normalization, so it joins the verdict artifact on the raw
+kg2.10.3 identifiers the transform emits. That matters because the artifact is keyed by node
+ids: keying it by normalized ids would tie it to one Babel release, and since a key that does
+not match is simply "no verdict" (which means keep), every id that changed in a later Babel
+release would silently stop being filtered and the filter would decay without any error. Raw
+ids from the frozen kg2.10.3 source never change, so the join stays stable. The artifact itself
+is re-keyed from normalized ids to raw ids by ``analysis/rekey_pmid_verdicts.py``.
+
+Drop a publication when its verdict is ``no`` or ``maybe``; keep ``yes``, ``no_abstract`` and
+any PMID with no verdict row at all. The ``maybe`` bucket is dropped for now and will be
+refined in a later second pass. Also drop the matching ``TextMiningStudyResult`` from
 ``has_supporting_studies``. Drop an edge when no publication remains. Trim an edge to the most
 recent ``MAX_PUBLICATIONS_PER_EDGE`` publications when it has more than that, then prune nodes
 left without any edge.
 
-The filter overwrites ``normalized_nodes.jsonl`` / ``normalized_edges.jsonl`` in place (no raw
-backup), so merge and every downstream stage read the filtered output with no path change.
+Because a non-matching key silently means "keep", a coverage guard backstops the join: the
+fraction of input edges that have any verdict row must be at least ``MIN_EDGE_COVERAGE``, or
+the filter raises instead of quietly passing everything through.
+
+Inputs are never modified. The filtered nodes and edges are written to the output paths the
+pipeline supplies, which live in a filter directory keyed by the filter code hash.
 """
 
 import json
@@ -18,14 +30,22 @@ from typing import Any
 
 import polars as pl
 
-# LLM PMID-checker results parquet downloaded into source_data/ (see download.yaml).
-# Used columns: subject_curie, predicate, object_curie, PMID, support. Rule B only needs
-# the "no" rows, which all live here, so no separate no-abstract file is required.
-VERDICT_ARTIFACT_FILENAME = "semmeddb_pmid_checker_results.parquet"
+# LLM PMID-checker results parquet downloaded into source_data/ (see download.yaml), re-keyed
+# from normalized ids to raw kg2.10.3 ids. Used columns: subject_curie, predicate, object_curie,
+# PMID, support.
+VERDICT_ARTIFACT_FILENAME = "semmeddb_pmid_checker_results_raw_keyed.parquet"
 
-# these verdicts remove a publication; "yes" and any PMID absent from the results (e.g. a
-# no-abstract paper) are kept. "maybe" is dropped now and refined in a later second pass.
+# these verdicts remove a publication; "yes", "no_abstract" and any PMID absent from the results
+# are kept. "maybe" is dropped now and refined in a later second pass.
 DROP_SUPPORT_VALUES = frozenset({"no", "maybe"})
+
+# minimum fraction of input edges that must carry at least one verdict row. A key the artifact
+# does not cover is treated as "keep", so a broken join would silently disable the filter rather
+# than fail; this guard turns that into a loud error. Measured on kg2.10.3 with the re-keyed
+# artifact: 99.7% of edges covered (the rest have only no-abstract publications the checker could
+# not judge). The same edges joined on the original normalized keys reach only 89.3%, so this
+# threshold catches a broken or drifted join with a wide margin on both sides.
+MIN_EDGE_COVERAGE = 0.95
 
 # edges left with more than this many publications after filtering are trimmed to the most
 # recent ones (highest PMID number, since PMIDs are assigned chronologically). This bounds the
@@ -40,6 +60,9 @@ CAP_ENABLED = os.environ.get("SEMMEDDB_UNCAPPED", "").lower() not in ("1", "true
 EdgeKey = tuple[str, str, str]
 DropSet = dict[EdgeKey, set[str]]
 
+VERDICT_ARTIFACT_COLUMNS = ["subject_curie", "predicate", "object_curie", "PMID", "support"]
+EDGE_KEY_COLUMNS = ["subject_curie", "predicate", "object_curie"]
+
 
 def load_drop_set(artifact_file: Path) -> DropSet:
     """Build ``{(subject, predicate, object) -> {rejected PMIDs}}`` from the ``no``/``maybe`` verdicts.
@@ -48,10 +71,7 @@ def load_drop_set(artifact_file: Path) -> DropSet:
     test per publication.
     """
     verdicts = (
-        pl.read_parquet(
-            artifact_file,
-            columns=["subject_curie", "predicate", "object_curie", "PMID", "support"],
-        )
+        pl.read_parquet(artifact_file, columns=VERDICT_ARTIFACT_COLUMNS)
         .with_columns(pl.col("support").cast(pl.Utf8).str.to_lowercase().str.strip_chars())
         .filter(pl.col("support").is_in(DROP_SUPPORT_VALUES))
     )
@@ -62,6 +82,17 @@ def load_drop_set(artifact_file: Path) -> DropSet:
     ).iter_rows():
         drop_set.setdefault((subject, predicate, obj), set()).add(pmid)
     return drop_set
+
+
+def load_covered_edge_keys(artifact_file: Path) -> set[EdgeKey]:
+    """Return every distinct edge key the verdict artifact mentions, for any support value.
+
+    Wider than the drop set on purpose: an edge whose verdicts are all ``yes`` is still covered
+    by the checker, so it counts toward the coverage guard.
+    """
+    covered = pl.read_parquet(artifact_file, columns=EDGE_KEY_COLUMNS).unique()
+    covered_keys: set[EdgeKey] = set(covered.iter_rows())
+    return covered_keys
 
 
 def _prune_supporting_studies(
@@ -117,6 +148,16 @@ def _cap_by_recency(publications: list[str], limit: int) -> list[str]:
     return [pmid for pmid in publications if pmid in kept]
 
 
+def edge_key_of(edge: dict[str, Any]) -> EdgeKey:
+    """Return the ``(subject, predicate, object)`` key a verdict row is joined on.
+
+    >>> edge_key_of({"subject": "A", "predicate": "p", "object": "B"})
+    ('A', 'p', 'B')
+    """
+    # transform-stage KGX edges always carry subject/predicate/object
+    return edge["subject"], edge["predicate"], edge["object"]
+
+
 def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | None:
     """Remove rejected publications and cap oversized edges, or return None if none remain.
 
@@ -136,9 +177,7 @@ def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | Non
     ...              "publications": ["PMID:9"]}, drop)
     {'subject': 'X', 'predicate': 'p', 'object': 'Y', 'publications': ['PMID:9']}
     """
-    # normalized KGX edges always carry subject/predicate/object
-    edge_key = (edge["subject"], edge["predicate"], edge["object"])
-    dropped_pmids = drop_set.get(edge_key) or set()
+    dropped_pmids = drop_set.get(edge_key_of(edge)) or set()
 
     original_publications = edge.get("publications", [])
     publications = [pmid for pmid in original_publications if pmid not in dropped_pmids]
@@ -167,15 +206,22 @@ def filter_edge(edge: dict[str, Any], drop_set: DropSet) -> dict[str, Any] | Non
     return filtered_edge
 
 
-def _rewrite_edges(
-    edges_file: Path, drop_set: DropSet
-) -> tuple[set[str], dict[str, int]]:
-    """Stream edges through the filter in place, returning surviving node ids and stats."""
+def _write_filtered_edges(
+    edges_file: Path,
+    output_edges_file: Path,
+    drop_set: DropSet,
+    covered_edge_keys: set[EdgeKey],
+) -> tuple[set[str], dict[str, Any]]:
+    """Stream edges through the filter into the output file, returning surviving node ids and stats.
+
+    The input file is only read. Verdict coverage is counted during the same pass.
+    """
     surviving_node_ids: set[str] = set()
     edges_before = edges_after = 0
+    edges_with_verdicts = 0
     publications_before = publications_after = 0
 
-    edges_tmp = edges_file.with_name(edges_file.name + ".tmp")
+    edges_tmp = output_edges_file.with_name(output_edges_file.name + ".tmp")
     with edges_file.open() as source, edges_tmp.open("w") as destination:
         for line in source:
             line = line.strip()
@@ -184,6 +230,8 @@ def _rewrite_edges(
             edge = json.loads(line)
             edges_before += 1
             publications_before += len(edge.get("publications", []))
+            if edge_key_of(edge) in covered_edge_keys:
+                edges_with_verdicts += 1
 
             filtered_edge = filter_edge(edge, drop_set)
             if filtered_edge is None:
@@ -194,12 +242,14 @@ def _rewrite_edges(
             surviving_node_ids.add(filtered_edge["subject"])
             surviving_node_ids.add(filtered_edge["object"])
             destination.write(json.dumps(filtered_edge) + "\n")
-    os.replace(edges_tmp, edges_file)
+    os.replace(edges_tmp, output_edges_file)
 
-    stats = {
+    stats: dict[str, Any] = {
         "edges_before": edges_before,
         "edges_after": edges_after,
         "edges_dropped": edges_before - edges_after,
+        "edges_with_verdicts": edges_with_verdicts,
+        "edge_coverage": edges_with_verdicts / edges_before if edges_before else 0.0,
         "publications_before": publications_before,
         "publications_after": publications_after,
         "publications_removed": publications_before - publications_after,
@@ -207,10 +257,12 @@ def _rewrite_edges(
     return surviving_node_ids, stats
 
 
-def _rewrite_nodes(nodes_file: Path, surviving_node_ids: set[str]) -> dict[str, int]:
-    """Stream nodes in place, keeping only those referenced by a surviving edge."""
+def _write_filtered_nodes(
+    nodes_file: Path, output_nodes_file: Path, surviving_node_ids: set[str]
+) -> dict[str, int]:
+    """Stream nodes into the output file, keeping only those referenced by a surviving edge."""
     nodes_before = nodes_after = 0
-    nodes_tmp = nodes_file.with_name(nodes_file.name + ".tmp")
+    nodes_tmp = output_nodes_file.with_name(output_nodes_file.name + ".tmp")
     with nodes_file.open() as source, nodes_tmp.open("w") as destination:
         for line in source:
             line = line.strip()
@@ -221,7 +273,7 @@ def _rewrite_nodes(nodes_file: Path, surviving_node_ids: set[str]) -> dict[str, 
             if node.get("id") in surviving_node_ids:
                 nodes_after += 1
                 destination.write(json.dumps(node) + "\n")
-    os.replace(nodes_tmp, nodes_file)
+    os.replace(nodes_tmp, output_nodes_file)
     return {
         "nodes_before": nodes_before,
         "nodes_after": nodes_after,
@@ -229,16 +281,25 @@ def _rewrite_nodes(nodes_file: Path, surviving_node_ids: set[str]) -> dict[str, 
     }
 
 
-def filter_normalized_kgx(
+def filter_transform_kgx(
     nodes_file: Path,
     edges_file: Path,
+    output_nodes_file: Path,
+    output_edges_file: Path,
     source_data_dir: Path,
 ) -> dict[str, Any]:
-    """Apply the PMID-checker filter in place over normalized KGX nodes and edges.
+    """Apply the PMID-checker filter to transform-stage KGX nodes and edges.
 
-    Reads the verdict artifact from ``source_data_dir``, rewrites ``edges_file`` (dropping
-    rejected publications and edges that lose all of them), then rewrites ``nodes_file`` to
-    keep only nodes still referenced by a surviving edge. Returns filtering statistics.
+    Reads the raw-keyed verdict artifact from ``source_data_dir``, writes ``output_edges_file``
+    (dropping rejected publications and edges that lose all of them), then writes
+    ``output_nodes_file`` with only the nodes still referenced by a surviving edge. The input
+    files are never modified. Returns filtering statistics.
+
+    Raises ``RuntimeError`` when the fraction of input edges covered by the artifact falls below
+    ``MIN_EDGE_COVERAGE``, which means the artifact keys no longer line up with the source ids.
+    The guard fires after the output files are written, which is harmless: the pipeline only
+    marks the stage complete once it has written the filter metadata, and that never happens
+    when this raises.
     """
     artifact_file = source_data_dir / VERDICT_ARTIFACT_FILENAME
     if not artifact_file.exists():
@@ -247,6 +308,21 @@ def filter_normalized_kgx(
         )
 
     drop_set = load_drop_set(artifact_file)
-    surviving_node_ids, edge_stats = _rewrite_edges(edges_file, drop_set)
-    node_stats = _rewrite_nodes(nodes_file, surviving_node_ids)
-    return {**edge_stats, **node_stats}
+    covered_edge_keys = load_covered_edge_keys(artifact_file)
+    surviving_node_ids, edge_stats = _write_filtered_edges(
+        edges_file, output_edges_file, drop_set, covered_edge_keys
+    )
+    node_stats = _write_filtered_nodes(nodes_file, output_nodes_file, surviving_node_ids)
+    stats = {**edge_stats, **node_stats}
+
+    edge_coverage = edge_stats["edge_coverage"]
+    if edge_coverage < MIN_EDGE_COVERAGE:
+        raise RuntimeError(
+            f"PMID-checker verdict coverage is {edge_coverage:.4f}, below the required "
+            f"{MIN_EDGE_COVERAGE}: only {edge_stats['edges_with_verdicts']} of "
+            f"{edge_stats['edges_before']} edges have any verdict row. The verdict artifact "
+            f"({artifact_file.name}) keys no longer match the source edge ids, most likely a "
+            f"re-keyed artifact mismatch or a source version change. Uncovered edges are kept "
+            f"unfiltered, so this would silently disable the filter."
+        )
+    return stats

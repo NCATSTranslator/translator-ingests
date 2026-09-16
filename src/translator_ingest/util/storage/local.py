@@ -26,12 +26,15 @@ class IngestFileType(Enum):
     LATEST_RELEASE_FILE = 18
     RELEASE_METADATA_FILE = 19
     FILTER_METADATA_FILE = 20
+    FILTERED_KGX_FILES = 21
 
 
 
 class IngestFileName(StrEnum):
     SOURCE_METADATA = "source-metadata.json"
     TRANSFORM_METADATA = "transform-metadata.json"
+    FILTERED_NODES = "filtered_nodes.jsonl"
+    FILTERED_EDGES = "filtered_edges.jsonl"
     NORMALIZED_NODES = "normalized_nodes.jsonl"
     NORMALIZED_EDGES = "normalized_edges.jsonl"
     NORMALIZATION_METADATA = "normalization-metadata.json"
@@ -59,6 +62,10 @@ FILE_PATH_LOOKUP = {
     ),
     IngestFileType.TRANSFORM_METADATA_FILE: lambda pipeline_metadata: get_transform_directory(pipeline_metadata)
     / IngestFileName.TRANSFORM_METADATA,
+    IngestFileType.FILTERED_KGX_FILES: lambda pipeline_metadata: (
+        get_filter_directory(pipeline_metadata) / IngestFileName.FILTERED_NODES,
+        get_filter_directory(pipeline_metadata) / IngestFileName.FILTERED_EDGES,
+    ),
     IngestFileType.NORMALIZED_KGX_FILES: lambda pipeline_metadata: (
         get_normalization_directory(pipeline_metadata) / IngestFileName.NORMALIZED_NODES,
         get_normalization_directory(pipeline_metadata) / IngestFileName.NORMALIZED_EDGES,
@@ -69,7 +76,7 @@ FILE_PATH_LOOKUP = {
     / IngestFileName.NORMALIZATION_MAP,
     IngestFileType.NORMALIZATION_FAILURES_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
     / IngestFileName.NORMALIZATION_FAILURES,
-    IngestFileType.FILTER_METADATA_FILE: lambda pipeline_metadata: get_normalization_directory(pipeline_metadata)
+    IngestFileType.FILTER_METADATA_FILE: lambda pipeline_metadata: get_filter_directory(pipeline_metadata)
     / IngestFileName.FILTER_METADATA,
     IngestFileType.MERGED_KGX_FILES: lambda pipeline_metadata: (
         get_merge_directory(pipeline_metadata) / IngestFileName.MERGED_NODES,
@@ -109,9 +116,27 @@ def get_source_data_directory(pipeline_metadata: PipelineMetadata) -> Path:
 def get_transform_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_output_directory(pipeline_metadata) / f"transform_{pipeline_metadata.transform_version}"
 
+def get_filter_directory(pipeline_metadata: PipelineMetadata) -> Path:
+    """Directory holding a source's optional pre-normalization filter output.
+
+    Nested under the transform directory and keyed by the filter code hash, so changing the
+    filter code produces a new directory instead of overwriting earlier filtered output.
+    """
+    return get_transform_directory(pipeline_metadata) / f"filter_{pipeline_metadata.filter_code_version}"
+
 def get_normalization_directory(pipeline_metadata: PipelineMetadata) -> Path:
-    return (get_transform_directory(pipeline_metadata) /
-            f"normalization_{pipeline_metadata.get_composite_normalization_version()}")
+    """Directory holding normalization output.
+
+    Sources with a filter normalize the filtered KGX files, so their normalization directory
+    lives inside the filter directory. Filtered and unfiltered builds of the same transform can
+    therefore never collide, and the filter code hash is part of every downstream path.
+    """
+    base_directory = (
+        get_filter_directory(pipeline_metadata)
+        if pipeline_metadata.filter_code_version is not None
+        else get_transform_directory(pipeline_metadata)
+    )
+    return base_directory / f"normalization_{pipeline_metadata.get_composite_normalization_version()}"
 
 def get_merge_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_normalization_directory(pipeline_metadata) / f"merge_{pipeline_metadata.merging_code_version}"

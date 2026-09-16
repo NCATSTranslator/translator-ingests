@@ -10,7 +10,7 @@ from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, cast
 
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -28,6 +28,7 @@ from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, current_iso_date
 from translator_ingest.util.storage.local import (
+    get_filter_directory,
     get_output_directory,
     get_source_data_directory,
     get_transform_directory,
@@ -307,6 +308,25 @@ def is_normalization_complete(pipeline_metadata: PipelineMetadata):
         return norm_nodes.exists() and norm_edges.exists() and norm_metadata.exists() and norm_map.exists()
 
 
+def get_normalization_input_kgx_files(pipeline_metadata: PipelineMetadata) -> tuple[Path | None, Path | None]:
+    """Return the KGX files normalization should read.
+
+    Sources with a filter normalize the filtered output of the source filter stage; every other
+    source normalizes the transform output directly. The transform file lookup returns
+    ``(None, None)`` when the transform directory does not exist yet.
+    """
+    input_file_type = (
+        IngestFileType.FILTERED_KGX_FILES
+        if pipeline_metadata.filter_code_version is not None
+        else IngestFileType.TRANSFORM_KGX_FILES
+    )
+    # both of these file types resolve to a (nodes, edges) pair, never a single path
+    return cast(
+        tuple[Path | None, Path | None],
+        get_versioned_file_paths(file_type=input_file_type, pipeline_metadata=pipeline_metadata),
+    )
+
+
 def normalize(pipeline_metadata: PipelineMetadata):
     logger.info(f"Starting normalization for {pipeline_metadata.source}...")
 
@@ -316,10 +336,8 @@ def normalize(pipeline_metadata: PipelineMetadata):
         logger.info(f"Running in nodes-only mode for {pipeline_metadata.source} (max_edge_count = 0)")
 
     normalization_output_dir = get_normalization_directory(pipeline_metadata=pipeline_metadata)
-    normalization_output_dir.mkdir(exist_ok=True)
-    input_nodes_path, input_edges_path = get_versioned_file_paths(
-        file_type=IngestFileType.TRANSFORM_KGX_FILES, pipeline_metadata=pipeline_metadata
-    )
+    normalization_output_dir.mkdir(parents=True, exist_ok=True)
+    input_nodes_path, input_edges_path = get_normalization_input_kgx_files(pipeline_metadata)
 
     # For nodes-only mode (max_edge_count = 0), skip edge processing if no edges file exists
     if max_edge_count == 0 and (input_edges_path is None or not Path(input_edges_path).exists()):
@@ -353,12 +371,15 @@ def normalize(pipeline_metadata: PipelineMetadata):
     logger.info(f"Normalization complete for {pipeline_metadata.source}.")
 
 
-# Optional post-normalization filter. A source opts in by providing a
-# translator_ingest.ingests.{source}.filtering subpackage exposing filter_normalized_kgx().
-# Kept in a subpackage (not the ingest's top-level files) so filter edits do not change the
-# content-hash transform version. Sources without one are unaffected: filter_code_version stays
-# None, this stage is a no-op, and no directory or build-version segment is added.
-SOURCE_FILTER_FUNCTION_NAME = "filter_normalized_kgx"
+# Optional pre-normalization filter, run between transform and normalization. A source opts in by
+# providing a translator_ingest.ingests.{source}.filtering subpackage exposing
+# filter_transform_kgx(). Filtering before normalization keeps a filter joined to the source's own
+# raw identifiers, which are frozen with the source version, instead of normalized identifiers that
+# change with every Babel release. Kept in a subpackage (not the ingest's top-level files) so filter
+# edits do not change the content-hash transform version. Sources without one are unaffected:
+# filter_code_version stays None, this stage is a no-op, normalization reads the transform output
+# directly, and no directory or build-version segment is added.
+SOURCE_FILTER_FUNCTION_NAME = "filter_transform_kgx"
 
 
 def get_source_filter(source: str) -> Callable[..., dict[str, Any]] | None:
@@ -394,46 +415,42 @@ def is_source_filter_complete(pipeline_metadata: PipelineMetadata) -> bool:
         return False
     with metadata_path.open() as metadata_file:
         recorded_version = json.load(metadata_file).get("filter_code_version")
-    return recorded_version == pipeline_metadata.filter_code_version
+    if recorded_version != pipeline_metadata.filter_code_version:
+        return False
+    filtered_nodes_file, filtered_edges_file = get_versioned_file_paths(
+        file_type=IngestFileType.FILTERED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    )
+    return filtered_nodes_file.exists() and filtered_edges_file.exists()
 
 
-def apply_source_filter(pipeline_metadata: PipelineMetadata, overwrite: bool) -> None:
-    """Run a source's optional filter in place over the normalized KGX files.
+def apply_source_filter(pipeline_metadata: PipelineMetadata) -> None:
+    """Run a source's optional filter over the transform KGX files, before normalization.
 
-    The filter overwrites normalized_nodes.jsonl / normalized_edges.jsonl with no raw
-    backup, so merge and every downstream stage read the filtered output without any path
-    change. Changing filter code later therefore requires an OVERWRITE run.
+    Reads the transform output and writes filtered_nodes.jsonl / filtered_edges.jsonl into a
+    filter directory keyed by the filter code hash, leaving the transform output untouched.
+    Normalization then reads the filtered files, so changing filter code produces a new filter
+    directory and a new normalization directory below it rather than overwriting anything.
     """
     source = pipeline_metadata.source
     filter_function = get_source_filter(source)
     if filter_function is None:
         return
 
-    normalized_nodes_file, normalized_edges_file = get_versioned_file_paths(
-        file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    transform_nodes_file, transform_edges_file = get_versioned_file_paths(
+        file_type=IngestFileType.TRANSFORM_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
-    metadata_path = get_versioned_file_paths(
-        file_type=IngestFileType.FILTER_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    get_filter_directory(pipeline_metadata).mkdir(parents=True, exist_ok=True)
+    filtered_nodes_file, filtered_edges_file = get_versioned_file_paths(
+        file_type=IngestFileType.FILTERED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
 
-    # Without a raw backup the normalized files are already the filtered output once a filter
-    # has run. Re-filtering them with changed filter code would be wrong and unrecoverable, so
-    # fail fast and require an OVERWRITE run that regenerates normalization first.
-    if metadata_path.exists() and not overwrite:
-        with metadata_path.open() as metadata_file:
-            recorded_version = json.load(metadata_file).get("filter_code_version")
-        if recorded_version != pipeline_metadata.filter_code_version:
-            raise RuntimeError(
-                f"Filter code for {source} changed (was {recorded_version}, now "
-                f"{pipeline_metadata.filter_code_version}) but the normalized output was already "
-                f"filtered in place with no raw backup. Re-run with OVERWRITE=1 to regenerate."
-            )
-
-    logger.info(f"Applying post-normalization filter for {source}...")
+    logger.info(f"Applying pre-normalization filter for {source}...")
     start_time = time.perf_counter()
     filter_stats = filter_function(
-        nodes_file=normalized_nodes_file,
-        edges_file=normalized_edges_file,
+        nodes_file=transform_nodes_file,
+        edges_file=transform_edges_file,
+        output_nodes_file=filtered_nodes_file,
+        output_edges_file=filtered_edges_file,
         source_data_dir=get_source_data_directory(pipeline_metadata),
     )
     elapsed_time = time.perf_counter() - start_time
@@ -725,6 +742,10 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     # Transform version is auto-computed as a content hash of the ingest's source files
     # Set transform_version before load_koza_config since it uses get_transform_directory
     pipeline_metadata.transform_version = get_transform_version(source)
+    # The optional source filter runs between transform and normalization, so its version has to be
+    # set before anything resolves a filter or normalization directory (both are keyed by it).
+    # No-op for sources without a filtering subpackage (filter_code_version stays None).
+    pipeline_metadata.filter_code_version = get_filter_code_version(source)
 
     # Load koza config early to get max_edge_count for all pipeline stages
     load_koza_config(source, pipeline_metadata)
@@ -737,6 +758,16 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         transform(pipeline_metadata)
     if transform_only:
         return
+
+    # Apply an optional source-specific filter to the transform KGX files. Filtering here, before
+    # normalization, keeps the filter joined to the source's own frozen identifiers.
+    if is_source_filter_complete(pipeline_metadata) and not overwrite:
+        logger.info(
+            f"Source filter already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
+            f"filter: {pipeline_metadata.filter_code_version}"
+        )
+    else:
+        apply_source_filter(pipeline_metadata)
 
     # Normalize the post-transform KGX files
     # Note - ORION can use the biolink model to map predicates during normalization, but we decided not to do that.
@@ -757,17 +788,6 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         )
     else:
         normalize(pipeline_metadata)
-
-    # Apply an optional source-specific filter to the normalized KGX files.
-    # No-op for sources without a filtering subpackage (filter_code_version stays None).
-    pipeline_metadata.filter_code_version = get_filter_code_version(source)
-    if is_source_filter_complete(pipeline_metadata) and not overwrite:
-        logger.info(
-            f"Source filter already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"filter: {pipeline_metadata.filter_code_version}"
-        )
-    else:
-        apply_source_filter(pipeline_metadata, overwrite)
 
     # Merge entities in post-normalization KGX files
     pipeline_metadata.merging_code_version = MERGING_CODE_VERSION
