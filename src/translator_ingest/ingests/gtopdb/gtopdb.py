@@ -6,7 +6,6 @@ from pathlib import Path
 import re
 from typing import Any, Iterable
 
-from bs4 import BeautifulSoup
 import koza
 from koza.model.graphs import KnowledgeGraph
 import pandas as pd
@@ -29,13 +28,16 @@ from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
 from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
-
 GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
 
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
+
+# The interactions file's first metadata line carries its release version.
+GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
+GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
@@ -178,13 +180,11 @@ class TargetDescriptor:
         """Build a target descriptor from a prepared GtoPdb interaction record."""
         return cls(
             source_id=_source_text(record.get("target_id")),
-            name=_source_text(record.get("target_name"))
-            or _source_text(record.get("object_name")),
+            name=_source_text(record.get("target_name")) or _source_text(record.get("object_name")),
             species=_source_text(record.get("target_species")),
             subunit_ids=_pipe_values(record.get("target_subunit_ids")),
             gene_symbols=_pipe_values(record.get("target_gene_symbols")),
-            uniprot_ids=_pipe_values(record.get("target_uniprot_ids"))
-            or _pipe_values(record.get("object_id")),
+            uniprot_ids=_pipe_values(record.get("target_uniprot_ids")) or _pipe_values(record.get("object_id")),
         )
 
     @property
@@ -278,21 +278,29 @@ def source_target_species_descriptors(
 def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
     """Return source target IDs represented for more than one known species."""
     descriptors = source_target_species_descriptors(targets)
-    return frozenset(
-        source_id for source_id, species in descriptors.items() if len(species) > 1
-    )
+    return frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
 
 
 def get_latest_version() -> str:
-    """Derive the GtoPdb release version from its download page."""
-    response = requests.get("https://www.guidetopharmacology.org/download.jsp")
-    soup = BeautifulSoup(response.content, "html.parser")
-    version_tag = soup.find("b", string=re.compile("Downloads are from the *"))
-    if version_tag is None:
-        raise RuntimeError("Could not find the GtoPdb download version text.")
+    """Determine the latest GtoPdb release version.
 
-    version_text = version_tag.text
-    return version_text[len("Downloads are from the "):].split(" version")[0]
+    The download.jsp web page that used to advertise the version now requires a login, so the version is
+    read from the metadata comment on the first line of the interactions file instead. That file is the
+    same one this ingest downloads, so the version is guaranteed to describe the data actually ingested.
+
+    :return: The GtoPdb version, e.g. '2026.2'
+    :raises RuntimeError: If the version could not be parsed from the file.
+    """
+    with requests.get(GTOPDB_INTERACTIONS_URL, stream=True, timeout=60) as response:
+        response.raise_for_status()
+        first_line = next(response.iter_lines(decode_unicode=True), "")
+
+    match = GTOPDB_VERSION_PATTERN.search(first_line)
+    if match is None:
+        raise RuntimeError(
+            f"Could not parse the GtoPdb version from the first line of {GTOPDB_INTERACTIONS_URL}: {first_line!r}"
+        )
+    return match.group("version")
 
 
 def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
@@ -323,10 +331,7 @@ def _prepare_interactions(
     source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
     source = source.astype({LIGAND_ID_COLUMN: "string", "Target ID": "string"})
     source = source.dropna(subset=["Target ID", LIGAND_ID_COLUMN])
-    source = source[
-        source["Target ID"].str.strip().ne("")
-        & source[LIGAND_ID_COLUMN].str.strip().ne("")
-    ]
+    source = source[source["Target ID"].str.strip().ne("") & source[LIGAND_ID_COLUMN].str.strip().ne("")]
 
     aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
     prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
@@ -359,9 +364,7 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
         object: NamedThing = Protein(
             id=target.protein_curie,
             name=target.name,
-            in_taxon=[target.species_context_qualifier]
-            if target.species_context_qualifier
-            else None,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
         )
     elif target.complex_curie:
         object = MacromolecularComplex(
@@ -370,9 +373,7 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
             # IUPHARobj identifies the source target concept. The taxon keeps
             # human target 378 (5-HT3AB) distinct in meaning from its mouse
             # descriptor, even though both use IUPHARobj:378 as the node ID.
-            in_taxon=[target.species_context_qualifier]
-            if target.species_context_qualifier
-            else None,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
         )
     else:
         raise ValueError(f"Cannot create a target node for {target.key}")
@@ -386,9 +387,7 @@ def _component_nodes(target: TargetDescriptor) -> list[Protein]:
     return [
         Protein(
             id=f"UniProtKB:{accession}",
-            in_taxon=[target.species_context_qualifier]
-            if target.species_context_qualifier
-            else None,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
         )
         for accession in target.canonical_uniprot_ids
     ]
@@ -502,9 +501,7 @@ def _edges_for_record(
         )
     ]
     if rule.physical_interaction:
-        edges.append(
-            _build_physical_interaction(subject, object, target.species_context_qualifier)
-        )
+        edges.append(_build_physical_interaction(subject, object, target.species_context_qualifier))
     if target.complex_curie and emit_component_edges:
         edges.extend(
             Association(
@@ -528,9 +525,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
     records = list(data)
     targets = tuple(TargetDescriptor.from_record(record) for record in records)
     descriptors = source_target_species_descriptors(targets)
-    multi_species_target_ids = frozenset(
-        source_id for source_id, species in descriptors.items() if len(species) > 1
-    )
+    multi_species_target_ids = frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
     unsupported_target_counts: dict[TargetClassification, int] = {}
@@ -563,11 +558,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         # unqualified components for shared source IDs. See the RIG's
         # multi-species composition note, biolink-model#1797, and
         # translator-ingests#510.
-        component_nodes = (
-            _component_nodes(target)
-            if target.source_id not in multi_species_target_ids
-            else []
-        )
+        component_nodes = _component_nodes(target) if target.source_id not in multi_species_target_ids else []
         nodes.extend((subject, object, *component_nodes))
         edges.extend(emitted_edges)
 
