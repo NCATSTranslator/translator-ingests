@@ -92,3 +92,22 @@ The command still exits nonzero if any source fails. This option does not turn a
 partial build into a successful release or authorize merging incomplete data.
 It only changes scheduling for source runs; downstream release and merge steps
 retain their existing failure behavior.
+
+### Fresh-storage pipeline acceptance
+
+The opt-in acceptance test uses tiny synthetic inputs served over local HTTP and
+real Koza, Node Normalizer, merge, validation and metadata generation. It starts
+with empty storage, verifies that a source whose version URL returns HTTP 404
+publishes no build, then checks that a healthy source completes all stages with
+two normalized nodes and one merged edge. It requires network access for Node
+Normalizer and schema services; regular CI skips it.
+
+```sh
+uv sync --frozen
+RUN_LIVE_PIPELINE_TESTS=1 uv run --frozen pytest tests/integration/test_fresh_pipeline.py -q
+```
+
+Set `PIPELINE_ACCEPTANCE_ARTIFACTS` to a directory to retain downloaded input,
+intermediate outputs and build metadata for inspection. This small acceptance
+case exercises the pipeline stages; individual production ingests still need
+their own source-specific coverage.
