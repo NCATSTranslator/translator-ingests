@@ -17,7 +17,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
-    MacromolecularComplex,
     NamedThing,
     PairwiseGeneToGeneInteraction,
     Protein,
@@ -112,15 +111,15 @@ _REGULATORY_ASSOCIATIONS: dict[tuple[str, str], tuple[type[Association], type[As
 }
 
 
-def _resolve_association_types(record: dict[str, Any]) -> tuple[type[Association], type[Association] | None] | None:
+def _resolve_association_types(record: dict[str, Any]) -> tuple[type[Association], type[Association]] | None:
     """Select an emitted route after validating the record's mechanism and effect.
 
-    Complex membership is a separate, single-edge route. Unrecognized category
-    combinations and recognized effects without a route are intentionally filtered.
+    Complex endpoints are excluded under the current deployment policy.
+    Unrecognized category combinations and effects without a route are also filtered.
 
     >>> _resolve_association_types({
     ...     "subject_category": "protein", "object_category": "complex", "EFFECT": "form complex"
-    ... }) == (Association, None)
+    ... }) is None
     True
     >>> _resolve_association_types({
     ...     "subject_category": "chemical", "object_category": "chemical", "EFFECT": "up-regulates"
@@ -131,8 +130,6 @@ def _resolve_association_types(record: dict[str, Any]) -> tuple[type[Association
     if record["subject_category"] not in ("protein", "chemical", "smallmolecule"):
         return None
     categories = (record["subject_category"], record["object_category"])
-    if categories == ("protein", "complex") and record["EFFECT"] == "form complex":
-        return Association, None
     if not record["EFFECT"] or record["EFFECT"] not in _EFFECT_QUALIFIERS:
         return None
     return _REGULATORY_ASSOCIATIONS.get(categories)
@@ -239,7 +236,7 @@ def get_latest_version() -> str:
     #
     # also note that currently the file we have on the RENCI server corresponds to a date but that's the download date
     # the actual version is
-    return "2026_March"
+    return "2026_July"
 
 
 @koza.prepare_data(tag="signor_parsing")
@@ -318,6 +315,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         & (source_agg_df["object_category"].str.lower() != "stimulus")
     ]
 
+    # Complex identifiers are not supported in the current Translator deployment.
+    source_agg_df = source_agg_df[
+        (source_agg_df["subject_category"].str.lower() != "complex")
+        & (source_agg_df["object_category"].str.lower() != "complex")
+    ]
+
     ## only drop rows missing fields required to build a valid record
     required_cols = ["subject_name", "object_name", "IDA", "IDB"]
 
@@ -360,13 +363,11 @@ def _transform_record(record: dict[str, Any]) -> KnowledgeGraph | None:
 
     if record["object_category"] == "protein":
         target = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
-    elif record["object_category"] == "complex":
-        target = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
     else:
         target = ChemicalEntity(id=record["IDB"], name=record["object_name"])
 
-    # Read DIRECT before constructing edges, but never require it for complex membership.
-    is_direct = interaction_type is not None and bool(record["DIRECT"] == "YES")
+    # Read DIRECT before constructing edges, only after selecting a supported route.
+    is_direct = bool(record["DIRECT"] == "YES")
     common_attributes: dict[str, Any] = {
         "subject": subject.id,
         "object": target.id,
@@ -377,10 +378,7 @@ def _transform_record(record: dict[str, Any]) -> KnowledgeGraph | None:
     primary_attributes: dict[str, Any] = {}
     interaction_attributes: dict[str, Any] = {}
 
-    if primary_type is Association:
-        # Complex membership has neither regulation qualifiers nor species/anatomy.
-        predicate = "biolink:part_of"
-    elif primary_type is ChemicalEntityToChemicalEntityAssociation:
+    if primary_type is ChemicalEntityToChemicalEntityAssociation:
         # Chemical-pair edges omit regulation qualifiers; only the primary has species.
         primary_attributes["species_context_qualifier"] = species
     else:
@@ -410,7 +408,7 @@ def _transform_record(record: dict[str, Any]) -> KnowledgeGraph | None:
             **primary_attributes,
         )
     ]
-    if is_direct and interaction_type is not None:
+    if is_direct:
         edges.append(
             interaction_type(
                 id=entity_id(),

@@ -390,6 +390,25 @@ def signor_record() -> dict[str, Any]:
     }
 
 
+@pytest.fixture
+def signor_source_record(signor_record: dict[str, Any]) -> dict[str, Any]:
+    """Provide the same record with original source columns for preparation tests."""
+    record = dict(signor_record)
+    for prepared_name, source_name in (
+        ("subject_name", "ENTITYA"),
+        ("subject_category", "TYPEA"),
+        ("object_name", "ENTITYB"),
+        ("object_category", "TYPEB"),
+    ):
+        record[source_name] = record.pop(prepared_name)
+    return record
+
+
+def test_release_version_matches_current_main() -> None:
+    """Retain the July release selected upstream rather than reverting to March."""
+    assert signor.get_latest_version() == "2026_July"
+
+
 @pytest.mark.parametrize(
     ("taxon", "cell", "tissue", "expected_species", "expected_anatomy"),
     [
@@ -430,7 +449,7 @@ def test_transform_preserves_context_values_and_placement(
     ("subject_category", "object_category", "primary_class", "secondary_class"),
     [
         ("protein", "protein", GeneRegulatesGeneAssociation, PairwiseGeneToGeneInteraction),
-        ("protein", "complex", Association, None),
+        ("protein", "complex", None, None),
         ("protein", "chemical", GeneAffectsChemicalAssociation, ChemicalGeneInteractionAssociation),
         ("chemical", "protein", ChemicalAffectsGeneAssociation, ChemicalGeneInteractionAssociation),
         ("smallmolecule", "protein", ChemicalAffectsGeneAssociation, ChemicalGeneInteractionAssociation),
@@ -454,23 +473,26 @@ def test_transform_preserves_edge_routing_and_evidence(
     direct: str | None,
     subject_category: str,
     object_category: str,
-    primary_class: type[Association],
+    primary_class: type[Association] | None,
     secondary_class: type[Association] | None,
 ) -> None:
-    """Preserve every emitted category route, edge order, qualifier placement, and evidence."""
-    is_part_of = object_category == "complex"
+    """Preserve emitted routes and the upstream exclusion of complex membership."""
     record = {
         **signor_record,
         "subject_category": subject_category,
         "object_category": object_category,
         "IDA": "P12345" if subject_category == "protein" else "CHEBI:17368",
         "IDB": {"protein": "Q12345", "complex": "C1"}.get(object_category, "CHEBI:28997"),
-        "EFFECT": "form complex" if is_part_of else "down-regulates quantity",
+        "EFFECT": "form complex" if object_category == "complex" else "down-regulates quantity",
         "DIRECT": direct,
     }
     (graph,) = signor.transform_ingest_all(signor_context, [record])
     nodes = list(graph.nodes)
     edges = list(graph.edges)
+    if primary_class is None:
+        assert nodes == []
+        assert edges == []
+        return
     expected_classes = [primary_class]
     if direct == "YES" and secondary_class is not None:
         expected_classes.append(secondary_class)
@@ -482,7 +504,7 @@ def test_transform_preserves_edge_routing_and_evidence(
     assert [node.name for node in nodes] == ["Subject", "Object"]
 
     protein_pair = subject_category == object_category == "protein"
-    predicate = "biolink:part_of" if is_part_of else "biolink:regulates" if protein_pair else "biolink:affects"
+    predicate = "biolink:regulates" if protein_pair else "biolink:affects"
     assert edges[0].predicate == predicate
     for index, edge in enumerate(edges):
         assert (edge.subject, edge.object) == (nodes[0].id, nodes[1].id)
@@ -497,14 +519,14 @@ def test_transform_preserves_edge_routing_and_evidence(
             assert edge.predicate == "biolink:directly_physically_interacts_with"
 
         fields = edge.model_dump()
-        qualified = not is_part_of and primary_class is not ChemicalEntityToChemicalEntityAssociation
+        qualified = primary_class is not ChemicalEntityToChemicalEntityAssociation
         assert fields.get("qualified_predicate") == ("biolink:causes" if qualified else None)
         assert fields.get("object_aspect_qualifier") == ("abundance" if qualified else None)
         direction = "downregulated" if protein_pair else "decreased"
         assert fields.get("object_direction_qualifier") == (direction if qualified else None)
         mechanism = "binding" if qualified and type(edge) is not GeneRegulatesGeneAssociation else None
         assert fields.get("causal_mechanism_qualifier") == mechanism
-        species = None if is_part_of or (not qualified and index == 1) else "NCBITaxon:9606"
+        species = None if not qualified and index == 1 else "NCBITaxon:9606"
         assert fields.get("species_context_qualifier") == species
         anatomy = ["CL:0000000", "CL:0000001"] if qualified and not protein_pair and index == 0 else None
         assert fields.get("anatomical_context_qualifier") == anatomy
@@ -741,22 +763,13 @@ def test_transform_preserves_mechanism_placement(
         assert interaction.model_dump().get("causal_mechanism_qualifier") == expected_value
 
 
-def test_complex_membership_does_not_require_direct(signor_record: dict[str, Any]) -> None:
-    """Complex membership emits one unqualified edge without consulting DIRECT."""
+def test_complex_membership_is_filtered_before_node_construction(signor_record: dict[str, Any]) -> None:
+    """The disabled complex route needs neither node fields nor DIRECT after mapping validation."""
     signor_record.update(object_category="complex", IDB="C1", EFFECT="form complex")
-    del signor_record["DIRECT"]
+    for field in ("IDA", "IDB", "subject_name", "object_name", "DIRECT"):
+        del signor_record[field]
 
-    graph = signor._transform_record(signor_record)
-
-    assert graph is not None
-    (association,) = graph.edges
-    assert type(association) is Association
-    assert (association.subject, association.predicate, association.object) == (
-        "UniProtKB:P12345",
-        "biolink:part_of",
-        "SIGNOR:C1",
-    )
-    assert association.publications == ["PMID:123", "PMID:456"]
+    assert signor._transform_record(signor_record) is None
 
 
 @pytest.mark.parametrize("subject_category", ["complex", "chemical", "unsupported"])
@@ -779,21 +792,16 @@ def test_unsupported_subject_does_not_require_object_category(signor_record: dic
 
 @pytest.mark.parametrize("direct", ["YES", "NO"])
 def test_prepare_and_transform_preserve_aggregation(
-    signor_context: koza.KozaTransform, signor_record: dict[str, Any], direct: str
+    signor_context: koza.KozaTransform, signor_source_record: dict[str, Any], direct: str
 ) -> None:
     """Exercise real preparation, evidence aggregation, filtering, and graph construction together."""
     raw_record = {
-        **signor_record,
+        **signor_source_record,
         "ENTITYA": "miR-34",
-        "TYPEA": "protein",
-        "ENTITYB": "Object",
-        "TYPEB": "protein",
         "PMID": "123",
         "SENTENCE": " First sentence. ",
         "DIRECT": direct,
     }
-    for field in ("subject_name", "subject_category", "object_name", "object_category"):
-        del raw_record[field]
     records = [
         raw_record,
         dict(raw_record),
@@ -820,3 +828,23 @@ def test_prepare_and_transform_preserve_aggregation(
         assert edge.publications == ["PMID:123", "PMID:456"]
         assert edge.supporting_text == ["First sentence.", "Second sentence."]
         assert edge.has_confidence_score == 0.75
+
+
+@pytest.mark.parametrize("field", ["TYPEA", "TYPEB"])
+@pytest.mark.parametrize("category", ["complex", "Complex", "COMPLEX"])
+@pytest.mark.parametrize("effect", ["form complex", "down-regulates quantity"])
+def test_prepare_excludes_complex_endpoints(
+    signor_context: koza.KozaTransform,
+    signor_source_record: dict[str, Any],
+    field: str,
+    category: str,
+    effect: str,
+) -> None:
+    """Preserve main's case-insensitive exclusion of either complex endpoint for every effect."""
+    source_record = {**signor_source_record, field: category, "EFFECT": effect}
+
+    prepared = list(signor.prepare(signor_context, iter([source_record])))
+    assert prepared == []
+    (graph,) = signor.transform_ingest_all(signor_context, iter(prepared))
+    assert list(graph.nodes) == []
+    assert list(graph.edges) == []
