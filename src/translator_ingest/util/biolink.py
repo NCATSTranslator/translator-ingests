@@ -39,6 +39,10 @@ INFORES_DRUGMATRIX = "infores:drugmatrix"
 INFORES_PDSP_KI = "infores:pdsp-ki"
 INFORES_WOMBAT_PK = "infores:wombat-pk"
 INFORES_PUBTATOR = "infores:pubtator"
+INFORES_PHARMGKB = "infores:pharmgkb"
+INFORES_STRING = "infores:string"
+INFORES_STITCH = "infores:stitch"
+INFORES_CUREID = "infores:cureid"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
 INFORES_CIVIC = "infores:civic"
@@ -56,11 +60,7 @@ INFORES_MYCANCERGENOME = "infores:mycancergenome"
 INFORES_MYCANCERGENOME_TRIALS = "infores:mycancergenome-trials"
 INFORES_NCIT = "infores:ncit"
 INFORES_ONCOKB = "infores:oncokb"
-INFORES_PHARMGKB = "infores:pharmgkb"
-INFORES_STRING = "infores:string"
-INFORES_STITCH = "infores:stitch"
-INFORES_CUREID = "infores:cureid"
-
+## end dgidb ingest section
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
