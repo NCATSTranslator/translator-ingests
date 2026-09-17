@@ -62,9 +62,15 @@ def get_latest_version() -> str:
 
 @koza.prepare_data()
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-    df = pd.DataFrame.from_records(data)
-    ## data was loaded with empty values = "". Just in case, replace these empty strings with None so na methods will work
-    df.replace(to_replace="", value=None, inplace=True)
+    ## load file in pandas directly
+    ## skipping koza reader because it's having problems reading rows that lack some values. Errors saying row is shorter than expected
+    interactions_path = f"{koza.input_files_dir}/interactions.tsv"  ## path to downloaded file
+
+    ## skip first two lines (comments)
+    ## setting parameter comment="#" causes a bug
+    ##   because some lines have # in the names. param causes rest of line to be NA
+    df = pd.read_table(interactions_path, header=2)
+    koza.log(f"{df.shape[0]} rows at start.")
     ## for debugging
     # print(df[df["gene_concept_id"].notna()].shape)
     # print(df[df["drug_concept_id"].notna()].shape)
