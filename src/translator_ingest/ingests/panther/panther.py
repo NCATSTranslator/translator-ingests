@@ -23,8 +23,6 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     extract_panther_data_polars,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
-    NCBITAXON_A_COL,
-    NCBITAXON_B_COL,
     GENE_FAMILY_ID_COL,
 )
 
