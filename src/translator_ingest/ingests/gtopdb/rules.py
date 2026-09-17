@@ -1,7 +1,7 @@
 """Declarative GtoPdb Type/Action interaction semantics."""
 
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import Any, Literal
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     CausalMechanismQualifierEnum as CMQ,
@@ -26,15 +26,9 @@ class InteractionRule:
 # Canonical rule shapes. Per-action entries below reuse these values or apply
 # only their semantic differences with dataclasses.replace().
 ACTIVATION = InteractionRule(polarity="positive", mechanism=CMQ.activation)
-AGONISM = InteractionRule(
-    polarity="positive", mechanism=CMQ.agonism, physical_interaction=True
-)
-ANTAGONISM = InteractionRule(
-    polarity="negative", mechanism=CMQ.antagonism, physical_interaction=True
-)
-INHIBITION = InteractionRule(
-    polarity="negative", mechanism=CMQ.inhibition, physical_interaction=True
-)
+AGONISM = InteractionRule(polarity="positive", mechanism=CMQ.agonism, physical_interaction=True)
+ANTAGONISM = InteractionRule(polarity="negative", mechanism=CMQ.antagonism, physical_interaction=True)
+INHIBITION = InteractionRule(polarity="negative", mechanism=CMQ.inhibition, physical_interaction=True)
 SKIP = InteractionRule(skip=True)
 RELATED = InteractionRule(relation="related", qualified=False)
 NEUTRAL_PHYSICAL = InteractionRule(qualified=False, physical_interaction=True)
@@ -58,9 +52,7 @@ RULES: dict[str, dict[str, InteractionRule]] = {
         "Biased agonist": replace(AGONISM, mechanism=CMQ.biased_agonism),
         "Binding": AGONISM,
         "Full agonist": AGONISM,
-        "Inverse agonist": replace(
-            AGONISM, polarity="negative", mechanism=CMQ.inverse_agonism
-        ),
+        "Inverse agonist": replace(AGONISM, polarity="negative", mechanism=CMQ.inverse_agonism),
         "Irreversible agonist": AGONISM,
         "Mixed": replace(AGONISM, mechanism=CMQ.mixed_agonism),
         "None": AGONISM,
@@ -72,45 +64,27 @@ RULES: dict[str, dict[str, InteractionRule]] = {
         "Agonist": AGONISM,
         "Antagonist": ANTAGONISM,
         "Biased agonist": replace(AGONISM, mechanism=CMQ.biased_agonism),
-        "Binding": replace(
-            NEUTRAL_PHYSICAL, mechanism=CMQ.allosteric_modulation
-        ),
-        "Biphasic": replace(
-            NEUTRAL_PHYSICAL, mechanism=CMQ.biphasic_allosteric_modulation
-        ),
+        "Binding": replace(NEUTRAL_PHYSICAL, mechanism=CMQ.allosteric_modulation),
+        "Biphasic": replace(NEUTRAL_PHYSICAL, mechanism=CMQ.biphasic_allosteric_modulation),
         "Full agonist": AGONISM,
         "Inhibition": INHIBITION,
-        "Inverse agonist": replace(
-            ANTAGONISM, mechanism=CMQ.inverse_agonism
-        ),
-        "Mixed": replace(
-            NEUTRAL_PHYSICAL, mechanism=CMQ.mixed_allosteric_modulation
-        ),
-        "Negative": replace(
-            ANTAGONISM, mechanism=CMQ.negative_allosteric_modulation
-        ),
+        "Inverse agonist": replace(ANTAGONISM, mechanism=CMQ.inverse_agonism),
+        "Mixed": replace(NEUTRAL_PHYSICAL, mechanism=CMQ.mixed_allosteric_modulation),
+        "Negative": replace(ANTAGONISM, mechanism=CMQ.negative_allosteric_modulation),
         "Neutral": SKIP,
         "None": SKIP,
         "Partial agonist": replace(AGONISM, mechanism=CMQ.partial_agonism),
-        "Positive": replace(
-            AGONISM, mechanism=CMQ.positive_allosteric_modulation
-        ),
+        "Positive": replace(AGONISM, mechanism=CMQ.positive_allosteric_modulation),
         "Potentiation": replace(AGONISM, mechanism=CMQ.potentiation),
     },
     "Antagonist": {
         "Antagonist": ANTAGONISM,
         "Binding": ANTAGONISM,
         "Inhibition": ANTAGONISM,
-        "Inverse agonist": replace(
-            ANTAGONISM, mechanism=CMQ.inverse_agonism
-        ),
-        "Irreversible inhibition": replace(
-            ANTAGONISM, mechanism=CMQ.irreversible_inhibition
-        ),
+        "Inverse agonist": replace(ANTAGONISM, mechanism=CMQ.inverse_agonism),
+        "Irreversible inhibition": replace(ANTAGONISM, mechanism=CMQ.irreversible_inhibition),
         "Mixed": ANTAGONISM,
-        "Non-competitive": replace(
-            ANTAGONISM, mechanism=CMQ.non_competitive_antagonism
-        ),
+        "Non-competitive": replace(ANTAGONISM, mechanism=CMQ.non_competitive_antagonism),
         "Partial agonist": SKIP,
     },
     "Antibody": {
@@ -123,12 +97,8 @@ RULES: dict[str, dict[str, InteractionRule]] = {
     "Channel blocker": {
         "Antagonist": replace(ANTAGONISM, mechanism=CMQ.molecular_channel_blockage),
         "Inhibition": replace(INHIBITION, mechanism=CMQ.molecular_channel_blockage),
-        "None": replace(
-            NEUTRAL_PHYSICAL, mechanism=CMQ.molecular_channel_blockage
-        ),
-        "Pore blocker": replace(
-            NEUTRAL_PHYSICAL, mechanism=CMQ.molecular_channel_blockage
-        ),
+        "None": replace(NEUTRAL_PHYSICAL, mechanism=CMQ.molecular_channel_blockage),
+        "Pore blocker": replace(NEUTRAL_PHYSICAL, mechanism=CMQ.molecular_channel_blockage),
     },
     "Fusion protein": {
         "Binding": SKIP,
@@ -140,24 +110,16 @@ RULES: dict[str, dict[str, InteractionRule]] = {
         "None": replace(NEUTRAL_PHYSICAL, mechanism=CMQ.gating_inhibition),
         "Pore blocker": replace(ANTAGONISM, mechanism=CMQ.gating_inhibition),
         "Slows inactivation": replace(ANTAGONISM, mechanism=CMQ.gating_inhibition),
-        "Voltage-dependent inhibition": replace(
-            ANTAGONISM, mechanism=CMQ.gating_inhibition
-        ),
+        "Voltage-dependent inhibition": replace(ANTAGONISM, mechanism=CMQ.gating_inhibition),
     },
     "Inhibitor": {
         "Antagonist": ANTAGONISM,
         "Binding": ANTAGONISM,
         "Competitive": replace(INHIBITION, mechanism=CMQ.competitive_inhibition),
-        "Feedback inhibition": replace(
-            INHIBITION, mechanism=CMQ.feedback_inhibition, physical_interaction=False
-        ),
+        "Feedback inhibition": replace(INHIBITION, mechanism=CMQ.feedback_inhibition, physical_interaction=False),
         "Inhibition": INHIBITION,
-        "Irreversible inhibition": replace(
-            INHIBITION, mechanism=CMQ.irreversible_inhibition
-        ),
-        "Non-competitive": replace(
-            INHIBITION, mechanism=CMQ.non_competitive_antagonism
-        ),
+        "Irreversible inhibition": replace(INHIBITION, mechanism=CMQ.irreversible_inhibition),
+        "Non-competitive": replace(INHIBITION, mechanism=CMQ.non_competitive_antagonism),
         "None": INHIBITION,
         "Unknown": INHIBITION,
     },
@@ -182,6 +144,16 @@ TYPE_FALLBACKS: dict[str, InteractionRule] = {
 }
 
 
-def resolve_rule(type_value: str, action_value: str) -> InteractionRule | None:
-    """Return the exact source rule or the established type-level fallback."""
+def resolve_rule(type_value: Any, action_value: Any) -> InteractionRule | None:
+    """Resolve exact source labels and nullable scalars without coercing them.
+
+    >>> resolve_rule("Activator", "future action").polarity
+    'positive'
+    >>> resolve_rule("Antagonist", "Partial agonist").skip
+    True
+    >>> resolve_rule("Allosteric modulator", None) is None
+    True
+    >>> resolve_rule("None", "None").relation
+    'related'
+    """
     return RULES.get(type_value, {}).get(action_value, TYPE_FALLBACKS.get(type_value))

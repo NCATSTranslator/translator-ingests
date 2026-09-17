@@ -1,5 +1,6 @@
 """GtoPdb ingest preparation and graph emission."""
 
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -139,6 +140,14 @@ class TargetClassification(str, Enum):
     MACROMOLECULAR_COMPLEX = "macromolecular_complex"
     UNRESOLVED_MULTI_PROTEIN_GROUP = "unresolved_multi_protein_group"
     UNMAPPED = "unmapped"
+
+
+UNSUPPORTED_TARGET_CLASSES = frozenset(
+    {
+        TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
+        TargetClassification.UNMAPPED,
+    }
+)
 
 
 def _canonical_uniprot_accession(accession: str) -> str:
@@ -348,7 +357,13 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[di
 
 
 def _publication_list(value: str | None) -> list[str] | None:
-    """Convert the source's pipe-delimited publication field into PubMed CURIEs."""
+    """Prefix publication tokens without changing whitespace or multiplicity.
+
+    >>> _publication_list("123|123|| 456 ")
+    ['PMID:123', 'PMID:123', 'PMID:', 'PMID: 456 ']
+    >>> _publication_list("") is None
+    True
+    """
     if not value:
         return None
     return [f"PMID:{pmid}" for pmid in value.split("|")]
@@ -403,7 +418,7 @@ def _attach_publications(edges: list[Association], publications: list[str] | Non
 def _build_primary_association(
     subject: ChemicalEntity,
     object: NamedThing,
-    endogenous: str,
+    endogenous: Any,
     rule: InteractionRule,
     species_context_qualifier: str | None,
 ) -> Association:
@@ -437,10 +452,21 @@ def _build_primary_association(
 
 
 def _endogenous_projection(
-    endogenous: str,
+    endogenous: Any,
     rule: InteractionRule,
 ) -> tuple[str, DirectionQualifierEnum | None]:
-    """Project source polarity into predicate and direction under endogenous policy."""
+    """Select endogenous context using the exact source string, including nulls.
+
+    >>> rule = InteractionRule(polarity="positive")
+    >>> predicate, direction = _endogenous_projection("TRUE", rule)
+    >>> predicate, direction.value
+    ('biolink:regulates', 'upregulated')
+    >>> predicate, direction = _endogenous_projection(True, rule)
+    >>> predicate, direction.value
+    ('biolink:affects', 'increased')
+    >>> _endogenous_projection(None, InteractionRule())
+    ('biolink:affects', None)
+    """
     if endogenous == "TRUE":
         predicate = BIOLINK_REGULATES
         directions = {
@@ -478,7 +504,7 @@ def _edges_for_record(
     subject: ChemicalEntity,
     object: NamedThing,
     target: TargetDescriptor,
-    endogenous: str,
+    endogenous: Any,
     rule: InteractionRule,
     publications: list[str] | None,
     emit_component_edges: bool,
@@ -519,49 +545,61 @@ def _edges_for_record(
     return edges
 
 
+def _transform_record(
+    record: dict[str, Any],
+    target: TargetDescriptor,
+    *,
+    emit_component_edges: bool,
+) -> KnowledgeGraph | None:
+    """Assemble one record using the descriptor and component policy of its batch.
+
+    All descriptors are resolved before any records are emitted. Passing that
+    context preserves validation order and accounts for other species even when
+    their interaction records are later skipped.
+    """
+    if target.classification in UNSUPPORTED_TARGET_CLASSES:
+        return None
+
+    rule = resolve_rule(record["Type"], record["Action"])
+    if rule is None or rule.skip:
+        return None
+
+    subject, object = _nodes_for_record(record, target)
+    edges = _edges_for_record(
+        subject,
+        object,
+        target,
+        record["Endogenous"],
+        rule,
+        _publication_list(record[PUBLICATIONS_COLUMN]),
+        emit_component_edges=emit_component_edges,
+    )
+    component_nodes = _component_nodes(target) if emit_component_edges else []
+    return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
+
+
 @koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    """Transform prepared GtoPdb records through declarative Type/Action rules."""
+    """Resolve batch species context, aggregate record graphs, and report exclusions."""
     records = list(data)
     targets = tuple(TargetDescriptor.from_record(record) for record in records)
-    descriptors = source_target_species_descriptors(targets)
-    multi_species_target_ids = frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
+    multi_species_target_ids = multi_species_source_target_ids(targets)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
-    unsupported_target_counts: dict[TargetClassification, int] = {}
 
     for record, target in zip(records, targets, strict=True):
-        if target.classification in {
-            TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
-            TargetClassification.UNMAPPED,
-        }:
-            unsupported_target_counts[target.classification] = (
-                unsupported_target_counts.get(target.classification, 0) + 1
-            )
-            continue
-
-        rule = resolve_rule(record["Type"], record["Action"])
-        if rule is None or rule.skip:
-            continue
-
-        subject, object = _nodes_for_record(record, target)
-        emitted_edges = _edges_for_record(
-            subject,
-            object,
+        graph = _transform_record(
+            record,
             target,
-            record["Endogenous"],
-            rule,
-            _publication_list(record[PUBLICATIONS_COLUMN]),
             emit_component_edges=target.source_id not in multi_species_target_ids,
         )
-        # Keep the species-qualified ligand-target assertion, but do not emit
-        # unqualified components for shared source IDs. See the RIG's
-        # multi-species composition note, biolink-model#1797, and
-        # translator-ingests#510.
-        component_nodes = _component_nodes(target) if target.source_id not in multi_species_target_ids else []
-        nodes.extend((subject, object, *component_nodes))
-        edges.extend(emitted_edges)
+        if graph is not None:
+            nodes.extend(graph.nodes)
+            edges.extend(graph.edges)
 
+    unsupported_target_counts = Counter(
+        target.classification for target in targets if target.classification in UNSUPPORTED_TARGET_CLASSES
+    )
     for classification, count in unsupported_target_counts.items():
         record_word = "record" if count == 1 else "records"
         koza.log(
