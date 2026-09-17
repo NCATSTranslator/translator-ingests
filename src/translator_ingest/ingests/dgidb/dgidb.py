@@ -35,7 +35,6 @@ PREFIXES_TO_DROP = [
     "wikidata",
     "hemonc",
     "drugsatfda\\.nda",
-    "chemidplus",
 ]
 ## interaction_types that map to plain "interacts_with" edge (no qualifiers, extra edge)
 ## "~NULL" is a placeholder for NA, see prepare_data for details
@@ -88,8 +87,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## change ID prefixes to Translator standard: mostly making all upper-case
     df["drug_concept_id"] = df["drug_concept_id"].str.upper()
     df["gene_concept_id"] = df["gene_concept_id"].str.upper()
-    ## special handling for some prefixes: CHEMBL, NCBIGENE
+    ## special handling for some prefixes: CHEMBL, CHEMIDPLUS, NCBIGENE
     df["drug_concept_id"] = df["drug_concept_id"].str.replace("CHEMBL:", "CHEMBL.COMPOUND:")
+    ## based on EDA, chemidplus IDs are CAS
+    df["drug_concept_id"] = df["drug_concept_id"].str.replace("CHEMIDPLUS:", "CAS:")
     df["gene_concept_id"] = df["gene_concept_id"].str.replace("NCBIGENE:", "NCBIGene:")
 
     ## clean up interaction_type values
