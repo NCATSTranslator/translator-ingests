@@ -112,6 +112,21 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     df["mod_type"] = ["~PLAIN_INTERACTS" if i in plain_interact_types else i for i in df["interaction_types"]]
     ## (keeping original column interaction_types for trouble-shooting, maybe future use (original predicates?))
 
+    ## check if any interaction_source_db_name values aren't mapped
+    ## log, save the unmapped: catch them so we can map them later
+    unmapped_sources = list(set(df["interaction_source_db_name"].unique()) - supporting_data_sources.keys() - publications.keys())
+    ## for testing if-statement code
+    # unmapped_sources = {"CKB-CORE", "fake"}
+    ## if it has values
+    if unmapped_sources:
+        koza.log(f"{len(unmapped_sources)} unmapped source values that will be filtered out: {", ".join(unmapped_sources)}. ADJUST PARSER TO HANDLE THESE.")
+        koza.transform_metadata["unmapped_sources"] = list(unmapped_sources)
+        ## remove rows with these unmapped values
+        n_before = df.shape[0]
+        df = df[~ df["interaction_source_db_name"].isin(unmapped_sources)].copy()
+        n_after = df.shape[0]
+        koza.log(f"{n_before - n_after} rows removed due to unmapped source values: {(n_before - n_after) / n_before:.1%}. Now have {n_after} rows.")
+
     ## group-by/merge rows by unique drug ID, gene ID, mod_type combo
     ## then each row == 1 Translator edge
     COLS_DEFINE_EDGE = ["drug_concept_id", "gene_concept_id", "mod_type"]
