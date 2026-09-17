@@ -23,8 +23,6 @@ from koza.runner import KozaRunner, KozaTransformHooks
 
 from tests.unit.ingests import MockKozaWriter
 from translator_ingest.ingests.semmeddb.semmeddb import (
-    PUBLICATIONS_CAP_THRESHOLD,
-    _cap_publications,
     _extract_supporting_studies,
     _has_bte_excluded_predicate,
     _make_node,
@@ -453,91 +451,6 @@ def test_edge_with_publications_info():
     study = list(association.has_supporting_studies.values())[0]
     assert len(study.has_study_results) == 1
     assert "Aspirin effectively reduces inflammation in diabetic patients." in study.has_study_results[0].supporting_text
-
-
-# ---------------------------------------------------------------------------
-# Publication capping
-# ---------------------------------------------------------------------------
-
-def test_cap_publications_under_threshold():
-    """Publications lists at or under PUBLICATIONS_CAP_THRESHOLD are returned unchanged."""
-    pubs = [f"PMID:{i}" for i in range(PUBLICATIONS_CAP_THRESHOLD)]
-    info = {p: {"subject score": "500", "object score": "500"} for p in pubs}
-    result_pubs, result_info = _cap_publications(pubs, info)
-    assert result_pubs == pubs
-    assert result_info == info
-
-
-def test_cap_publications_over_threshold():
-    """Publications lists over the threshold are trimmed by score + recency union."""
-    count = PUBLICATIONS_CAP_THRESHOLD * 3
-    pubs = [f"PMID:{i}" for i in range(count)]
-    info = {
-        p: {
-            "subject score": str(i),
-            "object score": str(i),
-            "publication date": f"{2000 + (i % 26)} Jan",
-        }
-        for i, p in enumerate(pubs)
-    }
-    result_pubs, result_info = _cap_publications(pubs, info)
-    assert len(result_pubs) <= 200
-    assert len(result_pubs) > 0
-    assert len(result_pubs) < count
-    assert set(result_info.keys()) == set(result_pubs)
-
-
-def test_cap_publications_integration():
-    """Transform caps publications for edges exceeding PUBLICATIONS_CAP_THRESHOLD."""
-    count = PUBLICATIONS_CAP_THRESHOLD + 100
-    many_pubs = [f"PMID:{i}" for i in range(count)]
-    pub_info = {
-        p: {
-            "sentence": f"Sentence for {p}",
-            "subject score": str(i * 10),
-            "object score": str(i * 10),
-            "publication date": f"{2000 + (i % 26)} Jan",
-        }
-        for i, p in enumerate(many_pubs)
-    }
-    record = _base_record(
-        publications=many_pubs,
-        publications_info=pub_info,
-    )
-    entities = _create_test_runner(record)
-    association = [e for e in entities if isinstance(e, Association)][0]
-    assert len(association.publications) <= 200
-    assert len(association.publications) < count
-
-
-def test_uncapped_mode_skips_capping(monkeypatch: pytest.MonkeyPatch):
-    """Setting SEMMEDDB_UNCAPPED=1 disables publication capping entirely."""
-    monkeypatch.setenv("SEMMEDDB_UNCAPPED", "1")
-    import importlib
-    import translator_ingest.ingests.semmeddb.semmeddb as semmeddb_mod
-    importlib.reload(semmeddb_mod)
-
-    count = PUBLICATIONS_CAP_THRESHOLD + 100
-    many_pubs = [f"PMID:{i}" for i in range(count)]
-    pub_info = {
-        p: {
-            "sentence": f"Sentence for {p}",
-            "subject score": str(i * 10),
-            "object score": str(i * 10),
-            "publication date": f"{2000 + (i % 26)} Jan",
-        }
-        for i, p in enumerate(many_pubs)
-    }
-    record = _base_record(
-        publications=many_pubs,
-        publications_info=pub_info,
-    )
-    entities = _create_test_runner(record)
-    association = [e for e in entities if isinstance(e, Association)][0]
-    assert len(association.publications) == count
-
-    monkeypatch.delenv("SEMMEDDB_UNCAPPED")
-    importlib.reload(semmeddb_mod)
 
 
 # ---------------------------------------------------------------------------

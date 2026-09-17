@@ -1,3 +1,9 @@
 ---
 - url: https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
   local_name: kg2.10.3-semmeddb-edges.jsonl.gz
+# LLM PMID-checker results (RTXteam/LLM_PMID_Checker v1.0) consumed by the
+# pre-normalization filter. Static: downloaded once and reused on later runs.
+# The raw-keyed artifact is produced by analysis/rekey_pmid_verdicts.py from the original
+# results.parquet plus the normalization map of the checker run.
+- url: https://rtx-kg2-public.s3.us-west-2.amazonaws.com/semmeddb_pmid_checker_results_raw_keyed.parquet
+  local_name: semmeddb_pmid_checker_results_raw_keyed.parquet
