@@ -91,8 +91,6 @@ def transform_gene_to_gene_orthology(
     """
     gene_a_id = record[GENE_A_ID_COL]
     gene_b_id = record[GENE_B_ID_COL]
-    ncbitaxon_a = record[NCBITAXON_A_COL]
-    ncbitaxon_b = record[NCBITAXON_B_COL]
     gene_family_id = record[GENE_FAMILY_ID_COL]
 
     gene_a = Gene(id=gene_a_id)

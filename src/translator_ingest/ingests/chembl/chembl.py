@@ -391,7 +391,6 @@ def get_protein(chembl_id: str, name: str, record: dict[str, Any]) -> bm.Protein
     
     uniprot_id = UNIPROT_PREFIX+record["accession"]
     synonym = record["description"]
-    tax_id = TAX_ID_PREFIX+str(record["component_tax_id"]) if record["component_tax_id"] else None
     return bm.Protein(
         id=uniprot_id,
         name=name,
