@@ -13,6 +13,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+## ADDED packages for this ingest
+import requests
+
+
 ## import from mapping file
 from translator_ingest.ingests.dgidb.mappings import (
     supporting_data_sources,
@@ -20,7 +24,6 @@ from translator_ingest.ingests.dgidb.mappings import (
     int_type_mapping,
 )
 from translator_ingest.util.biolink import INFORES_DGIDB
-from translator_ingest.util.http_utils import get_modify_date
 
 
 ## HARD-CODED VALUES, see mapping.py for more
@@ -44,9 +47,18 @@ DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 ## PIPELINE MAIN FUNCTIONS
 
 def get_latest_version() -> str:
-    ## Needs to be manually updated when we update what file we're using
-    ## ...unless we can read the downloaded file during this step. Then we can get the version info from the first few lines (header)
-    return get_modify_date("https://dgidb.org/data/2024-Dec/interactions.tsv")
+    ## queries Github repo with data releases: should be public, able to access w/o access tokens
+    dgidb_request = "https://api.github.com/repos/dgidb/dgidb-data/releases/latest"
+
+    try:
+        response = requests.get(dgidb_request, timeout=5)
+        if response.status_code == 200:
+            temp = response.json()
+            return temp["tag_name"]  ## should be the data release version in YYYY-MM format
+        else:
+            print(f"Error encountered: {response.status_code}.")
+    except requests.RequestException as e:
+        print(f"Request exemption encountered: {e}.")
 
 
 @koza.prepare_data()
