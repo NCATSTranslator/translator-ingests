@@ -95,8 +95,8 @@ def transform_gene_to_gene_orthology(
     ncbitaxon_b = record[NCBITAXON_B_COL]
     gene_family_id = record[GENE_FAMILY_ID_COL]
 
-    gene_a = Gene(id=gene_a_id, in_taxon=[ncbitaxon_a])
-    gene_b = Gene(id=gene_b_id, in_taxon=[ncbitaxon_b])
+    gene_a = Gene(id=gene_a_id)
+    gene_b = Gene(id=gene_b_id)
 
     orthology_evidence = [gene_family_id]
     gene_family = GeneFamily(id=gene_family_id)

@@ -397,7 +397,6 @@ def get_protein(chembl_id: str, name: str, record: dict[str, Any]) -> bm.Protein
         name=name,
         synonym=[synonym] if synonym and synonym != name else None,
         xref=[chembl_id] if chembl_id else None,
-        in_taxon = [tax_id]
     )
 
 
