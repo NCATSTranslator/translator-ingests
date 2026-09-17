@@ -19,6 +19,7 @@ from botocore.exceptions import ClientError
 
 from translator_ingest.util.storage.s3 import (
     S3_MULTIPART_CHUNK_SIZE,
+    S3_MULTIPART_MAX_PARTS,
     S3Uploader,
     upload_and_cleanup,
 )
@@ -214,6 +215,80 @@ def test_object_matches_false_when_multipart_etag_uses_different_chunk_size(
 
     # Our match check uses 8 MiB chunks; ETag won't match -> False -> re-upload
     assert uploader._s3_object_matches("data/file.bin", path) is False
+
+
+# ── Multipart chunk-size adjustment (files needing >S3_MULTIPART_MAX_PARTS parts) ──
+
+
+def test_adjusted_multipart_chunk_size_doubles_past_max_parts():
+    """_adjusted_multipart_chunk_size mirrors s3transfer's ChunksizeAdjuster:
+    it doubles the default chunk size once the file would otherwise need more
+    than S3_MULTIPART_MAX_PARTS parts. Uses the real ~80 GB boundary -- pure
+    arithmetic, no file is written."""
+    # One byte over the boundary where the default chunk size yields exactly
+    # S3_MULTIPART_MAX_PARTS parts -- boto3 would double the chunk size here.
+    file_size = S3_MULTIPART_MAX_PARTS * S3_MULTIPART_CHUNK_SIZE + 1
+
+    assert S3Uploader._adjusted_multipart_chunk_size(file_size) == S3_MULTIPART_CHUNK_SIZE * 2
+
+
+def test_adjusted_multipart_chunk_size_unchanged_below_max_parts():
+    """Below the boundary, the adjusted chunk size is just the default -- this
+    is what keeps the fix a no-op for every file this repo has ever seen."""
+    file_size = S3_MULTIPART_MAX_PARTS * S3_MULTIPART_CHUNK_SIZE
+
+    assert S3Uploader._adjusted_multipart_chunk_size(file_size) == S3_MULTIPART_CHUNK_SIZE
+
+
+def test_object_matches_true_for_object_uploaded_with_larger_than_default_chunk_size(
+    uploader, tmp_path, monkeypatch,
+):
+    """Regression test for the >~80GB gap: before the fix, _s3_object_matches
+    always recomputed the ETag using the hardcoded 8 MiB chunk size, so it
+    could never match an S3 object that boto3 uploaded with a larger,
+    auto-adjusted part size (which boto3 does for any file needing more than
+    S3_MULTIPART_MAX_PARTS parts at the default size) -- such a file would be
+    re-uploaded on every single build.
+
+    Reproducing that scenario with a real ~80GB file is infeasible in a unit
+    test, so S3_MULTIPART_MAX_PARTS and S3_MULTIPART_CHUNK_SIZE are shrunk to
+    trigger the exact same doubling logic on a tiny file.
+    """
+    monkeypatch.setattr("translator_ingest.util.storage.s3.S3_MULTIPART_MAX_PARTS", 2)
+    monkeypatch.setattr("translator_ingest.util.storage.s3.S3_MULTIPART_CHUNK_SIZE", 100)
+    monkeypatch.setattr("translator_ingest.util.storage.s3.S3_MULTIPART_MIN_CHUNK_SIZE", 1)
+
+    # 250 bytes: 3 parts at the 100-byte default chunk size (3 > max_parts=2),
+    # so boto3 would have doubled to a 200-byte chunk size, giving 2 parts.
+    body = b"p" * 250
+    path = _write(tmp_path / "big.bin", body)
+    doubled_chunk_etag = _boto3_style_etag(body, chunk_size=200)
+    uploader.s3_client.objects["releases/source/big.bin"] = {
+        "size": len(body), "etag": doubled_chunk_etag,
+    }
+
+    assert uploader._s3_object_matches("releases/source/big.bin", path) is True
+
+
+def test_object_matches_false_when_content_changes_with_larger_chunk_size(
+    uploader, tmp_path, monkeypatch,
+):
+    """The fix must never produce a false match: even when the adjusted
+    (larger) chunk size is the one that applies, a same-size content change
+    must still be detected as a mismatch."""
+    monkeypatch.setattr("translator_ingest.util.storage.s3.S3_MULTIPART_MAX_PARTS", 2)
+    monkeypatch.setattr("translator_ingest.util.storage.s3.S3_MULTIPART_CHUNK_SIZE", 100)
+    monkeypatch.setattr("translator_ingest.util.storage.s3.S3_MULTIPART_MIN_CHUNK_SIZE", 1)
+
+    original = b"p" * 250
+    changed = b"q" * 250  # same size, different content
+    path = _write(tmp_path / "big.bin", changed)
+    original_etag = _boto3_style_etag(original, chunk_size=200)
+    uploader.s3_client.objects["releases/source/big.bin"] = {
+        "size": len(changed), "etag": original_etag,
+    }
+
+    assert uploader._s3_object_matches("releases/source/big.bin", path) is False
 
 
 def test_object_matches_raises_on_non_404_client_error(uploader, tmp_path):

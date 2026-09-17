@@ -68,6 +68,27 @@ def get_logger(name: str) -> logging.Logger:
     return logger
 
 
+def _close_and_remove_handlers(target_logger: logging.Logger) -> None:
+    """Remove and close every handler attached to ``target_logger``.
+
+    ``Logger.handlers.clear()`` drops the references without closing the
+    underlying resources. For ``FileHandler`` this leaks an open file
+    descriptor on every repeated call in the same process -- ``setup_logging``
+    is called once per build stage by the orchestrator, and
+    ``setup_worker_logging`` is called once per worker, so those calls add up
+    over a build. The handlers here are only ever the ones a previous call to
+    ``setup_logging``/``setup_worker_logging`` attached to this same logger,
+    so closing them here is safe.
+
+    Args:
+        target_logger: The logger (always the root logger in this module) to
+            detach and close all handlers from.
+    """
+    for handler in list(target_logger.handlers):
+        target_logger.removeHandler(handler)
+        handler.close()
+
+
 def get_current_log_dir() -> Path | None:
     """Get the current log directory path.
 
@@ -112,9 +133,10 @@ def setup_logging(
     global _current_log_dir
     _current_log_dir = None
 
-    # Clear any existing handlers
+    # Close and detach any existing handlers (releases file descriptors from a
+    # prior setup_logging call in the same process)
     root_logger = logging.getLogger()
-    root_logger.handlers.clear()
+    _close_and_remove_handlers(root_logger)
     root_logger.setLevel(level)
 
     # Create formatter
@@ -235,7 +257,7 @@ def setup_worker_logging(
     global _current_log_dir
 
     root_logger = logging.getLogger()
-    root_logger.handlers.clear()
+    _close_and_remove_handlers(root_logger)
     root_logger.setLevel(logging.INFO)
 
     fmt = logging.Formatter(f"%(asctime)s [{source}] %(levelname)s: %(message)s")

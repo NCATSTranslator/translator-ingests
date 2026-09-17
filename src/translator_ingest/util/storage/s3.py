@@ -31,6 +31,7 @@ Usage:
 
 import hashlib
 import json
+import math
 import os
 import shutil
 from pathlib import Path
@@ -53,9 +54,28 @@ UploadStatus = Literal["uploaded", "skipped", "missing"]
 
 # boto3's default multipart chunk size for upload_file via TransferConfig.
 # We use the same chunk size to reproduce S3 multipart ETags locally so we
-# can detect already-uploaded files and skip them. boto3 keeps this default
-# for files up to ~80GB (10000 parts * 8MB).
+# can detect already-uploaded files and skip them. This is only the *starting*
+# chunk size boto3 uses -- see _adjusted_multipart_chunk_size below for how
+# boto3 grows it for files that would otherwise need more than
+# S3_MULTIPART_MAX_PARTS parts.
 S3_MULTIPART_CHUNK_SIZE = 8 * 1024 * 1024  # 8 MB
+
+# S3's hard limit on the number of parts in a multipart upload. boto3's
+# s3transfer library grows the chunk size past S3_MULTIPART_CHUNK_SIZE once a
+# file would otherwise need more than this many parts, so any file larger
+# than S3_MULTIPART_MAX_PARTS * S3_MULTIPART_CHUNK_SIZE (~80 GB) is uploaded
+# with a larger part size than our default. Verified against the installed
+# s3transfer package: s3transfer.utils.ChunksizeAdjuster (constant MAX_PARTS)
+# and its use in s3transfer.upload.MultipartUploadHandler, which calls
+# ``ChunksizeAdjuster().adjust_chunksize(config.multipart_chunksize, size)``
+# before every multipart upload.
+S3_MULTIPART_MAX_PARTS = 10_000
+
+# S3's part-size bounds (also enforced by s3transfer.utils.ChunksizeAdjuster,
+# as MIN_UPLOAD_CHUNKSIZE / MAX_SINGLE_UPLOAD_SIZE). Included so
+# _adjusted_multipart_chunk_size clamps to the same bounds boto3 would use.
+S3_MULTIPART_MIN_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MiB
+S3_MULTIPART_MAX_CHUNK_SIZE = 5 * 1024 * 1024 * 1024  # 5 GiB
 
 # Streaming read size for local MD5 computation
 HASH_READ_CHUNK_SIZE = 8 * 1024 * 1024  # 8 MB
@@ -118,13 +138,52 @@ class S3Uploader:
         concat_hex = hashlib.md5(b''.join(part_md5_digests)).hexdigest()
         return f"{concat_hex}-{len(part_md5_digests)}"
 
+    @staticmethod
+    def _adjusted_multipart_chunk_size(file_size: int) -> int:
+        """Reproduce the multipart part size boto3 would have used for ``file_size``.
+
+        boto3's default ``TransferConfig`` starts at ``S3_MULTIPART_CHUNK_SIZE``
+        (8 MiB) and doubles it until the file fits within
+        ``S3_MULTIPART_MAX_PARTS`` parts, then clamps to S3's part-size bounds
+        (``S3_MULTIPART_MIN_CHUNK_SIZE`` .. ``S3_MULTIPART_MAX_CHUNK_SIZE``).
+        This mirrors ``s3transfer.utils.ChunksizeAdjuster.adjust_chunksize``,
+        which every multipart upload goes through
+        (``s3transfer.upload`` calls
+        ``ChunksizeAdjuster().adjust_chunksize(config.multipart_chunksize, size)``
+        before uploading). ``upload_file`` is always called here without a
+        custom ``TransferConfig``, so for any file we uploaded ourselves this
+        reproduces the exact part size boto3 used.
+
+        Args:
+            file_size: Size of the file in bytes.
+
+        Returns:
+            The part size (in bytes) boto3 would use for a file this size.
+
+        Examples:
+            >>> S3Uploader._adjusted_multipart_chunk_size(1024) == S3_MULTIPART_CHUNK_SIZE
+            True
+            >>> huge = S3_MULTIPART_MAX_PARTS * S3_MULTIPART_CHUNK_SIZE + 1
+            >>> S3Uploader._adjusted_multipart_chunk_size(huge) == S3_MULTIPART_CHUNK_SIZE * 2
+            True
+        """
+        chunk_size = S3_MULTIPART_CHUNK_SIZE
+        num_parts = math.ceil(file_size / chunk_size)
+        while num_parts > S3_MULTIPART_MAX_PARTS:
+            chunk_size *= 2
+            num_parts = math.ceil(file_size / chunk_size)
+
+        return min(max(chunk_size, S3_MULTIPART_MIN_CHUNK_SIZE), S3_MULTIPART_MAX_CHUNK_SIZE)
+
     def _s3_object_matches(self, s3_key: str, local_path: Path) -> bool:
         """Check whether S3 already has an identical copy of ``local_path``.
 
         Returns True if the S3 object exists with matching size and content
-        hash. For multipart uploads we try the boto3 default chunk size; if
-        the ETag does not match (e.g. the file was originally uploaded with
-        a non-default chunk size), we return False so the file gets re-uploaded.
+        hash. For multipart uploads we recompute the ETag using the part size
+        boto3 would have used for a file this size (see
+        ``_adjusted_multipart_chunk_size``); if the ETag still does not match
+        (e.g. the file was originally uploaded with a genuinely custom
+        ``TransferConfig``), we return False so the file gets re-uploaded.
         """
         try:
             head = self.s3_client.head_object(Bucket=self.bucket_name, Key=s3_key)
@@ -146,8 +205,12 @@ class S3Uploader:
             # Single-part upload: ETag is just the hex MD5 of the file
             return etag == self._compute_md5(local_path)
 
-        # Multipart upload: try the boto3 default chunk size
-        return etag == self._compute_multipart_etag(local_path, S3_MULTIPART_CHUNK_SIZE)
+        # Multipart upload: recompute with the chunk size boto3 would have used
+        # for a file this size, so files that needed more than
+        # S3_MULTIPART_MAX_PARTS parts at the default chunk size (boto3 grows
+        # the part size to compensate) still match instead of always re-uploading.
+        chunk_size = self._adjusted_multipart_chunk_size(local_size)
+        return etag == self._compute_multipart_etag(local_path, chunk_size)
 
     def upload_file(self, local_path: Path, s3_key: str) -> UploadStatus:
         """Upload single file to S3, skipping if S3 already has identical content.
