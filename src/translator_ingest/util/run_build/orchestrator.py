@@ -13,6 +13,7 @@ import psutil
 
 from translator_ingest.util.logging_utils import get_logger
 from translator_ingest.util.run_build.build_report import (
+    MEMORY_ABORT_ERROR,
     StageTimingReport,
     format_summary_report,
     generate_build_report,
@@ -150,7 +151,7 @@ def run_full_build(
         except Exception:
             logger.exception("Per-stage log upload for %s failed (non-fatal)", stage)
 
-    def _collect_stage_timing(stage: str) -> StageTimingReport:
+    def _collect_stage_timing(stage: str, error: str | None = None) -> StageTimingReport:
         stage_perf = perf.get_stage_stats(stage)
         return StageTimingReport(
             stage=stage,
@@ -160,6 +161,7 @@ def run_full_build(
             min_memory_mb=stage_perf["memory_mb"]["min"],
             avg_cpu_percent=stage_perf["cpu_percent"]["avg"],
             status=display.stage_status[stage],
+            error=error,
         )
 
     # ── STAGE 1: RUN ──
@@ -268,8 +270,11 @@ def run_full_build(
         # Record timing entries for skipped stages so build_report.generate_build_report
         # sees their 'skipped' status via stage_timings and does not fall back to
         # artifact inference (which might mark them 'completed' from stale artifacts).
+        # Tagged with MEMORY_ABORT_ERROR so run_build.py's exit-code check can tell
+        # this abort apart from a deliberate --no-upload skip of UPLOAD, which leaves
+        # the same "status": "skipped" with no error tag.
         for _skipped in ("MERGE", "RELEASE", "UPLOAD"):
-            stage_timing_reports.append(_collect_stage_timing(_skipped))
+            stage_timing_reports.append(_collect_stage_timing(_skipped, error=MEMORY_ABORT_ERROR))
     else:
         # ── STAGE 2: MERGE ──
         merge_handler = _add_stage_handler("merge")
@@ -296,7 +301,7 @@ def run_full_build(
             display.skip_stage("RELEASE")
             display.skip_stage("UPLOAD")
             for _skipped in ("RELEASE", "UPLOAD"):
-                stage_timing_reports.append(_collect_stage_timing(_skipped))
+                stage_timing_reports.append(_collect_stage_timing(_skipped, error=MEMORY_ABORT_ERROR))
         else:
             release_handler = _add_stage_handler("release")
             try:
@@ -315,7 +320,7 @@ def run_full_build(
                     psutil.virtual_memory().percent,
                 )
                 display.skip_stage("UPLOAD")
-                stage_timing_reports.append(_collect_stage_timing("UPLOAD"))
+                stage_timing_reports.append(_collect_stage_timing("UPLOAD", error=MEMORY_ABORT_ERROR))
 
     if upload and display.stage_status.get("UPLOAD") == "pending":
         upload_handler = _add_stage_handler("upload")

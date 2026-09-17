@@ -544,10 +544,20 @@ def stage_upload(
         logger.info("  Data sources: %d", len(data_sources))
         logger.info("  Release sources: %d", len(release_sources))
 
+        # upload_reports/upload_logs are suppressed here: the orchestrator's
+        # post-build pass (orchestrator.py, after save_report()) re-uploads
+        # reports/ and logs/ once the final build-report.json and 'latest'
+        # copies actually exist, and must be the pass that wins. Leaving
+        # both at their s3.py default of True would make the UPLOAD stage
+        # walk and head-check the entire reports/ and logs/ trees a second
+        # time, uploading incomplete copies that the post-build pass then
+        # immediately re-uploads anyway.
         results = upload_and_cleanup(
             data_sources=data_sources,
             release_sources=release_sources,
             cleanup=True,
+            upload_reports=False,
+            upload_logs=False,
         )
 
         # Save to stage dir and standard location

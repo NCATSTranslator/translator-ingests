@@ -101,6 +101,15 @@ class UploadReport:
     per_source_errors: dict[str, str] = field(default_factory=dict)
 
 
+# Tag applied to a StageTimingReport's ``error`` field when a stage was
+# skipped specifically because the memory guardian's critical threshold was
+# still exceeded at that stage's start (orchestrator.py's _memory_still_critical
+# checks). This is the one signal that distinguishes a memory-triggered skip
+# from a deliberate skip (e.g. UPLOAD skipped because --no-upload was passed),
+# since both leave the same "status": "skipped" and no on-disk _summary.json.
+MEMORY_ABORT_ERROR = "memory_critical_threshold_exceeded"
+
+
 @dataclass
 class StageTimingReport:
     """Timing and resource data for a pipeline stage."""
@@ -141,12 +150,24 @@ class BuildReport:
     errors_log: list[str] = field(default_factory=list)
 
 
-def collect_source_report(source: str, node_properties: list[str]) -> SourceReport:
+def collect_source_report(
+    source: str,
+    node_properties: list[str],
+    release_status: str | None = None,
+) -> SourceReport:
     """Collect build report data for a single source from pipeline artifacts.
 
     Args:
         source: Source name (e.g. "ctd")
         node_properties: List of sources that are node-properties only
+        release_status: This build's RELEASE stage status, as recorded in
+            stage_timings (e.g. "completed", "failed", "skipped"), or None
+            when the report is generated outside the orchestrator (e.g.
+            ``make report``). A source is only reported as "released" when
+            release_status is None (artifact-only inference, the pre-existing
+            behavior) or "completed" -- otherwise the on-disk
+            latest-release.json predates this build and must not be
+            presented as this build's success.
 
     Returns:
         SourceReport with data from latest-build.json and validation-report.json
@@ -209,7 +230,13 @@ def collect_source_report(source: str, node_properties: list[str]) -> SourceRepo
             release_data = json.load(f)
         report.release_version = release_data.get("release_version")
         if report.status == "built":
-            report.status = "released"
+            if release_status in (None, "completed"):
+                report.status = "released"
+            else:
+                report.notes.append(
+                    f"latest-release.json on disk is from a previous build "
+                    f"(this run's RELEASE stage was '{release_status}')."
+                )
     elif source in node_properties:
         report.notes.append("Node properties only - not released as standalone source")
     else:
@@ -218,12 +245,24 @@ def collect_source_report(source: str, node_properties: list[str]) -> SourceRepo
     return report
 
 
-def collect_merged_graph_report(graph_id: str, expected_sources: list[str]) -> MergedGraphReport:
+def collect_merged_graph_report(
+    graph_id: str,
+    expected_sources: list[str],
+    merge_status: str | None = None,
+) -> MergedGraphReport:
     """Collect report data for a merged graph.
 
     Args:
         graph_id: The graph identifier (e.g. "translator_kg")
         expected_sources: List of source names expected to be in the merge
+        merge_status: This build's MERGE stage status, as recorded in
+            stage_timings (e.g. "completed", "failed", "skipped"), or None
+            when the report is generated outside the orchestrator (e.g.
+            ``make report``). The merge is only reported as "merged" when
+            merge_status is None (artifact-only inference, the pre-existing
+            behavior) or "completed" -- otherwise the on-disk merge
+            artifacts predate this build and are reported as "stale" so the
+            summary cannot claim a merge this build never performed.
 
     Returns:
         MergedGraphReport with data from merge artifacts
@@ -246,6 +285,18 @@ def collect_merged_graph_report(graph_id: str, expected_sources: list[str]) -> M
     report.biolink_version = release_data.get("biolink_version")
     report.node_normalizer_version = release_data.get("node_normalizer_version")
 
+    # Artifacts on disk may be left over from a previous build. Only report
+    # this build's merge as a success when this run's MERGE stage actually
+    # completed; otherwise mark it stale so the summary can never contradict
+    # the stage-timing table (e.g. "merge: skipped" printed right below it).
+    artifact_is_current = merge_status in (None, "completed")
+    report.status = "merged" if artifact_is_current else "stale"
+    if not artifact_is_current:
+        report.errors.append(
+            f"Merge artifacts on disk are from a previous build "
+            f"(this run's MERGE stage was '{merge_status}')."
+        )
+
     # Read graph-metadata.json to get included sources
     release_version = report.release_version
     if release_version:
@@ -263,17 +314,13 @@ def collect_merged_graph_report(graph_id: str, expected_sources: list[str]) -> M
                 if source_id:
                     sources_in_graph.append(source_id)
             report.sources_included = sorted(sources_in_graph)
-            report.status = "merged"
 
             # Check for missing expected sources
             missing = set(expected_sources) - set(sources_in_graph)
             if missing:
                 report.errors.append(f"Expected sources missing from merge: {sorted(missing)}")
         else:
-            report.status = "merged"
             report.errors.append("graph-metadata.json not found, cannot verify included sources")
-    else:
-        report.status = "merged"
 
     return report
 
@@ -393,9 +440,19 @@ def generate_build_report(
     if stage_timings:
         report.stage_timings = stage_timings
 
+    # Resolve this build's authoritative per-stage status up front so the
+    # artifact collectors below can tell a fresh artifact (produced by this
+    # run) apart from one a previous build left on disk. None means the
+    # report is generated outside the orchestrator (e.g. `make report`), in
+    # which case the collectors fall back to trusting whatever is on disk,
+    # matching the pre-existing artifact-inference behavior.
+    merge_status = _stage_status_from_timings("MERGE", stage_timings)
+    release_status = _stage_status_from_timings("RELEASE", stage_timings)
+    upload_status = _stage_status_from_timings("UPLOAD", stage_timings)
+
     # Collect individual source reports
     for source in sorted(sources):
-        source_report = collect_source_report(source, node_properties)
+        source_report = collect_source_report(source, node_properties, release_status=release_status)
         if source_durations and source in source_durations:
             source_report.duration_seconds = source_durations[source]
         if source_memory and source in source_memory:
@@ -468,13 +525,12 @@ def generate_build_report(
 
     # Collect merged graph report
     releasable_sources = [s for s in sources if s not in node_properties]
-    report.merged_graph = collect_merged_graph_report(graph_id, releasable_sources)
+    report.merged_graph = collect_merged_graph_report(graph_id, releasable_sources, merge_status=merge_status)
 
     # For MERGE/RELEASE/UPLOAD, prefer stage_timings (what actually ran this
     # build) over on-disk artifacts (which may be stale from a previous build).
     # Without this, a skipped MERGE this run would still appear "completed"
     # in the report just because an old merged graph is still on disk.
-    merge_status = _stage_status_from_timings("MERGE", stage_timings)
     if merge_status is None:
         # Report generated outside the orchestrator; fall back to artifact check.
         if report.merged_graph.status == "merged":
@@ -486,7 +542,6 @@ def generate_build_report(
     else:
         report.pipeline_stages_failed.append(f"merge: {merge_status}")
 
-    release_status = _stage_status_from_timings("RELEASE", stage_timings)
     if release_status is None:
         if all_released:
             report.pipeline_stages_completed.append("release")
@@ -505,7 +560,6 @@ def generate_build_report(
 
     # Load upload results
     report.upload = load_upload_results(upload_results_path)
-    upload_status = _stage_status_from_timings("UPLOAD", stage_timings)
     if upload_status is None:
         if report.upload:
             if report.upload.files_failed == 0 and report.upload.files_uploaded > 0:
@@ -526,9 +580,31 @@ def generate_build_report(
                 "Included in merged graph as node properties only."
             )
         if sr.source in failed_set:
-            report.build_notes.append(
-                f"{sr.source}: RUN failed -- merged/released/uploaded using previous successful build data."
-            )
+            if sr.status == "no_build":
+                report.build_notes.append(
+                    f"{sr.source}: RUN failed and no previous successful build exists on "
+                    "disk -- this source could not be merged, released, or uploaded."
+                )
+            else:
+                completed_actions = [
+                    action
+                    for action, status in (
+                        ("merged", merge_status),
+                        ("released", release_status),
+                        ("uploaded", upload_status),
+                    )
+                    if status == "completed"
+                ]
+                if completed_actions:
+                    report.build_notes.append(
+                        f"{sr.source}: RUN failed -- {'/'.join(completed_actions)} using "
+                        "previous successful build data."
+                    )
+                else:
+                    report.build_notes.append(
+                        f"{sr.source}: RUN failed -- a previous successful build exists on "
+                        "disk, but it was not merged, released, or uploaded this build."
+                    )
 
     return report
 

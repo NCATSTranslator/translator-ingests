@@ -47,7 +47,7 @@ make build MAX_WORKERS=4
 # Overwrite previously generated files
 make build OVERWRITE=true
 
-# Lower the memory abort threshold (default: 90%)
+# Lower the memory abort threshold (default: 95%)
 make build MEMORY_THRESHOLD=85
 ```
 
@@ -71,7 +71,7 @@ uv run python -m translator_ingest.util.run_build.run_build --memory-threshold 8
 | `--overwrite` | off | Overwrite previously generated files |
 | `--no-upload` | off | Skip S3 upload stage |
 | `--max-workers` | number of sources | Max parallel workers for RUN stage |
-| `--memory-threshold` | 90 | System memory % that triggers graceful abort |
+| `--memory-threshold` | 95 | System memory % that triggers graceful abort |
 
 ### Individual Stages
 

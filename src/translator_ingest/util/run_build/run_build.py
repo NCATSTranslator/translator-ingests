@@ -7,6 +7,7 @@ import click
 
 from translator_ingest import INGESTS_PARSER_PATH
 from translator_ingest.util.logging_utils import get_logger
+from translator_ingest.util.run_build.build_report import MEMORY_ABORT_ERROR
 from translator_ingest.util.run_build.orchestrator import run_full_build
 from translator_ingest.util.run_build.utils import MEMORY_CRITICAL_THRESHOLD_PERCENT
 
@@ -33,6 +34,54 @@ def discover_ingest_sources() -> list[str]:
         if (item / f"{item.name}.py").exists():
             sources.append(item.name)
     return sources
+
+
+def _memory_aborted_stages(report_dir: Path) -> list[str]:
+    """Return the stages skipped this build specifically by the memory guardian.
+
+    Reads the stage_timings recorded in build-report.json (the orchestrator's
+    authoritative account of what ran this build) rather than checking
+    whether each stage's ``_summary.json`` exists on disk. File existence
+    alone cannot distinguish a memory-triggered skip from a deliberate one
+    (e.g. UPLOAD skipped because ``--no-upload`` was passed): both leave the
+    stage's ``_summary.json`` absent. Only a memory-triggered skip tags its
+    StageTimingReport's ``error`` field with MEMORY_ABORT_ERROR (see
+    orchestrator.py), so that tag is the signal this function keys off.
+
+    Args:
+        report_dir: The timestamped report directory for this build, as
+            returned by ``run_full_build``. Contains build-report.json once
+            the build has finished.
+
+    Returns:
+        Stage names (e.g. ``["UPLOAD"]``) whose recorded status is
+        "skipped" with the memory-critical error tag. Empty list if
+        build-report.json is missing or no stage matches.
+
+    Examples:
+        >>> import json, tempfile
+        >>> from pathlib import Path
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     rd = Path(d)
+        ...     _ = (rd / "build-report.json").write_text(json.dumps({
+        ...         "stage_timings": [
+        ...             {"stage": "MERGE", "status": "completed", "error": None},
+        ...             {"stage": "UPLOAD", "status": "skipped", "error": MEMORY_ABORT_ERROR},
+        ...         ]
+        ...     }))
+        ...     _memory_aborted_stages(rd)
+        ['UPLOAD']
+    """
+    report_json_path = report_dir / "build-report.json"
+    if not report_json_path.exists():
+        return []
+    with report_json_path.open() as f:
+        stage_timings = json.load(f).get("stage_timings", [])
+    return [
+        st["stage"]
+        for st in stage_timings
+        if st.get("status") == "skipped" and st.get("error") == MEMORY_ABORT_ERROR
+    ]
 
 
 @click.command()
@@ -83,7 +132,7 @@ def main(
     node_props = node_properties.split() if node_properties else ["ncbi_gene"]
     seq_sources = sequential_sources.split() if sequential_sources and sequential_sources.strip() else []
 
-    _report_dir, _error_log_path, memory_aborted = run_full_build(
+    _report_dir, _error_log_path, _memory_aborted = run_full_build(
         sources=source_list,
         graph_id=graph_id,
         node_properties=node_props,
@@ -96,17 +145,17 @@ def main(
 
     # Only exit(2) if stages were skipped because memory was still critical
     # at stage start. A spike during RUN that recovered before MERGE is not
-    # an abort — it's a warning that appears in the report notes.
-    stages_skipped_for_memory = [
-        s for s in ("MERGE", "RELEASE")  # UPLOAD skip due to --no-upload is normal
-        if (_report_dir / "stages" / s.lower() / "_summary.json").exists() is False
-        and memory_aborted
-    ]
-    if stages_skipped_for_memory:
+    # an abort — it's a warning that appears in the report notes. This is
+    # based on build-report.json's stage_timings (see _memory_aborted_stages),
+    # not on whether a stage's _summary.json exists: UPLOAD skipped for
+    # --no-upload and UPLOAD skipped for memory pressure both leave that file
+    # absent, and only the latter is a build abort worth exit code 2.
+    memory_aborted_stages = _memory_aborted_stages(_report_dir)
+    if memory_aborted_stages:
         logger.error(
             "BUILD INCOMPLETE: Memory was still critical at stage start — "
             "%s were skipped. See report for details.",
-            ", ".join(stages_skipped_for_memory),
+            ", ".join(memory_aborted_stages),
         )
         sys.exit(2)
 

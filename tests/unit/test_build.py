@@ -17,14 +17,17 @@ from dataclasses import asdict
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from translator_ingest.util.run_build.build_report import (
+    MEMORY_ABORT_ERROR,
     BuildReport,
     MergedGraphReport,
     SourceReport,
     StageTimingReport,
     UploadReport,
     format_json_report,
+    format_summary_report,
     format_text_report,
     generate_build_report,
     load_upload_results,
@@ -34,6 +37,7 @@ from translator_ingest.util.run_build.build_report import (
 # from the canonical location rather than the legacy run_build shim
 from translator_ingest.util.run_build.display import BuildDisplay
 from translator_ingest.util.run_build.paths import create_report_dir
+from translator_ingest.util.run_build.run_build import _memory_aborted_stages, main
 from translator_ingest.util.run_build.stages import stage_upload
 from translator_ingest.util.run_build.tracking import PerformanceTracker
 from translator_ingest.util.run_build.utils import (
@@ -1226,6 +1230,154 @@ def test_no_stage_timings_falls_back_to_artifact_inference(make_report):
     assert "release" in report.pipeline_stages_completed
 
 
+# ── Stale-artifact gating ────────────────────────────────────────────────────
+#
+# Regression tests: source_reports[].status and merged_graph.status must not
+# read as this build's success when the corresponding stage did not actually
+# complete this run, even though a previous build's artifacts are still on
+# disk. Without this, the human-readable summary (format_summary_report) can
+# contradict the pipeline_stages_failed list printed right below it.
+
+
+def test_no_stage_timings_still_reports_released_and_merged(make_report):
+    """Sanity check for the gating tests below: with stage_timings=None
+    (report generated outside the orchestrator, e.g. `make report`), the
+    pre-existing artifact-only behavior is unchanged.
+    """
+    report = make_report(stage_timings=None)
+    assert report.merged_graph.status == "merged"
+    assert all(sr.status == "released" for sr in report.source_reports)
+
+
+def test_merged_graph_not_reported_merged_when_merge_skipped_this_run(make_report):
+    """merged_graph.status must not read 'merged' when this run's MERGE was
+    skipped, even though a previous build's graph-metadata.json is still on
+    disk (written unconditionally by the make_report fixture). Before the
+    fix, collect_merged_graph_report ignored stage_timings entirely and
+    always inferred 'merged' from the artifact regardless of what ran this
+    build.
+    """
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "skipped"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+    assert report.merged_graph.status == "stale"
+    assert any("previous build" in err for err in report.merged_graph.errors)
+
+
+def test_source_not_reported_released_when_release_skipped_this_run(make_report):
+    """A source's status must not read 'released' when this run's RELEASE
+    stage was skipped, even though latest-release.json on disk is from a
+    previous build. Before the fix, collect_source_report ignored
+    stage_timings entirely and always inferred 'released' from the artifact.
+    """
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "completed"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+    assert all(sr.status != "released" for sr in report.source_reports)
+    assert all(sr.status == "built" for sr in report.source_reports)
+
+
+def test_summary_does_not_claim_merge_or_release_when_stages_skipped(make_report):
+    """Regression test for the exact contradiction the audit found: the
+    shareable summary text (format_summary_report -- what run_full_build
+    prints to stdout at the end of every build) must not claim sources were
+    released or a graph was merged in the same build where the stage table
+    says merge/release/upload were skipped.
+    """
+    report = make_report(
+        stage_timings=[
+            _timing("RUN", "completed"),
+            _timing("MERGE", "skipped"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+    summary = format_summary_report(report)
+    assert "Merged graph" not in summary
+    assert "0 released sources" in summary
+    assert any("merge: skipped" in f for f in report.pipeline_stages_failed)
+
+
+# ── Fallback build-note accuracy ─────────────────────────────────────────────
+#
+# Regression tests: the per-source build_note for a failed source must only
+# claim what actually happened this build, not an unconditional
+# "merged/released/uploaded" for every failed source regardless of whether
+# it has fallback data or whether those stages ran.
+
+
+def test_build_note_for_missing_source_does_not_claim_fallback_data(make_report):
+    """A source with RUN failed and no prior successful build (SourceReport
+    status 'no_build') has nothing to fall back on. Before the fix, the
+    per-source build_note unconditionally claimed 'merged/released/uploaded
+    using previous successful build data' even for such a source --
+    directly contradicting that same source's own 'no_build' status in the
+    same report.
+    """
+    report = make_report(
+        sources=[*_SOURCES, "ghost_source"],
+        failed_sources=["ghost_source"],
+        stage_timings=[
+            _timing("RUN", "failed"),
+            _timing("MERGE", "skipped"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+    ghost = next(sr for sr in report.source_reports if sr.source == "ghost_source")
+    assert ghost.status == "no_build"
+    ghost_notes = [n for n in report.build_notes if n.startswith("ghost_source:")]
+    assert len(ghost_notes) == 1
+    assert "no previous successful build exists" in ghost_notes[0]
+    assert "merged/released/uploaded" not in ghost_notes[0]
+
+
+def test_build_note_for_fallback_source_reflects_stages_actually_run(make_report):
+    """A source with prior build data that failed RUN this build must only
+    be described as merged/released/uploaded when those stages actually
+    completed this build, not unconditionally.
+    """
+    report = make_report(
+        failed_sources=["test_source_a"],
+        stage_timings=[
+            _timing("RUN", "failed"),
+            _timing("MERGE", "skipped"),
+            _timing("RELEASE", "skipped"),
+            _timing("UPLOAD", "skipped"),
+        ],
+    )
+    note = next(n for n in report.build_notes if n.startswith("test_source_a:"))
+    assert "merged/released/uploaded" not in note
+    assert "was not merged, released, or uploaded this build" in note
+
+
+def test_build_note_for_fallback_source_with_stages_completed(make_report):
+    """When MERGE/RELEASE/UPLOAD did complete this build, the fallback note
+    accurately lists exactly those actions.
+    """
+    report = make_report(
+        failed_sources=["test_source_a"],
+        stage_timings=[
+            _timing("RUN", "failed"),
+            _timing("MERGE", "completed"),
+            _timing("RELEASE", "completed"),
+            _timing("UPLOAD", "completed"),
+        ],
+    )
+    note = next(n for n in report.build_notes if n.startswith("test_source_a:"))
+    assert "merged/released/uploaded using previous successful build data" in note
+
+
 # ── Upload stage gating tests ────────────────────────────────────────────────
 #
 # These tests verify the two fixed bugs:
@@ -1465,3 +1617,167 @@ def test_stage_upload_saves_summary_json(tmp_path, monkeypatch):
     assert summary["status"] == "completed"
     assert "duration_seconds" in summary
     assert "performance" in summary
+
+
+def test_stage_upload_suppresses_duplicate_reports_and_logs_upload(tmp_path, monkeypatch):
+    """stage_upload must not re-upload reports/ and logs/ itself. That
+    walk-and-head-check is redundant with the orchestrator's post-build pass
+    (orchestrator.py, which runs after build-report.json is actually
+    written and must be the pass that wins). Before the fix,
+    upload_and_cleanup was called without upload_reports/upload_logs, so
+    both defaulted to True in s3.py and the UPLOAD stage silently
+    duplicated that work on every build.
+    """
+    display = _make_display(upload=True)
+
+    report_dir = tmp_path / "report"
+    (report_dir / "stages" / "upload").mkdir(parents=True)
+
+    reports_base = tmp_path / "reports"
+    reports_base.mkdir()
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.stages.discover_data_sources",
+        lambda: ["go_cam"],
+    )
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.stages.discover_release_sources",
+        lambda: ["go_cam"],
+    )
+
+    captured_kwargs: dict[str, object] = {}
+
+    def _capture(**kwargs: object) -> dict:
+        captured_kwargs.update(kwargs)
+        return _fake_upload_results(total_failed=0)
+
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.stages.upload_and_cleanup", _capture,
+    )
+
+    stage_upload(report_dir, display)
+
+    assert captured_kwargs.get("upload_reports") is False
+    assert captured_kwargs.get("upload_logs") is False
+
+
+# ── CLI exit-code tests (run_build.py main()) ────────────────────────────────
+#
+# Regression tests for the exit-code bug the audit found: a memory-critical
+# abort that skips UPLOAD must exit 2, the same as a memory-skipped MERGE or
+# RELEASE, per the README's documented contract ("exit code 2 if the build
+# was aborted due to memory pressure"). A deliberate --no-upload run must
+# still exit 0 -- both leave UPLOAD's stages/upload/_summary.json absent, so
+# file existence alone cannot tell them apart.
+
+
+def test_memory_aborted_stages_returns_empty_when_no_report(tmp_path):
+    """No build-report.json (e.g. the build crashed before writing one)
+    means no stage can be confirmed memory-aborted."""
+    assert _memory_aborted_stages(tmp_path) == []
+
+
+def test_memory_aborted_stages_ignores_deliberate_no_upload_skip(tmp_path):
+    """UPLOAD skipped for --no-upload carries no error tag and must not be
+    treated as a memory abort, even though its _summary.json is absent --
+    the same on-disk shape as a memory-triggered skip.
+    """
+    (tmp_path / "build-report.json").write_text(json.dumps({
+        "stage_timings": [
+            {"stage": "MERGE", "status": "completed", "error": None},
+            {"stage": "RELEASE", "status": "completed", "error": None},
+            {"stage": "UPLOAD", "status": "skipped", "error": None},
+        ],
+    }))
+    assert _memory_aborted_stages(tmp_path) == []
+
+
+def test_memory_aborted_stages_detects_memory_skipped_upload(tmp_path):
+    """UPLOAD skipped with the memory-critical error tag must be detected.
+    This is the exact signal the CLI's exit-code check was missing.
+    """
+    (tmp_path / "build-report.json").write_text(json.dumps({
+        "stage_timings": [
+            {"stage": "MERGE", "status": "completed", "error": None},
+            {"stage": "RELEASE", "status": "completed", "error": None},
+            {"stage": "UPLOAD", "status": "skipped", "error": MEMORY_ABORT_ERROR},
+        ],
+    }))
+    assert _memory_aborted_stages(tmp_path) == ["UPLOAD"]
+
+
+def _write_cli_report_dir(
+    report_dir: Path,
+    upload_error: str | None,
+) -> None:
+    """Write the on-disk shape run_full_build leaves behind for main() to
+    read: RUN/MERGE/RELEASE all completed and summarized, UPLOAD skipped
+    with no _summary.json (identical file-existence shape whether the skip
+    was for --no-upload or for a memory abort -- only build-report.json's
+    error tag tells them apart).
+    """
+    for stage in ("run", "merge", "release", "upload"):
+        (report_dir / "stages" / stage).mkdir(parents=True)
+    (report_dir / "stages" / "run" / "_summary.json").write_text(json.dumps({"failed": 0}))
+    (report_dir / "stages" / "merge" / "_summary.json").write_text(json.dumps({"status": "completed"}))
+    (report_dir / "stages" / "release" / "_summary.json").write_text(json.dumps({"status": "completed"}))
+    (report_dir / "build-report.json").write_text(json.dumps({
+        "stage_timings": [
+            {"stage": "RUN", "status": "completed", "error": None},
+            {"stage": "MERGE", "status": "completed", "error": None},
+            {"stage": "RELEASE", "status": "completed", "error": None},
+            {"stage": "UPLOAD", "status": "skipped", "error": upload_error},
+        ],
+    }))
+
+
+def test_main_exits_2_when_upload_skipped_for_memory(tmp_path, monkeypatch):
+    """The CLI must exit 2 (not 0) when UPLOAD was skipped this build
+    specifically because memory was still critical at stage start, even
+    though RUN/MERGE/RELEASE all completed cleanly. Before the fix, the
+    exit-code check only looked at ("MERGE", "RELEASE") for a memory-skip
+    and fell through to exit 0 here -- the exact "ITRB reports success"
+    failure mode this persona exists to catch.
+    """
+    report_dir = tmp_path / "reports" / "2026_01_01_000000"
+    _write_cli_report_dir(report_dir, upload_error=MEMORY_ABORT_ERROR)
+
+    error_log_path = tmp_path / "logs" / "errors" / "2026_01_01_000000" / "errors.log"
+    error_log_path.parent.mkdir(parents=True)
+    error_log_path.write_text("")
+
+    def _fake_run_full_build(**kwargs: object) -> tuple[Path, Path, bool]:
+        return report_dir, error_log_path, True
+
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.run_full_build", _fake_run_full_build,
+    )
+
+    result = CliRunner().invoke(main, ["--sources", "ctd"])
+
+    assert result.exit_code == 2, result.output
+
+
+def test_main_exits_0_when_upload_skipped_for_no_upload_flag(tmp_path, monkeypatch):
+    """A deliberate --no-upload run must still exit 0, not be mistaken for a
+    memory abort just because UPLOAD's _summary.json is likewise absent.
+    """
+    report_dir = tmp_path / "reports" / "2026_01_01_000001"
+    _write_cli_report_dir(report_dir, upload_error=None)
+
+    error_log_path = tmp_path / "logs" / "errors" / "2026_01_01_000001" / "errors.log"
+    error_log_path.parent.mkdir(parents=True)
+    error_log_path.write_text("")
+
+    def _fake_run_full_build(**kwargs: object) -> tuple[Path, Path, bool]:
+        return report_dir, error_log_path, False
+
+    monkeypatch.setattr(
+        "translator_ingest.util.run_build.run_build.run_full_build", _fake_run_full_build,
+    )
+
+    result = CliRunner().invoke(main, ["--sources", "ctd", "--no-upload"])
+
+    assert result.exit_code == 0, result.output
