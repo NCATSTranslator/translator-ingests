@@ -5,14 +5,12 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.http_utils import get_modify_date
 from translator_ingest.util.biolink import INFORES_DISEASES, INFORES_MEDLINEPLUS, INFORES_AMYCO
 ## ADDED packages for this ingest
-from datetime import datetime
 import pandas as pd
 
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
     Disease,
-    CorrelatedGeneToDiseaseAssociation,
     GeneToDiseaseAssociation,
     RetrievalSource,
     ResourceRoleEnum,
@@ -20,7 +18,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 
-BIOLINK_OCCURS_IN_LIT_WITH = "biolink:occurs_together_in_literature_with"
 BIOLINK_ASSOCIATED_WITH = "biolink:associated_with"
 ## used to only keep rows with IDs (protein_id column starts with ENSP, disease_id column starts with DOID)
 ## see @koza.prepare_data, keep_rows_with_IDs for use
@@ -35,15 +32,9 @@ def get_latest_version() -> str:
     Returns the most recent modify date of the source files, with no spaces "%Y_%m_%d"
     """
     strformat = "%Y_%m_%d"
-    # get last-modified for each source data file
-    textmining_modify_date = get_modify_date("https://download.jensenlab.org/human_disease_textmining_filtered.tsv", strformat)
+    # get last-modified for source data file
     knowledge_modify_date = get_modify_date("https://download.jensenlab.org/human_disease_knowledge_filtered.tsv", strformat)
-    # compare them and return the most recent date in the form m_d_Y
-    if (datetime.strptime(textmining_modify_date, strformat) >
-            datetime.strptime(knowledge_modify_date, strformat)):
-        return textmining_modify_date
-    else:
-        return knowledge_modify_date
+    return knowledge_modify_date
 
 
 def remove_duplicates(dataframe: pd.DataFrame):
@@ -92,44 +83,6 @@ def keep_rows_with_IDs(dataframe: pd.DataFrame, starting_strings: dict):
     return dataframe, nrows_removed
 
 
-## ?? workflow for textmining vs knowledge are the same. But I'm not sure if I can set/mutate the koza.state variables in a separate, non-tagged function. So having these workflows written twice right now.
-@koza.prepare_data(tag="textmining")
-def textmining_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-    ## remove rows we don't want to process, using pandas
-    ## set up counts for removed rows, save in state for later use
-    koza.state["textmining_row_counts"] = {
-        "duplicate_rows": 0,  ## just in case
-        "no_ENSP_IDs": 0,
-        "no_DOIDs": 0,
-        "total_no_IDs": 0,
-    }
-
-    df = pd.DataFrame.from_records(data)
-    ## data was loaded with empty values = "". Just in case, replace these empty strings with None so isna() methods will work
-    df.replace(to_replace="", value=None, inplace=True)
-    # ## debugging
-    # print(df.shape)
-
-    ## just in case, remove duplicates. Record count of duplicates, if any
-    df, koza.state["textmining_row_counts"]["duplicate_rows"] = remove_duplicates(df)
-    # ## debugging
-    # print(f"After removing duplicates: {df.shape}")
-
-    ## only keep rows with IDs (protein_id column starts with ENSP, disease_id column starts with DOID)
-    ## get counts of rows removed (each criterion and total)
-    no_ID_counts = dict()
-    df, no_ID_counts = keep_rows_with_IDs(df, ID_start_strings)
-    ## update koza.state variables
-    koza.state["textmining_row_counts"]["no_ENSP_IDs"] = no_ID_counts["ENSP"]
-    koza.state["textmining_row_counts"]["no_DOIDs"] = no_ID_counts["DOID"]
-    koza.state["textmining_row_counts"]["total_no_IDs"] = no_ID_counts["total"]
-    # ## debugging
-    # print(f"After removing rows without IDs: {df.shape}")
-
-    ## return updated dataset
-    return df.to_dict(orient="records")
-
-
 @koza.prepare_data(tag="knowledge")
 def knowledge_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
     ## remove rows we don't want to process, using pandas
@@ -164,37 +117,6 @@ def knowledge_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) 
 
     ## return updated dataset
     return df.to_dict(orient="records")
-
-
-@koza.transform_record(tag="textmining")
-def textmining_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
-    ## add prefix (data only has value ENSP##########)
-    protein = Protein(id="ENSEMBL:" + record["protein_id"])
-    ## disease column DOIDs are already in correct prefix/format for Translator
-    disease = Disease(id=record["disease_id"])
-
-    association = CorrelatedGeneToDiseaseAssociation(
-        ## creating arbitrary ID for edge right now
-        id=entity_id(),
-        subject=protein.id,
-        predicate=BIOLINK_OCCURS_IN_LIT_WITH,
-        object=disease.id,
-        sources=[
-            RetrievalSource(
-                ## making the ID the same as infores for now, which is what go_cam did
-                id=INFORES_DISEASES,
-                resource_id=INFORES_DISEASES,
-                resource_role=ResourceRoleEnum.primary_knowledge_source,
-                source_record_urls=[record["url"]],
-            )
-        ],
-        knowledge_level=KnowledgeLevelEnum.text_co_occurrence,
-        agent_type=AgentTypeEnum.data_analysis_pipeline,
-        z_score=record["z_score"],
-        diseases_confidence_score=record["confidence_score"],
-    )
-
-    return KnowledgeGraph(nodes=[protein, disease], edges=[association])
 
 
 @koza.transform_record(tag="knowledge")
@@ -253,36 +175,6 @@ def knowledge_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Kno
     )
 
     return KnowledgeGraph(nodes=[protein, disease], edges=[association])
-
-
-## ?? workflow for textmining vs knowledge are the same. But I'm not sure if I can access koza.state variables in a separate, non-tagged function. So having these workflows written twice right now.
-@koza.on_data_end(tag="textmining")
-def textmining_on_end(koza: koza.KozaTransform) -> None:
-    """
-    add logs based on counts
-    """
-    if koza.state["textmining_row_counts"]["duplicate_rows"] > 0:
-        koza.log(
-            f"{koza.state["textmining_row_counts"]["duplicate_rows"]} rows were discarded for being duplicates.",
-            level="INFO",
-        )
-    ## report total "no IDs" first
-    if koza.state["textmining_row_counts"]["total_no_IDs"] > 0:
-        koza.log(
-            f"{koza.state["textmining_row_counts"]["total_no_IDs"]} rows were discarded for having either no protein ID (starts with 'ENSP') or no disease ID (starts with 'DOID').",
-            level="INFO",
-        )
-    ## then report individual
-    if koza.state["textmining_row_counts"]["no_ENSP_IDs"] > 0:
-        koza.log(
-            f"{koza.state["textmining_row_counts"]["no_ENSP_IDs"]} rows had no protein ID (starts with 'ENSP').",
-            level="INFO",
-        )
-    if koza.state["textmining_row_counts"]["no_DOIDs"] > 0:
-        koza.log(
-            f"{koza.state["textmining_row_counts"]["no_DOIDs"]} rows had no disease ID (starts with 'DOID').",
-            level="INFO",
-        )
 
 
 @koza.on_data_end(tag="knowledge")

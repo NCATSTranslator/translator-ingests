@@ -24,10 +24,12 @@ class IngestFileType(Enum):
     VALIDATION_REPORT_FILE = 16
     LATEST_BUILD_FILE = 17
     LATEST_RELEASE_FILE = 18
+    RELEASE_METADATA_FILE = 19
 
 
 
 class IngestFileName(StrEnum):
+    SOURCE_METADATA = "source-metadata.json"
     TRANSFORM_METADATA = "transform-metadata.json"
     NORMALIZED_NODES = "normalized_nodes.jsonl"
     NORMALIZED_EDGES = "normalized_edges.jsonl"
@@ -44,9 +46,12 @@ class IngestFileName(StrEnum):
     VALIDATION_REPORT_FILE = "validation-report.json"
     LATEST_BUILD_FILE = "latest-build.json"
     LATEST_RELEASE_FILE = "latest-release.json"
+    RELEASE_METADATA_FILE = "release-metadata.json"
 
 
 FILE_PATH_LOOKUP = {
+    IngestFileType.SOURCE_METADATA_FILE: lambda pipeline_metadata: get_source_data_directory(pipeline_metadata)
+    / IngestFileName.SOURCE_METADATA,
     IngestFileType.TRANSFORM_KGX_FILES: lambda pipeline_metadata: __find_transform_kgx_files(
         get_transform_directory(pipeline_metadata)
     ),
@@ -82,6 +87,8 @@ FILE_PATH_LOOKUP = {
     / IngestFileName.LATEST_BUILD_FILE,
     IngestFileType.LATEST_RELEASE_FILE: lambda pipeline_metadata: Path(INGESTS_RELEASES_PATH) / pipeline_metadata.source
                                                                   / IngestFileName.LATEST_RELEASE_FILE,
+    IngestFileType.RELEASE_METADATA_FILE: lambda pipeline_metadata: get_release_directory(pipeline_metadata)
+    / IngestFileName.RELEASE_METADATA_FILE,
 }
 
 def get_versioned_file_paths(
@@ -107,6 +114,9 @@ def get_merge_directory(pipeline_metadata: PipelineMetadata) -> Path:
 
 def get_validation_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return get_merge_directory(pipeline_metadata) / f"validation_{pipeline_metadata.biolink_version}"
+
+def get_release_directory(pipeline_metadata: PipelineMetadata) -> Path:
+    return Path(INGESTS_RELEASES_PATH) / pipeline_metadata.source / pipeline_metadata.release_version
 
 # Find the KGX files in a given directory
 def __find_transform_kgx_files(directory: Path) -> (str, str):

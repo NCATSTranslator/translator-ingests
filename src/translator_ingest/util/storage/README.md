@@ -43,6 +43,19 @@ The S3 bucket mirrors the local directory structure with four main directories:
 
 **logs/** contains per-stage timestamped log files (`run/`, `merge/`, `release/`, `upload/`, `errors/`) with a `latest/` directory copy per stage. Uploaded incrementally after each stage completes so logs remain visible even if a later stage crashes the orchestrator.
 
+The full upload pipeline consists of four steps:
+
+```bash
+make run        # Run the full ingest pipeline (download, transform, normalize, validate)
+make release    # Generate release archives for each source
+make merge-all  # Build multi-source KGs from those releases
+make upload     # Upload to S3 and cleanup old EBS versions
+```
+
+Releases are generated before merging because multi-source KGs are built from the source releases.
+
+When you run upload, the entire data and releases directories for each source are uploaded to S3. Files whose size and ETag already match S3 are skipped so their `LastModified` is preserved, everything else is overwritten, so it's safe to re-run multiple times.
+
 ## Upload Commands
 
 **make upload-all** — Auto-discover and upload all sources (data and releases separately)

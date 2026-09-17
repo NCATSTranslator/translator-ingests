@@ -1,5 +1,6 @@
 # HTTP query wrappers
 
+import re
 import requests
 import datetime
 from ftplib import FTP
@@ -9,6 +10,51 @@ from email.utils import parsedate_to_datetime
 from translator_ingest.util.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+# Public Gene Ontology release metadata endpoint, shared by the GO-CAM and GOA ingests.
+GENEONTOLOGY_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
+_ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def _extract_iso_date(text: str) -> str | None:
+    """Extract the first ``YYYY-MM-DD`` date from a string, or ``None`` if there isn't one.
+
+    The GO metadata endpoint returns malformed pseudo-JSON with an unquoted key and value,
+    so we can't use ``json.loads``; a plain regex extraction is robust to that.
+
+    >>> _extract_iso_date("{date: 2026-06-19}")
+    '2026-06-19'
+    >>> _extract_iso_date('{"date": "2026-06-19"}')
+    '2026-06-19'
+    >>> _extract_iso_date("no date here") is None
+    True
+    """
+    match = _ISO_DATE_RE.search(text)
+    return match.group(0) if match else None
+
+
+def get_geneontology_release_version(url: str = GENEONTOLOGY_RELEASE_METADATA_URL) -> str:
+    """Fetch the current Gene Ontology release date (YYYY-MM-DD).
+
+    The GO metadata endpoint returns malformed pseudo-JSON with an unquoted key and value
+    (e.g. ``{date: 2026-06-19}``), so ``response.json()`` raises ``JSONDecodeError``. We extract
+    the ISO date from the raw response text instead of parsing it as JSON.
+
+    :param url: GO release metadata endpoint (defaults to the public ``release-date.json``)
+    :return: the release date as a ``YYYY-MM-DD`` string
+    :raises RuntimeError: if the endpoint is unreachable or contains no ISO date
+    """
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Unable to retrieve GO release metadata from {url}") from exc
+
+    version = _extract_iso_date(response.text)
+    if not version:
+        raise RuntimeError(f"GO metadata from {url} did not contain a release date: {response.text!r}")
+
+    return version
 
 
 def post_query(url: str, query: dict, params=None, server: str = "") -> dict:

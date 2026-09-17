@@ -1,0 +1,57 @@
+name: string
+
+metadata:
+  ingest_title: 'STRING'
+  ingest_url: 'https://string-db.org/'
+  description: >-
+    Search Tool for the Retrieval of Interacting Genes/Proteins (STRING) — protein–protein interactions
+    for human, mouse, and rat, with per-channel biolink predicates.
+  rights: 'https://string-db.org/cgi/access'
+
+readers:
+  # STRING protein–protein interactions. The transform function lives in
+  # string.py decorated with @koza.transform_record(tag="string_ppi").
+  # (A STITCH protein–chemical sibling reader was developed alongside this
+  # ingest but split out for a later effort — preserved on the stitch-ingest
+  # branch. See CHANGELOG 2026-05-28.)
+  string_ppi:
+    format: "csv"
+    delimiter: " "
+    header_mode: 0
+    # One file per Translator-target taxon. Koza concatenates them under this
+    # tag; the transform identifies the taxon per-row from the STRING ID prefix.
+    # Uses the ``.full.`` variant (16 columns) so per-channel subscores drive
+    # per-channel predicate emission. See string.py CHANNEL_PREDICATES.
+    files:
+      - '9606.protein.links.full.v12.0.txt.gz'
+      - '10090.protein.links.full.v12.0.txt.gz'
+      - '10116.protein.links.full.v12.0.txt.gz'
+    columns:
+      - protein1
+      - protein2
+      - neighborhood
+      - neighborhood_transferred
+      - fusion
+      - cooccurence
+      - homology
+      - coexpression
+      - coexpression_transferred
+      - experiments
+      - experiments_transferred
+      - database
+      - database_transferred
+      - textmining
+      - textmining_transferred
+      # Typed as int so the combined_score > 500 reader filter compares numerically
+      # (untyped CSV columns are strings, and '594' > 500 raises TypeError).
+      - combined_score: int
+    # Row-inclusion gate at the reader level: drop sub-threshold rows before they
+    # reach the transform (STRING's medium-confidence cutoff, combined_score > 500).
+    # The transform retains an equivalent guard (passes_combined_score) so it stays
+    # correct when called directly in unit tests; this reader filter is the
+    # production efficiency path (Koza skips object construction for dropped rows).
+    filters:
+      - inclusion: 'include'
+        column: 'combined_score'
+        filter_code: 'gt'
+        value: 500

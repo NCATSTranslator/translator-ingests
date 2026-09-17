@@ -2,7 +2,14 @@ import pytest
 from pathlib import Path
 from typing import Optional
 
-from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    GeneToGeneHomologyAssociation,
+    GeneToGeneFamilyAssociation,
+    RetrievalSource,
+    ResourceRoleEnum,
+)
 
 import koza
 from koza.transform import Mappings
@@ -361,3 +368,55 @@ def test_ingest_transform(
         node_test_slots=NODE_TEST_SLOTS,
         edge_test_slots=ASSOCIATION_TEST_SLOTS
     )
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_PANTHER_SOURCES = [
+    RetrievalSource(
+        id="infores:panther",
+        resource_id="infores:panther",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": GeneToGeneHomologyAssociation,
+        "params": {
+            "id": "uuid:panther-test-1",
+            "subject": "HGNC:11477",
+            "predicate": "biolink:orthologous_to",
+            "object": "RGD:1564893",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            "sources": _PANTHER_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToGeneFamilyAssociation,
+        "params": {
+            "id": "uuid:panther-test-2",
+            "subject": "HGNC:11477",
+            "predicate": "biolink:member_of",
+            "object": "PANTHER.FAMILY:PTHR12434",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.automated_agent,
+            "sources": _PANTHER_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

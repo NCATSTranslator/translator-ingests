@@ -192,6 +192,8 @@ def _create_associations(record: dict[str, Any]):
                     **params
                 ))
             elif edge_type == 'biolink:VariantToDiseaseAssociation':
+                # VariantToDiseaseAssociation only accepts biolink:related_condition
+                params['predicate'] = 'biolink:related_condition'
                 associations.append(VariantToDiseaseAssociation(
                     **params
                 ))

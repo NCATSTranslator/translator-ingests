@@ -1,7 +1,24 @@
 """
 This file contains utility functions for ICEES data processing
 """
-from biolink_model.datamodel.pydanticmodel_v2 import Study, IceesStudyResult
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    Association,
+    CorrelatedGeneToDiseaseAssociation,
+    Study,
+    IceesStudyResult
+)
+
+from translator_ingest.util.biolink import get_biolink_model_toolkit
+bmt = get_biolink_model_toolkit()
+
+def get_association_type(subject_category, object_category):
+    # Specialized case of G2D Association
+    if "gene or gene product" in bmt.get_ancestors(subject_category) and \
+        object_category == "biolink:Disease":
+        association = CorrelatedGeneToDiseaseAssociation
+    else:
+        association = Association
+    return association
 
 #
 # An example of the TRAPI-like attribute data structure for a Study Result.

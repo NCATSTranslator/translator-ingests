@@ -46,9 +46,9 @@ GO aspect is mapped to the most specific Biolink class:
 Rationale: Using specific GO-domain classes improves downstream reasoning and alignment with Biolink’s semantic hierarchy.
 
 ### Predicate Selection
-1. Prefer qualifier-based predicates when present, covering standard and upstream-effect relations (e.g., enables, contributes_to, participates_in, located_in, is_active_in, colocalizes_with, acts_upstream_of, acts_upstream_of_or_within, and their positive/negative effect variants).
+1. Prefer qualifier-based predicates when present, covering standard and upstream-effect relations (e.g., enables, contributes_to, actively_involved_in, located_in, is_active_in, colocalizes_with, acts_upstream_of, acts_upstream_of_or_within, and their positive/negative effect variants).
 2. If a qualifier is absent or unrecognized, fall back to aspect-based defaults:
-   - P → participates_in
+   - P → actively_involved_in
    - F → enables
    - C → located_in
 

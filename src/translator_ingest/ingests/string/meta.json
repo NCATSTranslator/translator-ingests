@@ -1,0 +1,127 @@
+{
+  "graph_id": "STRING-DB_Automat",
+  "graph_name": "STRING",
+  "graph_description": "The Search Tool for the Retrieval of INteracting Genes/proteins (STRING) database provides information on known and predicted protein-protein interactions (both direct and indirect) derived from genomic context predictions, high-throughput laboratory experiments, conserved co-expression, automated text mining, and aggregated knowledge from primary data sources.",
+  "graph_url": "https://string-db.org/",
+  "graph_version": "4ca5a0ce557e2c18",
+  "sources": [
+    {
+      "source_id": "STRING-DB-Human",
+      "source_version": "v12.0",
+      "release_version": "c9e636085300b73e",
+      "parsing_version": "1.2",
+      "supplementation_version": "1.0",
+      "normalization_scheme": {
+        "node_normalization_version": "2.3.15",
+        "edge_normalization_version": "v4.2.1",
+        "normalization_code_version": "1.2",
+        "conflation": false,
+        "strict": true
+      },
+      "merge_strategy": "default",
+      "normalization_version": "2.3.15_v4.2.1_1.2_strict",
+      "provenance": "infores:string",
+      "description": "The Search Tool for the Retrieval of Interacting Genes/Proteins (STRING) database provides information on known and predicted protein-protein interactions (both direct and indirect) derived from genomic context predictions, high-throughput laboratory experiments, conserved co-expression, automated text mining, and aggregated knowledge from primary data sources.",
+      "source_data_url": "https://string-db.org",
+      "license": "All data and download files in STRING are freely available under a 'Creative Commons BY 4.0' license.",
+      "attribution": "https://string-db.org/cgi/about?footer_active_subpage=references",
+      "normalized_nodes.jsonl": {
+        "nodes": 18999
+      },
+      "normalized_edges.jsonl": {
+        "edges": 10904681
+      }
+    },
+    {
+      "source_id": "OntologicalHierarchy",
+      "source_version": "2024-07-07",
+      "release_version": "6a9b47e18095ea07",
+      "parsing_version": "1.5",
+      "supplementation_version": "1.0",
+      "normalization_scheme": {
+        "node_normalization_version": "2.3.15",
+        "edge_normalization_version": "v4.2.1",
+        "normalization_code_version": "1.2",
+        "conflation": false,
+        "strict": true
+      },
+      "merge_strategy": "connected_edge_subset",
+      "normalization_version": "2.3.15_v4.2.1_1.2_strict",
+      "provenance": "infores:ubergraph",
+      "description": "Subclass relationships from the redundant version of Ubergraph.",
+      "source_data_url": "https://github.com/INCATools/ubergraph",
+      "license": "https://raw.githubusercontent.com/INCATools/ubergraph/master/LICENSE.txt",
+      "attribution": "https://github.com/INCATools/ubergraph",
+      "normalized_nodes.jsonl": {
+        "nodes": 46070
+      },
+      "normalized_edges.jsonl": {
+        "edges": 497616
+      }
+    }
+  ],
+  "subgraphs": [],
+  "build_status": "stable",
+  "build_time": "07-23-24 22:16:28",
+  "build_error": null,
+  "final_node_count": 65069,
+  "final_edge_count": 11402297,
+  "merged_nodes": 0,
+  "merged_edges": 0,
+  "qc_results": {
+    "pass": true,
+    "primary_knowledge_sources": [
+      "infores:string",
+      "infores:ubergraph"
+    ],
+    "aggregator_knowledge_sources": [],
+    "predicate_totals": {
+      "biolink:coexpressed_with": 9204388,
+      "biolink:physically_interacts_with": 1414480,
+      "biolink:homologous_to": 230607,
+      "biolink:related_to": 55206,
+      "biolink:subclass_of": 497616
+    },
+    "predicates_by_knowledge_source": {
+      "infores:string": {
+        "biolink:coexpressed_with": 9204388,
+        "biolink:physically_interacts_with": 1414480,
+        "biolink:homologous_to": 230607,
+        "biolink:related_to": 55206
+      },
+      "infores:ubergraph": {
+        "biolink:subclass_of": 497616
+      }
+    },
+    "node_curie_prefixes": {
+      "ENSEMBL": 68,
+      "UniProtKB": 30900,
+      "PR": 34079,
+      "CHEBI": 22
+    },
+    "edges_with_publications": {},
+    "edge_properties": [
+      "Database_transferred",
+      "Textmining",
+      "Textmining_transferred",
+      "Coexpression_transferred",
+      "Cooccurance",
+      "Combined_score",
+      "knowledge_level",
+      "Fusion",
+      "Experiments",
+      "Experiments_transferred",
+      "primary_knowledge_source",
+      "Homology",
+      "predicate",
+      "agent_type",
+      "subject",
+      "object",
+      "Database",
+      "Coexpression",
+      "species_context_qualifier"
+    ],
+    "warnings": {}
+  },
+  "neo4j_dump": "https://stars.renci.org/var/plater/bl-4.2.1/STRING-DB_Automat/4ca5a0ce557e2c18/graph_4ca5a0ce557e2c18.db.dump"
+}

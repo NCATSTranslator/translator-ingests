@@ -7,6 +7,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     DiseaseOrPhenotypicFeature,  ## using just in case: NodeNorm does use MESH IDs for some phenos
     Gene,
     Association,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalEntityToChemicalEntityAssociation,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    RetrievalSource,
+    ResourceRoleEnum,
 )
 from translator_ingest.ingests.pubtator.pubtator import transform_row
 from translator_ingest.ingests.pubtator.mappings import RELATION_MODELING
@@ -139,3 +145,69 @@ def test_drug_interact_output(drug_interact_output):
     chems = [e for e in entities if isinstance(e, ChemicalEntity)]
     assert chems
     assert set([i.id for i in chems]) == set(["MESH:D000068338", "MESH:D016572"])
+
+
+# ---------------------------------------------------------------------------
+# Pydantic roundtrip edge fixtures
+# ---------------------------------------------------------------------------
+
+TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:pubtator",
+        resource_id="infores:pubtator",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": Association,
+        "params": {
+            "id": "uuid:test-pubtator-1",
+            "subject": "NCBIGene:201633",
+            "predicate": "biolink:negatively_correlated_with",
+            "object": "NCBIGene:3916",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:test-pubtator-2",
+            "subject": "MESH:C514285",
+            "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+            "object": "MESH:D010146",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToChemicalEntityAssociation,
+        "params": {
+            "id": "uuid:test-pubtator-3",
+            "subject": "MESH:D000068338",
+            "predicate": "biolink:pharmacologically_interacts_with",
+            "object": "MESH:D016572",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

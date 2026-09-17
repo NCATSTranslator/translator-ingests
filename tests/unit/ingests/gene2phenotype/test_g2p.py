@@ -11,6 +11,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalOrGeneOrGeneProductFormOrVariantEnum,
     GeneToDiseaseAssociation,
     RetrievalSource,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    ResourceRoleEnum,
 )
 import datetime
 from translator_ingest.ingests.gene2phenotype.gene2phenotype import transform
@@ -88,3 +91,43 @@ def test_ebi_g2p(single_record_test):
     assert gene.id == "HGNC:18704"
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MONDO:0100124"
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_G2P_SOURCES = [
+    RetrievalSource(
+        id="infores:gene2phenotype",
+        resource_id="infores:gene2phenotype",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": GeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:g2p-test-1",
+            "subject": "HGNC:18704",
+            "predicate": "biolink:associated_with",
+            "object": "OMIM:231550",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _G2P_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj
