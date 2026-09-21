@@ -11,7 +11,7 @@ source_info:
     may include official nomenclature and symbols, gene descriptions, Reference Sequences (RefSeqs), genomic
     maps, pathways, variations, phenotypes, and links to genome-, phenotype-, and locus-specific resources
     worldwide. This ingest uses NCBI Gene as the authoritative source of gene identity and basic gene
-    properties (symbol, full name, description, and taxon) for human, mouse, and rat.
+    properties (symbol, full name, description) for human, mouse, and rat.
   citations:
     - "National Center for Biotechnology Information (NCBI)[Internet]. Bethesda (MD): National Library of Medicine (US), National Center for Biotechnology Information; [1988] – [cited 2024 Dec]. Available from: https://www.ncbi.nlm.nih.gov/"
   terms_of_use_info:
@@ -35,7 +35,7 @@ ingest_info:
     - primary_knowledge_provider  # conformance: was 'primary_provider'
   utility: >-
     "NCBI Gene provides authoritative gene information for human, mouse, and rat genes, including official gene
-    symbols, descriptions, and taxonomic information critical for gene normalization and identification in
+    symbols, and descriptions critical for gene normalization and identification in
     biomedical knowledge graphs."
   scope: >-
     "This ingest focuses on human (NCBITaxon:9606), mouse (NCBITaxon:10090), and rat (NCBITaxon:10116)
@@ -80,9 +80,8 @@ target_info:
         - name
         - description
         - full_name
-        - taxon
       additional_notes:
-        - "Gene nodes include official gene symbols, descriptions, full names, and taxonomic information."
+        - "Gene nodes include official gene symbols, descriptions, full names."
 
   future_considerations:
     - category: spoq_pattern

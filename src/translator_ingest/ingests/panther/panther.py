@@ -23,8 +23,6 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     extract_panther_data_polars,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
-    NCBITAXON_A_COL,
-    NCBITAXON_B_COL,
     GENE_FAMILY_ID_COL,
 )
 
@@ -91,12 +89,10 @@ def transform_gene_to_gene_orthology(
     """
     gene_a_id = record[GENE_A_ID_COL]
     gene_b_id = record[GENE_B_ID_COL]
-    ncbitaxon_a = record[NCBITAXON_A_COL]
-    ncbitaxon_b = record[NCBITAXON_B_COL]
     gene_family_id = record[GENE_FAMILY_ID_COL]
 
-    gene_a = Gene(id=gene_a_id, in_taxon=[ncbitaxon_a])
-    gene_b = Gene(id=gene_b_id, in_taxon=[ncbitaxon_b])
+    gene_a = Gene(id=gene_a_id)
+    gene_b = Gene(id=gene_b_id)
 
     orthology_evidence = [gene_family_id]
     gene_family = GeneFamily(id=gene_family_id)
