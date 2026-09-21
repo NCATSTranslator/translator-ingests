@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 import click
+from translator_ingest import INGESTS_DATA_DIR
 from translator_ingest.util.biolink import get_biolink_schema, get_current_biolink_version
 from translator_ingest.util.storage.local import IngestFileName
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -649,8 +650,8 @@ def get_validation_status(report_file_path: Path) -> Optional[str]:
 @click.option(
     "--output-dir",
     type=click.Path(path_type=Path),
-    default=Path("data"),
-    help="Output directory for validation reports (default: data)",
+    default=INGESTS_DATA_DIR,
+    help="Output directory for validation reports (the ingests data directory, set by INGESTS_DATA_PATH)",
 )
 @click.option("--no-save", is_flag=True, help="Don't save validation report to file")
 @click.option("--nodes-only", is_flag=True, help="Validate only nodes file (skip edge validation)")
