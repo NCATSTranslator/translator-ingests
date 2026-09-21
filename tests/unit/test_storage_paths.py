@@ -39,7 +39,7 @@ def test_non_directory_raises(monkeypatch, tmp_path, kind):
         resolve_storage_path(ENV_VAR, DEFAULT)
 
 
-@pytest.mark.parametrize("env_var", ["INGESTS_DATA_PATH", "INGESTS_RELEASES_PATH"])
+@pytest.mark.parametrize("env_var", ["INGESTS_DATA_PATH", "INGESTS_RELEASES_PATH", "INGESTS_LOGS_PATH"])
 def test_import_fails_before_anything_can_be_created(tmp_path, env_var):
     """Importing must fail on a missing configured path, since the pipeline creates
     subdirectories with parents=True and would otherwise write to the wrong filesystem."""
