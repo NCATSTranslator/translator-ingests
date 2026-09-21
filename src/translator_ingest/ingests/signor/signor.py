@@ -38,6 +38,21 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 
+
+def _chemical_identifier(identifier: str) -> str:
+    """Expand SIGNOR's PubChem compound prefix without reinterpreting substances.
+
+    >>> _chemical_identifier("CID:24795070")
+    'PUBCHEM.COMPOUND:24795070'
+    >>> _chemical_identifier("CHEBI:95061")
+    'CHEBI:95061'
+    >>> _chemical_identifier("SID:134445687")
+    'SID:134445687'
+    """
+    if identifier.startswith("CID:"):
+        return "PUBCHEM.COMPOUND:" + identifier.removeprefix("CID:")
+    return identifier
+
 # Qi had used this to avoid an issue with long 'description' fields,
 # but I am not seeing any issue without it, so removing it for now.
 # csv.field_size_limit(10_000_000)   # allow fields up to 10MB
@@ -86,6 +101,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
             "PMID": lambda x: "|".join(x.dropna().astype(str)),
             "SENTENCE": lambda x: "|".join(x.dropna().astype(str))
           })
+    )
+
+    # Pandas groups absent context values as NaN; the transform expects None.
+    context_columns = ['CELL_DATA', 'TISSUE_DATA']
+    source_agg_df[context_columns] = (
+        source_agg_df[context_columns].astype(object).where(source_agg_df[context_columns].notna(), None)
     )
 
     ## rename those columns into desired format
@@ -450,7 +471,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
-            object = ChemicalEntity(id=record["IDB"], name=record["object_name"])
+            object = ChemicalEntity(id=_chemical_identifier(record["IDB"]), name=record["object_name"])
 
             ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
             ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
@@ -540,7 +561,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     edges.append(association)
 
         elif (record["subject_category"] == "chemical" or record["subject_category"] == "smallmolecule") and record["object_category"] == "protein" and record["EFFECT"] in list_ppi_accept_effects:
-            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
+            subject = ChemicalEntity(id=_chemical_identifier(record["IDA"]), name=record["subject_name"])
             object = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
 
             ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
@@ -632,8 +653,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
 
         elif record["subject_category"] == "smallmolecule" and (record["object_category"] == "chemical" or record["object_category"] == "smallmolecule") and record["EFFECT"] in list_ppi_accept_effects:
             ## chemical entity already have CHEBI prefix
-            subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
-            object = ChemicalEntity(id=record["IDB"], name=record["object_name"])
+            subject = ChemicalEntity(id=_chemical_identifier(record["IDA"]), name=record["subject_name"])
+            object = ChemicalEntity(id=_chemical_identifier(record["IDB"]), name=record["object_name"])
 
             ## now use the column("DIRECT") to decide whether a separate biolink:directly_physically_interacts_with needs to be added
             ## record["DIRECT"] == "YES", then add a separate biolink:directly_physically_interacts_with edge
