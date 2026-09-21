@@ -1,0 +1,65 @@
+{
+  "checked_on": "2026-09-21",
+  "baseline_commit": "d87dafedb35185f0727143015d28ae2833222d02",
+  "source_url": "https://www.ebi.ac.uk/Tools/webservices/psicquic/intact/webservices/current/search/query/EBI-10379036?format=tab27&firstResult=0&maxResults=10",
+  "sample_size": 1,
+  "accepted": 1,
+  "emitted_edges": 1,
+  "source_score_present": 1,
+  "emitted_score_present": 0,
+  "example_record": {
+    "idA": "uniprotkb:O15162",
+    "idB": "uniprotkb:Q01844",
+    "interactionIDs": "intact:EBI-10379036|imex:IM-23318-18943",
+    "interactionTypes": "psi-mi:\"MI:0915\"(physical association)",
+    "sourceDatabase": "psi-mi:\"MI:0469\"(IntAct)",
+    "confidenceScores": "intact-miscore:0.67",
+    "interactionDetectionMethod": "psi-mi:\"MI:0397\"(two hybrid array)",
+    "publicationIDs": "imex:IM-23318|pubmed:25416956"
+  },
+  "example_edge": {
+    "id": "6e9a8016-405a-4a93-a2f4-a13fd0396750",
+    "category": [
+      "biolink:PairwiseMolecularInteraction"
+    ],
+    "subject": "UniProtKB:O15162",
+    "predicate": "biolink:physically_interacts_with",
+    "object": "UniProtKB:Q01844",
+    "publications": [
+      "PMID:25416956"
+    ],
+    "sources": [
+      {
+        "id": "infores:intact",
+        "category": [
+          "biolink:RetrievalSource"
+        ],
+        "resource_id": "infores:intact",
+        "resource_role": "primary_knowledge_source"
+      }
+    ],
+    "knowledge_level": "knowledge_assertion",
+    "agent_type": "manual_agent"
+  },
+  "constructed_score_conflict": {
+    "input_scores": [
+      0.2,
+      0.9
+    ],
+    "output_scores": [
+      0.2
+    ],
+    "output_publications": [
+      [
+        "PMID:1",
+        "PMID:2"
+      ]
+    ],
+    "warnings": {
+      "mismatched_properties": [],
+      "dropped_properties": [
+        "has_confidence_score"
+      ]
+    }
+  }
+}
