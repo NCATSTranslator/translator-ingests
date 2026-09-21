@@ -185,7 +185,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     db_references_raw = record.get("DB_Reference", "")
     publications = db_references_raw.split("|") if db_references_raw else []
     evidence_code = record["Evidence_Code"]  # GO evidence code (EXP, IEA, etc.)
-    taxon = record["Taxon"]  # NCBI taxonomy identifier
     db_object_name = record["DB_Object_Name"]  # Full gene name/description
     assigned_by = record.get("Assigned_By")
 
@@ -214,7 +213,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
         id=node_id,
         name=db_object_symbol,
         category=biolink_class.model_fields["category"].default,  # Dynamic category from Biolink model
-        in_taxon=[taxon.replace("taxon:", "NCBITaxon:")],  # Convert GO taxon format to Biolink NCBI format
         description=db_object_name if db_object_name else None,  # Include full entity name as description
     )
 

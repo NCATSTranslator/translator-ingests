@@ -218,6 +218,21 @@ def _apply_evidence(
             association.has_confidence_score = confidence_score
 
 
+def _chemical_identifier(identifier: str) -> str:
+    """Expand SIGNOR's PubChem compound prefix without reinterpreting substances.
+
+    >>> _chemical_identifier("CID:24795070")
+    'PUBCHEM.COMPOUND:24795070'
+    >>> _chemical_identifier("CHEBI:95061")
+    'CHEBI:95061'
+    >>> _chemical_identifier("SID:134445687")
+    'SID:134445687'
+    """
+    if identifier.startswith("CID:"):
+        return "PUBCHEM.COMPOUND:" + identifier.removeprefix("CID:")
+    return identifier
+
+
 def get_latest_version() -> str:
     """Return the release version of the mirrored SIGNOR dataset."""
     # SIGNOR has some issues with downloading the latest data programmatically.
@@ -290,6 +305,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         {"PMID": lambda x: "|".join(x.dropna().astype(str)), "SENTENCE": lambda x: "|".join(x.dropna().astype(str))}
     )
 
+    # Pandas groups absent context values as NaN; the transform expects None.
+    context_columns = ["CELL_DATA", "TISSUE_DATA"]
+    source_agg_df[context_columns] = (
+        source_agg_df[context_columns].astype(object).where(source_agg_df[context_columns].notna(), None)
+    )
+
     ## rename those columns into desired format
     source_agg_df.rename(
         columns={
@@ -359,12 +380,12 @@ def _transform_record(record: dict[str, Any]) -> KnowledgeGraph | None:
     if record["subject_category"] == "protein":
         subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
     else:
-        subject = ChemicalEntity(id=record["IDA"], name=record["subject_name"])
+        subject = ChemicalEntity(id=_chemical_identifier(record["IDA"]), name=record["subject_name"])
 
     if record["object_category"] == "protein":
         target = Protein(id="UniProtKB:" + record["IDB"], name=record["object_name"])
     else:
-        target = ChemicalEntity(id=record["IDB"], name=record["object_name"])
+        target = ChemicalEntity(id=_chemical_identifier(record["IDB"]), name=record["object_name"])
 
     # Read DIRECT before constructing edges, only after selecting a supported route.
     is_direct = bool(record["DIRECT"] == "YES")

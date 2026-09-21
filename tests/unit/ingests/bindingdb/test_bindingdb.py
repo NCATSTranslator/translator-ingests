@@ -116,8 +116,6 @@ NODE_TEST_SLOTS = (
     "id",
     "name",
     "category",
-    "in_taxon",
-    "in_taxon_label"
 )
 
 # list of slots whose values are
@@ -219,8 +217,6 @@ def test_prepare_bindingdb_data(
                     "id": "UniProtKB:P42574",
                     "name": "Caspase-3",
                     "category": ["biolink:Protein"],
-                    "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
                 },
             ],
             {
@@ -261,8 +257,6 @@ def test_prepare_bindingdb_data(
                     "id": "UniProtKB:P29466",
                     "name": "Caspase-1",
                     "category": ["biolink:Protein"],
-                    "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
                 },
             ],
                 {
@@ -304,8 +298,6 @@ def test_prepare_bindingdb_data(
                     "id": "UniProtKB:P29466",
                     "name": "Caspase-1",
                     "category": ["biolink:Protein"],
-                    "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
                 },
             ],
                 {
@@ -335,8 +327,6 @@ def test_prepare_bindingdb_data(
                     "id": "UniProtKB:P29452",
                     "name": "Caspase-1",
                     "category": ["biolink:Protein"],
-                    "in_taxon": ["NCBITaxon:10090"],
-                    "in_taxon_label": "Mus musculus"
                 },
             ],
             {
@@ -377,8 +367,6 @@ def test_prepare_bindingdb_data(
                     "id": "UniProtKB:P08684",
                     "name": "Cytochrome P450 3A4",
                     "category": ["biolink:Protein"],
-                    "in_taxon": ["NCBITaxon:9606"],
-                    "in_taxon_label": "Homo sapiens"
                 },
             ],
             {
