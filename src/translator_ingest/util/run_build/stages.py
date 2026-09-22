@@ -22,7 +22,7 @@ from translator_ingest.merging import (
 from translator_ingest.pipeline import run_pipeline
 from translator_ingest.release import generate_release_summary, release_ingest
 from translator_ingest.util.logging_utils import get_logger, setup_worker_logging
-from translator_ingest.util.run_build import REPORTS_BASE
+from translator_ingest.util.run_build import UPLOAD_RESULTS_LATEST_PATH
 from translator_ingest.util.run_build.display import (
     DISPLAY_REFRESH_INTERVAL,
     BuildDisplay,
@@ -563,7 +563,7 @@ def stage_upload(
         # Save to stage dir and standard location
         for path in (
             report_dir / "stages" / "upload" / "upload-results.json",
-            REPORTS_BASE / "upload-results-latest.json",
+            UPLOAD_RESULTS_LATEST_PATH,
         ):
             with path.open("w") as f:
                 json.dump(results, f, indent=2)

@@ -40,6 +40,7 @@ import click
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
 from translator_ingest.util.logging_utils import get_logger, setup_logging
+from translator_ingest.util.run_build import UPLOAD_RESULTS_LATEST_PATH
 from translator_ingest.util.run_build.utils import BYTES_PER_GB, BYTES_PER_MB
 from translator_ingest.util.storage.s3 import upload_and_cleanup
 
@@ -257,12 +258,10 @@ def main(sources, data_sources, release_sources, no_cleanup, no_reports, no_logs
     print_upload_summary(results)
 
     # Save upload results for automated report generation
-    reports_path = Path(INGESTS_DATA_PATH).parent / "reports"
-    reports_path.mkdir(parents=True, exist_ok=True)
-    upload_results_path = reports_path / "upload-results-latest.json"
-    with upload_results_path.open("w") as f:
+    UPLOAD_RESULTS_LATEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with UPLOAD_RESULTS_LATEST_PATH.open("w") as f:
         json.dump(results, f, indent=2)
-    logger.info("Upload results saved to: %s", upload_results_path)
+    logger.info("Upload results saved to: %s", UPLOAD_RESULTS_LATEST_PATH)
 
     # Exit with error if there were failures
     if results['total_failed'] > 0:

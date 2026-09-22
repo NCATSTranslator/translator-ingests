@@ -1,6 +1,10 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 
+# Build reports location. Same default as INGESTS_REPORTS_PATH in
+# src/translator_ingest/__init__.py; an INGESTS_REPORTS_PATH env var overrides both.
+INGESTS_REPORTS_PATH ?= $(ROOTDIR)/reports
+
 # Graph ID for multisource graph target (default: translator_kg).
 # Graph definitions live in graphs.yaml; see src/translator_ingest/graphs.py.
 GRAPH_ID ?= translator_kg
@@ -249,8 +253,8 @@ build:
 report:
 	@echo "Generating build report..."
 	@UPLOAD_RESULTS=""; \
-	if [ -f "$(ROOTDIR)/reports/upload-results-latest.json" ]; then \
-		UPLOAD_RESULTS="--upload-results $(ROOTDIR)/reports/upload-results-latest.json"; \
+	if [ -f "$(INGESTS_REPORTS_PATH)/upload-results-latest.json" ]; then \
+		UPLOAD_RESULTS="--upload-results $(INGESTS_REPORTS_PATH)/upload-results-latest.json"; \
 	fi; \
 	$(RUN) python -m translator_ingest.util.run_build.build_report \
 		--sources "$(SOURCES)" \

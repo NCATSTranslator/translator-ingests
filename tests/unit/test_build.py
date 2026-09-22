@@ -1489,7 +1489,8 @@ def test_stage_upload_marks_completed_on_success(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.UPLOAD_RESULTS_LATEST_PATH",
+        reports_base / "upload-results-latest.json",
     )
 
     monkeypatch.setattr(
@@ -1527,7 +1528,8 @@ def test_stage_upload_marks_failed_on_upload_failures(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.UPLOAD_RESULTS_LATEST_PATH",
+        reports_base / "upload-results-latest.json",
     )
     monkeypatch.setattr(
         "translator_ingest.util.run_build.stages.discover_data_sources",
@@ -1557,7 +1559,8 @@ def test_stage_upload_marks_failed_on_exception(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.UPLOAD_RESULTS_LATEST_PATH",
+        reports_base / "upload-results-latest.json",
     )
     monkeypatch.setattr(
         "translator_ingest.util.run_build.stages.discover_data_sources",
@@ -1595,7 +1598,8 @@ def test_stage_upload_saves_summary_json(tmp_path, monkeypatch):
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.UPLOAD_RESULTS_LATEST_PATH",
+        reports_base / "upload-results-latest.json",
     )
     monkeypatch.setattr(
         "translator_ingest.util.run_build.stages.discover_data_sources",
@@ -1636,7 +1640,8 @@ def test_stage_upload_suppresses_duplicate_reports_and_logs_upload(tmp_path, mon
     reports_base = tmp_path / "reports"
     reports_base.mkdir()
     monkeypatch.setattr(
-        "translator_ingest.util.run_build.stages.REPORTS_BASE", reports_base,
+        "translator_ingest.util.run_build.stages.UPLOAD_RESULTS_LATEST_PATH",
+        reports_base / "upload-results-latest.json",
     )
     monkeypatch.setattr(
         "translator_ingest.util.run_build.stages.discover_data_sources",

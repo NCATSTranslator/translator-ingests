@@ -11,11 +11,13 @@ we can run the full upload flow without network or credentials.
 """
 
 import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 from botocore.exceptions import ClientError
+from click.testing import CliRunner
 
 from translator_ingest.util.storage.s3 import (
     S3_MULTIPART_CHUNK_SIZE,
@@ -23,6 +25,7 @@ from translator_ingest.util.storage.s3 import (
     S3Uploader,
     upload_and_cleanup,
 )
+from translator_ingest.util.storage.upload_s3 import main as upload_cli
 
 
 # ── FakeS3Client ─────────────────────────────────────────────────────────────
@@ -538,6 +541,35 @@ def test_upload_and_cleanup_aggregates_total_skipped(tmp_path, monkeypatch):
     per_source = results["per_source_stats"]["go_cam"]["data_upload"]
     assert per_source["uploaded"] == 1
     assert per_source["skipped"] == 1
+
+
+def test_upload_cli_saves_results_under_reports_path_not_data_path(tmp_path, monkeypatch):
+    """The upload CLI writes upload-results-latest.json to the reports path.
+
+    On Jenkins INGESTS_DATA_PATH points at the EBS volume while reports stay
+    in the workspace. The results file used to be written next to the data
+    directory, where neither `make report` nor the reports upload looks.
+    """
+    data_dir = tmp_path / "ebs" / "data"
+    releases_dir = tmp_path / "ebs" / "releases"
+    results_path = tmp_path / "workspace" / "reports" / "upload-results-latest.json"
+    _write(data_dir / "go_cam" / "nodes.jsonl", b"node1\n")
+    releases_dir.mkdir(parents=True)
+
+    for module in ("s3", "upload_s3"):
+        monkeypatch.setattr(f"translator_ingest.util.storage.{module}.INGESTS_DATA_PATH", str(data_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.s3.INGESTS_RELEASES_PATH", str(releases_dir))
+    monkeypatch.setattr("translator_ingest.util.storage.upload_s3.UPLOAD_RESULTS_LATEST_PATH", results_path)
+    monkeypatch.setattr("translator_ingest.util.logging_utils.INGESTS_LOGS_PATH", tmp_path / "logs")
+    monkeypatch.setattr("translator_ingest.util.storage.s3.boto3.client", lambda *_, **__: FakeS3Client())
+
+    result = CliRunner().invoke(
+        upload_cli, ["--data-sources", "go_cam", "--no-cleanup", "--no-reports", "--no-logs"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(results_path.read_text())["total_uploaded"] == 1
+    assert not (tmp_path / "ebs" / "reports").exists()
 
 
 # ── Reports upload ───────────────────────────────────────────────────────────

@@ -8,3 +8,7 @@ from translator_ingest import INGESTS_REPORTS_PATH
 # INGESTS_REPORTS_PATH instead of being derived from INGESTS_DATA_PATH, so it
 # no longer silently follows the data directory if that path is reconfigured.
 REPORTS_BASE = INGESTS_REPORTS_PATH
+
+# Upload statistics from the most recent upload, written by both the build's
+# UPLOAD stage and the standalone upload CLI, and read by `make report`.
+UPLOAD_RESULTS_LATEST_PATH = REPORTS_BASE / "upload-results-latest.json"
