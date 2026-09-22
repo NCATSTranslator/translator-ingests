@@ -1,37 +1,37 @@
 This release note covers merge commits from 2026-06-21 (last formal KGX release) to now. 
 
 ## Major Resource Code Changes
-* multiple ingests: **remove source-derived taxon node properties** #528
-* **bgee, go_cam, goa**: fix `get_latest_version()` failures #446 
-* **bindingdb, go_cam, gtopdb**: major parser changes plus test updates #350
-* **bgee**: fix download links #499
-* **chembl**: major performance improvement #498
-* **ctd**: fix bug in "chem–gene interaction edge" direction #401; add sensitivity #402 and binding #464 edges
-* **dgidb**: dynamically pull latest data release and parser rewrite to handle latest data at the time (2026-09) #527
-* **goa**: fix incorrect predicate #472
-* **hpoa**: derive `has_evidence_of_type` and `agent_type` from data, plus a general, minor addition of `encoding="utf-8"` to file I/O #462; remove negated edges #489
-* **icees**: improve parsing of data, update RIG #467
-* **tmkp**: fix ingestion of confidence score #511; fix parsing of download file (previously changed) #514
+* multiple ingests: **remove source-derived taxon node properties** https://github.com/NCATSTranslator/translator-ingests/pull/528
+* **bgee, go_cam, goa**: fix `get_latest_version()` failures https://github.com/NCATSTranslator/translator-ingests/pull/446 
+* **bindingdb, go_cam, gtopdb**: major parser changes plus test updates https://github.com/NCATSTranslator/translator-ingests/pull/350
+* **bgee**: fix download links https://github.com/NCATSTranslator/translator-ingests/pull/499
+* **chembl**: major performance improvement https://github.com/NCATSTranslator/translator-ingests/pull/498
+* **ctd**: fix bug in "chem–gene interaction edge" direction https://github.com/NCATSTranslator/translator-ingests/pull/401; add sensitivity https://github.com/NCATSTranslator/translator-ingests/pull/402 and binding https://github.com/NCATSTranslator/translator-ingests/pull/464 edges
+* **dgidb**: dynamically pull latest data release and parser rewrite to handle latest data at the time (2026-09) https://github.com/NCATSTranslator/translator-ingests/pull/527
+* **goa**: fix incorrect predicate https://github.com/NCATSTranslator/translator-ingests/pull/472
+* **hpoa**: derive `has_evidence_of_type` and `agent_type` from data, plus a general, minor addition of `encoding="utf-8"` to file I/O https://github.com/NCATSTranslator/translator-ingests/pull/462; remove negated edges https://github.com/NCATSTranslator/translator-ingests/pull/489
+* **icees**: improve parsing of data, update RIG https://github.com/NCATSTranslator/translator-ingests/pull/467
+* **tmkp**: fix ingestion of confidence score https://github.com/NCATSTranslator/translator-ingests/pull/511; fix parsing of download file (previously changed) https://github.com/NCATSTranslator/translator-ingests/pull/514
 
 
 ## Minor Resource Code Changes
-* **cohd, hpoa**: test updates #496
-* **ctkp**: code and RIG changes to support improved CTKP data #468
-* **drug_rep_hub**: minor, add a test #502
-* **geneticskp**: change download location to allow for data updates #469
-* **hpoa**: address technical debt #509
-* **signor**: remove ingest of edges involving complexes, update RIG #491
+* **cohd, hpoa**: test updates https://github.com/NCATSTranslator/translator-ingests/pull/496
+* **ctkp**: code and RIG changes to support improved CTKP data https://github.com/NCATSTranslator/translator-ingests/pull/468
+* **drug_rep_hub**: minor, add a test https://github.com/NCATSTranslator/translator-ingests/pull/502
+* **geneticskp**: change download location to allow for data updates https://github.com/NCATSTranslator/translator-ingests/pull/469
+* **hpoa**: address technical debt https://github.com/NCATSTranslator/translator-ingests/pull/509
+* **signor**: remove ingest of edges involving complexes, update RIG https://github.com/NCATSTranslator/translator-ingests/pull/491
 
 
 ## General Pipeline Changes
-* Make data / releases / logs locations configurable #520 
-* Release metadata improvements #515 
-* Build multi-source KGs from releases, not data #443
-* Record source-data download timestamp #455
-* Minor: GitHub Actions version bumps #492
-* Minor: clean up shared unit-test code #495
-* Add env var to set ORION dependency to same biolink-model version #487
-* Change KGX release versions to semantic versioning #393
+* Make data / releases / logs locations configurable https://github.com/NCATSTranslator/translator-ingests/pull/520 
+* Release metadata improvements https://github.com/NCATSTranslator/translator-ingests/pull/515 
+* Build multi-source KGs from releases, not data https://github.com/NCATSTranslator/translator-ingests/pull/443
+* Record source-data download timestamp https://github.com/NCATSTranslator/translator-ingests/pull/455
+* Minor: GitHub Actions version bumps https://github.com/NCATSTranslator/translator-ingests/pull/492
+* Minor: clean up shared unit-test code https://github.com/NCATSTranslator/translator-ingests/pull/495
+* Add env var to set ORION dependency to same biolink-model version https://github.com/NCATSTranslator/translator-ingests/pull/487
+* Change KGX release versions to semantic versioning https://github.com/NCATSTranslator/translator-ingests/pull/393
 
 
 ## RIG-Specific Updates
@@ -39,43 +39,43 @@ This release note covers merge commits from 2026-06-21 (last formal KGX release)
 From [June–July 2026 "RIG review & completion" campaign](https://github.com/NCATSTranslator/translator-ingests/issues/407) to make RIGS richer, more complete, and compliant with RIG schema `0.1.5`.
 
 General changes: 
-* Simple schema-conformance fixes to RIGS #448
-* remove deprecated RIG field from scripts #501
-* pin RIG schema to updated version and fix validate-rigs command #447
-* update RIG template #391
+* Simple schema-conformance fixes to RIGS https://github.com/NCATSTranslator/translator-ingests/pull/448
+* remove deprecated RIG field from scripts https://github.com/NCATSTranslator/translator-ingests/pull/501
+* pin RIG schema to updated version and fix validate-rigs command https://github.com/NCATSTranslator/translator-ingests/pull/447
+* update RIG template https://github.com/NCATSTranslator/translator-ingests/pull/391
 
 
 <details><summary>Resource-specific PRs</summary>
 <p>
 
-* alliance #442
-* bgee #475
-* chembl #483
-* cohd #482
-* ctd #460
-* ctkp #451
-* cureid #471
-* dakp #481
-* dgidb #457
-* diseases #456
-* drug_rep_hub #484
-* drugcentral #459
-* gene2phenotype #405
-* geneticskp #449
-* go_cam #453
-* goa #485
-* gtopdb #477, #493
-* intact #404
-* ncbi_gene #454
-* panther #466
-* pathbank #479
-* pubtator #461
-* semmeddb #480
-* sider #476
-* signor #478
-* tmkp #452
-* ttd #458
-* ubergraph #450
+* alliance https://github.com/NCATSTranslator/translator-ingests/pull/442
+* bgee https://github.com/NCATSTranslator/translator-ingests/pull/475
+* chembl https://github.com/NCATSTranslator/translator-ingests/pull/483
+* cohd https://github.com/NCATSTranslator/translator-ingests/pull/482
+* ctd https://github.com/NCATSTranslator/translator-ingests/pull/460
+* ctkp https://github.com/NCATSTranslator/translator-ingests/pull/451
+* cureid https://github.com/NCATSTranslator/translator-ingests/pull/471
+* dakp https://github.com/NCATSTranslator/translator-ingests/pull/481
+* dgidb https://github.com/NCATSTranslator/translator-ingests/pull/457
+* diseases https://github.com/NCATSTranslator/translator-ingests/pull/456
+* drug_rep_hub https://github.com/NCATSTranslator/translator-ingests/pull/484
+* drugcentral https://github.com/NCATSTranslator/translator-ingests/pull/459
+* gene2phenotype https://github.com/NCATSTranslator/translator-ingests/pull/405
+* geneticskp https://github.com/NCATSTranslator/translator-ingests/pull/449
+* go_cam https://github.com/NCATSTranslator/translator-ingests/pull/453
+* goa https://github.com/NCATSTranslator/translator-ingests/pull/485
+* gtopdb https://github.com/NCATSTranslator/translator-ingests/pull/477, https://github.com/NCATSTranslator/translator-ingests/pull/493
+* intact https://github.com/NCATSTranslator/translator-ingests/pull/404
+* ncbi_gene https://github.com/NCATSTranslator/translator-ingests/pull/454
+* panther https://github.com/NCATSTranslator/translator-ingests/pull/466
+* pathbank https://github.com/NCATSTranslator/translator-ingests/pull/479
+* pubtator https://github.com/NCATSTranslator/translator-ingests/pull/461
+* semmeddb https://github.com/NCATSTranslator/translator-ingests/pull/480
+* sider https://github.com/NCATSTranslator/translator-ingests/pull/476
+* signor https://github.com/NCATSTranslator/translator-ingests/pull/478
+* tmkp https://github.com/NCATSTranslator/translator-ingests/pull/452
+* ttd https://github.com/NCATSTranslator/translator-ingests/pull/458
+* ubergraph https://github.com/NCATSTranslator/translator-ingests/pull/450
 
 </p>
 </details> 
