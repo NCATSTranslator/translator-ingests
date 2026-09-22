@@ -1,3 +1,7 @@
+import tempfile
+from pathlib import Path
+
+import polars as pl
 import pytest
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
@@ -23,26 +27,71 @@ from koza.runner import KozaRunner, KozaTransformHooks
 
 from tests.unit.ingests import MockKozaWriter
 from translator_ingest.ingests.semmeddb.semmeddb import (
-    PUBLICATIONS_CAP_THRESHOLD,
-    _cap_publications,
+    MAX_PUBLICATIONS_PER_EDGE,
+    VERDICT_ARTIFACT_COLUMNS,
+    VERDICT_ARTIFACT_FILENAME,
     _extract_supporting_studies,
     _has_bte_excluded_predicate,
     _make_node,
+    on_begin_filter_edges,
+    on_end_filter_edges,
     transform_semmeddb_edge,
 )
 
 FOUR_PUBS = ["PMID:11111111", "PMID:22222222", "PMID:33333333", "PMID:44444444"]
 
+# Column order of the LLM PMID-checker results parquet the transform reads.
+VERDICT_SCHEMA: dict[str, pl.DataType] = {column: pl.String() for column in VERDICT_ARTIFACT_COLUMNS}
 
-def _create_test_runner(record: dict) -> list:
-    """Run a single record through the transform and return emitted entities."""
+
+def _verdict(
+    pmid: str,
+    support: str = "no",
+    subject: str = "CHEBI:15365",
+    predicate: str = "biolink:treats_or_applied_or_studied_to_treat",
+    obj: str = "MONDO:0005148",
+) -> dict[str, str]:
+    """Return one verdict row, keyed like _base_record's edge by default."""
+    return {
+        "subject_curie": subject,
+        "predicate": predicate,
+        "object_curie": obj,
+        "PMID": pmid,
+        "support": support,
+    }
+
+
+def _write_verdict_artifact(directory: Path, verdicts: list[dict[str, str]]) -> None:
+    """Write the verdict parquet the transform loads from its input files directory."""
+    pl.DataFrame(verdicts, schema=VERDICT_SCHEMA).write_parquet(directory / VERDICT_ARTIFACT_FILENAME)
+
+
+def _create_test_runner(
+    record: dict,
+    verdicts: list[dict[str, str]] | None = None,
+    check_coverage: bool = False,
+) -> list:
+    """Run a single record through the transform and return emitted entities.
+
+    The transform loads the PMID-checker verdicts in its on_data_begin hook, so every run needs
+    an artifact; with no ``verdicts`` it is empty, meaning no publication is rejected. The
+    on_data_end hook, which enforces the coverage guard, only runs when ``check_coverage`` is set.
+    """
     writer = MockKozaWriter()
-    runner = KozaRunner(
-        data=[record],
-        writer=writer,
-        hooks=KozaTransformHooks(transform_record=[transform_semmeddb_edge]),
+    hooks = KozaTransformHooks(
+        on_data_begin=[on_begin_filter_edges],
+        transform_record=[transform_semmeddb_edge],
+        on_data_end=[on_end_filter_edges] if check_coverage else [],
     )
-    runner.run()
+    with tempfile.TemporaryDirectory() as input_files_dir:
+        _write_verdict_artifact(Path(input_files_dir), verdicts or [])
+        runner = KozaRunner(
+            data=[record],
+            writer=writer,
+            hooks=hooks,
+            input_files_dir=Path(input_files_dir),
+        )
+        runner.run()
     return writer.items
 
 
@@ -456,58 +505,148 @@ def test_edge_with_publications_info():
 
 
 # ---------------------------------------------------------------------------
+# PMID-checker verdict filtering
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    "support,expected_publications",
+    [
+        ("no", [p for p in FOUR_PUBS if p != FOUR_PUBS[0]]),
+        ("maybe", [p for p in FOUR_PUBS if p != FOUR_PUBS[0]]),
+        ("yes", FOUR_PUBS),
+        ("no_abstract", FOUR_PUBS),
+        # support values are compared case- and whitespace-insensitively
+        (" NO ", [p for p in FOUR_PUBS if p != FOUR_PUBS[0]]),
+    ],
+)
+def test_verdict_support_values(support: str, expected_publications: list[str]):
+    """Only 'no' and 'maybe' drop a publication; other verdicts keep it."""
+    entities = _create_test_runner(_base_record(), verdicts=[_verdict(FOUR_PUBS[0], support)])
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == expected_publications
+
+
+def test_publication_without_a_verdict_is_kept():
+    """A PMID the checker never judged has no verdict row, and no verdict means keep."""
+    entities = _create_test_runner(_base_record(), verdicts=[_verdict("PMID:99999999", "no")])
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == FOUR_PUBS
+
+
+def test_verdicts_for_another_edge_do_not_apply():
+    """Verdicts are keyed per edge, so the same PMID on a different edge is untouched."""
+    entities = _create_test_runner(
+        _base_record(), verdicts=[_verdict(FOUR_PUBS[0], "no", subject="CHEBI:999999")]
+    )
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == FOUR_PUBS
+
+
+def test_edge_dropped_when_every_publication_is_rejected():
+    """An edge that loses all of its publications is not emitted, and neither are its nodes."""
+    entities = _create_test_runner(
+        _base_record(), verdicts=[_verdict(pmid, "no") for pmid in FOUR_PUBS]
+    )
+    assert entities == []
+
+
+def test_verdicts_match_the_remapped_predicate():
+    """Verdicts were produced after PREDICATE_REMAP, so they key on the emitted predicate."""
+    record = _base_record(predicate="biolink:preventative_for_condition")
+    entities = _create_test_runner(
+        record,
+        verdicts=[_verdict(FOUR_PUBS[0], "no", predicate="biolink:treats_or_applied_or_studied_to_treat")],
+    )
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == [p for p in FOUR_PUBS if p != FOUR_PUBS[0]]
+
+
+def test_rejected_publication_drops_its_supporting_study():
+    """A rejected PMID is removed from publications_info, so no study result is built for it."""
+    pub_info = {pmid: {"sentence": f"Sentence for {pmid}"} for pmid in FOUR_PUBS}
+    record = _base_record(publications_info=pub_info)
+    entities = _create_test_runner(record, verdicts=[_verdict(FOUR_PUBS[0], "no")])
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    study = list(association.has_supporting_studies.values())[0]
+    supporting_pmids = {result.xref[0] for result in study.has_study_results}
+    assert supporting_pmids == set(FOUR_PUBS[1:])
+
+
+def test_coverage_guard_raises_when_no_edge_has_a_verdict():
+    """An artifact whose keys do not match the emitted edges must fail, not silently pass."""
+    with pytest.raises(RuntimeError, match="verdict coverage"):
+        _create_test_runner(
+            _base_record(),
+            verdicts=[_verdict(FOUR_PUBS[0], "no", subject="CHEBI:999999")],
+            check_coverage=True,
+        )
+
+
+def test_coverage_guard_passes_when_the_edge_is_covered():
+    """A covered edge satisfies the guard even when its verdicts keep every publication."""
+    entities = _create_test_runner(
+        _base_record(), verdicts=[_verdict(FOUR_PUBS[0], "yes")], check_coverage=True
+    )
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == FOUR_PUBS
+
+
+def test_missing_verdict_artifact_raises():
+    """The transform cannot run without the artifact; failing fast beats filtering nothing."""
+    writer = MockKozaWriter()
+    with tempfile.TemporaryDirectory() as input_files_dir:
+        runner = KozaRunner(
+            data=[_base_record()],
+            writer=writer,
+            hooks=KozaTransformHooks(
+                on_data_begin=[on_begin_filter_edges], transform_record=[transform_semmeddb_edge]
+            ),
+            input_files_dir=Path(input_files_dir),
+        )
+        with pytest.raises(FileNotFoundError, match=VERDICT_ARTIFACT_FILENAME):
+            runner.run()
+
+
+# ---------------------------------------------------------------------------
 # Publication capping
 # ---------------------------------------------------------------------------
 
-def test_cap_publications_under_threshold():
-    """Publications lists at or under PUBLICATIONS_CAP_THRESHOLD are returned unchanged."""
-    pubs = [f"PMID:{i}" for i in range(PUBLICATIONS_CAP_THRESHOLD)]
-    info = {p: {"subject score": "500", "object score": "500"} for p in pubs}
-    result_pubs, result_info = _cap_publications(pubs, info)
-    assert result_pubs == pubs
-    assert result_info == info
-
-
-def test_cap_publications_over_threshold():
-    """Publications lists over the threshold are trimmed by score + recency union."""
-    count = PUBLICATIONS_CAP_THRESHOLD * 3
-    pubs = [f"PMID:{i}" for i in range(count)]
-    info = {
-        p: {
-            "subject score": str(i),
-            "object score": str(i),
-            "publication date": f"{2000 + (i % 26)} Jan",
-        }
-        for i, p in enumerate(pubs)
-    }
-    result_pubs, result_info = _cap_publications(pubs, info)
-    assert len(result_pubs) <= 200
-    assert len(result_pubs) > 0
-    assert len(result_pubs) < count
-    assert set(result_info.keys()) == set(result_pubs)
-
-
-def test_cap_publications_integration():
-    """Transform caps publications for edges exceeding PUBLICATIONS_CAP_THRESHOLD."""
-    count = PUBLICATIONS_CAP_THRESHOLD + 100
-    many_pubs = [f"PMID:{i}" for i in range(count)]
-    pub_info = {
-        p: {
-            "sentence": f"Sentence for {p}",
-            "subject score": str(i * 10),
-            "object score": str(i * 10),
-            "publication date": f"{2000 + (i % 26)} Jan",
-        }
-        for i, p in enumerate(many_pubs)
-    }
-    record = _base_record(
-        publications=many_pubs,
-        publications_info=pub_info,
-    )
-    entities = _create_test_runner(record)
+def test_publications_under_cap_are_unchanged():
+    """Edges at or under MAX_PUBLICATIONS_PER_EDGE keep every publication."""
+    pubs = [f"PMID:{i}" for i in range(1, MAX_PUBLICATIONS_PER_EDGE + 1)]
+    entities = _create_test_runner(_base_record(publications=pubs))
     association = [e for e in entities if isinstance(e, Association)][0]
-    assert len(association.publications) <= 200
-    assert len(association.publications) < count
+    assert association.publications == pubs
+
+
+def test_publications_over_cap_trimmed_to_most_recent():
+    """Oversized edges keep the highest-numbered (most recent) PMIDs, in their original order."""
+    pubs = [f"PMID:{i}" for i in range(1, MAX_PUBLICATIONS_PER_EDGE + 101)]
+    entities = _create_test_runner(_base_record(publications=pubs))
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == pubs[100:]
+
+
+def test_cap_applies_after_verdict_filtering():
+    """Rejected publications are removed first, so they do not use up the cap."""
+    pubs = [f"PMID:{i}" for i in range(1, MAX_PUBLICATIONS_PER_EDGE + 101)]
+    # reject the 100 most recent, leaving exactly the cap, so nothing is trimmed
+    verdicts = [_verdict(pmid, "no") for pmid in pubs[-100:]]
+    entities = _create_test_runner(_base_record(publications=pubs), verdicts=verdicts)
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == pubs[:-100]
+
+
+def test_capped_publications_drop_their_supporting_studies():
+    """Capped-out PMIDs are removed from publications_info like rejected ones."""
+    pubs = [f"PMID:{i}" for i in range(1, MAX_PUBLICATIONS_PER_EDGE + 101)]
+    pub_info = {pmid: {"sentence": f"Sentence for {pmid}"} for pmid in pubs}
+    entities = _create_test_runner(_base_record(publications=pubs, publications_info=pub_info))
+    association = [e for e in entities if isinstance(e, Association)][0]
+
+    study = list(association.has_supporting_studies.values())[0]
+    assert len(study.has_study_results) == MAX_PUBLICATIONS_PER_EDGE
 
 
 def test_uncapped_mode_skips_capping(monkeypatch: pytest.MonkeyPatch):
@@ -517,24 +656,22 @@ def test_uncapped_mode_skips_capping(monkeypatch: pytest.MonkeyPatch):
     import translator_ingest.ingests.semmeddb.semmeddb as semmeddb_mod
     importlib.reload(semmeddb_mod)
 
-    count = PUBLICATIONS_CAP_THRESHOLD + 100
-    many_pubs = [f"PMID:{i}" for i in range(count)]
-    pub_info = {
-        p: {
-            "sentence": f"Sentence for {p}",
-            "subject score": str(i * 10),
-            "object score": str(i * 10),
-            "publication date": f"{2000 + (i % 26)} Jan",
-        }
-        for i, p in enumerate(many_pubs)
-    }
-    record = _base_record(
-        publications=many_pubs,
-        publications_info=pub_info,
-    )
-    entities = _create_test_runner(record)
-    association = [e for e in entities if isinstance(e, Association)][0]
-    assert len(association.publications) == count
+    pubs = [f"PMID:{i}" for i in range(1, MAX_PUBLICATIONS_PER_EDGE + 101)]
+    writer = MockKozaWriter()
+    with tempfile.TemporaryDirectory() as input_files_dir:
+        _write_verdict_artifact(Path(input_files_dir), [])
+        runner = KozaRunner(
+            data=[_base_record(publications=pubs)],
+            writer=writer,
+            hooks=KozaTransformHooks(
+                on_data_begin=[semmeddb_mod.on_begin_filter_edges],
+                transform_record=[semmeddb_mod.transform_semmeddb_edge],
+            ),
+            input_files_dir=Path(input_files_dir),
+        )
+        runner.run()
+    association = [e for e in writer.items if isinstance(e, Association)][0]
+    assert association.publications == pubs
 
     monkeypatch.delenv("SEMMEDDB_UNCAPPED")
     importlib.reload(semmeddb_mod)
