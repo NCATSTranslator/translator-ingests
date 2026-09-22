@@ -89,7 +89,7 @@ def update_latest_copy(parent_dir: Path, target_name: str) -> None:
 
 
 # Stage names used throughout the pipeline
-STAGE_NAMES = ("RUN", "MERGE", "RELEASE", "UPLOAD")
+STAGE_NAMES = ("RUN", "RELEASE", "MERGE", "UPLOAD")
 STAGE_NAMES_LOWER = tuple(s.lower() for s in STAGE_NAMES)
 
 # Byte conversion constants

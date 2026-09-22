@@ -51,16 +51,12 @@ logger = get_logger(__name__)
 def run_full_build(
     sources: list[str],
     graph_id: str = "translator_kg",
-    node_properties: list[str] | None = None,
     overwrite: bool = False,
     upload: bool = True,
     max_workers: int | None = None,
     memory_critical_percent: float | None = None,
     sequential_sources: list[str] | None = None,
 ) -> tuple[Path, Path, bool]:
-    if node_properties is None:
-        node_properties = ["ncbi_gene"]
-
     build_start = time.time()
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y_%m_%d_%H%M%S")
     report_dir = create_report_dir(timestamp)
@@ -233,7 +229,7 @@ def run_full_build(
             "BUILD HARD-STOP — missing-with-no-fallback sources detected:\n%s",
             format_missing_sources_error(partition, errors_by_source=errors_by_source),
         )
-        for _skipped in ("MERGE", "RELEASE", "UPLOAD"):
+        for _skipped in ("RELEASE", "MERGE", "UPLOAD"):
             display.skip_stage(_skipped)
             stage_timing_reports.append(_collect_stage_timing(_skipped))
         # short-circuit: jump to the report/log-upload tail by setting a
@@ -249,23 +245,25 @@ def run_full_build(
     def _memory_still_critical() -> bool:
         return perf.is_memory_critical()
 
-    # all sources proceed to MERGE/RELEASE via partition.available —
+    # all sources proceed to RELEASE/MERGE via partition.available —
     # fresh sources contribute their freshly-built data, fallback sources
     # contribute their prior LATEST_BUILD_FILE (which still points at the
     # last good version because it's only updated on success)
     mergeable_sources = partition.available
 
-    # ── STAGE 2: MERGE ──
+    # ── STAGE 2: RELEASE ──
+    # RELEASE goes before MERGE: merge() builds the graph from each source's
+    # latest release, so merging first would merge the previous build.
     if _hard_stop_no_fallback:
         # already handled above — skip the rest of the stage gating block
         pass
     elif _memory_still_critical():
         logger.error(
-            "Memory still at %.1f%% after RUN — skipping MERGE/RELEASE/UPLOAD.",
+            "Memory still at %.1f%% after RUN — skipping RELEASE/MERGE/UPLOAD.",
             psutil.virtual_memory().percent,
         )
-        display.skip_stage("MERGE")
         display.skip_stage("RELEASE")
+        display.skip_stage("MERGE")
         display.skip_stage("UPLOAD")
         # Record timing entries for skipped stages so build_report.generate_build_report
         # sees their 'skipped' status via stage_timings and does not fall back to
@@ -273,50 +271,49 @@ def run_full_build(
         # Tagged with MEMORY_ABORT_ERROR so run_build.py's exit-code check can tell
         # this abort apart from a deliberate --no-upload skip of UPLOAD, which leaves
         # the same "status": "skipped" with no error tag.
-        for _skipped in ("MERGE", "RELEASE", "UPLOAD"):
+        for _skipped in ("RELEASE", "MERGE", "UPLOAD"):
             stage_timing_reports.append(_collect_stage_timing(_skipped, error=MEMORY_ABORT_ERROR))
     else:
-        # ── STAGE 2: MERGE ──
-        merge_handler = _add_stage_handler("merge")
+        release_handler = _add_stage_handler("release")
         try:
             # pass mergeable_sources (fresh + fallback) so a source whose
-            # transform failed today still contributes via its prior build
-            stage_merge(graph_id, mergeable_sources, overwrite, display, report_dir)
+            # transform failed today is still released from its prior build
+            stage_release(mergeable_sources, display, report_dir)
         except Exception:
-            pass  # stage_merge already called fail_stage and logged the exception
+            pass  # stage_release already called fail_stage and logged the exception
         finally:
-            stage_timing_reports.append(_collect_stage_timing("MERGE"))
-            _remove_handler(merge_handler)
-            # incremental S3 upload for MERGE — runs even if stage_merge raised
-            _upload_stage_logs_safe("merge")
+            stage_timing_reports.append(_collect_stage_timing("RELEASE"))
+            _remove_handler(release_handler)
+            # incremental S3 upload for RELEASE — runs even if stage_release raised
+            _upload_stage_logs_safe("release")
 
-        # ── STAGE 3: RELEASE ──
-        # Always proceeds regardless of MERGE outcome — failed sources fall back
-        # to their previous successful build via latest-build.json.
+        # ── STAGE 3: MERGE ──
+        # Always proceeds regardless of RELEASE outcome — a source whose
+        # release failed is merged from its previous release.
         if _memory_still_critical():
             logger.error(
-                "Memory at %.1f%% after MERGE — skipping RELEASE/UPLOAD.",
+                "Memory at %.1f%% after RELEASE — skipping MERGE/UPLOAD.",
                 psutil.virtual_memory().percent,
             )
-            display.skip_stage("RELEASE")
+            display.skip_stage("MERGE")
             display.skip_stage("UPLOAD")
-            for _skipped in ("RELEASE", "UPLOAD"):
+            for _skipped in ("MERGE", "UPLOAD"):
                 stage_timing_reports.append(_collect_stage_timing(_skipped, error=MEMORY_ABORT_ERROR))
         else:
-            release_handler = _add_stage_handler("release")
+            merge_handler = _add_stage_handler("merge")
             try:
-                stage_release(mergeable_sources, node_properties, display, report_dir)
+                stage_merge(graph_id, mergeable_sources, overwrite, display, report_dir)
             except Exception:
-                pass  # stage_release already called fail_stage and logged the exception
+                pass  # stage_merge already called fail_stage and logged the exception
             finally:
-                stage_timing_reports.append(_collect_stage_timing("RELEASE"))
-                _remove_handler(release_handler)
-                _upload_stage_logs_safe("release")
+                stage_timing_reports.append(_collect_stage_timing("MERGE"))
+                _remove_handler(merge_handler)
+                _upload_stage_logs_safe("merge")
 
             # ── STAGE 4: UPLOAD ──
             if _memory_still_critical():
                 logger.error(
-                    "Memory at %.1f%% after RELEASE — skipping UPLOAD.",
+                    "Memory at %.1f%% after MERGE — skipping UPLOAD.",
                     psutil.virtual_memory().percent,
                 )
                 display.skip_stage("UPLOAD")
@@ -376,7 +373,7 @@ def run_full_build(
     # Some stages may still have run if memory recovered between stages.
     memory_aborted = perf.memory_critical_event.is_set()
     stages_skipped = [
-        s for s in ("MERGE", "RELEASE")
+        s for s in ("RELEASE", "MERGE")
         if display.stage_status.get(s) == "skipped"
     ]
     build_notes: list[str] = []
@@ -400,7 +397,6 @@ def run_full_build(
     report = generate_build_report(
         sources=sources,
         graph_id=graph_id,
-        node_properties=node_properties,
         upload_results_path=upload_results_path,
         stage_timings=stage_timing_reports,
         source_durations=source_durations,

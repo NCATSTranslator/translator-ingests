@@ -152,14 +152,12 @@ class BuildReport:
 
 def collect_source_report(
     source: str,
-    node_properties: list[str],
     release_status: str | None = None,
 ) -> SourceReport:
     """Collect build report data for a single source from pipeline artifacts.
 
     Args:
         source: Source name (e.g. "ctd")
-        node_properties: List of sources that are node-properties only
         release_status: This build's RELEASE stage status, as recorded in
             stage_timings (e.g. "completed", "failed", "skipped"), or None
             when the report is generated outside the orchestrator (e.g.
@@ -200,6 +198,7 @@ def collect_source_report(
             val_data = json.load(f)
 
         # Handle both single-file and directory validation report formats
+        source_val: dict[str, Any]
         if "sources" in val_data:
             source_val = next(iter(val_data["sources"].values()), {})
         else:
@@ -237,8 +236,6 @@ def collect_source_report(
                     f"latest-release.json on disk is from a previous build "
                     f"(this run's RELEASE stage was '{release_status}')."
                 )
-    elif source in node_properties:
-        report.notes.append("Node properties only - not released as standalone source")
     else:
         report.notes.append("Not yet released")
 
@@ -308,11 +305,8 @@ def collect_merged_graph_report(
             with graph_metadata_path.open() as f:
                 graph_metadata = json.load(f)
 
-            sources_in_graph = []
-            for source_info in graph_metadata.get("isBasedOn", []):
-                source_id = source_info.get("id", "")
-                if source_id:
-                    sources_in_graph.append(source_id)
+            # hasPart lists the source releases merge() built the graph from
+            sources_in_graph = [part["name"] for part in graph_metadata.get("hasPart", [])]
             report.sources_included = sorted(sources_in_graph)
 
             # Check for missing expected sources
@@ -389,7 +383,6 @@ def _stage_status_from_timings(
 def generate_build_report(
     sources: list[str],
     graph_id: str,
-    node_properties: list[str],
     upload_results_path: Path | None = None,
     stage_timings: list[StageTimingReport] | None = None,
     source_durations: dict[str, float] | None = None,
@@ -407,7 +400,6 @@ def generate_build_report(
     Args:
         sources: List of source names processed
         graph_id: Merged graph identifier
-        node_properties: Sources that are node-properties only
         upload_results_path: Optional path to upload results JSON
         stage_timings: Optional list of stage timing reports from run_build
         source_durations: Optional dict mapping source -> duration_seconds
@@ -452,7 +444,7 @@ def generate_build_report(
 
     # Collect individual source reports
     for source in sorted(sources):
-        source_report = collect_source_report(source, node_properties, release_status=release_status)
+        source_report = collect_source_report(source, release_status=release_status)
         if source_durations and source in source_durations:
             source_report.duration_seconds = source_durations[source]
         if source_memory and source in source_memory:
@@ -489,11 +481,7 @@ def generate_build_report(
     # Determine which pipeline stages completed
     all_built = all(s.status != "no_build" for s in report.source_reports)
     any_validation_failed = any(s.status == "validation_failed" for s in report.source_reports)
-    all_released = all(
-        s.status == "released" or s.source in node_properties
-        for s in report.source_reports
-        if s.status != "no_build"
-    )
+    all_released = all(s.status == "released" for s in report.source_reports if s.status != "no_build")
 
     # Prefer stage_timings for RUN so the report reflects what happened in
     # this orchestrated build, not whatever latest-build.json files happen
@@ -524,8 +512,7 @@ def generate_build_report(
         report.pipeline_stages_failed.append(f"validate: {len(failed_val)} sources failed: {', '.join(failed_val)}")
 
     # Collect merged graph report
-    releasable_sources = [s for s in sources if s not in node_properties]
-    report.merged_graph = collect_merged_graph_report(graph_id, releasable_sources, merge_status=merge_status)
+    report.merged_graph = collect_merged_graph_report(graph_id, sources, merge_status=merge_status)
 
     # For MERGE/RELEASE/UPLOAD, prefer stage_timings (what actually ran this
     # build) over on-disk artifacts (which may be stale from a previous build).
@@ -546,11 +533,7 @@ def generate_build_report(
         if all_released:
             report.pipeline_stages_completed.append("release")
         else:
-            unreleased = [
-                s.source
-                for s in report.source_reports
-                if s.status not in ("released", "no_build") and s.source not in node_properties
-            ]
+            unreleased = [s.source for s in report.source_reports if s.status not in ("released", "no_build")]
             if unreleased:
                 report.pipeline_stages_failed.append(f"release: {len(unreleased)} sources not released")
     elif release_status == "completed":
@@ -574,11 +557,6 @@ def generate_build_report(
     # Detect noteworthy per-source conditions
     failed_set = set(failed_sources) if failed_sources else set()
     for sr in report.source_reports:
-        if sr.source in node_properties:
-            report.build_notes.append(
-                f"{sr.source}: Not released as standalone source by design (NODE_PROPERTIES). "
-                "Included in merged graph as node properties only."
-            )
         if sr.source in failed_set:
             if sr.status == "no_build":
                 report.build_notes.append(
@@ -609,15 +587,11 @@ def generate_build_report(
     return report
 
 
-def _report_counts(report: BuildReport) -> tuple[int, list[str], int]:
-    """Compute released count, node-property source names, and merged count."""
+def _report_counts(report: BuildReport) -> tuple[int, int]:
+    """Compute released source count and merged graph count."""
     released_count = sum(1 for s in report.source_reports if s.status == "released")
-    node_prop_sources = [
-        s.source for s in report.source_reports
-        if s.status == "built" and any("node properties" in n.lower() for n in s.notes)
-    ]
     merged_count = 1 if report.merged_graph and report.merged_graph.status == "merged" else 0
-    return released_count, node_prop_sources, merged_count
+    return released_count, merged_count
 
 
 def _format_report_header(report: BuildReport) -> list[str]:
@@ -632,12 +606,10 @@ def _format_report_header(report: BuildReport) -> list[str]:
     lines.append(f"Endpoints documentation: {report.docs_url}")
     lines.append("")
 
-    released_count, node_prop_sources, merged_count = _report_counts(report)
-    total_processed = released_count + len(node_prop_sources) + merged_count
+    released_count, merged_count = _report_counts(report)
+    total_processed = released_count + merged_count
     breakdown_parts = [f"{released_count} released sources"]
-    if node_prop_sources:
-        breakdown_parts.append(f"{len(node_prop_sources)} node-properties-only ({', '.join(node_prop_sources)})")
-    if merged_count:
+    if merged_count and report.merged_graph:
         breakdown_parts.append(f"{merged_count} merged graph ({report.merged_graph.graph_id})")
 
     lines.append(
@@ -653,14 +625,12 @@ def _format_upload_section(report: BuildReport) -> list[str]:
     if not report.upload:
         return []
 
-    released_count, node_prop_sources, merged_count = _report_counts(report)
+    released_count, merged_count = _report_counts(report)
     lines: list[str] = []
     lines.append("=" * 80)
     lines.append("S3 UPLOAD SUMMARY")
     lines.append("=" * 80)
     upload_breakdown = f"{released_count} individual"
-    if node_prop_sources:
-        upload_breakdown += f" + {len(node_prop_sources)} node-properties"
     if merged_count:
         upload_breakdown += f" + {merged_count} merged graph"
     lines.append(f"Sources uploaded:     {report.upload.sources_processed} ({upload_breakdown})")
@@ -675,7 +645,7 @@ def _format_upload_section(report: BuildReport) -> list[str]:
 
 def _format_source_list(report: BuildReport) -> list[str]:
     """Format source list and merged graph details."""
-    _, _, merged_count = _report_counts(report)
+    _, merged_count = _report_counts(report)
     lines: list[str] = []
     individual_sources = sorted([s.source for s in report.source_reports if s.status == "released"])
     lines.append(f"Individual sources ({len(individual_sources)}): {', '.join(individual_sources)}")
@@ -826,7 +796,7 @@ def format_text_report(report: BuildReport) -> str:
     sources_with_time = [s for s in report.source_reports if s.duration_seconds and s.duration_seconds > 0]
     if sources_with_time:
         sources_with_time.sort(key=lambda s: s.duration_seconds or 0, reverse=True)
-        lines.append(f"SOURCE TIMING ({len(sources_with_time)} sources including node-properties, slowest first):")
+        lines.append(f"SOURCE TIMING ({len(sources_with_time)} sources, slowest first):")
         hdr = f"  {'SOURCE':<20} {'TIME':>10}   {'PEAK MEM':>10}   {'NODES':>12}   {'EDGES':>12}   {'STATUS':<8}"
         lines.append(hdr)
         lines.append(f"  {'-' * 20} {'-' * 10}   {'-' * 10}   {'-' * 12}   {'-' * 12}   {'-' * 8}")
@@ -955,12 +925,6 @@ def save_report(
 @click.option("--sources", type=str, default=None, help="Space-separated list of sources (default: auto-discover)")
 @click.option("--graph-id", type=str, default="translator_kg", help="Merged graph ID (default: translator_kg)")
 @click.option(
-    "--node-properties",
-    type=str,
-    default="ncbi_gene",
-    help="Space-separated node-property-only sources (default: ncbi_gene)",
-)
-@click.option(
     "--upload-results",
     type=click.Path(path_type=Path),
     default=None,
@@ -974,7 +938,7 @@ def save_report(
     help="Output format (default: text)",
 )
 @click.option("--output", type=click.Path(path_type=Path), default=None, help="Write report to file")
-def main(sources, graph_id, node_properties, upload_results, output_format, output) -> None:
+def main(sources, graph_id, upload_results, output_format, output) -> None:
     """Generate automated build report from pipeline artifacts."""
     setup_logging(source="report")
 
@@ -986,14 +950,11 @@ def main(sources, graph_id, node_properties, upload_results, output_format, outp
         data_path = Path(INGESTS_DATA_PATH)
         source_list = sorted([d.name for d in data_path.iterdir() if d.is_dir()]) if data_path.exists() else []
 
-    node_props = node_properties.split() if node_properties else []
-
     logger.info("Generating build report for %d sources...", len(source_list))
 
     report = generate_build_report(
         sources=source_list,
         graph_id=graph_id,
-        node_properties=node_props,
         upload_results_path=upload_results,
     )
 

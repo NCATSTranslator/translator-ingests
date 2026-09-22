@@ -240,7 +240,6 @@ build:
 	@$(RUN) python -m translator_ingest.util.run_build.run_build \
 		--sources "$(SOURCES)" \
 		--graph-id $(GRAPH_ID) \
-		--node-properties "$(NODE_PROPERTIES)" \
 		--sequential-sources "$(SEQUENTIAL_SOURCES)" \
 		$(if $(OVERWRITE),--overwrite) \
 		$(if $(NO_UPLOAD),--no-upload) \
@@ -259,7 +258,6 @@ report:
 	$(RUN) python -m translator_ingest.util.run_build.build_report \
 		--sources "$(SOURCES)" \
 		--graph-id $(GRAPH_ID) \
-		--node-properties "$(NODE_PROPERTIES)" \
 		$$UPLOAD_RESULTS
 
 ### S3 Upload and Storage Management ###

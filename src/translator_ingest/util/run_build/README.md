@@ -2,7 +2,7 @@
 
 ## Overview
 
-The build orchestrator runs the full translator-ingests pipeline end-to-end: executing all sources in parallel, merging into a single graph, generating releases, uploading to S3, and producing automated reports.
+The build orchestrator runs the full translator-ingests pipeline end-to-end: executing all sources in parallel, generating releases, merging the releases into a single graph, uploading to S3, and producing automated reports.
 
 Key modules:
 
@@ -15,14 +15,14 @@ Key modules:
 The build runs 4 stages in order:
 
 ```
-RUN -> MERGE -> RELEASE -> UPLOAD
+RUN -> RELEASE -> MERGE -> UPLOAD
 ```
 
 | Stage | What it does | Parallelism |
 |-------|-------------|-------------|
 | **RUN** | Executes `pipeline.run_pipeline(source)` for each source (download, transform, normalize) | Parallel via ProcessPoolExecutor |
-| **MERGE** | Combines all sources into a single graph (`translator_kg`). Failed sources use their last successful build data. | Sequential |
-| **RELEASE** | Generates tar.zst release archives for each source | Sequential per source |
+| **RELEASE** | Generates tar.zst release archives for each source. Failed sources are released from their last successful build. | Sequential per source |
+| **MERGE** | Combines the latest source releases into a single graph (`translator_kg`) and releases it. Runs after RELEASE because `merge()` reads releases, not builds. | Sequential |
 | **UPLOAD** | Auto-discovers data/release sources and uploads to S3 with EBS cleanup | Sequential per source |
 
 The RUN stage uses `ProcessPoolExecutor` to run all sources in parallel. Each worker process runs in its own subprocess with independent logging. The default worker count equals the number of sources, configurable with `--max-workers`.
@@ -67,7 +67,6 @@ uv run python -m translator_ingest.util.run_build.run_build --memory-threshold 8
 |--------|---------|-------------|
 | `--sources` | All sources in Makefile | Space-separated list of sources to process |
 | `--graph-id` | `translator_kg` | Merged graph identifier |
-| `--node-properties` | `ncbi_gene` | Sources that are node-properties-only (excluded from releases) |
 | `--overwrite` | off | Overwrite previously generated files |
 | `--no-upload` | off | Skip S3 upload stage |
 | `--max-workers` | number of sources | Max parallel workers for RUN stage |
@@ -80,15 +79,15 @@ The stages can also be run separately via Makefile:
 ```bash
 make run                         # Run pipeline (download, transform, normalize)
 make run SOURCES="ctd go_cam"    # Run for specific sources
-make merge                       # Merge sources into single graph
 make release                     # Generate release archives
+make merge                       # Merge source releases into single graph
 make upload-all                  # Upload all to S3 with EBS cleanup
 ```
 
 ## Error Handling
 
 - If a source fails during the RUN stage, other sources continue processing
-- Failed sources use their last successful build data for MERGE, RELEASE, and UPLOAD (the `latest-build.json` still points to the previous good version)
+- Failed sources use their last successful build data for RELEASE, MERGE, and UPLOAD (the `latest-build.json` still points to the previous good version)
 - All errors are collected in `errors.log` and the build report
 - The upload stage is skipped if `--no-upload` is set
 - Exit code 1 if any source or stage failed, exit code 2 if the build was aborted due to memory pressure
@@ -131,7 +130,7 @@ When the critical threshold is breached:
 
 1. Pending futures in the RUN stage are cancelled
 2. Already-running workers are given up to 5 minutes to finish
-3. Remaining stages (MERGE, RELEASE, UPLOAD) are skipped
+3. Remaining stages (RELEASE, MERGE, UPLOAD) are skipped
 4. A partial build report is still generated with a `BUILD ABORTED` note
 5. The process exits with code **2**
 

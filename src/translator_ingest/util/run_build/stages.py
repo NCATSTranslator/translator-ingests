@@ -14,11 +14,7 @@ from typing import Any
 # the stdlib resource module can't read child-process rss without ptrace
 import psutil
 
-from translator_ingest.merging import (
-    generate_merged_graph_release,
-    is_merged_graph_release_current,
-    merge,
-)
+from translator_ingest.merging import generate_merged_graph_release, merge
 from translator_ingest.pipeline import run_pipeline
 from translator_ingest.release import generate_release_summary, release_ingest
 from translator_ingest.util.logging_utils import get_logger, setup_worker_logging
@@ -441,6 +437,13 @@ def stage_merge(
     display: BuildDisplay,
     report_dir: Path,
 ) -> None:
+    """Merge the latest source releases into ``graph_id`` and release the merged graph.
+
+    merge() reads each source's latest release, not its build, so this stage
+    must run after RELEASE or it merges the previous build's releases.
+    merge() returns None when the graph's latest release already has these
+    exact source builds; the stage then completes with nothing to release.
+    """
     display.start_stage("MERGE")
     logger.info("STAGE: MERGE  |  graph: %s  |  %d sources", graph_id, len(sources))
 
@@ -450,15 +453,18 @@ def stage_merge(
     _stage_start = time.time()
 
     try:
-        merged_graph_metadata, _kgx_sources = merge(graph_id, sources=sources, overwrite=overwrite)
+        merged_graph_metadata = merge(graph_id, sources=sources, overwrite=overwrite)
 
-        if is_merged_graph_release_current(merged_graph_metadata) and not overwrite:
-            logger.info("Merged graph release already current: %s", merged_graph_metadata.build_version)
+        if merged_graph_metadata is None:
+            logger.info("Merged graph %s latest release is already current, nothing to release", graph_id)
         else:
             generate_merged_graph_release(merged_graph_metadata)
+            # RELEASE wrote the summary before this graph was released, refresh it
+            generate_release_summary()
+            merge_result["build_version"] = merged_graph_metadata.build_version
+            merge_result["release_version"] = merged_graph_metadata.release_version
 
         merge_result["status"] = "completed"
-        merge_result["build_version"] = merged_graph_metadata.build_version
         display.complete_stage("MERGE")
         logger.info("MERGE: completed successfully")
     except Exception:
@@ -474,19 +480,22 @@ def stage_merge(
 
 def stage_release(
     sources: list[str],
-    node_properties: list[str],
     display: BuildDisplay,
     report_dir: Path,
 ) -> None:
+    """Release every source's latest build.
+
+    All sources are released, nodes-only ones like ncbi_gene too: merge()
+    fails on a source without a release, so skipping one breaks MERGE.
+    """
     display.start_stage("RELEASE")
     logger.info("STAGE: RELEASE")
 
-    releasable = [s for s in sources if s not in node_properties]
     per_source: dict[str, dict[str, Any]] = {}
     all_ok = True
 
     try:
-        for source in releasable:
+        for source in sources:
             src_start = time.time()
             try:
                 release_ingest(source)
@@ -516,7 +525,7 @@ def stage_release(
         release_result = {
             "stage": "RELEASE",
             "status": "completed" if all_ok else "failed",
-            "total_sources": len(releasable),
+            "total_sources": len(sources),
             "completed": sum(1 for v in per_source.values() if v["status"] == "completed"),
             "failed": sum(1 for v in per_source.values() if v["status"] == "failed"),
             "duration_seconds": display.stage_durations.get("RELEASE", 0),

@@ -87,7 +87,6 @@ def _memory_aborted_stages(report_dir: Path) -> list[str]:
 @click.command()
 @click.option("--sources", type=str, default=None, help="Space-separated list of sources (default: all)")
 @click.option("--graph-id", type=str, default="translator_kg", help="Merged graph ID")
-@click.option("--node-properties", type=str, default="ncbi_gene", help="Space-separated node-property-only sources")
 @click.option("--overwrite", is_flag=True, help="Overwrite previously generated files")
 @click.option("--no-upload", is_flag=True, help="Skip S3 upload stage")
 @click.option("--max-workers", type=int, default=None, help="Max parallel workers for parallel RUN phase")
@@ -110,7 +109,6 @@ def _memory_aborted_stages(report_dir: Path) -> list[str]:
 def main(
     sources: str | None,
     graph_id: str,
-    node_properties: str,
     overwrite: bool,
     no_upload: bool,
     max_workers: int | None,
@@ -119,7 +117,7 @@ def main(
 ) -> None:
     """Run the full translator-ingests pipeline build end-to-end.
 
-    Stages: RUN (sequential-first then parallel) -> MERGE -> RELEASE -> UPLOAD
+    Stages: RUN (sequential-first then parallel) -> RELEASE -> MERGE -> UPLOAD
 
     Per-stage logs are written live to logs/{stage}/{timestamp}/.
     JSON artifacts and build reports go to reports/{timestamp}/.
@@ -129,13 +127,11 @@ def main(
     else:
         source_list = discover_ingest_sources()
         logger.info("Auto-discovered %d sources from ingests/ directory", len(source_list))
-    node_props = node_properties.split() if node_properties else ["ncbi_gene"]
     seq_sources = sequential_sources.split() if sequential_sources and sequential_sources.strip() else []
 
     _report_dir, _error_log_path, _memory_aborted = run_full_build(
         sources=source_list,
         graph_id=graph_id,
-        node_properties=node_props,
         overwrite=overwrite,
         upload=not no_upload,
         max_workers=max_workers,
@@ -144,7 +140,7 @@ def main(
     )
 
     # Only exit(2) if stages were skipped because memory was still critical
-    # at stage start. A spike during RUN that recovered before MERGE is not
+    # at stage start. A spike during RUN that recovered before RELEASE is not
     # an abort — it's a warning that appears in the report notes. This is
     # based on build-report.json's stage_timings (see _memory_aborted_stages),
     # not on whether a stage's _summary.json exists: UPLOAD skipped for
@@ -168,7 +164,7 @@ def main(
         has_failures = run_summary.get("failed", 0) > 0
 
     if not has_failures:
-        for stage in ("merge", "release", "upload"):
+        for stage in ("release", "merge", "upload"):
             stage_summary_path = _report_dir / "stages" / stage / "_summary.json"
             if stage_summary_path.exists():
                 with stage_summary_path.open() as f:

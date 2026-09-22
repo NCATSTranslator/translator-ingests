@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -19,6 +21,9 @@ from translator_ingest.release import (
     create_compressed_tar,
 )
 from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.run_build.display import BuildDisplay
+from translator_ingest.util.run_build.stages import stage_merge
+from translator_ingest.util.run_build.tracking import PerformanceTracker
 from translator_ingest.util.storage.local import IngestFileName
 
 # A source release with everything the merge requires of it.
@@ -271,3 +276,60 @@ def test_merge_fails_fast_on_an_unreleased_source(merged_graph_sources):
     """A source that was never released cannot be merged, and the error names the source to release."""
     with pytest.raises(IOError, match="Create a release for never_released before attempting to merge it"):
         merge("test_graph", merged_graph_sources + ["never_released"])
+
+
+@pytest.fixture
+def merge_stage(releases_path, monkeypatch, tmp_path_factory) -> tuple[BuildDisplay, Path]:
+    """A build display and report dir for running the build's MERGE stage against the temp releases dir."""
+    monkeypatch.setattr("translator_ingest.release.INGESTS_RELEASES_PATH", releases_path)
+    report_dir = tmp_path_factory.mktemp("report")
+    (report_dir / "stages" / "merge").mkdir(parents=True)
+    display = BuildDisplay(total_sources=2, upload_enabled=False, perf=PerformanceTracker(sample_interval=60))
+    return display, report_dir
+
+
+def _merge_stage_summary(report_dir: Path) -> dict[str, Any]:
+    """Read the MERGE stage's _summary.json from a build report dir."""
+    return json.loads((report_dir / "stages" / "merge" / "_summary.json").read_text())
+
+
+def test_stage_merge_releases_the_merged_graph(releases_path, merged_graph_sources, merge_stage):
+    """The build's MERGE stage releases the graph merge() built and adds it to the release summary."""
+    display, report_dir = merge_stage
+
+    stage_merge("test_graph", merged_graph_sources, False, display, report_dir)
+
+    assert display.stage_status["MERGE"] == "completed"
+    assert _merge_stage_summary(report_dir)["release_version"] == "1.0.0"
+    latest_release = json.loads((releases_path / "test_graph" / IngestFileName.LATEST_RELEASE_FILE).read_text())
+    assert latest_release["release_version"] == "1.0.0"
+    # RELEASE writes the summary before MERGE runs, so MERGE must refresh it to include the graph
+    release_summary = json.loads((releases_path / "latest-release-summary.json").read_text())
+    assert release_summary["test_graph"]["release_version"] == "1.0.0"
+
+
+def test_stage_merge_completes_without_new_release_when_graph_is_current(
+    releases_path, merged_graph_sources, merge_stage
+):
+    """When merge() finds the graph already released from these builds, the stage completes and releases nothing."""
+    display, report_dir = merge_stage
+    stage_merge("test_graph", merged_graph_sources, False, display, report_dir)
+
+    stage_merge("test_graph", merged_graph_sources, False, display, report_dir)
+
+    assert display.stage_status["MERGE"] == "completed"
+    summary = _merge_stage_summary(report_dir)
+    assert summary["status"] == "completed"
+    assert "release_version" not in summary
+    assert sorted(p.name for p in (releases_path / "test_graph").iterdir() if p.is_dir()) == ["1.0.0", "latest"]
+
+
+def test_stage_merge_fails_on_a_source_without_a_release(merged_graph_sources, merge_stage):
+    """MERGE reads releases, so a source that was not released fails the stage instead of being left out."""
+    display, report_dir = merge_stage
+
+    with pytest.raises(IOError, match="never_released"):
+        stage_merge("test_graph", merged_graph_sources + ["never_released"], False, display, report_dir)
+
+    assert display.stage_status["MERGE"] == "failed"
+    assert _merge_stage_summary(report_dir)["status"] == "failed"

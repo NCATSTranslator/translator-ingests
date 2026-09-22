@@ -404,7 +404,7 @@ def _write_merged_graph_artifacts(releases_path: Path) -> None:
     version_dir = graph_dir / _RELEASE_VERSION
     version_dir.mkdir(parents=True, exist_ok=True)
     (version_dir / "graph-metadata.json").write_text(json.dumps({
-        "isBasedOn": [{"id": s} for s in _SOURCES],
+        "hasPart": [{"name": s} for s in _SOURCES],
     }))
 
 
@@ -443,7 +443,6 @@ def make_report(tmp_path, monkeypatch):
         defaults = dict(
             sources=list(_SOURCES),
             graph_id=_GRAPH_ID,
-            node_properties=["ncbi_gene"],
             total_duration=120.5,
             peak_memory_mb=2048.0,
             avg_memory_mb=1500.0,
