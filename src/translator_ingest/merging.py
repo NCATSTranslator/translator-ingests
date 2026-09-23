@@ -326,13 +326,6 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     merged_graph_metadata.release_version = release_version
     merged_graph_metadata.data = data_path
 
-    # Identify the released graphs the merged graph is built from (hasPart in the graph metadata).
-    kgx_sources = [KGXKnowledgeGraphSource(id=release_metadata.data,
-                                           name=source,
-                                           release_version=release_metadata.release_version,
-                                           build_version=release_metadata.build_version)
-                   for source, release_metadata in source_releases.items()]
-
     # Get KGXKnowledgeSource metadata from the rig files (isBasedOn in the graph metadata).
     knowledge_sources = []
     for source, release_metadata in source_releases.items():
@@ -388,9 +381,18 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
         logger.error(f"Merging error occurred: {merge_metadata['merge_error']}")
         raise RuntimeError(f"Merge failed for {graph_id}: {merge_metadata['merge_error']}")
 
-    metadata_output = output_dir / "merge-metadata.json"
-    with open(metadata_output, "w") as metadata_file:
-        metadata_file.write(json.dumps(merge_metadata, indent=4))
+    # ORION writes this to ORION's MERGE_METADATA_FILENAME in the merger's output directory
+    file_merger.write_merge_metadata()
+
+    # Identify the released graphs the merged graph is built from (hasPart in the graph metadata)
+    merged_sources = merge_metadata["sources"]
+    kgx_sources = [KGXKnowledgeGraphSource(id=release_metadata.data,
+                                           name=source,
+                                           release_version=release_metadata.release_version,
+                                           build_version=release_metadata.build_version,
+                                           node_count=merged_sources[source]["node_count"],
+                                           edge_count=merged_sources[source]["edge_count"])
+                   for source, release_metadata in source_releases.items()]
 
     # Generate graph metadata after successful merge
     merge_graph_metadata(pipeline_metadata=merged_graph_metadata, knowledge_sources=knowledge_sources,
