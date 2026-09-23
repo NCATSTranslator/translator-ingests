@@ -120,7 +120,6 @@ def test_merge_single_raises_when_the_merger_reports_an_error(tmp_path: Path) ->
         input_edges_file=input_edges_file,
         output_nodes_file=output_dir / "nodes.jsonl",
         output_edges_file=output_dir / "edges.jsonl",
-        output_metadata_file=output_dir / "merge-metadata.json",
         source_version="v1",
     )
     merge_single(**merge_kwargs)

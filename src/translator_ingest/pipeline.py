@@ -403,7 +403,6 @@ def merge(pipeline_metadata: PipelineMetadata):
         input_edges_file=normalized_edges_file,
         output_nodes_file=output_nodes_file,
         output_edges_file=output_edges_file,
-        output_metadata_file=output_metadata_file,
         source_version=pipeline_metadata.source_version
     )
 

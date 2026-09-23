@@ -25,7 +25,6 @@ def merge_single(
     input_edges_file: Path,
     output_nodes_file: Path,
     output_edges_file: Path,
-    output_metadata_file: Path,
     source_version: str = None
 ) -> dict:
     """Merge KGX files using ORION's KGXFileMerger. Note that merge_single is used in a different way than most of the
@@ -33,6 +32,7 @@ def merge_single(
 
     This is the low-level merge function that handles a single set of KGX files.
     It deduplicates nodes and edges, outputting merged files and merge metadata.
+    The merge metadata is written beside the merged files.
 
     Args:
         source_id: Identifier for the source being merged
@@ -40,7 +40,6 @@ def merge_single(
         input_edges_file: Path to input edges JSONL file
         output_nodes_file: Path for output merged nodes file
         output_edges_file: Path for output merged edges file
-        output_metadata_file: Path for output merge metadata JSON file
         source_version: Optional version string for the source
 
     Returns:
@@ -91,9 +90,8 @@ def merge_single(
         logger.error(f"Merging error occurred for {source_id}: {merge_metadata['merge_error']}")
         raise RuntimeError(f"Merge failed for {source_id}: {merge_metadata['merge_error']}")
 
-    with open(output_metadata_file, "w") as metadata_file:
-        json.dump(merge_metadata, metadata_file, indent=4)
-    logger.info(f"Merge metadata written to {output_metadata_file}")
+    merge_metadata_path = file_merger.write_merge_metadata()
+    logger.info(f"Merge metadata written to {merge_metadata_path}")
 
     return merge_metadata
 
