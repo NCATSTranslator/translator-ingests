@@ -534,7 +534,9 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
                     ", Biolink Model, and Node Normalizer.",
         license="",
         url=storage_url,
-        version=pipeline_metadata.build_version,
+        # An ingest build has no release version yet, release_ingest() assigns one later.
+        version=pipeline_metadata.release_version or "",
+        build_version=pipeline_metadata.build_version,
         date_created=current_iso_date(),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.babel_version,

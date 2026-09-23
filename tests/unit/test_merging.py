@@ -3,6 +3,8 @@ import json
 import pytest
 import yaml
 
+from orion import ORION_BUILD_VERSION
+
 from translator_ingest import merging
 from translator_ingest.merging import (
     SHARED_SOURCE_RELEASE_METADATA,
@@ -237,6 +239,11 @@ def test_merge_produces_a_release_of_its_sources(releases_path, merged_graph_sou
     # hasPart identifies the released graphs the merged graph is made of
     graph_metadata = json.loads((output_dir / RELEASE_GRAPH_METADATA_FILENAME).read_text())
     assert sorted(part["name"] for part in graph_metadata["hasPart"]) == merged_graph_sources
+
+    # A merged graph is versioned and released in one step, so it records both of its versions.
+    # version is the semantic release version, the build version is recorded separately by ORION.
+    assert graph_metadata["version"] == "1.0.0"
+    assert graph_metadata[ORION_BUILD_VERSION] == merged_graph_metadata.build_version
 
 
 def test_merge_skips_when_latest_release_is_already_this_build(releases_path, merged_graph_sources):

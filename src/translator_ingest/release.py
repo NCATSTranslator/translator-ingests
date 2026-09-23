@@ -5,6 +5,8 @@ import click
 import zstandard as zstd
 from pathlib import Path
 
+from orion import ORION_BUILD_VERSION
+
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
 from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
@@ -89,8 +91,9 @@ def extract_compressed_tar(tar_path: Path, output_directory: Path):
 
 def update_graph_metadata_for_release(source_graph_metadata_path: Path,
                                       release_dir: Path,
-                                      release_url: str) -> Path:
-    """Update graph-metadata.json with release URL for id and url fields.
+                                      release_url: str,
+                                      release_version: str) -> Path:
+    """Update graph-metadata.json with the release URL and version.
 
     Reads the existing graph metadata, updates the id and url fields to use
     the release versioning, and writes the updated version to the release directory.
@@ -99,6 +102,7 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
         source_graph_metadata_path: Path to the original graph-metadata.json
         release_dir: Directory where the release files are being created
         release_url: The release URL to use for id and url fields
+        release_version: The release version to record as the graph's version
 
     Returns:
         Path to the updated graph-metadata.json in the release directory
@@ -108,6 +112,9 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
 
     graph_metadata['@id'] = release_url
     graph_metadata['url'] = release_url
+    # Builds metadata is generated before a release version exists, so the version is only filled in here.
+    # The build version is recorded separately and is left alone.
+    graph_metadata['version'] = release_version
 
     output_path = release_dir / "graph-metadata.json"
     with open(output_path, 'w') as f:
@@ -120,8 +127,9 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
 def get_existing_release_build_version(release_dir: Path) -> str | None:
     """Return the build version an existing release was made from, or None if there is no release in release_dir.
 
-    Releases made before release-metadata.json was written to every release directory recorded their build version 
-    as the "version" of their graph-metadata.json.
+    Releases made before release-metadata.json was written to every release directory recorded their build version
+    as the "version" of their graph-metadata.json. Newer graph metadata records the release version there instead,
+    and the build version under ORION_BUILD_VERSION, so that is preferred when present.
 
     Args:
         release_dir: Directory of a single release, which may or may not exist yet
@@ -133,7 +141,8 @@ def get_existing_release_build_version(release_dir: Path) -> str | None:
     graph_metadata_path = release_dir / RELEASE_GRAPH_METADATA_FILENAME
     if graph_metadata_path.exists():
         with graph_metadata_path.open() as graph_metadata_file:
-            return json.load(graph_metadata_file).get("version")
+            graph_metadata = json.load(graph_metadata_file)
+        return graph_metadata.get(ORION_BUILD_VERSION) or graph_metadata.get("version")
     return None
 
 
@@ -239,7 +248,8 @@ def create_release(release_metadata: PipelineMetadata,
         release_graph_metadata_path = update_graph_metadata_for_release(
             source_graph_metadata_path=graph_metadata_file,
             release_dir=release_dir,
-            release_url=release_url
+            release_url=release_url,
+            release_version=release_metadata.release_version
         )
 
     # Check if release files already exist

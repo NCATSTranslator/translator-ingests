@@ -4,6 +4,8 @@ import json
 
 import pytest
 
+from orion import ORION_BUILD_VERSION
+
 import translator_ingest.release
 import translator_ingest.util.storage.local as local_storage
 from translator_ingest.release import (
@@ -188,6 +190,38 @@ def test_releasing_the_same_build_into_an_existing_release_completes_it(release_
 
     assert _read_latest_release(releases_path)["release_version"] == "1.0.0"
     assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build1"
+
+
+def test_release_stamps_the_release_version_into_graph_metadata(release_env):
+    """Builds have no release version, so releasing fills it in as the graph's version."""
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+
+    release_ingest(SOURCE)
+
+    with (releases_path / SOURCE / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME).open() as f:
+        graph_metadata = json.load(f)
+    assert graph_metadata["version"] == "1.0.0"
+    assert graph_metadata["url"] == f"http://example.test/releases/{SOURCE}/1.0.0/"
+
+
+def test_existing_release_build_version_prefers_orion_build_version(release_env):
+    """graph-metadata.json records the release version as "version", so the build version must be
+    read from ORION_BUILD_VERSION rather than being inferred from "version"."""
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    release_ingest(SOURCE)
+
+    # Reduce the release to a graph-metadata.json carrying both versions, as a current release does.
+    (releases_path / SOURCE / "latest-release.json").unlink()
+    (releases_path / SOURCE / "1.0.0" / IngestFileName.RELEASE_METADATA_FILE).unlink()
+    _write_json(releases_path / SOURCE / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME,
+                {"version": "1.0.0", ORION_BUILD_VERSION: "build1"})
+    write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
+
+    # build1 must be recognized as the existing build, not the "1.0.0" release version.
+    with pytest.raises(ValueError, match="was made from build build1, but build build2 is being released"):
+        release_ingest(SOURCE)
 
 
 def test_existing_release_without_release_metadata_is_still_detected(release_env):

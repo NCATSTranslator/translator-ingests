@@ -410,6 +410,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
     """
     graph_id = pipeline_metadata.source
     release_version = pipeline_metadata.release_version
+    build_version = pipeline_metadata.build_version
     biolink_version = pipeline_metadata.biolink_version
     babel_version = pipeline_metadata.babel_version
 
@@ -428,6 +429,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
         license="",
         url=release_url,
         version=release_version,
+        build_version=build_version,
         date_created=current_iso_date(),
         biolink_version=biolink_version,
         babel_version=babel_version,
