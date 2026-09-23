@@ -12,7 +12,7 @@ from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, extract_compressed_tar, atomic_copy_directory, \
     generate_release_summary, RELEASE_NODES_FILENAME, RELEASE_EDGES_FILENAME, RELEASE_GRAPH_METADATA_FILENAME
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, next_release_version, \
-    current_iso_date
+    current_iso_date, to_translator_graph_metadata
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -443,7 +443,7 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
                                              biolink_version=biolink_version)
 
     with graph_metadata_file_path.open("w") as output_file:
-        output_file.write(source_metadata.to_json())
+        json.dump(to_translator_graph_metadata(source_metadata), output_file, indent=2)
     logger.info(f"Graph metadata complete for {graph_id} ({release_version}).")
 
 

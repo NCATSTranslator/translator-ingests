@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from orion import ORION_BUILD_VERSION
+from translator_ingest.util.metadata import TRANSLATOR_BUILD_VERSION
 
 import translator_ingest.release
 import translator_ingest.util.storage.local as local_storage
@@ -207,7 +207,7 @@ def test_release_stamps_the_release_version_into_graph_metadata(release_env):
 
 def test_existing_release_build_version_prefers_orion_build_version(release_env):
     """graph-metadata.json records the release version as "version", so the build version must be
-    read from ORION_BUILD_VERSION rather than being inferred from "version"."""
+    read from TRANSLATOR_BUILD_VERSION rather than being inferred from "version"."""
     write_latest_build, releases_path = release_env
     write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
     release_ingest(SOURCE)
@@ -216,7 +216,7 @@ def test_existing_release_build_version_prefers_orion_build_version(release_env)
     (releases_path / SOURCE / "latest-release.json").unlink()
     (releases_path / SOURCE / "1.0.0" / IngestFileName.RELEASE_METADATA_FILE).unlink()
     _write_json(releases_path / SOURCE / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME,
-                {"version": "1.0.0", ORION_BUILD_VERSION: "build1"})
+                {"version": "1.0.0", TRANSLATOR_BUILD_VERSION: "build1"})
     write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
 
     # build1 must be recognized as the existing build, not the "1.0.0" release version.

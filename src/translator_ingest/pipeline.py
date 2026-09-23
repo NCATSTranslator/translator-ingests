@@ -23,7 +23,8 @@ from orion import (KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder,
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, current_iso_date
+from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
+                                             to_translator_graph_metadata)
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -561,7 +562,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
                                                  biolink_version=pipeline_metadata.biolink_version)
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=source_metadata.to_dict())
+                      data=to_translator_graph_metadata(source_metadata))
     logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
     transform_metadata_file_path = get_versioned_file_paths(

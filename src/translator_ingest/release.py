@@ -5,10 +5,9 @@ import click
 import zstandard as zstd
 from pathlib import Path
 
-from orion import ORION_BUILD_VERSION
-
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
-from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
+from translator_ingest.util.metadata import (PipelineMetadata, next_release_version, current_iso_date,
+                                             TRANSLATOR_BUILD_VERSION)
 from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
                                                   write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -129,7 +128,7 @@ def get_existing_release_build_version(release_dir: Path) -> str | None:
 
     Releases made before release-metadata.json was written to every release directory recorded their build version
     as the "version" of their graph-metadata.json. Newer graph metadata records the release version there instead,
-    and the build version under ORION_BUILD_VERSION, so that is preferred when present.
+    and the build version under TRANSLATOR_BUILD_VERSION, so that is preferred when present.
 
     Args:
         release_dir: Directory of a single release, which may or may not exist yet
@@ -142,7 +141,7 @@ def get_existing_release_build_version(release_dir: Path) -> str | None:
     if graph_metadata_path.exists():
         with graph_metadata_path.open() as graph_metadata_file:
             graph_metadata = json.load(graph_metadata_file)
-        return graph_metadata.get(ORION_BUILD_VERSION) or graph_metadata.get("version")
+        return graph_metadata.get(TRANSLATOR_BUILD_VERSION) or graph_metadata.get("version")
     return None
 
 
