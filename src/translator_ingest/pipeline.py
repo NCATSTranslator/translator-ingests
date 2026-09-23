@@ -393,11 +393,10 @@ def merge(pipeline_metadata: PipelineMetadata):
     # KGXFileMerger refuses to write over existing merged files and reports that as a merge error
     # instead of raising, so stale output from an earlier run would otherwise survive an OVERWRITE
     # and flow into validation and release unnoticed. Clear the outputs first.
-    stale_outputs = cast(tuple[Path, ...], (output_nodes_file, output_edges_file, output_metadata_file))
-    for stale_output in stale_outputs:
+    for stale_output in (output_nodes_file, output_edges_file, output_metadata_file):
         stale_output.unlink(missing_ok=True)
 
-    merge_metadata = merge_single(
+    merge_single(
         source_id=pipeline_metadata.source,
         input_nodes_file=normalized_nodes_file,
         input_edges_file=normalized_edges_file,
@@ -406,10 +405,6 @@ def merge(pipeline_metadata: PipelineMetadata):
         output_metadata_file=output_metadata_file,
         source_version=pipeline_metadata.source_version
     )
-    if "merge_error" in merge_metadata:
-        raise RuntimeError(
-            f"Merge failed for {pipeline_metadata.source}: {merge_metadata['merge_error']}"
-        )
 
     logger.info(f"Merge complete for {pipeline_metadata.source}.")
 

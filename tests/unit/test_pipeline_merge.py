@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from translator_ingest import pipeline
+from translator_ingest.merging import merge_single
 from translator_ingest.util import storage
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.storage.local import IngestFileType, get_versioned_file_paths
@@ -98,3 +99,31 @@ def test_merge_replaces_stale_output_when_run_again(data_root: Path) -> None:
         file_type=IngestFileType.MERGE_METADATA_FILE, pipeline_metadata=pipeline_metadata
     )
     assert "merge_error" not in json.loads(metadata_file.read_text())
+
+
+def test_merge_single_raises_when_the_merger_reports_an_error(tmp_path: Path) -> None:
+    """A merge error must raise rather than leave the caller with no merged output and no metadata.
+
+    Merging twice into the same directory is the error ORION actually reports: it refuses to write
+    over existing merged files. The pipeline stage clears those files first, so this calls
+    merge_single directly to reach the error path.
+    """
+    input_nodes_file = tmp_path / "nodes.jsonl"
+    input_edges_file = tmp_path / "edges.jsonl"
+    input_nodes_file.write_text("".join(f"{json.dumps(node)}\n" for node in NODES))
+    input_edges_file.write_text(f"{json.dumps(FIRST_EDGE)}\n")
+
+    output_dir = tmp_path / "merged"
+    merge_kwargs: dict[str, Any] = dict(
+        source_id="testsrc",
+        input_nodes_file=input_nodes_file,
+        input_edges_file=input_edges_file,
+        output_nodes_file=output_dir / "nodes.jsonl",
+        output_edges_file=output_dir / "edges.jsonl",
+        output_metadata_file=output_dir / "merge-metadata.json",
+        source_version="v1",
+    )
+    merge_single(**merge_kwargs)
+
+    with pytest.raises(RuntimeError, match="Merge failed for testsrc"):
+        merge_single(**merge_kwargs)
