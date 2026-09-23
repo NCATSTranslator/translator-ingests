@@ -1,9 +1,31 @@
-"""SemMedDB ingest: KG2 pre-processed edges -> Biolink Model associations."""
+"""SemMedDB ingest: KG2 pre-processed edges -> Biolink Model associations.
+
+Publications are filtered by the LLM PMID-checker (RTXteam/LLM_PMID_Checker) verdicts during
+the transform. A publication is dropped when its verdict is ``no`` or ``maybe``; ``yes``,
+``no_abstract`` and any PMID with no verdict row at all are kept. The ``maybe`` bucket is dropped
+for now and will be refined in a later second pass. An edge is dropped when no publication
+remains, and edges that survive are capped to the most recent ``MAX_PUBLICATIONS_PER_EDGE``
+publications. Rejected and capped-out PMIDs are removed from ``publications_info`` too, so no
+supporting study is built for them, and nodes are only emitted for edges that survive.
+
+The verdict artifact is keyed by the raw kg2.10.3 ids and the predicates this transform emits
+(after ``PREDICATE_REMAP``), not by normalized ids. Normalized ids change with every Babel
+release, and a key that does not match means "no verdict", which means keep, so a filter keyed on
+them would silently decay as Babel moved on. Raw ids from the frozen kg2.10.3 source never
+change. The artifact is re-keyed from the checker's normalized ids to raw ids by
+``analysis/rekey_pmid_verdicts.py``.
+
+Because a non-matching key silently means "keep", a coverage guard backstops the join: the
+fraction of checked edges that have any verdict row must be at least ``MIN_EDGE_COVERAGE``, or
+the transform fails instead of quietly passing everything through.
+"""
 
 import os
+from pathlib import Path
 from typing import Any
 
 import koza
+import polars as pl
 from koza.model.graphs import KnowledgeGraph
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -53,11 +75,54 @@ PREDICATE_REMAP: dict[str, str] = {
 
 GENETIC_VARIANT_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_variant_form
 
-PUBLICATIONS_CAP_THRESHOLD = 200
-MAX_PUBLICATIONS_PER_STRATEGY = 100  # up to 2x this many total (score + recency)
+# LLM PMID-checker results parquet downloaded into source_data/ (see download.yaml), re-keyed
+# from normalized ids to raw kg2.10.3 ids.
+VERDICT_ARTIFACT_FILENAME = "semmeddb_pmid_checker_results_raw_keyed.parquet"
+VERDICT_ARTIFACT_COLUMNS = ["subject_curie", "predicate", "object_curie", "PMID", "support"]
+EDGE_KEY_COLUMNS = ["subject_curie", "predicate", "object_curie"]
+
+# these verdicts remove a publication; "yes", "no_abstract" and any PMID absent from the results
+# are kept. "maybe" is dropped now and refined in a later second pass.
+DROP_SUPPORT_VALUES = frozenset({"no", "maybe"})
+
+# minimum fraction of checked edges that must carry at least one verdict row. A key the artifact
+# does not cover is treated as "keep", so a broken join would silently disable the filter rather
+# than fail; this guard turns that into a loud error. Measured on kg2.10.3 with the re-keyed
+# artifact: 99.7% of edges covered (the rest have only no-abstract publications the checker could
+# not judge). The same edges joined on the original normalized keys reach only 89.3%, so this
+# threshold catches a broken or drifted join with a wide margin on both sides.
+MIN_EDGE_COVERAGE = 0.95
+
+# edges left with more than this many publications after verdict filtering are trimmed to the
+# most recent ones (highest PMID number, since PMIDs are assigned chronologically). This bounds
+# the small tail of very large edges (some have 60k+ PMIDs) without touching the vast majority.
+MAX_PUBLICATIONS_PER_EDGE = 1000
+
+# the cap is on by default. Set SEMMEDDB_UNCAPPED=1 (or true/yes) to disable it and keep every
+# surviving publication, for example to regenerate uncapped output for a fresh PMID-checker run.
+# get_latest_version() reports a distinct source version when it is set, so capped and uncapped
+# builds never share a directory or a build version.
 PUBLICATIONS_CAP_ENABLED: bool = (
     os.environ.get("SEMMEDDB_UNCAPPED", "").lower() not in ("1", "true", "yes")
 )
+
+# the filter is on by default. Set SEMMEDDB_UNFILTERED=1 (or true/yes) to keep every publication
+# the checker rejected, which is how the pre-filter edge set is regenerated for a new checker run
+# (the planned second pass over the "maybe" bucket needs exactly that input). The verdict artifact
+# is then not read at all and the coverage guard does not apply. get_latest_version() reports a
+# distinct source version when it is set, so filtered and unfiltered builds never share a
+# directory or a build version.
+PMID_FILTER_ENABLED: bool = (
+    os.environ.get("SEMMEDDB_UNFILTERED", "").lower() not in ("1", "true", "yes")
+)
+
+EdgeKey = tuple[str, str, str]
+
+# Every edge key the verdict artifact mentions, mapped to the PMIDs rejected for that edge.
+# A key with no rejected PMID maps to None rather than an empty set.
+# Membership in this index is what "the checker covered this edge" means for the coverage guard,
+# so it holds keys of every support value, not only the rejected ones.
+VerdictIndex = dict[EdgeKey, set[str] | None]
 
 BTE_EXCLUDED_ORIGINAL_PREDICATES: frozenset[str] = frozenset({
     "compared_with",
@@ -88,7 +153,23 @@ _ACTIVITY_BEARING_CLASSES: frozenset[type[NamedThing]] = frozenset({
 
 def get_latest_version() -> str:
     """Return the current SemMedDB ingest version identifier."""
-    return "semmeddb-2023-kg2.10.3"
+    version = "semmeddb-2023-kg2.10.3"
+
+    # Treat having publications uncapped like a different version.
+    # Ideally this distinction would be part of the transform version and not
+    # the source version, but the transform version is derived from code and
+    # doesn't take env var settings like this into account. Doing it here has
+    # the effect of distinguishing between capped and uncapped at the expense
+    # of downloading the source twice.
+    if not PUBLICATIONS_CAP_ENABLED:
+        version += "-publications-uncapped"
+
+    # Same treatment for an unfiltered build: its edges and publications differ from a filtered
+    # one, so it must not land in the directory or the build version of a filtered build.
+    if not PMID_FILTER_ENABLED:
+        version += "-unfiltered"
+
+    return version
 
 
 def _get_node_class(curie: str) -> type[NamedThing]:
@@ -174,63 +255,84 @@ def _has_bte_excluded_predicate(kg2_ids: list[str]) -> bool:
     return False
 
 
-def _pub_min_score(
-    pmid: str,
-    publications_info: dict[str, dict[str, str]],
-) -> float:
-    """Return the minimum of subject/object scores for a PMID (higher = more confident)."""
-    info = publications_info.get(pmid, {})
-    subj = float(info.get("subject score", 0) or 0)
-    obj = float(info.get("object score", 0) or 0)
-    return min(subj, obj)
+def load_verdicts(artifact_file: Path) -> VerdictIndex:
+    """Read the verdict artifact into an index of edge key -> rejected PMIDs.
+
+    Every row contributes its edge key, so the index's keys are the edges the checker covered.
+    Only ``no``/``maybe`` rows contribute a PMID; a key whose verdicts are all kept maps to None.
+    Support values are lowercased and stripped before they are compared, and a row with a null
+    support counts as covered without rejecting anything.
+    """
+    verdicts = pl.read_parquet(artifact_file, columns=VERDICT_ARTIFACT_COLUMNS).with_columns(
+        pl.col("support").cast(pl.Utf8).str.to_lowercase().str.strip_chars()
+    )
+
+    # The artifact has one row per (edge, PMID), tens of millions of them, for an index of a
+    # couple of million keys. Grouping the rejections and the covered keys in polars keeps python
+    # out of that walk: it only iterates one row per rejecting edge and one per covered edge.
+    rejections = (
+        verdicts.filter(pl.col("support").is_in(DROP_SUPPORT_VALUES))
+        .group_by(EDGE_KEY_COLUMNS)
+        .agg(pl.col("PMID"))
+    )
+    verdict_index: VerdictIndex = {
+        (subject, predicate, obj): set(pmids) for subject, predicate, obj, pmids in rejections.iter_rows()
+    }
+    for edge_key in verdicts.select(EDGE_KEY_COLUMNS).unique().iter_rows():
+        verdict_index.setdefault(edge_key, None)
+    return verdict_index
 
 
-def _pub_year(
-    pmid: str,
-    publications_info: dict[str, dict[str, str]],
-) -> int:
-    """Return the 4-digit publication year for a PMID, or 0 if unavailable."""
-    date: str = publications_info.get(pmid, {}).get("publication date", "") or ""
-    try:
-        return int(date[:4]) if date else 0
-    except ValueError:
-        return 0
+def _pmid_number(pmid: str) -> int:
+    """Return the numeric part of a PMID for recency ordering, or -1 if not numeric.
+
+    PMIDs are assigned chronologically, so a higher number is a more recent paper.
+    """
+    digits = pmid.rsplit(":", 1)[-1]
+    return int(digits) if digits.isdigit() else -1
 
 
-def _cap_publications(
+def _cap_by_recency(publications: list[str], limit: int) -> list[str]:
+    """Keep the ``limit`` most recent publications (highest PMID number), in original order.
+
+    >>> _cap_by_recency(["PMID:5", "PMID:1", "PMID:9", "PMID:3"], 2)
+    ['PMID:5', 'PMID:9']
+    >>> _cap_by_recency(["PMID:1", "PMID:2"], 5)
+    ['PMID:1', 'PMID:2']
+    """
+    if len(publications) <= limit:
+        return publications
+    kept = set(sorted(publications, key=_pmid_number, reverse=True)[:limit])
+    return [pmid for pmid in publications if pmid in kept]
+
+
+def _filter_publications(
     publications: list[str],
     publications_info: dict[str, dict[str, str]],
+    rejected_pmids: set[str] | None,
+    state: dict[str, Any],
 ) -> tuple[list[str], dict[str, dict[str, str]]]:
-    """Cap publications to avoid oversized edges (some SemMedDB edges have 60k+ PMIDs).
+    """Drop rejected PMIDs, then cap to the most recent ``MAX_PUBLICATIONS_PER_EDGE``.
 
-    Keeps the union of:
-    - top MAX_PUBLICATIONS_PER_STRATEGY by confidence (min of subject/object score)
-    - top MAX_PUBLICATIONS_PER_STRATEGY by recency (publication year)
-
-    Returns trimmed (publications, publications_info).
+    Every removed PMID is dropped from ``publications_info`` too, so no supporting study is
+    built for it. Returns an empty publication list when the checker rejected every publication.
     """
-    if len(publications) <= PUBLICATIONS_CAP_THRESHOLD:
-        return publications, publications_info
+    kept_publications = (
+        [pmid for pmid in publications if pmid not in rejected_pmids] if rejected_pmids else publications
+    )
+    removed_pmids = set(publications) - set(kept_publications)
+    state["publications_rejected"] += len(removed_pmids)
 
-    top_by_score = set(
-        sorted(
-            publications,
-            key=lambda p: _pub_min_score(p, publications_info),
-            reverse=True,
-        )[:MAX_PUBLICATIONS_PER_STRATEGY]
-    )
-    top_by_recency = set(
-        sorted(
-            publications,
-            key=lambda p: _pub_year(p, publications_info),
-            reverse=True,
-        )[:MAX_PUBLICATIONS_PER_STRATEGY]
-    )
-    kept = top_by_score | top_by_recency
-    return (
-        [p for p in publications if p in kept],
-        {k: v for k, v in publications_info.items() if k in kept},
-    )
+    if PUBLICATIONS_CAP_ENABLED and len(kept_publications) > MAX_PUBLICATIONS_PER_EDGE:
+        state["publications_capped"] += 1
+        capped_publications = _cap_by_recency(kept_publications, MAX_PUBLICATIONS_PER_EDGE)
+        removed_pmids |= set(kept_publications) - set(capped_publications)
+        kept_publications = capped_publications
+
+    if not removed_pmids:
+        return publications, publications_info
+    kept_info = {pmid: info for pmid, info in publications_info.items() if pmid not in removed_pmids}
+    return kept_publications, kept_info
 
 
 def _extract_supporting_studies(
@@ -296,15 +398,33 @@ _STATE_DEFAULTS: dict[str, int] = {
     "bte_excluded_predicate_skipped": 0,
     "publications_capped": 0,
     "qualifier_stripped_invalid_domain_range": 0,
+    "edges_verdict_checked": 0,
+    "edges_with_verdicts": 0,
+    "publications_rejected": 0,
+    "edges_rejected_by_verdicts": 0,
 }
 
 
 @koza.on_data_begin(tag="filter_edges")
 def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
-    """Initialize counters for processing statistics."""
+    """Initialize counters and load the PMID-checker verdicts."""
     koza.state["seen_node_ids"] = set()
     for key, default in _STATE_DEFAULTS.items():
         koza.state[key] = default
+
+    if not PMID_FILTER_ENABLED:
+        koza.log("SEMMEDDB_UNFILTERED is set, keeping every publication the checker rejected.", level="WARNING")
+        koza.state["verdict_index"] = {}
+        return
+
+    if koza.input_files_dir is None:
+        raise ValueError("No input_files_dir; the semmeddb transform needs the PMID-checker verdicts.")
+    artifact_file = Path(koza.input_files_dir) / VERDICT_ARTIFACT_FILENAME
+    if not artifact_file.exists():
+        raise FileNotFoundError(f"PMID-checker verdict artifact not found: {artifact_file}")
+    koza.log(f"Loading PMID-checker verdicts from {artifact_file}...", level="INFO")
+    koza.state["verdict_index"] = load_verdicts(artifact_file)
+    koza.log(f"  Edges covered by a verdict: {len(koza.state['verdict_index'])}", level="INFO")
 
 @koza.on_data_end(tag="filter_edges")
 def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
@@ -313,7 +433,7 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
     koza.log("semmeddb processing complete:", level="INFO")
     koza.log(f"  Total edges processed: {s['total_edges_processed']}", level="INFO")
     koza.log(
-        f"  Edges emitted (>3 PMIDs each): {s['edges_with_publications']}",
+        f"  Edges emitted (at least one surviving publication): {s['edges_with_publications']}",
         level="INFO",
     )
     koza.log(f"  Edges with qualifiers: {s['edges_with_qualifiers']}", level="INFO")
@@ -326,7 +446,9 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
         ("domain_range_exclusion_skipped", "Domain/range exclusion skipped", "INFO"),
         ("low_publication_count_skipped", "Low publication count skipped", "INFO"),
         ("bte_excluded_predicate_skipped", "BTE-excluded predicate skipped", "INFO"),
-        ("publications_capped", "Publications capped to top-N by score+recency", "INFO"),
+        ("publications_rejected", "Publications dropped by the PMID checker", "INFO"),
+        ("edges_rejected_by_verdicts", "Edges dropped (every publication rejected)", "INFO"),
+        ("publications_capped", f"Edges capped to the {MAX_PUBLICATIONS_PER_EDGE} most recent", "INFO"),
         (
             "qualifier_stripped_invalid_domain_range",
             "Qualifier stripped (aspect/endpoint mismatch, see Feedback#1213)",
@@ -336,6 +458,40 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
     for key, label, level in _warn_if:
         if s[key] > 0:
             koza.log(f"  {label}: {s[key]}", level=level)
+
+    edge_coverage = s["edges_with_verdicts"] / s["edges_verdict_checked"] if s["edges_verdict_checked"] else 0.0
+    if PMID_FILTER_ENABLED:
+        koza.log(
+            f"  Edges covered by a PMID-checker verdict: {s['edges_with_verdicts']} of "
+            f"{s['edges_verdict_checked']} ({edge_coverage:.2%})",
+            level="INFO",
+        )
+    koza.transform_metadata["pmid_checker_filter"] = {
+        "edges_verdict_checked": s["edges_verdict_checked"],
+        "edges_with_verdicts": s["edges_with_verdicts"],
+        "edge_coverage": edge_coverage,
+        "publications_rejected": s["publications_rejected"],
+        "edges_rejected_by_verdicts": s["edges_rejected_by_verdicts"],
+        "edges_capped": s["publications_capped"],
+        "publications_cap_enabled": PUBLICATIONS_CAP_ENABLED,
+        "max_publications_per_edge": MAX_PUBLICATIONS_PER_EDGE,
+        "pmid_filter_enabled": PMID_FILTER_ENABLED,
+    }
+
+    if not PMID_FILTER_ENABLED:
+        return
+
+    # An edge key the verdicts do not cover keeps all of its publications, so a join that stops
+    # matching would disable the filter silently rather than fail. Make that loud instead.
+    if edge_coverage < MIN_EDGE_COVERAGE:
+        raise RuntimeError(
+            f"PMID-checker verdict coverage is {edge_coverage:.4f}, below the required "
+            f"{MIN_EDGE_COVERAGE}: only {s['edges_with_verdicts']} of {s['edges_verdict_checked']} "
+            f"checked edges have any verdict row. The verdict artifact "
+            f"({VERDICT_ARTIFACT_FILENAME}) keys no longer match the edges this transform emits, "
+            f"most likely an artifact mismatch or a source version change. Uncovered edges keep "
+            f"every publication, so this would silently disable the filter."
+        )
 
 def _pick_affects_class(
     subject_id: str,
@@ -459,11 +615,6 @@ def transform_semmeddb_edge(
     record: dict[str, Any],
 ) -> KnowledgeGraph | None:
     """Convert one KG2 edge record into Biolink nodes and associations."""
-    if "total_edges_processed" not in koza.state:
-        koza.state["seen_node_ids"] = set()
-        for key, default in _STATE_DEFAULTS.items():
-            koza.state[key] = default
-
     koza.state["total_edges_processed"] += 1
 
     publications = _apply_filters(record, koza.state)
@@ -482,26 +633,34 @@ def transform_semmeddb_edge(
     assert object_id is not None
     assert predicate is not None
 
+    # The verdicts are keyed by the ids and predicate this transform emits, so remap first.
+    predicate = PREDICATE_REMAP.get(predicate, predicate)
+
+    publications_info: dict[str, dict[str, str]] = record.get(
+        "publications_info", {},
+    )
+
+    # Filter before collecting nodes, so nodes are only emitted for edges that survive.
+    verdict_index: VerdictIndex = koza.state["verdict_index"]
+    edge_key = (subject_id, predicate, object_id)
+    if edge_key in verdict_index:
+        koza.state["edges_with_verdicts"] += 1
+    koza.state["edges_verdict_checked"] += 1
+
+    publications, publications_info = _filter_publications(
+        publications, publications_info, verdict_index.get(edge_key), koza.state,
+    )
+    if not publications:
+        koza.state["edges_rejected_by_verdicts"] += 1
+        return None
+
     nodes = _collect_nodes(
         subject_id, object_id, koza.state["seen_node_ids"], koza,
     )
     if nodes is None:
         return None
 
-    # _apply_filters requires len(publications) > 3, so every emitted edge has publications.
     koza.state["edges_with_publications"] += 1
-
-    publications_info: dict[str, dict[str, str]] = record.get(
-        "publications_info", {},
-    )
-
-    if PUBLICATIONS_CAP_ENABLED and len(publications) > PUBLICATIONS_CAP_THRESHOLD:
-        koza.state["publications_capped"] += 1
-        publications, publications_info = _cap_publications(
-            publications, publications_info,
-        )
-
-    predicate = PREDICATE_REMAP.get(predicate, predicate)
 
     association_kwargs: dict[str, Any] = {
         "id": entity_id(),
