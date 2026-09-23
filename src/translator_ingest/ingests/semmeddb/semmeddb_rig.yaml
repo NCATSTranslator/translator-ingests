@@ -168,6 +168,10 @@ ingest_info:
         abstract. 'maybe' is dropped for now and is expected to be refined in a later second pass.
         Because an unmatched key means "keep", the transform fails if fewer than 95% of checked
         edges have any verdict row, so a broken or drifted join cannot silently disable the filter.
+        Filtering is disabled when the SEMMEDDB_UNFILTERED environment variable is set to 1, true,
+        or yes, which is how the pre-filter edge set is regenerated for a new checker pass. That
+        build reports a distinct source version (semmeddb-2023-kg2.10.3-unfiltered) so filtered and
+        unfiltered builds stay separate.
     # Some SemMedDB edges have 60k+ PMIDs, producing massive output rows.
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: >-

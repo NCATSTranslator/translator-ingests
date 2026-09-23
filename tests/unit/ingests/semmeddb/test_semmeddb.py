@@ -33,6 +33,7 @@ from translator_ingest.ingests.semmeddb.semmeddb import (
     _extract_supporting_studies,
     _has_bte_excluded_predicate,
     _make_node,
+    get_latest_version,
     on_begin_filter_edges,
     on_end_filter_edges,
     transform_semmeddb_edge,
@@ -70,12 +71,15 @@ def _create_test_runner(
     record: dict,
     verdicts: list[dict[str, str]] | None = None,
     check_coverage: bool = False,
+    write_artifact: bool = True,
 ) -> list:
     """Run a single record through the transform and return emitted entities.
 
     The transform loads the PMID-checker verdicts in its on_data_begin hook, so every run needs
     an artifact; with no ``verdicts`` it is empty, meaning no publication is rejected. The
     on_data_end hook, which enforces the coverage guard, only runs when ``check_coverage`` is set.
+    ``write_artifact`` is set to False to run without an artifact at all, which is what an
+    unfiltered run does.
     """
     writer = MockKozaWriter()
     hooks = KozaTransformHooks(
@@ -84,7 +88,8 @@ def _create_test_runner(
         on_data_end=[on_end_filter_edges] if check_coverage else [],
     )
     with tempfile.TemporaryDirectory() as input_files_dir:
-        _write_verdict_artifact(Path(input_files_dir), verdicts or [])
+        if write_artifact:
+            _write_verdict_artifact(Path(input_files_dir), verdicts or [])
         runner = KozaRunner(
             data=[record],
             writer=writer,
@@ -531,6 +536,30 @@ def test_publication_without_a_verdict_is_kept():
     entities = _create_test_runner(_base_record(), verdicts=[_verdict("PMID:99999999", "no")])
     association = [e for e in entities if isinstance(e, Association)][0]
     assert association.publications == FOUR_PUBS
+
+
+def test_unfiltered_run_keeps_rejected_publications_and_needs_no_artifact(monkeypatch):
+    """SEMMEDDB_UNFILTERED regenerates the pre-filter edge set, so nothing is dropped or required."""
+    monkeypatch.setattr("translator_ingest.ingests.semmeddb.semmeddb.PMID_FILTER_ENABLED", False)
+
+    entities = _create_test_runner(
+        _base_record(),
+        verdicts=[_verdict(pmid, "no") for pmid in FOUR_PUBS],
+        check_coverage=True,
+        write_artifact=False,
+    )
+
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.publications == FOUR_PUBS
+
+
+def test_unfiltered_run_reports_its_own_source_version(monkeypatch):
+    """A filtered and an unfiltered build must never share a directory or a build version."""
+    assert get_latest_version() == "semmeddb-2023-kg2.10.3"
+
+    monkeypatch.setattr("translator_ingest.ingests.semmeddb.semmeddb.PMID_FILTER_ENABLED", False)
+
+    assert get_latest_version() == "semmeddb-2023-kg2.10.3-unfiltered"
 
 
 def test_verdicts_for_another_edge_do_not_apply():

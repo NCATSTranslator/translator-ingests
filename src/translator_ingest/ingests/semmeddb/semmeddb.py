@@ -105,6 +105,16 @@ PUBLICATIONS_CAP_ENABLED: bool = (
     os.environ.get("SEMMEDDB_UNCAPPED", "").lower() not in ("1", "true", "yes")
 )
 
+# the filter is on by default. Set SEMMEDDB_UNFILTERED=1 (or true/yes) to keep every publication
+# the checker rejected, which is how the pre-filter edge set is regenerated for a new checker run
+# (the planned second pass over the "maybe" bucket needs exactly that input). The verdict artifact
+# is then not read at all and the coverage guard does not apply. get_latest_version() reports a
+# distinct source version when it is set, so filtered and unfiltered builds never share a
+# directory or a build version.
+PMID_FILTER_ENABLED: bool = (
+    os.environ.get("SEMMEDDB_UNFILTERED", "").lower() not in ("1", "true", "yes")
+)
+
 EdgeKey = tuple[str, str, str]
 
 # Every edge key the verdict artifact mentions, mapped to the PMIDs rejected for that edge.
@@ -152,6 +162,11 @@ def get_latest_version() -> str:
     # of downloading the source twice.
     if not PUBLICATIONS_CAP_ENABLED:
         version += "-publications-uncapped"
+
+    # Same treatment for an unfiltered build: its edges and publications differ from a filtered
+    # one, so it must not land in the directory or the build version of a filtered build.
+    if not PMID_FILTER_ENABLED:
+        version += "-unfiltered"
 
     return version
 
@@ -394,6 +409,11 @@ def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
     for key, default in _STATE_DEFAULTS.items():
         koza.state[key] = default
 
+    if not PMID_FILTER_ENABLED:
+        koza.log("SEMMEDDB_UNFILTERED is set, keeping every publication the checker rejected.", level="WARNING")
+        koza.state["verdict_index"] = {}
+        return
+
     if koza.input_files_dir is None:
         raise ValueError("No input_files_dir; the semmeddb transform needs the PMID-checker verdicts.")
     artifact_file = Path(koza.input_files_dir) / VERDICT_ARTIFACT_FILENAME
@@ -437,11 +457,12 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
             koza.log(f"  {label}: {s[key]}", level=level)
 
     edge_coverage = s["edges_with_verdicts"] / s["edges_verdict_checked"] if s["edges_verdict_checked"] else 0.0
-    koza.log(
-        f"  Edges covered by a PMID-checker verdict: {s['edges_with_verdicts']} of "
-        f"{s['edges_verdict_checked']} ({edge_coverage:.2%})",
-        level="INFO",
-    )
+    if PMID_FILTER_ENABLED:
+        koza.log(
+            f"  Edges covered by a PMID-checker verdict: {s['edges_with_verdicts']} of "
+            f"{s['edges_verdict_checked']} ({edge_coverage:.2%})",
+            level="INFO",
+        )
     koza.transform_metadata["pmid_checker_filter"] = {
         "edges_verdict_checked": s["edges_verdict_checked"],
         "edges_with_verdicts": s["edges_with_verdicts"],
@@ -451,7 +472,11 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
         "edges_capped": s["publications_capped"],
         "publications_cap_enabled": PUBLICATIONS_CAP_ENABLED,
         "max_publications_per_edge": MAX_PUBLICATIONS_PER_EDGE,
+        "pmid_filter_enabled": PMID_FILTER_ENABLED,
     }
+
+    if not PMID_FILTER_ENABLED:
+        return
 
     # An edge key the verdicts do not cover keeps all of its publications, so a join that stops
     # matching would disable the filter silently rather than fail. Make that loud instead.
