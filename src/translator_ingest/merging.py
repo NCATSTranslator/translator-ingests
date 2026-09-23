@@ -44,6 +44,10 @@ def merge_single(
 
     Returns:
         dict: Merge metadata from KGXFileMerger
+
+    Raises:
+        RuntimeError: if KGXFileMerger reported a merge error. It records errors in its metadata instead of raising,
+            and no merge metadata file is written in that case, so callers must not continue with the output.
     """
     output_dir = output_nodes_file.parent
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -81,10 +85,11 @@ def merge_single(
     merge_metadata = file_merger.get_merge_metadata()
     if "merge_error" in merge_metadata:
         logger.error(f"Merging error occurred for {source_id}: {merge_metadata['merge_error']}")
-    else:
-        with open(output_metadata_file, "w") as metadata_file:
-            json.dump(merge_metadata, metadata_file, indent=4)
-        logger.info(f"Merge metadata written to {output_metadata_file}")
+        raise RuntimeError(f"Merge failed for {source_id}: {merge_metadata['merge_error']}")
+
+    with open(output_metadata_file, "w") as metadata_file:
+        json.dump(merge_metadata, metadata_file, indent=4)
+    logger.info(f"Merge metadata written to {output_metadata_file}")
 
     return merge_metadata
 
