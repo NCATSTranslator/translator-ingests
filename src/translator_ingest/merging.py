@@ -5,7 +5,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from orion import KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, generate_schema, GraphSpec, SubGraphSource
+from orion import (KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, KGXKnowledgeGraphSource, generate_schema,
+                   GraphSpec, GraphFileSource)
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, extract_compressed_tar, atomic_copy_directory, \
@@ -52,24 +53,27 @@ def merge_single(
     output_dir = output_nodes_file.parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # ORION resolves a GraphSpec's `sources` (a recipe of ids to look up or build) into `resolved_sources`
+    # (KGX files on disk) before merging, and KGXFileMerger reads only the latter. We already have the files,
+    # so we populate resolved_sources directly and leave sources empty.
     graph_spec = GraphSpec(
         graph_id=source_id,
         graph_name=source_id,
         graph_description="",
         graph_url="",
-        graph_version=source_version or "",
+        release_version=source_version or "",
         graph_output_format="jsonl",
         add_edge_id=True,
         edge_id_type="uuid",
         overwrite_edge_ids=False,
-        sources=[
-            SubGraphSource(
+        sources=[],
+        resolved_sources=[
+            GraphFileSource(
                 id=source_id,
                 file_paths=[str(input_nodes_file), str(input_edges_file)],
-                graph_version=source_version
+                release_version=source_version
             )
         ],
-        subgraphs=[],
     )
 
     logger.info(f"Running KGXFileMerger for {source_id}...")
@@ -323,10 +327,10 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     merged_graph_metadata.data = data_path
 
     # Identify the released graphs the merged graph is built from (hasPart in the graph metadata).
-    kgx_sources = [{"@id": release_metadata.data,
-                    "name": source,
-                    "release_version": release_metadata.release_version,
-                    "build_version": release_metadata.build_version}
+    kgx_sources = [KGXKnowledgeGraphSource(id=release_metadata.data,
+                                           name=source,
+                                           release_version=release_metadata.release_version,
+                                           build_version=release_metadata.build_version)
                    for source, release_metadata in source_releases.items()]
 
     # Get KGXKnowledgeSource metadata from the rig files (isBasedOn in the graph metadata).
@@ -354,19 +358,21 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
             graph_name=graph_id,
             graph_description="",
             graph_url=data_path,
-            graph_version=release_version,
+            release_version=release_version,
+            build_version=build_version,
             graph_output_format="jsonl",
+            sources=[],
             # NOTE: merge_strategy=DONT_MERGE really means don't merge edges, nodes are always merged.
             # We already merged edges for every ingest and don't have overlapping
             # primary-knowledge-sources, so we don't need to merge edges here.
-            sources=[SubGraphSource(id=source,
-                                    file_paths=_extract_release_kgx_files(source,
-                                                                          release_metadata,
-                                                                          Path(staging_directory)),
-                                    graph_version=release_metadata.release_version,
-                                    merge_strategy=KGXFileMerger.DONT_MERGE)
-                     for source, release_metadata in source_releases.items()],
-            subgraphs=[],
+            resolved_sources=[GraphFileSource(id=source,
+                                              file_paths=_extract_release_kgx_files(source,
+                                                                                    release_metadata,
+                                                                                    Path(staging_directory)),
+                                              release_version=release_metadata.release_version,
+                                              build_version=release_metadata.build_version,
+                                              merge_strategy=KGXFileMerger.DONT_MERGE)
+                              for source, release_metadata in source_releases.items()],
         )
         file_merger = KGXFileMerger(
             graph_spec=graph_spec,
@@ -394,7 +400,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
 
 def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
                          knowledge_sources: list[KGXKnowledgeSource],
-                         kgx_sources: list[dict]):
+                         kgx_sources: list[KGXKnowledgeGraphSource]):
     """Generate graph metadata for a merged graph.
 
     Args:

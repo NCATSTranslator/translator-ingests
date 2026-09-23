@@ -20,6 +20,7 @@ def build_normalization_scheme(pipeline_metadata: PipelineMetadata) -> Normaliza
         normalization_code_version=pipeline_metadata.normalization_code_version,
         conflation=pipeline_metadata.normalization_conflation,
         strict=pipeline_metadata.normalization_strict,
+        include_taxa=False,  # ORION changed to include taxa by default, turn it off to continue our behavior
     )
 
 
