@@ -19,8 +19,10 @@ ORION_VOCABULARY = "orion"
 TRANSLATOR_VOCABULARY = "translator"
 TRANSLATOR_VOCABULARY_URL = "https://github.com/NCATSTranslator/translator-ingests"
 
-# Terms of the translator-ingests vocabulary that are read back out of published graph metadata.
+# Terms of the translator-ingests vocabulary that are referred to by name elsewhere.
 TRANSLATOR_BUILD_VERSION = f"{TRANSLATOR_VOCABULARY}:buildVersion"
+TRANSLATOR_NODE_COUNT = f"{TRANSLATOR_VOCABULARY}:nodeCount"
+TRANSLATOR_EDGE_COUNT = f"{TRANSLATOR_VOCABULARY}:edgeCount"
 
 
 @dataclass
