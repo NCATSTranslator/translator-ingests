@@ -79,6 +79,7 @@ GENETIC_VARIANT_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.genetic_vari
 # from normalized ids to raw kg2.10.3 ids.
 VERDICT_ARTIFACT_FILENAME = "semmeddb_pmid_checker_results_raw_keyed.parquet"
 VERDICT_ARTIFACT_COLUMNS = ["subject_curie", "predicate", "object_curie", "PMID", "support"]
+EDGE_KEY_COLUMNS = ["subject_curie", "predicate", "object_curie"]
 
 # these verdicts remove a publication; "yes", "no_abstract" and any PMID absent from the results
 # are kept. "maybe" is dropped now and refined in a later second pass.
@@ -266,17 +267,19 @@ def load_verdicts(artifact_file: Path) -> VerdictIndex:
         pl.col("support").cast(pl.Utf8).str.to_lowercase().str.strip_chars()
     )
 
-    verdict_index: VerdictIndex = {}
-    for subject, predicate, obj, pmid, support in verdicts.iter_rows():
-        edge_key = (subject, predicate, obj)
-        if support in DROP_SUPPORT_VALUES:
-            rejected_pmids = verdict_index.get(edge_key)
-            if rejected_pmids is None:
-                verdict_index[edge_key] = {pmid}
-            else:
-                rejected_pmids.add(pmid)
-        else:
-            verdict_index.setdefault(edge_key, None)
+    # The artifact has one row per (edge, PMID), tens of millions of them, for an index of a
+    # couple of million keys. Grouping the rejections and the covered keys in polars keeps python
+    # out of that walk: it only iterates one row per rejecting edge and one per covered edge.
+    rejections = (
+        verdicts.filter(pl.col("support").is_in(DROP_SUPPORT_VALUES))
+        .group_by(EDGE_KEY_COLUMNS)
+        .agg(pl.col("PMID"))
+    )
+    verdict_index: VerdictIndex = {
+        (subject, predicate, obj): set(pmids) for subject, predicate, obj, pmids in rejections.iter_rows()
+    }
+    for edge_key in verdicts.select(EDGE_KEY_COLUMNS).unique().iter_rows():
+        verdict_index.setdefault(edge_key, None)
     return verdict_index
 
 

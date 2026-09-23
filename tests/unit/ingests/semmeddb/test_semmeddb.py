@@ -34,6 +34,7 @@ from translator_ingest.ingests.semmeddb.semmeddb import (
     _has_bte_excluded_predicate,
     _make_node,
     get_latest_version,
+    load_verdicts,
     on_begin_filter_edges,
     on_end_filter_edges,
     transform_semmeddb_edge,
@@ -536,6 +537,31 @@ def test_publication_without_a_verdict_is_kept():
     entities = _create_test_runner(_base_record(), verdicts=[_verdict("PMID:99999999", "no")])
     association = [e for e in entities if isinstance(e, Association)][0]
     assert association.publications == FOUR_PUBS
+
+
+BASE_EDGE_KEY = ("CHEBI:15365", "biolink:treats_or_applied_or_studied_to_treat", "MONDO:0005148")
+
+
+def test_load_verdicts_groups_rejected_pmids_per_edge(tmp_path):
+    """Both rejecting verdicts of an edge land in its set, and another edge keeps its own."""
+    _write_verdict_artifact(tmp_path, [
+        _verdict(FOUR_PUBS[0], "no"),
+        _verdict(FOUR_PUBS[1], "maybe"),
+        _verdict(FOUR_PUBS[2], "yes"),
+        _verdict(FOUR_PUBS[3], "no", subject="CHEBI:999999"),
+    ])
+
+    index = load_verdicts(tmp_path / VERDICT_ARTIFACT_FILENAME)
+
+    assert index[BASE_EDGE_KEY] == {FOUR_PUBS[0], FOUR_PUBS[1]}
+    assert index[("CHEBI:999999", BASE_EDGE_KEY[1], BASE_EDGE_KEY[2])] == {FOUR_PUBS[3]}
+
+
+def test_load_verdicts_marks_an_edge_without_rejections_as_covered(tmp_path):
+    """An edge whose verdicts all keep still counts as covered, mapped to None."""
+    _write_verdict_artifact(tmp_path, [_verdict(FOUR_PUBS[0], "yes")])
+
+    assert load_verdicts(tmp_path / VERDICT_ARTIFACT_FILENAME) == {BASE_EDGE_KEY: None}
 
 
 def test_unfiltered_run_keeps_rejected_publications_and_needs_no_artifact(monkeypatch):
