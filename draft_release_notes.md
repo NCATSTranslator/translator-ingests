@@ -20,10 +20,13 @@ This release note covers merge commits from 2026-06-21 (last formal KGX release)
 * **drug_rep_hub**: minor, add a test https://github.com/NCATSTranslator/translator-ingests/pull/502
 * **geneticskp**: change download location to allow for data updates https://github.com/NCATSTranslator/translator-ingests/pull/469
 * **hpoa**: address technical debt https://github.com/NCATSTranslator/translator-ingests/pull/509
+* **semmeddb**: refactor LLM-PMID-checker filter, merged to main so we can build entire graph from main branch again https://github.com/NCATSTranslator/translator-ingests/pull/530
 * **signor**: remove ingest of edges involving complexes, update RIG https://github.com/NCATSTranslator/translator-ingests/pull/491
 
 
 ## General Pipeline Changes
+* ORION dependency bump to v2.0.9 and update our code to take advantage of it. **Changes metadata file names/contents (including versioning**), and **explicitly requests taxa/description data during the NodeNorming process and adds them as node properties**. https://github.com/NCATSTranslator/translator-ingests/pull/533
+* Fix issues with OVERWRITE and error handling in merge_single https://github.com/NCATSTranslator/translator-ingests/pull/532
 * Make data / releases / logs locations configurable https://github.com/NCATSTranslator/translator-ingests/pull/520 
 * Release metadata improvements https://github.com/NCATSTranslator/translator-ingests/pull/515 
 * Build multi-source KGs from releases, not data https://github.com/NCATSTranslator/translator-ingests/pull/443
