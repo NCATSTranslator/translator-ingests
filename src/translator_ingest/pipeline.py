@@ -17,13 +17,14 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION
-from orion.normalization import get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION
+from orion import (KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION,
+                   get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION)
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, current_iso_date
+from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
+                                             to_translator_graph_metadata)
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -402,7 +403,6 @@ def merge(pipeline_metadata: PipelineMetadata):
         input_edges_file=normalized_edges_file,
         output_nodes_file=output_nodes_file,
         output_edges_file=output_edges_file,
-        output_metadata_file=output_metadata_file,
         source_version=pipeline_metadata.source_version
     )
 
@@ -534,7 +534,9 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
                     ", Biolink Model, and Node Normalizer.",
         license="",
         url=storage_url,
-        version=pipeline_metadata.build_version,
+        # An ingest build has no release version yet, release_ingest() assigns one later.
+        version=pipeline_metadata.release_version or "",
+        build_version=pipeline_metadata.build_version,
         date_created=current_iso_date(),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.babel_version,
@@ -549,19 +551,17 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Check if this is a nodes-only ingest
     max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
     if max_edge_count == 0 and (graph_edges_file_path is None or not Path(graph_edges_file_path).exists()):
-        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, use the source_metadata as is without analysis
         # TODO get generate_schema working for nodes-only
-        graph_metadata = asdict(source_metadata)
+        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
     else:
-        # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
+        # complete the source_metadata from translator-ingests with an ORION analysis of the KGX files
         source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
                                                  edges_file_path=graph_edges_file_path,
                                                  biolink_version=pipeline_metadata.biolink_version)
-        graph_metadata = source_metadata.to_json()
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=graph_metadata)
+                      data=to_translator_graph_metadata(source_metadata))
     logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
     transform_metadata_file_path = get_versioned_file_paths(
