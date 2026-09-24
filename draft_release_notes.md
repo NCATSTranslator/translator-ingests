@@ -1,10 +1,10 @@
-This release note covers merge commits from 2026-06-21 (last formal KGX release) to the latest code release `0.5.0`.
+This code release is intended for use in the upcoming KGX release. So this changelog covers merged PRs from 2026-06-21 (last formal KGX release) onward.
 
 ## Major Resource Code Changes
 * multiple ingests: **remove source-derived taxon node properties** https://github.com/NCATSTranslator/translator-ingests/pull/528
+* **bgee**: fix download links https://github.com/NCATSTranslator/translator-ingests/pull/499
 * **bgee, go_cam, goa**: fix `get_latest_version()` failures https://github.com/NCATSTranslator/translator-ingests/pull/446 
 * **bindingdb, go_cam, gtopdb**: major parser changes plus test updates https://github.com/NCATSTranslator/translator-ingests/pull/350
-* **bgee**: fix download links https://github.com/NCATSTranslator/translator-ingests/pull/499
 * **chembl**: major performance improvement https://github.com/NCATSTranslator/translator-ingests/pull/498
 * **ctd**: fix bug in "chem–gene interaction edge" direction https://github.com/NCATSTranslator/translator-ingests/pull/401; add sensitivity https://github.com/NCATSTranslator/translator-ingests/pull/402 and binding https://github.com/NCATSTranslator/translator-ingests/pull/464 edges
 * **dgidb**: dynamically pull latest data release and parser rewrite to handle latest data at the time (2026-09) https://github.com/NCATSTranslator/translator-ingests/pull/527
