@@ -1,4 +1,4 @@
-This release note covers merge commits from 2026-06-21 (last formal KGX release) to now. 
+This release note covers merge commits from 2026-06-21 (last formal KGX release) to the latest code release `0.5.0`.
 
 ## Major Resource Code Changes
 * multiple ingests: **remove source-derived taxon node properties** https://github.com/NCATSTranslator/translator-ingests/pull/528
