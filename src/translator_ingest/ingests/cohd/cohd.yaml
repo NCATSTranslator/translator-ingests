@@ -1,0 +1,23 @@
+name: 'cohd'
+
+readers:
+  cohd_nodes:
+    files:
+      - 'cohd_nodes.jsonl'
+    format: 'jsonl'
+    required_properties:
+      - 'id'
+      - 'name'
+      - 'categories'  # to be renamed to 'category' during ingest
+      - 'attributes'
+  cohd_edges:
+    files:
+      - 'cohd_edges.jsonl'
+    format: 'jsonl'
+    required_properties:
+      - 'subject'
+      - 'predicate'
+      - 'object'
+      - 'score'
+      - 'attributes'
+      - 'sources'

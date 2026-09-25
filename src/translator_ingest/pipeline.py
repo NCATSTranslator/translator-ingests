@@ -1,11 +1,13 @@
 import click
+import hashlib
 import json
-import tarfile
+import time
+import shutil
 
 from dataclasses import is_dataclass, asdict
-from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
@@ -15,12 +17,14 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion.meta_kg import MetaKnowledgeGraphBuilder
-from orion.kgx_metadata import KGXGraphMetadata, analyze_graph
+from orion import (KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION,
+                   get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION)
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
-from translator_ingest.normalize import get_current_node_norm_version, normalize_kgx_files
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig
+from translator_ingest.merging import merge_single
+from translator_ingest.normalize import normalize_kgx_files
+from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
+                                             to_translator_graph_metadata)
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -32,9 +36,17 @@ from translator_ingest.util.storage.local import (
     write_ingest_file,
 )
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
-from translator_ingest.util.download_utils import substitute_version_in_download_yaml
+from translator_ingest.util.download_utils import (
+    get_recorded_download_date,
+    record_download_metadata,
+    substitute_version_in_download_yaml,
+)
 
 logger = get_logger(__name__)
+
+# Source-specific normalization overrides.
+# All sources default to strict normalization (True).
+NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {}
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
@@ -47,25 +59,47 @@ def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
     pipeline_metadata.koza_config = {
-        'max_edge_count': config.writer.max_edge_count if config.writer else None
+        "max_edge_count": config.writer.max_edge_count if config.writer else None,
     }
 
 
-# Determine the latest available version for the source using the function from the ingest module
-def get_latest_source_version(source):
+def get_last_successful_source_version(source: str) -> str | None:
+    """Get the source version from the last successful build.
+
+    Looks for the LATEST_BUILD_FILE for the source and returns its source_version.
+    Used as a fallback when get_latest_version() fails.
+
+    :param source: Source name
+    :return: The source_version from the last build, or None if not found
+    """
+    latest_build_path = get_versioned_file_paths(
+        file_type=IngestFileType.LATEST_BUILD_FILE,
+        pipeline_metadata=PipelineMetadata(source=source)
+    )
+    if not latest_build_path.exists():
+        return None
+
+    with open(latest_build_path, 'r') as f:
+        build_metadata = json.load(f)
+        return build_metadata.get("source_version")
+
+# Return an ingest module by source name so attributes from it can be accessed without explicit imports
+def get_ingest_module(source: str) -> ModuleType:
     try:
         # Import the ingest module for this source
         ingest_module = import_module(f"translator_ingest.ingests.{source}.{source}")
+        return ingest_module
     except ModuleNotFoundError:
         error_message = f"Python module for {source} was not found at translator_ingest.ingests.{source}.{source}.py"
         logger.error(error_message)
         raise NotImplementedError(error_message)
 
+# Determine the latest available version for the source using the function from the ingest module
+def get_latest_source_version(source):
+    ingest_module = get_ingest_module(source)
     try:
         # Get a reference to the get_latest_source_version function
         latest_version_fn = getattr(ingest_module, "get_latest_version")
-        # Call it and return the latest version
-        return latest_version_fn()
     except AttributeError:
         error_message = (
             f"Function get_latest_version() was not found for {source}. "
@@ -75,12 +109,49 @@ def get_latest_source_version(source):
         logger.error(error_message)
         raise NotImplementedError(error_message)
 
+    try:
+        # Call it and return the latest version
+        logger.info(f"Determining latest version for {source}...")
+        latest_version = latest_version_fn()
+        logger.info(f"Latest version for {source} established: {latest_version}")
+        return latest_version
+    except Exception as e:
+        logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
+                     f'Error: {e}.')
+        last_version = get_last_successful_source_version(source)
+        if last_version is not None:
+            logger.info(f'Fallback version identified for {source}: {last_version}.')
+            return last_version
+        logger.error(f'Fallback version could not be identified for {source}.')
+        raise e
+
+def get_transform_version(source: str) -> str:
+    """Compute a content hash of the ingest's source files.
+
+    Hashes all .py files, .json files, and the ingest YAML config in the ingest directory,
+    producing a short hash that changes whenever the ingest changes.
+    This automatically triggers a new build when the pipeline detects a new version.
+    """
+    ingest_dir = INGESTS_PARSER_PATH / source
+    source_yaml = ingest_dir / f"{source}.yaml"
+
+    files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py")) + sorted(ingest_dir.glob("*.json"))
+    if source_yaml.exists():
+        files_to_hash.append(source_yaml)
+
+    hasher = hashlib.sha256()
+    for file_path in files_to_hash:
+        hasher.update(file_path.read_bytes())
+    return hasher.hexdigest()[:8]
 
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Downloading source data for {pipeline_metadata.source}...")
     # Find the path to the source-specific download yaml
     download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
+    # If the download yaml does not exist, assume it isn't needed for this source and back out
+    if not download_yaml_file.exists():
+        logger.info(f"Download yaml not found for {pipeline_metadata.source}. Skipping download...")
+        return
 
     # Substitute version placeholders in download.yaml if they exist
     download_yaml_with_version = substitute_version_in_download_yaml(
@@ -93,7 +164,8 @@ def download(pipeline_metadata: PipelineMetadata):
     try:
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
-        kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        logger.info(f"Downloading source data for {pipeline_metadata.source}...")
+        report = kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
         # is a temporary file with versioning resolved but is
@@ -102,24 +174,9 @@ def download(pipeline_metadata: PipelineMetadata):
                 download_yaml_with_version != download_yaml_file:
             download_yaml_with_version.unlink(missing_ok=True)
 
-
-def extract_tmkp_archive(pipeline_metadata: PipelineMetadata):
-    """Extract TMKP tar.gz archive after download."""
-    logger.info("Extracting TMKP archive...")
-    source_data_dir = get_source_data_directory(pipeline_metadata)
-    
-    # Find the tar.gz file
-    tar_files = list(source_data_dir.glob("*.tar.gz"))
-    if not tar_files:
-        raise FileNotFoundError(f"No tar.gz file found in {source_data_dir}")
-    
-    tar_path = tar_files[0]
-    
-    # Extract to the same directory
-    with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(source_data_dir, filter='data')
-    
-    logger.info(f"Extracted {tar_path.name} to {source_data_dir}")
+    # Record when source data was actually fetched. The timestamp is only refreshed when a real
+    # download happened this run; cache-hit reruns preserve the existing downloaded_at.
+    record_download_metadata(pipeline_metadata, report)
 
 
 # Check if the transform stage was already completed
@@ -168,8 +225,10 @@ def transform(pipeline_metadata: PipelineMetadata):
         output_format=KozaOutputFormat.jsonl,
         input_files_dir=str(get_source_data_directory(pipeline_metadata)),
     )
+    start_time = time.perf_counter()
     runner.run()
-    logger.info(f"Finished transform for {source}")
+    elapsed_time = time.perf_counter() - start_time
+    logger.info(f"Finished transform for {source} in {elapsed_time:.1f} seconds.")
 
     # Reload koza config after transform to ensure we have the latest values
     # This is important because the transform might have updated config values
@@ -192,7 +251,8 @@ def transform(pipeline_metadata: PipelineMetadata):
         **{k: v for k, v in source_metadata.items() if v is not None},
         "source_version": pipeline_metadata.source_version,
         "transform_version": pipeline_metadata.transform_version,
-        "transform_metadata": runner.transform_metadata,
+        "transform_duration": f"{elapsed_time:.1f}",
+        "transform_metadata": runner.transform_metadata
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
@@ -212,7 +272,6 @@ def transform(pipeline_metadata: PipelineMetadata):
                 source=pipeline_metadata.source,
                 source_version=actual_version,
                 transform_version=pipeline_metadata.transform_version,
-                node_norm_version=pipeline_metadata.node_norm_version,
                 biolink_version=pipeline_metadata.biolink_version,
                 release_version=pipeline_metadata.release_version
             )
@@ -277,9 +336,6 @@ def normalize(pipeline_metadata: PipelineMetadata):
     node_norm_map_path = get_versioned_file_paths(
         file_type=IngestFileType.NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
     )
-    predicate_map_path = get_versioned_file_paths(
-        file_type=IngestFileType.PREDICATE_NORMALIZATION_MAP_FILE, pipeline_metadata=pipeline_metadata
-    )
 
     # Call normalize_kgx_files with pipeline_metadata to handle nodes-only ingests
     normalize_kgx_files(
@@ -289,12 +345,68 @@ def normalize(pipeline_metadata: PipelineMetadata):
         node_norm_map_file_path=str(node_norm_map_path),
         node_norm_failures_file_path=str(norm_failures_path),
         edges_output_file_path=str(norm_edge_path),
-        predicate_map_file_path=str(predicate_map_path),
         normalization_metadata_file_path=str(norm_metadata_path),
         pipeline_metadata=pipeline_metadata,
     )
     logger.info(f"Normalization complete for {pipeline_metadata.source}.")
 
+
+def is_merge_complete(pipeline_metadata: PipelineMetadata):
+    merged_nodes, merged_edges = get_versioned_file_paths(
+        file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    )
+    merge_metadata = get_versioned_file_paths(
+        file_type=IngestFileType.MERGE_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+    return merged_nodes.exists() and merged_edges.exists() and merge_metadata.exists()
+
+
+def merge(pipeline_metadata: PipelineMetadata):
+    """Merge post-normalization KGX files to deduplicate nodes and edges. After normalization,
+    there may be duplicate edges (e.g., from nodes that normalized to the same identifier).
+    """
+    logger.info(f"Starting merge for {pipeline_metadata.source}...")
+    normalized_nodes_file, normalized_edges_file = get_versioned_file_paths(
+        file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    )
+    output_nodes_file, output_edges_file = get_versioned_file_paths(
+        file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    )
+    output_metadata_file = get_versioned_file_paths(
+        file_type=IngestFileType.MERGE_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+
+    # Check if this is a nodes-only ingest
+    max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
+    if max_edge_count == 0:
+        logger.info(f"Skipping merge for nodes-only ingest {pipeline_metadata.source}")
+        # For nodes-only ingests, just copy the normalized files
+        # make sure the merged directory exists because for nodes-only ingests it might not
+        output_nodes_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(normalized_nodes_file, output_nodes_file)
+        # Write empty merge metadata
+        with open(output_metadata_file, 'w') as f:
+            json.dump({}, f, indent=2)
+        logger.info(f"Merge complete for {pipeline_metadata.source} (nodes-only, copied without merging).")
+        return
+
+    # This stage only runs when the merge is incomplete or an OVERWRITE was requested. ORION's
+    # KGXFileMerger refuses to write over existing merged files and reports that as a merge error
+    # instead of raising, so stale output from an earlier run would otherwise survive an OVERWRITE
+    # and flow into validation and release unnoticed. Clear the outputs first.
+    for stale_output in (output_nodes_file, output_edges_file, output_metadata_file):
+        stale_output.unlink(missing_ok=True)
+
+    merge_single(
+        source_id=pipeline_metadata.source,
+        input_nodes_file=normalized_nodes_file,
+        input_edges_file=normalized_edges_file,
+        output_nodes_file=output_nodes_file,
+        output_edges_file=output_edges_file,
+        source_version=pipeline_metadata.source_version
+    )
+
+    logger.info(f"Merge complete for {pipeline_metadata.source}.")
 
 def is_validation_complete(pipeline_metadata: PipelineMetadata):
     validation_report_file_path = get_versioned_file_paths(
@@ -306,7 +418,7 @@ def is_validation_complete(pipeline_metadata: PipelineMetadata):
 def validate(pipeline_metadata: PipelineMetadata):
     logger.info(f"Starting validation for {pipeline_metadata.source}... biolink: {pipeline_metadata.biolink_version}")
     nodes_file, edges_file = get_versioned_file_paths(
-        file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+        file_type=IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
     validation_output_dir = get_validation_directory(pipeline_metadata=pipeline_metadata)
     validation_output_dir.mkdir(exist_ok=True)
@@ -357,7 +469,7 @@ def test_data(pipeline_metadata: PipelineMetadata):
     #  we're not saving the metakg anymore.
     logger.info(f"Generating test data and example edges for {pipeline_metadata.source}...")
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
-        IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+        IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
 
     # Check if this is a nodes-only ingest
@@ -406,46 +518,50 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Generate test data and example edges
     test_data(pipeline_metadata)
 
-    # Get KGXSource metadata from the rig file
+    # Get KGXKnowledgeSource metadata from the rig file
     data_source_info = get_kgx_source_from_rig(pipeline_metadata.source)
     data_source_info.version = pipeline_metadata.source_version
 
-    release_url = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
+    storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
+                   f"transform_{pipeline_metadata.transform_version}/"
+                   f"normalization_{pipeline_metadata.get_composite_normalization_version()}/"
+                   f"merge_{MERGING_CODE_VERSION}/")
+    pipeline_metadata.data = storage_url
     source_metadata = KGXGraphMetadata(
-        id=release_url,
+        id=storage_url,
         name=pipeline_metadata.source,
         description="A knowledge graph built for the NCATS Biomedical Data Translator project using Translator-Ingests"
                     ", Biolink Model, and Node Normalizer.",
-        license="MIT",
-        url=release_url,
-        version=pipeline_metadata.release_version,
-        date_created=datetime.now().strftime("%Y_%m_%d"),
+        license="",
+        url=storage_url,
+        # An ingest build has no release version yet, release_ingest() assigns one later.
+        version=pipeline_metadata.release_version or "",
+        build_version=pipeline_metadata.build_version,
+        date_created=current_iso_date(),
         biolink_version=pipeline_metadata.biolink_version,
-        babel_version=pipeline_metadata.node_norm_version,
-        kgx_sources=[data_source_info]
+        babel_version=pipeline_metadata.babel_version,
+        knowledge_sources=[data_source_info]
     )
 
     # get paths to the final nodes and edges files
     graph_nodes_file_path, graph_edges_file_path = get_versioned_file_paths(
-        IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+        IngestFileType.MERGED_KGX_FILES, pipeline_metadata=pipeline_metadata
     )
 
     # Check if this is a nodes-only ingest
     max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
     if max_edge_count == 0 and (graph_edges_file_path is None or not Path(graph_edges_file_path).exists()):
-        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, use the source_metadata as is without analysis
-        graph_metadata = source_metadata
+        # TODO get generate_schema working for nodes-only
+        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
     else:
-        # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
-        graph_metadata = analyze_graph(
-            nodes_file_path=graph_nodes_file_path,
-            edges_file_path=graph_edges_file_path,
-            graph_metadata=source_metadata,
-        )
+        # complete the source_metadata from translator-ingests with an ORION analysis of the KGX files
+        source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
+                                                 edges_file_path=graph_edges_file_path,
+                                                 biolink_version=pipeline_metadata.biolink_version)
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=graph_metadata)
+                      data=to_translator_graph_metadata(source_metadata))
     logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
     transform_metadata_file_path = get_versioned_file_paths(
@@ -466,9 +582,19 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     else:
         logger.error(f"Normalization metadata not found for {pipeline_metadata.source}...")
         normalization_metadata = {"Normalization metadata not found."}
+    merge_metadata_path = get_versioned_file_paths(
+        file_type=IngestFileType.MERGE_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+    if merge_metadata_path.exists():
+        with merge_metadata_path.open("r") as merge_metadata_file:
+            merge_metadata = json.load(merge_metadata_file)
+    else:
+        logger.error(f"Merge metadata not found for {pipeline_metadata.source}...")
+        merge_metadata = {"Merge metadata not found."}
     ingest_metadata = {
         "transform": transform_metadata,
         "normalization": normalization_metadata,
+        "merge": merge_metadata
     }
     write_ingest_file(file_type=IngestFileType.INGEST_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
@@ -476,24 +602,21 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     logger.info(f"Ingest metadata complete for {pipeline_metadata.source}.")
 
 
-# Open the latest release metadata and compare build versions with the current pipeline run to see if a new release needs to
-# be generated. build_version is used, intentionally ignoring the release version, because we don't need to make a
-# new release if the build hasn't actually changed.
-def is_latest_release_current(pipeline_metadata: PipelineMetadata):
-    release_metadata_path = get_versioned_file_paths(IngestFileType.LATEST_RELEASE_FILE,
+# Open the latest build metadata and compare build versions with the current pipeline run to see if the latest build
+# needs to be updated.
+def is_latest_build_metadata_current(pipeline_metadata: PipelineMetadata):
+    build_metadata_path = get_versioned_file_paths(IngestFileType.LATEST_BUILD_FILE,
                                                      pipeline_metadata=pipeline_metadata)
-    if not release_metadata_path.exists():
+    if not build_metadata_path.exists():
         return False
-    with release_metadata_path.open("r") as latest_release_file:
-        latest_release_metadata = PipelineMetadata(**json.load(latest_release_file))
-    return pipeline_metadata.build_version == latest_release_metadata.build_version
+    with build_metadata_path.open("r") as latest_build_file:
+        latest_build_metadata = PipelineMetadata.from_dict(json.load(latest_build_file))
+    return pipeline_metadata.build_version == latest_build_metadata.build_version
 
 
-def generate_latest_release_metadata(pipeline_metadata: PipelineMetadata):
-    logger.info(f"Generating release metadata for {pipeline_metadata.source}... "
-                f"release: {pipeline_metadata.release_version}")
-    pipeline_metadata.data = f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.release_version}/"
-    write_ingest_file(file_type=IngestFileType.LATEST_RELEASE_FILE,
+def generate_latest_build_metadata(pipeline_metadata: PipelineMetadata):
+    logger.info(f"Generating latest build metadata for {pipeline_metadata.source}... ")
+    write_ingest_file(file_type=IngestFileType.LATEST_BUILD_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=pipeline_metadata.get_release_metadata())
 
@@ -505,15 +628,14 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
 
     # Download the source data
     download(pipeline_metadata)
-    
-    # Special handling for tmkp: extract tar.gz after download
-    if source == "tmkp":
-        extract_tmkp_archive(pipeline_metadata)
+    # Carry the recorded download timestamp (either new or from a previous download) into the
+    # pipeline metadata so it surfaces in the build and release metadata outputs.
+    pipeline_metadata.source_download_date = get_recorded_download_date(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
-    # TODO we need a way to version the transform (see issue #97)
+    # Transform version is auto-computed as a content hash of the ingest's source files
     # Set transform_version before load_koza_config since it uses get_transform_directory
-    pipeline_metadata.transform_version = "1.0"
+    pipeline_metadata.transform_version = get_transform_version(source)
 
     # Load koza config early to get max_edge_count for all pipeline stages
     load_koza_config(source, pipeline_metadata)
@@ -528,18 +650,33 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         return
 
     # Normalize the post-transform KGX files
-    pipeline_metadata.node_norm_version = get_current_node_norm_version()
+    # Note - ORION can use the biolink model to map predicates during normalization, but we decided not to do that.
+    # Here we still need the biolink model version populated before normalization so metadata outputs are
+    # consistent.
+    pipeline_metadata.biolink_version = get_current_biolink_version()
+    pipeline_metadata.babel_version = get_current_babel_version()
+    pipeline_metadata.node_normalizer_version = get_current_node_norm_version()
+    pipeline_metadata.normalization_code_version = NORMALIZATION_CODE_VERSION
+    pipeline_metadata.normalization_conflation = True
+    pipeline_metadata.normalization_strict = NORMALIZATION_STRICT_OVERRIDES.get(source, True)
+    # Now pipeline_metadata has everything it needs to check if the currently desired normalization is done already,
+    # and settings to provide to the normalization stage.
     if is_normalization_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Normalization already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
-            f"normalization: {pipeline_metadata.node_norm_version}"
+            f"normalization: {pipeline_metadata.get_composite_normalization_version()}"
         )
     else:
         normalize(pipeline_metadata)
 
+    # Merge entities in post-normalization KGX files
+    pipeline_metadata.merging_code_version = MERGING_CODE_VERSION
+    if is_merge_complete(pipeline_metadata) and not overwrite:
+        logger.info(f"Merge already done for {pipeline_metadata.source}...")
+    else:
+        merge(pipeline_metadata)
+
     # Validate the post-normalization files
-    # First retrieve and set the current biolink version to make sure validation is run using that version
-    pipeline_metadata.biolink_version = get_current_biolink_version()
     if is_validation_complete(pipeline_metadata) and not overwrite:
         logger.info(f"Validation already done for {pipeline_metadata.source} ({pipeline_metadata.source_version}), "
                     f"biolink: {pipeline_metadata.biolink_version}")
@@ -551,11 +688,8 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         logger.warning(f"Validation did not pass for {pipeline_metadata.source}! Aborting...")
         return
 
-    # The release version needs to be established before the graph metadata phase because it's used in the outputs
-    release_version = datetime.now().strftime("%Y_%m_%d")
-    pipeline_metadata.release_version = release_version
-
     pipeline_metadata.build_version = pipeline_metadata.generate_build_version()
+    pipeline_metadata.build_date = current_iso_date()
     if is_graph_metadata_complete(pipeline_metadata) and not overwrite:
         logger.info(
             f"Graph metadata already completed for {pipeline_metadata.source} ({pipeline_metadata.source_version})."
@@ -563,11 +697,11 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     else:
         generate_graph_metadata(pipeline_metadata)
 
-    if is_latest_release_current(pipeline_metadata) and not overwrite:
-        logger.info(f"Latest release metadata already up to date for {pipeline_metadata.source}, "
+    if is_latest_build_metadata_current(pipeline_metadata) and not overwrite:
+        logger.info(f"Latest build metadata already up to date for {pipeline_metadata.source}, "
                     f"build: {pipeline_metadata.build_version}")
     else:
-        generate_latest_release_metadata(pipeline_metadata)
+        generate_latest_build_metadata(pipeline_metadata)
 
 
 @click.command()

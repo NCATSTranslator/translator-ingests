@@ -1,0 +1,1103 @@
+"""Tests for TMKP ingest validation functions and transforms."""
+
+import json
+
+import pytest
+
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    Association,
+    ChemicalAffectsGeneAssociation,
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    GeneToDiseaseAssociation,
+    GeneToGeneAssociation,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    NamedThing,
+    RetrievalSource,
+    ResourceRoleEnum,
+    Study,
+    TextMiningStudyResult,
+)
+from translator_ingest.util.transform_utils import entity_id
+from koza.runner import KozaRunner, KozaTransformHooks
+
+from tests.unit.ingests import MockKozaWriter
+from translator_ingest.ingests.tmkp.tmkp import (
+    _get_id_prefix,
+    _get_valid_prefixes_for_class,
+    _get_predicate_domain_range_prefixes,
+    _normalize_publication_id,
+    _validate_edge_prefixes,
+    _reset_module_state,
+    _warned_unmapped_attrs,
+    get_skipped_edges_summary,
+    _skipped_edges_by_prefix,
+    parse_attributes,
+    transform_tmkp_edge,
+    TMKP_TO_BIOLINK_SLOT_MAP,
+    INFORES_TEXT_MINING_KP,
+    PREDICATE_REMAP,
+    MODIFIED_FORM,
+)
+
+
+@pytest.fixture(autouse=True)
+def clean_module_state():
+    """Reset module-level mutable state before each test."""
+    _reset_module_state()
+
+
+class TestGetIdPrefix:
+    """Tests for _get_id_prefix function."""
+
+    @pytest.mark.parametrize(
+        "curie,expected",
+        [
+            ("MONDO:0008315", "MONDO"),
+            ("DRUGBANK:DB01248", "DRUGBANK"),
+            ("CHEBI:15365", "CHEBI"),
+            ("NCBIGene:1234", "NCBIGene"),
+            ("HP:0001234", "HP"),
+        ],
+    )
+    def test_extracts_prefix_from_valid_curie(self, curie: str, expected: str):
+        assert _get_id_prefix(curie) == expected
+
+    @pytest.mark.parametrize(
+        "curie",
+        [
+            "invalid",
+            "nocolon",
+            "",
+        ],
+    )
+    def test_returns_empty_string_for_invalid_curie(self, curie: str):
+        assert _get_id_prefix(curie) == ""
+
+
+class TestNormalizePublicationId:
+    """Tests for _normalize_publication_id function."""
+
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            # Bare PMC IDs gain the "PMC:" CURIE prefix
+            ("PMC6211782", "PMC:PMC6211782"),
+            ("PMC8208096", "PMC:PMC8208096"),
+            # Already-prefixed IDs are passed through unchanged
+            ("PMC:PMC6211782", "PMC:PMC6211782"),
+            ("PMID:31388901", "PMID:31388901"),
+            # Empty / None-like values pass through unchanged
+            ("", ""),
+            # Non-PMC, non-prefixed values pass through unchanged
+            ("foo", "foo"),
+        ],
+    )
+    def test_normalize(self, raw: str, expected: str):
+        assert _normalize_publication_id(raw) == expected
+
+
+class TestGetValidPrefixesForClass:
+    """Tests for _get_valid_prefixes_for_class function."""
+
+    def test_chemical_entity_includes_drugbank(self):
+        prefixes = _get_valid_prefixes_for_class("ChemicalEntity")
+        assert "DRUGBANK" in prefixes
+
+    def test_chemical_entity_includes_chebi(self):
+        prefixes = _get_valid_prefixes_for_class("ChemicalEntity")
+        assert "CHEBI" in prefixes
+
+    def test_disease_or_phenotypic_feature_includes_mondo(self):
+        prefixes = _get_valid_prefixes_for_class("DiseaseOrPhenotypicFeature")
+        assert "MONDO" in prefixes
+
+    def test_disease_or_phenotypic_feature_includes_hp(self):
+        prefixes = _get_valid_prefixes_for_class("DiseaseOrPhenotypicFeature")
+        assert "HP" in prefixes
+
+    def test_gene_or_gene_product_includes_hgnc(self):
+        prefixes = _get_valid_prefixes_for_class("GeneOrGeneProduct")
+        assert "HGNC" in prefixes
+
+    def test_gene_or_gene_product_includes_ncbigene(self):
+        prefixes = _get_valid_prefixes_for_class("GeneOrGeneProduct")
+        assert "NCBIGene" in prefixes
+
+    def test_includes_descendant_prefixes(self):
+        """Prefixes from subclasses should be included via descendant traversal."""
+        # SmallMolecule is a descendant of ChemicalEntity
+        chemical_prefixes = _get_valid_prefixes_for_class("ChemicalEntity")
+        small_mol_prefixes = _get_valid_prefixes_for_class("SmallMolecule")
+        # All SmallMolecule prefixes should appear in ChemicalEntity's set
+        assert small_mol_prefixes.issubset(chemical_prefixes)
+
+    def test_returns_frozenset(self):
+        prefixes = _get_valid_prefixes_for_class("ChemicalEntity")
+        assert isinstance(prefixes, frozenset)
+
+    def test_unknown_class_raises_value_error(self):
+        # BMT raises ValueError for invalid Biolink classes
+        with pytest.raises(ValueError, match="not a valid biolink component"):
+            _get_valid_prefixes_for_class("NonExistentClass")
+
+
+class TestGetPredicateDomainRangePrefixes:
+    """Tests for _get_predicate_domain_range_prefixes function."""
+
+    def test_treats_returns_chemical_domain_and_disease_range(self):
+        result = _get_predicate_domain_range_prefixes("biolink:treats")
+        assert result is not None
+        domain_prefixes, range_prefixes = result
+        assert "DRUGBANK" in domain_prefixes
+        assert "MONDO" in range_prefixes
+
+    def test_gene_associated_with_condition_has_gene_domain(self):
+        result = _get_predicate_domain_range_prefixes("biolink:gene_associated_with_condition")
+        assert result is not None
+        domain_prefixes, _ = result
+        assert "HGNC" in domain_prefixes
+
+    def test_unknown_predicate_returns_none(self):
+        result = _get_predicate_domain_range_prefixes("biolink:nonexistent_predicate")
+        assert result is None
+
+    def test_returns_tuple_of_frozensets(self):
+        result = _get_predicate_domain_range_prefixes("biolink:treats")
+        assert result is not None
+        domain_prefixes, range_prefixes = result
+        assert isinstance(domain_prefixes, frozenset)
+        assert isinstance(range_prefixes, frozenset)
+
+
+class TestValidateEdgePrefixes:
+    """Tests for _validate_edge_prefixes function."""
+
+    def test_valid_treats_edge_chemical_to_disease(self):
+        # Chemical treating disease is valid
+        assert _validate_edge_prefixes(
+            "DRUGBANK:DB01248", "MONDO:0008315", "biolink:treats"
+        )
+
+    def test_invalid_treats_edge_disease_to_chemical(self):
+        # Disease treating chemical is invalid (reversed)
+        assert not _validate_edge_prefixes(
+            "MONDO:0008315", "DRUGBANK:DB01248", "biolink:treats"
+        )
+
+    def test_valid_treats_edge_chebi_to_mondo(self):
+        # CHEBI chemical treating MONDO disease is valid
+        assert _validate_edge_prefixes(
+            "CHEBI:15365", "MONDO:0005148", "biolink:treats"
+        )
+
+    def test_valid_gene_associated_with_condition(self):
+        # Gene associated with disease is valid
+        assert _validate_edge_prefixes(
+            "HGNC:11477", "MONDO:0005148", "biolink:gene_associated_with_condition"
+        )
+
+    def test_invalid_gene_associated_with_condition_reversed(self):
+        # Disease associated with gene in subject position is invalid
+        assert not _validate_edge_prefixes(
+            "MONDO:0005148", "HGNC:11477", "biolink:gene_associated_with_condition"
+        )
+
+    def test_valid_treats_edge_chebi_to_hp(self):
+        # Chemical treating phenotypic feature is valid (HP is in range of treats)
+        assert _validate_edge_prefixes(
+            "CHEBI:15365", "HP:0001234", "biolink:treats"
+        )
+
+    def test_unknown_predicate_returns_true(self):
+        # Unknown predicates should pass (no constraints to check)
+        assert _validate_edge_prefixes(
+            "FOO:123", "BAR:456", "biolink:nonexistent_predicate"
+        )
+
+    def test_unknown_prefix_in_subject_fails_validation(self):
+        # Unknown prefix in subject position for constrained predicate
+        assert not _validate_edge_prefixes(
+            "UNKNOWN:123", "MONDO:0008315", "biolink:treats"
+        )
+
+    def test_unknown_prefix_in_object_fails_validation(self):
+        # Unknown prefix in object position for constrained predicate
+        assert not _validate_edge_prefixes(
+            "DRUGBANK:DB01248", "UNKNOWN:456", "biolink:treats"
+        )
+
+    def test_invalid_curie_without_colon_fails(self):
+        # Subject with no colon has empty prefix, should fail for constrained predicate
+        assert not _validate_edge_prefixes(
+            "invalid", "MONDO:0008315", "biolink:treats"
+        )
+
+
+class TestGetSkippedEdgesSummary:
+    """Tests for get_skipped_edges_summary function."""
+
+    def test_empty_when_no_skipped_edges(self):
+        summary = get_skipped_edges_summary()
+        assert summary == {}
+
+    def test_counts_skipped_edges_by_prefix_pattern(self):
+        _skipped_edges_by_prefix.add(
+            ("MONDO:0008315", "biolink:treats", "DRUGBANK:DB01248", "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation")
+        )
+        _skipped_edges_by_prefix.add(
+            ("MONDO:0005148", "biolink:treats", "CHEBI:15365", "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation")
+        )
+        summary = get_skipped_edges_summary()
+        # Both have pattern "MONDO biolink:treats <prefix> (relation)"
+        assert len(summary) >= 1
+        # Each unique (subject, pred, object, relation) tuple is one entry in the set
+        total = sum(summary.values())
+        assert total == 2
+
+
+# ---------------------------------------------------------------------------
+# parse_attributes unit tests
+# ---------------------------------------------------------------------------
+
+def _make_association(**overrides) -> Association:
+    """Create a minimal Association for testing parse_attributes."""
+    defaults = {
+        "id": entity_id(),
+        "subject": "DRUGBANK:DB00001",
+        "predicate": "biolink:treats",
+        "object": "MONDO:0005148",
+        "knowledge_level": KnowledgeLevelEnum.not_provided,
+        "agent_type": AgentTypeEnum.text_mining_agent,
+    }
+    defaults.update(overrides)
+    return Association(**defaults)
+
+
+class TestParseAttributes:
+    """Direct unit tests for parse_attributes."""
+
+    def test_text_mining_study_result_creation(self):
+        """Full nested attribute parsing produces a Study with TextMiningStudyResult."""
+        attributes = [
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:supporting_text", "value": "Drug X treats disease Y."},
+                    {"attribute_type_id": "biolink:publications", "value": "PMID:12345"},
+                    {"attribute_type_id": "biolink:supporting_text_located_in", "value": "abstract"},
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.95"},
+                    {"attribute_type_id": "biolink:subject_location_in_text", "value": "42|50"},
+                    {"attribute_type_id": "biolink:object_location_in_text", "value": "60|70"},
+                    {"attribute_type_id": "biolink:supporting_document_year", "value": "2021"},
+                ],
+            }
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_supporting_studies is not None
+        study = list(assoc.has_supporting_studies.values())[0]
+        assert isinstance(study, Study)
+
+        result = study.has_study_results[0]
+        assert isinstance(result, TextMiningStudyResult)
+        assert result.id == "tmkp:result_1"
+        assert result.supporting_text == ["Drug X treats disease Y."]
+        assert result.xref == ["PMID:12345"]
+        assert result.supporting_text_section_type == "abstract"
+        assert result.extraction_confidence_score == 0.95
+        assert result.subject_location_in_text == [42, 50]
+        assert result.object_location_in_text == [60, 70]
+        assert result.supporting_document_year == 2021
+
+    def test_pipe_delimited_location_parsing(self):
+        """'42|50' parses to [42, 50]."""
+        attributes = [
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:loc_test",
+                "attributes": [
+                    {"attribute_type_id": "biolink:subject_location_in_text", "value": "42|50"},
+                ],
+            }
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        result = list(assoc.has_supporting_studies.values())[0].has_study_results[0]
+        assert result.subject_location_in_text == [42, 50]
+
+    def test_edge_level_publications_are_ingested(self):
+        """The edge-level 'biolink:publications' attribute populates association.publications.
+
+        This is the aggregate list across all evidence items, distinct from the per-evidence
+        nested 'biolink:publications' attribute that populates TextMiningStudyResult.xref.
+        """
+        attributes = [
+            {"attribute_type_id": "biolink:publications", "value": ["PMID:111", "PMC:9308958"]},
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.publications == ["PMID:111", "PMC:9308958"]
+
+    def test_bare_pmc_id_in_nested_publications_is_prefixed(self):
+        """Bare PMC identifier in a nested publications attribute is normalized in xref."""
+        attributes = [
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_pmc",
+                "attributes": [
+                    {"attribute_type_id": "biolink:publications", "value": "PMC6211782"},
+                ],
+            }
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        result = list(assoc.has_supporting_studies.values())[0].has_study_results[0]
+        assert result.xref == ["PMC:PMC6211782"]
+
+    def test_knowledge_source_extraction(self):
+        """Primary + supporting sources from attributes populate association.sources."""
+        attributes = [
+            {"attribute_type_id": "biolink:primary_knowledge_source", "value": "infores:custom-kp"},
+            {"attribute_type_id": "biolink:supporting_data_source", "value": "infores:upstream"},
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.sources is not None
+        source_ids = [s.resource_id for s in assoc.sources]
+        assert "infores:custom-kp" in source_ids
+        assert "infores:upstream" in source_ids
+
+    def test_default_sources_when_no_source_attributes(self):
+        """Falls back to INFORES_TEXT_MINING_KP and pubmed when no source attrs present."""
+        attributes = [
+            {"attribute_type_id": "has_evidence_count", "value": 5},
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        source_ids = [s.resource_id for s in assoc.sources]
+        assert INFORES_TEXT_MINING_KP in source_ids
+        assert "infores:pubmed" in source_ids
+
+    def test_empty_attributes_list(self):
+        """Empty list still sets default sources."""
+        assoc = _make_association()
+        parse_attributes([], assoc)
+
+        assert assoc.sources is not None
+        source_ids = [s.resource_id for s in assoc.sources]
+        assert INFORES_TEXT_MINING_KP in source_ids
+
+    def test_multiple_study_results_in_single_study(self):
+        """Two supporting_study_result attrs create two results under one Study."""
+        attributes = [
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:r1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:supporting_text", "value": "First sentence."},
+                ],
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:r2",
+                "attributes": [
+                    {"attribute_type_id": "biolink:supporting_text", "value": "Second sentence."},
+                ],
+            },
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert len(assoc.has_supporting_studies) == 1
+        study = list(assoc.has_supporting_studies.values())[0]
+        assert len(study.has_study_results) == 2
+
+    def test_unknown_attribute_warning_logged_once(self):
+        """Unknown attr_type is tracked in _warned_unmapped_attrs."""
+        attributes = [
+            {"attribute_type_id": "totally_unknown_attr", "value": "whatever"},
+            {"attribute_type_id": "totally_unknown_attr", "value": "again"},
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert "totally_unknown_attr" in _warned_unmapped_attrs
+
+    def test_edge_level_confidence_score_is_ingested(self):
+        attributes = [
+            {
+                "attribute_type_id": "biolink:extraction_confidence_score",
+                "value": 0.9983171550000001,
+                "value_type_id": "biolink:ConfidenceLevel",
+            }
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == pytest.approx(0.9983171550000001)
+        assert "biolink:extraction_confidence_score" not in _warned_unmapped_attrs
+
+    def test_edge_level_score_does_not_disturb_per_evidence_scores(self):
+        attributes = [
+            {
+                "attribute_type_id": "biolink:extraction_confidence_score",
+                "value": 0.9983171550000001,
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.99937016"},
+                ],
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_2",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": "0.99726415"},
+                ],
+            },
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == pytest.approx(0.9983171550000001)
+        results = list(assoc.has_supporting_studies.values())[0].has_study_results
+        assert [r.extraction_confidence_score for r in results] == [
+            pytest.approx(0.99937016),
+            pytest.approx(0.99726415),
+        ]
+
+    def test_edge_level_score_is_mean_of_per_evidence_scores(self):
+        nested = [0.99937016, 0.99726415]
+        attributes = [
+            {
+                "attribute_type_id": "biolink:extraction_confidence_score",
+                "value": sum(nested) / len(nested),
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": str(nested[0])},
+                ],
+            },
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_2",
+                "attributes": [
+                    {"attribute_type_id": "biolink:extraction_confidence_score", "value": str(nested[1])},
+                ],
+            },
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        results = list(assoc.has_supporting_studies.values())[0].has_study_results
+        per_evidence = [r.extraction_confidence_score for r in results]
+        assert assoc.has_confidence_score == pytest.approx(sum(per_evidence) / len(per_evidence))
+
+    def test_out_of_range_confidence_score_is_ingested_unchanged(self):
+        attributes = [
+            {"attribute_type_id": "biolink:extraction_confidence_score", "value": 1.240364}
+        ]
+        assoc = _make_association()
+        parse_attributes(attributes, assoc)
+
+        assert assoc.has_confidence_score == pytest.approx(1.240364)
+
+    def test_mapping_to_a_nonexistent_slot_warns_instead_of_dropping(self):
+        monkey_key = "attr_with_bad_target"
+        TMKP_TO_BIOLINK_SLOT_MAP[monkey_key] = "not_a_real_biolink_slot"
+        try:
+            attributes = [{"attribute_type_id": monkey_key, "value": "something"}]
+            assoc = _make_association()
+            parse_attributes(attributes, assoc)
+
+            assert "not_a_real_biolink_slot" in _warned_unmapped_attrs
+        finally:
+            del TMKP_TO_BIOLINK_SLOT_MAP[monkey_key]
+
+    def test_slot_map_contains_no_dead_entries(self):
+        for source_name, biolink_slot in TMKP_TO_BIOLINK_SLOT_MAP.items():
+            assert biolink_slot in Association.model_fields, (
+                f"'{source_name}' maps to '{biolink_slot}', which is not a slot on Association"
+            )
+
+
+# ---------------------------------------------------------------------------
+# transform_tmkp_edge integration tests via KozaRunner
+# ---------------------------------------------------------------------------
+
+def _run_edge_transform(record: dict) -> list:
+    """Helper: run transform_tmkp_edge through KozaRunner, return collected items."""
+    writer = MockKozaWriter()
+    runner = KozaRunner(
+        data=[record],
+        writer=writer,
+        hooks=KozaTransformHooks(transform_record=[transform_tmkp_edge]),
+    )
+    runner.run()
+    return writer.items
+
+
+class TestTransformTmkpEdge:
+    """Integration tests for transform_tmkp_edge via KozaRunner."""
+
+    def test_basic_edge_with_attributes(self):
+        """Full round-trip: edge with JSON attributes produces association + nodes.
+
+        Source 'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat'
+        and knowledge_level is set to 'knowledge_assertion' for this predicate.
+        """
+        attributes = [
+            {
+                "attribute_type_id": "biolink:has_supporting_study_result",
+                "value": "tmkp:result_1",
+                "attributes": [
+                    {"attribute_type_id": "biolink:supporting_text", "value": "Drug treats disease."},
+                    {"attribute_type_id": "biolink:publications", "value": "PMID:99999"},
+                ],
+            }
+        ]
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+            "_attributes": json.dumps(attributes),
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+        assert assoc.subject == "DRUGBANK:DB01248"
+        assert assoc.object == "MONDO:0008315"
+        assert assoc.predicate == "biolink:treats_or_applied_or_studied_to_treat"
+        assert assoc.knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+        assert assoc.agent_type == AgentTypeEnum.text_mining_agent
+
+        # Verify supporting studies populated
+        assert assoc.has_supporting_studies is not None
+        study = list(assoc.has_supporting_studies.values())[0]
+        assert len(study.has_study_results) == 1
+
+        # Verify nodes created
+        nodes = [i for i in items if isinstance(i, NamedThing) and not isinstance(i, Association)]
+        assert len(nodes) == 2
+
+    def test_edge_without_attributes_gets_default_sources(self):
+        """Edge without _attributes still gets default sources and remapped predicate."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert assoc.predicate == "biolink:treats_or_applied_or_studied_to_treat"
+        source_ids = [s.resource_id for s in assoc.sources]
+        assert INFORES_TEXT_MINING_KP in source_ids
+        assert "infores:pubmed" in source_ids
+
+    def test_edge_with_invalid_prefix_is_skipped(self):
+        """Domain/range validation filters out reversed edges."""
+        record = {
+            "subject": "MONDO:0008315",
+            "predicate": "biolink:treats",
+            "object": "DRUGBANK:DB01248",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 0
+
+    def test_edge_missing_required_fields_returns_none(self):
+        """Missing subject/predicate/object produces no output."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            # no predicate
+            "object": "MONDO:0008315",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 0
+
+    def test_gene_to_gene_without_qualifiers(self):
+        """GeneToGeneAssociation is emitted even without typed qualifiers (qualifiers are optional)."""
+        record = {
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:200",
+            "relation": "biolink:GeneRegulatoryRelationship",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert isinstance(associations[0], GeneToGeneAssociation)
+        assert associations[0].predicate == "biolink:affects"
+        assert associations[0].qualified_predicate is None
+        assert associations[0].object_aspect_qualifier is None
+        assert associations[0].object_direction_qualifier is None
+
+    def test_gene_to_gene_with_qualifiers(self):
+        """GeneToGeneAssociation passes through source qualifiers without altering predicate."""
+        record = {
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:200",
+            "relation": "biolink:GeneRegulatoryRelationship",
+            "qualified_predicate": "biolink:causes",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert isinstance(associations[0], GeneToGeneAssociation)
+        assert associations[0].predicate == "biolink:affects"
+        assert associations[0].qualified_predicate == "biolink:causes"
+        assert associations[0].object_aspect_qualifier == "activity_or_abundance"
+        assert associations[0].object_direction_qualifier == "increased"
+
+    @pytest.mark.parametrize(
+        "record,expected_class",
+        [
+            (
+                {
+                    "subject": "DRUGBANK:DB01248",
+                    "predicate": "biolink:affects",
+                    "object": "UniProtKB:P12345",
+                    "relation": "biolink:ChemicalToGeneAssociation",
+                    "object_aspect_qualifier": "activity_or_abundance",
+                    "object_direction_qualifier": "increased",
+                },
+                ChemicalAffectsGeneAssociation,
+            ),
+            (
+                {
+                    "subject": "HGNC:11477",
+                    "predicate": "biolink:associated_with",
+                    "object": "MONDO:0005148",
+                    "relation": "biolink:GeneToDiseaseAssociation",
+                },
+                GeneToDiseaseAssociation,
+            ),
+            (
+                {
+                    "subject": "DRUGBANK:DB01248",
+                    "predicate": "biolink:treats",
+                    "object": "MONDO:0008315",
+                    "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+                },
+                ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+            ),
+        ],
+    )
+    def test_association_class_mapping(self, record: dict, expected_class: type):
+        """Relation maps to the correct Association subclass.
+
+        Each row uses a subject/predicate/object combination that is consistent
+        with both the declared `relation` and the source data shape. The
+        ChemicalToGene case includes the qualifiers required by
+        ChemicalAffectsGeneAssociation in the Biolink Model.
+        """
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert isinstance(associations[0], expected_class)
+
+    def test_treats_predicate_is_remapped(self):
+        """Source 'biolink:treats' is remapped to 'biolink:treats_or_applied_or_studied_to_treat'."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert associations[0].predicate == "biolink:treats_or_applied_or_studied_to_treat"
+
+    def test_non_treats_predicate_not_remapped(self):
+        """Predicates not in PREDICATE_REMAP pass through unchanged."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert associations[0].predicate == "biolink:affects"
+
+    def test_treats_edge_gets_knowledge_assertion(self):
+        """Remapped treats edges get knowledge_level=knowledge_assertion."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert associations[0].knowledge_level == KnowledgeLevelEnum.knowledge_assertion
+
+    def test_non_treats_edge_gets_not_provided(self):
+        """Non-treats edges keep knowledge_level=not_provided."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert associations[0].knowledge_level == KnowledgeLevelEnum.not_provided
+
+    @pytest.mark.parametrize(
+        "predicate,expected_knowledge_level",
+        [
+            ("biolink:treats", KnowledgeLevelEnum.knowledge_assertion),
+            ("biolink:treats_or_applied_or_studied_to_treat", KnowledgeLevelEnum.knowledge_assertion),
+            ("biolink:affects", KnowledgeLevelEnum.not_provided),
+        ],
+    )
+    def test_source_attributes_do_not_overwrite_computed_slots(
+        self, predicate, expected_knowledge_level
+    ):
+        """Computed knowledge_level survives TMKP's own top-level knowledge_level attribute.
+
+        Every TMKP edge carries 'biolink:knowledge_level' = 'not_provided' and
+        'biolink:agent_type' = 'text_mining_agent' as top-level attributes. Both are real
+        slots on Association, so without the protected_slots guard parse_attributes would
+        set them from the source and revert the values transform_tmkp_edge computed.
+        """
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": predicate,
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+            "_attributes": json.dumps(
+                [
+                    {"attribute_type_id": "biolink:knowledge_level", "value": "not_provided"},
+                    {"attribute_type_id": "biolink:agent_type", "value": "text_mining_agent"},
+                    {
+                        "attribute_type_id": "biolink:primary_knowledge_source",
+                        "value": INFORES_TEXT_MINING_KP,
+                    },
+                ]
+            ),
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+        assert associations[0].knowledge_level == expected_knowledge_level
+        assert associations[0].agent_type == AgentTypeEnum.text_mining_agent
+
+    def test_gene_disease_contributes_to_gets_epc_pattern(self):
+        """Gene-disease 'contributes_to' is transformed to canonical EPC pattern.
+
+        Primary predicate becomes 'affects', qualified_predicate becomes 'contributes_to',
+        and subject_form_or_variant_qualifier is set to 'modified_form'.
+        """
+        record = {
+            "subject": "UniProtKB:P12345",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0008315",
+            "relation": "biolink:GeneToDiseaseAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == MODIFIED_FORM
+
+    def test_gene_disease_contributes_to_source_qualifier_overrides_default(self):
+        """Source subject_form_or_variant_qualifier takes precedence over the EPC default.
+
+        When a gene-disease edge has predicate='contributes_to' AND the source provides
+        its own subject_form_or_variant_qualifier (e.g. 'loss_of_function_variant_form'),
+        the source value is kept instead of the 'modified_form' default.
+        """
+        record = {
+            "subject": "UniProtKB:Q06609",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0000605",
+            "relation": "biolink:GeneToDiseaseAssociation",
+            "subject_form_or_variant_qualifier": "loss_of_function_variant_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
+
+    def test_chemical_disease_contributes_to_not_transformed(self):
+        """Chemical-disease 'contributes_to' is NOT transformed (only gene-disease gets EPC)."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+        assert assoc.predicate == "biolink:contributes_to"
+
+    def test_gene_disease_affects_not_transformed(self):
+        """Gene-disease 'affects' is NOT transformed (only contributes_to triggers EPC)."""
+        record = {
+            "subject": "UniProtKB:P12345",
+            "predicate": "biolink:affects",
+            "object": "MONDO:0008315",
+            "relation": "biolink:GeneToDiseaseAssociation",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert not hasattr(assoc, "qualified_predicate") or assoc.qualified_predicate is None
+
+    def test_gene_disease_pre_qualified_preserves_subject_form_or_variant_qualifier(self):
+        """Source edges with predicate=affects + qp=contributes_to + sfvq pass through sfvq.
+
+        Reproduces a bug where 13,135 source edges arrived with all three fields set
+        but subject_form_or_variant_qualifier was silently dropped.
+        """
+        record = {
+            "subject": "UniProtKB:Q06609",
+            "predicate": "biolink:affects",
+            "object": "MONDO:0000605",
+            "relation": "biolink:GeneToDiseaseAssociation",
+            "qualified_predicate": "biolink:contributes_to",
+            "subject_form_or_variant_qualifier": "loss_of_function_variant_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, GeneToDiseaseAssociation)
+        assert assoc.predicate == "biolink:affects"
+        assert assoc.qualified_predicate == "biolink:contributes_to"
+        assert assoc.subject_form_or_variant_qualifier == "loss_of_function_variant_form"
+
+    def test_chemical_gene_anatomical_context_qualifier_passthrough(self):
+        """anatomical_context_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+            "anatomical_context_qualifier": ["UBERON:0002107"],
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalAffectsGeneAssociation)
+        assert assoc.anatomical_context_qualifier == ["UBERON:0002107"]
+
+    def test_chemical_gene_object_form_or_variant_qualifier_passthrough(self):
+        """object_form_or_variant_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+            "object_form_or_variant_qualifier": "modified_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalAffectsGeneAssociation)
+        assert assoc.object_form_or_variant_qualifier == "modified_form"
+
+    def test_chemical_gene_subject_part_qualifier_passthrough(self):
+        """subject_part_qualifier from source passes through to ChemicalAffectsGeneAssociation."""
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "relation": "biolink:ChemicalToGeneAssociation",
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+            "subject_part_qualifier": "promoter",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalAffectsGeneAssociation)
+        assert assoc.subject_part_qualifier == "promoter"
+
+    def test_qualifier_not_on_model_is_silently_ignored(self):
+        """Qualifiers not in the association's model_fields are ignored without error.
+
+        ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation lacks most qualifier fields.
+        """
+        record = {
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:contributes_to",
+            "object": "MONDO:0008315",
+            "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+            "subject_form_or_variant_qualifier": "modified_form",
+        }
+        items = _run_edge_transform(record)
+
+        associations = [i for i in items if isinstance(i, Association)]
+        assert len(associations) == 1
+
+        assoc = associations[0]
+        assert isinstance(assoc, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+        assert assoc.predicate == "biolink:contributes_to"
+
+
+class TestPredicateRemap:
+    """Tests for the PREDICATE_REMAP constant."""
+
+    def test_treats_is_remapped(self):
+        assert PREDICATE_REMAP["biolink:treats"] == "biolink:treats_or_applied_or_studied_to_treat"
+
+    def test_only_treats_is_remapped(self):
+        assert len(PREDICATE_REMAP) == 1
+
+
+# ---------------------------------------------------------------------------
+# Pydantic roundtrip edge fixtures
+# ---------------------------------------------------------------------------
+
+TEST_SOURCES = [
+    RetrievalSource(
+        id="infores:text-mining-provider-targeted",
+        resource_id="infores:text-mining-provider-targeted",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": ChemicalAffectsGeneAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-1",
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:affects",
+            "object": "UniProtKB:P12345",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+            "object_aspect_qualifier": "activity_or_abundance",
+            "object_direction_qualifier": "increased",
+        },
+    },
+    {
+        "association_class": GeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-2",
+            "subject": "HGNC:11477",
+            "predicate": "biolink:associated_with",
+            "object": "MONDO:0005148",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-3",
+            "subject": "DRUGBANK:DB01248",
+            "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+            "object": "MONDO:0008315",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+    {
+        "association_class": GeneToGeneAssociation,
+        "params": {
+            "id": "uuid:test-tmkp-4",
+            "subject": "NCBIGene:100",
+            "predicate": "biolink:affects",
+            "object": "NCBIGene:200",
+            "knowledge_level": KnowledgeLevelEnum.not_provided,
+            "agent_type": AgentTypeEnum.text_mining_agent,
+            "sources": TEST_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

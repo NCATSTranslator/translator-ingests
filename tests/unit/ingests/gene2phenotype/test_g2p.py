@@ -1,6 +1,6 @@
 import pytest
 
-# import koza    ## for mocking on_data_begin
+from koza.transform import KozaTransform
 from koza.runner import KozaRunner, KozaTransformHooks
 from tests.unit.ingests import MockKozaWriter
 
@@ -11,28 +11,26 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalOrGeneOrGeneProductFormOrVariantEnum,
     GeneToDiseaseAssociation,
     RetrievalSource,
+    KnowledgeLevelEnum,
+    AgentTypeEnum,
+    ResourceRoleEnum,
 )
 import datetime
-from translator_ingest.ingests.gene2phenotype.gene2phenotype import on_begin, transform
+from translator_ingest.ingests.gene2phenotype.gene2phenotype import transform
 
 
-## trying to mock on_data_begin, create koza.state["allelicreq_mappings"] in hard-coded manner.
-## but having trouble getting it to work
-# @pytest.fixture
-# def mock_on_begin():
-#     koza = koza.KozaTransform()
-#     koza.state["allelicreq_mappings"] = {
-#         "biallelic_autosomal": "HP:0000007",
-#         "monoallelic_autosomal": "HP:0000006",
-#         "biallelic_PAR": "HP:0034341",
-#         "monoallelic_PAR": "HP:0034340",
-#         "mitochondrial": "HP:0001427",
-#         "monoallelic_Y_hemizygous": "HP:0001450",
-#         "monoallelic_X": "HP:0001417",
-#         "monoallelic_X_hemizygous": "HP:0001419",
-#         "monoallelic_X_heterozygous": "HP:0001423"
-#     }
-#     return koza.state["allelicreq_mappings"]
+def mock_on_begin(koza: KozaTransform):
+    koza.transform_metadata["allelicreq_mappings"] = {
+        "biallelic_autosomal": "HP:0000007",
+        "monoallelic_autosomal": "HP:0000006",
+        "biallelic_PAR": "HP:0034341",
+        "monoallelic_PAR": "HP:0034340",
+        "mitochondrial": "HP:0001427",
+        "monoallelic_Y_hemizygous": "HP:0001450",
+        "monoallelic_X": "HP:0001417",
+        "monoallelic_X_hemizygous": "HP:0001419",
+        "monoallelic_X_heterozygous": "HP:0001423"
+    }
 
 
 @pytest.fixture
@@ -54,7 +52,7 @@ def single_record_test():
     ]
     ## running on_begin is problematic because it actually runs requests to retrieve outside data
     runner = KozaRunner(
-        data=records, writer=writer, hooks=KozaTransformHooks(on_data_begin=[on_begin], transform_record=[transform])
+        data=records, writer=writer, hooks=KozaTransformHooks(on_data_begin=[mock_on_begin], transform_record=[transform])
     )
     runner.run()
     return writer.items
@@ -93,3 +91,43 @@ def test_ebi_g2p(single_record_test):
     assert gene.id == "HGNC:18704"
     disease = [e for e in entities if isinstance(e, Disease)][0]
     assert disease.id == "MONDO:0100124"
+
+
+# ── Pydantic round-trip fixtures & test ──────────────────────────────
+
+_G2P_SOURCES = [
+    RetrievalSource(
+        id="infores:gene2phenotype",
+        resource_id="infores:gene2phenotype",
+        resource_role=ResourceRoleEnum.primary_knowledge_source,
+    )
+]
+
+EDGE_FIXTURES = [
+    {
+        "association_class": GeneToDiseaseAssociation,
+        "params": {
+            "id": "uuid:g2p-test-1",
+            "subject": "HGNC:18704",
+            "predicate": "biolink:associated_with",
+            "object": "OMIM:231550",
+            "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            "agent_type": AgentTypeEnum.manual_agent,
+            "sources": _G2P_SOURCES,
+        },
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    EDGE_FIXTURES,
+    ids=lambda f: f["association_class"].__name__,
+)
+def test_pydantic_roundtrip(fixture):
+    """Instantiate the association and round-trip through Pydantic serialization."""
+    cls = fixture["association_class"]
+    obj = cls(**fixture["params"])
+    dumped = obj.model_dump()
+    restored = cls.model_validate(dumped)
+    assert restored == obj

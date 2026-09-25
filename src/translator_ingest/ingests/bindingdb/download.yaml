@@ -1,0 +1,7 @@
+# Specify the file that needs to be downloaded for this ingest process
+# The download.yaml file format is defined and used by the KGHub Downloader to download files.
+# https://monarch-initiative.github.io/kghub-downloader/
+#
+---
+- url: https://www.bindingdb.org/rwd/bind/downloads/BindingDB_All_{version}_tsv.zip
+  local_name: BindingDB.zip

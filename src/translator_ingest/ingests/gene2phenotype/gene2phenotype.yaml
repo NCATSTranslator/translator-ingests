@@ -10,20 +10,11 @@ reader:
   ## Not sure if I'm supposed to include all column names in the file instead
   columns:
     - "g2p id"
-    - "hgnc id"
-    - "disease mim"
+    - "hgnc id": str
+    - "disease mim": str
     - "disease MONDO"
     - "allelic requirement"
     - "confidence"
     - "molecular mechanism"
     - "publications"
     - "date of last review"
-  filters:
-    ## remove rows with specific confidence values: negated or likely-no relationship
-    - inclusion: exclude
-      column: "confidence"
-      filter_code: in_exact
-      value:
-        - "refuted"
-        - "disputed"
-        - "limited"

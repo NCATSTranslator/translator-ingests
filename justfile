@@ -19,7 +19,8 @@ shebang := if os() == 'windows' {
 }
 
 rootdir :=`pwd`
-sources := "alliance ctd diseases gene2phenotype go_cam goa hpoa icees panther sider"
+
+sources := "alliance bindingdb chembl cohd ctd ctkp dakp dgidb diseases drug_rep_hub gtopdb gene2phenotype geneticskp go_cam goa hpoa icees intact ncbi_gene panther semmeddb sider signor tmkp ttd ubergraph"
 
 ### Help ###
 
@@ -93,7 +94,8 @@ install: _python
 # Run all tests
 test:
     {{run}} python -m pytest tests
-    {{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore
+    # Skip **/*.ipynb: base64 in plot outputs and truncated table text cause codespell false positives (see Makefile CODESPELL_SKIP).
+    {{run}} codespell --skip="./data/*,**/site-packages,**/*.ipynb" --ignore-words=.codespellignore
     {{run}} ruff check
 
 ### Running ###
@@ -143,8 +145,9 @@ format:
 	{{run}} ruff check --fix --exit-zero
 	{{run}} black -l 120 src tests
 
+# Same ipynb skip rationale as `test` (base64 + truncation false positives).
 spell_fix:
-	{{run}} codespell --skip="./data/*,**/site-packages" --ignore-words=.codespellignore --write-changes --interactive=3
+	{{run}} codespell --skip="./data/*,**/site-packages,**/*.ipynb" --ignore-words=.codespellignore --write-changes --interactive=3
 
 import "project.justfile"
 import "rig.justfile"

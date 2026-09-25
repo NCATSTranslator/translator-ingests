@@ -1,0 +1,584 @@
+{
+  "nodes": {
+    "biolink:Protein": {
+      "id_prefixes": [
+        "ENSEMBL",
+        "UniProtKB",
+        "PR"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    },
+    "biolink:ChemicalEntity": {
+      "id_prefixes": [
+        "CHEBI"
+      ],
+      "attributes": [
+        {
+          "attribute_type_id": "dct:description",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "description"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "information_content"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:same_as",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "equivalent_identifiers"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ]
+    }
+  },
+  "edges": [
+    {
+      "subject": "biolink:Protein",
+      "predicate": "biolink:coexpressed_with",
+      "object": "biolink:Protein",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Coexpression_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Cooccurance"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Combined_score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Coexpression"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "species_context_qualifier",
+          "applicable_values": [
+            "NCBITaxon:9606"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:Protein",
+      "predicate": "biolink:homologous_to",
+      "object": "biolink:Protein",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Homology"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Cooccurance"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Combined_score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "species_context_qualifier",
+          "applicable_values": [
+            "NCBITaxon:9606"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:Protein",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:Protein",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    },
+    {
+      "subject": "biolink:Protein",
+      "predicate": "biolink:physically_interacts_with",
+      "object": "biolink:Protein",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Homology"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Combined_score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "species_context_qualifier",
+          "applicable_values": [
+            "NCBITaxon:9606"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:Protein",
+      "predicate": "biolink:related_to",
+      "object": "biolink:Protein",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Experiments_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Textmining_transferred"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Cooccurance"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Combined_score"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Database"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:Attribute",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "Fusion"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": [
+        {
+          "qualifier_type_id": "species_context_qualifier",
+          "applicable_values": [
+            "NCBITaxon:9606"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "biolink:Protein",
+      "predicate": "biolink:subclass_of",
+      "object": "biolink:ChemicalEntity",
+      "attributes": [
+        {
+          "attribute_type_id": "biolink:knowledge_level",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "knowledge_level"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        },
+        {
+          "attribute_type_id": "biolink:agent_type",
+          "attribute_source": null,
+          "original_attribute_names": [
+            "agent_type"
+          ],
+          "constraint_use": false,
+          "constraint_name": null
+        }
+      ],
+      "qualifiers": []
+    }
+  ]
+}

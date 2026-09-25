@@ -1,0 +1,329 @@
+"""
+Utility methods for BindingDB input and parsing.
+Adapted from sample code prototyped by CLAUDE.ai
+"""
+from typing import Optional, Any
+from pathlib import Path
+from zipfile import ZipFile
+from math import log10
+import polars as pl
+import koza
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    BinaryRelationEnum as bre,
+    ProteinLigandAssayResult,
+    QuantityValue,
+    Study,
+)
+
+#
+# Core BindingDb Record Field Name Keys - currently ignored fields commented out
+#
+REACTANT_SET_ID = "BindingDB Reactant_set_id"
+LIGAND_SMILES = "Ligand SMILES"
+MONOMER_ID = "BindingDB MonomerID"
+LIGAND_NAME = "BindingDB Ligand Name"
+TARGET_NAME = "Target Name"
+SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
+
+# Ignoring pKon and pKoff for now - since they
+# are not concentration-driven affinity parameters
+# Keys are ProteinLigandAssayResult field names, since biolink-model 4.4.4 carries each
+# affinity parameter as its own typed slot rather than as an enum value on a measurement.
+AFFINITY_PARAMETERS = {
+    "pKi": "Ki (nM)",
+    "pIC50": "IC50 (nM)",
+    "pKd": "Kd (nM)",
+    "pEC50": "EC50 (nM)",
+}
+
+# An upper filter threshold of 1.0e-6 (1 micromole)
+# (equal to a negative base 10 logarithm value of 6)
+# is specified, which is 1,000 (1.0e+3) times the recorded
+# 1.0e-9 (nanoMolar) units of the BindingDb dataset values
+AFFINITY_FILTER_UPPER_BOUND = 1.0e+3
+
+ROWS_MISSING_AFFINITY = "rows_missing_affinity"
+
+# nanoMolar multiplier
+nM = 1.0e-9
+
+# "pH" = "7.4",
+# "Temp (C)" = "25.00",
+CURATION_DATASOURCE = "Curation/DataSource"
+ARTICLE_DOI = "Article DOI"
+PMID = "PMID"
+PATENT_NUMBER = "Patent Number"
+PUBCHEM_CID = "PubChem CID"
+UNIPROT_ID = "UniProt (SwissProt) Primary ID of Target Chain 1"
+
+PUBLICATION = "publication"
+SUPPORTING_DATA_ID = "supporting_data_id"
+
+CURATION_DATA_SOURCE_TO_INFORES_MAPPING = {
+    "CSAR": "infores:community-sar",
+    "ChEMBL": "infores:chembl",
+    "D3R": "infores:drug-design",
+    "PDSP Ki": "infores:ki-database",
+    "PubChem": "infores:pubchem",
+    "Taylor Research Group, UCSD": "infores:taylor-research-group-ucsd",
+    "US Patent": "infores:uspto-patent"
+}
+
+# We don't need these yet...
+# BASE_LINK_TO_MONOMER: str = "http://www.bindingdb.org/bind/chemsearch/marvin/MolStructure.jsp?monomerid={monomerid}"
+# BASE_LINK_TO_TARGET: str = ("http://www.bindingdb.org/rwd/jsp/dbsearch/PrimarySearch_ki.jsp"
+#                             "?energyterm=kJ/mole"
+#                             "&tag=com"
+#                             "&complexid=56"
+#                             "&target={target}"
+#                             "&column=ki&startPg=0&Increment=50&submit=Search")
+
+# ...but would like to use this to publish the source_record_urls for the
+#    BindindDb primary_knowledge_source RetrievalSource provenance metadata.
+LINK_TO_LIGAND_TARGET_PAIR: str = (
+    "http://www.bindingdb.org/rwd/jsp/dbsearch/PrimarySearch_ki.jsp"
+    "?energyterm=kJ/mole&tag=r21&monomerid={monomerid}"
+    "&enzyme={enzyme}"
+    "&column=ki&startPg=0&Increment=50&submit=Search"
+)
+
+_WEB_MAPPINGS: dict[str, str] = {
+    " ": "+",
+    ",": "%2C",
+    "{": "%7B",
+    "}": "%7D",
+    "[": "%5B",
+    "]": "%5D",
+    "|": "%7C"
+}
+def web_string(s: str) -> str:
+    """
+    :param s: The input string to be encoded
+    :return: The input string encoded with web-encoded characters
+    """
+    # Web string sanitization
+    for a,b in _WEB_MAPPINGS.items():
+        s = s.replace(a, b)
+    return s
+
+SCHEMA_OVERRIDES = {
+    MONOMER_ID: pl.Utf8,
+    PUBCHEM_CID: pl.Utf8,
+    TARGET_NAME: pl.Utf8,
+    UNIPROT_ID: pl.Utf8,
+    CURATION_DATASOURCE: pl.Utf8,
+    ARTICLE_DOI: pl.Utf8,
+    PMID: pl.Utf8,
+    PATENT_NUMBER: pl.Utf8,
+}
+SCHEMA_OVERRIDES.update(
+    {label: pl.Utf8 for label in AFFINITY_PARAMETERS.values()}
+)
+
+def extract_bindingdb_columns_polars(
+    koza_transform: koza.KozaTransform,
+    data_archive_path: Path,
+    columns: tuple[str,...],
+    target_taxa: tuple[str,...],
+) -> pl.DataFrame:
+    """
+     Extract only specified columns from the BindingDB TSV file using polars.
+
+    This is the FASTEST approach:
+    - Only parses the specified subset of columns instead of the full 640 (~80x less data)
+    - Filters data by desired taxa
+    - Lazy evaluation optimizes the query
+
+    :param koza_transform: Ingest context
+    :param data_archive_path: Path to BindingDB TSV archive.
+    :param columns: Target BindingDB columns to extract.
+    :param target_taxa: Target species to be included in extracted BindingDB data.
+    :return: A Polars DataFrame containing BindingDB data rows with only specified columns.
+    """
+    with ZipFile(data_archive_path) as z:
+        with z.open("BindingDB_All.tsv") as datafile:
+            df = (
+                pl.scan_csv(
+                    datafile,
+                    separator="\t",
+                    has_header=True,  # header_mode: 0 means that the first row is the header
+                    schema_overrides=SCHEMA_OVERRIDES,
+                    # not ideal to skip problematic BindingDB data rows, but if
+                    # most of the other data can be read, we still make progress
+                    ignore_errors=True
+                )
+                # CRITICAL: Only select the required columns - massive performance gain
+                .select(columns)
+                # Execute the optimized query
+                .collect()
+            )
+
+    # Filtering to only human targets
+    if SOURCE_ORGANISM in columns:
+        df = df.filter(
+            pl.col(SOURCE_ORGANISM).is_in(target_taxa)
+        )
+
+    koza_transform.log(f"Loaded {len(df)} rows with {len(df.columns)} columns")
+    koza_transform.log(df.columns)
+
+    return df
+
+MISSING_PUBS = "rows_missing_publications"
+
+def process_publications(
+        koza_transform: koza.KozaTransform,
+        df: pl.DataFrame
+)-> pl.DataFrame:
+    """
+    Capture and process publications for BindingDb records.
+    :param koza_transform: Ingest context
+    :param df: Polars data frame whose entries contain BindingDb records
+    :return: Polars data frame with publications processed into a PUBLICATIONS column
+    """
+    # Add the publication column (same logic as the current implementation)
+    df = df.with_columns([
+        pl.when(pl.col(PMID).is_not_null())
+        .then(pl.concat_str([pl.lit("PMID:"), pl.col(PMID)]))
+        .when(pl.col(PATENT_NUMBER).is_not_null())
+        .then(
+            pl.concat_str([
+                pl.lit("uspto-patent:"),
+                pl.col(PATENT_NUMBER).str.replace("US", "")
+            ])
+        )
+        .when(pl.col(ARTICLE_DOI).is_not_null())
+        .then(pl.concat_str([pl.lit("doi:"), pl.col(ARTICLE_DOI)]))
+        .otherwise(None)
+        .alias(PUBLICATION)
+    ])
+
+    # Count rows without publications
+    rows_missing_pubs = df.filter(pl.col(PUBLICATION).is_null()).height
+    if rows_missing_pubs != 0:
+        koza_transform.transform_metadata[MISSING_PUBS] = rows_missing_pubs
+
+    # Filter out rows without publications
+    df = df.filter(pl.col(PUBLICATION).is_not_null())
+
+    return df
+
+def filter_affinity_values(
+        koza_transform: koza.KozaTransform,
+        df: pl.DataFrame
+) -> pl.DataFrame:
+    """
+    Filter BindingDB records by affinity value validity and range.
+
+    Two-stage filtering:
+    1. Null out individual affinity column values that fall outside
+       the bounds defined in between 0.0 and the AFFINITY_FILTER_UPPER_BOUND.
+    2. Remove rows where all affinity columns are null (either
+       originally missing or nulled by range filtering).
+
+    Values may contain relational prefixes (``<``, ``>``) which are
+    stripped before numeric comparison.
+
+    :param koza_transform: Ingest context for recording filter metadata.
+    :param df: Polars DataFrame with affinity columns as strings.
+    :return: Filtered DataFrame with out-of-range values nulled.
+    """
+    initial_count = df.height
+
+    # Stage 1: null out individual values outside bounds
+    bound_exprs = []
+    for col_name in AFFINITY_PARAMETERS.values():
+        parsed = (
+            pl.col(col_name)
+            .str.strip_chars("<> ")
+            .cast(pl.Float64, strict=False)
+        )
+        in_range = parsed.gt(0.0) & parsed.le(AFFINITY_FILTER_UPPER_BOUND)
+        bound_exprs.append(
+            pl.when(in_range)
+            .then(pl.col(col_name))
+            .otherwise(None)
+            .alias(col_name)
+        )
+    df = df.with_columns(bound_exprs)
+
+    # Stage 2: remove rows where all affinity columns are null
+    has_any_affinity = pl.lit(False)
+    for col_name in AFFINITY_PARAMETERS.values():
+        has_any_affinity = has_any_affinity | pl.col(col_name).is_not_null()
+    df = df.filter(has_any_affinity)
+
+    rows_filtered = initial_count - df.height
+    if rows_filtered > 0:
+        koza_transform.transform_metadata[ROWS_MISSING_AFFINITY] = rows_filtered
+        koza_transform.log(f"Filtered {rows_filtered} rows with missing or out-of-range affinity values")
+
+    return df
+
+
+def get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue]:
+    """
+    Parse the affinity columns of a BindingDb record into QuantityValue measurements.
+
+    Returns a mapping of ProteinLigandAssayResult field name ("pKi", "pIC50", ...) to the
+    measured value, suitable for splatting into that class.
+
+    :param record: a BindingDb data record.
+    :return: measurements keyed by assay-result field name; empty when none are present.
+    """
+    measurements: dict[str, QuantityValue] = {}
+    for parameter, column in AFFINITY_PARAMETERS.items():
+        if record.get(column):
+            value: str = record[column]
+            value = value.strip()
+            has_binary_relation: bre
+            if value.startswith("<"):
+                value = value[1:]
+                has_binary_relation = bre.less_than
+            elif value.startswith(">"):
+                value = value[1:]
+                has_binary_relation = bre.greater_than
+            else:
+                has_binary_relation = bre.equal_to
+
+            # Adjust BindingDb nominal nanomolar values to actual float values then transform
+            # to a linearized negative base 10 logarithm ("pK") value in which a higher
+            # real value represents higher binding affinity at lower ligand concentrations
+            measurements[parameter] = QuantityValue(
+                has_numeric_value=-log10(float(value)*nM),
+                has_binary_relation=has_binary_relation,
+            )
+    return measurements
+
+
+def get_bindingdb_assay_study(
+        publication_id: str,
+        edge_id: str,
+        record: dict[str, Any]
+) -> Optional[dict[str, Study]]:
+    """
+    Wrap a record's affinity measurements as a Study-wrapped ProteinLigandAssayResult.
+
+    biolink-model 4.4.4 removed AffinityMeasurement and the has_affinity slot in favour of
+    ProteinLigandAssayResult, which is a StudyResult. No slot links an Association to a
+    StudyResult directly, so the route is Association -> has_supporting_studies -> Study ->
+    has_study_results -> ProteinLigandAssayResult. The publication identifies the Study,
+    since a BindingDb record's assay is reported by its publication.
+
+    :param publication_id: identifier of the publication acting as the Study.
+    :param edge_id: identifier of the edge, reused to identify the assay result.
+    :param record: a BindingDb data record.
+    :return: a single-entry mapping of study id to Study, or None when the record has no
+             affinity measurements.
+    """
+    affinity_measurements = get_affinity_measurements(record)
+    if not affinity_measurements:
+        return None
+    return {
+        publication_id: Study(
+            id=publication_id,
+            has_study_results=[
+                ProteinLigandAssayResult(id=edge_id, **affinity_measurements)
+            ],
+        )
+    }

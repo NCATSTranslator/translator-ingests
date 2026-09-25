@@ -1,10 +1,10 @@
 """
 Ingest of Reference Genome Orthologs from Panther
 """
-from typing import Any
+from typing import Any, Iterable
+from pathlib import Path
 import requests
 import re
-from loguru import logger
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToGeneHomologyAssociation,
@@ -13,16 +13,20 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum, GeneFamily
 )
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 import koza
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
-    parse_gene_info,
-    panther_taxon_map,
-    db_to_curie_map
+    extract_panther_data_polars,
+    GENE_A_ID_COL,
+    GENE_B_ID_COL,
+    GENE_FAMILY_ID_COL,
 )
+
+PANTHER_SOURCES = build_association_knowledge_sources(primary="infores:panther")
 
 
 def get_latest_version() -> str:
@@ -44,22 +48,27 @@ def get_latest_version() -> str:
         print(f"Could not determine latest version for Panther: {e}")
         return "unknown"
 
-@koza.on_data_begin()
-def on_data_begin_panther(koza_transform: koza.KozaTransform) -> None:
-    """
-    Called before processing begins.
-    Can be used for setup or validation of input files.
-    """
-    koza_transform.log("Starting Panther Gene Orthology processing")
-    koza_transform.log(f"Version: {get_latest_version()}")
 
-@koza.on_data_end()
-def on_data_end_panther(koza_transform: koza.KozaTransform):
+@koza.prepare_data()
+def prepare_panther_data(
+        koza_transform: koza.KozaTransform,
+        data: Iterable[dict[str, Any]]
+) -> Iterable[dict[str, Any]] | None:
     """
-    Called after all data has been processed.
-    Used for logging summary statistics.
+    Pre-process Panther RefGenomeOrthologs data using polars.
+
+    Bypasses the Koza input reader to directly read the tar.gz archive,
+    filter by target species, and resolve gene CURIEs vectorized with polars.
+
+    :param koza_transform: The koza.KozaTransform context of the data processing.
+    :param data: Iterable[dict[str, Any]], @koza.prepare_data() specified input data
+                 parameter is not used by the pipeline, hence ignored.
+    :return: Iterable[dict[str, Any]], pre-processed records with resolved gene CURIEs
+             and taxon IDs ready for record-by-record transform_record processing.
     """
-    koza_transform.log("Panther Gene Orthology processing complete")
+    data_archive_path: Path = koza_transform.input_files_dir / "RefGenomeOrthologs.tar.gz"
+    df = extract_panther_data_polars(data_archive_path)
+    return df.to_dicts()
 
 
 @koza.transform_record()
@@ -68,92 +77,64 @@ def transform_gene_to_gene_orthology(
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Transform a Panther protein orthology relationship entry into a
-    Biolink Model-compliant gene to gene orthology knowledge graph statement.
+    Transform a pre-processed Panther orthology record into a
+    Biolink Model-compliant gene-to-gene orthology knowledge graph statement.
 
-    :param koza_transform: KozaTransform object (unused in this implementation)
-    :param record: Dict contents of a single input data record
+    Records are expected to contain pre-processed fields from prepare_panther_data:
+    gene_a_id, gene_b_id, ncbitaxon_a, ncbitaxon_b, gene_family_id.
+
+    :param koza_transform: KozaTransform object
+    :param record: Dict contents of a single pre-processed input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
-    try:
-        # Parse the gene information for both species and format gene id to curie:gene_id
-        # (Gene and Ortholog columns are formatted the same, but for different species/gene info)
-        species_a, gene_a_id = parse_gene_info(
-            record["Gene"],
-            panther_taxon_map,
-            db_to_curie_map
-        )
-        species_b, gene_b_id = parse_gene_info(
-            record["Ortholog"],
-            panther_taxon_map,
-            db_to_curie_map
-        )
+    gene_a_id = record[GENE_A_ID_COL]
+    gene_b_id = record[GENE_B_ID_COL]
+    gene_family_id = record[GENE_FAMILY_ID_COL]
 
-        # Only consume species we are interested in (i.e.,
-        # those that are in our NCBI Taxon catalog)
-        if (not species_a) or (not species_b):
-            return None
+    gene_a = Gene(id=gene_a_id)
+    gene_b = Gene(id=gene_b_id)
 
-        # Format our species names to NCBI Taxon IDs
-        ncbitaxon_a = "NCBITaxon:{}".format(panther_taxon_map[species_a])
-        ncbitaxon_b = "NCBITaxon:{}".format(panther_taxon_map[species_b])
+    orthology_evidence = [gene_family_id]
+    gene_family = GeneFamily(id=gene_family_id)
 
-        gene_a = Gene(id=gene_a_id, in_taxon=[ncbitaxon_a],**{})
-        gene_b = Gene(id=gene_b_id, in_taxon=[ncbitaxon_b],**{})
-
-        # Our ortholog identifier (panther protein family name), and predicate
-        panther_ortholog_id = record["Panther Ortholog ID"]
-        gene_family_id = "PANTHER.FAMILY:{}".format(panther_ortholog_id)
-        orthology_evidence = [gene_family_id]
-
-        gene_family = GeneFamily(id=gene_family_id, **{})
-
-        # Generate our association objects
-        orthology_relationship = GeneToGeneHomologyAssociation(
-            id=entity_id(),
-            subject=gene_a.id,
-            object=gene_b.id,
-            predicate="biolink:orthologous_to",
-            has_evidence=orthology_evidence,
-            sources=build_association_knowledge_sources(primary="infores:panther"),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
-        )
-        gene_a_family_relationship = GeneToGeneFamilyAssociation(
-            id=entity_id(),
-            subject=gene_a.id,
-            object=gene_family.id,
-            predicate="biolink:member_of",
-            sources=build_association_knowledge_sources(primary="infores:panther"),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
-        )
-        gene_b_family_relationship = GeneToGeneFamilyAssociation(
-            id=entity_id(),
-            subject=gene_b.id,
-            object=gene_family.id,
-            predicate="biolink:member_of",
-            sources=build_association_knowledge_sources(primary="infores:panther"),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_validation_of_automated_agent
-        )
-        return KnowledgeGraph(
-            nodes=[
-                gene_a,
-                gene_b,
-                gene_family
-            ],
-            edges=[
-                orthology_relationship,
-                gene_a_family_relationship,
-                gene_b_family_relationship
-            ]
-        )
-
-    except Exception as e:
-        # Catch and report all errors here with messages
-        logger.warning(
-            f"transform_record_gene_to_disease() - record: '{str(record)}' " +
-            f"with {type(e)} exception: "+str(e)
-        )
-        return None
+    # Generate our association objects
+    orthology_relationship = GeneToGeneHomologyAssociation(
+        id=entity_id(),
+        subject=gene_a.id,
+        object=gene_b.id,
+        predicate="biolink:orthologous_to",
+        has_evidence=orthology_evidence,
+        sources=PANTHER_SOURCES,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_validation_of_automated_agent
+    )
+    gene_a_family_relationship = GeneToGeneFamilyAssociation(
+        id=entity_id(),
+        subject=gene_a.id,
+        object=gene_family.id,
+        predicate="biolink:member_of",
+        sources=PANTHER_SOURCES,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.automated_agent
+    )
+    gene_b_family_relationship = GeneToGeneFamilyAssociation(
+        id=entity_id(),
+        subject=gene_b.id,
+        object=gene_family.id,
+        predicate="biolink:member_of",
+        sources=PANTHER_SOURCES,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.automated_agent
+    )
+    return KnowledgeGraph(
+        nodes=[
+            gene_a,
+            gene_b,
+            gene_family
+        ],
+        edges=[
+            orthology_relationship,
+            gene_a_family_relationship,
+            gene_b_family_relationship
+        ]
+    )

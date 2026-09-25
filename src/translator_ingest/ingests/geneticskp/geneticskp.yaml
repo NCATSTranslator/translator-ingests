@@ -1,0 +1,7 @@
+name: geneticskp
+
+readers:
+  edges:
+    format: "jsonl"
+    files:
+      - "edges_geneticsKP_magma.jsonl"

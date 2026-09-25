@@ -16,7 +16,7 @@ def test_valid_source_config_yaml(source_id):
         return
 
     # this is how koza opens and parses the yaml
-    with config_yaml_file_path.open("r") as fh:
+    with config_yaml_file_path.open("r", encoding="utf-8") as fh:
         config_dict = yaml.load(fh, Loader=UniqueIncludeLoader.with_file_base(str(config_yaml_file_path)))  # noqa: S506
         # just initializing the KozaConfig will run pydantic validation and catch a lot of config issues
         KozaConfig(**config_dict)
@@ -29,7 +29,7 @@ def test_valid_rig_yaml(source_id):
     if rig_yaml_file_path is None:
         raise FileNotFoundError(f"rig file not found for {source_id} - it should be named {source_id}_rig.yaml")
 
-    with rig_yaml_file_path.open("r") as rig_file:
+    with rig_yaml_file_path.open("r", encoding="utf-8") as rig_file:
         rig_data = yaml.safe_load(rig_file)
         assert "source_info" in rig_data
         assert "ingest_info" in rig_data

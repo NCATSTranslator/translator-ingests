@@ -3,7 +3,8 @@ import koza
 import pandas as pd
 from typing import Any, Iterable
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     Gene,    ## because terms/IDs dgidb gives are for genes
@@ -12,6 +13,10 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
+## ADDED packages for this ingest
+import requests
+
+
 ## import from mapping file
 from translator_ingest.ingests.dgidb.mappings import (
     supporting_data_sources,
@@ -30,12 +35,10 @@ PREFIXES_TO_DROP = [
     "wikidata",
     "hemonc",
     "drugsatfda\\.nda",
-    "chemidplus",
 ]
 ## interaction_types that map to plain "interacts_with" edge (no qualifiers, extra edge)
 ## "~NULL" is a placeholder for NA, see prepare_data for details
 plain_interact_types = {"other/unknown", "~NULL"}
-BIOLINK_INTERACTS = "biolink:interacts_with"
 ## columns for drug-gene pair
 DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 
@@ -43,16 +46,31 @@ DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 ## PIPELINE MAIN FUNCTIONS
 
 def get_latest_version() -> str:
-    ## Needs to be manually updated when we update what file we're using
-    ## ...unless we can read the downloaded file during this step. Then we can get the version info from the first few lines (header)
-    return "2024-12"
+    ## queries Github repo with data releases: should be public, able to access w/o access tokens
+    dgidb_request = "https://api.github.com/repos/dgidb/dgidb-data/releases/latest"
+
+    try:
+        response = requests.get(dgidb_request, timeout=5)
+        if response.status_code == 200:
+            temp = response.json()
+            return temp["tag_name"]  ## should be the data release version in YYYY-MM format
+        else:
+            print(f"Error encountered: {response.status_code}.")
+    except requests.RequestException as e:
+        print(f"Request exemption encountered: {e}.")
 
 
 @koza.prepare_data()
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
-    df = pd.DataFrame.from_records(data)
-    ## data was loaded with empty values = "". Just in case, replace these empty strings with None so na methods will work
-    df.replace(to_replace="", value=None, inplace=True)
+    ## load file in pandas directly
+    ## skipping koza reader because it's having problems reading rows that lack some values. Errors saying row is shorter than expected
+    interactions_path = f"{koza.input_files_dir}/interactions.tsv"  ## path to downloaded file
+
+    ## skip first two lines (comments)
+    ## setting parameter comment="#" causes a bug
+    ##   because some lines have # in the names. param causes rest of line to be NA
+    df = pd.read_table(interactions_path, header=2)
+    koza.log(f"{df.shape[0]} rows at start.")
     ## for debugging
     # print(df[df["gene_concept_id"].notna()].shape)
     # print(df[df["drug_concept_id"].notna()].shape)
@@ -75,8 +93,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## change ID prefixes to Translator standard: mostly making all upper-case
     df["drug_concept_id"] = df["drug_concept_id"].str.upper()
     df["gene_concept_id"] = df["gene_concept_id"].str.upper()
-    ## special handling for some prefixes: CHEMBL, NCBIGENE
+    ## special handling for some prefixes: CHEMBL, CHEMIDPLUS, NCBIGENE
     df["drug_concept_id"] = df["drug_concept_id"].str.replace("CHEMBL:", "CHEMBL.COMPOUND:")
+    ## based on EDA, chemidplus IDs are CAS
+    df["drug_concept_id"] = df["drug_concept_id"].str.replace("CHEMIDPLUS:", "CAS:")
     df["gene_concept_id"] = df["gene_concept_id"].str.replace("NCBIGENE:", "NCBIGene:")
 
     ## clean up interaction_type values
@@ -91,14 +111,21 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ##   currently, multiple values map to plain "interacts_with" edge modeling
     df["mod_type"] = ["~PLAIN_INTERACTS" if i in plain_interact_types else i for i in df["interaction_types"]]
     ## (keeping original column interaction_types for trouble-shooting, maybe future use (original predicates?))
-    ## take int_type_mapping and add this value
-    int_type_mapping.update({
-        "~PLAIN_INTERACTS": {
-            "predicate": BIOLINK_INTERACTS,
-            ## create empty qualifier dict, so assigning to association later is easier. Will error if the ** is set to None
-            "qualifiers": {},
-        }
-    })
+
+    ## check if any interaction_source_db_name values aren't mapped
+    ## log, save the unmapped: catch them so we can map them later
+    unmapped_sources = list(set(df["interaction_source_db_name"].unique()) - supporting_data_sources.keys() - publications.keys())
+    ## for testing if-statement code
+    # unmapped_sources = {"CKB-CORE", "fake"}
+    ## if it has values
+    if unmapped_sources:
+        koza.log(f"{len(unmapped_sources)} unmapped source values that will be filtered out: {", ".join(unmapped_sources)}. ADJUST PARSER TO HANDLE THESE.")
+        koza.transform_metadata["unmapped_sources"] = list(unmapped_sources)
+        ## remove rows with these unmapped values
+        n_before = df.shape[0]
+        df = df[~ df["interaction_source_db_name"].isin(unmapped_sources)].copy()
+        n_after = df.shape[0]
+        koza.log(f"{n_before - n_after} rows removed due to unmapped source values: {(n_before - n_after) / n_before:.1%}. Now have {n_after} rows.")
 
     ## group-by/merge rows by unique drug ID, gene ID, mod_type combo
     ## then each row == 1 Translator edge
@@ -159,6 +186,15 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
     ## if publications is an empty list, make it None so pipeline will remove from properties (it handles empty supporting list okay) 
     if len(record_pubs) == 0:
         record_pubs = None
+    
+    ## processing scores that are NA, just in case
+    ## use get because it's safer, works with current test
+    interaction_score = record.get("interaction_score")
+    if pd.isna(interaction_score):
+        interaction_score = None
+    evidence_score = record.get("evidence_score")
+    if pd.isna(evidence_score):
+        evidence_score = None
 
     ## Nodes
     chemical = ChemicalEntity(id=record["drug_concept_id"])
@@ -180,11 +216,13 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             agent_type=AgentTypeEnum.automated_agent,
             sources=build_association_knowledge_sources(primary=INFORES_DGIDB, supporting=record_support_infores),
             publications=record_pubs,
-            dgidb_interaction_score=record["interaction_score"],
+            ## currently no issues/validation problems when score is None
+            dgidb_interaction_score=interaction_score,
             ## currently, becomes int without issues
-            dgidb_evidence_score=record["evidence_score"],
+            dgidb_evidence_score=evidence_score,
             predicate=data_modeling["predicate"],
-            **data_modeling.get("qualifiers")
+            ## return empty dict if mapping doesn't have "qualifiers" (ex: plain "interacts_with" edge)
+            **data_modeling.get("qualifiers", dict())
         )
         return KnowledgeGraph(nodes=[chemical, gene], edges=[association])
     elif "affects" in data_modeling["predicate"]:
@@ -200,12 +238,13 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             agent_type=AgentTypeEnum.automated_agent,
             sources=build_association_knowledge_sources(primary=INFORES_DGIDB, supporting=record_support_infores),
             publications=record_pubs,
-            dgidb_interaction_score=record["interaction_score"],
+            ## currently no issues/validation problems when score is None
+            dgidb_interaction_score=interaction_score,
             ## currently, becomes int without issues
-            dgidb_evidence_score=record["evidence_score"],
+            dgidb_evidence_score=evidence_score,
             predicate=data_modeling["predicate"],
             ## currently, there are always qualifiers
-            **data_modeling.get("qualifiers")
+            **data_modeling.get("qualifiers", dict())
         )
         ## if there's an extra edge field
         if data_modeling.get("extra_edge_pred"):

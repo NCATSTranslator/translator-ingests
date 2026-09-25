@@ -1,7 +1,7 @@
 name: 'icees'
 
 readers:
-  icees_nodes:
+  nodes:
     files:
       - 'nodes.jsonl.gz'
     format: 'jsonl'
@@ -9,8 +9,8 @@ readers:
       - 'id'
       - 'name'
       - 'category'
-      - 'equivalent_identifiers'  # rename this field to KGX 'xref' list value
-  icees_edges:
+      - 'equivalent_identifiers'
+  edges:
     files:
       - 'edges.jsonl.gz'
     format: 'jsonl'

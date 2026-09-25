@@ -1,7 +1,6 @@
 from typing import Iterable, Any
 
 import koza
-import requests
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
@@ -20,27 +19,27 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RNAProduct,
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import entity_id, build_association_knowledge_sources
-from translator_ingest.util.biolink import INFORES_GOA, INFORES_BIOLINK
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
+from translator_ingest.util.biolink import INFORES_GOA, INFORES_INTACT
+from translator_ingest.util.http_utils import get_geneontology_release_version
 
-# Constants
-GOA_RELEASE_METADATA_URL = "https://current.geneontology.org/metadata/release-date.json"
+# Supporting source mapping based on GOA `Assigned_By` field.
+# We only map values with clear upstream source identity.
+ASSIGNED_BY_TO_SUPPORTING_INFORES = {
+    "MGI": "infores:mgi",
+    "RGD": "infores:rgd",
+    "Reactome": "infores:reactome",
+    "IntAct": INFORES_INTACT,
+    # GOA central curation imports may include GO-CAM-derived assertions.
+    "GO_Central": "infores:go-cam",
+    "GOC": "infores:go-cam",
+}
 
 
 def get_latest_version() -> str:
     """Fetch the current GOA release version from the public metadata endpoint."""
-    try:
-        response = requests.get(GOA_RELEASE_METADATA_URL, timeout=10)
-        response.raise_for_status()
-        metadata = response.json()
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Unable to retrieve GOA release metadata from {GOA_RELEASE_METADATA_URL}") from exc
-
-    version = metadata.get("date")
-    if not version:
-        raise RuntimeError(f"GOA metadata from {GOA_RELEASE_METADATA_URL} did not include a 'date' field")
-
-    return version
+    return get_geneontology_release_version()
 
 
 # Dynamic category assignments from Biolink pydantic models
@@ -83,10 +82,11 @@ QUALIFIER_TO_PREDICATE = {
     "enables": "biolink:enables",
     "located_in": "biolink:located_in",
     "part_of": "biolink:part_of",
-    "involved_in": "biolink:participates_in",
+    "involved_in": "biolink:actively_involved_in",
     "contributes_to": "biolink:contributes_to",
     "colocalizes_with": "biolink:colocalizes_with",
-    "is_active_in": "biolink:is_active_in",
+    "is_active_in": "biolink:active_in",
+    "active_in": "biolink:active_in",
     # Upstream qualifiers
     "acts_upstream_of": "biolink:acts_upstream_of",
     "acts_upstream_of_or_within": "biolink:acts_upstream_of_or_within",
@@ -98,7 +98,7 @@ QUALIFIER_TO_PREDICATE = {
 
 # Fallback mapping for aspect-based predicates (used when the qualifier is not recognized)
 ASPECT_TO_PREDICATE = {
-    "P": "biolink:participates_in",  # Biological Process
+    "P": "biolink:actively_involved_in",  # Biological Process
     "F": "biolink:enables",  # Molecular Function
     "C": "biolink:located_in",  # Cellular Component
 }
@@ -121,17 +121,19 @@ EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE = {
     "HGI": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "HEP": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     # Phylogenetic evidence codes (prediction level)
-    "IBA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "IBD": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
+    # Manual QA 1 fix: IBA, IBD use manual_validation_of_automated_agent per ORION alignment
+    "IBA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "IBD": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
     "IKR": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "IRD": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
     # Computational analysis evidence codes (prediction level)
-    "ISS": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "ISO": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "ISA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "ISM": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
+    # Manual QA 1 fix: ISS, ISO, ISA, ISM, RCA use manual_validation_of_automated_agent per ORION alignment
+    "ISS": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "ISO": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "ISA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
+    "ISM": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
     "IGC": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
-    "RCA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
+    "RCA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_validation_of_automated_agent),
     # Author statement evidence codes
     "TAS": (KnowledgeLevelEnum.knowledge_assertion, AgentTypeEnum.manual_agent),
     "NAS": (KnowledgeLevelEnum.prediction, AgentTypeEnum.manual_agent),
@@ -140,6 +142,22 @@ EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE = {
     "ND": (KnowledgeLevelEnum.not_provided, AgentTypeEnum.not_provided),  # No biological data available
     "IEA": (KnowledgeLevelEnum.prediction, AgentTypeEnum.automated_agent),  # Inferred from Electronic Annotation
 }
+
+
+def get_supporting_data_sources(assigned_by: str | None) -> list[str] | None:
+    """Map GOA `Assigned_By` value to supporting data source infores IDs.
+
+    :param assigned_by: The GOA Assigned_By token from the GAF record.
+    :returns: A one-element list with infores ID or None when no supported mapping exists.
+    """
+    if not assigned_by:
+        return None
+
+    supporting_source = ASSIGNED_BY_TO_SUPPORTING_INFORES.get(assigned_by.strip())
+    if not supporting_source:
+        return None
+
+    return [supporting_source]
 
 
 @koza.transform_record()
@@ -167,8 +185,8 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     db_references_raw = record.get("DB_Reference", "")
     publications = db_references_raw.split("|") if db_references_raw else []
     evidence_code = record["Evidence_Code"]  # GO evidence code (EXP, IEA, etc.)
-    taxon = record["Taxon"]  # NCBI taxonomy identifier
     db_object_name = record["DB_Object_Name"]  # Full gene name/description
+    assigned_by = record.get("Assigned_By")
 
     # Determine Biolink class based on the database source
     # The DB field contains the database name (e.g., "UniProtKB"), not the DB_Object_ID
@@ -195,7 +213,6 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
         id=node_id,
         name=db_object_symbol,
         category=biolink_class.model_fields["category"].default,  # Dynamic category from Biolink model
-        in_taxon=[taxon.replace("taxon:", "NCBITaxon:")],  # Convert GO taxon format to Biolink NCBI format
         description=db_object_name if db_object_name else None,  # Include full entity name as description
     )
 
@@ -235,6 +252,7 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
     knowledge_level, agent_type = EVIDENCE_CODE_TO_KNOWLEDGE_LEVEL_AND_AGENT_TYPE.get(
         evidence_code, (KnowledgeLevelEnum.not_provided, AgentTypeEnum.not_provided)
     )
+    supporting_data_sources = get_supporting_data_sources(assigned_by)
 
     # Format publications as CURIEs using biolink conventions
     # Biolink pydantic model centric: Formats publication IDs as proper CURIEs following biolink model conventions
@@ -266,11 +284,12 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             predicate=predicate,
             object=go_term.id,
             negated="NOT" in qualifier,  # Handle negative associations from the GAF qualifier field
-            has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
+            has_evidence_of_type=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
+            # Manual QA 1 fix: removed aggregator_knowledge_source per Matt's comment
             sources=build_association_knowledge_sources(
                 primary=INFORES_GOA,  # GOA as the primary source
-                aggregating=INFORES_BIOLINK,  # This repository as the aggregator
+                supporting=supporting_data_sources,
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,
@@ -283,11 +302,12 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Iterab
             predicate=predicate,
             object=go_term.id,
             negated="NOT" in qualifier,  # Handle negative associations from the GAF qualifier field
-            has_evidence=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
+            has_evidence_of_type=[f"ECO:{evidence_code}"],  # Biolink pydantic model centric: Formats evidence as ECO CURIE
             publications=publications_list,
+            # Manual QA 1 fix: removed aggregator_knowledge_source per Matt's comment
             sources=build_association_knowledge_sources(
                 primary=INFORES_GOA,  # GOA as the primary source
-                aggregating=INFORES_BIOLINK,  # This repository as the aggregator
+                supporting=supporting_data_sources,
             ),
             knowledge_level=knowledge_level,
             agent_type=agent_type,

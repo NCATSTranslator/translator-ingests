@@ -6,7 +6,6 @@ from translator_ingest.util.biolink import INFORES_DISEASES, INFORES_MEDLINEPLUS
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
     Disease,
-    CorrelatedGeneToDiseaseAssociation,
     GeneToDiseaseAssociation,
     RetrievalSource,
     ResourceRoleEnum,
@@ -14,7 +13,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.ingests.diseases.diseases import (
     remove_duplicates,
     keep_rows_with_IDs,
-    textmining_transform,
     knowledge_transform,
 )
 import pandas as pd
@@ -89,58 +87,6 @@ def test_functions(starting_data):
     assert dict_no_IDs["DOID"] == 1
 
 
-## TEXT-MINING
-@pytest.fixture
-def textmining_output():
-    writer = MockKozaWriter()
-    ## From searching resource file: grep -m 1 "ENSP"
-    record = {
-        "protein_id": "ENSP00000000233",
-        "protein_name": "ARF5",
-        "disease_id": "DOID:0111266",
-        "disease_name": "Geroderma osteodysplasticum",
-        "z_score": 4.774,
-        "confidence_score": 2.387,
-        "url": "https://diseases.jensenlab.org/Entity?documents=10&type1=9606&id1=ENSP00000000233&type2=-26&id2=DOID:0111266",
-    }
-    runner = KozaRunner(
-        data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[textmining_transform])
-    )
-    runner.run()
-    return writer.items
-
-
-def test_textmining_output(textmining_output):
-    ## check basic output
-    entities = textmining_output
-    assert entities
-    ## 1 edge/association, 2 nodes
-    assert len(entities) == 3
-
-    ## check association contents
-    ## Doing because entities includes Nodes as well
-    association = [e for e in entities if isinstance(e, CorrelatedGeneToDiseaseAssociation)][0]
-    assert association
-    ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association.z_score == 4.774
-    assert association.has_confidence_score == 2.387
-
-    ## sources stuff
-    assert association.sources
-    assert len(association.sources) == 1
-    textmining_source = association.sources[0]
-    assert isinstance(textmining_source, RetrievalSource)
-    assert textmining_source.source_record_urls == [
-        "https://diseases.jensenlab.org/Entity?documents=10&type1=9606&id1=ENSP00000000233&type2=-26&id2=DOID:0111266"
-    ]
-
-    protein = [e for e in entities if isinstance(e, Protein)][0]
-    assert protein.id == "ENSEMBL:ENSP00000000233"
-
-    disease = [e for e in entities if isinstance(e, Disease)][0]
-    assert disease.id == "DOID:0111266"
-
-
 ## KNOWLEDGE
 @pytest.fixture
 def knowledge_output():
@@ -183,7 +129,7 @@ def test_knowledge_output(knowledge_output):
     association1 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][0]
     assert association1
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association1.has_confidence_score == 5.0
+    assert association1.diseases_confidence_score == 5.0
     ## sources stuff
     assert association1.sources
     assert len(association1.sources) == 2
@@ -208,7 +154,7 @@ def test_knowledge_output(knowledge_output):
     association2 = [e for e in entities if isinstance(e, GeneToDiseaseAssociation)][1]
     assert association2
     ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-    assert association2.has_confidence_score == 4.0
+    assert association2.diseases_confidence_score == 4.0
     ## sources stuff
     assert association2.sources
     assert len(association2.sources) == 2

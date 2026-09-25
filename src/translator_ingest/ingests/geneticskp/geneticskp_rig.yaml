@@ -1,0 +1,97 @@
+name: "GeneticsKP Reference Ingest Guide"
+
+supporting_data_source_info:
+  - infores_id: "infores:magma"
+    name: "MAGMA (Multi-marker Analysis of GenoMic Annotation)"
+    description: "MAGMA is a tool for gene analysis and generalized gene-set analysis of GWAS data"
+    terms_of_use_info:
+      terms_of_use_description: >-
+        MAGMA is freely available for academic use. For commercial use, please contact the developers.
+    relevant_files:
+      - file_name: "GWAS summary statistics"
+        location: "Various GWAS repositories"
+        description: "GWAS summary statistics used as input to MAGMA analysis"
+
+source_info:
+  infores_id: "infores:geneticskp"
+  name: "GeneticsKP"
+  description: >-
+    GeneticsKP is a Translator Knowledge Provider that surfaces gene-disease and gene-phenotype
+    associations derived from genome-wide association study (GWAS) data. Associations are computed
+    using MAGMA (Multi-marker Analysis of GenoMic Annotation), a gene-level statistical method that
+    aggregates variant-level GWAS summary statistics into gene-based association scores. GeneticsKP
+    packages these MAGMA-derived associations as a KGX knowledge graph, providing statistically
+    grounded genetic evidence linking genes to diseases and phenotypic traits that can be combined
+    with other knowledge sources in Translator. This ingest is a passthrough of the pre-computed
+    GeneticsKP KGX graph, validating and re-serializing its nodes and edges to Biolink Model form.
+  terms_of_use_info:
+    terms_of_use_description: "Freely available"
+  data_access_locations:
+    - "Data is provided as a pre-computed KGX tar.gz file (genetics_magma.tar.gz) sourced from GeneticsKP"
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - kgx
+  data_versioning_and_releases: "Static, pre-computed release based on a single MAGMA analysis; not versioned on a fixed schedule."
+  source_status: unknown
+
+ingest_info:
+  ingest_categories:
+    - translator_knowledge_creator
+  utility: "GeneticsKP provides gene-disease associations based on GWAS data analyzed with MAGMA, offering genetic evidence for disease associations that can be integrated with other knowledge sources in Translator."
+  scope: "Gene-disease associations derived from GWAS data using MAGMA statistical analysis."
+  relevant_files:
+    - file_name: "genetics_magma.tar.gz"
+      location: "translator-ingests repository"
+      description: "KGX files containing nodes and edges from MAGMA analysis"
+  included_content:
+    - file_name: "edges_geneticsKP_magma.jsonl"
+      included_records: "Gene-disease associations from MAGMA analysis"
+      fields_used: "Gene identifiers, disease identifiers, association scores, p-values"
+    - file_name: "nodes_geneticsKP_magma.jsonl"
+      included_records: "Gene and disease nodes referenced in the edges"
+      fields_used: "Node identifiers, labels, categories"
+
+target_info:
+  edge_type_info:
+    - subject_categories:
+        - "biolink:Gene"
+      predicates:
+        - "biolink:genetically_associated_with"
+      object_categories:
+        - "biolink:Disease"
+        - "biolink:PhenotypicFeature"
+      knowledge_level:
+        - statistical_association
+      agent_type:
+        - computational_model
+      primary_knowledge_sources:
+        - "infores:geneticskp"
+      ui_explanation: >-
+        This edge asserts that genetic variation in the subject gene is statistically associated
+        with the object disease or phenotypic feature. The association is derived from MAGMA
+        (Multi-marker Analysis of GenoMic Annotation), which aggregates variant-level GWAS summary
+        statistics into a gene-level association score. Because the knowledge is produced by a
+        statistical model rather than manual curation, these edges carry a knowledge level of
+        'statistical_association' and an agent type of 'computational_model'. This ingest passes the
+        pre-computed GeneticsKP KGX edges through with minimal transformation, attributing
+        infores:geneticskp as the primary knowledge source.
+
+  node_type_info:
+    - node_category: "biolink:Gene"
+      source_identifier_types:
+        - "NCBI Gene ID"
+        - "HGNC ID"
+    - node_category: "biolink:Disease"
+      source_identifier_types:
+        - "MONDO ID"
+        - "EFO ID"
+    - node_category: "biolink:PhenotypicFeature"
+      source_identifier_types:
+        - "HP ID"
+        - "EFO ID"
+
+provenance_info:
+  contributions:
+    - "GeneticsKP team - MAGMA analysis and KGX generation"
+    - "Translator team - ingest implementation"

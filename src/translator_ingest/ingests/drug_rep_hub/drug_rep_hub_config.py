@@ -3,6 +3,10 @@ import json
 from collections import defaultdict
 from urllib.request import urlopen
 
+from translator_ingest import INGESTS_DATA_DIR
+
+DRUG_REP_HUB_FILE = INGESTS_DATA_DIR / "drug_rep_hub" / "v1" / "source_data" / "repo-drug-annotation.txt"
+
 feature_map = {
     'agent for': ('biolink:has_chemical_role', 'biolink:chemical_role_of'),
     'aid for': ('biolink:ameliorates_condition', 'biolink:condition_ameliorated_by'),
@@ -40,8 +44,7 @@ def generate_indications_config(filename: str):
     molepro_indications = get_molepro_indications(filename)
     config_indications = json.load(open('src/translator_ingest/ingests/drug_rep_hub/indications_config.json'))
     indications = {}
-    drug_rep_hub_file = 'data/drug_rep_hub/v1/source_data/repo-drug-annotation.txt'
-    with open(drug_rep_hub_file, 'r') as f:
+    with open(DRUG_REP_HUB_FILE, 'r') as f:
         for line in f:
             if line.startswith('!'):
                 continue
@@ -116,12 +119,11 @@ def get_molepro_targets(molepro_targets):
 
 def generate_target_config():
     gene_ids, aliases = get_genes()
-    if sys.argv.length > 1:
+    if len(sys.argv) > 1:
         molepro_targets = sys.argv[1]
         molepro_targets = get_molepro_targets(molepro_targets)
-    dru_rep_hub_file = 'data/drug_rep_hub/v1/source_data/repo-drug-annotation.txt'
     targets = {}
-    with open(dru_rep_hub_file, 'r') as f:
+    with open(DRUG_REP_HUB_FILE, 'r') as f:
         for line in f:
             if line.startswith('!'):
                 continue

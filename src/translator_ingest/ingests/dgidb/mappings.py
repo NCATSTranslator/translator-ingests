@@ -19,15 +19,17 @@ supporting_data_sources = {    ## become a RetrievalSource object in sources pro
   "ChEMBL": util.INFORES_CHEMBL,
   "ClearityFoundationBiomarkers": util.INFORES_CLEARITY_BIOMARKERS,
   "ClearityFoundationClinicalTrial": util.INFORES_CLEARITY_CLINICAL,
+  "ClinPGx": util.INFORES_CLINPGX,
   "DTC": util.INFORES_DTC,
   "DoCM": util.INFORES_DOCM,
+  "Drug Repurposing Hub": util.INFORES_DRUG_REPURPOSING_HUB,
   "FDA": util.INFORES_FDA_PGX,
   "GuideToPharmacology": util.INFORES_GTOPDB,
+  "MOAlmanac": util.INFORES_MOALMANAC,
   "MyCancerGenome": util.INFORES_MYCANCERGENOME,
   "MyCancerGenomeClinicalTrial": util.INFORES_MYCANCERGENOME_TRIALS,
   "NCI": util.INFORES_NCIT,
   "OncoKB": util.INFORES_ONCOKB,
-  "PharmGKB":util.INFORES_PHARMGKB,
   "TTD": util.INFORES_TTD,
 }
 
@@ -38,6 +40,7 @@ publications = {     ## become an element in "publications" list
   "TALC": "PMID:25535693",
   "TEND": "PMID:21804595",
   "TdgClinicalTrial": "PMID:24016212",
+  "PRISM": "PMID:32613204",
 }
 
 
@@ -45,12 +48,18 @@ publications = {     ## become an element in "publications" list
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_DP_INTERACTS = "biolink:directly_physically_interacts_with"
 BIOLINK_CAUSES = "biolink:causes"
+BIOLINK_INTERACTS = "biolink:interacts_with"
     
 
 ## interaction_type -> predicate, qualifier-set, extra edge's predicate
 ## imported enum from pydantic (vs hard-coded values)
 ## DOESN'T INCLUDE ALL VALUES: the ones that map to plain "interacts_with" edge are saved in hard-coded variable in main py
 int_type_mapping = {
+    ## same modeling. original values: {"other/unknown", "~NULL"} ("~NULL" is a placeholder for no value)
+    "~PLAIN_INTERACTS": {
+        "predicate": BIOLINK_INTERACTS,
+        ## lack of qualifiers is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
+    },
     "activator": {
         "predicate": BIOLINK_AFFECTS,
         "qualifiers": {

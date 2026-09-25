@@ -1,7 +1,7 @@
 name: 'human_phenotype_ontology_annotations'
 
 readers:
-  disease_to_phenotype:
+  disease_to_phenotype_nodes:
     files:
       - 'phenotype.hpoa'
     header_mode: 4
@@ -11,6 +11,16 @@ readers:
     columns:
       - 'database_id'
       - 'disease_name'
+      - 'hpo_id'
+  disease_to_phenotype_edges:
+    files:
+      - 'phenotype.hpoa'
+    header_mode: 4
+    format: 'csv'
+    delimiter: '\t'
+    # For a csv/tsv file, list expected columns
+    columns:
+      - 'database_id'
       - 'qualifier'
       - 'hpo_id'
       - 'reference'
@@ -32,6 +42,13 @@ readers:
       - 'association_type'
       - 'disease_id'
       - 'source'
+    filters:
+      - inclusion: 'include'
+        column: 'association_type'
+        filter_code: 'in'
+        value:
+          - 'MENDELIAN'
+          - 'POLYGENIC'
   gene_to_phenotype:
     files:
       - 'phenotype.hpoa'

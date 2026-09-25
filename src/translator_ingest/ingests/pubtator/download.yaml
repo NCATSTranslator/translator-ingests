@@ -1,0 +1,3 @@
+---
+- url: https://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator3/relation2pubtator3.gz
+  local_name: relation2pubtator3.gz

@@ -1,11 +1,11 @@
 """
 HPOA processing utility methods
 """
-from typing import Optional, Union
-from loguru import logger
+import koza
 from pydantic import BaseModel
-from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
-from bmt.pydantic import build_association_knowledge_sources
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, AgentTypeEnum
+
+from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
     INFORES_OMIM,
@@ -14,53 +14,58 @@ from translator_ingest.util.biolink import  (
     INFORES_HPOA
 )
 
+HPOA_MEDGEN_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
+HPOA_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
+HPOA_ORPHANET_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
+HPOA_DECIPHER_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
 
-def get_hpoa_association_sources(source_id: str, as_list: bool = False) -> Union[list[RetrievalSource], list[str]]:
+
+def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
     """
     The primary knowledge source may either be inferred from the 'source' string
     matching a characteristic port of a HPOA-coded record['source'] encoded URI
     or from the CURIE namespace of a 'source' string, which is a disease identifier.
 
     :param source_id: HPOA data field value encoding the primary knowledge source
-    :param as_list: boolean if True (default: False), returns the sources as a simple flat list of
-                    infores strings (for use as a 'provided_by' node property value)
-    :return: Union[list[RetrievalSource], list[str]] of source infores identifiers
+    :return: list[RetrievalSource] of source infores identifiers
     """
     if "medgen" in source_id:
-        if as_list:
-            return [INFORES_HPOA, INFORES_MEDGEN, INFORES_OMIM]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
+        return HPOA_MEDGEN_OMIM_SOURCES
 
     elif source_id.startswith("OMIM"):
-        if as_list:
-            return [INFORES_HPOA, INFORES_OMIM]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
+        return HPOA_OMIM_SOURCES
 
     elif "orphadata" in source_id or source_id.startswith("ORPHA") or "orpha" in source_id.lower():
-        if as_list:
-            return [INFORES_HPOA, INFORES_ORPHANET]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
+        return HPOA_ORPHANET_SOURCES
 
     elif source_id.startswith("DECIPHER"):
-        if as_list:
-            return [INFORES_HPOA, INFORES_DECIFER]
-        else:
-            return build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
+        return HPOA_DECIPHER_SOURCES
 
     else:
         raise ValueError(f"Unknown source '{source_id}' value, can't set the primary knowledge source")
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco
-evidence_to_eco: dict = {
-    "IEA": "ECO:0000501",  # "inferred from electronic annotation",
-    "PCS": "ECO:0006017",  # "published clinical study evidence",
-    "TAS": "ECO:0000304",  # "traceable author statement",
-    "ICE": "ECO:0006019",
-}  # "individual clinical experience evidence"
+_evidence_mappings: dict = {
+
+    # "inferred from electronic annotation"
+    "IEA": (["ECO:0000501"],AgentTypeEnum.text_mining_agent),
+
+    # "published clinical study evidence"
+    "PCS": (["ECO:0006017"],AgentTypeEnum.manual_agent),
+
+    # "traceable author statement"
+    "TAS": (["ECO:0000304"],AgentTypeEnum.manual_validation_of_automated_agent),
+
+    # "individual clinical experience evidence"
+    "ICE": (["ECO:0006019"],AgentTypeEnum.manual_agent)
+}
+
+def get_evidence_and_agent(evidence_tag: str | None) -> tuple[list[str]|None,AgentTypeEnum]:
+    if evidence_tag is None or evidence_tag not in _evidence_mappings:
+        return None, AgentTypeEnum.not_provided
+    else:
+        return _evidence_mappings[evidence_tag]
 
 # Sex (right now both all uppercase and all lowercase
 sex_format: dict = {"male": "male", "MALE": "male", "female": "female", "FEMALE": "female"}
@@ -75,8 +80,8 @@ class FrequencyHpoTerm(BaseModel):
 
     curie: str
     name: str
-    lower: float
-    upper: float
+    lower: float | int
+    upper: float | int
 
 
 class Frequency(BaseModel):
@@ -84,11 +89,11 @@ class Frequency(BaseModel):
     Converts fields to pydantic field declarations
     """
 
-    frequency_qualifier: Optional[str] = None
-    has_percentage: Optional[float] = None
-    has_quotient: Optional[float] = None
-    has_count: Optional[int] = None
-    has_total: Optional[int] = None
+    frequency_qualifier: str | None = None
+    has_percentage: float | int | None = None
+    has_quotient: float | int | None = None
+    has_count: int | None = None
+    has_total: int | None = None
 
 
 # HPO "HP:0040279": representing the frequency of phenotypic abnormalities within a patient cohort.
@@ -112,7 +117,7 @@ hpo_term_to_frequency: dict = {
 }  # Present in 0% of the cases.
 
 
-def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm:
+def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm | None:
     """
     :param hpo_id: Candidate "frequency" HPO ID to be looked up
     :return: FrequencyHpoTerm defined by the HPO ID (if available)
@@ -124,22 +129,22 @@ def get_frequency_hpo_term(hpo_id: str) -> FrequencyHpoTerm:
         raise ValueError(f"Invalid HPO ID: {hpo_id}")
 
 
-def map_percentage_frequency_to_hpo_term(percentage: Optional[float]) -> FrequencyHpoTerm:
+def map_percentage_frequency_to_hpo_term(percentage: float | None) -> FrequencyHpoTerm:
     """
     Map phenotypic percentage frequency to a corresponding HPO term corresponding to (HP:0040280 to HP:0040285).
 
-    :param percentage: The float number should be in range 0.0 to 100.0 (otherwise, returns None)
+    :param percentage: float | None, number should be in range 0.0 to 100.0 (otherwise, returns None)
     :return: FrequencyHpoTerm mapping onto the percentage range of the term definition
-    :raise ValueError: when percentage lies outside any valid FrequencyHpoTerm range
+    :raise ValueError: when the percentage lies outside any valid FrequencyHpoTerm range
     """
     if percentage is not None:
         for hpo_id, fht in hpo_term_to_frequency.items():
             if fht.lower <= round(percentage) <= fht.upper:
                 return fht
-    raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage}")
+    raise ValueError(f"Out-of-bound phenotypic frequency percentage: {percentage or 'None'}")
 
 
-def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency:
+def phenotype_frequency_to_hpo_term(koza_transform: koza.KozaTransform, frequency_field: str | None) -> Frequency:
     """
     Maps a raw frequency field onto an HPO term, for consistency, since **phenotypes.hpoa** file field 8,
     which tracks phenotypic frequency, has variable values.   There are three allowed options for this field:
@@ -153,14 +158,15 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
        with the specified disease were found to have the phenotypic abnormality referred to by the HPO term
        in question in the study referred to by the DB_Reference;
 
-        :param frequency_field: String raw frequency value in one of the three above forms
-        :return: Frequency containing the resolved FrequencyHpoTerm range and/or
-                 interpreted value (empty Frequency object, if not found)
+    :param koza_transform: koza.KozaTransform object
+    :param frequency_field: String raw frequency value in one of the three above forms
+    :return: Frequency containing the resolved FrequencyHpoTerm range and/or
+             interpreted value (empty Frequency object, if not found)
     """
-    quotient: Optional[float] = None
-    percentage: Optional[float] = None
-    has_count: Optional[int] = None
-    has_total: Optional[int] = None
+    quotient: float | int | None = None
+    percentage: float | int | None = None
+    has_count: int | None = None
+    has_total: int | None = None
     if frequency_field:
         try:
 
@@ -176,7 +182,10 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
                     # assume a ratio
                     ratio_parts = frequency_field.split("/")
                     assert (
-                        len(ratio_parts) == 2
+                        len(ratio_parts) == 2 and
+                        ratio_parts[0].isdigit() and
+                        ratio_parts[1] is not None and
+                        ratio_parts[1].isdigit()
                     ), f"phenotype_frequency_to_hpo_term(): invalid frequency ratio '{frequency_field}'"
                     has_count = int(ratio_parts[0])
                     has_total = int(ratio_parts[1])
@@ -188,9 +197,10 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
 
         except Exception as e:
             # the expected ratio is not recognized
-            logger.error(
+            koza_transform.log(
                 "phenotype_frequency_to_hpo_term(): invalid frequency field value "
-                + f"'{frequency_field}' of type {type(frequency_field)}, {type(e)} message: {e}"
+                + f"'{frequency_field}' of type {type(frequency_field).__name__}, {type(e).__name__} message: {e}",
+                level="ERROR"
             )
             return Frequency()
 
@@ -208,7 +218,7 @@ def phenotype_frequency_to_hpo_term(frequency_field: Optional[str]) -> Frequency
         return Frequency()
 
 
-def get_hpoa_genetic_predicate(original_predicate: str) -> str:
+def get_qualified_predicate(original_predicate: str) -> str | None:
     """
     Convert the association column into a Biolink Model predicate
     """
@@ -217,7 +227,7 @@ def get_hpoa_genetic_predicate(original_predicate: str) -> str:
     elif original_predicate == "POLYGENIC":
         return "biolink:contributes_to"
     elif original_predicate == "UNKNOWN":
-        return "biolink:associated_with"
+        return None
     else:
         raise ValueError(f"Unknown predicate: {original_predicate}")
 
@@ -273,6 +283,7 @@ hpo_to_mode_of_inheritance: dict = {
     "HP:0010985": "Gonosomal inheritance",
     "HP:0003829": "Typified by incomplete penetrance",
     "HP:0003831": "Typified by age-related disease onset",
+    "HP:0034341": "Pseudoautosomal recessive inheritance",
     "HP:0034344": "Female-limited expression",
     "HP:4000158": "Typified by high penetrance",
 }

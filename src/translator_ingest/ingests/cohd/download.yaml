@@ -1,0 +1,12 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for this project.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+# KGX 'nodes' jsonl file
+- url: https://stars.renci.org/var/data_services/cohd_2/cohd_nodes.jsonl
+  local_name: cohd_nodes.jsonl
+
+# KGX 'edges' jsonl file
+- url: https://stars.renci.org/var/data_services/cohd_2/cohd_edges.jsonl
+  local_name: cohd_edges.jsonl

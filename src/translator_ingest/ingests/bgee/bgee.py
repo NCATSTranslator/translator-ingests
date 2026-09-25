@@ -16,15 +16,19 @@ from translator_ingest.util.biolink import INFORES_BGEE
 
 from koza.model.graphs import KnowledgeGraph
 
-from bmt.pydantic import entity_id, build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 BIOLINK_EXPRESSED_IN = "biolink:expressed_in"
+BGEE_SOURCES = build_association_knowledge_sources(primary=INFORES_BGEE)
 
 def get_latest_version() -> str:
     """Get version from the manifest file"""
     latest_release_url = "https://www.bgee.org/ftp/release_v2.tsv"
+    # bgee.org returns HTTP 403 for the default Python urllib User-Agent, so send a browser-like one.
+    request = urllib.request.Request(latest_release_url, headers={"User-Agent": "Mozilla/5.0"})
     try:
-        with urllib.request.urlopen(latest_release_url) as response:
+        with urllib.request.urlopen(request) as response:
             response_text = response.read().decode('utf8')
             reader = list(csv.DictReader(response_text.splitlines(),delimiter='\t'))
             version = reader[0]['release']
@@ -80,7 +84,7 @@ def transform_bgee_expressed_in(
         subject=gene_id,
         predicate=BIOLINK_EXPRESSED_IN,
         object=anatomical_id,
-        sources=build_association_knowledge_sources(primary=INFORES_BGEE),
+        sources=BGEE_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent,
     )

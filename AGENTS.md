@@ -12,7 +12,7 @@ Layout:
 
 Best practice:
 
-
+* imports always go at the top of the file
 * Use doctests liberally—these serve as both explanatory examples for humans and as unit tests
 * For longer examples, write pytest tests
 * always write pytest functional style rather than unittest OO style
@@ -27,3 +27,4 @@ Best practice:
 * Declarative principles are favored
 * Always use type hints, always document methods and classes
 * always use pytest, never unittest
+* only instantiate bmt Toolkit once per module, reuse it. 

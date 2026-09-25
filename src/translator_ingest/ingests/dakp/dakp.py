@@ -3,7 +3,7 @@ import gzip
 import urllib.request
 from pathlib import Path
 from typing import Any
-import uuid
+import math
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -11,6 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     MolecularMixture,
     DiseaseOrPhenotypicFeature,
     Disease,
+    Drug,
     PhenotypicFeature,
     SmallMolecule,
     ComplexMolecularMixture,
@@ -21,13 +22,16 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
     RetrievalSource,
+    ClinicalApprovalStatusEnum
 )
 from koza.model.graphs import KnowledgeGraph
-from bmt.pydantic import build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 from translator_ingest.util.logging_utils import get_logger
 
 INFORES_DAKP = "infores:multiomics-drugapprovals"
+DAKP_SOURCES = build_association_knowledge_sources(primary=INFORES_DAKP)
 
 logger = get_logger(__name__)
 
@@ -36,9 +40,9 @@ logger = get_logger(__name__)
 def create_node(node_data: dict) -> Any:
     node_id = node_data.get("id")
     name = node_data.get("name")
-    category = node_data.get("category")
+    categories = node_data.get("category", [])
 
-    if not category:
+    if not categories:
         return NamedThing(
             id=node_id,
             name=name,
@@ -51,26 +55,32 @@ def create_node(node_data: dict) -> Any:
         "MolecularMixture": MolecularMixture,
         "ChemicalEntity": ChemicalEntity,
         "ComplexMolecularMixture": ComplexMolecularMixture,
+        "Drug": Drug,
         "Disease": Disease,
         "PhenotypicFeature": PhenotypicFeature,
         "DiseaseOrPhenotypicFeature": DiseaseOrPhenotypicFeature,
     }
 
-    node_class = category_to_class.get(category)
+    # Iterate through categories to find the first matching class
+    node_class = None
+    for cat in categories:
+        short_name = cat.removeprefix("biolink:")
+        node_class = category_to_class.get(short_name)
+        if node_class:
+            break
 
     if node_class:
         return node_class(
             id=node_id,
             name=name,
-            category=[f"biolink:{category}"]
+            category=categories,
         )
     else:
-        # For unknown categories, use NamedThing as default
-        logger.debug(f"Unknown category {category} for node {node_id}, using NamedThing")
+        logger.debug(f"Unknown categories {categories} for node {node_id}, using NamedThing")
         return NamedThing(
             id=node_id,
             name=name,
-            category=[f"biolink:{category}"] if category else ["biolink:NamedThing"]
+            category=categories,
         )
 
 
@@ -143,7 +153,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     publications = record.get("publications", [])
 
     edge_props = {
-        "id": record.get("id", str(uuid.uuid4())),
+        "id": record.get("id", entity_id()),
         "subject": subject_id,
         "predicate": predicate,
         "object": object_id,
@@ -153,14 +163,18 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
     }
 
     # Add optional edge properties if present
-    if "N_cases" in record:
+    if "N_cases" in record and not math.isnan(record["N_cases"]):
         edge_props["number_of_cases"] = record["N_cases"]
 
     # Add clinical_approval_status directly to edge properties
     # This is available on EntityToDiseaseAssociation and EntityToPhenotypicFeatureAssociation
     if "clinical_approval_status" in record:
-        edge_props["clinical_approval_status"] = record["clinical_approval_status"]
-    
+        if record["clinical_approval_status"] not in ClinicalApprovalStatusEnum.__members__:
+            # clinical_approval_status was sometimes "?" so this makes it the biolink-valid not_provided instead
+            edge_props["clinical_approval_status"] = ClinicalApprovalStatusEnum.not_provided
+        else:
+            edge_props["clinical_approval_status"] = record["clinical_approval_status"]
+
     # Add FDA regulatory approvals
     if "approvals" in record and record["approvals"]:
         edge_props["FDA_regulatory_approvals"] = record["approvals"]
@@ -176,7 +190,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         sources = []
         for source in record["sources"]:
             retrieval_source = RetrievalSource(
-                id=str(uuid.uuid4()),  # Generate unique ID
+                id=source.get("resource_id"),  # Generate unique ID
                 resource_id=source.get("resource_id"),
                 resource_role=source.get("resource_role", "primary_knowledge_source"),
                 upstream_resource_ids=source.get("upstream_resource_ids"),
@@ -186,7 +200,7 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         edge_props["sources"] = sources
     else:
         # Default to standard source if not provided
-        edge_props["sources"] = build_association_knowledge_sources(primary=INFORES_DAKP)
+        edge_props["sources"] = DAKP_SOURCES
 
     # Determine which association class to use based on category
     categories = record.get("category", ["biolink:Association"])
