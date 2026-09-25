@@ -33,6 +33,13 @@ INGESTS_RELEASES_PATH = resolve_storage_path("INGESTS_RELEASES_PATH",  TRANSLATO
 
 INGESTS_LOGS_PATH = resolve_storage_path("INGESTS_LOGS_PATH",  TRANSLATOR_INGEST_PATH / ".." / ".." / "logs")
 
+# Reports and logs are deliberate siblings: both are build-wide (not per-source)
+# artifacts uploaded together to S3 (see util/storage/s3.py upload_reports/
+# upload_logs) and documented as a matched pair in util/storage/README.md. When
+# overriding one of INGESTS_REPORTS_PATH / INGESTS_LOGS_PATH, override the other
+# to the same volume, or they will silently end up on different filesystems.
+INGESTS_REPORTS_PATH = resolve_storage_path("INGESTS_REPORTS_PATH",  TRANSLATOR_INGEST_PATH / ".." / ".." / "reports")
+
 INGESTS_PARSER_PATH = TRANSLATOR_INGEST_PATH / "ingests"
 INGEST_PARSER_DIR = INGESTS_PARSER_PATH.absolute()
 
