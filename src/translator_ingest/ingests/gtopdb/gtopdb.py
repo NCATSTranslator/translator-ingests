@@ -1,46 +1,293 @@
-import koza
-import pandas as pd
-import requests
-import re
+"""GtoPdb ingest preparation and graph emission."""
+
+from collections import Counter
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+import re
 from typing import Any, Iterable
 
+import koza
 from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.biolink import build_association_knowledge_sources
-from translator_ingest.util.transform_utils import entity_id
-
+import pandas as pd
+import requests
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    # Gene,
-    Protein,
-    ChemicalEntity,
-    NamedThing,
+    AgentTypeEnum,
     Association,
     ChemicalAffectsGeneAssociation,
-    GeneOrGeneProductOrChemicalEntityAspectEnum,
-    PairwiseMolecularInteraction,
-    CausalMechanismQualifierEnum,
+    ChemicalEntity,
     DirectionQualifierEnum,
+    GeneOrGeneProductOrChemicalEntityAspectEnum,
     KnowledgeLevelEnum,
-    AgentTypeEnum,
+    MacromolecularComplex,
+    NamedThing,
+    PairwiseMolecularInteraction,
+    Protein,
 )
 
-from translator_ingest.util.biolink import (
-    INFORES_GTOPDB
-)
+from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
+from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
+from translator_ingest.util.transform_utils import entity_id
 
 GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
 
-# adding additional needed resources
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
 
-# The interactions file that this ingest downloads; its first line carries the release version.
+# The interactions file's first metadata line carries its release version.
 GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
-
-# e.g. '"# GtoPdb Version: 2026.2 - published: 2026-06-15"'
 GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
+
+LIGAND_ID_COLUMN = "Ligand ID"
+PUBCHEM_ID_COLUMN = "PubChem CID"
+PUBLICATIONS_COLUMN = "PubMed ID"
+
+SOURCE_COLUMNS = (
+    "Target",
+    "Target ID",
+    "Target Subunit IDs",
+    "Target Gene Symbol",
+    "Target UniProt ID",
+    "Target Species",
+    LIGAND_ID_COLUMN,
+    "Ligand",
+    "Type",
+    "Action",
+    "Endogenous",
+    "Ligand Context",
+    PUBLICATIONS_COLUMN,
+)
+
+GROUP_COLUMNS = (
+    "Target",
+    "Target ID",
+    "Target Subunit IDs",
+    "Target Gene Symbol",
+    "Target UniProt ID",
+    "Target Species",
+    LIGAND_ID_COLUMN,
+    "Ligand",
+    "Type",
+    "Action",
+    "Endogenous",
+)
+
+PREPARED_COLUMN_RENAMES = {
+    "Ligand": "subject_name",
+    "Target": "target_name",
+    "Target ID": "target_id",
+    "Target Subunit IDs": "target_subunit_ids",
+    "Target Gene Symbol": "target_gene_symbols",
+    "Target UniProt ID": "target_uniprot_ids",
+    "Target Species": "target_species",
+}
+
+SPECIES_TO_TAXON = {
+    "bovine": "NCBITaxon:9913",
+    "chicken": "NCBITaxon:9031",
+    "dog": "NCBITaxon:9615",
+    "escherichia coli": "NCBITaxon:562",
+    "ferret": "NCBITaxon:9669",
+    "gorilla": "NCBITaxon:9595",
+    "guinea pig": "NCBITaxon:10141",
+    "hepatitis c virus": "NCBITaxon:11103",
+    "honeybee": "NCBITaxon:7460",
+    "human": "NCBITaxon:9606",
+    "mers-cov": "NCBITaxon:1335626",
+    "mouse": "NCBITaxon:10090",
+    "mycobacterium tuberculosis": "NCBITaxon:1773",
+    "pig": "NCBITaxon:9823",
+    "plasmodium berghei": "NCBITaxon:5821",
+    "plasmodium cynomolgi": "NCBITaxon:5827",
+    "plasmodium falciparum": "NCBITaxon:5833",
+    "plasmodium knowlesi": "NCBITaxon:5850",
+    "plasmodium vivax": "NCBITaxon:5855",
+    "plasmodium yoelii": "NCBITaxon:5861",
+    "rabbit": "NCBITaxon:9986",
+    "rat": "NCBITaxon:10116",
+    "sars-cov": "NCBITaxon:694009",
+    "sars-cov-2": "NCBITaxon:2697049",
+    "sheep": "NCBITaxon:9940",
+    "turkey": "NCBITaxon:9103",
+    "zika virus": "NCBITaxon:64320",
+}
+
+
+def _pipe_values(value: Any) -> tuple[str, ...]:
+    """Parse a pipe-delimited source field without inventing identifiers."""
+    if value is None or pd.isna(value):
+        return ()
+    return tuple(part.strip() for part in str(value).split("|") if part.strip())
+
+
+def _source_text(value: Any) -> str:
+    """Normalize a nullable source scalar to stripped text.
+
+    >>> _source_text(pd.NA)
+    ''
+    >>> _source_text(" Human ")
+    'Human'
+    """
+    return "" if value is None or pd.isna(value) else str(value).strip()
+
+
+class TargetClassification(str, Enum):
+    """The source-supported representation of a GtoPdb target descriptor."""
+
+    SINGLE_PROTEIN = "single_protein"
+    MACROMOLECULAR_COMPLEX = "macromolecular_complex"
+    UNRESOLVED_MULTI_PROTEIN_GROUP = "unresolved_multi_protein_group"
+    UNMAPPED = "unmapped"
+
+
+UNSUPPORTED_TARGET_CLASSES = frozenset(
+    {
+        TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
+        TargetClassification.UNMAPPED,
+    }
+)
+
+
+def _canonical_uniprot_accession(accession: str) -> str:
+    """Remove a terminal UniProt isoform suffix from an accession.
+
+    >>> _canonical_uniprot_accession("P56856-2")
+    'P56856'
+    >>> _canonical_uniprot_accession("P46098")
+    'P46098'
+    """
+    return re.sub(r"-\d+$", "", accession)
+
+
+def _known_species(value: str) -> str | None:
+    """Return a normalized source species value, excluding unknown placeholders.
+
+    >>> _known_species("Human")
+    'human'
+    >>> _known_species("Unknown") is None
+    True
+    """
+    normalized = _source_text(value).casefold()
+    return normalized if normalized not in {"", "none", "unknown"} else None
+
+
+@dataclass(frozen=True)
+class TargetDescriptor:
+    """Source identity and component evidence for one GtoPdb target."""
+
+    source_id: str
+    name: str
+    species: str
+    subunit_ids: tuple[str, ...]
+    gene_symbols: tuple[str, ...]
+    uniprot_ids: tuple[str, ...]
+
+    @classmethod
+    def from_record(cls, record: dict[str, Any]) -> "TargetDescriptor":
+        """Build a target descriptor from a prepared GtoPdb interaction record."""
+        return cls(
+            source_id=_source_text(record.get("target_id")),
+            name=_source_text(record.get("target_name")) or _source_text(record.get("object_name")),
+            species=_source_text(record.get("target_species")),
+            subunit_ids=_pipe_values(record.get("target_subunit_ids")),
+            gene_symbols=_pipe_values(record.get("target_gene_symbols")),
+            uniprot_ids=_pipe_values(record.get("target_uniprot_ids")) or _pipe_values(record.get("object_id")),
+        )
+
+    @property
+    def key(self) -> tuple[str, str]:
+        """Return the source target identifier together with its species context."""
+        return self.source_id, self.species
+
+    @property
+    def canonical_uniprot_ids(self) -> tuple[str, ...]:
+        """Return the distinct canonical accessions in source order."""
+        return tuple(dict.fromkeys(_canonical_uniprot_accession(accession) for accession in self.uniprot_ids))
+
+    @property
+    def classification(self) -> TargetClassification:
+        """Classify the target using subunit evidence before accession cardinality.
+
+        Multiple subunit IDs identify a source-defined complex. Multiple
+        canonical accessions without that evidence remain unresolved rather
+        than being inferred to be a complex.
+
+        Examples from GtoPdb 2026.2 ``interactions.csv``:
+
+        - Target 378 (5-HT3AB, Human) has subunits ``373|374`` and proteins
+          ``P46098|O95264``; it is a macromolecular complex.
+        - Target 2903 (claudin 18, Human) has ``P56856|P56856-2`` but no
+          subunits; both values identify the same canonical protein.
+        - Target 34 (AT1 receptor, Rat) has ``P29089|P25095`` and no
+          subunits; it remains an unresolved multi-protein group.
+        - Target 1287 (guanylyl cyclase alpha1/beta1, Bovine) has subunits
+          ``1288|1290`` but no UniProt mapping; it is still a complex.
+        """
+        if len(self.subunit_ids) > 1:
+            # Source subunits, not UniProt cardinality, establish a complex.
+            return TargetClassification.MACROMOLECULAR_COMPLEX
+        canonical_uniprot_ids = self.canonical_uniprot_ids
+        if len(canonical_uniprot_ids) == 1:
+            # A pipe-delimited list can contain canonical and isoform accessions.
+            return TargetClassification.SINGLE_PROTEIN
+        if len(canonical_uniprot_ids) > 1:
+            # Do not turn source groups or paralog alternatives into complexes.
+            return TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP
+        return TargetClassification.UNMAPPED
+
+    @property
+    def protein_curie(self) -> str | None:
+        """Return the canonical protein CURIE for a single-protein descriptor."""
+        if self.classification is not TargetClassification.SINGLE_PROTEIN:
+            return None
+        return f"UniProtKB:{self.canonical_uniprot_ids[0]}"
+
+    @property
+    def complex_curie(self) -> str | None:
+        """Return the GtoPdb target CURIE for a source-defined complex."""
+        if self.classification is not TargetClassification.MACROMOLECULAR_COMPLEX:
+            return None
+        return f"IUPHARobj:{self.source_id}"
+
+    @property
+    def species_context_qualifier(self) -> str | None:
+        """Return the NCBI Taxonomy CURIE for a recognized source species."""
+        species = _known_species(self.species)
+        return SPECIES_TO_TAXON.get(species) if species else None
+
+
+def source_target_species_descriptors(
+    targets: Iterable[TargetDescriptor],
+) -> dict[str, dict[str, TargetDescriptor]]:
+    """Index source target descriptors by ID and known species.
+
+    Complex membership and multi-species coverage are independent properties:
+    a GtoPdb target can be a complex in several species.
+
+    For example, target 378 (5-HT3AB) has distinct Human and Mouse descriptors
+    in GtoPdb 2026.2, and both descriptors identify the same two source
+    subunits. It is therefore a multi-species complex, not an ambiguous list
+    of proteins to split into individual interaction edges.
+
+    >>> human = TargetDescriptor("378", "5-HT3AB", "Human", (), (), ("P46098",))
+    >>> mouse = TargetDescriptor("378", "5-HT3AB", "Mouse", (), (), ("P23979",))
+    >>> sorted(source_target_species_descriptors((human, mouse))["378"])
+    ['human', 'mouse']
+    """
+    descriptors: dict[str, dict[str, TargetDescriptor]] = {}
+    for target in targets:
+        species = _known_species(target.species)
+        if target.source_id and species:
+            descriptors.setdefault(target.source_id, {})[species] = target
+    return descriptors
+
+
+def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
+    """Return source target IDs represented for more than one known species."""
+    descriptors = source_target_species_descriptors(targets)
+    return frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
 
 
 def get_latest_version() -> str:
@@ -64,1043 +311,301 @@ def get_latest_version() -> str:
         )
     return match.group("version")
 
+
+def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
+    """Load the source Ligand ID to PubChem CID crosswalk."""
+    ligands = pd.read_csv(
+        input_files_dir / "ligands.csv",
+        skiprows=1,
+        dtype={LIGAND_ID_COLUMN: str, PUBCHEM_ID_COLUMN: str},
+    )
+    return dict(
+        zip(
+            ligands[LIGAND_ID_COLUMN].astype(str).str.strip(),
+            ligands[PUBCHEM_ID_COLUMN].astype(str).str.strip(),
+        )
+    )
+
+
+def _join_publications(values: pd.Series) -> str:
+    """Combine distinct source publication cells in their input order."""
+    return "|".join(pd.unique(values.dropna().astype(str)))
+
+
+def _prepare_interactions(
+    data: Iterable[dict[str, Any]],
+    ligand_mapping: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Aggregate source rows and retain source target metadata for emission."""
+    source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
+    source = source.astype({LIGAND_ID_COLUMN: "string", "Target ID": "string"})
+    source = source.dropna(subset=["Target ID", LIGAND_ID_COLUMN])
+    source = source[source["Target ID"].str.strip().ne("") & source[LIGAND_ID_COLUMN].str.strip().ne("")]
+
+    aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
+    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
+    prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
+    prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
+    prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
+    return prepared.to_dict(orient="records")
+
+
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
-def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]] | None:
+def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Prepare GtoPdb interactions for record-level graph transformation."""
+    return _prepare_interactions(data, _load_ligand_mapping(Path(koza.input_files_dir)))
 
-    ## used for debugging only
-    ## check whether the mapping tag is in the same execution context
-    # print("STATE KEYS:", koza.state.keys())
-    # print("MAPPING SIZE:", len(koza.state.get("pubchem_id_mapping_dict", {})))
 
-    ## Load ligands mapping CSV directly
-    ## skip the metadata row
-    ## Specify that 'Ligand ID' and "PubChem CID" should be read as a string
-    ligands_file_path = Path(koza.input_files_dir) / "ligands.csv"
-    mapping_df = pd.read_csv(ligands_file_path, skiprows = 1, dtype={'Ligand ID': str, 'PubChem CID': str})
-    ## used for debugging only
-    # print("Mapping CSV columns:", mapping_df.columns.tolist())
+def _publication_list(value: str | None) -> list[str] | None:
+    """Prefix publication tokens without changing whitespace or multiplicity.
 
-    mapping_dict = dict(zip(
-        mapping_df["Ligand ID"].astype(str).str.strip(),
-        mapping_df["PubChem CID"].astype(str).str.strip()
-    ))
+    >>> _publication_list("123|123|| 456 ")
+    ['PMID:123', 'PMID:123', 'PMID:', 'PMID: 456 ']
+    >>> _publication_list("") is None
+    True
+    """
+    if not value:
+        return None
+    return [f"PMID:{pmid}" for pmid in value.split("|")]
 
-    ## convert the input dataframe into pandas df format
-    source_df = pd.DataFrame(data)
 
-    ## Only select needed columns
-    sele_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action',
-    'Endogenous', 'Ligand Context', 'PubMed ID']
-    source_subset_df = source_df[sele_cols].drop_duplicates()
+def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple[ChemicalEntity, NamedThing]:
+    """Create the source-supported chemical and target nodes for one record."""
+    subject = ChemicalEntity(
+        id=f"PUBCHEM.COMPOUND:{record['subject_id']}",
+        name=record["subject_name"],
+    )
+    if target.protein_curie:
+        object: NamedThing = Protein(
+            id=target.protein_curie,
+            name=target.name,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
+        )
+    elif target.complex_curie:
+        object = MacromolecularComplex(
+            id=target.complex_curie,
+            name=target.name,
+            # IUPHARobj identifies the source target concept. The taxon keeps
+            # human target 378 (5-HT3AB) distinct in meaning from its mouse
+            # descriptor, even though both use IUPHARobj:378 as the node ID.
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
+        )
+    else:
+        raise ValueError(f"Cannot create a target node for {target.key}")
+    return subject, object
 
-    ## Specify that 'Ligand ID' and "Target UniProt ID" should be read as a string ('object' dtype) to avoid pandas changing identifier from 1102 -> 1102.0
-    source_subset_df = source_subset_df.astype({
-        "Ligand ID": "string",
-        "Target UniProt ID": "string"
-    })
 
-    ## debugging usage
-    # koza.log(f"DataFrame columns: {source_df.columns.tolist()}")
+def _component_nodes(target: TargetDescriptor) -> list[Protein]:
+    """Create protein nodes for the explicitly identified complex components."""
+    if not target.complex_curie:
+        return []
+    return [
+        Protein(
+            id=f"UniProtKB:{accession}",
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
+        )
+        for accession in target.canonical_uniprot_ids
+    ]
 
-    ## Drop nan values
-    source_subset_df = source_subset_df.dropna(subset=["Target UniProt ID", "Ligand ID"])
 
-    ## Implement logic to aggregate source records into a single edge based on SPO + qualifier pair (subject_name, subject_category, object_name, object_category, MECHANISM, EFFECT, DIRECT)
-    group_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action', 'Endogenous']
+def _attach_publications(edges: list[Association], publications: list[str] | None) -> None:
+    """Attach shared publications to every edge emitted for one source record."""
+    if publications:
+        for edge in edges:
+            edge.publications = publications
 
-    source_agg_df = (
-        ## In pandas, groupby() drops rows with NA in any grouping key by default, which can silently discard interaction rows (and makes downstream Type/Action is None handling unreachable).
-        ## use groupby(..., dropna=False) if intend to keep records with missing qualifiers
-        source_subset_df.groupby(group_cols, as_index=False, dropna=False)
-        .agg({
-            "PubMed ID": lambda x: "|".join(pd.unique(x.dropna().astype(str)))
-            })
+
+def _build_primary_association(
+    subject: ChemicalEntity,
+    object: NamedThing,
+    endogenous: Any,
+    rule: InteractionRule,
+    species_context_qualifier: str | None,
+) -> Association:
+    """Construct the one pharmacological edge selected by an interaction rule."""
+    if rule.relation == "related":
+        return Association(
+            id=entity_id(),
+            subject=subject.id,
+            predicate=BIOLINK_RELATED,
+            object=object.id,
+            sources=GTOPDB_SOURCES,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+
+    predicate, direction = _endogenous_projection(endogenous, rule)
+    return ChemicalAffectsGeneAssociation(
+        id=entity_id(),
+        subject=subject.id,
+        predicate=predicate,
+        object=object.id,
+        qualified_predicate=BIOLINK_CAUSES if rule.qualified else None,
+        object_aspect_qualifier=GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+        object_direction_qualifier=direction,
+        causal_mechanism_qualifier=rule.mechanism,
+        sources=GTOPDB_SOURCES,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        species_context_qualifier=species_context_qualifier,
     )
 
-    ## rename those columns into desired format, note we need to obtain "pubchem CID" as subject id from "Ligand ID"
-    source_agg_df.rename(
-        columns={
-            "Ligand": "subject_name",
-            "Target": "object_name",
-            "Target UniProt ID": "object_id",
-        },
-        inplace=True,
+
+def _endogenous_projection(
+    endogenous: Any,
+    rule: InteractionRule,
+) -> tuple[str, DirectionQualifierEnum | None]:
+    """Select endogenous context using the exact source string, including nulls.
+
+    >>> rule = InteractionRule(polarity="positive")
+    >>> predicate, direction = _endogenous_projection("TRUE", rule)
+    >>> predicate, direction.value
+    ('biolink:regulates', 'upregulated')
+    >>> predicate, direction = _endogenous_projection(True, rule)
+    >>> predicate, direction.value
+    ('biolink:affects', 'increased')
+    >>> _endogenous_projection(None, InteractionRule())
+    ('biolink:affects', None)
+    """
+    if endogenous == "TRUE":
+        predicate = BIOLINK_REGULATES
+        directions = {
+            "positive": DirectionQualifierEnum.upregulated,
+            "negative": DirectionQualifierEnum.downregulated,
+        }
+    else:
+        predicate = BIOLINK_AFFECTS
+        directions = {
+            "positive": DirectionQualifierEnum.increased,
+            "negative": DirectionQualifierEnum.decreased,
+        }
+    return predicate, directions.get(rule.polarity)
+
+
+def _build_physical_interaction(
+    subject: ChemicalEntity,
+    object: NamedThing,
+    species_context_qualifier: str | None,
+) -> PairwiseMolecularInteraction:
+    """Construct the companion direct physical-interaction edge for a rule."""
+    return PairwiseMolecularInteraction(
+        id=entity_id(),
+        subject=subject.id,
+        predicate="biolink:directly_physically_interacts_with",
+        object=object.id,
+        sources=GTOPDB_SOURCES,
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        species_context_qualifier=species_context_qualifier,
     )
 
-    ## avoid mismatching by converting string ids into integer IDs
-    source_agg_df["subject_id"] = (
-        source_agg_df["Ligand ID"]
-        .astype(str)
-        .str.strip()
-        .map(mapping_dict)
+
+def _edges_for_record(
+    subject: ChemicalEntity,
+    object: NamedThing,
+    target: TargetDescriptor,
+    endogenous: Any,
+    rule: InteractionRule,
+    publications: list[str] | None,
+    emit_component_edges: bool,
+) -> list[Association]:
+    """Build every graph edge emitted for one supported source record.
+
+    ``IUPHARobj:<Target ID>`` is shared by GtoPdb species descriptors. Until
+    Biolink permits a taxon-qualified ``has_part`` assertion, component edges
+    would merge the human and mouse compositions for target 378 (5-HT3AB).
+    Therefore multi-species source IDs omit those edges conservatively; see
+    https://github.com/biolink/biolink-model/pull/1797 and translator-ingests#510.
+    """
+    edges: list[Association] = [
+        _build_primary_association(
+            subject,
+            object,
+            endogenous,
+            rule,
+            target.species_context_qualifier,
+        )
+    ]
+    if rule.physical_interaction:
+        edges.append(_build_physical_interaction(subject, object, target.species_context_qualifier))
+    if target.complex_curie and emit_component_edges:
+        edges.extend(
+            Association(
+                id=entity_id(),
+                subject=target.complex_curie,
+                predicate="biolink:has_part",
+                object=f"UniProtKB:{accession}",
+                sources=GTOPDB_SOURCES,
+                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+                agent_type=AgentTypeEnum.manual_agent,
+            )
+            for accession in target.canonical_uniprot_ids
+        )
+    _attach_publications(edges, publications)
+    return edges
+
+
+def _transform_record(
+    record: dict[str, Any],
+    target: TargetDescriptor,
+    *,
+    emit_component_edges: bool,
+) -> KnowledgeGraph | None:
+    """Assemble one record using the descriptor and component policy of its batch.
+
+    All descriptors are resolved before any records are emitted. Passing that
+    context preserves validation order and accounts for other species even when
+    their interaction records are later skipped.
+    """
+    if target.classification in UNSUPPORTED_TARGET_CLASSES:
+        return None
+
+    rule = resolve_rule(record["Type"], record["Action"])
+    if rule is None or rule.skip:
+        return None
+
+    subject, object = _nodes_for_record(record, target)
+    edges = _edges_for_record(
+        subject,
+        object,
+        target,
+        record["Endogenous"],
+        rule,
+        _publication_list(record[PUBLICATIONS_COLUMN]),
+        emit_component_edges=emit_component_edges,
     )
-
-    ## drop NA of those dont find a mapping
-    source_agg_df = source_agg_df.dropna(subset=["subject_id"])
-
-    return source_agg_df.drop_duplicates().to_dict(orient="records")
+    component_nodes = _component_nodes(target) if emit_component_edges else []
+    return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
 
 
 @koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
+    """Resolve batch species context, aggregate record graphs, and report exclusions."""
+    records = list(data)
+    targets = tuple(TargetDescriptor.from_record(record) for record in records)
+    multi_species_target_ids = multi_species_source_target_ids(targets)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
 
-    ## create one-time action list checkers:
-    activator_list_with_separate_directly_physically_interacts_with_edge = ['Agonist', 'Binding', 'Full agonist', 'Partial agonist']
-    ## all action == agonist edges need a separate directly_physically_interacts_with edge
-    agonist_list_with_separate_directly_physically_interacts_with_edge = ['Activation', 'Agonist', 'Biased agonist', 'Binding', 'Full agonist', 'Inverse agonist', 'Irreversible agonist', 'Mixed', 'None', 'Partial agonist', 'Unknown']
-    ## all action == Allosteric modulator need a seaparate directly_physically_interacts_with edge, thus no need of the branch switch code
-    allosteric_modulator_list_with_separate_directly_physically_interacts_with_edge = ['Activation', 'Agonist', 'Antagonist', 'Biased agonist', 'Binding', 'Biphasic', 'Full agonist', 'Inhibition', 'Inverse agonist', 'Mixed', 'Negative', 'Neutral', None, 'Partial agonist', 'Positive', 'Potentiation']
-    ## all action == Antagonist needs a separate directly_physically_interacts_with
-    antagonist_list_with_separate_directly_physically_interacts_with_edge = ['Antagonist', 'Binding', 'Inhibition', 'Inverse agonist', 'Irreversible inhibition', 'Mixed', 'Non-competitive', 'Partial agonist']
-    ## all action == Antibody needs a separate directly_physically_interacts_with
-    antibody_list_with_separate_directly_physically_interacts_with_edge = ['Agonist', 'Antagonist', 'Binding', 'Inhibition', 'None']
-    ## all action == Channel blocker needs a separate directly_physically_interacts_with
-    channel_blocker_list_with_separate_directly_physically_interacts_with_edge = ['Antagonist', 'Inhibition', 'None', 'Pore blocker']
-    ## all action == Fusion protein needs a separate directly_physically_interacts_with
-    fusion_protein_list_with_separate_directly_physically_interacts_with_edge = ['Binding', 'Inhibition']
-    ## all action == Gating inhibitor needs a separate directly_physically_interacts_with
-    gating_inhibitor_list_with_separate_directly_physically_interacts_with_edge = ['Antagonist', 'Inhibition', 'None', 'Pore blocker', 'Slows inactivation', 'Voltage-dependent inhibition']
-    ## following action == inhibitor needs a separate directly_physically_interacts_with
-    inhibitor_list_with_separate_directly_physically_interacts_with_edge = ['Antagonist', 'Binding', 'Competitive', 'Inhibition', 'Irreversible inhibition', 'Non-competitive', 'None', 'Unknown']
-    ## following action == None needs a separate directly_physically_interacts_with
-    none_list_with_separate_directly_physically_interacts_with_edge = ['Binding', 'Competitive', 'Inhibition']
-    ## following action ==  Subunit-specific needs a separate directly_physically_interacts_with
-    subunit_specific_list_with_separate_directly_physically_interacts_with_edge = ['Inhibition']
-
-    for record in data:
-        object_direction_qualifier = None
-        object_aspect_qualifier = None
-        predicate = "None"
-        qualified_predicate = None
-        association = None
-        causal_mechanism_qualifier = None
-
-        # seems all subjects are chemical entity, and all objects are proteins
-        subject = ChemicalEntity(id="PUBCHEM.COMPOUND:" + record["subject_id"], name=record["subject_name"])
-        object = Protein(id="UniProtKB:" + record["object_id"], name=record["object_name"])
-
-        ## Obtain the publications information
-        publications = [f"PMID:{p}" for p in record["PubMed ID"].split("|")] if record["PubMed ID"] else None
-
-        ## Now check whether the column (ENDOGENOUS) = TRUE, in source data records as a flag to indicate that the regulates predicate should be used instead of `affects',
-        ## and "upregulates" and "downregulates" should be used as object directions instead of "increased" and decreased".
-
-        ## initialize variables to hold information
-        ## on whether an edge should use BIOLINK_AFFECTS and increased/decreased (if Endogenous == False)
-        ## or should use BIOLINK_REGULATES and upregulated/downregulated (if Endogenous == True)
-        current_predicate_mapping = BIOLINK_AFFECTS
-        ## will be assigned as a tuple later, since we need to store two values
-        current_direction_mapping = None
-        if record["Endogenous"] == "TRUE":
-            current_predicate_mapping = BIOLINK_REGULATES
-            current_direction_mapping = (DirectionQualifierEnum.upregulated, DirectionQualifierEnum.downregulated)
-        else:
-            # current_predicate_mapping = BIOLINK_AFFECTS
-            current_direction_mapping = (DirectionQualifierEnum.increased, DirectionQualifierEnum.decreased)
-
-        # subject: Activator
-        if record["Type"] == 'Activator' and record["Action"] in activator_list_with_separate_directly_physically_interacts_with_edge:
-            ## define CausalMechanismQualifierEnum for each unique action values
-            if record["Action"] == "Agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-            elif record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.binding
-            elif record["Action"] == "Full agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-            elif record["Action"] == "Partial agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = current_predicate_mapping,
-                    qualified_predicate = BIOLINK_CAUSES,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    object_direction_qualifier = current_direction_mapping[0],
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-                # causal_mechanism_qualifier = causal_mechanism_qualifier,
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        if record["Type"] == 'Activator' and record["Action"] not in activator_list_with_separate_directly_physically_interacts_with_edge:
-            predicate = current_predicate_mapping
-            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-            qualified_predicate = BIOLINK_CAUSES
-            object_direction_qualifier = current_direction_mapping[0]
-            if record["Action"] == "Activation":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
-            ## Recorded in source file as a string "None" instead of a none type
-            elif record["Action"] == "None":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
-            elif record["Action"] == "Positive":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
-            elif record["Action"] == "Potentiation":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
-
-            association = ChemicalAffectsGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                ## Five edge attributes in order
-                predicate = predicate,
-                qualified_predicate = qualified_predicate,
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
-                ## other edge attributes
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-
-            if publications:
-                association.publications = publications
-
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
-
-        ## subject: Agonist
-        if record["Type"] == 'Agonist' and record["Action"] in agonist_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Activation":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Biased agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.biased_agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Full agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Inverse agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inverse_agonism
-                object_direction_qualifier = current_direction_mapping[1]
-            elif record["Action"] == "Irreversible agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Mixed":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.mixed_agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "None" or record["Action"] == "Unknown":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-            elif record["Action"] == "Partial agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
-                object_direction_qualifier = current_direction_mapping[0]
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = current_predicate_mapping,
-                    qualified_predicate = BIOLINK_CAUSES,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-                # causal_mechanism_qualifier = causal_mechanism_qualifier,
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Allosteric modulator
-        if record["Type"] == 'Allosteric modulator' and record["Action"] in allosteric_modulator_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Activation":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.activation
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Agonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Antagonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Biased agonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.biased_agonism
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Binding":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation
-                object_direction_qualifier = None
-                qualified_predicate = None
-
-            elif record["Action"] == "Biphasic":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.biphasic_allosteric_modulation
-                object_direction_qualifier = None
-                qualified_predicate = None
-
-            elif record["Action"] == "Full agonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.agonism
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Inhibition":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Inverse agonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inverse_agonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Mixed":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.mixed_allosteric_modulation
-                object_direction_qualifier = None
-                qualified_predicate = None
-
-            elif record["Action"] == "Negative":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.negative_allosteric_modulation
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Neutral" or record["Action"] == "None":
-                ## print("not applicable")
-                ## only jump off the parsing of current records, not the whole dataframe
-                continue
-
-            elif record["Action"] == "Partial agonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.partial_agonism
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Positive":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.positive_allosteric_modulation
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Potentiation":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = predicate,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = object_aspect_qualifier,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-                # causal_mechanism_qualifier = CausalMechanismQualifierEnum.allosteric_modulation,
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Antagonist
-        if record["Type"] == 'Antagonist' and record["Action"] in antagonist_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Antagonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Binding":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Inhibition":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Inverse agonist":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inverse_agonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Irreversible inhibition":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.irreversible_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Mixed":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Non-competitive":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.non_competitive_antagonism
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Partial agonist":
-                # print("not applicable")
-                ## only jump off the parsing of current records, not the whole dataframe
-                continue
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = predicate,
-                    object_aspect_qualifier = object_aspect_qualifier,
-                    qualified_predicate = qualified_predicate,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Antibody
-        if record["Type"] == 'Antibody' and record["Action"] in antibody_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Agonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_agonism
-                object_direction_qualifier = current_direction_mapping[0]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Antagonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.binding
-                object_direction_qualifier = None
-                qualified_predicate = None
-
-            elif record["Action"] == "Inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antibody_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            elif record["Action"] == "None":
-                causal_mechanism_qualifier = None
-                object_direction_qualifier = None
-                qualified_predicate = None
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = current_predicate_mapping,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier= causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Channel blocker
-        if record["Type"] == 'Channel blocker' and record["Action"] in channel_blocker_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Antagonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-            elif record["Action"] == "Inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-            elif record["Action"] == "None":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
-                object_direction_qualifier = None
-                qualified_predicate = None
-            elif record["Action"] == "Pore blocker":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
-                object_direction_qualifier = None
-                qualified_predicate = None
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = current_predicate_mapping,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Fusion protein
-        if record["Type"] == 'Fusion protein' and record["Action"] in fusion_protein_list_with_separate_directly_physically_interacts_with_edge:
-            predicate = current_predicate_mapping
-            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-            causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
-            object_direction_qualifier = current_direction_mapping[1]
-            qualified_predicate = BIOLINK_CAUSES
-
-            if record["Action"] == "Binding":
-                # print("not applicable")
-                ## only jump off the parsing of current records, not the whole dataframe
-                continue
-            elif record["Action"] == "Inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.molecular_channel_blockage
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = predicate,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = object_aspect_qualifier,
-                    object_direction_qualifier= object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Gating inhibitor
-        if record["Type"] == 'Gating inhibitor' and record["Action"] in gating_inhibitor_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Antagonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-            elif record["Action"] == "Inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-            elif record["Action"] == "None":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-                object_direction_qualifier = None
-                qualified_predicate = None
-            elif record["Action"] == "Pore blocker":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-            elif record["Action"] == "Slows inactivation":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-            elif record["Action"] == "Voltage-dependent inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.gating_inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = current_predicate_mapping,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        # subject: Inhibitor
-        if record["Type"] == 'Inhibitor' and record["Action"] in inhibitor_list_with_separate_directly_physically_interacts_with_edge:
-            predicate = current_predicate_mapping
-            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-            qualified_predicate = BIOLINK_CAUSES
-            object_direction_qualifier = current_direction_mapping[1]
-
-            if record["Action"] == "Antagonist":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-            elif record["Action"] == "Binding":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.antagonism
-            elif record["Action"] == "Competitive":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.competitive_inhibition
-            elif record["Action"] == "Inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
-            elif record["Action"] == "Irreversible inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.irreversible_inhibition
-            elif record["Action"] == "Non-competitive":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.non_competitive_antagonism
-            elif record["Action"] == "None" or record["Action"] == "Unknown":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = predicate,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = object_aspect_qualifier,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        if record["Type"] == 'Inhibitor' and record["Action"] not in inhibitor_list_with_separate_directly_physically_interacts_with_edge:
-            predicate = current_predicate_mapping
-            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-            qualified_predicate = BIOLINK_CAUSES
-            object_direction_qualifier = current_direction_mapping[1]
-
-            if record["Action"] == "Feedback inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.feedback_inhibition
-
-            association = ChemicalAffectsGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                ## Five edge attributes in order
-                predicate = predicate,
-                qualified_predicate = qualified_predicate,
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
-                ## other edge attributes
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-
-            if publications:
-                association.publications = publications
-
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
-
-        # subject: None
-        if record["Type"] == "None" and record["Action"] in none_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Binding" or record["Action"] == "Competitive":
-                # print("not applicable")
-                ## only jump off the parsing of current records, not the whole dataframe
-                continue
-            elif record["Action"] == "Inhibition":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-                qualified_predicate = BIOLINK_CAUSES
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = predicate,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = object_aspect_qualifier,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        if record["Type"] == "None" and record["Action"] not in none_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "None":
-                association = Association(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate=BIOLINK_RELATED,
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-            elif record["Action"] == "Potentiation":
-                association = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    predicate=current_predicate_mapping,
-                    qualified_predicate=BIOLINK_CAUSES,
-                    object_aspect_qualifier=GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-                    object_direction_qualifier=current_direction_mapping[0],
-                    causal_mechanism_qualifier=CausalMechanismQualifierEnum.potentiation,
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            if publications:
-                association.publications = publications
-
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
-
-        # subject: Subunit-specific
-        if record["Type"] == "Subunit-specific" and record["Action"] in subunit_specific_list_with_separate_directly_physically_interacts_with_edge:
-            predicate = current_predicate_mapping
-            object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-            qualified_predicate = BIOLINK_CAUSES
-
-            if record["Action"] == "Inhibition":
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.inhibition
-                object_direction_qualifier = current_direction_mapping[1]
-
-            association_1 = ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    ## Five edge attributes in order
-                    predicate = predicate,
-                    qualified_predicate = qualified_predicate,
-                    object_aspect_qualifier = object_aspect_qualifier,
-                    object_direction_qualifier = object_direction_qualifier,
-                    causal_mechanism_qualifier = causal_mechanism_qualifier,
-                    ## other edge attributes
-                    sources=GTOPDB_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                )
-
-            association_2 = PairwiseMolecularInteraction(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                predicate = "biolink:directly_physically_interacts_with",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-                ## Qi review comment, seems that PairwiseMolecularInteraction don't accept causal_mechanism_qualifier
-            )
-
-            if publications and association_1 is not None and association_2 is not None:
-                association_1.publications = publications
-                association_2.publications = publications
-
-            if subject is not None and object is not None and association_1 is not None and association_2 is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association_1)
-                edges.append(association_2)
-
-        if record["Type"] == "Subunit-specific" and record["Action"] not in subunit_specific_list_with_separate_directly_physically_interacts_with_edge:
-
-            if record["Action"] == "Mixed":
-                # print("not applicable")
-                ## only jump off the parsing of current records, not the whole dataframe
-                continue
-            elif record["Action"] == "Potentiation":
-                predicate = current_predicate_mapping
-                object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.activity
-                qualified_predicate = BIOLINK_CAUSES
-                causal_mechanism_qualifier = CausalMechanismQualifierEnum.potentiation
-                object_direction_qualifier = current_direction_mapping[0]
-
-            association = ChemicalAffectsGeneAssociation(
-                id=entity_id(),
-                subject=subject.id,
-                object=object.id,
-                ## Five edge attributes in order
-                predicate = predicate,
-                qualified_predicate = qualified_predicate,
-                object_aspect_qualifier = object_aspect_qualifier,
-                object_direction_qualifier = object_direction_qualifier,
-                causal_mechanism_qualifier = causal_mechanism_qualifier,
-                ## other edge attributes
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-            if publications:
-                association.publications = publications
-
-            if subject is not None and object is not None and association is not None:
-                nodes.append(subject)
-                nodes.append(object)
-                edges.append(association)
+    for record, target in zip(records, targets, strict=True):
+        graph = _transform_record(
+            record,
+            target,
+            emit_component_edges=target.source_id not in multi_species_target_ids,
+        )
+        if graph is not None:
+            nodes.extend(graph.nodes)
+            edges.extend(graph.edges)
+
+    unsupported_target_counts = Counter(
+        target.classification for target in targets if target.classification in UNSUPPORTED_TARGET_CLASSES
+    )
+    for classification, count in unsupported_target_counts.items():
+        record_word = "record" if count == 1 else "records"
+        koza.log(
+            f"Excluded {count} GtoPdb interaction {record_word} with a "
+            f"{classification.value} target; no unsupported target CURIE was emitted.",
+            level="WARNING",
+        )
 
     return [KnowledgeGraph(nodes=nodes, edges=edges)]
