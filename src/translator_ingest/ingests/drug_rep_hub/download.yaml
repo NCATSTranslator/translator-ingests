@@ -6,6 +6,7 @@
 ---
 - url: https://repo-hub.broadinstitute.org/public/data/repo-sample-annotation-20250818.txt
   local_name: repo-sample-annotation.txt
+  verify_ssl: false
 - url: https://repo-hub.broadinstitute.org/public/data/repo-drug-annotation-20250818.txt
   local_name: repo-drug-annotation.txt
   verify_ssl: false
