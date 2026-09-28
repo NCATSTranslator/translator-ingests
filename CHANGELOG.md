@@ -3,7 +3,7 @@
 This code release is intended for use in the upcoming KGX release. So this changelog covers merged PRs from 2026-06-21 (last formal KGX release) onward.
 
 ## Major Resource Code Changes
-* multiple ingests: **remove source-derived taxon node properties** https://github.com/NCATSTranslator/translator-ingests/pull/528
+* multiple ingests: **remove source-derived taxon node properties** https://github.com/NCATSTranslator/translator-ingests/pull/528. Instead, using NodeNorm-derived `taxon` node attribute, see https://github.com/NCATSTranslator/translator-ingests/pull/533 in "General Pipeline Changes" section below
 * **bgee**: fix download links https://github.com/NCATSTranslator/translator-ingests/pull/499
 * **bgee, go_cam, goa**: fix `get_latest_version()` failures https://github.com/NCATSTranslator/translator-ingests/pull/446 
 * **bindingdb, go_cam, gtopdb**: major parser changes plus test updates https://github.com/NCATSTranslator/translator-ingests/pull/350
@@ -22,8 +22,8 @@ This code release is intended for use in the upcoming KGX release. So this chang
 * **drug_rep_hub**: update download urls (but data contents should stay the same) https://github.com/NCATSTranslator/translator-ingests/pull/534; add test https://github.com/NCATSTranslator/translator-ingests/pull/502
 * **geneticskp**: change download location to allow for data updates https://github.com/NCATSTranslator/translator-ingests/pull/469
 * **hpoa**: address technical debt https://github.com/NCATSTranslator/translator-ingests/pull/509
-* **semmeddb**: refactor LLM-PMID-checker filter, merged to main so we can build entire graph from main branch again https://github.com/NCATSTranslator/translator-ingests/pull/530
-* **signor**: remove ingest of edges involving complexes, update RIG https://github.com/NCATSTranslator/translator-ingests/pull/491
+* **semmeddb**: refactor LLM-PMID-checker filter, merged to main so we can build entire graph from main branch again. Shouldn't affect edge output. https://github.com/NCATSTranslator/translator-ingests/pull/530
+* **signor**: remove ingest of edges involving complexes, update RIG. Shouldn't affect edge output. https://github.com/NCATSTranslator/translator-ingests/pull/491
 * **ubergraph**: temporarily remove 2 CURIEs and their edges, due to a NodeNorm bug that leads to validation failure and build blocked. https://github.com/NCATSTranslator/translator-ingests/pull/535
 
 
