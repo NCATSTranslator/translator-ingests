@@ -1,41 +1,37 @@
-import pytest
-
-from typing import Optional, Iterable, Any
-from os.path import join, abspath, dirname
-from loguru import logger
+from collections.abc import Iterable
+from os.path import abspath, dirname, join
 from pathlib import Path
-
-from biolink_model.datamodel.pydanticmodel_v2 import (
-    KnowledgeLevelEnum,
-    AgentTypeEnum,
-    GeneToPhenotypicFeaturePredicateEnum,
-    DiseaseToPhenotypicFeatureAssociation,
-    CausalGeneToDiseaseAssociation,
-    GeneToDiseaseAssociation,
-    GeneToPhenotypicFeatureAssociation,
-    RetrievalSource,
-    ResourceRoleEnum,
-)
+from typing import Any
 
 import koza
-from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
+from koza.transform import Mappings
 
-from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
-
-from translator_ingest.ingests.hpoa.hpoa import (
-    transform_disease_to_phenotype_node_record,
-    transform_disease_to_phenotype_edge_record,
-    transform_gene_to_disease_record,
-    prepare_gene_to_phenotype_data,
-    transform_gene_to_phenotype_record,
+import pytest
+from biolink_model.datamodel.pydanticmodel_v2 import (
+    AgentTypeEnum,
+    CausalGeneToDiseaseAssociation,
+    DiseaseToPhenotypicFeatureAssociation,
+    GeneToDiseaseAssociation,
+    GeneToPhenotypicFeatureAssociation,
+    GeneToPhenotypicFeaturePredicateEnum,
+    KnowledgeLevelEnum,
+    ResourceRoleEnum,
+    RetrievalSource,
 )
 
-from tests.unit.ingests import MockKozaWriter, MockKozaTransform, validate_transform_result
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
+from translator_ingest.ingests.hpoa.hpoa import (
+    prepare_gene_to_phenotype_data,
+    transform_disease_to_phenotype_edge_record,
+    transform_disease_to_phenotype_node_record,
+    transform_gene_to_disease_record,
+    transform_gene_to_phenotype_record,
+)
+from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
 
 HPOA_UNIT_TESTS = abspath(dirname(__file__))
 HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "sample_data")
-logger.info("HPOA test data path: {}".format(HPOA_TEST_DATA_PATH))
 
 
 # test mondo_map for the gene_to_phenotype
@@ -52,7 +48,7 @@ mock_mondo_sssom_map: dict[str, dict[str, str]] = {
 def mock_koza_transform_1() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     mappings: Mappings = {"mondo_map": mock_mondo_sssom_map}
-    return MockKozaTransform(extra_fields=dict(), writer=writer, mappings=mappings)
+    return MockKozaTransform(extra_fields={}, writer=writer, mappings=mappings)
 
 
 # list of slots whose values are
@@ -77,6 +73,28 @@ ASSOCIATION_TEST_SLOTS = (
     "has_quotient",
     "frequency_qualifier",
     "disease_context_qualifier",
+    "sources",
+    "knowledge_level",
+    "agent_type",
+)
+
+# list of slots whose values are
+# to be checked in a result edge
+GENE_TO_PHENOTYPE_ASSOCIATION_TEST_SLOTS = (
+    "category",
+    "subject",
+    "predicate",
+    "negated",
+    "object",
+    "qualified_predicate",
+    "subject_form_or_variant_qualifier",
+    "frequency_qualifier",
+    "has_percentage",
+    "has_quotient",
+    "has_count",
+    "has_total",
+    "disease_context_qualifier",
+    "publications",
     "sources",
     "knowledge_level",
     "agent_type",
@@ -138,7 +156,7 @@ ASSOCIATION_TEST_SLOTS = (
 def test_disease_to_phenotype_node_transform(
     mock_koza_transform_1: koza.KozaTransform,
     test_record: dict,
-    result_nodes: Optional[list]
+    result_nodes: list | None
 ):
     validate_transform_result(
         result=transform_disease_to_phenotype_node_record(mock_koza_transform_1, test_record),
@@ -167,7 +185,7 @@ def test_disease_to_phenotype_node_transform(
                 "biocuration": "HPO:skoehler[2012-11-16]",
             },
             # This is not a 'P' record, so it should be skipped
-            None,
+            None
         ),
         (  # Query 1 - An 'aspect' == 'P' record processed
             {
@@ -176,7 +194,7 @@ def test_disease_to_phenotype_node_transform(
                 "qualifier": "",
                 "hpo_id": "HP:0001249",
                 "reference": "OMIM:117650",
-                "evidence": "TAS",
+                "evidence": "IEA",
                 "onset": "",
                 "frequency": "50%",
                 "sex": "",
@@ -189,12 +207,12 @@ def test_disease_to_phenotype_node_transform(
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                # "negated": False,  # removed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
                 "object": "HP:0001249",
                 # Although "OMIM:117650" is recorded above as
                 # a reference, it is not used as a publication
                 "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
+                "has_evidence_of_type": ["ECO:0000501"],
                 "sex_qualifier": None,
                 "onset_qualifier": None,
                 "has_percentage": 50.0,
@@ -207,8 +225,8 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+                "agent_type": AgentTypeEnum.text_mining_agent,
+            }
         ),
         (  # Query 2 - Another 'aspect' == 'P' record processed
             {
@@ -219,7 +237,7 @@ def test_disease_to_phenotype_node_transform(
                 "qualifier": "NOT",
                 "hpo_id": "HP:0001545",
                 "reference": "OMIM:117650",
-                "evidence": "TAS",
+                "evidence": "PCS",
                 "onset": "",
                 "frequency": "HP:0040283",
                 "sex": "",
@@ -227,26 +245,28 @@ def test_disease_to_phenotype_node_transform(
                 "aspect": "P",
                 "biocuration": "HPO:skoehler[2017-07-13]",
             },
-            {
-                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
-                "subject": "OMIM:117650",
-                "predicate": "biolink:has_phenotype",
-                "negated": True,
-                "object": "HP:0001545",
-                "publications": [],
-                "has_evidence_of_type": ["ECO:0000304"],
-                "sex_qualifier": None,
-                "onset_qualifier": None,
-                "has_percentage": None,
-                "has_quotient": None,
-                "frequency_qualifier": "HP:0040283",
-                "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
-                ],
-                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
-            },
+            # Negated edges now suppressed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
+            None
+            # {
+            #     "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+            #     "subject": "OMIM:117650",
+            #     "predicate": "biolink:has_phenotype",
+            #     "negated": True,
+            #     "object": "HP:0001545",
+            #     "publications": [],
+            #     "has_evidence_of_type": ["ECO:0000304"],
+            #     "sex_qualifier": None,
+            #     "onset_qualifier": None,
+            #     "has_percentage": None,
+            #     "has_quotient": None,
+            #     "frequency_qualifier": "HP:0040283",
+            #     "sources": [
+            #         {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+            #         {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+            #     ],
+            #     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+            #     "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            # }
         ),
         (  # Query 3 - Same 'aspect' == 'P' record but lacking any frequency qualifier
             {
@@ -269,7 +289,7 @@ def test_disease_to_phenotype_node_transform(
                 "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
                 "subject": "OMIM:117650",
                 "predicate": "biolink:has_phenotype",
-                "negated": False,
+                # "negated": False, # removed, see https://github.com/NCATSTranslator/translator-ingests/issues/474
                 "object": "HP:0001545",
                 "publications": [],
                 "has_evidence_of_type": ["ECO:0000304"],
@@ -283,7 +303,7 @@ def test_disease_to_phenotype_node_transform(
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
-                "agent_type": AgentTypeEnum.manual_agent,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             },
         )
     ],
@@ -291,7 +311,7 @@ def test_disease_to_phenotype_node_transform(
 def test_disease_to_phenotype_edge_transform(
     mock_koza_transform_1: koza.KozaTransform,
     test_record: dict,
-    result_edge: Optional[dict],
+    result_edge: dict | None,
 ):
     validate_transform_result(
         result=transform_disease_to_phenotype_edge_record(mock_koza_transform_1, test_record),
@@ -309,7 +329,7 @@ def test_disease_to_phenotype_edge_transform(
         ("UNKNOWN", None),
     ],
 )
-def test_predicate(association: str, expected_predicate: Optional[str]):
+def test_predicate(association: str, expected_predicate: str | None):
     predicate = get_qualified_predicate(association)
 
     assert predicate == expected_predicate
@@ -397,8 +417,8 @@ def test_predicate(association: str, expected_predicate: Optional[str]):
 def test_gene_to_disease_transform(
     mock_koza_transform_1: koza.KozaTransform,
     test_record: dict,
-    result_nodes: Optional[list],
-    result_edge: Optional[dict],
+    result_nodes: list | None,
+    result_edge: dict | None,
 ):
     validate_transform_result(
         result=transform_gene_to_disease_record(mock_koza_transform_1, test_record),
@@ -412,8 +432,8 @@ def test_gene_to_disease_transform(
 def mock_koza_transform_2() -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     return MockKozaTransform(writer=writer,
-                             mappings=dict(),
-                             extra_fields=dict(),
+                             mappings={},
+                             extra_fields={},
                              input_files_dir=Path(HPOA_TEST_DATA_PATH))
 
 
@@ -425,6 +445,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         "gene_symbol": "ABCB7",
         "hpo_id": "HP:0002470",
         "hpo_name": "Nonprogressive cerebellar ataxia",
+        "evidence": "PCS",
         "publications": "PMID:26242992;PMID:4045952;PMID:11050011",
         "frequency": "11/11",
         "disease_id": "OMIM:301310",
@@ -432,11 +453,9 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
     }
     # Find any entry with the expected fields in the result list
     assert any(
-        [
-            # Check that all expected fields are present in the entry
-            all([key in expected_entry.keys() and expected_entry[key] == value for key, value in entry.items()])
-            for entry in result
-        ]
+        # Check that all expected fields are present in the entry
+        all(key in expected_entry and expected_entry[key] == value for key, value in entry.items())
+        for entry in result
     )
 
 
@@ -449,6 +468,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "AAAS",
                 "hpo_id": "HP:0000252",
                 "hpo_name": "Microcephaly",
+                "evidence": "IEA",
                 "publications": "PMID:11062474",
                 "frequency": "-",
                 "disease_id": "OMIM:231550",
@@ -476,7 +496,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": ["PMID:11062474"],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.text_mining_agent,
             },
         ),
         (  # Query 1 - Full record, with a HPO term defined frequency field value
@@ -485,6 +505,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "AP3B2",
                 "hpo_id": "HP:0001298",
                 "hpo_name": "Encephalopathy",
+                "evidence": "PCS",
                 "publications": "",
                 "frequency": "HP:0040281",
                 "disease_id": "ORPHA:442835",
@@ -512,7 +533,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": [],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
         (  # Query 2 - Full record, with a ratio ("quotient") frequency field value
@@ -521,6 +542,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "CLPP",
                 "hpo_id": "HP:0000013",
                 "hpo_name": "Hypoplasia of the uterus",
+                "evidence": "TAS",
                 "publications": "PMID:23541340",
                 "frequency": "3/9",
                 "disease_id": "OMIM:614129",
@@ -548,7 +570,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": ["PMID:23541340"],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             },
         ),
         (  # Query 3 - Full record, with a percentage frequency field value
@@ -558,6 +580,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "gene_symbol": "PHOX2B",
                 "hpo_id": "HP:0003005",
                 "hpo_name": "Ganglioneuroma",
+                "evidence": "PCS",
                 "publications": "PMID:23541340;PMID:12345678",
                 "frequency": "5%",
                 "disease_id": "OMIM:613013",
@@ -585,7 +608,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "publications": ["PMID:23541340", "PMID:12345678"],
                 "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
-                "agent_type": AgentTypeEnum.automated_agent,
+                "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
     ],
@@ -593,15 +616,15 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
 def test_gene_to_phenotype_transform(
     mock_koza_transform_1: koza.KozaTransform,
     test_record: dict,
-    result_nodes: Optional[list],
-    result_edge: Optional[dict],
+    result_nodes: list,
+    result_edge: dict
 ):
     validate_transform_result(
         result=transform_gene_to_phenotype_record(mock_koza_transform_1, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
-        edge_test_slots=ASSOCIATION_TEST_SLOTS,
+        edge_test_slots=GENE_TO_PHENOTYPE_ASSOCIATION_TEST_SLOTS,
     )
 
 

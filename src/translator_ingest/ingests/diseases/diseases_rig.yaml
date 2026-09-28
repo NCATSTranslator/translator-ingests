@@ -7,7 +7,9 @@ source_info:
     - "https://doi.org/10.1093/database/baac019"
     - "https://www.sciencedirect.com/science/article/pii/S1046202314003831"
   terms_of_use_info:
-    license_name: "CC BY 4.0"
+    terms_of_use_url: "https://diseases.jensenlab.org/About"
+    license_name: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+    license_url: "https://creativecommons.org/licenses/by/4.0/"
   data_access_locations:
     - "https://diseases.jensenlab.org/Downloads"
   data_provision_mechanisms:
@@ -15,6 +17,8 @@ source_info:
   data_formats:
     - tsv
   data_versioning_and_releases: "Updated weekly on Fridays, according to current maintainer 2025-08-05 (not sure if this is when the update posts or when it starts - the update process may take days). Website offers only download of latest version. It does not include a version or creation date for this download. Old, versioned releases archived at https://figshare.com/authors/Lars_Juhl_Jensen/96428"
+  source_status: maintained_regular_updates
+  # additional_notes:  # (optional, multivalued, range = string)
 
 ingest_info:
   ingest_categories:
@@ -43,15 +47,10 @@ ingest_info:
     - file_name: "human_disease_knowledge_filtered.tsv"
       filtered_records: "Records with no ENSP ID in gene ID column or no DOID in disease ID column"
       rationale: "Need node IDs that are in NodeNorm's scope. Other values are non-ID strings (based on string-searches, a little manual review) or IDs that wouldn't be resolved by NodeNorm (AmyCo)."
-    - file_name: "human_disease_knowledge_filtered.tsv"
-      filtered_records: "Records that had NodeNorm mapping failure on gene or disease ID"
-      rationale: "Need node IDs that NodeNorm successfully maps to entities."
   
   # future_considerations:
 
-target_info:
-  infores_id: "infores:translator-diseases"
-  
+target_info:  
   edge_type_info:
     ## from "knowledge channel" file
     - subject_categories:
@@ -66,17 +65,21 @@ target_info:
       agent_type:
         - manual_agent
       primary_knowledge_sources:
+        ## NO source_record_urls:
+        ## - tried a method of generating for medlineplus and it wasn't reliable (and was slow)
+        ## - no website for amyco
         - infores:amyco
         - infores:medlineplus
       aggregator_knowledge_sources:
+      ## maybe can generate source_record_urls for this, but UI doesn't show aggregator
         - infores:diseases
       edge_properties:
         - "biolink:diseases_confidence_score"
-        - "biolink:original_subject"
-        - "biolink:original_object"
       ui_explanation: "Source DISEASES provides Gene-Disease associations ingested from external, manually-curated sources. The DISEASES record used to create this Translator edge does not report a specific type of gene-disease relationship for these 'associations' and is therefore represented using the relatively-generic Biolink 'associated with' predicate."
       source_files:
         - human_disease_knowledge_filtered.tsv
+      additional_notes:
+        - DISEASES gives all MedlinePlus associations a confidence score of 5 (out of 5). It gives most AmyCo associations a 4, but a few (<100) are given scores of 2 or 3. Based on a quick look, I (CX) can't tell why some AmyCo scores are lower (looks like specific diseases but I've found exceptions).
   
   node_type_info:
     - node_category: "biolink:Gene"

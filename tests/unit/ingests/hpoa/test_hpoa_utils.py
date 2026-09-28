@@ -1,11 +1,12 @@
 """
 Tests of HPOA Utils methods
 """
-
-from typing import Optional
-
 import pytest
 
+import koza
+from koza.io.writer.writer import KozaWriter
+from koza.transform import Mappings
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     FrequencyHpoTerm,
@@ -30,6 +31,13 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
 #
 
 
+@pytest.fixture(scope="package")
+def mock_koza_transform_u() -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    mappings: Mappings = {}
+    return MockKozaTransform(extra_fields={}, writer=writer, mappings=mappings)
+
+
 def test_get_hpo_term():
     assert get_frequency_hpo_term("HP:0040282") == FrequencyHpoTerm(
         curie="HP:0040282", name="Frequent", lower=30, upper=79
@@ -49,7 +57,7 @@ def test_get_hpo_term():
         (100, FrequencyHpoTerm(curie="HP:0040280", name="Obligate", lower=100, upper=100)),
     ],
 )
-def test_map_percentage_frequency_to_hpo_term(query: tuple[int, Optional[FrequencyHpoTerm]]):
+def test_map_percentage_frequency_to_hpo_term(query: tuple[int, FrequencyHpoTerm | None]):
     assert map_percentage_frequency_to_hpo_term(query[0]) == query[1]
 
 
@@ -155,6 +163,10 @@ def test_invalid_query_to_map_percentage_frequency_to_hpo_term(query: int):
         ),
     ],
 )
-def test_phenotype_frequency_to_hpo_term(query: Optional[str], frequency: Optional[Frequency]):
-    result: Optional[Frequency] = phenotype_frequency_to_hpo_term(query)
+def test_phenotype_frequency_to_hpo_term(
+    mock_koza_transform_u: koza.KozaTransform,
+    query: str | None,
+    frequency: Frequency | None
+):
+    result: Frequency | None = phenotype_frequency_to_hpo_term(mock_koza_transform_u,query)
     assert result == frequency

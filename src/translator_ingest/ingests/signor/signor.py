@@ -6,7 +6,8 @@ from typing import Any, Iterable
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     Protein,
-    MacromolecularComplex,
+    ## Qi's comment: comment out since currently not implemented
+    # MacromolecularComplex,
     NamedThing,
     ## necessary associations and interactions
     Association,
@@ -59,7 +60,7 @@ def get_latest_version() -> str:
     #
     # also note that currently the file we have on the RENCI server corresponds to a date but that's the download date
     # the actual version is
-    return "2026_March"
+    return "2026_July"
 
 
 @koza.prepare_data(tag="signor_parsing")
@@ -102,6 +103,12 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     source_agg_df = source_agg_df[
         (source_agg_df['subject_category'].str.lower() != 'stimulus')
         & (source_agg_df['object_category'].str.lower() != 'stimulus')
+    ]
+
+    ## Remove those rows with category in complex for this iteration of deployment, will comeback in later phase to ingest complex knowledge_assertion
+    source_agg_df = source_agg_df[
+        (source_agg_df['subject_category'].str.lower() != 'complex')
+        & (source_agg_df['object_category'].str.lower() != 'complex')
     ]
 
     ## only drop rows missing fields required to build a valid record
@@ -155,7 +162,8 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         confidence_score = record["SCORE"]
 
         list_ppi_accept_effects = ['up-regulates', 'up-regulates activity', 'up-regulates quantity', 'up-regulates quantity by expression', 'up-regulates quantity by stabilization', 'down-regulates', 'down-regulates activity', 'down-regulates quantity', 'down-regulates quantity by destabilization', 'down-regulates quantity by repression']
-        list_pci_accept_effects = ['form complex']
+        ## Qi's comment: comment out since complex related edges are not enabled
+        # list_pci_accept_effects = ['form complex']
 
         ## initialize variables to hold information
         ## on whether an edge should use BIOLINK_AFFECTS and increased/decreased (if Endogenous == False)
@@ -298,6 +306,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         elif record["EFFECT"] == 'down-regulates quantity by repression':
             object_aspect_qualifier = GeneOrGeneProductOrChemicalEntityAspectEnum.expression
             object_direction_qualifier = current_direction_mapping[1]
+        # Qi's comment: don't comment out although we are excluding complex node for this iteration
         elif record["EFFECT"] == 'form complex':
             object_aspect_qualifier = None
             object_direction_qualifier = None
@@ -401,39 +410,43 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
                     nodes.append(object)
                     edges.append(association)
 
-        elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
-            ## should be protein -> is part_of -> a complex, so no need to reverse the order of subject and object
-            subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
-            object = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
+        ## Qi's comment after review: to be consistent with the RIG. Since for complex, the SIGNOR ID is not going to be mapped in Translator system
+        ## Thus we don't need this part of code for now
+        ## uncomment for future development
 
-            if record["EFFECT"] == 'form complex':
-                association = Association(
-                    id=entity_id(),
-                    subject=subject.id,
-                    object=object.id,
-                    sources=SIGNOR_SOURCES,
-                    knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                    agent_type=AgentTypeEnum.manual_agent,
-                    ## five edge attributes
-                    predicate = "biolink:part_of",
-                    ## should be missing values for qualified predicate for this combo
-                    ##qualified_predicate = None,
-                    # object_aspect_qualifier = object_aspect_qualifier,
-                    # object_direction_qualifier = object_direction_qualifier,
-                    # causal_mechanism_qualifier = current_causal_mechanism_mapping,
-                )
-
-                if publications:
-                    association.publications = publications
-                if supporting_text:
-                    association.supporting_text = supporting_text
-                if confidence_score:
-                    association.has_confidence_score = confidence_score
-
-                if subject is not None and object is not None and association is not None:
-                    nodes.append(subject)
-                    nodes.append(object)
-                    edges.append(association)
+        # elif record["subject_category"] == "protein" and record["object_category"] == "complex" and record["EFFECT"] in list_pci_accept_effects:
+        #     ## should be protein -> is part_of -> a complex, so no need to reverse the order of subject and object
+        #     subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])
+        #     object = MacromolecularComplex(id="SIGNOR:" + record["IDB"], name=record["object_name"])
+        #
+        #     if record["EFFECT"] == 'form complex':
+        #         association = Association(
+        #             id=entity_id(),
+        #             subject=subject.id,
+        #             object=object.id,
+        #             sources=SIGNOR_SOURCES,
+        #             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        #             agent_type=AgentTypeEnum.manual_agent,
+        #             ## five edge attributes
+        #             predicate = "biolink:part_of",
+        #             ## should be missing values for qualified predicate for this combo
+        #             ##qualified_predicate = None,
+        #             # object_aspect_qualifier = object_aspect_qualifier,
+        #             # object_direction_qualifier = object_direction_qualifier,
+        #             # causal_mechanism_qualifier = current_causal_mechanism_mapping,
+        #         )
+        #
+        #         if publications:
+        #             association.publications = publications
+        #         if supporting_text:
+        #             association.supporting_text = supporting_text
+        #         if confidence_score:
+        #             association.has_confidence_score = confidence_score
+        #
+        #         if subject is not None and object is not None and association is not None:
+        #             nodes.append(subject)
+        #             nodes.append(object)
+        #             edges.append(association)
 
         elif record["subject_category"] == "protein" and record["object_category"] == "chemical" and record["EFFECT"] in list_ppi_accept_effects:
             subject = Protein(id="UniProtKB:" + record["IDA"], name=record["subject_name"])

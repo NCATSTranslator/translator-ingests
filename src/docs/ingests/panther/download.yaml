@@ -1,0 +1,13 @@
+### This file is a YAML configuration that specifies
+### the data to be downloaded and ingested for the Automat/ORION specific ingest.
+### The configuration is used by `kghub-downloader`.
+### For more information, see https://github.com/monarch-initiative/kghub-downloader
+---
+- url: https://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_human
+  local_name: PTHR19.0_human
+
+- url: https://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_mouse
+  local_name: PTHR19.0_mouse
+
+- url: https://data.pantherdb.org/ftp/sequence_classifications/current_release/PANTHER_Sequence_Classification_files/PTHR19.0_rat
+  local_name: PTHR19.0_rat

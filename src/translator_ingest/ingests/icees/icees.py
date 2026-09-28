@@ -7,8 +7,6 @@ import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     Study,
-    Association,
-    CorrelatedGeneToDiseaseAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum
 )
@@ -17,16 +15,26 @@ from bmt.pydantic import get_node_class
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 from koza.model.graphs import KnowledgeGraph
+from translator_ingest.ingests.icees.icees_util import (
+    get_association_type,
+    get_icees_supporting_study
+)
 
 from translator_ingest.util.biolink import get_biolink_model_toolkit
-
-from translator_ingest.ingests.icees.icees_util import get_icees_supporting_study
-
 bmt = get_biolink_model_toolkit()
 
 def get_latest_version() -> str:
     return "2024-08-20"  # last Phase 2 release of ICEES
 
+@koza.on_data_begin(tag="nodes")
+def on_begin_ingest_nodes(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["node_category_counts"] = dict()
+
+def increment_category_count(koza_transform: koza.KozaTransform, context: str, node) -> None:
+    category = node.__class__.__name__
+    if category not in koza_transform.transform_metadata[f"{context}_category_counts"]:
+        koza_transform.transform_metadata[f"{context}_category_counts"][category] = 0
+    koza_transform.transform_metadata[f"{context}_category_counts"][category] += 1
 
 _icees_nodes: dict[str, NamedThing] = {}
 
@@ -36,8 +44,8 @@ def transform_icees_node(
         record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Ingest ICEES phase 2 JSONL node entry into a Phase 3 compliant Pydantic node.
-    :param koza_transform: Koza context of ingest
+    Ingest ICEES phase 2 jsonl node entry into a Phase 3 compliant Pydantic node.
+    :param koza_transform: Koza context of the ingest task
     :param record: original Phase 2 ICEES 'node' data record
     :return: KnowledgeGraph[nodes=list[NamedThing]]
     """
@@ -53,7 +61,6 @@ def transform_icees_node(
     if node_class is None:
         logger.warning(f"Pydantic class for node '{node_id}' could not be inferred from categories '{category}'")
         return None
-
     equivalent_identifiers: Optional[list[str]] = record.get("equivalent_identifiers", None)
 
     node = node_class(
@@ -62,19 +69,24 @@ def transform_icees_node(
         equivalent_identifiers=equivalent_identifiers,
         **{}
     )
+    increment_category_count(koza_transform, "node", node)
 
-    # Cache the node for dereferencing during edge file ingest
+    # Cache the node for dereferencing during edge file ingest task
     _icees_nodes[node_id] = node
 
     return KnowledgeGraph(nodes=[node])
 
+@koza.on_data_begin(tag="edges")
+def on_begin_ingest_edges(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["subject_category_counts"] = dict()
+    koza_transform.transform_metadata["object_category_counts"] = dict()
 
 @koza.transform_record(tag="edges")
 def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGraph | None:
     """
-    Ingest ICEES phase 2 JSONL 'edge' entry into a Phase 3 compliant Pydantic node.
-    :param koza_transform: Koza context of ingest
-    :param record: original Phase 2 ICEES 'edge'' data record
+    Ingest ICEES phase 2 jsonl 'edge' entry into a Phase 3 compliant Pydantic node.
+    :param koza_transform: Koza context of the ingest task
+    :param record: original Phase 2 ICEES 'edge'  data record
     :return: KnowledgeGraph[edges=list[Association]]
     """
     global _icees_nodes
@@ -89,6 +101,7 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             level="WARNING"
         )
         return None
+    increment_category_count(koza_transform, "subject", subject_node)
     subject_categories: list[str] = subject_node.category
 
     icees_predicate: str = record["predicate"]
@@ -101,14 +114,13 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
             level="WARNING"
         )
         return None
+    increment_category_count(koza_transform, "object", object_node)
     object_categories: list[str] = object_node.category
 
-    # Specialized case of G2D Association
-    if "gene or gene product" in bmt.get_ancestors(subject_categories[0]) and \
-            object_categories[0] == "biolink:Disease":
-        association = CorrelatedGeneToDiseaseAssociation
-    else:
-        association = Association
+    association = get_association_type(
+        subject_categories[0],
+        object_categories[0]
+    )
 
     # Convert many of the ICEES edge attributes into specific edge properties
     supporting_studies: dict[str, Study] = {}
@@ -135,9 +147,9 @@ def transform_icees_edge(koza_transform: koza.KozaTransform, record: dict[str, A
         predicate=icees_predicate,
         object=icees_object,
         has_supporting_studies=supporting_studies,
-        sources=build_association_knowledge_sources(primary=record["primary_knowledge_source"]),
+        sources=build_association_knowledge_sources(primary="infores:icees-kg"),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.not_provided,
+        agent_type=AgentTypeEnum.data_analysis_pipeline,
         **icees_qualifiers
     )
 

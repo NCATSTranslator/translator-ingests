@@ -46,9 +46,9 @@ GO aspect is mapped to the most specific Biolink class:
 Rationale: Using specific GO-domain classes improves downstream reasoning and alignment with Biolink’s semantic hierarchy.
 
 ### Predicate Selection
-1. Prefer qualifier-based predicates when present, covering standard and upstream-effect relations (e.g., enables, contributes_to, participates_in, located_in, is_active_in, colocalizes_with, acts_upstream_of, acts_upstream_of_or_within, and their positive/negative effect variants).
+1. Prefer qualifier-based predicates when present, covering standard and upstream-effect relations (e.g., enables, contributes_to, actively_involved_in, located_in, is_active_in, colocalizes_with, acts_upstream_of, acts_upstream_of_or_within, and their positive/negative effect variants).
 2. If a qualifier is absent or unrecognized, fall back to aspect-based defaults:
-   - P → participates_in
+   - P → actively_involved_in
    - F → enables
    - C → located_in
 
@@ -77,12 +77,6 @@ Rationale: Prioritizing PMIDs improves citation quality; mapping evidence to kno
 
 Rationale: Prefer specific association classes where defined by Biolink; otherwise use the generic form to remain valid and extensible.
 
-### Taxon Modeling
-- Taxon information is recorded on subject nodes (`in_taxon`) using `NCBITaxon:` CURIEs.
-- Taxon is not set on associations.
-
-Rationale: The specific gene→GO association class does not carry the taxon mixin; node-level modeling preserves species context without violating Biolink constraints.
-
 ### Provenance
 - Primary knowledge source: `infores:goa`
 - Aggregator knowledge source: `infores:biolink`
@@ -91,7 +85,7 @@ Note: The RIG lists a target infores identifier for produced files (`translator-
 
 ### Operational Characteristics
 - Record-by-record transformation for memory efficiency and fault isolation.
-- Deterministic identifier normalization: DB_Object_IDs are CURIE-formed with DB prefix when missing; GO IDs are used directly; taxon identifiers are normalized to `NCBITaxon:`.
+- Deterministic identifier normalization: DB_Object_IDs are CURIE-formed with DB prefix when missing; GO IDs are used directly.
 
 ### Outputs
 - Nodes file: `goa_nodes.jsonl`
