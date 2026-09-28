@@ -1,3 +1,5 @@
+# Changelog 2026-06-21 - 2026-09-28 (v0.5.1)
+
 This code release is intended for use in the upcoming KGX release. So this changelog covers merged PRs from 2026-06-21 (last formal KGX release) onward.
 
 ## Major Resource Code Changes
