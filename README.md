@@ -69,3 +69,45 @@ The task involves the following steps/components:
 - CTD transform code: [ctd.py](./src/translator_ingest/ingests/ctd/ctd.py)
 - [CTD transform documentation](./src/translator_ingest/ingests/ctd/README.md)
 - Unit tests: [test_ctd.py](./tests/unit/ctd/test_ctd.py)
+
+## Source failures on a fresh machine
+
+Version discovery runs before downloading or transforming a source. If discovery
+fails, the pipeline can fall back to that source's local `latest-build.json`.
+A fresh machine has no such fallback: the affected source fails without writing
+a successful build or inventing a version. An old build file does not guarantee
+that the old source data is still downloadable.
+
+By default, `make run` and `make transform` stop scheduling work after a failure;
+parallel jobs already running may still finish. To attempt every independent
+source despite failures, use:
+
+```sh
+make run SOURCES="gtopdb ctd" KEEP_GOING=1
+# The same option is available for transform-only runs:
+make transform SOURCES="gtopdb ctd" KEEP_GOING=1
+```
+
+The command still exits nonzero if any source fails. This option does not turn a
+partial build into a successful release or authorize merging incomplete data.
+It only changes scheduling for source runs; downstream release and merge steps
+retain their existing failure behavior.
+
+### Fresh-storage pipeline acceptance
+
+The opt-in acceptance test uses tiny synthetic inputs served over local HTTP and
+real Koza, Node Normalizer, merge, validation and metadata generation. It starts
+with empty storage, verifies that a source whose version URL returns HTTP 404
+publishes no build, then checks that a healthy source completes all stages with
+two normalized nodes and one merged edge. It requires network access for Node
+Normalizer and schema services; regular CI skips it.
+
+```sh
+uv sync --frozen
+RUN_LIVE_PIPELINE_TESTS=1 uv run --frozen pytest tests/integration/test_fresh_pipeline.py -q
+```
+
+Set `PIPELINE_ACCEPTANCE_ARTIFACTS` to a directory to retain downloaded input,
+intermediate outputs and build metadata for inspection. This small acceptance
+case exercises the pipeline stages; individual production ingests still need
+their own source-specific coverage.
