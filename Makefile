@@ -1,6 +1,10 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 
+# Build reports location. Same default as INGESTS_REPORTS_PATH in
+# src/translator_ingest/__init__.py; an INGESTS_REPORTS_PATH env var overrides both.
+INGESTS_REPORTS_PATH ?= $(ROOTDIR)/reports
+
 # Graph ID for multisource graph target (default: translator_kg).
 # Graph definitions live in graphs.yaml; see src/translator_ingest/graphs.py.
 GRAPH_ID ?= translator_kg
@@ -30,7 +34,9 @@ endif
 # (truncation can leave a substring that looks like a misspelling of a longer word),
 # (3) acronyms and external vocabulary tokens in analysis cells add more noise.
 # Prefer spell-checking .py, .yaml, and prose docs instead.
-CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
+# uv.lock is a generated artifact and contains PyPI package names that
+# codespell treats as typos. Exclude lockfiles entirely.
+CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb,uv.lock
 
 # Include additional makefiles
 include rig.Makefile
@@ -68,6 +74,9 @@ define HELP
 │                                                                              │
 │     test                Run all tests                                        │
 │                                                                              │
+│     build               Run full pipeline end-to-end with progress & report  │
+│     report              Generate automated build report                      │
+│                                                                              │
 │     upload              Upload data and releases to S3                       │
 │     upload-all          Upload all sources to S3                             │
 │     cleanup-ebs         Clean up old EBS versions                            │
@@ -90,6 +99,10 @@ define HELP
 │                         Default: translator_kg                               │
 │     SOURCES             Space-separated list of sources                      │
 │                         Default: resolved from graphs.yaml using GRAPH_ID    │
+│     SEQUENTIAL_SOURCES  Sources run one-at-a-time before the parallel batch  │
+│                         Default: "ctd semmeddb" (memory-intensive ingests)   │
+│                         Override: make build SEQUENTIAL_SOURCES="ctd"        │
+│                         Disable:  make build SEQUENTIAL_SOURCES=""           │
 │                                                                              │
 │ Examples:                                                                    │
 │     # Run pipeline for all sources                                           │
@@ -213,22 +226,56 @@ release-%:
 	@echo "Creating release for $*..."
 	@$(RUN) python src/translator_ingest/release.py $*
 
+### Full Build (end-to-end with progress & report) ###
+
+# Sources to run one at a time before the parallel batch.
+# ctd and semmeddb are memory-intensive: running them sequentially prevents
+# them from competing for RAM and triggering the memory abort threshold.
+# To disable sequential pre-pass: make build SEQUENTIAL_SOURCES=""
+# To change the set:              make build SEQUENTIAL_SOURCES="ctd"
+SEQUENTIAL_SOURCES ?= ctd semmeddb
+
+.PHONY: build
+build:
+	@$(RUN) python -m translator_ingest.util.run_build.run_build \
+		--sources "$(SOURCES)" \
+		--graph-id $(GRAPH_ID) \
+		--sequential-sources "$(SEQUENTIAL_SOURCES)" \
+		$(if $(OVERWRITE),--overwrite) \
+		$(if $(NO_UPLOAD),--no-upload) \
+		$(if $(MAX_WORKERS),--max-workers $(MAX_WORKERS)) \
+		$(if $(MEMORY_THRESHOLD),--memory-threshold $(MEMORY_THRESHOLD))
+
+### Build Report ###
+
+.PHONY: report
+report:
+	@echo "Generating build report..."
+	@UPLOAD_RESULTS=""; \
+	if [ -f "$(INGESTS_REPORTS_PATH)/upload-results-latest.json" ]; then \
+		UPLOAD_RESULTS="--upload-results $(INGESTS_REPORTS_PATH)/upload-results-latest.json"; \
+	fi; \
+	$(RUN) python -m translator_ingest.util.run_build.build_report \
+		--sources "$(SOURCES)" \
+		--graph-id $(GRAPH_ID) \
+		$$UPLOAD_RESULTS
+
 ### S3 Upload and Storage Management ###
 
 .PHONY: upload
 upload:
 	@echo "Uploading sources to S3: $(SOURCES)"
-	@$(RUN) python src/translator_ingest/upload_s3.py $(SOURCES)
+	@$(RUN) python -m translator_ingest.util.storage.upload_s3 $(SOURCES)
 
 .PHONY: upload-%
 upload-%:
 	@echo "Uploading $* to S3..."
-	@$(RUN) python src/translator_ingest/upload_s3.py $*
+	@$(RUN) python -m translator_ingest.util.storage.upload_s3 $*
 
 .PHONY: upload-all
 upload-all:
 	@echo "Uploading all sources to S3..."
-	@$(RUN) python src/translator_ingest/upload_s3.py
+	@$(RUN) python -m translator_ingest.util.storage.upload_s3
 
 .PHONY: cleanup-ebs
 cleanup-ebs:
