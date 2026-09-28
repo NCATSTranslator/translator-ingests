@@ -67,6 +67,8 @@ define HELP
 │     merge-all           Merge every graph declared in graphs.yaml            │
 │                                                                              │
 │     test                Run all tests                                        │
+│     update-transform-versions                                                │
+│                         Record the current transform version of each ingest  │
 │                                                                              │
 │     upload              Upload data and releases to S3                       │
 │     upload-all          Upload all sources to S3                             │
@@ -150,6 +152,10 @@ test:
 	$(RUN) pytest tests
 	$(RUN) codespell --skip="$(CODESPELL_SKIP)" --ignore-words=.codespellignore
 	$(RUN) ruff check
+
+.PHONY: update-transform-versions
+update-transform-versions:
+	$(RUN) python -m translator_ingest.util.transform_version update
 
 
 ### Running ###
