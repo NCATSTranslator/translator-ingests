@@ -2,6 +2,8 @@ import json
 from enum import Enum, StrEnum
 from pathlib import Path
 
+from orion import MERGE_METADATA_FILENAME
+
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
 from translator_ingest.util.metadata import PipelineMetadata
 
@@ -38,7 +40,7 @@ class IngestFileName(StrEnum):
     NORMALIZATION_FAILURES = "normalization_failures.txt"
     MERGED_NODES = "merged_nodes.jsonl"
     MERGED_EDGES = "merged_edges.jsonl"
-    MERGE_METADATA_FILE = "merge_metadata.json"
+    MERGE_METADATA_FILE = MERGE_METADATA_FILENAME
     TEST_DATA_FILENAME = "testing_data.json"
     EXAMPLE_EDGES_FILENAME = "example_edges.jsonl"
     INGEST_METADATA_FILE = "ingest-metadata.json"
