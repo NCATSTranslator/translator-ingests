@@ -17,14 +17,16 @@ This code release is intended for use in the upcoming KGX release. So this chang
 ## Minor Resource Code Changes
 * **cohd, hpoa**: test updates https://github.com/NCATSTranslator/translator-ingests/pull/496
 * **ctkp**: code and RIG changes to support improved CTKP data https://github.com/NCATSTranslator/translator-ingests/pull/468
-* **drug_rep_hub**: minor, add a test https://github.com/NCATSTranslator/translator-ingests/pull/502
+* **drug_rep_hub**: update download urls (but data contents should stay the same) https://github.com/NCATSTranslator/translator-ingests/pull/534; add test https://github.com/NCATSTranslator/translator-ingests/pull/502
 * **geneticskp**: change download location to allow for data updates https://github.com/NCATSTranslator/translator-ingests/pull/469
 * **hpoa**: address technical debt https://github.com/NCATSTranslator/translator-ingests/pull/509
 * **semmeddb**: refactor LLM-PMID-checker filter, merged to main so we can build entire graph from main branch again https://github.com/NCATSTranslator/translator-ingests/pull/530
 * **signor**: remove ingest of edges involving complexes, update RIG https://github.com/NCATSTranslator/translator-ingests/pull/491
+* **ubergraph**: temporarily remove 2 CURIEs and their edges, due to a NodeNorm bug that leads to validation failure and build blocked. https://github.com/NCATSTranslator/translator-ingests/pull/535
 
 
 ## General Pipeline Changes
+* **use new NodeNorm CI (ES) as default NodeNorm endpoint** https://github.com/NCATSTranslator/translator-ingests/pull/444
 * ORION dependency bump to v2.0.9 and update our code to take advantage of it. **Changes metadata file names/contents (including versioning**), and **explicitly requests taxa/description data during the NodeNorming process and adds them as node properties**. https://github.com/NCATSTranslator/translator-ingests/pull/533
 * Fix issues with OVERWRITE and error handling in merge_single https://github.com/NCATSTranslator/translator-ingests/pull/532
 * Make data / releases / logs locations configurable https://github.com/NCATSTranslator/translator-ingests/pull/520 
