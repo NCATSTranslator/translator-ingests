@@ -17,7 +17,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     ChemicalEntity,
     DirectionQualifierEnum,
-    GeneOrGeneProductOrChemicalEntityAspectEnum,
     KnowledgeLevelEnum,
     MacromolecularComplex,
     NamedThing,
@@ -25,7 +24,12 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
 )
 
-from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
+from translator_ingest.ingests.gtopdb.rules import (
+    InteractionRule,
+    PhysicalInteractionRule,
+    PrimaryAssociationRule,
+    resolve_rule,
+)
 from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
@@ -419,10 +423,10 @@ def _build_primary_association(
     subject: ChemicalEntity,
     object: NamedThing,
     endogenous: Any,
-    rule: InteractionRule,
+    rule: PrimaryAssociationRule,
     species_context_qualifier: str | None,
 ) -> Association:
-    """Construct the one pharmacological edge selected by an interaction rule."""
+    """Construct a primary edge using only its own relation and qualifiers."""
     if rule.relation == "related":
         return Association(
             id=entity_id(),
@@ -441,7 +445,7 @@ def _build_primary_association(
         predicate=predicate,
         object=object.id,
         qualified_predicate=BIOLINK_CAUSES if rule.qualified else None,
-        object_aspect_qualifier=GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+        object_aspect_qualifier=rule.aspect,
         object_direction_qualifier=direction,
         causal_mechanism_qualifier=rule.mechanism,
         sources=GTOPDB_SOURCES,
@@ -453,18 +457,18 @@ def _build_primary_association(
 
 def _endogenous_projection(
     endogenous: Any,
-    rule: InteractionRule,
+    rule: PrimaryAssociationRule,
 ) -> tuple[str, DirectionQualifierEnum | None]:
     """Select endogenous context using the exact source string, including nulls.
 
-    >>> rule = InteractionRule(polarity="positive")
+    >>> rule = PrimaryAssociationRule(polarity="positive")
     >>> predicate, direction = _endogenous_projection("TRUE", rule)
     >>> predicate, direction.value
     ('biolink:regulates', 'upregulated')
     >>> predicate, direction = _endogenous_projection(True, rule)
     >>> predicate, direction.value
     ('biolink:affects', 'increased')
-    >>> _endogenous_projection(None, InteractionRule())
+    >>> _endogenous_projection(None, PrimaryAssociationRule())
     ('biolink:affects', None)
     """
     if endogenous == "TRUE":
@@ -485,14 +489,16 @@ def _endogenous_projection(
 def _build_physical_interaction(
     subject: ChemicalEntity,
     object: NamedThing,
+    rule: PhysicalInteractionRule,
     species_context_qualifier: str | None,
 ) -> PairwiseMolecularInteraction:
-    """Construct the companion direct physical-interaction edge for a rule."""
+    """Construct a direct physical edge using its independent mechanism."""
     return PairwiseMolecularInteraction(
         id=entity_id(),
         subject=subject.id,
         predicate="biolink:directly_physically_interacts_with",
         object=object.id,
+        causal_mechanism_qualifier=rule.mechanism,
         sources=GTOPDB_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
@@ -517,17 +523,19 @@ def _edges_for_record(
     Therefore multi-species source IDs omit those edges conservatively; see
     https://github.com/biolink/biolink-model/pull/1797 and translator-ingests#510.
     """
-    edges: list[Association] = [
-        _build_primary_association(
-            subject,
-            object,
-            endogenous,
-            rule,
-            target.species_context_qualifier,
+    edges: list[Association] = []
+    if rule.primary is not None:
+        edges.append(
+            _build_primary_association(
+                subject,
+                object,
+                endogenous,
+                rule.primary,
+                target.species_context_qualifier,
+            )
         )
-    ]
-    if rule.physical_interaction:
-        edges.append(_build_physical_interaction(subject, object, target.species_context_qualifier))
+    if rule.physical is not None:
+        edges.append(_build_physical_interaction(subject, object, rule.physical, target.species_context_qualifier))
     if target.complex_curie and emit_component_edges:
         edges.extend(
             Association(
@@ -561,7 +569,7 @@ def _transform_record(
         return None
 
     rule = resolve_rule(record["Type"], record["Action"])
-    if rule is None or rule.skip:
+    if rule is None:
         return None
 
     subject, object = _nodes_for_record(record, target)

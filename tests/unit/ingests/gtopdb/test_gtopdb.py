@@ -27,10 +27,11 @@ from translator_ingest.ingests.gtopdb.rules import (
     AGONISM,
     ANTAGONISM,
     INHIBITION,
+    InteractionRule,
     NEUTRAL_PHYSICAL,
+    PHYSICAL_ONLY,
     RELATED,
     RULES,
-    SKIP,
     TYPE_FALLBACKS,
     resolve_rule,
 )
@@ -185,14 +186,15 @@ def test_multi_species_target_detection_is_independent_of_complex_classification
         ("Inhibitor", "future action", "negative"),
     ],
 )
-def test_legacy_type_fallbacks_remain_explicit(type_value, action_value, polarity):
+def test_legacy_type_fallbacks_remain_explicit(type_value: str, action_value: str, polarity: str) -> None:
+    """Unknown actions retain their type-level effect without a mechanism."""
     rule = resolve_rule(type_value, action_value)
 
     assert rule is not None
-    assert rule.polarity == polarity
-    assert rule.mechanism is None
-    assert not rule.physical_interaction
-    assert not rule.skip
+    assert rule.primary is not None
+    assert rule.primary.polarity == polarity
+    assert rule.primary.mechanism is None
+    assert rule.physical is None
 
 
 def test_unknown_type_action_pair_has_no_rule():
@@ -205,22 +207,35 @@ def test_canonical_rules_and_nested_lookup_are_the_registration_source():
     assert RULES["Agonist"]["Inverse agonist"] == resolve_rule("Agonist", "Inverse agonist")
 
 
-def test_canonical_rules_are_immutable_and_mapping_inventory_is_explicit():
+def test_canonical_rules_are_immutable_and_mapping_inventory_is_explicit() -> None:
+    """Shared rules and their edge definitions are immutable, including physical-only rules."""
     canonical_rules = (
         ACTIVATION,
         AGONISM,
         ANTAGONISM,
         INHIBITION,
-        SKIP,
         RELATED,
         NEUTRAL_PHYSICAL,
+        PHYSICAL_ONLY,
     )
     for rule in canonical_rules:
         with pytest.raises(FrozenInstanceError):
-            rule.skip = True
+            rule.physical = None
+        if rule.primary is not None:
+            with pytest.raises(FrozenInstanceError):
+                rule.primary.mechanism = None
+        if rule.physical is not None:
+            with pytest.raises(FrozenInstanceError):
+                rule.physical.mechanism = None
 
     assert sum(len(actions) for actions in RULES.values()) == 77
     assert set(TYPE_FALLBACKS) == {"Activator", "Inhibitor"}
+
+
+def test_empty_interaction_rule_is_rejected() -> None:
+    """Keep None as the only way to represent a skipped interaction."""
+    with pytest.raises(ValueError, match="Use None to skip"):
+        InteractionRule(primary=None, physical=None)
 
 
 def test_prepare_preserves_source_target_fields(tmp_path):
@@ -405,7 +420,7 @@ INTERACTION_RULE_GOLDEN = json.loads((Path(__file__).parent / "interaction_rule_
     ids=lambda case: f"{case['type']}:{case['action']}:{case['endogenous']}",
 )
 def test_transform_matches_current_source_rule_behavior(case):
-    """Freeze 2026.2 behavior before replacing the Type/Action conditional forest."""
+    """Verify the literal inventory, including reviewed corrections and the chosen activation mapping."""
     record = {
         "subject_id": "2244",
         "subject_name": "example ligand",

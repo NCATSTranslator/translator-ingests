@@ -4,6 +4,12 @@ Initially characterized at 0d1e745c, these tests also preserve the merged
 baseline's complex targets and skips for previously exceptional unknown mappings.
 The older 72f65887 specification must not undo those changes.
 Expectations use the checked-in interaction inventory, never production rules.
+Reviewed corrections cover physical-only interactions, independent physical-edge
+mechanisms, and primary mechanisms. Agonist + Activation retains the explicitly
+chosen activation mapping without a physical edge. Full agonism intentionally
+maps to agonism, and voltage-dependent inhibition maps to gating_inhibition.
+Irreversible agonism, non-competitive inhibition, and the disputed Antibody +
+Agonist direction retain their existing mappings pending resolution.
 """
 
 import json
@@ -189,6 +195,173 @@ def test_type_action_context_matrix(context: KozaTransform, type_value: str, act
         assert graph.nodes[1].in_taxon == ["NCBITaxon:9606"]
 
 
+@pytest.mark.parametrize(
+    "type_value,action,mechanism",
+    [
+        ("Inhibitor", "Binding", "inhibition"),
+        ("Inhibitor", "Antagonist", "antagonism"),
+        ("Antagonist", "Binding", "antagonism"),
+    ],
+)
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [
+        ("FALSE", "biolink:affects", "decreased"),
+        ("TRUE", "biolink:regulates", "downregulated"),
+    ],
+)
+def test_binding_and_antagonist_mechanisms_match_reviewed_mapping(
+    context: KozaTransform,
+    type_value: str,
+    action: str,
+    mechanism: str,
+    endogenous: str,
+    predicate: str,
+    direction: str,
+) -> None:
+    """Use inhibition for inhibitor binding while preserving antagonism cases.
+
+    The reviewed mapping specifies these mechanisms in rows 63, 62, and 38:
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142
+    """
+    record = RECORD | {"Type": type_value, "Action": action, "Endogenous": endogenous}
+    graph = list(transform_ingest_all(context, [record]))[0]
+
+    assert len(graph.edges) == 2
+    effect, physical = graph.edges
+    assert effect.predicate == predicate
+    assert effect.qualified_predicate == "biolink:causes"
+    assert effect.object_aspect_qualifier == "activity"
+    assert effect.object_direction_qualifier == direction
+    assert effect.causal_mechanism_qualifier == mechanism
+    assert physical.predicate == "biolink:directly_physically_interacts_with"
+    assert effect.subject == physical.subject == "PUBCHEM.COMPOUND:2244"
+    assert effect.object == physical.object == "UniProtKB:P08588"
+    assert effect.publications == physical.publications == ["PMID:123", "PMID:456"]
+
+
+@pytest.mark.parametrize(
+    "type_value,action,mechanism",
+    [
+        ("Allosteric modulator", "Neutral", "allosteric_modulation"),
+        ("Allosteric modulator", "None", "allosteric_modulation"),
+        ("Antagonist", "Partial agonist", None),
+        ("Fusion protein", "Binding", "binding"),
+        ("None", "Binding", "binding"),
+        ("None", "Competitive", None),
+    ],
+)
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_physical_only_interactions(
+    context: KozaTransform, type_value: str, action: str, mechanism: str | None, endogenous: str
+) -> None:
+    """Mapping rows 32, 33, 44, 54, 71, and 72 assert only physical interaction."""
+    record = RECORD | {"Type": type_value, "Action": action, "Endogenous": endogenous}
+    graph = list(transform_ingest_all(context, [record]))[0]
+
+    assert [node.id for node in graph.nodes] == ["PUBCHEM.COMPOUND:2244", "UniProtKB:P08588"]
+    assert len(graph.edges) == 1
+    edge = graph.edges[0]
+    assert type(edge).__name__ == "PairwiseMolecularInteraction"
+    assert edge.predicate == "biolink:directly_physically_interacts_with"
+    assert edge.causal_mechanism_qualifier == mechanism
+    assert edge.qualified_predicate is None
+    assert edge.object_aspect_qualifier is None
+    assert edge.object_direction_qualifier is None
+    assert edge.subject == "PUBCHEM.COMPOUND:2244"
+    assert edge.object == "UniProtKB:P08588"
+    assert edge.publications == ["PMID:123", "PMID:456"]
+    assert edge.species_context_qualifier == "NCBITaxon:9606"
+    assert [source.model_dump(mode="json", exclude_none=True) for source in edge.sources] == SOURCES
+    assert type(edge).model_validate(edge.model_dump()) == edge
+
+
+@pytest.mark.parametrize(
+    "type_value,action,primary_mechanism,physical_mechanism",
+    [
+        ("Activator", "Binding", "binding", "binding"),
+        ("Agonist", "Binding", "agonism", "binding"),
+        ("Antagonist", "Binding", "antagonism", "binding"),
+        ("Antibody", "Binding", "binding", "binding"),
+        ("Inhibitor", "Binding", "inhibition", "binding"),
+        ("Allosteric modulator", "Agonist", "agonism", "allosteric_modulation"),
+        ("Allosteric modulator", "Antagonist", "antagonism", "allosteric_modulation"),
+        ("Allosteric modulator", "Biased agonist", "biased_agonism", "allosteric_modulation"),
+        ("Allosteric modulator", "Binding", "allosteric_modulation", "allosteric_modulation"),
+        ("Allosteric modulator", "Biphasic", "biphasic_allosteric_modulation", "allosteric_modulation"),
+        ("Allosteric modulator", "Full agonist", "agonism", "allosteric_modulation"),
+        ("Allosteric modulator", "Inhibition", "inhibition", "allosteric_modulation"),
+        ("Allosteric modulator", "Inverse agonist", "inverse_agonism", "allosteric_modulation"),
+        ("Allosteric modulator", "Mixed", "mixed_allosteric_modulation", "allosteric_modulation"),
+        ("Allosteric modulator", "Negative", "negative_allosteric_modulation", "allosteric_modulation"),
+        ("Allosteric modulator", "Partial agonist", "partial_agonism", "allosteric_modulation"),
+        ("Allosteric modulator", "Positive", "positive_allosteric_modulation", "allosteric_modulation"),
+        ("Allosteric modulator", "Potentiation", "potentiation", "allosteric_modulation"),
+    ],
+)
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_primary_and_physical_mechanisms_are_independent(
+    context: KozaTransform,
+    type_value: str,
+    action: str,
+    primary_mechanism: str,
+    physical_mechanism: str,
+    endogenous: str,
+) -> None:
+    """Apply mapping columns K and M to their own edges without leaking qualifiers.
+
+    Full agonism intentionally uses agonism on the primary edge.
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142
+    """
+    record = RECORD | {"Type": type_value, "Action": action, "Endogenous": endogenous}
+    graph = list(transform_ingest_all(context, [record]))[0]
+
+    assert len(graph.edges) == 2
+    primary, physical = graph.edges
+    assert primary.predicate == ("biolink:regulates" if endogenous == "TRUE" else "biolink:affects")
+    assert primary.object_aspect_qualifier == "activity"
+    assert primary.causal_mechanism_qualifier == primary_mechanism
+    assert physical.predicate == "biolink:directly_physically_interacts_with"
+    assert physical.causal_mechanism_qualifier == physical_mechanism
+    assert physical.qualified_predicate is None
+    assert physical.object_aspect_qualifier is None
+    assert physical.object_direction_qualifier is None
+    assert primary.publications == physical.publications == ["PMID:123", "PMID:456"]
+    assert primary.species_context_qualifier == physical.species_context_qualifier == "NCBITaxon:9606"
+    assert type(physical).model_validate(physical.model_dump()) == physical
+
+
+@pytest.mark.parametrize(
+    "type_value,action,mechanism,physical_count",
+    [
+        ("Activator", "None", None, 0),
+        ("Activator", "Positive", None, 0),
+        ("Fusion protein", "Inhibition", "inhibition", 1),
+    ],
+)
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_primary_mechanism_corrections(
+    context: KozaTransform,
+    type_value: str,
+    action: str,
+    mechanism: str | None,
+    physical_count: int,
+    endogenous: str,
+) -> None:
+    """Mapping rows 6, 8, and 55 specify absent or inhibitory primary mechanisms."""
+    record = RECORD | {"Type": type_value, "Action": action, "Endogenous": endogenous}
+    graph = list(transform_ingest_all(context, [record]))[0]
+
+    assert len(graph.edges) == 1 + physical_count
+    primary = graph.edges[0]
+    assert primary.causal_mechanism_qualifier == mechanism
+    assert primary.qualified_predicate == "biolink:causes"
+    assert primary.object_aspect_qualifier == "activity"
+    assert primary.predicate == ("biolink:regulates" if endogenous == "TRUE" else "biolink:affects")
+    directions = ("decreased", "downregulated") if type_value == "Fusion protein" else ("increased", "upregulated")
+    assert primary.object_direction_qualifier == directions[endogenous == "TRUE"]
+
+
 @pytest.mark.parametrize("type_value", [None, float("nan"), pd.NA, "", "Unknown", "agonist", " Agonist ", True])
 def test_unknown_type_skips_before_required_emission_fields(context: KozaTransform, type_value: Any) -> None:
     """The current baseline resolves unsupported types before constructing nodes."""
@@ -308,9 +481,24 @@ def test_mixed_batch_order_duplicates_and_evidence(context: KozaTransform) -> No
     assert len({edge.id for edge in graph.edges}) == 6
 
 
-def test_complex_order_and_filtered_species_context(context: KozaTransform) -> None:
+@pytest.mark.parametrize(
+    "type_value,action,interaction_predicates",
+    [
+        ("Agonist", "Agonist", ["biolink:affects", "biolink:directly_physically_interacts_with"]),
+        ("Fusion protein", "Binding", ["biolink:directly_physically_interacts_with"]),
+    ],
+)
+def test_complex_order_and_filtered_species_context(
+    context: KozaTransform, type_value: str, action: str, interaction_predicates: list[str]
+) -> None:
     """Even a skipped second-species record prevents unqualified component edges."""
-    human = RECORD | {"target_id": "378", "target_subunit_ids": "373|374", "target_uniprot_ids": "P46098|O95264"}
+    human = RECORD | {
+        "target_id": "378",
+        "target_subunit_ids": "373|374",
+        "target_uniprot_ids": "P46098|O95264",
+        "Type": type_value,
+        "Action": action,
+    }
     single = list(transform_ingest_all(context, [human]))[0]
     assert [node.id for node in single.nodes] == [
         "PUBCHEM.COMPOUND:2244",
@@ -318,18 +506,16 @@ def test_complex_order_and_filtered_species_context(context: KozaTransform) -> N
         "UniProtKB:P46098",
         "UniProtKB:O95264",
     ]
-    assert [edge.predicate for edge in single.edges] == [
-        "biolink:affects",
-        "biolink:directly_physically_interacts_with",
+    assert [edge.predicate for edge in single.edges] == interaction_predicates + [
         "biolink:has_part",
         "biolink:has_part",
     ]
     assert all(edge.publications == ["PMID:123", "PMID:456"] for edge in single.edges)
-    assert len({edge.id for edge in single.edges}) == 4
+    assert len({edge.id for edge in single.edges}) == len(interaction_predicates) + 2
     mouse = human | {"target_species": "Mouse", "Type": "unknown"}
     combined = list(transform_ingest_all(context, [human, mouse]))[0]
     assert [node.id for node in combined.nodes] == ["PUBCHEM.COMPOUND:2244", "IUPHARobj:378"]
-    assert len(combined.edges) == 2
+    assert [edge.predicate for edge in combined.edges] == interaction_predicates
 
 
 def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Path) -> None:
