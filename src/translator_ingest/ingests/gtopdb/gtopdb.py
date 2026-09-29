@@ -26,7 +26,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from translator_ingest.ingests.gtopdb.rules import (
     InteractionRule,
-    PhysicalInteractionRule,
     PrimaryAssociationRule,
     resolve_rule,
 )
@@ -48,22 +47,6 @@ LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
 
-SOURCE_COLUMNS = (
-    "Target",
-    "Target ID",
-    "Target Subunit IDs",
-    "Target Gene Symbol",
-    "Target UniProt ID",
-    "Target Species",
-    LIGAND_ID_COLUMN,
-    "Ligand",
-    "Type",
-    "Action",
-    "Endogenous",
-    "Ligand Context",
-    PUBLICATIONS_COLUMN,
-)
-
 GROUP_COLUMNS = (
     "Target",
     "Target ID",
@@ -77,6 +60,7 @@ GROUP_COLUMNS = (
     "Action",
     "Endogenous",
 )
+SOURCE_COLUMNS = (*GROUP_COLUMNS, "Ligand Context", PUBLICATIONS_COLUMN)
 
 PREPARED_COLUMN_RENAMES = {
     "Ligand": "subject_name",
@@ -412,47 +396,56 @@ def _component_nodes(target: TargetDescriptor) -> list[Protein]:
     ]
 
 
-def _attach_publications(edges: list[Association], publications: list[str] | None) -> None:
-    """Attach shared publications to every edge emitted for one source record."""
-    if publications:
-        for edge in edges:
-            edge.publications = publications
-
-
-def _build_primary_association(
+def _interaction_edges(
     subject: ChemicalEntity,
     object: NamedThing,
     endogenous: Any,
-    rule: PrimaryAssociationRule,
+    rule: InteractionRule,
     species_context_qualifier: str | None,
-) -> Association:
-    """Construct a primary edge using only its own relation and qualifiers."""
-    if rule.relation == "related":
-        return Association(
-            id=entity_id(),
-            subject=subject.id,
-            predicate=BIOLINK_RELATED,
-            object=object.id,
-            sources=GTOPDB_SOURCES,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
+) -> list[Association]:
+    """Build the optional primary and physical edges, each with its own qualifiers.
 
-    predicate, direction = _endogenous_projection(endogenous, rule)
-    return ChemicalAffectsGeneAssociation(
-        id=entity_id(),
-        subject=subject.id,
-        predicate=predicate,
-        object=object.id,
-        qualified_predicate=BIOLINK_CAUSES if rule.qualified else None,
-        object_aspect_qualifier=rule.aspect,
-        object_direction_qualifier=direction,
-        causal_mechanism_qualifier=rule.mechanism,
-        sources=GTOPDB_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        species_context_qualifier=species_context_qualifier,
-    )
+    Endogenous projection applies only to an affects/regulates primary edge.
+    Related-to edges remain unqualified; physical edges carry their own mechanism
+    and species context without asserting an effect on activity.
+    """
+    common_fields: dict[str, Any] = {
+        "subject": subject.id,
+        "object": object.id,
+        "sources": GTOPDB_SOURCES,
+        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+        "agent_type": AgentTypeEnum.manual_agent,
+    }
+    edges: list[Association] = []
+    primary = rule.primary
+    if primary is not None:
+        if primary.relation == "related":
+            edges.append(Association(id=entity_id(), predicate=BIOLINK_RELATED, **common_fields))
+        else:
+            predicate, direction = _endogenous_projection(endogenous, primary)
+            edges.append(
+                ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    predicate=predicate,
+                    qualified_predicate=BIOLINK_CAUSES if primary.qualified else None,
+                    object_aspect_qualifier=primary.aspect,
+                    object_direction_qualifier=direction,
+                    causal_mechanism_qualifier=primary.mechanism,
+                    species_context_qualifier=species_context_qualifier,
+                    **common_fields,
+                )
+            )
+    if rule.physical is not None:
+        edges.append(
+            PairwiseMolecularInteraction(
+                id=entity_id(),
+                predicate="biolink:directly_physically_interacts_with",
+                causal_mechanism_qualifier=rule.physical.mechanism,
+                species_context_qualifier=species_context_qualifier,
+                **common_fields,
+            )
+        )
+    return edges
 
 
 def _endogenous_projection(
@@ -486,84 +479,21 @@ def _endogenous_projection(
     return predicate, directions.get(rule.polarity)
 
 
-def _build_physical_interaction(
-    subject: ChemicalEntity,
-    object: NamedThing,
-    rule: PhysicalInteractionRule,
-    species_context_qualifier: str | None,
-) -> PairwiseMolecularInteraction:
-    """Construct a direct physical edge using its independent mechanism."""
-    return PairwiseMolecularInteraction(
-        id=entity_id(),
-        subject=subject.id,
-        predicate="biolink:directly_physically_interacts_with",
-        object=object.id,
-        causal_mechanism_qualifier=rule.mechanism,
-        sources=GTOPDB_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        species_context_qualifier=species_context_qualifier,
-    )
-
-
-def _edges_for_record(
-    subject: ChemicalEntity,
-    object: NamedThing,
-    target: TargetDescriptor,
-    endogenous: Any,
-    rule: InteractionRule,
-    publications: list[str] | None,
-    emit_component_edges: bool,
-) -> list[Association]:
-    """Build every graph edge emitted for one supported source record.
-
-    ``IUPHARobj:<Target ID>`` is shared by GtoPdb species descriptors. Until
-    Biolink permits a taxon-qualified ``has_part`` assertion, component edges
-    would merge the human and mouse compositions for target 378 (5-HT3AB).
-    Therefore multi-species source IDs omit those edges conservatively; see
-    https://github.com/biolink/biolink-model/pull/1797 and translator-ingests#510.
-    """
-    edges: list[Association] = []
-    if rule.primary is not None:
-        edges.append(
-            _build_primary_association(
-                subject,
-                object,
-                endogenous,
-                rule.primary,
-                target.species_context_qualifier,
-            )
-        )
-    if rule.physical is not None:
-        edges.append(_build_physical_interaction(subject, object, rule.physical, target.species_context_qualifier))
-    if target.complex_curie and emit_component_edges:
-        edges.extend(
-            Association(
-                id=entity_id(),
-                subject=target.complex_curie,
-                predicate="biolink:has_part",
-                object=f"UniProtKB:{accession}",
-                sources=GTOPDB_SOURCES,
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-            for accession in target.canonical_uniprot_ids
-        )
-    _attach_publications(edges, publications)
-    return edges
-
-
 def _transform_record(
     record: dict[str, Any],
     target: TargetDescriptor,
     *,
     emit_component_edges: bool,
 ) -> KnowledgeGraph | None:
-    """Assemble one record using the descriptor and component policy of its batch.
+    """Skip unsupported records, then assemble nodes, interaction edges, and evidence.
 
     All descriptors are resolved before any records are emitted. Passing that
     context preserves validation order and accounts for other species even when
     their interaction records are later skipped.
+
+    ``IUPHARobj:<Target ID>`` is shared by species descriptors. Component edges
+    are omitted for multi-species targets until Biolink supports taxon-qualified
+    ``has_part`` assertions; see biolink/biolink-model#1797 and translator-ingests#510.
     """
     if target.classification in UNSUPPORTED_TARGET_CLASSES:
         return None
@@ -573,16 +503,26 @@ def _transform_record(
         return None
 
     subject, object = _nodes_for_record(record, target)
-    edges = _edges_for_record(
-        subject,
-        object,
-        target,
-        record["Endogenous"],
-        rule,
-        _publication_list(record[PUBLICATIONS_COLUMN]),
-        emit_component_edges=emit_component_edges,
-    )
+    endogenous = record["Endogenous"]
+    publications = _publication_list(record[PUBLICATIONS_COLUMN])
+    edges = _interaction_edges(subject, object, endogenous, rule, target.species_context_qualifier)
+
     component_nodes = _component_nodes(target) if emit_component_edges else []
+    edges.extend(
+        Association(
+            id=entity_id(),
+            subject=object.id,
+            predicate="biolink:has_part",
+            object=component.id,
+            sources=GTOPDB_SOURCES,
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
+        )
+        for component in component_nodes
+    )
+    if publications:
+        for edge in edges:
+            edge.publications = publications
     return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
 
 
