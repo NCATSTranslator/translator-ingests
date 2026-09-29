@@ -48,7 +48,7 @@ Note that this release's individual-resource graphs have their own varying relea
 * Added `directly_physically_interacts_with` edges from ingesting binding data
 * Added `affects_sensitivity_to`, `decreases_sensitivity_to`, and `increases_sensitivity_to` edges from ingesting "response to substance" data (majority of these edges are gene→chem)
 
-## CTKP:
+### CTKP:
 * big increase in edges due to major data update, which included the addition of non-chemical interventions (subject, mostly `Procedure`), and new Babel update (more successfully-normalized nodes). 
 
 ### DGIdb:
