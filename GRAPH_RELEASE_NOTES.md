@@ -30,7 +30,7 @@ Note that this release's individual-resource graphs have their own varying relea
 
 ### General changes:
 * node-attribute taxon data: now using the key `taxon` which holds data exclusively from NodeNorm. The `taxon` node-attribute is present on `Gene`/`Protein`, `MacromolecularComplex`, `Disease`, and `PhenotypicFeature` nodes. Removed `in_taxon` and `in_taxon_label` node attributes, which stored resource-derived taxon data.
-* NodeNorm is using the new Babel release, which had wide-ranging impacts on the graph: increases in normalized nodes/edges for some resources, decreases for other resources, and changes in Node categories. Tried to note the major increases/decreases in individual-resource notes below. Overall, there was an increase in final normalized nodes/edges.
+* NodeNorm is using the new Babel release `2026jul22`, which had wide-ranging impacts on the graph: increases in normalized nodes/edges for some resources, decreases for other resources, and changes in Node categories. Tried to note the major edge increases/decreases in individual-resource notes below. Overall, the use of the new Babel lead to a small increase in final normalized nodes/edges.
 * Metadata changes, including file names/contents (including versioning).
 
 ### Alliance
