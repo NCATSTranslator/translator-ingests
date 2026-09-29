@@ -55,45 +55,15 @@ class InteractionRule:
             raise ValueError("Use None to skip an interaction instead of an empty InteractionRule")
 
 
-# Primary qualifiers describe only the pharmacological association.
+# Share primary definitions only when multiple named rules use them.
 PRIMARY_ACTIVATION = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.activation)
 PRIMARY_POTENTIATION = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.potentiation)
-PRIMARY_POSITIVE_BINDING = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.binding)
 PRIMARY_AGONISM = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.agonism)
 PRIMARY_BIASED_AGONISM = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.biased_agonism)
 PRIMARY_INVERSE_AGONISM = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.inverse_agonism)
-PRIMARY_MIXED_AGONISM = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.mixed_agonism)
 PRIMARY_PARTIAL_AGONISM = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.partial_agonism)
 PRIMARY_ANTAGONISM = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.antagonism)
-PRIMARY_NON_COMPETITIVE_ANTAGONISM = PrimaryAssociationRule(
-    polarity="negative", mechanism=CMQ.non_competitive_antagonism
-)
 PRIMARY_INHIBITION = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.inhibition)
-PRIMARY_COMPETITIVE_INHIBITION = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.competitive_inhibition)
-PRIMARY_FEEDBACK_INHIBITION = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.feedback_inhibition)
-PRIMARY_IRREVERSIBLE_INHIBITION = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.irreversible_inhibition)
-PRIMARY_ALLOSTERIC_MODULATION = PrimaryAssociationRule(mechanism=CMQ.allosteric_modulation, qualified=False)
-PRIMARY_BIPHASIC_ALLOSTERIC_MODULATION = PrimaryAssociationRule(
-    mechanism=CMQ.biphasic_allosteric_modulation, qualified=False
-)
-PRIMARY_MIXED_ALLOSTERIC_MODULATION = PrimaryAssociationRule(mechanism=CMQ.mixed_allosteric_modulation, qualified=False)
-PRIMARY_NEGATIVE_ALLOSTERIC_MODULATION = PrimaryAssociationRule(
-    polarity="negative", mechanism=CMQ.negative_allosteric_modulation
-)
-PRIMARY_POSITIVE_ALLOSTERIC_MODULATION = PrimaryAssociationRule(
-    polarity="positive", mechanism=CMQ.positive_allosteric_modulation
-)
-PRIMARY_ANTIBODY_AGONISM = PrimaryAssociationRule(polarity="positive", mechanism=CMQ.antibody_agonism)
-PRIMARY_ANTIBODY_INHIBITION = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.antibody_inhibition)
-PRIMARY_BINDING = PrimaryAssociationRule(mechanism=CMQ.binding, qualified=False)
-PRIMARY_CHANNEL_BLOCKAGE = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.molecular_channel_blockage)
-PRIMARY_GATING_INHIBITION = PrimaryAssociationRule(polarity="negative", mechanism=CMQ.gating_inhibition)
-PRIMARY_UNDIRECTED_CHANNEL_BLOCKAGE = PrimaryAssociationRule(mechanism=CMQ.molecular_channel_blockage, qualified=False)
-PRIMARY_UNDIRECTED_GATING_INHIBITION = PrimaryAssociationRule(mechanism=CMQ.gating_inhibition, qualified=False)
-PRIMARY_RELATED = PrimaryAssociationRule(relation="related", qualified=False, aspect=None)
-PRIMARY_NEUTRAL = PrimaryAssociationRule(qualified=False)
-PRIMARY_POSITIVE_EFFECT = PrimaryAssociationRule(polarity="positive")
-PRIMARY_NEGATIVE_EFFECT = PrimaryAssociationRule(polarity="negative")
 
 # Physical mechanisms come from the mapping's separate physical-edge column.
 DIRECT_PHYSICAL = PhysicalInteractionRule()
@@ -104,40 +74,78 @@ ALLOSTERIC_PHYSICAL = PhysicalInteractionRule(mechanism=CMQ.allosteric_modulatio
 ACTIVATION = InteractionRule(primary=PRIMARY_ACTIVATION, physical=None)
 PHYSICAL_ACTIVATION = InteractionRule(primary=PRIMARY_ACTIVATION, physical=DIRECT_PHYSICAL)
 POTENTIATION = InteractionRule(primary=PRIMARY_POTENTIATION, physical=None)
-POSITIVE_BINDING = InteractionRule(primary=PRIMARY_POSITIVE_BINDING, physical=BINDING_PHYSICAL)
+POSITIVE_BINDING = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="positive", mechanism=CMQ.binding), physical=BINDING_PHYSICAL
+)
 AGONISM = InteractionRule(primary=PRIMARY_AGONISM, physical=DIRECT_PHYSICAL)
 BIASED_AGONISM = InteractionRule(primary=PRIMARY_BIASED_AGONISM, physical=DIRECT_PHYSICAL)
 INVERSE_AGONISM = InteractionRule(primary=PRIMARY_INVERSE_AGONISM, physical=DIRECT_PHYSICAL)
-MIXED_AGONISM = InteractionRule(primary=PRIMARY_MIXED_AGONISM, physical=DIRECT_PHYSICAL)
+MIXED_AGONISM = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="positive", mechanism=CMQ.mixed_agonism), physical=DIRECT_PHYSICAL
+)
 PARTIAL_AGONISM = InteractionRule(primary=PRIMARY_PARTIAL_AGONISM, physical=DIRECT_PHYSICAL)
 ANTAGONISM = InteractionRule(primary=PRIMARY_ANTAGONISM, physical=DIRECT_PHYSICAL)
-NON_COMPETITIVE_ANTAGONISM = InteractionRule(primary=PRIMARY_NON_COMPETITIVE_ANTAGONISM, physical=DIRECT_PHYSICAL)
-INHIBITION = InteractionRule(primary=PRIMARY_INHIBITION, physical=DIRECT_PHYSICAL)
-COMPETITIVE_INHIBITION = InteractionRule(primary=PRIMARY_COMPETITIVE_INHIBITION, physical=DIRECT_PHYSICAL)
-FEEDBACK_INHIBITION = InteractionRule(primary=PRIMARY_FEEDBACK_INHIBITION, physical=None)
-IRREVERSIBLE_INHIBITION = InteractionRule(primary=PRIMARY_IRREVERSIBLE_INHIBITION, physical=DIRECT_PHYSICAL)
-ALLOSTERIC_MODULATION = InteractionRule(primary=PRIMARY_ALLOSTERIC_MODULATION, physical=ALLOSTERIC_PHYSICAL)
-BIPHASIC_ALLOSTERIC_MODULATION = InteractionRule(
-    primary=PRIMARY_BIPHASIC_ALLOSTERIC_MODULATION, physical=ALLOSTERIC_PHYSICAL
+NON_COMPETITIVE_ANTAGONISM = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.non_competitive_antagonism),
+    physical=DIRECT_PHYSICAL,
 )
-MIXED_ALLOSTERIC_MODULATION = InteractionRule(primary=PRIMARY_MIXED_ALLOSTERIC_MODULATION, physical=ALLOSTERIC_PHYSICAL)
+INHIBITION = InteractionRule(primary=PRIMARY_INHIBITION, physical=DIRECT_PHYSICAL)
+COMPETITIVE_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.competitive_inhibition), physical=DIRECT_PHYSICAL
+)
+FEEDBACK_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.feedback_inhibition), physical=None
+)
+IRREVERSIBLE_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.irreversible_inhibition), physical=DIRECT_PHYSICAL
+)
+ALLOSTERIC_MODULATION = InteractionRule(
+    primary=PrimaryAssociationRule(mechanism=CMQ.allosteric_modulation, qualified=False), physical=ALLOSTERIC_PHYSICAL
+)
+BIPHASIC_ALLOSTERIC_MODULATION = InteractionRule(
+    primary=PrimaryAssociationRule(mechanism=CMQ.biphasic_allosteric_modulation, qualified=False),
+    physical=ALLOSTERIC_PHYSICAL,
+)
+MIXED_ALLOSTERIC_MODULATION = InteractionRule(
+    primary=PrimaryAssociationRule(mechanism=CMQ.mixed_allosteric_modulation, qualified=False),
+    physical=ALLOSTERIC_PHYSICAL,
+)
 NEGATIVE_ALLOSTERIC_MODULATION = InteractionRule(
-    primary=PRIMARY_NEGATIVE_ALLOSTERIC_MODULATION, physical=ALLOSTERIC_PHYSICAL
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.negative_allosteric_modulation),
+    physical=ALLOSTERIC_PHYSICAL,
 )
 POSITIVE_ALLOSTERIC_MODULATION = InteractionRule(
-    primary=PRIMARY_POSITIVE_ALLOSTERIC_MODULATION, physical=ALLOSTERIC_PHYSICAL
+    primary=PrimaryAssociationRule(polarity="positive", mechanism=CMQ.positive_allosteric_modulation),
+    physical=ALLOSTERIC_PHYSICAL,
 )
-ANTIBODY_AGONISM = InteractionRule(primary=PRIMARY_ANTIBODY_AGONISM, physical=DIRECT_PHYSICAL)
-ANTIBODY_INHIBITION = InteractionRule(primary=PRIMARY_ANTIBODY_INHIBITION, physical=DIRECT_PHYSICAL)
-BINDING = InteractionRule(primary=PRIMARY_BINDING, physical=BINDING_PHYSICAL)
-MOLECULAR_CHANNEL_BLOCKAGE = InteractionRule(primary=PRIMARY_CHANNEL_BLOCKAGE, physical=DIRECT_PHYSICAL)
-GATING_INHIBITION = InteractionRule(primary=PRIMARY_GATING_INHIBITION, physical=DIRECT_PHYSICAL)
-UNDIRECTED_CHANNEL_BLOCKAGE = InteractionRule(primary=PRIMARY_UNDIRECTED_CHANNEL_BLOCKAGE, physical=DIRECT_PHYSICAL)
-UNDIRECTED_GATING_INHIBITION = InteractionRule(primary=PRIMARY_UNDIRECTED_GATING_INHIBITION, physical=DIRECT_PHYSICAL)
-RELATED = InteractionRule(primary=PRIMARY_RELATED, physical=None)
-NEUTRAL_PHYSICAL = InteractionRule(primary=PRIMARY_NEUTRAL, physical=DIRECT_PHYSICAL)
-POSITIVE_EFFECT = InteractionRule(primary=PRIMARY_POSITIVE_EFFECT, physical=None)
-NEGATIVE_EFFECT = InteractionRule(primary=PRIMARY_NEGATIVE_EFFECT, physical=None)
+ANTIBODY_AGONISM = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="positive", mechanism=CMQ.antibody_agonism), physical=DIRECT_PHYSICAL
+)
+ANTIBODY_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.antibody_inhibition), physical=DIRECT_PHYSICAL
+)
+BINDING = InteractionRule(
+    primary=PrimaryAssociationRule(mechanism=CMQ.binding, qualified=False), physical=BINDING_PHYSICAL
+)
+MOLECULAR_CHANNEL_BLOCKAGE = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.molecular_channel_blockage),
+    physical=DIRECT_PHYSICAL,
+)
+GATING_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.gating_inhibition), physical=DIRECT_PHYSICAL
+)
+UNDIRECTED_CHANNEL_BLOCKAGE = InteractionRule(
+    primary=PrimaryAssociationRule(mechanism=CMQ.molecular_channel_blockage, qualified=False), physical=DIRECT_PHYSICAL
+)
+UNDIRECTED_GATING_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(mechanism=CMQ.gating_inhibition, qualified=False), physical=DIRECT_PHYSICAL
+)
+RELATED = InteractionRule(
+    primary=PrimaryAssociationRule(relation="related", qualified=False, aspect=None), physical=None
+)
+NEUTRAL_PHYSICAL = InteractionRule(primary=PrimaryAssociationRule(qualified=False), physical=DIRECT_PHYSICAL)
+POSITIVE_EFFECT = InteractionRule(primary=PrimaryAssociationRule(polarity="positive"), physical=None)
+NEGATIVE_EFFECT = InteractionRule(primary=PrimaryAssociationRule(polarity="negative"), physical=None)
 
 BINDING_AGONISM = InteractionRule(primary=PRIMARY_AGONISM, physical=BINDING_PHYSICAL)
 BINDING_ANTAGONISM = InteractionRule(primary=PRIMARY_ANTAGONISM, physical=BINDING_PHYSICAL)
