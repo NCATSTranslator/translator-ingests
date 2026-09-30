@@ -15,17 +15,15 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     ChemicalEntity,
     DirectionQualifierEnum,
-    GeneOrGeneProductOrChemicalEntityAspectEnum,
     KnowledgeLevelEnum,
     NamedThing,
     PairwiseMolecularInteraction,
     Protein,
 )
 
-from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
+from translator_ingest.ingests.gtopdb.rules import InteractionRule, PrimaryAssociationRule, resolve_rule
 from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
-
 
 GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
 
@@ -36,22 +34,6 @@ BIOLINK_RELATED = "biolink:related_to"
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
-
-SOURCE_COLUMNS = (
-    "Target",
-    "Target ID",
-    "Target Subunit IDs",
-    "Target Gene Symbol",
-    "Target UniProt ID",
-    "Target Species",
-    LIGAND_ID_COLUMN,
-    "Ligand",
-    "Type",
-    "Action",
-    "Endogenous",
-    "Ligand Context",
-    PUBLICATIONS_COLUMN,
-)
 
 GROUP_COLUMNS = (
     "Target",
@@ -69,6 +51,8 @@ TARGET_METADATA_COLUMNS = (
     "Target Gene Symbol",
     "Target Species",
 )
+
+SOURCE_COLUMNS = (*GROUP_COLUMNS, *TARGET_METADATA_COLUMNS, "Ligand Context", PUBLICATIONS_COLUMN)
 
 # The interactions file that this ingest downloads; its first line carries the release version.
 GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
@@ -181,9 +165,9 @@ def _prepare_interactions(
     source = source.astype({LIGAND_ID_COLUMN: "string", "Target UniProt ID": "string"})
     source = source.dropna(subset=["Target UniProt ID", LIGAND_ID_COLUMN])
 
-    prepared = source.groupby(
-        [*GROUP_COLUMNS, *TARGET_METADATA_COLUMNS], as_index=False, dropna=False
-    ).agg({PUBLICATIONS_COLUMN: _join_publications})
+    prepared = source.groupby([*GROUP_COLUMNS, *TARGET_METADATA_COLUMNS], as_index=False, dropna=False).agg(
+        {PUBLICATIONS_COLUMN: _join_publications}
+    )
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
     prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
@@ -197,7 +181,13 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[di
 
 
 def _publication_list(value: str | None) -> list[str] | None:
-    """Convert the source's pipe-delimited publication field into PubMed CURIEs."""
+    """Prefix publication tokens without changing whitespace or multiplicity.
+
+    >>> _publication_list("123|123|| 456 ")
+    ['PMID:123', 'PMID:123', 'PMID:', 'PMID: 456 ']
+    >>> _publication_list("") is None
+    True
+    """
     if not value:
         return None
     return [f"PMID:{pmid}" for pmid in value.split("|")]
@@ -217,52 +207,71 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
     return subject, object
 
 
-def _attach_publications(edges: list[Association], publications: list[str] | None) -> None:
-    """Attach shared publications to every edge emitted for one source record."""
-    if publications:
-        for edge in edges:
-            edge.publications = publications
-
-
-def _build_primary_association(
+def _interaction_edges(
     subject: ChemicalEntity,
     object: Protein,
-    endogenous: str,
+    endogenous: Any,
     rule: InteractionRule,
-) -> Association:
-    """Construct the one pharmacological edge selected by an interaction rule."""
-    if rule.relation == "related":
-        return Association(
-            id=entity_id(),
-            subject=subject.id,
-            predicate=BIOLINK_RELATED,
-            object=object.id,
-            sources=GTOPDB_SOURCES,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
+) -> list[Association]:
+    """Build the optional primary and physical edges, each with its own qualifiers.
 
-    predicate, direction = _endogenous_projection(endogenous, rule)
-    return ChemicalAffectsGeneAssociation(
-        id=entity_id(),
-        subject=subject.id,
-        predicate=predicate,
-        object=object.id,
-        qualified_predicate=BIOLINK_CAUSES if rule.qualified else None,
-        object_aspect_qualifier=GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-        object_direction_qualifier=direction,
-        causal_mechanism_qualifier=rule.mechanism,
-        sources=GTOPDB_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-    )
+    Endogenous projection applies only to an affects/regulates primary edge.
+    Related-to edges remain unqualified; physical edges carry their own mechanism
+    without asserting an effect on activity.
+    """
+    common_fields: dict[str, Any] = {
+        "subject": subject.id,
+        "object": object.id,
+        "sources": GTOPDB_SOURCES,
+        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+        "agent_type": AgentTypeEnum.manual_agent,
+    }
+    edges: list[Association] = []
+    primary = rule.primary
+    if primary is not None:
+        if primary.relation == "related":
+            edges.append(Association(id=entity_id(), predicate=BIOLINK_RELATED, **common_fields))
+        else:
+            predicate, direction = _endogenous_projection(endogenous, primary)
+            edges.append(
+                ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    predicate=predicate,
+                    qualified_predicate=BIOLINK_CAUSES if primary.qualified else None,
+                    object_aspect_qualifier=primary.aspect,
+                    object_direction_qualifier=direction,
+                    causal_mechanism_qualifier=primary.mechanism,
+                    **common_fields,
+                )
+            )
+    if rule.physical is not None:
+        edges.append(
+            PairwiseMolecularInteraction(
+                id=entity_id(),
+                predicate="biolink:directly_physically_interacts_with",
+                causal_mechanism_qualifier=rule.physical.mechanism,
+                **common_fields,
+            )
+        )
+    return edges
 
 
 def _endogenous_projection(
-    endogenous: str,
-    rule: InteractionRule,
+    endogenous: Any,
+    rule: PrimaryAssociationRule,
 ) -> tuple[str, DirectionQualifierEnum | None]:
-    """Project source polarity into predicate and direction under endogenous policy."""
+    """Select endogenous context using the exact source string, including nulls.
+
+    >>> rule = PrimaryAssociationRule(polarity="positive")
+    >>> predicate, direction = _endogenous_projection("TRUE", rule)
+    >>> predicate, direction.value
+    ('biolink:regulates', 'upregulated')
+    >>> predicate, direction = _endogenous_projection(True, rule)
+    >>> predicate, direction.value
+    ('biolink:affects', 'increased')
+    >>> _endogenous_projection(None, PrimaryAssociationRule())
+    ('biolink:affects', None)
+    """
     if endogenous == "TRUE":
         predicate = BIOLINK_REGULATES
         directions = {
@@ -276,34 +285,6 @@ def _endogenous_projection(
             "negative": DirectionQualifierEnum.decreased,
         }
     return predicate, directions.get(rule.polarity)
-
-
-def _build_physical_interaction(subject: ChemicalEntity, object: Protein) -> PairwiseMolecularInteraction:
-    """Construct the companion direct physical-interaction edge for a rule."""
-    return PairwiseMolecularInteraction(
-        id=entity_id(),
-        subject=subject.id,
-        predicate="biolink:directly_physically_interacts_with",
-        object=object.id,
-        sources=GTOPDB_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-    )
-
-
-def _edges_for_record(
-    subject: ChemicalEntity,
-    object: Protein,
-    endogenous: str,
-    rule: InteractionRule,
-    publications: list[str] | None,
-) -> list[Association]:
-    """Build every graph edge emitted for one supported source record."""
-    edges: list[Association] = [_build_primary_association(subject, object, endogenous, rule)]
-    if rule.physical_interaction:
-        edges.append(_build_physical_interaction(subject, object))
-    _attach_publications(edges, publications)
-    return edges
 
 
 @koza.transform(tag="gtopdb_interaction_parsing")
@@ -320,17 +301,16 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             continue
 
         rule = resolve_rule(record["Type"], record["Action"])
-        if rule is None or rule.skip:
+        if rule is None:
             continue
 
         subject, object = _nodes_for_record(record, target)
-        emitted_edges = _edges_for_record(
-            subject,
-            object,
-            record["Endogenous"],
-            rule,
-            _publication_list(record[PUBLICATIONS_COLUMN]),
-        )
+        endogenous = record["Endogenous"]
+        publications = _publication_list(record[PUBLICATIONS_COLUMN])
+        emitted_edges = _interaction_edges(subject, object, endogenous, rule)
+        if publications:
+            for edge in emitted_edges:
+                edge.publications = publications
         nodes.extend((subject, object))
         edges.extend(emitted_edges)
 
