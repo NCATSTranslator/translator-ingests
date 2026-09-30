@@ -1,5 +1,14 @@
 name: 'human_phenotype_ontology_annotations'
 
+writer:
+  # Measured against the 2026-09-29 HPOA release: 268,180 disease_to_phenotype
+  # + 7,676 gene_to_disease + 158,788 gene_to_phenotype = 434,644 edges.
+  # A gene_to_phenotype MENDELIAN filter that stops applying adds 175,196 more
+  # (171,700 Orphanet UNKNOWN + 3,496 OMIM POLYGENIC) for 609,840, so this ceiling
+  # leaves ~15% headroom for upstream growth while still failing that regression.
+  # Raise it deliberately when HPOA genuinely outgrows it, after checking why.
+  max_edge_count: 500000
+
 readers:
   disease_to_phenotype_nodes:
     files:
@@ -64,10 +73,9 @@ readers:
       - 'frequency'
       - 'disease_id'
       - 'publications'
+      # computed by prepare_gene_to_phenotype_data, not read from a source file.
+      # NB: the MENDELIAN restriction on this column is applied in that function's SQL,
+      # and cannot be a reader filter here - koza applies reader filters to the raw rows
+      # that prepare_gene_to_phenotype_data discards, so a filter here does nothing.
+      # See https://github.com/NCATSTranslator/translator-ingests/issues/537
       - 'gene_to_disease_association_types'
-    filters:
-      - inclusion: 'include'
-        column: 'gene_to_disease_association_types'
-        filter_code: 'in'
-        value:
-          - 'MENDELIAN'

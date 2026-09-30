@@ -4,7 +4,10 @@ from pathlib import Path
 from typing import Any
 
 import koza
+import yaml
+from koza import KozaConfig
 from koza.io.writer.writer import KozaWriter
+from koza.io.yaml_loader import UniqueIncludeLoader
 from koza.transform import Mappings
 
 import pytest
@@ -29,6 +32,7 @@ from translator_ingest.ingests.hpoa.hpoa import (
     transform_gene_to_phenotype_record,
 )
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
+from tests.util import get_ingest_config_yaml_path
 
 HPOA_UNIT_TESTS = abspath(dirname(__file__))
 HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "sample_data")
@@ -456,6 +460,102 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         # Check that all expected fields are present in the entry
         all(key in expected_entry and expected_entry[key] == value for key, value in entry.items())
         for entry in result
+    )
+
+
+# The gene_to_phenotype ingest keeps only rows whose underlying gene-disease association
+# asserts MENDELIAN inheritance: HPO infers G-P from G-D plus D-P, and that inference only
+# holds where a single gene is causal. See hpoa_rig.yaml included_content/filtered_content.
+# Regression test for https://github.com/NCATSTranslator/translator-ingests/issues/537, where
+# this filter lived in hpoa.yaml as a reader filter and therefore never ran: the reader filter
+# was applied to raw rows that prepare_gene_to_phenotype_data discards, so every Orphanet
+# (UNKNOWN) and OMIM POLYGENIC row was emitted as a 'causes' edge anyway.
+@pytest.mark.parametrize(
+    "hpo_id,disease_id,association_types,kept",
+    [
+        # MENDELIAN - the inference holds, row is kept
+        ("HP:0002463", "OMIM:301310", "MENDELIAN", True),
+        ("HP:0002470", "OMIM:301310", "MENDELIAN", True),
+        ("HP:0001133", "OMIM:601718", "MENDELIAN", True),
+        # the gene-disease pair carries both a MENDELIAN and a POLYGENIC assertion; a MENDELIAN
+        # assertion exists, so the inference holds and the row is kept
+        ("HP:0000548", "OMIM:248200", "MENDELIAN;POLYGENIC", True),
+        # POLYGENIC only - the gene may be one of many contributing factors, row is dropped
+        ("HP:0000510", "OMIM:153800", "POLYGENIC", False),
+        # UNKNOWN (every Orphanet gene-disease row is UNKNOWN), row is dropped
+        ("HP:0001105", "ORPHA:791", "UNKNOWN", False),
+    ],
+)
+def test_gene_to_phenotype_mendelian_filter(
+    mock_koza_transform_2: koza.KozaTransform,
+    hpo_id: str,
+    disease_id: str,
+    association_types: str,
+    kept: bool,
+):
+    """
+    Check that prepare_gene_to_phenotype_data keeps only gene-phenotype rows inferred over a
+    MENDELIAN gene-disease association, whatever the disease source.
+    """
+    result = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
+    assert result is not None
+    matches = [row for row in result if row["hpo_id"] == hpo_id and row["disease_id"] == disease_id]
+    if kept:
+        assert len(matches) == 1, f"expected {hpo_id}/{disease_id} ({association_types}) to be kept"
+        assert matches[0]["gene_to_disease_association_types"] == association_types
+    else:
+        assert not matches, f"expected {hpo_id}/{disease_id} ({association_types}) to be filtered out"
+
+
+def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2: koza.KozaTransform):
+    """
+    Check that no non-MENDELIAN gene-disease association type survives preparation. Guards the
+    whole prepared set rather than the specific sample rows above, so a filter that regresses
+    for an association type not represented in the sample data still fails here.
+    """
+    result = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
+    assert result is not None
+    rows = list(result)
+    assert rows, "expected at least one prepared gene_to_phenotype row"
+    non_mendelian = [row["gene_to_disease_association_types"] for row in rows if "MENDELIAN" not in row["gene_to_disease_association_types"]]
+    assert not non_mendelian, f"non-MENDELIAN association types survived preparation: {sorted(set(non_mendelian))}"
+
+
+# Edge counts measured against the HPOA release downloaded 2026-09-29:
+#   disease_to_phenotype_edges (aspect 'P', hpo_id set, not negated)  268,180
+#   gene_to_disease            (MENDELIAN 7,094 + POLYGENIC 582)        7,676
+#   gene_to_phenotype          (MENDELIAN only)                       158,788
+#                                                              total  434,644
+# With the MENDELIAN filter broken, gene_to_phenotype emits 333,984 rows instead - the 175,196
+# extra being 171,700 Orphanet UNKNOWN plus 3,496 OMIM POLYGENIC, matching issue #537 - for a
+# total of 609,840. writer.max_edge_count has to sit between the two so that the regression trips
+# the build. koza enforces it in KozaWriter.validate_counts() after the run, over the total edges
+# written by all of hpoa.yaml's readers.
+HPOA_EXPECTED_EDGE_COUNT = 434_644
+HPOA_UNFILTERED_EDGE_COUNT = 609_840
+
+
+def test_hpoa_max_edge_count_catches_a_broken_mendelian_filter():
+    """
+    Check that hpoa.yaml configures an edge ceiling that the measured output clears but a
+    regressed MENDELIAN filter does not. A tripwire for the class of bug in issue #537, where
+    the filter silently stopped applying and 52% of gene_to_phenotype output was wrong.
+    """
+    config_yaml_file_path = get_ingest_config_yaml_path("hpoa")
+    assert config_yaml_file_path is not None
+    with config_yaml_file_path.open("r", encoding="utf-8") as fh:
+        config = KozaConfig(**yaml.load(fh, Loader=UniqueIncludeLoader.with_file_base(str(config_yaml_file_path))))  # noqa: S506
+
+    max_edge_count = config.writer.max_edge_count
+    assert max_edge_count is not None, "hpoa.yaml must set writer.max_edge_count as a filter tripwire"
+    assert max_edge_count > HPOA_EXPECTED_EDGE_COUNT, (
+        f"writer.max_edge_count of {max_edge_count} is below the {HPOA_EXPECTED_EDGE_COUNT} edges "
+        f"the ingest is measured to emit, so a correct build would fail"
+    )
+    assert max_edge_count < HPOA_UNFILTERED_EDGE_COUNT, (
+        f"writer.max_edge_count of {max_edge_count} is at or above the {HPOA_UNFILTERED_EDGE_COUNT} "
+        f"edges emitted when the gene_to_phenotype MENDELIAN filter stops applying, so it would "
+        f"not catch that regression"
     )
 
 
