@@ -89,6 +89,10 @@ NON_COMPETITIVE_ANTAGONISM = InteractionRule(
     primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.non_competitive_antagonism),
     physical=DIRECT_PHYSICAL,
 )
+NONCOMPETITIVE_INHIBITION = InteractionRule(
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.noncompetitive_inhibition),
+    physical=DIRECT_PHYSICAL,
+)
 INHIBITION = InteractionRule(primary=PRIMARY_INHIBITION, physical=DIRECT_PHYSICAL)
 COMPETITIVE_INHIBITION = InteractionRule(
     primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.competitive_inhibition), physical=DIRECT_PHYSICAL
@@ -118,8 +122,9 @@ POSITIVE_ALLOSTERIC_MODULATION = InteractionRule(
     primary=PrimaryAssociationRule(polarity="positive", mechanism=CMQ.positive_allosteric_modulation),
     physical=ALLOSTERIC_PHYSICAL,
 )
+# The reviewed mapping specifies a negative direction for Antibody + Agonist.
 ANTIBODY_AGONISM = InteractionRule(
-    primary=PrimaryAssociationRule(polarity="positive", mechanism=CMQ.antibody_agonism), physical=DIRECT_PHYSICAL
+    primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.antibody_agonism), physical=DIRECT_PHYSICAL
 )
 ANTIBODY_INHIBITION = InteractionRule(
     primary=PrimaryAssociationRule(polarity="negative", mechanism=CMQ.antibody_inhibition), physical=DIRECT_PHYSICAL
@@ -251,7 +256,7 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Feedback inhibition": FEEDBACK_INHIBITION,
         "Inhibition": INHIBITION,
         "Irreversible inhibition": IRREVERSIBLE_INHIBITION,
-        "Non-competitive": NON_COMPETITIVE_ANTAGONISM,
+        "Non-competitive": NONCOMPETITIVE_INHIBITION,
         "None": INHIBITION,
         "Unknown": INHIBITION,
     },

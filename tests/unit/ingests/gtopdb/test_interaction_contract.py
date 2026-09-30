@@ -4,8 +4,9 @@ Expectations use the checked-in inventory, never production rules. Reviewed
 corrections cover physical-only interactions and independent edge qualifiers.
 Full agonism intentionally maps to agonism, voltage-dependent inhibition to
 gating_inhibition, and Agonist + Activation to activation without a physical edge.
-Irreversible agonism, non-competitive inhibition, and the Antibody + Agonist
-direction retain their existing mappings pending resolution.
+Non-competitive inhibition uses Biolink's noncompetitive_inhibition term;
+Antibody + Agonist follows the reviewed decreased/downregulated direction.
+Irreversible agonism retains its existing mapping pending resolution.
 
 Composite targets remain excluded under this PR's existing boundary.
 """
@@ -202,6 +203,10 @@ def test_type_action_context_matrix(context: KozaTransform, type_value: str, act
         ("Inhibitor", "Binding", "inhibition"),
         ("Inhibitor", "Antagonist", "antagonism"),
         ("Antagonist", "Binding", "antagonism"),
+        ("Inhibitor", "Non-competitive", "noncompetitive_inhibition"),
+        ("Antagonist", "Non-competitive", "non_competitive_antagonism"),
+        ("Antibody", "Agonist", "antibody_agonism"),
+        ("Antibody", "Antagonist", "antibody_inhibition"),
     ],
 )
 @pytest.mark.parametrize(
@@ -211,7 +216,7 @@ def test_type_action_context_matrix(context: KozaTransform, type_value: str, act
         ("TRUE", "biolink:regulates", "downregulated"),
     ],
 )
-def test_binding_and_antagonist_mechanisms_match_reviewed_mapping(
+def test_inhibitory_mappings_match_reviewed_specification(
     context: KozaTransform,
     type_value: str,
     action: str,
@@ -220,9 +225,11 @@ def test_binding_and_antagonist_mechanisms_match_reviewed_mapping(
     predicate: str,
     direction: str,
 ) -> None:
-    """Use inhibition for inhibitor binding while preserving antagonism cases.
+    """Apply the reviewed mechanisms and negative directions in both contexts.
 
-    The reviewed mapping specifies these mechanisms in rows 63, 62, and 38:
+    Non-competitive inhibition uses Biolink's spelling, without an underscore
+    between non and competitive. Antibody + Agonist has a negative direction
+    in the reviewed specification despite retaining its antibody_agonism mechanism:
     https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142
     """
     record = RECORD | {"Type": type_value, "Action": action, "Endogenous": endogenous}
@@ -239,6 +246,8 @@ def test_binding_and_antagonist_mechanisms_match_reviewed_mapping(
     assert effect.subject == physical.subject == "PUBCHEM.COMPOUND:2244"
     assert effect.object == physical.object == "UniProtKB:P08588"
     assert effect.publications == physical.publications == ["PMID:123", "PMID:456"]
+    assert type(effect).model_validate(effect.model_dump()) == effect
+    assert type(physical).model_validate(physical.model_dump()) == physical
 
 
 @pytest.mark.parametrize(

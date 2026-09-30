@@ -2809,7 +2809,7 @@
         "object": "UniProtKB:P08588",
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
-        "object_direction_qualifier": "increased",
+        "object_direction_qualifier": "decreased",
         "causal_mechanism_qualifier": "antibody_agonism",
         "publications": [
           "PMID:123",
@@ -2844,7 +2844,7 @@
         "object": "UniProtKB:P08588",
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
-        "object_direction_qualifier": "upregulated",
+        "object_direction_qualifier": "downregulated",
         "causal_mechanism_qualifier": "antibody_agonism",
         "publications": [
           "PMID:123",
@@ -4376,7 +4376,7 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "decreased",
-        "causal_mechanism_qualifier": "non_competitive_antagonism",
+        "causal_mechanism_qualifier": "noncompetitive_inhibition",
         "publications": [
           "PMID:123",
           "PMID:456"
@@ -4411,7 +4411,7 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "downregulated",
-        "causal_mechanism_qualifier": "non_competitive_antagonism",
+        "causal_mechanism_qualifier": "noncompetitive_inhibition",
         "publications": [
           "PMID:123",
           "PMID:456"
