@@ -335,7 +335,6 @@
           - ChEMBL
           - UniProtKB
         node_properties:
-          - biolink:in_taxon
           - biolink:synonym
           - biolink:xref
       - node_category: biolink:ProteinFamily

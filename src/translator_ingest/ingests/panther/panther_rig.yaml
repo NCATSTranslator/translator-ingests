@@ -135,8 +135,6 @@ target_info:
     - MGI
     - RGD
     - ENSEMBL
-    node_properties:
-    - "biolink:in_taxon"
   - node_category: "biolink:GeneFamily"
     source_identifier_types:
       - PANTHER.FAMILY

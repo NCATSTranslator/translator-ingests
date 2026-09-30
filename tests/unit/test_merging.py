@@ -3,6 +3,9 @@ import json
 import pytest
 import yaml
 
+from translator_ingest.util.metadata import (TRANSLATOR_BUILD_VERSION, TRANSLATOR_EDGE_COUNT,
+                                             TRANSLATOR_NODE_COUNT)
+
 from translator_ingest import merging
 from translator_ingest.merging import (
     SHARED_SOURCE_RELEASE_METADATA,
@@ -237,6 +240,29 @@ def test_merge_produces_a_release_of_its_sources(releases_path, merged_graph_sou
     # hasPart identifies the released graphs the merged graph is made of
     graph_metadata = json.loads((output_dir / RELEASE_GRAPH_METADATA_FILENAME).read_text())
     assert sorted(part["name"] for part in graph_metadata["hasPart"]) == merged_graph_sources
+
+    # A merged graph is versioned and released in one step, so it records both of its versions.
+    # version is the semantic release version, the build version is recorded separately.
+    assert graph_metadata["version"] == "1.0.0"
+    assert graph_metadata[TRANSLATOR_BUILD_VERSION] == merged_graph_metadata.build_version
+
+
+def test_merged_graph_parts_report_what_each_source_contributed(releases_path, merged_graph_sources):
+    """The node and edge counts of a hasPart entry come from this merge, not from the source's own build,
+    so they describe what that release actually contributed here."""
+    merge("test_graph", merged_graph_sources)
+
+    graph_metadata_path = releases_path / "test_graph" / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME
+    parts = json.loads(graph_metadata_path.read_text())["hasPart"]
+
+    # Every source release is written with the same two nodes and one edge.
+    assert {part["name"]: (part[TRANSLATOR_NODE_COUNT], part[TRANSLATOR_EDGE_COUNT]) for part in parts} == {
+        source: (len(RELEASE_NODES), 1) for source in merged_graph_sources
+    }
+    # The counts the parts report add up to what the merge metadata recorded for the whole graph.
+    merge_metadata = json.loads((releases_path / "test_graph" / "1.0.0" / "merge-metadata.json").read_text())
+    assert sum(part[TRANSLATOR_NODE_COUNT] for part in parts) == merge_metadata["final_node_count"] + \
+           merge_metadata["nodes_diff"]
 
 
 def test_merge_skips_when_latest_release_is_already_this_build(releases_path, merged_graph_sources):

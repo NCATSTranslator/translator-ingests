@@ -212,18 +212,12 @@ def transform_bindingdb_by_record(
     #       can eventually be made in between chemical types
     chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:" + pubchem_id)
 
-    # Taxon of protein target
-    taxon_label = record[SOURCE_ORGANISM]
-    taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None) if taxon_label else None
-
     # Unless otherwise advised, all BindingDb targets
     # are assumed to be (UniProt registered) proteins.
     target_name = record[TARGET_NAME]
     protein = Protein(
         id="UniProtKB:" + uniprot_id,
         name=target_name,
-        in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
-        in_taxon_label=taxon_label
     )
 
     # Publications
