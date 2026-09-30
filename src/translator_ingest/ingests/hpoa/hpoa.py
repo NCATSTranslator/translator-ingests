@@ -339,19 +339,34 @@ def prepare_gene_to_phenotype_data(
       g2d_grouped as (select 
         ncbi_gene_id_clean,
         disease_id,
-        array_to_string(list(distinct association_type), ';') as association_types
+        -- sorted so the joined column below is deterministic: list() does not
+        -- guarantee an order, so an unsorted list of a gene-disease pair asserted
+        -- both MENDELIAN and POLYGENIC could come out in either order
+        list_sort(list(distinct association_type)) as association_types
         from g2d 
         group by ncbi_gene_id_clean, disease_id)
     select g2p.*, 
             hpoa.evidence,
             array_to_string(list(hpoa.reference),';') as publications,
-            coalesce(g2d_grouped.association_types, '') as gene_to_disease_association_types
+            array_to_string(g2d_grouped.association_types, ';') as gene_to_disease_association_types
     from g2p
          left outer join hpoa on hpoa.hpo_id = g2p.hpo_id
                      and g2p.disease_id = hpoa.database_id
                         and hpoa.frequency = g2p.frequency
-         left outer join g2d_grouped on g2p.ncbi_gene_id = g2d_grouped.ncbi_gene_id_clean
+         -- An inner join, restricted to gene-disease pairs carrying a MENDELIAN
+         -- assertion, is what keeps non-Mendelian gene-phenotype rows out of the
+         -- transform. HPO infers a gene-phenotype association from a gene-disease
+         -- association plus a disease-phenotype association, and that inference only
+         -- holds where a single gene is causal; for POLYGENIC or UNKNOWN diseases the
+         -- gene may be one of many contributing factors. See the RIG's
+         -- included_content / filtered_content.
+         -- This condition must stay in the SQL: it cannot be expressed as a koza
+         -- reader filter in hpoa.yaml, because reader filters are applied to the raw
+         -- rows that this function discards, so such a filter silently does nothing
+         -- (https://github.com/NCATSTranslator/translator-ingests/issues/537).
+         join g2d_grouped on g2p.ncbi_gene_id = g2d_grouped.ncbi_gene_id_clean
                      and g2p.disease_id = g2d_grouped.disease_id
+                     and list_contains(g2d_grouped.association_types, 'MENDELIAN')
     group by all
     """
         )
