@@ -6,7 +6,8 @@ Full agonism intentionally maps to agonism, voltage-dependent inhibition to
 gating_inhibition, and Agonist + Activation to activation without a physical edge.
 Non-competitive inhibition uses Biolink's noncompetitive_inhibition term;
 Antibody + Agonist follows the reviewed decreased/downregulated direction.
-Irreversible agonism retains its existing mapping pending resolution.
+Irreversible agonism deliberately retains the original ingest's agonism fallback
+because Biolink has no irreversible_agonism mechanism.
 
 Composite targets remain excluded under this PR's existing boundary.
 """
@@ -248,6 +249,34 @@ def test_inhibitory_mappings_match_reviewed_specification(
     assert effect.publications == physical.publications == ["PMID:123", "PMID:456"]
     assert type(effect).model_validate(effect.model_dump()) == effect
     assert type(physical).model_validate(physical.model_dump()) == physical
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [
+        ("FALSE", "biolink:affects", "increased"),
+        ("TRUE", "biolink:regulates", "upregulated"),
+    ],
+)
+def test_irreversible_agonist_preserves_original_fallback(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """Retain general agonism and physical interaction without claiming irreversibility."""
+    record = RECORD | {"Action": "Irreversible agonist", "Endogenous": endogenous}
+    graph = list(transform_ingest_all(context, [record]))[0]
+
+    assert len(graph.edges) == 2
+    effect, physical = graph.edges
+    assert effect.predicate == predicate
+    assert effect.causal_mechanism_qualifier == "agonism"
+    assert effect.qualified_predicate == "biolink:causes"
+    assert effect.object_aspect_qualifier == "activity"
+    assert effect.object_direction_qualifier == direction
+    assert physical.predicate == "biolink:directly_physically_interacts_with"
+    assert physical.causal_mechanism_qualifier is None
+    assert physical.object_aspect_qualifier is None
+    assert physical.object_direction_qualifier is None
+    assert type(effect).model_validate(effect.model_dump()) == effect
 
 
 @pytest.mark.parametrize(

@@ -190,6 +190,7 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Binding": BINDING_AGONISM,
         "Full agonist": AGONISM,
         "Inverse agonist": INVERSE_AGONISM,
+        # Preserve the original ingest's agonism fallback; Biolink lacks irreversible_agonism.
         "Irreversible agonist": AGONISM,
         "Mixed": MIXED_AGONISM,
         "None": AGONISM,
