@@ -40,7 +40,7 @@ Note that this release's individual-resource graphs have their own varying relea
 * edge attribute for affinity data changed from `has_affinity` to `has_supporting_studies`
 
 ### ChEMBL:
-* increase in edges due to new Babel update (more successfully-normalized nodes). 
+* overall increase in edges due to new Babel update (more successfully-normalized nodes). 
 
 ### CTD:
 * Small subset of "chem `affects` gene" edges (<1%) changed to "gene `affects` chem" after fixing bug in directionality
@@ -55,7 +55,7 @@ Note that this release's individual-resource graphs have their own varying relea
 * New `supporting_data_sources` added to handle resource's `2026-09` data
 
 ### GeneticsKP:
-* big decrease in edges, mainly because resource appears to have removed edges for the following Node categories: `biolink:AnatomicalEntity`, `biolink:ChemicalEntity`, `biolink:ClinicalAttribute`, `biolink:InformationContentEntity`, `biolink:Procedure`, `biolink:SmallMolecule`
+* big decrease in edges, mainly because resource appears to have removed edges for the following 6 Node categories: `biolink:AnatomicalEntity`, `biolink:ChemicalEntity`, `biolink:ClinicalAttribute`, `biolink:InformationContentEntity`, `biolink:Procedure`, `biolink:SmallMolecule`
 
 ### GO-CAM:
 * substantial changes to predicates used (now mostly `biolink:regulates` and `biolink:precedes`), with added qualifiers. This is due to code/data-modeling changes, particularly the resource predicate mappings. 
