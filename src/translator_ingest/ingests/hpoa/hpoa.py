@@ -266,7 +266,7 @@ def transform_gene_to_disease_record(
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
     gene_id = record["ncbi_gene_id"]
-    gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
+    gene = Gene(id=gene_id, symbol=record["gene_symbol"], **{})
 
     qualified_predicate: str | None = get_qualified_predicate(record["association_type"])
 
@@ -374,7 +374,7 @@ def transform_gene_to_phenotype_record(
              and edges (Association) or None if the data is incomplete
     """
     gene_id = "NCBIGene:" + str(record["ncbi_gene_id"])
-    gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
+    gene = Gene(id=gene_id, symbol=record["gene_symbol"], **{})
 
     hpo_id = record["hpo_id"]
     if not hpo_id:
