@@ -348,7 +348,7 @@ def test_predicate(association: str, expected_predicate: str | None):
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:64170", "name": "CARD9", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:64170", "symbol": "CARD9", "category": ["biolink:Gene"]},
                 {"id": "OMIM:212050", "category": ["biolink:Disease"]},
             ],
             # Captured edge contents
@@ -378,7 +378,7 @@ def test_predicate(association: str, expected_predicate: str | None):
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:6505", "name": "SLC1A1", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:6505", "symbol": "SLC1A1", "category": ["biolink:Gene"]},
                 {"id": "OMIM:615232", "category": ["biolink:Disease"]},
             ],
             # Captured edge contents
@@ -476,7 +476,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8086", "name": "AAAS", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8086", "symbol": "AAAS", "category": ["biolink:Gene"]},
                 {"id": "HP:0000252", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -513,7 +513,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8120", "name": "AP3B2", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8120", "symbol": "AP3B2", "category": ["biolink:Gene"]},
                 {"id": "HP:0001298", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -550,7 +550,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8192", "name": "CLPP", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8192", "symbol": "CLPP", "category": ["biolink:Gene"]},
                 {"id": "HP:0000013", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -588,7 +588,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8929", "name": "PHOX2B", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8929", "symbol": "PHOX2B", "category": ["biolink:Gene"]},
                 {"id": "HP:0003005", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
