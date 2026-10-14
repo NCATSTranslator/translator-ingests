@@ -25,6 +25,7 @@ from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
 from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
                                              to_translator_graph_metadata)
+from translator_ingest.util import tablassert
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -50,7 +51,16 @@ NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {}
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
-    """Load koza config to get ingest-specific settings like max_edge_count."""
+    """Load koza config to get ingest-specific settings like max_edge_count.
+
+    Tablassert ingests run no koza transform, so their config records the absence of a koza
+    edge limit without ever instantiating a KozaRunner.
+    """
+    if tablassert.declares(source):
+        # Validate the declaration up front so a broken config fails before any download.
+        tablassert.load(source)
+        pipeline_metadata.koza_config = {"max_edge_count": None}
+        return
     source_config_yaml_path = INGESTS_PARSER_PATH / source / f"{source}.yaml"
     config, _ = KozaRunner.from_config_file(
         str(source_config_yaml_path),
@@ -128,16 +138,23 @@ def get_latest_source_version(source):
 def get_transform_version(source: str) -> str:
     """Compute a content hash of the ingest's source files.
 
-    Hashes all .py files, .json files, and the ingest YAML config in the ingest directory,
-    producing a short hash that changes whenever the ingest changes.
-    This automatically triggers a new build when the pipeline detects a new version.
+    Hashes all .py files, .json files, and whichever ingest config the source declares (the koza
+    YAML or, for Tablassert ingests, `tablassert.yaml`) in the ingest directory, producing a short
+    hash that changes whenever the ingest changes. This automatically triggers a new build when the
+    pipeline detects a new version.
     """
     ingest_dir = INGESTS_PARSER_PATH / source
     source_yaml = ingest_dir / f"{source}.yaml"
+    tablassert_yaml = ingest_dir / tablassert.TABLASSERT_CONFIG_FILENAME
 
     files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py")) + sorted(ingest_dir.glob("*.json"))
     if source_yaml.exists():
         files_to_hash.append(source_yaml)
+    if tablassert_yaml.exists():
+        files_to_hash.append(tablassert_yaml)
+        # The shared adapter decides how the declaration is executed; changes to it must invalidate
+        # this source's transform just like an ingest-local code change would.
+        files_to_hash.extend(tablassert.adapter_files())
 
     hasher = hashlib.sha256()
     for file_path in files_to_hash:
@@ -145,7 +162,33 @@ def get_transform_version(source: str) -> str:
     return hasher.hexdigest()[:8]
 
 # Download the source data for a source from the original location
-def download(pipeline_metadata: PipelineMetadata):
+def download(pipeline_metadata: PipelineMetadata, overwrite: bool = False):
+    """Download the source's declared data files into its source_data directory.
+
+    Tablassert ingests declare their files in tablassert.yaml; their durable manifest is written
+    with the dataset version substituted into the URLs. `overwrite` is honored there by telling
+    kghub-downloader to ignore its cache, so a rebuild against a mutable upstream URL actually
+    sees changed bytes (and the input digest can detect them).
+    """
+    if tablassert.declares(pipeline_metadata.source):
+        if not pipeline_metadata.source_version:
+            raise ValueError(f"A Tablassert build for {pipeline_metadata.source} requires a resolved source version.")
+        config = tablassert.load(pipeline_metadata.source)
+        source_data_output_dir = get_source_data_directory(pipeline_metadata)
+        Path.mkdir(source_data_output_dir, exist_ok=True)
+        download_yaml_file = tablassert.write_download_yaml(
+            source=pipeline_metadata.source,
+            config=config,
+            dataset_version=pipeline_metadata.source_version,
+            output_dir=source_data_output_dir,
+        )
+        logger.info(f"Downloading source data for {pipeline_metadata.source}...")
+        report = kghub_download(
+            yaml_file=str(download_yaml_file), output_dir=str(source_data_output_dir), ignore_cache=overwrite
+        )
+        record_download_metadata(pipeline_metadata, report)
+        return
+
     # Find the path to the source-specific download yaml
     download_yaml_file = INGESTS_PARSER_PATH / pipeline_metadata.source / "download.yaml"
     # If the download yaml does not exist, assume it isn't needed for this source and back out
@@ -189,6 +232,30 @@ def is_transform_complete(pipeline_metadata: PipelineMetadata):
     if not (nodes_file_path and nodes_file_path.exists()):
         return False
 
+    # A Tablassert transform is only complete when the graph pair, the RIG snapshot, and the
+    # recorded execution identity all exist; a partial output never counts as complete.
+    if tablassert.declares(pipeline_metadata.source):
+        transform_metadata_path = get_versioned_file_paths(
+            file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
+        )
+        if not transform_metadata_path.exists():
+            logger.info(f"Transform {pipeline_metadata.source}: KGX files exist but transformation metadata was not found.")
+            return False
+        with transform_metadata_path.open("r", encoding="utf-8") as transform_metadata_file:
+            recorded = json.load(transform_metadata_file)
+        if not recorded.get("tablassert_version") or not recorded.get("input_digest"):
+            logger.info(f"Transform {pipeline_metadata.source}: transform metadata is missing the recorded "
+                        f"Tablassert execution identity.")
+            return False
+        if not (edges_file_path and edges_file_path.is_file()):
+            logger.info(f"Transform {pipeline_metadata.source}: the transformed edges file was not found.")
+            return False
+        rig_snapshot = tablassert.rig_snapshot_path(pipeline_metadata)
+        if not (rig_snapshot and rig_snapshot.exists()):
+            logger.info(f"Transform {pipeline_metadata.source}: RIG snapshot was not found.")
+            return False
+        return True
+
     # Check if this is a nodes-only ingest based on max_edge_count
     max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
 
@@ -217,6 +284,11 @@ def transform(pipeline_metadata: PipelineMetadata):
     # the path for the versioned output subdirectory for this transform
     transform_output_dir = get_transform_directory(pipeline_metadata)
     Path.mkdir(transform_output_dir, parents=True, exist_ok=True)
+
+    # A Tablassert ingest has no koza transform: the isolated CLI validates, prunes, and publishes.
+    if tablassert.declares(source):
+        tablassert.transform(pipeline_metadata)
+        return
 
     # use Koza to load the config and run the transform
     config, runner = KozaRunner.from_config_file(
@@ -518,8 +590,11 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Generate test data and example edges
     test_data(pipeline_metadata)
 
-    # Get KGXKnowledgeSource metadata from the rig file
-    data_source_info = get_kgx_source_from_rig(pipeline_metadata.source)
+    # Get KGXKnowledgeSource metadata from the rig file. A Tablassert build reads the RIG snapshot
+    # downloaded with this dataset version instead of a committed file.
+    data_source_info = get_kgx_source_from_rig(
+        pipeline_metadata.source, rig_path=tablassert.rig_snapshot_path(pipeline_metadata)
+    )
     data_source_info.version = pipeline_metadata.source_version
 
     storage_url = (f"{INGESTS_STORAGE_URL}/{pipeline_metadata.source}/{pipeline_metadata.source_version}/"
@@ -627,7 +702,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     Path.mkdir(get_output_directory(pipeline_metadata), parents=True, exist_ok=True)
 
     # Download the source data
-    download(pipeline_metadata)
+    download(pipeline_metadata, overwrite)
     # Carry the recorded download timestamp (either new or from a previous download) into the
     # pipeline metadata so it surfaces in the build and release metadata outputs.
     pipeline_metadata.source_download_date = get_recorded_download_date(pipeline_metadata)
@@ -646,6 +721,9 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         )
     else:
         transform(pipeline_metadata)
+    # Restore the recorded Tablassert execution identity (or set it fresh from the transform) so the
+    # build version always includes it, on cached reruns and rebuilds alike.
+    tablassert.load_execution_identity(pipeline_metadata)
     if transform_only:
         return
 
