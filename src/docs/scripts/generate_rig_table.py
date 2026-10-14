@@ -6,15 +6,19 @@ from pathlib import Path
 
 
 def find_rig_files(base_path):
-    """Find all RIG YAML files in the ingests directory."""
+    """Find all RIG YAML files in the staged documentation directory.
+
+    The staged set (docs/rigs/) is the single source of truth for docs: stage_rigs.py copies every
+    committed RIG there and fetches every remote (Tablassert) RIG, so sources without a committed
+    RIG are still documented.
+    """
     rig_files = []
-    ingests_path = Path(base_path) / "src" / "translator_ingest" / "ingests"
+    rigs_path = Path(base_path) / "docs" / "rigs"
 
-    for rig_file in ingests_path.rglob("*rig*.yaml"):
-        if rig_file.name.endswith("-rig.yaml") or rig_file.name.endswith("_rig.yaml"):
-            rig_files.append(rig_file)
+    for rig_file in sorted(rigs_path.glob("*_rig.yaml")):
+        rig_files.append(rig_file)
 
-    return sorted(rig_files)
+    return rig_files
 
 
 def extract_rig_info(rig_file):
