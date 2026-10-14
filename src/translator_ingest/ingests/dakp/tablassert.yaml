@@ -1,0 +1,11 @@
+# Omit version to track the latest Tablassert release. For replay only: version: 19.7.0.
+# {version} in URLs is the dataset release from get_latest_version(), never the CLI version.
+nodes:
+  url: https://huggingface.co/datasets/SkyeAv/drug-approvals-kp/resolve/main/{version}/DRUG_APPROVALS_KP_{version}.nodes.ndjson
+  path: drug_approvals_kp_nodes.jsonl
+edges:
+  url: https://huggingface.co/datasets/SkyeAv/drug-approvals-kp/resolve/main/{version}/DRUG_APPROVALS_KP_{version}.edges.ndjson
+  path: drug_approvals_kp_edges.jsonl
+rig:
+  url: https://huggingface.co/datasets/SkyeAv/drug-approvals-kp/resolve/main/{version}/DRUG_APPROVALS_KP_{version}.RIG.yaml
+  path: drug_approvals_kp_rig.yaml
