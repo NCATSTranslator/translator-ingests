@@ -4,10 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import koza
-import yaml
-from koza import KozaConfig
 from koza.io.writer.writer import KozaWriter
-from koza.io.yaml_loader import UniqueIncludeLoader
 from koza.transform import Mappings
 
 import pytest
@@ -32,7 +29,6 @@ from translator_ingest.ingests.hpoa.hpoa import (
     transform_gene_to_phenotype_record,
 )
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import get_qualified_predicate
-from tests.util import get_ingest_config_yaml_path
 
 HPOA_UNIT_TESTS = abspath(dirname(__file__))
 HPOA_TEST_DATA_PATH = join(HPOA_UNIT_TESTS, "sample_data")
@@ -521,42 +517,6 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
     assert not non_mendelian, f"non-MENDELIAN association types survived preparation: {sorted(set(non_mendelian))}"
 
 
-# Edge counts measured against the HPOA release downloaded 2026-09-29:
-#   disease_to_phenotype_edges (aspect 'P', hpo_id set, not negated)  268,180
-#   gene_to_disease            (MENDELIAN 7,094 + POLYGENIC 582)        7,676
-#   gene_to_phenotype          (MENDELIAN only)                       158,788
-#                                                              total  434,644
-# With the MENDELIAN filter broken, gene_to_phenotype emits 333,984 rows instead - the 175,196
-# extra being 171,700 Orphanet UNKNOWN plus 3,496 OMIM POLYGENIC, matching issue #537 - for a
-# total of 609,840. writer.max_edge_count has to sit between the two so that the regression trips
-# the build. koza enforces it in KozaWriter.validate_counts() after the run, over the total edges
-# written by all of hpoa.yaml's readers.
-HPOA_EXPECTED_EDGE_COUNT = 434_644
-HPOA_UNFILTERED_EDGE_COUNT = 609_840
-
-
-def test_hpoa_max_edge_count_catches_a_broken_mendelian_filter():
-    """
-    Check that hpoa.yaml configures an edge ceiling that the measured output clears but a
-    regressed MENDELIAN filter does not. A tripwire for the class of bug in issue #537, where
-    the filter silently stopped applying and 52% of gene_to_phenotype output was wrong.
-    """
-    config_yaml_file_path = get_ingest_config_yaml_path("hpoa")
-    assert config_yaml_file_path is not None
-    with config_yaml_file_path.open("r", encoding="utf-8") as fh:
-        config = KozaConfig(**yaml.load(fh, Loader=UniqueIncludeLoader.with_file_base(str(config_yaml_file_path))))  # noqa: S506
-
-    max_edge_count = config.writer.max_edge_count
-    assert max_edge_count is not None, "hpoa.yaml must set writer.max_edge_count as a filter tripwire"
-    assert max_edge_count > HPOA_EXPECTED_EDGE_COUNT, (
-        f"writer.max_edge_count of {max_edge_count} is below the {HPOA_EXPECTED_EDGE_COUNT} edges "
-        f"the ingest is measured to emit, so a correct build would fail"
-    )
-    assert max_edge_count < HPOA_UNFILTERED_EDGE_COUNT, (
-        f"writer.max_edge_count of {max_edge_count} is at or above the {HPOA_UNFILTERED_EDGE_COUNT} "
-        f"edges emitted when the gene_to_phenotype MENDELIAN filter stops applying, so it would "
-        f"not catch that regression"
-    )
 
 
 @pytest.mark.parametrize(

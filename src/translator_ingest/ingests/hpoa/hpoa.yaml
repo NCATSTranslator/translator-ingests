@@ -1,12 +1,18 @@
 name: 'human_phenotype_ontology_annotations'
 
 writer:
-  # Measured against the 2026-09-29 HPOA release: 268,180 disease_to_phenotype
-  # + 7,676 gene_to_disease + 158,788 gene_to_phenotype = 434,644 edges.
-  # A gene_to_phenotype MENDELIAN filter that stops applying adds 175,196 more
-  # (171,700 Orphanet UNKNOWN + 3,496 OMIM POLYGENIC) for 609,840, so this ceiling
-  # leaves ~15% headroom for upstream growth while still failing that regression.
-  # Raise it deliberately when HPOA genuinely outgrows it, after checking why.
+  # A tripwire for the gene_to_phenotype MENDELIAN filter silently ceasing to
+  # apply, as in https://github.com/NCATSTranslator/translator-ingests/issues/537.
+  # koza enforces this over the total edges from all the readers below.
+  #
+  # For scale, the 2026-09-29 HPOA release gives roughly 435,000 edges
+  # (269k disease_to_phenotype + 8k gene_to_disease + 159k gene_to_phenotype),
+  # and roughly 610,000 if that filter stops applying - the difference being the
+  # Orphanet UNKNOWN and OMIM POLYGENIC gene_to_phenotype rows. This ceiling sits
+  # between the two, with headroom for upstream growth.
+  #
+  # If a build fails on this, check whether HPOA genuinely grew before raising it:
+  # a jump of this size is more likely to mean the filter broke again.
   max_edge_count: 500000
 
 readers:
