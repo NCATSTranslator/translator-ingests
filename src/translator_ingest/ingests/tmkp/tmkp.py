@@ -56,15 +56,7 @@ PREDICATE_REMAP = {
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
 # Map TMKP attribute names to Biolink slot names.
-
 TMKP_TO_BIOLINK_SLOT_MAP = {
-    # Space case variations (from YAML serialization)
-    "has evidence count": "evidence_count",
-    "has confidence score": "has_confidence_score",
-    # Snake_case variations that need mapping
-    "has_evidence_count": "evidence_count",
-    "supporting_publications": "publications",
-    "supporting_document": "publications",
     "extraction_confidence_score": "has_confidence_score",
 }
 
@@ -277,7 +269,11 @@ def get_latest_version() -> str:
     return "tmkp-2024-09-07"
 
 
-def parse_attributes(attributes: List[Dict[str, Any]], association: Association) -> None:
+def parse_attributes(
+    attributes: List[Dict[str, Any]],
+    association: Association,
+    protected_slots: frozenset[str] = frozenset(),
+) -> None:
     """
     Parse attribute objects and populate the association with supporting studies and knowledge sources.
 
@@ -288,6 +284,11 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
     - has_supporting_studies: Dict of Study objects containing TextMiningStudyResult objects
     - sources: Knowledge source attribution built from attribute data or defaults
     - Any other direct attributes found in the attribute list
+
+    :param attributes: Parsed '_attributes' objects from a TMKP edge record.
+    :param association: The association to mutate in place.
+    :param protected_slots: Slot names the caller has already determined. Source attributes
+        of the same name are ignored rather than overwriting the computed value.
     """
     text_mining_results: List[TextMiningStudyResult] = []
     primary_source = None
@@ -315,7 +316,10 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
 
                 if nested_type == "biolink:supporting_text":
                     tm_result.supporting_text = [nested_value] if nested_value else []
-                elif nested_type == "biolink:supporting_document":
+                elif nested_type == "biolink:publications":
+                    # Per-evidence provenance: the document this supporting_text came from.
+                    # Distinct from the edge-level 'biolink:publications' attribute, which
+                    # aggregates these across all evidence items.
                     tm_result.xref = [_normalize_publication_id(nested_value)] if nested_value else []
                 elif nested_type == "biolink:supporting_text_located_in":
                     tm_result.supporting_text_section_type = nested_value
@@ -347,19 +351,17 @@ def parse_attributes(attributes: List[Dict[str, Any]], association: Association)
             else:
                 supporting_sources.append(value)
 
+        elif slot_name in protected_slots:
+            # ingest already set this slot; the source value should not overwrite it.
+            continue
+
         elif hasattr(association, slot_name):
             setattr(association, slot_name, value)
 
         elif slot_name in TMKP_TO_BIOLINK_SLOT_MAP:
             biolink_slot = TMKP_TO_BIOLINK_SLOT_MAP[slot_name]
             if hasattr(association, biolink_slot):
-                if biolink_slot == "publications":
-                    raw_pubs = value.split("|") if isinstance(value, str) else (value or [])
-                    new_pubs = [_normalize_publication_id(p) for p in raw_pubs]
-                    existing = getattr(association, biolink_slot) or []
-                    setattr(association, biolink_slot, existing + new_pubs)
-                else:
-                    setattr(association, biolink_slot, value)
+                setattr(association, biolink_slot, value)
             elif biolink_slot not in _warned_unmapped_attrs:
                 logger.warning(
                     f"TMKP attribute '{attr_type}' is mapped to '{biolink_slot}', which is "
@@ -475,7 +477,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
     if attributes_json := record.get("_attributes"):
         attributes = json.loads(attributes_json)
-        parse_attributes(attributes, association)
+        parse_attributes(attributes, association, frozenset(assoc_kwargs))
     else:
         # No attributes - set default sources
         association.sources = TMKP_DEFAULT_SOURCES

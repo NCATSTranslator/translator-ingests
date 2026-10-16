@@ -336,7 +336,6 @@ target_info:
           - UniProtKB
           - PR
         node_properties:
-          - in_taxon
           - equivalent_identifiers
         additional_notes:
           - |

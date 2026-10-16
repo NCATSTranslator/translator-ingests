@@ -69,8 +69,9 @@ ingest_info:
     Edges taken from RTX-KG2's SemMedDB slice, restricted to a selected set of 20 Biolink
     predicates and to evidence-bearing records (more than 3 supporting publications), with
     additional filtering to remove low-value predicates, domain/range-incoherent edges, and
-    upstream-dropped predicates. Nodes are emitted only for the subject/object endpoints of
-    included edges.
+    upstream-dropped predicates. Supporting publications are then filtered by LLM PMID-checker
+    verdicts, and an edge is dropped when none of its publications survive. Nodes are emitted
+    only for the subject/object endpoints of included edges.
 
   relevant_files:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl (RTX-KG2 SemMedDB slice)"
@@ -79,7 +80,16 @@ ingest_info:
         KGX-compatible edges with Biolink predicates, literature evidence (publications,
         publications_info), kg2_ids, optional qualifiers, and a domain_range_exclusion flag.
         Downloaded via semmeddb/download.yaml; the decompressed JSONL is the Koza reader input.
-        This is the only file downloaded by this ingest.
+    - file_name: "semmeddb_pmid_checker_results_raw_keyed.parquet (LLM PMID-checker verdicts)"
+      location: "https://rtx-kg2-public.s3.us-west-2.amazonaws.com/semmeddb_pmid_checker_results_raw_keyed.parquet"
+      description: >-
+        Per-publication verdicts from the LLM PMID checker (RTXteam/LLM_PMID_Checker), one row per
+        (subject_curie, predicate, object_curie, PMID) with a support value of yes, no, maybe, or
+        no_abstract. Keyed by the raw kg2.10.3 subject/object ids and by the predicate this
+        transform emits (after the predicate remap), not by normalized ids, so
+        the join does not drift with Babel releases. Re-keyed from the checker's normalized-id
+        output by analysis/rekey_pmid_verdicts.py. Downloaded via semmeddb/download.yaml and read
+        once at the start of the transform; it is not a Koza reader input.
 
   included_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
@@ -126,7 +136,10 @@ ingest_info:
         considers them non-informative for knowledge graph use.
       rationale: "Align with BTE filtering of low-value predicates hidden inside biolink:related_to."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
-      filtered_records: "Edges with 3 or fewer supporting publications."
+      filtered_records: >-
+        Edges with 3 or fewer supporting publications in the source record. This threshold is
+        applied before PMID-checker filtering, so an emitted edge can end up with fewer than 4
+        publications (as few as 1) once rejected publications are removed.
       rationale: "Ensure each edge has meaningful literature support; singleton text-mining extractions are noisy."
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: "Edges where the KG2 domain_range_exclusion flag is True."
@@ -142,16 +155,33 @@ ingest_info:
         Per NCATSTranslator/Feedback#1213, KG2 emits chemical -> phenotype/disease/anatomy edges
         qualified as 'causes activity_or_abundance increased', which downstream reasoners chain on
         to produce nonsensical 'X has increased activity caused by Y' inferences.
-    # AB: Publication cap ported from semmeddb_pmid_cap branch (#342).
+    - file_name: "kg2.10.3-semmeddb-edges.jsonl"
+      filtered_records: >-
+        Individual publications (not whole edges) whose LLM PMID-checker verdict for that edge is
+        'no' or 'maybe'. Publications with a 'yes' or 'no_abstract' verdict, or with no verdict row
+        at all, are kept. A removed PMID is also dropped from publications_info, so no supporting
+        study is built for it. An edge whose publications are all rejected is dropped entirely,
+        and its endpoints are not emitted as nodes unless another surviving edge uses them.
+      rationale: >-
+        SemRep extractions are noisy, and many cited sentences do not actually support the
+        asserted relationship. The PMID checker judges each (edge, publication) pair against the
+        abstract. 'maybe' is dropped for now and is expected to be refined in a later second pass.
+        Because an unmatched key means "keep", the transform fails if fewer than 95% of checked
+        edges have any verdict row, so a broken or drifted join cannot silently disable the filter.
+        Filtering is disabled when the SEMMEDDB_UNFILTERED environment variable is set to 1, true,
+        or yes, which is how the pre-filter edge set is regenerated for a new checker pass. That
+        build reports a distinct source version (semmeddb-2023-kg2.10.3-unfiltered) so filtered and
+        unfiltered builds stay separate.
     # Some SemMedDB edges have 60k+ PMIDs, producing massive output rows.
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
       filtered_records: >-
-        For edges with more than 200 publications, the publication list is trimmed
-        to the union of top-100 by confidence score (min of subject/object score) and
-        top-100 by recency (publication year), yielding at most ~200 PMIDs per edge.
-        This only affects rare extreme cases (some edges have 60k+ PMIDs) and is disabled
-        when the SEMMEDDB_UNCAPPED=1 environment variable is set.
-      rationale: "Prevent oversized edges while retaining the most informative publications by two orthogonal strategies. Configurable for uncapped builds."
+        After PMID-checker filtering, edges with more than 1000 remaining publications are trimmed
+        to the 1000 most recent (highest PMID number, since PMIDs are assigned chronologically).
+        Capped-out PMIDs are also dropped from publications_info. This only affects a small tail of
+        very large edges. The cap is disabled when the SEMMEDDB_UNCAPPED environment variable is set
+        to 1, true, or yes, in which case the ingest reports a distinct source version
+        (semmeddb-2023-kg2.10.3-publications-uncapped) so capped and uncapped builds stay separate.
+      rationale: "Prevent oversized edges while keeping the most recent literature. Configurable for uncapped builds."
 
   future_considerations:
     - category: edge_property_content
@@ -207,10 +237,12 @@ target_info:
   # near-identical blocks. What genuinely differs between edges is the qualifier payload, the
   # emitted Association subclass, and the subject/object categories that follow from them, which is
   # what these four edge types capture. Counts below are from a full transform run of the
-  # semmeddb-2023-kg2.10.3 slice (1,725,595 edges).
+  # semmeddb-2023-kg2.10.3 slice with PMID-checker filtering applied (1,420,851 edges emitted, of
+  # 1,725,595 that passed the other filters; 304,744 were dropped because every publication was
+  # rejected).
   edge_type_info:
 
-    # 1. Qualified biolink:affects edges (23,513). Both endpoints are constrained to activity- or
+    # 1. Qualified biolink:affects edges (16,146). Both endpoints are constrained to activity- or
     #    abundance-bearing entities by the aspect check in _aspect_target_is_valid.
     - subject_categories:
         - biolink:Gene
@@ -277,7 +309,7 @@ target_info:
           Protein, or ChemicalEntity, the qualifiers are stripped and the edge is emitted as a plain
           biolink:affects Association instead, which places it in the unqualified edge type below.
 
-    # 2. biolink:causes edges from a gene or protein to a disease or phenotype (2,470).
+    # 2. biolink:causes edges from a gene or protein to a disease or phenotype (1,800).
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -322,16 +354,14 @@ target_info:
           other subject/object combination carry no qualifier and fall into the unqualified edge
           type below.
 
-    # 3. biolink:close_match (234). Identity mapping rather than a biological claim.
+    # 3. biolink:close_match (123). Identity mapping rather than a biological claim.
     - subject_categories:
-        - biolink:Gene
         - biolink:Protein
         - biolink:ChemicalEntity
         - biolink:NamedThing
       predicates:
         - biolink:close_match
       object_categories:
-        - biolink:Gene
         - biolink:ChemicalEntity
         - biolink:NamedThing
       knowledge_level:
@@ -359,7 +389,7 @@ target_info:
           biolink:NamedThing appears here as a transient placeholder for endpoints the transform
           could not type, not as a real category. See the notes on the biolink:NamedThing node type.
 
-    # 4. Everything else, emitted as a plain biolink:Association with no qualifiers (1,699,378).
+    # 4. Everything else, emitted as a plain biolink:Association with no qualifiers (1,402,782).
     - subject_categories:
         - biolink:Gene
         - biolink:Protein
@@ -520,7 +550,7 @@ target_info:
       consideration: >-
         The plain-Association edge type still carries 18 predicates in one multivalued list rather
         than a predicate plus its descendants. Splitting it per predicate was measured against the
-        data and rejected for now: six of those predicates already use all seven subject and object
+        data and rejected for now: four of those predicates already use all seven subject and object
         categories, and every one of them has a NamedThing endpoint on a large share of its edges,
         so per-predicate blocks would repeat the same categories, provenance, and UI explanation 18
         times. Revisit if node typing becomes richer than CURIE-prefix matching, since tighter

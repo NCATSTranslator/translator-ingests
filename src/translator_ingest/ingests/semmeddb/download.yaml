@@ -1,3 +1,5 @@
 ---
 - url: https://rtx-kg2-public.s3.us-west-2.amazonaws.com/kg2.10.3-semmeddb-edges.jsonl.gz
   local_name: kg2.10.3-semmeddb-edges.jsonl.gz
+- url: https://rtx-kg2-public.s3.us-west-2.amazonaws.com/semmeddb_pmid_checker_results_raw_keyed.parquet
+  local_name: semmeddb_pmid_checker_results_raw_keyed.parquet

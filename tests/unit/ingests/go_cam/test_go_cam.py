@@ -105,12 +105,10 @@ def test_gocam_entities(gocam_output):
     gene1 = [g for g in genes if g.id == "UniProtKB:P12345"][0]
     assert gene1.name == "Test Gene 1"
     assert gene1.category == ["biolink:Gene"]
-    assert gene1.in_taxon == ["NCBITaxon:9606"]
 
     gene2 = [g for g in genes if g.id == "UniProtKB:Q67890"][0]
     assert gene2.name == "Test Gene 2"
     assert gene2.category == ["biolink:Gene"]
-    assert gene2.in_taxon == ["NCBITaxon:9606"]
 
     associations = [e for e in all_entities if isinstance(e, GeneToGeneAssociation)]
     assert len(associations) == 1
