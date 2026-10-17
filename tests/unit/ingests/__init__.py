@@ -93,16 +93,19 @@ def _item_matches_expected(item: Any, expected: dict[str, Any]) -> bool:
         if not hasattr(item, field):
             return False
         actual = getattr(item, field)
-        if isinstance(value
-                , list) and value and isinstance(value[0], dict):
-            # Nested Pydantic collection: each expected sub-dict must be
-            # satisfied by at least one element in the actual sub-collection.
-            if not actual:
-                return False
-            for sub in value:
-                if not _validate_pydantic_collection(sub, actual):
+        if isinstance(value, list):
+            if value and isinstance(value[0], dict):
+                # Nested Pydantic collection: each expected sub-dict must be
+                # satisfied by at least one element in the actual sub-collection.
+                if not actual:
                     return False
-        else:
+                for sub in value:
+                    if not _validate_pydantic_collection(sub, actual):
+                        return False
+        elif isinstance(value, dict):
+            if not _item_matches_expected(actual, value):
+                return False
+        else: # maybe just a scalar?
             if actual != value:
                 return False
     return True
@@ -190,7 +193,8 @@ def _match_edge(
 
     # Sanity check: don't put any expected_edge test data slot that isn't in target slots?
     assert all(association_slot in target_slots for association_slot in expected_edge), \
-    "Sample expected edge data has slot field(s) unexpected in list of validation 'edge_test_slots'"
+    (f"Sample expected edge data slots '{','.join(expected_edge.keys())}' "
+     f"are not a strict subset of target slots '{','.join(target_slots)}'")
 
     for association_slot in target_slots:
         if association_slot in returned_edge and association_slot in expected_edge:
@@ -229,15 +233,15 @@ def _match_edge(
             elif isinstance(expected_slot_value, dict):
                 if not _validate_pydantic_collection(expected_slot_value, reasv):
                     return (
-                        f"Expected fields {expected_slot_value!r} not found in any returned "
+                        f"Expected fields {expected_slot_value!r} not found in any returned " +
                         f"'{association_slot}' entry in '{reasv!r}'"
                     )
             else:
                 # Scalar value test
                 if reasv != expected_slot_value:
                     return (
-                        f"Value '{expected_slot_value!r}' "
-                        + f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
+                        f"Value '{expected_slot_value!r}' " +
+                        f"for slot '{association_slot}' not equal to returned edge value '{reasv!r}'?"
                     )
 
     # If we got to here, then success!
