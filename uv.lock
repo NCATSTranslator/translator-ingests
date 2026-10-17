@@ -353,7 +353,7 @@ dev = [
     { name = "nbclassic" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "resource-ingest-guide-schema", specifier = ">=0.1.5" },
-    { name = "ruff", specifier = ">=0.12.8" },
+    { name = "ruff", specifier = "==0.14.14" },
 ]
 
 [[package]]
