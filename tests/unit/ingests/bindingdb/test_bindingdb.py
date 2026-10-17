@@ -106,8 +106,6 @@ NODE_TEST_SLOTS = (
     "id",
     "name",
     "category",
-    "in_taxon",
-    "in_taxon_label"
 )
 
 # list of slots whose values are

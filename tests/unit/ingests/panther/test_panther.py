@@ -57,7 +57,6 @@ def mock_koza_transform() -> koza.KozaTransform:
 # to be checked in a result node
 NODE_TEST_SLOTS = (
     "id",
-    "in_taxon",
     "category"
 )
 
@@ -143,12 +142,10 @@ def test_prepare_panther_data_filters_excluded_species():
             [
                 {
                     "id": "HGNC:11477",
-                    "in_taxon": ["NCBITaxon:9606"],
                     "category": ["biolink:Gene"]
                 },
                 {
                     "id": "RGD:1564893",
-                    "in_taxon": ["NCBITaxon:10116"],
                     "category": ["biolink:Gene"]
                 },
                 {
@@ -217,12 +214,10 @@ def test_prepare_panther_data_filters_excluded_species():
             [
                 {
                     "id": "ENSEMBL:ENSG00000275949",
-                    "in_taxon": ["NCBITaxon:9606"],
                     "category": ["biolink:Gene"]
                 },
                 {
                     "id": "MGI:99431",
-                    "in_taxon": ["NCBITaxon:10090"],
                     "category": ["biolink:Gene"]
                 },
                 {
@@ -291,12 +286,10 @@ def test_prepare_panther_data_filters_excluded_species():
             [
                 {
                     "id": "UniProtKB:A6NNC1",
-                    "in_taxon": ["NCBITaxon:9606"],
                     "category": ["biolink:Gene"]
                 },
                 {
                     "id": "RGD:7561849",
-                    "in_taxon": ["NCBITaxon:10116"],
                     "category": ["biolink:Gene"]
                 },
                 {

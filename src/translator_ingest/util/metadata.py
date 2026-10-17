@@ -4,12 +4,25 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field, fields, asdict
 from typing import Any, Dict
 
-from orion import KGXKnowledgeSource
+from orion import KGXGraphMetadata, KGXKnowledgeSource
 
 from translator_ingest import INGESTS_PARSER_PATH
 
 # Matches a semantic version of the form MAJOR.MINOR.PATCH (e.g. "1.0.0").
 SEMANTIC_VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+
+# ORION namespaces the graph metadata terms it defines as `orion:`. This pipeline computes the values it
+# publishes, and they do not always mean what ORION's do - a build version here is an underscore-joined
+# composite of pipeline versions, where ORION's is a hash of its own inputs. The terms are published under a
+# translator-ingests vocabulary instead, so consumers can tell which vocabulary defines what they are reading.
+ORION_VOCABULARY = "orion"
+TRANSLATOR_VOCABULARY = "translator"
+TRANSLATOR_VOCABULARY_URL = "https://github.com/NCATSTranslator/translator-ingests"
+
+# Terms of the translator-ingests vocabulary that are referred to by name elsewhere.
+TRANSLATOR_BUILD_VERSION = f"{TRANSLATOR_VOCABULARY}:buildVersion"
+TRANSLATOR_NODE_COUNT = f"{TRANSLATOR_VOCABULARY}:nodeCount"
+TRANSLATOR_EDGE_COUNT = f"{TRANSLATOR_VOCABULARY}:edgeCount"
 
 
 @dataclass
@@ -118,6 +131,33 @@ def next_release_version(previous_release_version: str | None) -> str:
         return "1.0.0"
     major, minor, patch = (int(part) for part in match.groups())
     return f"{major}.{minor}.{patch + 1}"
+
+
+def _to_translator_vocabulary(value: Any) -> Any:
+    """Recursively rename every ORION vocabulary term in a graph metadata value to its translator term."""
+    if isinstance(value, dict):
+        return {_to_translator_term(key): _to_translator_vocabulary(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_to_translator_vocabulary(item) for item in value]
+    return value
+
+
+def _to_translator_term(key: str) -> str:
+    """Rename a single ORION vocabulary term, leaving terms of every other vocabulary alone."""
+    prefix, separator, term = key.partition(":")
+    if separator and prefix == ORION_VOCABULARY:
+        return f"{TRANSLATOR_VOCABULARY}:{term}"
+    return key
+
+
+def to_translator_graph_metadata(graph_metadata: KGXGraphMetadata) -> Dict[str, Any]:
+    """Serialize graph metadata using the translator-ingests vocabulary in place of ORION's."""
+    translator_metadata = _to_translator_vocabulary(graph_metadata.to_dict())
+    # The prefix is declared in the context as well as used by the terms, and is not itself a term.
+    context = translator_metadata["@context"]
+    context.pop(ORION_VOCABULARY, None)
+    context[TRANSLATOR_VOCABULARY] = TRANSLATOR_VOCABULARY_URL
+    return translator_metadata
 
 
 def get_kgx_source_from_rig(source: str) -> KGXKnowledgeSource:
