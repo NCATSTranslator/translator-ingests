@@ -1,0 +1,7 @@
+channel,predicate,family,gt_150,gt_300,gt_400,gt_500,gt_600,gt_700,gt_750
+neighborhood,genetic_neighborhood_of,gene,0,0,0,0,0,0,0
+cooccurence,genetically_interacts_with,gene,134894,14612,3404,298,0,0,0
+fusion,gene_fusion_with,molecular,15638,5758,3520,2214,1382,876,706
+experiments,physically_interacts_with,molecular,940170,239080,185548,147542,122230,102924,98684
+textmining,interacts_with,molecular,4384932,1313110,703298,415728,233718,139772,105086
+coexpression,coexpressed_with,coexpression,818272,131624,59140,27312,20034,13032,11996
