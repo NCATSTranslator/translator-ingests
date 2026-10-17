@@ -112,7 +112,7 @@ def pmid_key_expr(column: str) -> pl.Expr:
     """
     return (
         pl.col(column)
-        .cast(pl.Utf8)
+        .cast(pl.String)
         .str.strip_chars()
         .str.replace(r"(?i)^pmid:", "")
         .alias("pmid_key")
@@ -162,10 +162,10 @@ def load_edge_pairs(edges_path: Path) -> tuple[pl.DataFrame, int, int]:
 
     schema = {
         "edge_idx": pl.Int64,
-        "subject": pl.Utf8,
-        "predicate": pl.Utf8,
-        "object": pl.Utf8,
-        "pmid": pl.Utf8,
+        "subject": pl.String,
+        "predicate": pl.String,
+        "object": pl.String,
+        "pmid": pl.String,
     }
     pairs = pl.concat(frames, rechunk=True) if frames else pl.DataFrame(schema=schema)
     pairs = pairs.with_columns(pmid_key_expr("pmid")).drop("pmid")
@@ -183,7 +183,7 @@ def build_verdicts(results_path: Path, no_abstract_path: Path | None) -> pl.Data
         .rename(rename)
         .with_columns(
             pmid_key_expr("PMID"),
-            pl.col("support").cast(pl.Utf8).str.to_lowercase().str.strip_chars().alias("support"),
+            pl.col("support").cast(pl.String).str.to_lowercase().str.strip_chars().alias("support"),
         )
         .select([*JOIN_KEYS, "support"])
     )
