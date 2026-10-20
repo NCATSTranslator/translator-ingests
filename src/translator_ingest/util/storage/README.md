@@ -28,13 +28,16 @@ The S3 bucket mirrors the local directory structure with two main directories:
 
 ## Upload Workflow
 
-The full upload pipeline consists of three steps:
+The full upload pipeline consists of four steps:
 
 ```bash
 make run        # Run the full ingest pipeline (download, transform, normalize, validate)
 make release    # Generate release archives for each source
+make merge-all  # Build multi-source KGs from those releases
 make upload     # Upload to S3 and cleanup old EBS versions
 ```
+
+Releases are generated before merging because multi-source KGs are built from the source releases.
 
 When you run upload, the entire data and releases directories for each source are uploaded to S3. The upload always overwrites existing files (rsync-like behavior), so it's safe to re-run multiple times.
 

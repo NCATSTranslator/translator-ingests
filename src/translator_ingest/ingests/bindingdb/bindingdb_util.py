@@ -9,11 +9,11 @@ from math import log10
 import polars as pl
 import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    AffinityParameterEnum as ape,
-    AffinityMeasurement,
-    BinaryRelationEnum as bre
+    BinaryRelationEnum as bre,
+    ProteinLigandAssayResult,
+    QuantityValue,
+    Study,
 )
-from translator_ingest.util.transform_utils import entity_id
 
 #
 # Core BindingDb Record Field Name Keys - currently ignored fields commented out
@@ -27,11 +27,13 @@ SOURCE_ORGANISM = "Target Source Organism According to Curator or DataSource"
 
 # Ignoring pKon and pKoff for now - since they
 # are not concentration-driven affinity parameters
+# Keys are ProteinLigandAssayResult field names, since biolink-model 4.4.4 carries each
+# affinity parameter as its own typed slot rather than as an enum value on a measurement.
 AFFINITY_PARAMETERS = {
-    ape.pKi: "Ki (nM)",
-    ape.pIC50: "IC50 (nM)",
-    ape.pKd: "Kd (nM)",
-    ape.pEC50: "EC50 (nM)",
+    "pKi": "Ki (nM)",
+    "pIC50": "IC50 (nM)",
+    "pKd": "Kd (nM)",
+    "pEC50": "EC50 (nM)",
 }
 
 # An upper filter threshold of 1.0e-6 (1 micromole)
@@ -259,11 +261,19 @@ def filter_affinity_values(
     return df
 
 
-def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityMeasurement]]:
-    affinity_parameter: ape
-    measurements: Optional[list[AffinityMeasurement]] = None
-    for affinity_parameter, column in AFFINITY_PARAMETERS.items():
-        if column in record and record[column]:
+def get_affinity_measurements(record: dict[str, Any]) -> dict[str, QuantityValue]:
+    """
+    Parse the affinity columns of a BindingDb record into QuantityValue measurements.
+
+    Returns a mapping of ProteinLigandAssayResult field name ("pKi", "pIC50", ...) to the
+    measured value, suitable for splatting into that class.
+
+    :param record: a BindingDb data record.
+    :return: measurements keyed by assay-result field name; empty when none are present.
+    """
+    measurements: dict[str, QuantityValue] = {}
+    for parameter, column in AFFINITY_PARAMETERS.items():
+        if record.get(column):
             value: str = record[column]
             value = value.strip()
             has_binary_relation: bre
@@ -279,16 +289,41 @@ def get_affinity_measurements(record: dict[str, Any]) -> Optional[list[AffinityM
             # Adjust BindingDb nominal nanomolar values to actual float values then transform
             # to a linearized negative base 10 logarithm ("pK") value in which a higher
             # real value represents higher binding affinity at lower ligand concentrations
-            affinity = -log10(float(value)*nM)
-
-            affinity_measurement = AffinityMeasurement(
-                id=entity_id(),
-                affinity_parameter=affinity_parameter,
-                affinity=affinity,
-                has_binary_relation=has_binary_relation
+            measurements[parameter] = QuantityValue(
+                has_numeric_value=-log10(float(value)*nM),
+                has_binary_relation=has_binary_relation,
             )
-            if measurements is None:
-                measurements = [affinity_measurement]
-            else:
-                measurements.append(affinity_measurement)
     return measurements
+
+
+def get_bindingdb_assay_study(
+        publication_id: str,
+        edge_id: str,
+        record: dict[str, Any]
+) -> Optional[dict[str, Study]]:
+    """
+    Wrap a record's affinity measurements as a Study-wrapped ProteinLigandAssayResult.
+
+    biolink-model 4.4.4 removed AffinityMeasurement and the has_affinity slot in favour of
+    ProteinLigandAssayResult, which is a StudyResult. No slot links an Association to a
+    StudyResult directly, so the route is Association -> has_supporting_studies -> Study ->
+    has_study_results -> ProteinLigandAssayResult. The publication identifies the Study,
+    since a BindingDb record's assay is reported by its publication.
+
+    :param publication_id: identifier of the publication acting as the Study.
+    :param edge_id: identifier of the edge, reused to identify the assay result.
+    :param record: a BindingDb data record.
+    :return: a single-entry mapping of study id to Study, or None when the record has no
+             affinity measurements.
+    """
+    affinity_measurements = get_affinity_measurements(record)
+    if not affinity_measurements:
+        return None
+    return {
+        publication_id: Study(
+            id=publication_id,
+            has_study_results=[
+                ProteinLigandAssayResult(id=edge_id, **affinity_measurements)
+            ],
+        )
+    }
