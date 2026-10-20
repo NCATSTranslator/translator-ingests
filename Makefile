@@ -1,6 +1,10 @@
 ROOTDIR = $(shell pwd)
 RUN = uv run
 
+# Opt in to finishing independent sources while preserving a nonzero batch status.
+KEEP_GOING ?= 0
+SOURCE_RUN_FLAGS = $(if $(filter 1,$(KEEP_GOING)),--keep-going)
+
 # Graph ID for multisource graph target (default: translator_kg).
 # Graph definitions live in graphs.yaml; see src/translator_ingest/graphs.py.
 GRAPH_ID ?= translator_kg
@@ -156,7 +160,7 @@ test:
 
 .PHONY: run
 run:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix run-,$(SOURCES))
+	@$(MAKE) $(SOURCE_RUN_FLAGS) -j $(words $(SOURCES)) $(addprefix run-,$(SOURCES))
 
 .PHONY: run-%
 run-%:
@@ -165,7 +169,7 @@ run-%:
 
 .PHONY: transform
 transform:
-	@$(MAKE) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
+	@$(MAKE) $(SOURCE_RUN_FLAGS) -j $(words $(SOURCES)) $(addprefix transform-,$(SOURCES))
 
 .PHONY: transform-%
 transform-%:
