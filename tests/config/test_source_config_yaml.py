@@ -4,6 +4,8 @@ import yaml
 from koza import KozaConfig
 from koza.io.yaml_loader import UniqueIncludeLoader
 
+from translator_ingest.util.tablassert import declares
+
 from ..util import get_ingest_config_yaml_path, get_ingest_rig_yaml_path, ALL_SOURCE_IDS
 
 
@@ -24,6 +26,14 @@ def test_valid_source_config_yaml(source_id):
 
 @pytest.mark.parametrize("source_id", ALL_SOURCE_IDS)
 def test_valid_rig_yaml(source_id):
+    # A Tablassert source has no committed rig: its upstream RIG is fetched per build and staged
+    # for validate-rigs/docs (covered by the staging tests and the live integration tests).
+    if declares(source_id):
+        from translator_ingest.util.tablassert import load as load_tablassert
+
+        assert load_tablassert(source_id).rig.path.endswith(".yaml")
+        return
+
     # get the path to a specific rig yaml file
     rig_yaml_file_path = get_ingest_rig_yaml_path(source_id)
     if rig_yaml_file_path is None:
