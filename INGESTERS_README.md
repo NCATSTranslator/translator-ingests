@@ -22,7 +22,81 @@ Basic development environment setup:
 - Run `uv sync` often to update environ after pipeline updates
 - And update (git) dependencies regularly too: `uv add --upgrade biolink-model` and `uv add --upgrade koza`
 
-## Writing code based on template
+## Choosing an ingest kind
+
+Use **Koza** when raw tables, APIs, or custom data need to be mapped into Biolink nodes and edges, or when an
+existing graph needs substantial remodeling. Koza ingests are declared by a `<source>.yaml` koza config plus
+transform code (see the next section).
+
+Use **Tablassert** when upstream already supplies Tablassert-built KGX nodes, edges, and a generated Resource
+Ingest Guide (RIG). A Tablassert ingest executes no transform code of its own: the upstream CLI validates the
+graph and prunes non-compliant edges in an isolated environment, and the result is published as-is. Tablassert
+ingests are declared by a `tablassert.yaml` file (described below).
+
+## Writing a Tablassert ingest
+
+Create `<source>.py` containing `get_latest_version() -> str`, and a `tablassert.yaml` declaring the three
+upstream files. The presence of `tablassert.yaml` is the explicit declaration of the kind. Do not also create
+a `<source>.yaml` koza config, koza decorators, a `download.yaml`, or a committed RIG: the RIG is downloaded
+with the graph and snapshotted into every build.
+
+Example (the exact DAKP declaration):
+
+```yaml
+# Omit version to track the latest Tablassert release. For replay only: version: 19.7.0.
+# {version} in URLs is the dataset release from get_latest_version(), never the CLI version.
+nodes:
+  url: https://huggingface.co/datasets/SkyeAv/drug-approvals-kp/resolve/main/{version}/DRUG_APPROVALS_KP_{version}.nodes.ndjson
+  path: drug_approvals_kp_nodes.jsonl
+edges:
+  url: https://huggingface.co/datasets/SkyeAv/drug-approvals-kp/resolve/main/{version}/DRUG_APPROVALS_KP_{version}.edges.ndjson
+  path: drug_approvals_kp_edges.jsonl
+rig:
+  url: https://huggingface.co/datasets/SkyeAv/drug-approvals-kp/resolve/main/{version}/DRUG_APPROVALS_KP_{version}.RIG.yaml
+  path: drug_approvals_kp_rig.yaml
+```
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `version` | No | Tablassert CLI selection: `latest` by default, or an exact `X.Y.Z` release for replay. No ranges. |
+| `nodes`, `edges`, `rig` | Yes | Objects, each containing its own `url` and `path`. |
+| `*.url` | Yes | Absolute http(s) URL. `{version}` is the dataset release, not the CLI version. |
+| `*.path` | Yes | A distinct bare filename: no directories, no `.`/`..`, and not a reserved name (`download.yaml`, `tablassert.yaml`). The node and edge paths must end in `nodes.jsonl` and `edges.jsonl`. |
+
+Unknown keys are rejected. `get_latest_version()` usually delegates to the shared HuggingFace helper
+(`translator_ingest.util.hf_releases.get_latest_dataset_version`), which compares release versions numerically
+(`1.23.5` sorts after `1.9.0`).
+
+### Execution, warnings, and cache behavior
+
+The pipeline downloads the three declared files, resolves the CLI selection once per build, prunes a staged
+copy of the graph inside isolated `uvx`, then publishes the transform outputs plus the RIG snapshot and full
+metadata. A nonzero CLI exit stops the ingest and leaves the downloaded inputs untouched. Pruning removes whole
+edges; review the recorded prune report and counts.
+
+If the resolved Tablassert environment validates against a different `biolink-model` version than this repo
+pins, the pipeline logs a warning naming both versions and continues. Later repo-side validation still uses
+the repo's model and may disagree with the CLI's validation.
+
+The default `latest` selection is re-resolved when a build (re)runs, not when a completed transform is reused
+from cache. Rebuild with `make run SOURCES=dakp OVERWRITE=true`. The resolved tool versions, the input digest,
+and the source release are recorded in the build metadata and are part of the build identity, so changed
+inputs or a newer latest CLI produce a new build and release rather than being silently attributed to the old
+one. Mutable upstream URLs and `latest` selections are still not a full replay lock; explicit CLI pins and
+released metadata help with auditing.
+
+### Testing and running
+
+Write functional pytest cases over small local records and negative cases; no mock tests. Put tests that hit
+the real network or the real CLI under `tests/integration/` with the `integration` marker (`make test` runs
+them too). CI exercises a small real `uvx` prune, never a full dataset download. Review the declaration
+example, the recorded prune report, and the output counts.
+
+Commands: `make test`, `make run SOURCES=dakp OVERWRITE=true`, `make validate SOURCES=dakp`,
+`make validate-rigs`, `make docs-build`. The README's no-download guidance applies to unit tests; the
+Pydantic-construction explanation below applies to Koza ingests only.
+
+## Writing code based on template (Koza ingests)
 
 [Template](https://github.com/NCATSTranslator/translator-ingests/tree/main/src/translator_ingest/ingests/_ingest_template)
 

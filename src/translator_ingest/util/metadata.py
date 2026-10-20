@@ -1,12 +1,14 @@
+import json
 import re
 import yaml
 from datetime import datetime, timezone
 from dataclasses import dataclass, field, fields, asdict
+from pathlib import Path
 from typing import Any, Dict
 
 from orion import KGXGraphMetadata, KGXKnowledgeSource
 
-from translator_ingest import INGESTS_PARSER_PATH
+from translator_ingest import INGESTS_PARSER_PATH, INGESTS_RELEASES_PATH
 
 # Matches a semantic version of the form MAJOR.MINOR.PATCH (e.g. "1.0.0").
 SEMANTIC_VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
@@ -66,6 +68,16 @@ class PipelineMetadata:
     data: str | None = None
     # koza_config: the koza config yaml file associated with an ingest
     koza_config: Dict[str, Any] = field(default_factory=dict)
+    # The following three fields are only set for Tablassert ingests. They record the complete
+    # identity of the isolated Tablassert CLI that produced the outputs and one digest over the
+    # downloaded inputs, so a newer CLI or changed upstream bytes produce a new build (and thus a
+    # new release) instead of looking identical to the previous one.
+    # tablassert_version: the exact Tablassert CLI version the isolated environment resolved to
+    tablassert_version: str | None = None
+    # tablassert_biolink_version: the biolink-model version inside that isolated environment
+    tablassert_biolink_version: str | None = None
+    # input_digest: sha256 over the downloaded nodes bytes, edge bytes, and RIG bytes, in that order
+    input_digest: str | None = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PipelineMetadata":
@@ -95,6 +107,13 @@ class PipelineMetadata:
             self.merging_code_version,
             self.biolink_version,
         ]
+        # Tablassert identity and input digests are part of the build identity: without them, a
+        # rebuild against changed upstream bytes or a newer latest CLI would hash identically and
+        # release/merge would short-circuit on unchanged outputs that are no longer the same.
+        # Koza ingests record none of them and keep their exact existing build version.
+        versions += [version for version in
+                     (self.tablassert_version, self.tablassert_biolink_version, self.input_digest)
+                     if version is not None]
         return "_".join(versions)
 
     def get_release_metadata(self) -> Dict[str, Any]:
@@ -160,9 +179,18 @@ def to_translator_graph_metadata(graph_metadata: KGXGraphMetadata) -> Dict[str, 
     return translator_metadata
 
 
-def get_kgx_source_from_rig(source: str) -> KGXKnowledgeSource:
-    """Read a source's rig YAML file and create a KGXSource instance."""
-    rig_yaml_file = INGESTS_PARSER_PATH / source / f"{source}_rig.yaml"
+def get_kgx_source_from_rig(source: str, rig_path: Path | None = None) -> KGXKnowledgeSource:
+    """Read a source's RIG YAML and create a KGXKnowledgeSource instance.
+
+    Args:
+        source: id of the source whose RIG describes the upstream knowledge source.
+        rig_path: explicit RIG file to read (e.g. a Tablassert build's downloaded snapshot).
+            When omitted, the source's committed `<source>_rig.yaml` is used.
+
+    Raises:
+        FileNotFoundError: when neither the explicit nor the committed RIG file exists.
+    """
+    rig_yaml_file = rig_path if rig_path is not None else INGESTS_PARSER_PATH / source / f"{source}_rig.yaml"
     if not rig_yaml_file.exists():
         raise FileNotFoundError(f"Rig YAML file not found for {source}")
 
@@ -178,3 +206,49 @@ def get_kgx_source_from_rig(source: str) -> KGXKnowledgeSource:
         license=rig_source_info.get("terms_of_use_info", ""),
         url=rig_source_info.get("data_access_locations", "")
     )
+
+def get_kgx_source_from_release_metadata(source: str, release_metadata: "PipelineMetadata") -> KGXKnowledgeSource:
+    """Reconstruct a source's KGXKnowledgeSource from its released graph metadata.
+
+    HuggingFace deletes historical dataset directories, so a released Tablassert source's RIG can
+    no longer be re-fetched from upstream when a multisource merged graph is built. Releases
+    already carry their provenance: the `isBasedOn` entries of the released
+    `releases/<source>/<release_version>/graph-metadata.json` record exactly what the release was
+    built from. This reads that released metadata instead of any cache or network source.
+
+    Args:
+        source: id of the source whose release provenance to read.
+        release_metadata: the source's latest release metadata (provides the release version).
+
+    Returns:
+        The KGXKnowledgeSource recorded for the source in its release.
+
+    Raises:
+        FileNotFoundError: when the release's graph-metadata.json is missing.
+        ValueError: when the release records no entry, several entries, or a wrong version for the
+            source; released provenance must be unambiguous to be usable.
+    """
+    from translator_ingest.util.storage.local import IngestFileName  # local import avoids a storage/metadata cycle
+
+    if not release_metadata.release_version:
+        raise ValueError(f"Release metadata for {source} does not record a release version.")
+    release_graph_metadata_path = (Path(INGESTS_RELEASES_PATH) / source / release_metadata.release_version /
+                                   IngestFileName.GRAPH_METADATA_FILE)
+    if not release_graph_metadata_path.exists():
+        raise FileNotFoundError(f"Released graph metadata not found for {source}: {release_graph_metadata_path}")
+    with release_graph_metadata_path.open("r", encoding="utf-8") as graph_metadata_file:
+        graph_metadata = json.load(graph_metadata_file)
+    matches = [entry for entry in graph_metadata.get("isBasedOn", [])
+               if isinstance(entry, dict) and entry.get("identifier") == source]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Expected exactly one isBasedOn entry for {source} in {release_graph_metadata_path}, "
+            f"found {len(matches)}."
+        )
+    entry = matches[0]
+    if entry.get("version") != release_metadata.source_version:
+        raise ValueError(
+            f"Released provenance for {source} records version {entry.get('version')!r}, but the release "
+            f"metadata records source version {release_metadata.source_version!r}."
+        )
+    return KGXKnowledgeSource.from_dict(entry)
