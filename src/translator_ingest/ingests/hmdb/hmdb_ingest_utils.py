@@ -19,10 +19,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum
 )
 
-from bmt.pydantic import (
-    entity_id,
-    build_association_knowledge_sources
-)
+from bmt.pydantic import build_association_knowledge_sources
+
+from translator_ingest.util.transform_utils import entity_id
 
 
 def initialize_counts(koza_transform: koza.KozaTransform):
