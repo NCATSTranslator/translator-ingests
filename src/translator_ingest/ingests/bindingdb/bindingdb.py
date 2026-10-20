@@ -6,8 +6,8 @@ import polars as pl
 import koza
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    AffinityMeasurement,
     ChemicalGeneInteractionAssociation,
+    Study,
     Protein,
     KnowledgeLevelEnum,
     AgentTypeEnum
@@ -20,7 +20,7 @@ from translator_ingest.ingests.bindingdb.bindingdb_util import (
     extract_bindingdb_columns_polars,
     process_publications,
     filter_affinity_values,
-    get_affinity_measurements,
+    get_bindingdb_assay_study,
 
     CURATION_DATA_SOURCE_TO_INFORES_MAPPING,
     LINK_TO_LIGAND_TARGET_PAIR, web_string,
@@ -212,26 +212,23 @@ def transform_bindingdb_by_record(
     #       can eventually be made in between chemical types
     chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:" + pubchem_id)
 
-    # Taxon of protein target
-    taxon_label = record[SOURCE_ORGANISM]
-    taxon_id = SOURCE_ORGANISM_TO_TAXON_ID_MAPPING.get(taxon_label, None) if taxon_label else None
-
     # Unless otherwise advised, all BindingDb targets
     # are assumed to be (UniProt registered) proteins.
     target_name = record[TARGET_NAME]
     protein = Protein(
         id="UniProtKB:" + uniprot_id,
         name=target_name,
-        in_taxon=[f"NCBITaxon:{taxon_id}"] if taxon_id else None,
-        in_taxon_label=taxon_label
     )
 
     # Publications
-    publications = [record[PUBLICATION]]
+    publication = record[PUBLICATION]
+    edge_id: str = entity_id()
 
-    # Measurements of the molecular interaction affinity of
-    # chemical 'subject' to gene product target 'object'
-    affinity_measurements: Optional[list[AffinityMeasurement]] = get_affinity_measurements(record)
+    # Measurements of the molecular interaction affinity of chemical 'subject' to gene
+    # product target 'object', as a Study-wrapped ProteinLigandAssayResult.
+    bindingdb_assay_study: Optional[dict[str, Study]] = get_bindingdb_assay_study(
+        publication, edge_id, record
+    )
 
     # Sources
     target_label = web_string(target_name)
@@ -245,12 +242,12 @@ def transform_bindingdb_by_record(
 
     # Edge
     association = ChemicalGeneInteractionAssociation(
-        id=entity_id(),
+        id=edge_id,
         subject=chemical.id,
         predicate="biolink:directly_physically_interacts_with",
         object=protein.id,
-        has_affinity=affinity_measurements,
-        publications=publications,
+        has_supporting_studies=bindingdb_assay_study,
+        publications=[publication],
         sources=sources,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,

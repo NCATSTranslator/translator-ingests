@@ -7,7 +7,10 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.drug_rep_hub.drug_rep_hub import transform_drug_rep_hub_annotations
+from translator_ingest.ingests.drug_rep_hub.drug_rep_hub import (
+    create_chemical_role_association,
+    transform_drug_rep_hub_annotations,
+)
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
@@ -26,6 +29,22 @@ NODE_TEST_SLOTS = ("id", "name", "category")
 # list of slots whose values are
 # to be checked in a result edge
 ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources", "knowledge_level", "agent_type")
+
+
+def test_chemical_role_association_keeps_drug_and_role_distinct():
+    """Regression test for #281: the role node must not replace the drug node."""
+    chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:123", name="example drug")
+
+    chemical_role, association = create_chemical_role_association(
+        chemical=chemical,
+        indication="anticoagulant",
+        indication_info={"xref": "CHEBI:50249", "primary_name": "anticoagulant"},
+        predicate="biolink:has_chemical_role",
+    )
+
+    assert association.subject == chemical.id
+    assert association.object == chemical_role.id
+    assert association.subject != association.object
 
 
 @pytest.mark.parametrize(
