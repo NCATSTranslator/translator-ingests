@@ -1,0 +1,186 @@
+name: Open Health Data Carolina
+supporting_data_source_info:
+- infores_id: null
+  name: null
+  description: null
+  terms_of_use_info:
+    terms_of_use_url: null
+source_info:
+  infores_id: infores:openhealthdata-carolina
+  name: Open Health Data - Carolina
+  description: A graph based on infores:openhealthdata-carolina, providing access
+    to counts and frequencies of conditions, procedures, drug exposures, and patient
+    demographics, and the co-occurrence frequencies between them.
+  citations:
+  - https://github.com/NCATSTranslator/Translator-All/wiki/Open-Health-Data-at-Carolina
+  terms_of_use_info:
+    terms_of_use_url: null
+    terms_of_use_description: null
+    license name: null
+    license url: null
+  data_access_locations: https://stars.renci.org/var/data_services/ohd/unc_omop_2018_2022_kg.zip
+  data_provision_mechanisms:
+  - file_download
+  data_formats:
+  - zip
+  - csv
+  data_versioning_and_releases: null
+  additional_notes: null
+ingest_info:
+  ingest_categories:
+  - aggregation_interpreter
+  utility: Real clinical data from patients diagnosed with a condition, exposed to
+    a drug, or who had a procedure.
+  scope: Clinical correlations of patients to treatments.
+  relevant_files:
+  - file_name: unc_omop_2018_2022_kg.zip
+    location: https://stars.renci.org/var/data_services/ohd
+    description: Zip compressed csv file of OHD Carolina clinical data.
+  included_content:
+  - file_name: unc_omop_2018_2022_kg.csv
+    included_records: all
+    fields_used: subject,subject_name,object,object_name,predicate,chi_squared_p_value,log_odds_ratio,log_odds_ratio_95_ci,score,total_sample_size,primary_knowledge_source
+  future_considerations:
+  - category: null
+    consideration: null
+    relevant_files: null
+  additional_notes: null
+target_info:
+  infores_id: infores:ohd-carolina
+  edge_type_info:
+  - subject:
+    - biolink:MolecularMixture
+    - biolink:Protein
+    - biolink:Drug
+    - biolink:InformationContentEntity
+    - biolink:ComplexMolecularMixture
+    - biolink:PhenotypicFeature
+    - biolink:SmallMolecule
+    - biolink:Disease
+    - biolink:ChemicalEntity
+    - biolink:Gene
+    - biolink:OrganismTaxon
+    predicates:
+    - biolink:negatively_correlated_with
+    - biolink:positively_correlated_with
+    object:
+    - biolink:MolecularMixture
+    - biolink:Protein
+    - biolink:Drug
+    - biolink:InformationContentEntity
+    - biolink:ComplexMolecularMixture
+    - biolink:PhenotypicFeature
+    - biolink:SmallMolecule
+    - biolink:Disease
+    - biolink:ChemicalEntity
+    - biolink:Gene
+    - biolink:OrganismTaxon
+    knowledge_level:
+    - statistical_association
+    agent_type:
+    - data_analysis_pipeline
+    edge_properties:
+    - biolink:original_object
+    - biolink:log_odds_ratio_95_ci
+    - biolink:original_subject
+    - biolink:p_value
+    - biolink:log_odds_ratio
+    - biolink:total_sample_size
+    - biolink:Attribute
+  node_type_info:
+  - node_category: biolink:Disease
+    source_identifier_types:
+    - DOID
+    - OMIM
+    - UMLS
+    - MONDO
+    - EFO
+    node_properties:
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:PhenotypicFeature
+    source_identifier_types:
+    - EFO
+    - UMLS
+    - NCIT
+    - HP
+    node_properties:
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:Drug
+    source_identifier_types:
+    - UMLS
+    - RXCUI
+    node_properties:
+    - biolink:same_as
+  - node_category: biolink:SmallMolecule
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - CHEBI
+    - GTOPDB
+    - UNII
+    node_properties:
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:MolecularMixture
+    source_identifier_types:
+    - PUBCHEM.COMPOUND
+    - CHEBI
+    - UNII
+    node_properties:
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:ChemicalEntity
+    source_identifier_types:
+    - MESH
+    - CHEBI
+    - UMLS
+    - UNII
+    - DRUGBANK
+    - CHEMBL.COMPOUND
+    - KEGG.COMPOUND
+    node_properties:
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:Protein
+    source_identifier_types:
+    - UMLS
+    node_properties:
+    - biolink:same_as
+  - node_category: biolink:OrganismTaxon
+    source_identifier_types:
+    - NCBITaxon
+    node_properties:
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:ComplexMolecularMixture
+    source_identifier_types:
+    - MESH
+    node_properties:
+    - biolink:same_as
+  - node_category: biolink:Gene
+    source_identifier_types:
+    - NCBIGene
+    node_properties:
+    - dct:description
+    - biolink:same_as
+    - biolink:Attribute
+  - node_category: biolink:InformationContentEntity
+    source_identifier_types:
+    - UMLS
+    node_properties:
+    - biolink:same_as
+  future_considerations:
+  - category: null
+    consideration: null
+    relevant_files: null
+provenance_info:
+  contributions:
+  - Richard Bruskiewich - data modeling, code author
+  - Kara Fecho - domain expertise
+  - Hong Yi - data modeling, domain expertise

@@ -1,0 +1,2 @@
+subject,subject_name,object,object_name,predicate,chi_squared_p_value,log_odds_ratio,log_odds_ratio_95_ci,score,total_sample_size,primary_knowledge_source
+UMLS:C0496912,Neoplasm of uncertain or unknown behavior of larynx,HP:0012027,Laryngeal edema,biolink:positively_correlated_with,0.000,4.982,"[4.455178293670431, 5.509214309994943]",3.579,2344578,infores:openhealthdata-carolina
