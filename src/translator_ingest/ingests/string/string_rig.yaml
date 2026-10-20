@@ -276,12 +276,12 @@ target_info:
           - "infores:pdb"
           - "infores:kegg"
         ui_explanation: >-
-          Emitted in addition to the associated_with edge when STRING's experiments channel score exceeds
+          Emitted in addition to the 'associated_with' edge when STRING's experiments channel score exceeds
           the experimental evidence threshold (cutoff TBD: Vlado's recommendation pending). The experiments
           channel aggregates wet-lab assays — yeast two-hybrid, co-immunoprecipitation, AP-MS, protein
           complementation — curated from BioGRID, IntAct, MINT, and DIP. A high experiments score indicates
           direct physical binding between the two proteins has been demonstrated experimentally.
-          The stringdb_experimental_score captures the calibrated STRING experiments channel score for this pair.
+          The 'stringdb_experimental_score' captures the calibrated STRING experiments channel score for this pair.
         source_files:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
@@ -312,12 +312,12 @@ target_info:
           - "infores:hpa"        # https://www.proteinatlas.org/
           - "infores:ebi-pride"  # https://www.ebi.ac.uk/pride/
         ui_explanation: >-
-          Emitted in addition to the associated_with edge when STRING's coexpression channel score exceeds
+          Emitted in addition to the 'associated_with' edge when STRING's coexpression channel score exceeds
           the coexpression threshold (cutoff TBD: Vlado's recommendation pending). The coexpression channel
           is derived from correlation analyses of large transcriptomic datasets (microarray and RNA-seq),
           calibrated by STRING against curated pathway co-membership. A high coexpression score indicates
           the two proteins' coding genes show consistently correlated expression across biological conditions.
-          The stringdb_coexpression_score captures the calibrated STRING coexpression channel score for this pair.
+          The 'stringdb_coexpression_score' captures the calibrated STRING coexpression channel score for this pair.
         source_files:
           - 9606.protein.links.full.v12.0.txt.gz
           - 10090.protein.links.full.v12.0.txt.gz
