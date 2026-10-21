@@ -20,7 +20,7 @@ def find_rig_files(base_path):
 def extract_rig_info(rig_file):
     """Extract information from a RIG YAML file."""
     try:
-        with open(rig_file, "r") as f:
+        with open(rig_file, "r", encoding="utf-8") as f:
             content = f.read()
             # Handle YAML files that might not start with ---
             if not content.strip().startswith("---"):
@@ -73,7 +73,7 @@ def update_rig_index(table, docs_path):
     """Update the rig_index.md file with the generated table."""
     rig_index_path = Path(docs_path) / "src" / "docs" / "rig_index.md"
 
-    with open(rig_index_path, "r") as f:
+    with open(rig_index_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Replace content between markers
@@ -88,7 +88,7 @@ def update_rig_index(table, docs_path):
             content[: start_idx + len(start_marker)] + "\n" + table + "\n" + content[end_idx - len(end_marker) :]
         )
 
-        with open(rig_index_path, "w") as f:
+        with open(rig_index_path, "w", encoding="utf-8") as f:
             f.write(new_content)
 
         print(f"Updated {rig_index_path} with {len(table.split('\n')) - 3} RIGs")

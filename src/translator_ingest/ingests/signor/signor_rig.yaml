@@ -1,11 +1,13 @@
 # SIGnaling Network Open Resource (Signor) Reference Ingest Guide (RIG)
 name: SIGnaling Network Open Resource (Signor) Reference Ingest Guide
 
+#
+
 # Information about the Source of the data ingest
 source_info:
   infores_id: infores:signor
   name: SIGnaling Network Open Resource (Signor)
-  description: "SIGNOR 3.0, https://signor.uniroma2.it, is a public repository that captures causal information and represents it according to an 'activity-flow' model. SIGNOR provides freely-accessible static maps of causal interactions that can be tailored, pruned and refined to build dynamic and predictive models. Each signaling relationship is annotated with an effect (up/down-regulation) and with the mechanism (e.g. binding, phosphorylation, transcriptional activation, etc.) causing the regulation of the target entity. Since its latest release, SIGNOR has undergone a significant upgrade including: (i) a new website that offers an improved user experience and novel advanced search and graph tools; (ii) a significant content growth adding up to a total of approx. 33,000 manually-annotated causal relationships between more than 8900 biological entities; (iii) an increase in the number of manually annotated pathways, currently including pathways deregulated by SARS-CoV-2 infection or involved in neurodevelopment synaptic transmission and metabolism, among others; (iv) additional features such as new model to represent metabolic reactions and a new confidence score assigned to each interaction."
+  description: "SIGNOR 4.0, https://signor.uniroma2.it, is a public repository that captures causal information and represents it according to an 'activity-flow' model. SIGNOR provides freely-accessible static maps of causal interactions that can be tailored, pruned and refined to build dynamic and predictive models. Each signaling relationship is annotated with an effect (up/down-regulation) and with the mechanism (e.g. binding, phosphorylation, transcriptional activation, etc.) causing the regulation of the target entity. Since its latest release, SIGNOR has undergone a significant upgrade including: (i) a new website that offers an improved user experience and novel advanced search and graph tools; (ii) a significant content growth adding up to a total of approx. 33,000 manually-annotated causal relationships between more than 8900 biological entities; (iii) an increase in the number of manually annotated pathways, currently including pathways deregulated by SARS-CoV-2 infection or involved in neurodevelopment synaptic transmission and metabolism, among others; (iv) additional features such as new model to represent metabolic reactions and a new confidence score assigned to each interaction."
   citations:
     - "Prisca Lo Surdo, Marta Iannuccelli, Silvia Contino, Luisa Castagnoli, Luana Licata, Gianni Cesareni, Livia Perfetto, SIGNOR 3.0, the SIGnaling network open resource 3.0: 2022 update, Nucleic Acids Research, Volume 51, Issue D1, 6 January 2023, Pages D631–D637, https://doi.org/10.1093/nar/gkac883"
   terms_of_use_info:
@@ -63,9 +65,43 @@ ingest_info:
 target_info:
   edge_type_info:
     - subject_categories:
-        - biolink:Gene
         - biolink:Protein
         # - biolink:Proteinfamily
+      predicates:
+        - biolink:regulates
+      object_categories:
+        - biolink:Protein
+        # - biolink:Proteinfamily
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+              - biolink:causes
+        - property: biolink:object_aspect_qualifier
+          value_enumeration:
+              - activity_or_abundance
+              - activity
+              - abundance
+              - expression
+              - stability
+        - property: biolink:object_direction_qualifier
+          value_enumeration:
+            - downregulated
+            - upregulated
+        - property: biolink:species_context_qualifier
+          value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:signor
+      ## MHB: edge properties need to include "biolink" prefix.; QW: fixed, thanks for pointing this out!
+      edge_properties:
+        - biolink:publications
+        - biolink:has_confidence_score
+        - biolink:supporting_text
+      ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule"
+    - subject_categories:
         ## As discussed with Matt, for initial ingest we skipped complex nodes
         ## Note to Qi: There is a separate SIGNOR_complexes.csv which has the detail of each complex ID, e.g., SIGNOR-C14;IKK-complex;"O14920	  O15111	  Q9Y6K9"
         # - biolink:MacromolecularComplex
@@ -74,7 +110,6 @@ target_info:
       predicates:
         - biolink:regulates
       object_categories:
-        - biolink:Gene
         - biolink:Protein
         # - biolink:Proteinfamily
         ## Qi - review comment: Currently, no complex as object node
@@ -113,7 +148,7 @@ target_info:
         - biolink:publications
         - biolink:has_confidence_score
         - biolink:supporting_text
-      ui_explanation: "Signor records indicate the protein / protein family to 'regulate' another protein / complex / protein family / small molecule or complex / small molecule to 'regulate' another complex / protein / protein family / smallmolecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
+      ui_explanation: "Signor records indicate complex / small molecule to 'regulate' another complex / protein / protein family / smallmolecule - which maps best to the Biolink predicate 'regulates' with additional directional qualifier."
     ## Qi review comment: not in the initial ingestion as of 02/2026
     # - subject_categories:
     #     - biolink:Protein
@@ -138,12 +173,12 @@ target_info:
     #   ui_explanation: "Signor records indicate the protein to be 'form complex' another complex - which maps best to the Biolink predicate 'part of' with additional directional qualifier."
     - subject_categories:
         - biolink:ChemicalEntity
-        - biolink:Drug
+        ## Qi's comment: comment out to be consistent with RIG
+        # - biolink:Drug
         - biolink:SmallMolecule
       predicates:
         - biolink:affects       # MHB: this is now plural ('predicates'), and takes a list/array; QW: fixed
       object_categories:
-        - biolink:Gene
         - biolink:Protein
         # - biolink:MacromolecularComplex
         # - biolink:Proteinfamily
