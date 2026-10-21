@@ -447,14 +447,27 @@ def get_pathways(
     return pathway_list
 
 
-def get_go_cellular_id(name: str) -> str:
-    # TODO: Stub, rather need to use the Gene Ontology 'Cellular Component' term Koza map implementation
-    return f"HMDB:{name}"
+def get_go_cellular_id(name: str) -> tuple[str,str]:
+    """
+	Map a (sub)cellular locality of a metabolite
+	onto a Gene Ontology 'Cellular Component' ontology term.
+
+	:param name: str, text name from the original raw HMDB data entry field.
+	:return: tuple[str,str] of ontology term id and canonical name of the cellular compartment
+	"""
+    # TODO: Stub implementation, rather need to use the Gene Ontology 'Cellular Component' term Koza map implementation
+    return f"HMDB:{name}", name
 
 
-def get_uberon_id(name: str) -> str:
-    # TODO: Stub, rather need to use the UBERON Koza map implementation
-    return f"HMDB:{name}"
+def get_uberon_id(name: str) -> tuple[str,str]:
+    '''
+    Map an anatomical or biospecimen text specified locality of a metabolite onto an UBERON term.
+
+    :param name: str, text name from the original raw HMDB data entry field.
+    :return: tuple[str,str] of ontology term id and canonical name of the anatomical or biospecimen location.
+    '''
+    # TODO: Stub implementation, rather need to use the UBERON Koza map implementation
+    return f"HMDB:{name}",name
 
 
 def get_cellular_locations(
