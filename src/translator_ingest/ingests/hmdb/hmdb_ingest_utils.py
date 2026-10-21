@@ -446,6 +446,12 @@ def get_pathways(
 
     return pathway_list
 
+def normalize_name(text) -> str:
+    return (
+        text.lower()
+            .strip()
+            .replace("_", " ")
+    )
 
 def get_go_cellular_id(name: str) -> tuple[str,str]:
     """
@@ -455,6 +461,7 @@ def get_go_cellular_id(name: str) -> tuple[str,str]:
 	:param name: str, text name from the original raw HMDB data entry field.
 	:return: tuple[str,str] of ontology term id and canonical name of the cellular compartment
 	"""
+    name = normalize_name(name)
     # TODO: Stub implementation, rather need to use the Gene Ontology 'Cellular Component' term Koza map implementation
     return f"HMDB:{name}", name
 
@@ -466,6 +473,7 @@ def get_uberon_id(name: str) -> tuple[str,str]:
     :param name: str, text name from the original raw HMDB data entry field.
     :return: tuple[str,str] of ontology term id and canonical name of the anatomical or biospecimen location.
     '''
+    name = normalize_name(name)
     # TODO: Stub implementation, rather need to use the UBERON Koza map implementation
     return f"HMDB:{name}",name
 
