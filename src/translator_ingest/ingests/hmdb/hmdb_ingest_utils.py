@@ -479,9 +479,9 @@ def get_cellular_locations(
 
                     cellular_edge = Association(
                         id=entity_id(),
-                        subject=cellular_id,
+                        subject=metabolite_id,
                         predicate="biolink:located_in",
-                        object=metabolite_id,
+                        object=cellular_id,
                         sources=build_association_knowledge_sources(primary="infores:hmdb"),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent
@@ -529,9 +529,9 @@ def get_tissue_locations(
 
                     tissue_edge = Association(
                         id=entity_id(),
-                        subject=tissue_id,
+                        subject=metabolite_id,
                         predicate="biolink:located_in",
-                        object=metabolite_id,
+                        object=tissue_id,
                         sources=build_association_knowledge_sources(primary="infores:hmdb"),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent
@@ -579,9 +579,9 @@ def get_biospecimen_locations(
     
                     biospecimen_edge = Association(
                         id=entity_id(),
-                        subject=biospecimen_id,
+                        subject=metabolite_id,
                         predicate="biolink:located_in",
-                        object=metabolite_id,
+                        object=biospecimen_id,
                         sources=build_association_knowledge_sources(primary="infores:hmdb"),
                         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                         agent_type=AgentTypeEnum.manual_agent
