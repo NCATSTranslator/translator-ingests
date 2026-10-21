@@ -447,6 +447,16 @@ def get_pathways(
     return pathway_list
 
 
+def get_go_cellular_id(name: str) -> str:
+    # TODO: Stub, rather need to use the Gene Ontology 'Cellular Component' term Koza map implementation
+    return f"HMDB:{name}"
+
+
+def get_uberon_id(name: str) -> str:
+    # TODO: Stub, rather need to use the UBERON Koza map implementation
+    return f"HMDB:{name}"
+
+
 def get_cellular_locations(
         koza_transform,
         el,
@@ -474,7 +484,7 @@ def get_cellular_locations(
             if len(cellulars) > 0:
                 for c in cellulars:
                     cellular = str(c.text).strip()
-                    cellular_id = f"HMDB:{cellular}"
+                    cellular_id = get_go_cellular_id(cellular)
                     cellular_node = CellularComponent(id=cellular_id, name=cellular)
 
                     cellular_edge = Association(
@@ -524,7 +534,7 @@ def get_tissue_locations(
             if len(tissues) > 0:
                 for t in tissues:
                     tissue = str(t.text).strip()
-                    tissue_id = f"HMDB:{tissue}"
+                    tissue_id = get_uberon_id(tissue)
                     tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue)
 
                     tissue_edge = Association(
@@ -574,7 +584,7 @@ def get_biospecimen_locations(
             if len(biospecimens) > 0:
                 for b in biospecimens:
                     biospecimen = str(b.text).strip()
-                    biospecimen_id = f"HMDB:{biospecimen}"
+                    biospecimen_id = get_uberon_id(biospecimen)
                     biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen)
     
                     biospecimen_edge = Association(
