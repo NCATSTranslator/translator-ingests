@@ -1,5 +1,13 @@
+#!/usr/bin/env python3
+"""
+Script to generate the contents of the HMDB 'uberon_lookup.csv' Koza mapping file.
+Note that this script as a dependency on OakLib which is specified in the 'koza_map' uv dependency group.
+"""
 import pandas as pd
 from oaklib import get_adapter
+from translator_ingest import TRANSLATOR_INGEST_PATH
+
+uberon_lookup_file = TRANSLATOR_INGEST_PATH / "ingests" / "hmdb" / "maps" / "uberon_lookup.csv"
 
 # Local file
 adapter = get_adapter("sqlite:obo:uberon")
@@ -44,6 +52,6 @@ df.drop_duplicates(
     inplace=True
 )
 
-df.to_csv("uberon_lookup.csv", index=False)
+df.to_csv(uberon_lookup_file, index=False)
 
 print(f"Generated {len(df):,} mappings")

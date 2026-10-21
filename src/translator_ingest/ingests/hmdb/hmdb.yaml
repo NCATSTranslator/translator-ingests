@@ -6,3 +6,7 @@ name: hmdb
 
 reader:
   format: csv  # fake format, we don't use it!
+
+  depends_on:
+    - './anatomy_to_uberon_map.yaml'
+    - './cellular_to_go_map.yaml'

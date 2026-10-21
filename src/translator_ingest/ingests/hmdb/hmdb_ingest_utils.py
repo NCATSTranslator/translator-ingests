@@ -446,40 +446,50 @@ def get_pathways(
 
     return pathway_list
 
-def normalize_name(text) -> str:
-    return (
-        text.lower()
-            .strip()
-            .replace("_", " ")
-    )
 
-def get_go_cellular_id(name: str) -> tuple[str,str]:
+def get_term_mapping(
+        koza_transform: koza.KozaTransform,
+        map_name: str,
+        name: str
+) -> tuple[str,str]:
     """
-	Map a (sub)cellular locality of a metabolite
-	onto a Gene Ontology 'Cellular Component' ontology term.
+    Map a raw text specified locality of a metabolite onto an ontology term in a specified map.
 
-	:param name: str, text name from the original raw HMDB data entry field.
-	:return: tuple[str,str] of ontology term id and canonical name of the cellular compartment
-	"""
-    name = normalize_name(name)
-    # TODO: Stub implementation, rather need to use the Gene Ontology 'Cellular Component' term Koza map implementation
-    return f"HMDB:{name}", name
+    :param koza_transform: The koza transform context
+    :param map_name: str, name of map to be accessed
+    :param name: str, text name from an original locality field value.
+    :return: tuple[str,str] of ontology term id and canonical name of the location.
+    """
+    assert map_name in ["go_cellular", "uberon"]
+    name = name.lower().strip().replace("_", " ")
+    term_map = koza_transform.mappings.get(f"{map_name}_lookup")
+    assert term_map is not None
+    mapping = term_map.get(name)
+
+    if mapping:
+        term_id = mapping[f"{map_name}_id"]
+        term_label = mapping[f"{map_name}_label"]
+    else:
+        term_id = f"HMDB:{name}"
+        term_label = name
+        koza_transform.log(
+            msg=f"Text label '{name}' does not have an {map_name.upper()} term mapping?",
+            level="WARNING",
+        )
+        
+    return term_id, term_label
 
 
-def get_uberon_id(name: str) -> tuple[str,str]:
-    '''
-    Map an anatomical or biospecimen text specified locality of a metabolite onto an UBERON term.
+def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,str]:
+    return get_term_mapping(koza_transform, "uberon", name)
 
-    :param name: str, text name from the original raw HMDB data entry field.
-    :return: tuple[str,str] of ontology term id and canonical name of the anatomical or biospecimen location.
-    '''
-    name = normalize_name(name)
-    # TODO: Stub implementation, rather need to use the UBERON Koza map implementation
-    return f"HMDB:{name}",name
+
+def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,str]:
+    return get_term_mapping(koza_transform, "go_cellular", name)
 
 
 def get_cellular_locations(
-        koza_transform,
+        koza_transform: koza.KozaTransform,
         el,
         metabolite_id
 ) -> list[tuple[CellularComponent, Association]]:
@@ -505,8 +515,8 @@ def get_cellular_locations(
             if len(cellulars) > 0:
                 for c in cellulars:
                     cellular = str(c.text).strip()
-                    cellular_id = get_go_cellular_id(cellular)
-                    cellular_node = CellularComponent(id=cellular_id, name=cellular)
+                    cellular_id, cellular_name = get_go_cellular_term(koza_transform, cellular)
+                    cellular_node = CellularComponent(id=cellular_id, name=cellular_name)
 
                     cellular_edge = Association(
                         id=entity_id(),
@@ -529,7 +539,7 @@ def get_cellular_locations(
 
 
 def get_tissue_locations(
-        koza_transform,
+        koza_transform: koza.KozaTransform,
         el,
         metabolite_id
 ) -> list[tuple[GrossAnatomicalStructure, Association]]:
@@ -555,8 +565,8 @@ def get_tissue_locations(
             if len(tissues) > 0:
                 for t in tissues:
                     tissue = str(t.text).strip()
-                    tissue_id = get_uberon_id(tissue)
-                    tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue)
+                    tissue_id, tissue_name = get_uberon_term(koza_transform,tissue)
+                    tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue_name)
 
                     tissue_edge = Association(
                         id=entity_id(),
@@ -579,7 +589,7 @@ def get_tissue_locations(
 
 
 def get_biospecimen_locations(
-        koza_transform,
+        koza_transform: koza.KozaTransform,
         el,
         metabolite_id
 ) -> list[tuple[NamedThing, Association]]:
@@ -605,8 +615,8 @@ def get_biospecimen_locations(
             if len(biospecimens) > 0:
                 for b in biospecimens:
                     biospecimen = str(b.text).strip()
-                    biospecimen_id = get_uberon_id(biospecimen)
-                    biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen)
+                    biospecimen_id, biospecimen_name = get_uberon_term(koza_transform,biospecimen)
+                    biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen_name)
     
                     biospecimen_edge = Association(
                         id=entity_id(),
