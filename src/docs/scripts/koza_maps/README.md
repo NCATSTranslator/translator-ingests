@@ -3,7 +3,8 @@
 This folder segregates a set of scripts used to generate specific Koza mapping files. 
 
 The current set are specifically designed for the HMDB ingests but should other ingests require them, their 
-generation and placement could be suitably modified, since the files themselves are agnostic about HMDB per say.
+generation and placement could be suitably modified, since the files themselves are agnostic about HMDB per se.
+In fact, the content of the files is overkill for the scope of HMDB terms (but might be useful for other ingests?)
 
 Generally, if the source ontology are stable releases, the scripts only need to be run (offline from the
 Translator Ingest pipeline) once per ontology release, then the corresponding mapping files committed to the repository.
