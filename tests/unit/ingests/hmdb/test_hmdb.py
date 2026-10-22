@@ -4,6 +4,7 @@ from pathlib import Path
 from biolink_model.datamodel.pydanticmodel_v2 import KnowledgeLevelEnum, AgentTypeEnum
 
 import koza
+from koza.utils.exceptions import MapItemException
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
@@ -19,11 +20,34 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
+@pytest.fixture(scope="package")
+def mappings() -> Mappings:
+    # Test Koza map
+    return Mappings(
+        {
+            "go": {
+                # source_term
+                # cytoplasm,GO:0005737,cytoplasm,label
+                "cytoplasm": {
+                    "go_id": "GO:0005737",
+                    "go_label": "cytoplasm",
+                    "match_type": "label"
+                }
+            },
+            "uberon": {
+                # source_term
+                "neck of uterus": {
+                    "uberon_id": "UBERON:0000002",
+                    "uberon_label": "uterine cervix",
+                    "match_type": "label"
+                }
+            },
+        }
+    ) 
 
 @pytest.fixture(scope="package")
-def mock_koza_transform() -> koza.KozaTransform:
+def mock_koza_transform(mappings: Mappings) -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
-    mappings: Mappings = {}
     return MockKozaTransform(
         extra_fields={},
         writer=writer,
@@ -34,16 +58,22 @@ def mock_koza_transform() -> koza.KozaTransform:
         input_files_dir = Path(__file__).resolve().parent
     )
 
-def test_get_term_mapping():
-    pass
+def test_get_term_mapping(mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_term_mapping(mock_koza_transform, map_name="go", name="cytoplasm")
+    assert term_id == "GO:0005737" and term_name == "cytoplasm"
+    term_id, term_name = get_term_mapping(mock_koza_transform, map_name="uberon", name="neck of uterus")
+    assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
+    with pytest.raises(MapItemException):
+        get_term_mapping(mock_koza_transform, map_name="unknown", name="fake_name")
+
+def test_get_go_cellular_term(mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_go_cellular_term(mock_koza_transform, name="cytoplasm")
+    assert term_id == "GO:0005737" and term_name == "cytoplasm"
 
 
-def test_get_uberon_term():
-    pass
-
-
-def test_get_go_cellular_term():
-    pass
+def test_get_uberon_term(mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_uberon_term(mock_koza_transform, name="neck of uterus")
+    assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
 
 
 # list of slots whose values are

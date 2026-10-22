@@ -132,6 +132,38 @@ G2C_PREDICATE = Literal[
 ]
 
 
+def get_term_mapping(koza_transform: koza.KozaTransform, map_name: str, name: str) -> tuple[str, str]:
+    """
+    Map a raw text specified locality of a metabolite onto an ontology term in a specified map.
+
+    :param koza_transform: The koza transform context
+    :param map_name: str, exact name of map to be accessed
+    :param name: str, text name from an original locality field value.
+    :return: tuple[str,str] of ontology term id and canonical name label of the location.
+    """
+    name = name.lower().strip().replace("_", " ")
+    try:
+        term_id = koza_transform.lookup(name=name, map_column=f"{map_name}_id", map_name=f"{map_name}_lookup")
+        term_label = koza_transform.lookup(name=name, map_column=f"{map_name}_label", map_name=f"{map_name}_lookup")
+    except MapItemException:
+        term_id = f"HMDB:{name}"
+        term_label = name
+        koza_transform.log(
+            msg=f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?",
+            level="WARNING",
+        )
+
+    return term_id, term_label
+
+
+def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
+    return get_term_mapping(koza_transform, "uberon", name)
+
+
+def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
+    return get_term_mapping(koza_transform, "go", name)
+
+
 def get_genes(
         koza_transform,
         el,
@@ -446,42 +478,6 @@ def get_pathways(
         count(koza_transform, "Missing biological properties")
 
     return pathway_list
-
-
-def get_term_mapping(
-        koza_transform: koza.KozaTransform,
-        map_name: str,
-        name: str
-) -> tuple[str,str]:
-    """
-    Map a raw text specified locality of a metabolite onto an ontology term in a specified map.
-
-    :param koza_transform: The koza transform context
-    :param map_name: str, name of map to be accessed
-    :param name: str, text name from an original locality field value.
-    :return: tuple[str,str] of ontology term id and canonical name of the location.
-    """
-    name = name.lower().strip().replace("_", " ")
-    try:
-        term_id = koza_transform.lookup(name=name, map_column=f"{map_name}_id", map_name=f"{map_name}_lookup")
-        term_label = koza_transform.lookup(name=name, map_column=f"{map_name}_label", map_name=f"{map_name}_lookup")
-    except MapItemException:
-        term_id = f"HMDB:{name}"
-        term_label = name
-        koza_transform.log(
-            msg=f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?",
-            level="WARNING",
-        )
-        
-    return term_id, term_label
-
-
-def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,str]:
-    return get_term_mapping(koza_transform, "uberon", name)
-
-
-def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,str]:
-    return get_term_mapping(koza_transform, "go", name)
 
 
 def get_cellular_locations(
