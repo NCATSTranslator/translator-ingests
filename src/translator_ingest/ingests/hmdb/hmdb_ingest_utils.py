@@ -4,6 +4,7 @@ HMDB ingest utils adapted from the Orion HMDB parsing code base.
 from typing import Iterable, Literal
 
 import koza
+from koza.utils.exceptions import MapItemException
 
 import xml.etree.cElementTree as E_Tree
 
@@ -460,20 +461,15 @@ def get_term_mapping(
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name of the location.
     """
-    assert map_name in ["go_cellular", "uberon"]
     name = name.lower().strip().replace("_", " ")
-    term_map = koza_transform.mappings.get(f"{map_name}_lookup")
-    assert term_map is not None
-    mapping = term_map.get(name)
-
-    if mapping:
-        term_id = mapping[f"{map_name}_id"]
-        term_label = mapping[f"{map_name}_label"]
-    else:
+    try:
+        term_id = koza_transform.lookup(name=name, map_column=f"{map_name}_id", map_name=f"{map_name}_lookup")
+        term_label = koza_transform.lookup(name=name, map_column=f"{map_name}_label", map_name=f"{map_name}_lookup")
+    except MapItemException:
         term_id = f"HMDB:{name}"
         term_label = name
         koza_transform.log(
-            msg=f"Text label '{name}' does not have an {map_name.upper()} term mapping?",
+            msg=f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?",
             level="WARNING",
         )
         
@@ -485,7 +481,7 @@ def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,
 
 
 def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,str]:
-    return get_term_mapping(koza_transform, "go_cellular", name)
+    return get_term_mapping(koza_transform, "go", name)
 
 
 def get_cellular_locations(

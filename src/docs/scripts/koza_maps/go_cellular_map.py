@@ -8,7 +8,9 @@ from oaklib import get_adapter
 from semsql.sqla.semsql import Statements
 from translator_ingest import TRANSLATOR_INGEST_PATH
 
-go_cellular_lookup_file = TRANSLATOR_INGEST_PATH / "ingests" / "hmdb" / "maps" / "go_cellular_lookup.csv"
+# Although this lookup file is constrained to just the GO Cellular Compartment terms,
+# for practical convenience in accessing it, we simply name it the 'go_lookup' file.
+go_cellular_lookup_file = TRANSLATOR_INGEST_PATH / "ingests" / "hmdb" / "maps" / "go_lookup.csv"
 
 def normalize(text: str) -> str:
     return (

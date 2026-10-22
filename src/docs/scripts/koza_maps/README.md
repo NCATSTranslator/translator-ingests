@@ -14,8 +14,8 @@ named **koza_map** and should be implicitly _uv sync'd_ into the local dev envir
 
 ## HMDB 'cellular_locations' names to Gene Ontology Cellular Compartment terms
 
-The [go_cellular_map.py](./go_cellular_map.py) script generates the contents of the 
-[go_cellular_lookup.csv](../../../translator_ingest/ingests/hmdb/maps/go_cellular_lookup.csv) file.
+The [go_cellular_map.py](./go_cellular_map.py) script generates the GO (Cellular Compartment term) contents of the 
+[go_lookup.csv](../../../translator_ingest/ingests/hmdb/maps/go_lookup.csv) file.
 
 ## HMDB 'biospecimen_locations' or 'tissue_locations' names to UBERON terms
 

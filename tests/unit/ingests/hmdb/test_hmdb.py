@@ -11,6 +11,11 @@ from translator_ingest.ingests.hmdb.hmdb import (
     on_begin_hmdb_ingest,
     transform_hmdb_ingest,
 )
+from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
+    get_term_mapping,
+    get_uberon_term,
+    get_go_cellular_term
+)
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
@@ -28,6 +33,17 @@ def mock_koza_transform() -> koza.KozaTransform:
         # input_files_dir=INGESTS_DATA_PATH / "hmdb_metabolites.zip" # Path(__file__).resolve().parent
         input_files_dir = Path(__file__).resolve().parent
     )
+
+def test_get_term_mapping():
+    pass
+
+
+def test_get_uberon_term():
+    pass
+
+
+def test_get_go_cellular_term():
+    pass
 
 
 # list of slots whose values are
