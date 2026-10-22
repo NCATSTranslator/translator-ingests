@@ -8,5 +8,5 @@ reader:
   format: csv  # fake format, we don't use it!
 
   depends_on:
-    - './anatomy_to_uberon_map.yaml'
-    - './cellular_to_go_map.yaml'
+    - './uberon_map.yaml'
+    - './go_cellular_map.yaml'
