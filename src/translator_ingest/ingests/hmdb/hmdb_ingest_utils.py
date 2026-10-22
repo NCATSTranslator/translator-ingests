@@ -141,17 +141,21 @@ def get_term_mapping(koza_transform: koza.KozaTransform, map_name: str, name: st
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     """
-    name = name.lower().strip().replace("_", " ")
-    try:
-        term_id = koza_transform.lookup(name=name, map_column=f"{map_name}_id", map_name=f"{map_name}_lookup")
-        term_label = koza_transform.lookup(name=name, map_column=f"{map_name}_label", map_name=f"{map_name}_lookup")
-    except MapItemException:
-        term_id = f"HMDB:{name}"
+    normalized_name = name.lower().strip().replace("_", " ")
+    term_id = koza_transform.lookup(name=normalized_name, map_column=f"{map_name}_id", map_name=f"{map_name}_lookup")
+    if term_id == normalized_name:
+        # The lookup seems to have actually failed,
+        # so we create a pseudo-identifier and log a warning
+        pseudo_object_id = normalized_name.replace(" ", "_")
+        term_id = f"HMDB:{pseudo_object_id}"
         term_label = name
         koza_transform.log(
             msg=f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?",
             level="WARNING",
         )
+    else:
+        # Likely got a real term_id, so we also map to the canonical name as well
+        term_label = koza_transform.lookup(name=normalized_name, map_column=f"{map_name}_label", map_name=f"{map_name}_lookup")
 
     return term_id, term_label
 

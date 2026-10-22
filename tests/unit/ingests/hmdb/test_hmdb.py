@@ -25,17 +25,14 @@ def mappings() -> Mappings:
     # Test Koza map
     return Mappings(
         {
-            "go": {
-                # source_term
-                # cytoplasm,GO:0005737,cytoplasm,label
+            "go_lookup": {
                 "cytoplasm": {
                     "go_id": "GO:0005737",
                     "go_label": "cytoplasm",
                     "match_type": "label"
                 }
             },
-            "uberon": {
-                # source_term
+            "uberon_lookup": {
                 "neck of uterus": {
                     "uberon_id": "UBERON:0000002",
                     "uberon_label": "uterine cervix",
@@ -63,8 +60,12 @@ def test_get_term_mapping(mock_koza_transform: koza.KozaTransform):
     assert term_id == "GO:0005737" and term_name == "cytoplasm"
     term_id, term_name = get_term_mapping(mock_koza_transform, map_name="uberon", name="neck of uterus")
     assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
-    with pytest.raises(MapItemException):
-        get_term_mapping(mock_koza_transform, map_name="unknown", name="fake_name")
+
+
+def test_get_term_mapping_failure(mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_term_mapping(mock_koza_transform, map_name="unknown", name="fake name")
+    assert term_id == "HMDB:fake_name" and term_name == "fake name"
+
 
 def test_get_go_cellular_term(mock_koza_transform: koza.KozaTransform):
     term_id, term_name = get_go_cellular_term(mock_koza_transform, name="cytoplasm")
