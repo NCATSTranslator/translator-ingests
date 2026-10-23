@@ -4,7 +4,6 @@ HMDB ingest utils adapted from the Orion HMDB parsing code base.
 from typing import Iterable, Literal
 
 import koza
-from koza.utils.exceptions import MapItemException
 
 import xml.etree.cElementTree as E_Tree
 
@@ -159,12 +158,35 @@ def get_term_mapping(koza_transform: koza.KozaTransform, map_name: str, name: st
 
     return term_id, term_label
 
+def _sanitize_uberon_input(name: str) -> str:
+    # Hacky patch for known fringe cases of
+    # HMDB input terms for uberon query
+
+    # "Cerebrospinal Fluid (CSF)" - trailing CSF confounds the match
+    name = name.replace("(CSF)","")  
+    return name
+
 
 def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
-    return get_term_mapping(koza_transform, "uberon", name)
+    """
+    Returns the best match UBERON term and name.
+    Note that the input name may be an alias matched to a term, but this is not reported back.
+    :param koza_transform: The koza transform context
+    :param name: str, text name from an original locality field value.
+    :return: tuple[str,str] of ontology term id and canonical name label of the location.
+    """
+    return get_term_mapping(koza_transform, "uberon", _sanitize_uberon_input(name))
 
 
 def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
+    """
+    Returns the best match GO Cellular Compartment term and name.
+    Note that the input name may be an alias matched to a term, but this is not reported back.
+
+    :param koza_transform: The koza transform context
+    :param name: str, text name from an original locality field value.
+    :return: tuple[str,str] of ontology term id and canonical name label of the location.
+    """
     return get_term_mapping(koza_transform, "go", name)
 
 

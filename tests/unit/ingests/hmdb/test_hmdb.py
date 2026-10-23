@@ -21,7 +21,7 @@ from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 @pytest.fixture(scope="package")
-def mappings() -> Mappings:
+def basic_mappings() -> Mappings:
     # Test Koza map
     return Mappings(
         {
@@ -43,38 +43,103 @@ def mappings() -> Mappings:
     ) 
 
 @pytest.fixture(scope="package")
-def mock_koza_transform(mappings: Mappings) -> koza.KozaTransform:
+def basic_mock_koza_transform(basic_mappings: Mappings) -> koza.KozaTransform:
     writer: KozaWriter = MockKozaWriter()
     return MockKozaTransform(
         extra_fields={},
         writer=writer,
-        mappings=mappings,
+        mappings=basic_mappings,
+        transform_metadata={},
+        input_files_dir = None
+    )
+
+def test_get_term_mapping(basic_mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, map_name="go", name="cytoplasm")
+    assert term_id == "GO:0005737" and term_name == "cytoplasm"
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, map_name="uberon", name="neck of uterus")
+    assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
+
+
+def test_get_term_mapping_failure(basic_mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, map_name="unknown", name="fake name")
+    assert term_id == "HMDB:fake_name" and term_name == "fake name"
+
+
+def test_get_go_cellular_term(basic_mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_go_cellular_term(basic_mock_koza_transform, name="cytoplasm")
+    assert term_id == "GO:0005737" and term_name == "cytoplasm"
+
+
+def test_get_uberon_term(basic_mock_koza_transform: koza.KozaTransform):
+    term_id, term_name = get_uberon_term(basic_mock_koza_transform, name="neck of uterus")
+    assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
+
+
+@pytest.fixture(scope="package")
+def full_mappings() -> Mappings:
+    # Test Koza map
+    return Mappings(
+        {
+            "go_lookup": {
+                "cytoplasm": {
+                    "go_id": "GO:0005737",
+                    "go_label": "cytoplasm",
+                    "match_type": "label"
+                }
+            },
+            "uberon_lookup": {
+                "blood": {
+                    "uberon_id": "UBERON:0000178",
+                    "uberon_label": "blood",
+                    "match_type": "label"
+                },
+                "cerebrospinal fluid": {
+                    "uberon_id": "UBERON:0001359",
+                    "uberon_label": "cerebrospinal fluid",
+                    "match_type": "label"
+                },
+                "feces": {
+                    "uberon_id": "UBERON:0001988",
+                    "uberon_label": "feces",
+                    "match_type": "label"
+                },
+                "saliva": {
+                    "uberon_id": "UBERON:0001836",
+                    "uberon_label": "saliva",
+                    "match_type": "label"
+                },
+                "urine": {
+                    "uberon_id": "UBERON:0001088",
+                    "uberon_label": "urine",
+                    "match_type": "label"
+                },
+                "placenta": {
+                    "uberon_id": "UBERON:0001987",
+                    "uberon_label": "placenta",
+                    "match_type": "label"
+                },
+                "skeletal muscle": {
+                    "uberon_id": "UBERON:0001134",
+                    "uberon_label": "skeletal muscle tissue",
+                    "match_type": "label"
+                }
+            }
+        }
+    )
+
+
+@pytest.fixture(scope="package")
+def full_mapping_mock_koza_transform(full_mappings: Mappings) -> koza.KozaTransform:
+    writer: KozaWriter = MockKozaWriter()
+    return MockKozaTransform(
+        extra_fields={},
+        writer=writer,
+        mappings=full_mappings,
         transform_metadata={},
         # Swap in the following code for temporary debugging using the real data file
         # input_files_dir=INGESTS_DATA_PATH / "hmdb_metabolites.zip" # Path(__file__).resolve().parent
         input_files_dir = Path(__file__).resolve().parent
     )
-
-def test_get_term_mapping(mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_term_mapping(mock_koza_transform, map_name="go", name="cytoplasm")
-    assert term_id == "GO:0005737" and term_name == "cytoplasm"
-    term_id, term_name = get_term_mapping(mock_koza_transform, map_name="uberon", name="neck of uterus")
-    assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
-
-
-def test_get_term_mapping_failure(mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_term_mapping(mock_koza_transform, map_name="unknown", name="fake name")
-    assert term_id == "HMDB:fake_name" and term_name == "fake name"
-
-
-def test_get_go_cellular_term(mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_go_cellular_term(mock_koza_transform, name="cytoplasm")
-    assert term_id == "GO:0005737" and term_name == "cytoplasm"
-
-
-def test_get_uberon_term(mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_uberon_term(mock_koza_transform, name="neck of uterus")
-    assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
 
 
 # list of slots whose values are
@@ -122,27 +187,22 @@ ASSOCIATION_TEST_SLOTS = (
                     "category": ["biolink:MolecularEntity"]
                 },
                 {
-                    "id": "HMDB:Cytoplasm",
-                    "name": "Cytoplasm",
+                    "id": "GO:0005737",
+                    "name": "cytoplasm",
                     "category": ["biolink:CellularComponent"]
                 },
                 {
-                    "id": "HMDB:Blood",
-                    "name": "Blood",
+                    "id": "UBERON:0000178",
+                    "name": "blood",
                     "category": ["biolink:NamedThing"]
                 },
                 {
-                    "id": "HMDB:Placenta",
-                    "name": "Placenta",
+                    "id": "UBERON:0001987",
+                    "name": "placenta",
                     "category": ["biolink:GrossAnatomicalStructure"]
-                },
-                {
-                    "id": "HMDB:HMDB0000001",
-                    "name": "1-Methylhistidine",
-                    "category": ["biolink:MolecularEntity"]
                 }
             ],
-            # Captured edge contents, TODO: need to put full HMDB edge data contents here
+            # Captured edge contents
             [
                 {
                     "category": ["biolink:ChemicalEntityToPathwayAssociation"],
@@ -175,27 +235,27 @@ ASSOCIATION_TEST_SLOTS = (
                 },
                 {
                     "category": ["biolink:Association"],
-                    "subject": "HMDB:Cytoplasm",
+                    "subject": "HMDB:HMDB0000001",
                     "predicate": "biolink:located_in",
-                    "object": "HMDB:HMDB0000001",
+                    "object": "GO:0005737",
                     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
                 {
                     "category": ["biolink:Association"],
-                    "subject": "HMDB:Blood",
+                    "subject": "HMDB:HMDB0000001",
                     "predicate": "biolink:located_in",
-                    "object": "HMDB:HMDB0000001",
+                    "object": "UBERON:0000178",
                     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
                 {
                     "category": ["biolink:Association"],
-                    "subject": "HMDB:Placenta",
+                    "subject": "HMDB:HMDB0000001",
                     "predicate": "biolink:located_in",
-                    "object": "HMDB:HMDB0000001",
+                    "object": "UBERON:0001987",
                     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
@@ -205,17 +265,17 @@ ASSOCIATION_TEST_SLOTS = (
     ],
 )
 def test_hmdb_ingest_transform(
-    mock_koza_transform: koza.KozaTransform,
+    full_mapping_mock_koza_transform: koza.KozaTransform,
     result_nodes: list,
     result_edge: dict
 ):
-    on_begin_hmdb_ingest(mock_koza_transform)
+    on_begin_hmdb_ingest(full_mapping_mock_koza_transform)
 
     # the data argument is ignored internally (i.e., the HMDB data file is directly read.)
     # hence we pass an empty list as data. The mock KozaTransform object points to the
     # sample HMDB data file located in the tests/unit/ingests/hmdb folder itself.
     # An iterable derived list of KnowledgeGraph objects is returned (a bit challenging to test but...)
-    knowledge_graphs = list(transform_hmdb_ingest(mock_koza_transform, []))
+    knowledge_graphs = list(transform_hmdb_ingest(full_mapping_mock_koza_transform, []))
 
     assert len(knowledge_graphs) == 1
 
