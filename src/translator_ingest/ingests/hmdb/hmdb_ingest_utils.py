@@ -174,6 +174,7 @@ def get_term_mapping(
 
     return term_id, term_label
 
+
 def _remap_uberon_input(name: str) -> str:
     # Hacky patch for some quirky known fringe cases of HMDB input terms
     # which don't map cleanly onto UBERON terms. We could conceivably curate
@@ -194,6 +195,9 @@ def _remap_uberon_input(name: str) -> str:
 
     if name == "Breast Milk":
         name = "milk"
+
+    if name == "Prostate Tissue":
+        name = "prostate"
 
     return name
 
@@ -234,6 +238,18 @@ def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str
     return term_id, term_name
     
 
+def _remap_go_input(name: str) -> str:
+    # Hacky patch for some quirky known fringe cases of HMDB input terms which don't
+    # map cleanly onto Gene Ontology (GO) cellular compartment terms. We could conceivably
+    # curate these labels directly into the CL file, but for now we add them here(?)
+
+    # HMDB talks about 'Microsomes' which are treatment artifacts of laboratory homogenization of
+    # whole cells but represent fragments of endoplasmic reticulum thus, we encode them as such.
+    if name == "Microsomes":
+        name = "endoplasmic reticulum"
+
+    return name
+
 
 def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
     """
@@ -244,7 +260,7 @@ def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     """
-    return get_term_mapping(koza_transform, map_name="go", name=name)
+    return get_term_mapping(koza_transform, map_name="go", name=_remap_go_input(name))
 
 
 def get_genes(
