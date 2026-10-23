@@ -133,7 +133,7 @@ G2C_PREDICATE = Literal[
 
 def get_term_mapping(
         koza_transform: koza.KozaTransform,
-        map_name: str,
+        ontology: str,
         name: str,
         raise_exception: bool = False
 ) -> tuple[str, str]:
@@ -141,20 +141,22 @@ def get_term_mapping(
     Map a raw text specified locality of a metabolite onto an ontology term in a specified map.
 
     :param koza_transform: The koza transform context
-    :param map_name: str, exact name of map to be accessed
+    :param ontology: str, prefix namespace of ontology to be accessed
     :param name: str, text name from an original locality field value.
     :param raise_exception: bool, signal that lookup miss should throw an exception, default: False
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     :raise RuntimeError: if raise_exception == True and mapping is missing
     """
+    map_name = ontology.lower()
     normalized_name = name.lower().strip().replace("_", " ")
     term_id = koza_transform.lookup(
         name=normalized_name,
         map_column=f"{map_name}_id",
         map_name=f"{map_name}_lookup"
     )
-    if term_id == normalized_name:
-        err_msg = f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?"
+
+    if not term_id.startswith(f"{ontology}:"):
+        err_msg = f"Text label '{name}' does not have an associated {ontology} term mapping?"
         if raise_exception:
             raise RuntimeError(err_msg)
         # The lookup seems to have actually failed,
@@ -233,7 +235,7 @@ def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str
     try:
         term_id, term_name = get_term_mapping(
             koza_transform,
-            map_name="uberon",
+            ontology="UBERON",
             name=_remap_uberon_input(name),
             raise_exception=True
         )
@@ -241,7 +243,7 @@ def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str
         # Maybe this name is a cell type?
         term_id, term_name = get_term_mapping(
             koza_transform,
-            map_name="cl",
+            ontology="CL",
             name=_remap_cl_input(name)
         )
 
@@ -270,7 +272,7 @@ def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     """
-    return get_term_mapping(koza_transform, map_name="go", name=_remap_go_input(name))
+    return get_term_mapping(koza_transform, ontology="GO", name=_remap_go_input(name))
 
 
 def get_genes(

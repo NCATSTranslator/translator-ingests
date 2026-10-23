@@ -39,6 +39,13 @@ def basic_mappings() -> Mappings:
                     "match_type": "label"
                 }
             },
+            "cl_lookup": {
+                "fibroblast": {
+                "cl_id": "CL:0000057",
+                "cl_label": "fibroblast",
+                "match_type": "label"
+            }
+    }
         }
     ) 
 
@@ -54,25 +61,29 @@ def basic_mock_koza_transform(basic_mappings: Mappings) -> koza.KozaTransform:
     )
 
 def test_get_term_mapping(basic_mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_term_mapping(basic_mock_koza_transform, map_name="go", name="cytoplasm")
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="go", name="cytoplasm")
     assert term_id == "GO:0005737" and term_name == "cytoplasm"
-    term_id, term_name = get_term_mapping(basic_mock_koza_transform, map_name="uberon", name="neck of uterus")
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="uberon", name="neck of uterus")
     assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
 
 
 def test_get_term_mapping_failure(basic_mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_term_mapping(basic_mock_koza_transform, map_name="unknown", name="fake name")
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="unknown", name="fake name")
     assert term_id == "HMDB:fake_name" and term_name == "fake name"
 
 
 def test_get_go_cellular_term(basic_mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_go_cellular_term(basic_mock_koza_transform, name="cytoplasm")
+    term_id, term_name = get_go_cellular_term(basic_mock_koza_transform, name="Cytoplasm")
     assert term_id == "GO:0005737" and term_name == "cytoplasm"
 
 
-def test_get_uberon_term(basic_mock_koza_transform: koza.KozaTransform):
+def test_get_anatomy_term(basic_mock_koza_transform: koza.KozaTransform):
     term_id, term_name = get_anatomy_term(basic_mock_koza_transform, name="neck of uterus")
     assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
+    term_id, term_name = get_anatomy_term(basic_mock_koza_transform, name="Cellular Cytoplasm")
+    assert term_id == term_id == "GO:0005737" and term_name == "cytoplasm"
+    term_id, term_name = get_anatomy_term(basic_mock_koza_transform, name="Fibroblasts")
+    assert term_id == term_id == "CL:0000057" and term_name == "fibroblast"
 
 
 @pytest.fixture(scope="package")
