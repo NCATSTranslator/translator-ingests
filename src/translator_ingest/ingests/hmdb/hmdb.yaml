@@ -7,6 +7,7 @@ name: hmdb
 reader:
   format: csv  # fake format, we don't use it!
 
-  depends_on:
+transform:
+  mappings:
     - './uberon_map.yaml'
     - './go_cellular_map.yaml'

@@ -1,26 +1,29 @@
-name: 'go_cellular_lookup'
+name: "go_lookup"
 
 metadata:
   description: "Mapping file for lookup from HMDB (sub)cellular location to Gene Ontology 'Cellular Compartment' terms"
 
-format: "csv"
+reader:
+  format: "csv"
+  delimiter: ","
 
-# This is generated from the GO ontology using the project
-# script src/docs/scripts/koza_maps/go_cellular_map.py
-files:
-  - './maps/go_cellular_lookup.csv'
+  # This is generated from the GO ontology using the project
+  # script src/docs/scripts/koza_maps/go_cellular_map.py
+  files:
+    - './maps/go_lookup.csv'
 
-header_mode: "infer"
+  header_mode: "infer"
 
-columns:
-  - "source_term"
-  - "go_id"
-  - "go_label"
-  - "match_type"
+  columns:
+    - "source_term"
+    - "go_id"
+    - "go_label"
+    - "match_type"
 
-key: "source_term"
+transform:
+  key: "source_term"
 
-values:
-  - "go_id"
-  - "go_label"
-  - "match_type"
+  values:
+    - "go_id"
+    - "go_label"
+    - "match_type"
