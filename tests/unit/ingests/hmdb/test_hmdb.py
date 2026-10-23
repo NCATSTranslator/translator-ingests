@@ -13,9 +13,9 @@ from translator_ingest.ingests.hmdb.hmdb import (
     transform_hmdb_ingest,
 )
 from translator_ingest.ingests.hmdb.hmdb_ingest_utils import (
-    get_term_mapping,
-    get_uberon_term,
-    get_go_cellular_term
+	get_term_mapping,
+	get_anatomy_term,
+	get_go_cellular_term
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
@@ -71,7 +71,7 @@ def test_get_go_cellular_term(basic_mock_koza_transform: koza.KozaTransform):
 
 
 def test_get_uberon_term(basic_mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_uberon_term(basic_mock_koza_transform, name="neck of uterus")
+    term_id, term_name = get_anatomy_term(basic_mock_koza_transform, name="neck of uterus")
     assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
 
 

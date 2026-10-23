@@ -131,30 +131,46 @@ G2C_PREDICATE = Literal[
 ]
 
 
-def get_term_mapping(koza_transform: koza.KozaTransform, map_name: str, name: str) -> tuple[str, str]:
+def get_term_mapping(
+        koza_transform: koza.KozaTransform,
+        map_name: str,
+        name: str,
+        raise_exception: bool = False
+) -> tuple[str, str]:
     """
     Map a raw text specified locality of a metabolite onto an ontology term in a specified map.
 
     :param koza_transform: The koza transform context
     :param map_name: str, exact name of map to be accessed
     :param name: str, text name from an original locality field value.
+    :param raise_exception: bool, signal that lookup miss should throw an exception, default: False
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
+    :raise RuntimeError: if raise_exception == True and mapping is missing
     """
     normalized_name = name.lower().strip().replace("_", " ")
-    term_id = koza_transform.lookup(name=normalized_name, map_column=f"{map_name}_id", map_name=f"{map_name}_lookup")
+    term_id = koza_transform.lookup(
+        name=normalized_name,
+        map_column=f"{map_name}_id",
+        map_name=f"{map_name}_lookup"
+    )
     if term_id == normalized_name:
+        err_msg = f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?"
+        if raise_exception:
+            raise RuntimeError(err_msg)
         # The lookup seems to have actually failed,
         # so we create a pseudo-identifier and log a warning
         pseudo_object_id = normalized_name.replace(" ", "_")
         term_id = f"HMDB:{pseudo_object_id}"
         term_label = name
-        koza_transform.log(
-            msg=f"Text label '{name}' does not have an associated {map_name.upper()} term mapping?",
-            level="WARNING",
-        )
+        koza_transform.log(msg=err_msg,level="WARNING")
     else:
-        # Likely got a real term_id, so we also map to the canonical name as well
-        term_label = koza_transform.lookup(name=normalized_name, map_column=f"{map_name}_label", map_name=f"{map_name}_lookup")
+        # Likely got a real term_id, so we also
+        # retrieve the canonical name as well
+        term_label = koza_transform.lookup(
+            name=normalized_name,
+            map_column=f"{map_name}_label",
+            map_name=f"{map_name}_lookup"
+        )
 
     return term_id, term_label
 
@@ -182,7 +198,7 @@ def _sanitize_uberon_input(name: str) -> str:
     return name
 
 
-def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
+def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
     """
     Returns the best match UBERON term and name.
     Note that the input name may be an alias matched to a term, but this is not reported back.
@@ -190,7 +206,23 @@ def get_uberon_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str,
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     """
-    return get_term_mapping(koza_transform, "uberon", _sanitize_uberon_input(name))
+    try:
+        term_id, term_name = get_term_mapping(
+            koza_transform,
+            map_name="uberon",
+            name=_sanitize_uberon_input(name),
+            raise_exception=True
+        )
+    except RuntimeError:
+        # Maybe this name is a cell type?
+        term_id, term_name = get_term_mapping(
+            koza_transform,
+            map_name="cl",
+            name=name
+        )
+
+    return term_id, term_name
+    
 
 
 def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
@@ -202,7 +234,7 @@ def get_go_cellular_term(koza_transform: koza.KozaTransform, name: str) -> tuple
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     """
-    return get_term_mapping(koza_transform, "go", name)
+    return get_term_mapping(koza_transform, map_name="go", name=name)
 
 
 def get_genes(
@@ -598,7 +630,7 @@ def get_tissue_locations(
             if len(tissues) > 0:
                 for t in tissues:
                     tissue = str(t.text).strip()
-                    tissue_id, tissue_name = get_uberon_term(koza_transform,tissue)
+                    tissue_id, tissue_name = get_anatomy_term(koza_transform, tissue)
                     tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue_name)
 
                     tissue_edge = Association(
@@ -648,7 +680,7 @@ def get_biospecimen_locations(
             if len(biospecimens) > 0:
                 for b in biospecimens:
                     biospecimen = str(b.text).strip()
-                    biospecimen_id, biospecimen_name = get_uberon_term(koza_transform,biospecimen)
+                    biospecimen_id, biospecimen_name = get_anatomy_term(koza_transform, biospecimen)
                     biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen_name)
     
                     biospecimen_edge = Association(
