@@ -9,5 +9,6 @@ reader:
 
 transform:
   mappings:
+    - './cl_map.yaml'
     - './uberon_map.yaml'
     - './go_cellular_map.yaml'

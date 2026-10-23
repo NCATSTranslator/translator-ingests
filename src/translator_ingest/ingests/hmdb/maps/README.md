@@ -9,5 +9,10 @@ The [go_cellular_map.py](../../../../docs/scripts/koza_maps/go_cellular_map.py) 
 
 ## HMDB 'biospecimen_locations' or 'tissue_locations' names to UBERON terms
 
-The [go_cellular_map.py](../../../../docs/scripts/koza_maps/uberon_map.py) script generates the contents of the 
+The [uberon_map.py](../../../../docs/scripts/koza_maps/uberon_map.py) script generates the contents of the 
 [uberon_lookup.csv](./uberon_lookup.csv) file.
+
+## Cell type names to Cell Ontology (CL) terms
+
+The [cl_map.py](../../../../docs/scripts/koza_maps/cl_map.py) script generates the [Cell Ontology](http://purl.obolibrary.org/obo/cl.owl) 
+contents of the [cl_lookup.csv](./cl_lookup.csv) file.

@@ -19,5 +19,10 @@ The [go_cellular_map.py](./go_cellular_map.py) script generates the GO (Cellular
 
 ## HMDB 'biospecimen_locations' or 'tissue_locations' names to UBERON terms
 
-The [go_cellular_map.py](./uberon_map.py) script generates the contents of the 
+The [uberon_map.py](./uberon_map.py) script generates the contents of the 
 [uberon_lookup.csv](../../../translator_ingest/ingests/hmdb/maps/uberon_lookup.csv) file.
+
+## Cell type names to Cell Ontology (CL) terms
+
+The [cl_map.py](./cl_map.py) script generates the [Cell Ontology](http://purl.obolibrary.org/obo/cl.owl) 
+contents of the [cl_lookup.csv](../../../translator_ingest/ingests/hmdb/maps/cl_lookup.csv) file.
