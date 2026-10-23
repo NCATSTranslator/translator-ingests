@@ -199,6 +199,11 @@ def _remap_uberon_input(name: str) -> str:
     if name == "Prostate Tissue":
         name = "prostate"
 
+    # A pericardial effusion is an abnormal
+    # accumulation of fluid in the pericardial sac...
+    if name == "Pericardial Effusion":
+        name = "pericardial sac"
+
     return name
 
 def _remap_cl_input(name: str) -> str:
@@ -220,6 +225,11 @@ def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str
     :param name: str, text name from an original locality field value.
     :return: tuple[str,str] of ontology term id and canonical name label of the location.
     """
+    # Fringe case in HMDB which mistakenly classifies "Cellular Cytoplasm"
+    # as tissue or biospecimen, but needs the GO Cellular Compartment term
+    if name == "Cellular Cytoplasm":
+        return "GO:0005737","cytoplasm"
+
     try:
         term_id, term_name = get_term_mapping(
             koza_transform,
