@@ -174,7 +174,7 @@ def get_term_mapping(
 
     return term_id, term_label
 
-def _sanitize_uberon_input(name: str) -> str:
+def _remap_uberon_input(name: str) -> str:
     # Hacky patch for some quirky known fringe cases of HMDB input terms
     # which don't map cleanly onto UBERON terms. We could conceivably curate
     # these labels directly into the UBERON file, but for now we add them here(?)
@@ -197,6 +197,16 @@ def _sanitize_uberon_input(name: str) -> str:
 
     return name
 
+def _remap_cl_input(name: str) -> str:
+    # Hacky patch for some quirky known fringe cases of HMDB input terms
+    # which don't map cleanly onto Cell Ontology (CL) terms. We could conceivably curate
+    # these labels directly into the CL file, but for now we add them here(?)
+
+    # HMDB talks about 'Fibroblasts' plural, whereas, CL only knows of a singular 'fibroblast'
+    if name == "Fibroblasts":
+        name = "fibroblast"
+
+    return name
 
 def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str, str]:
     """
@@ -210,7 +220,7 @@ def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str
         term_id, term_name = get_term_mapping(
             koza_transform,
             map_name="uberon",
-            name=_sanitize_uberon_input(name),
+            name=_remap_uberon_input(name),
             raise_exception=True
         )
     except RuntimeError:
@@ -218,7 +228,7 @@ def get_anatomy_term(koza_transform: koza.KozaTransform, name: str) -> tuple[str
         term_id, term_name = get_term_mapping(
             koza_transform,
             map_name="cl",
-            name=name
+            name=_remap_cl_input(name)
         )
 
     return term_id, term_name
