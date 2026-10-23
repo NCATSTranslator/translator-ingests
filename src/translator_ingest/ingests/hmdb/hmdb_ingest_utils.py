@@ -159,11 +159,26 @@ def get_term_mapping(koza_transform: koza.KozaTransform, map_name: str, name: st
     return term_id, term_label
 
 def _sanitize_uberon_input(name: str) -> str:
-    # Hacky patch for known fringe cases of
-    # HMDB input terms for uberon query
+    # Hacky patch for some quirky known fringe cases of HMDB input terms
+    # which don't map cleanly onto UBERON terms. We could conceivably curate
+    # these labels directly into the UBERON file, but for now we add them here(?)
 
     # "Cerebrospinal Fluid (CSF)" - trailing CSF confounds the match
-    name = name.replace("(CSF)","")  
+    name = name.replace("(CSF)","")
+
+    # HMDB talks about 'All Tissues'. Best mapping is the root tissue term?
+    if name == "All Tissues":
+        name = "tissue"
+
+    # HMDB talks about 'Breath' as a biospecimen.
+    # 'gas in respiratory system' seems like the closest match
+    # ('excreted gas' might be a close second candidate term?)
+    if name == "Breath":
+        name = "gas in respiratory system"
+
+    if name == "Breast Milk":
+        name = "milk"
+
     return name
 
 
