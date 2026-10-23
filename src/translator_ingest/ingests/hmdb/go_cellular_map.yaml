@@ -4,8 +4,7 @@ metadata:
   description: "Mapping file for lookup from HMDB (sub)cellular location to Gene Ontology 'Cellular Compartment' terms"
 
 reader:
-  format: "csv"
-  delimiter: ","
+  format: "csv"   # actually, 'tsv'
 
   # This is generated from the GO ontology using the project
   # script src/docs/scripts/koza_maps/go_cellular_map.py

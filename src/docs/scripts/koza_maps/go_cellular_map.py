@@ -25,13 +25,6 @@ adapter = get_adapter("sqlite:obo:go")
 rows = []
 
 print("Loading GO term namespaces...")
-#
-# Bulk lookup of each GO term's OBO namespace ('cellular_component', 'biological_process',
-# 'molecular_function') in a single query, rather than calling adapter.entity_metadata_map(curie)
-# once per entity (which internally rescans the whole annotation-property table on every call,
-# and whose result was being matched against the wrong key - 'namespace' instead of
-# 'oio:hasOBONamespace' - so it never actually kept any term).
-#
 namespace_by_curie = {
     subject: value
     for subject, value in adapter.session.query(Statements.subject, Statements.value).filter(
@@ -40,7 +33,6 @@ namespace_by_curie = {
 }
 
 print("Loading GO entities...")
-n=0
 for curie in adapter.entities():
 
     if not curie.startswith("GO:"):
@@ -56,13 +48,6 @@ for curie in adapter.entities():
 
     if not label:
         continue
-
-    # rudimentary progress bar for this long-lived script?
-    n = n + 1
-    if n%100 == 0:
-        print(". ",sep=None, end=None)
-        if n%1000 == 0:
-            print("\n")
 
     rows.append(
         {
@@ -107,9 +92,10 @@ df.sort_values(
     inplace=True
 )
 
-print("... Publishing mapping file.")
+print("... publishing mapping file.")
 df.to_csv(
     go_cellular_lookup_file,
+    sep="\t",
     index=False
 )
 

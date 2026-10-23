@@ -14,6 +14,7 @@ adapter = get_adapter("sqlite:obo:uberon")
 
 rows = []
 
+print("Loading UBERON entities...")
 for curie in adapter.entities():
 
     if not curie.startswith("UBERON:"):
@@ -46,12 +47,20 @@ for curie in adapter.entities():
                 "match_type": "alias"
             })
 
+print(".. creating data frame...")
 df = pd.DataFrame(rows)
+
+print("...dropping duplicates...")
 df.drop_duplicates(
     subset=["source_term", "uberon_id"],
     inplace=True
 )
 
-df.to_csv(uberon_lookup_file, index=False)
+print("... publishing mapping file.")
+df.to_csv(
+    uberon_lookup_file,
+    sep="\t",
+    index=False
+)
 
 print(f"Generated {len(df):,} mappings")
