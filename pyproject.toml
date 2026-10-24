@@ -31,7 +31,8 @@ dependencies = [
     "robokop-orion==2.0.9",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
-    "zstandard>=0.25.0"
+    "zstandard>=0.25.0",
+    "pandas-stubs~=2.3.3",
 ]
 
 [project.scripts]
@@ -53,6 +54,10 @@ dev = [
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
     "biolink-model==4.4.4",
+]
+
+koza_map = [
+    "oaklib>=0.7.4",
 ]
 
 [tool.pytest.ini_options]
