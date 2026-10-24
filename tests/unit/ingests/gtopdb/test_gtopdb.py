@@ -6,6 +6,7 @@ import pytest
 import pandas as pd
 
 from translator_ingest.ingests.gtopdb.gtopdb import (
+    GTOPDB_VERSION_PATTERN,
     TargetClassification,
     TargetDescriptor,
     _load_ligand_mapping,
@@ -23,7 +24,8 @@ from translator_ingest.ingests.gtopdb.rules import (
     NEUTRAL_PHYSICAL,
     RELATED,
     RULES,
-    SKIP,
+    InteractionRule,
+    PHYSICAL_ONLY,
     TYPE_FALLBACKS,
     resolve_rule,
 )
@@ -42,7 +44,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
-
 
 GTOPDB_SOURCES = [
     RetrievalSource(
@@ -166,9 +167,7 @@ def test_multi_species_target_detection_is_independent_of_complex_classification
 
     assert human_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
     assert mouse_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
-    assert multi_species_source_target_ids(
-        (human_complex, mouse_complex, unknown_species)
-    ) == frozenset({"378"})
+    assert multi_species_source_target_ids((human_complex, mouse_complex, unknown_species)) == frozenset({"378"})
 
 
 @pytest.mark.parametrize(
@@ -178,14 +177,15 @@ def test_multi_species_target_detection_is_independent_of_complex_classification
         ("Inhibitor", "future action", "negative"),
     ],
 )
-def test_legacy_type_fallbacks_remain_explicit(type_value, action_value, polarity):
+def test_legacy_type_fallbacks_remain_explicit(type_value: str, action_value: str, polarity: str) -> None:
+    """Unknown actions retain their type-level effect without a mechanism."""
     rule = resolve_rule(type_value, action_value)
 
     assert rule is not None
-    assert rule.polarity == polarity
-    assert rule.mechanism is None
-    assert not rule.physical_interaction
-    assert not rule.skip
+    assert rule.primary is not None
+    assert rule.primary.polarity == polarity
+    assert rule.primary.mechanism is None
+    assert rule.physical is None
 
 
 def test_unknown_type_action_pair_has_no_rule():
@@ -195,33 +195,42 @@ def test_unknown_type_action_pair_has_no_rule():
 def test_canonical_rules_and_nested_lookup_are_the_registration_source():
     assert RULES["Activator"]["Activation"] is ACTIVATION
     assert RULES["Agonist"]["Agonist"] is AGONISM
-    assert RULES["Agonist"]["Inverse agonist"] == resolve_rule(
-        "Agonist", "Inverse agonist"
-    )
+    assert RULES["Agonist"]["Inverse agonist"] == resolve_rule("Agonist", "Inverse agonist")
 
 
-def test_canonical_rules_are_immutable_and_mapping_inventory_is_explicit():
+def test_canonical_rules_are_immutable_and_mapping_inventory_is_explicit() -> None:
+    """Shared rules and their edge definitions are immutable, including physical-only rules."""
     canonical_rules = (
         ACTIVATION,
         AGONISM,
         ANTAGONISM,
         INHIBITION,
-        SKIP,
         RELATED,
         NEUTRAL_PHYSICAL,
+        PHYSICAL_ONLY,
     )
     for rule in canonical_rules:
         with pytest.raises(FrozenInstanceError):
-            rule.skip = True
+            rule.physical = None
+        if rule.primary is not None:
+            with pytest.raises(FrozenInstanceError):
+                rule.primary.mechanism = None
+        if rule.physical is not None:
+            with pytest.raises(FrozenInstanceError):
+                rule.physical.mechanism = None
 
     assert sum(len(actions) for actions in RULES.values()) == 77
     assert set(TYPE_FALLBACKS) == {"Activator", "Inhibitor"}
 
 
+def test_empty_interaction_rule_is_rejected() -> None:
+    """Keep None as the only way to represent a skipped interaction."""
+    with pytest.raises(ValueError, match="Use None to skip"):
+        InteractionRule(primary=None, physical=None)
+
+
 def test_prepare_preserves_source_target_fields(tmp_path):
-    (tmp_path / "ligands.csv").write_text(
-        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
-    )
+    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
     context = RecordingContext()
     context.input_files_dir = tmp_path
     source_record = {
@@ -252,9 +261,7 @@ def test_prepare_preserves_source_target_fields(tmp_path):
 
 
 def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path):
-    (tmp_path / "ligands.csv").write_text(
-        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
-    )
+    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
     context = RecordingContext()
     context.input_files_dir = tmp_path
     base = {
@@ -286,9 +293,7 @@ def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path)
 
 def test_prepare_preserves_target_species_descriptors(tmp_path):
     """Keep source target descriptors separate when their species differ."""
-    (tmp_path / "ligands.csv").write_text(
-        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
-    )
+    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
     context = RecordingContext()
     context.input_files_dir = tmp_path
     base = {
@@ -314,45 +319,18 @@ def test_prepare_preserves_target_species_descriptors(tmp_path):
 
     prepared = list(prepare(context, [base, mouse]))
 
-    assert {
-        (record["target_id"], record["target_species"], record["target_uniprot_ids"])
-        for record in prepared
-    } == {
+    assert {(record["target_id"], record["target_species"], record["target_uniprot_ids"]) for record in prepared} == {
         ("378", "Human", "P46098|O95264"),
         ("378", "Mouse", "P23979|Q9JHJ5"),
     }
 
 
 def test_load_ligand_mapping_and_publication_list(tmp_path):
-    (tmp_path / "ligands.csv").write_text(
-        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n'
-    )
+    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
 
     assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
     assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
     assert _publication_list("") is None
-
-
-@pytest.mark.parametrize(
-    ("page", "expected"),
-    [
-        ("<b>Downloads are from the 2026.2 version.</b>", "2026.2"),
-        ("<p>No release information</p>", None),
-    ],
-)
-def test_get_latest_version_parses_or_rejects_download_page(monkeypatch, page, expected):
-    class Response:
-        content = page.encode()
-
-    monkeypatch.setattr(
-        "translator_ingest.ingests.gtopdb.gtopdb.requests.get", lambda _: Response()
-    )
-
-    if expected is None:
-        with pytest.raises(RuntimeError, match="download version text"):
-            get_latest_version()
-    else:
-        assert get_latest_version() == expected
 
 
 class RecordingContext:
@@ -377,9 +355,7 @@ def _edge_signature(edge):
     }
 
 
-INTERACTION_RULE_GOLDEN = json.loads(
-    (Path(__file__).parent / "interaction_rule_golden.json").read_text()
-)
+INTERACTION_RULE_GOLDEN = json.loads((Path(__file__).parent / "interaction_rule_golden.json").read_text())
 
 
 @pytest.mark.parametrize(
@@ -388,7 +364,7 @@ INTERACTION_RULE_GOLDEN = json.loads(
     ids=lambda case: f"{case['type']}:{case['action']}:{case['endogenous']}",
 )
 def test_transform_matches_current_source_rule_behavior(case):
-    """Freeze 2026.2 behavior before replacing the Type/Action conditional forest."""
+    """Verify the literal inventory, including reviewed corrections and the chosen activation mapping."""
     record = {
         "subject_id": "2244",
         "subject_name": "example ligand",
@@ -440,14 +416,8 @@ def test_transform_emits_source_defined_complex_targets():
         next(node for node in graph.nodes if node.id == "IUPHARobj:378"),
         MacromolecularComplex,
     )
-    assert all(
-        isinstance(node, Protein)
-        for node in graph.nodes
-        if node.id in {"UniProtKB:P46098", "UniProtKB:O95264"}
-    )
-    assert {
-        (edge.subject, edge.predicate, edge.object) for edge in graph.edges
-    } == {
+    assert all(isinstance(node, Protein) for node in graph.nodes if node.id in {"UniProtKB:P46098", "UniProtKB:O95264"})
+    assert {(edge.subject, edge.predicate, edge.object) for edge in graph.edges} == {
         ("PUBCHEM.COMPOUND:2244", "biolink:affects", "IUPHARobj:378"),
         (
             "PUBCHEM.COMPOUND:2244",
@@ -458,22 +428,26 @@ def test_transform_emits_source_defined_complex_targets():
         ("IUPHARobj:378", "biolink:has_part", "UniProtKB:O95264"),
     }
     assert {
-        edge.predicate: edge.species_context_qualifier
-        for edge in graph.edges
-        if edge.predicate != "biolink:has_part"
+        edge.predicate: edge.species_context_qualifier for edge in graph.edges if edge.predicate != "biolink:has_part"
     } == {
         "biolink:affects": "NCBITaxon:9606",
         "biolink:directly_physically_interacts_with": "NCBITaxon:9606",
     }
-    assert all(
-        node.in_taxon == ["NCBITaxon:9606"]
-        for node in graph.nodes
-        if node.id != "PUBCHEM.COMPOUND:2244"
-    )
+    assert all(node.in_taxon == ["NCBITaxon:9606"] for node in graph.nodes if node.id != "PUBCHEM.COMPOUND:2244")
     assert context.messages == []
 
 
-def test_transform_omits_components_for_multi_species_source_complexes():
+@pytest.mark.parametrize(
+    "type_value,action,edge_count,physical_mechanism",
+    [
+        ("Agonist", "Agonist", 4, None),
+        ("Fusion protein", "Binding", 2, "binding"),
+        ("Allosteric modulator", "Neutral", 2, "allosteric_modulation"),
+    ],
+)
+def test_transform_omits_components_for_multi_species_source_complexes(
+    type_value: str, action: str, edge_count: int, physical_mechanism: str | None
+):
     """Avoid merging human and mouse target 378 components under IUPHARobj:378."""
     human = {
         "subject_id": "2244",
@@ -484,8 +458,8 @@ def test_transform_omits_components_for_multi_species_source_complexes():
         "target_subunit_ids": "373|374",
         "target_gene_symbols": "HTR3A|HTR3B",
         "target_uniprot_ids": "P46098|O95264",
-        "Type": "Agonist",
-        "Action": "Agonist",
+        "Type": type_value,
+        "Action": action,
         "Endogenous": "FALSE",
         "PubMed ID": "11489465",
     }
@@ -502,11 +476,16 @@ def test_transform_omits_components_for_multi_species_source_complexes():
         "IUPHARobj:378",
     }
     assert all(edge.predicate != "biolink:has_part" for edge in graph.edges)
-    assert {
-        edge.species_context_qualifier
-        for edge in graph.edges
-        if edge.predicate != "biolink:has_part"
-    } == {"NCBITaxon:9606", "NCBITaxon:10090"}
+    assert len(graph.edges) == edge_count
+    physical_edges = [edge for edge in graph.edges if edge.predicate == "biolink:directly_physically_interacts_with"]
+    assert len(physical_edges) == 2
+    assert all(edge.causal_mechanism_qualifier == physical_mechanism for edge in physical_edges)
+    assert all(edge.object_aspect_qualifier is None for edge in physical_edges)
+    assert all(edge.object_direction_qualifier is None for edge in physical_edges)
+    assert {edge.species_context_qualifier for edge in graph.edges if edge.predicate != "biolink:has_part"} == {
+        "NCBITaxon:9606",
+        "NCBITaxon:10090",
+    }
 
 
 # ── Fixtures: one per edge type declared in gtopdb_rig.yaml / gtopdb.py ────
@@ -567,3 +546,34 @@ def test_pydantic_roundtrip(fixture):
     dumped = obj.model_dump()
     restored = cls.model_validate(dumped)
     assert restored == obj
+
+
+# ── Version parsing ───────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    "first_line,expected",
+    [
+        ('"# GtoPdb Version: 2026.2 - published: 2026-06-15"', "2026.2"),
+        ("# GtoPdb Version: 2025.4 - published: 2025-12-01", "2025.4"),
+        ('"# GtoPdb Version:2026.10 - published: 2026-11-02"', "2026.10"),
+    ],
+)
+def test_gtopdb_version_pattern(first_line: str, expected: str):
+    """The version is parsed from the metadata comment on the first line of the data files."""
+    match = GTOPDB_VERSION_PATTERN.search(first_line)
+    assert match is not None
+    assert match.group("version") == expected
+
+
+@pytest.mark.parametrize("first_line", ["", '"Target","Target ID"', "# some other comment"])
+def test_gtopdb_version_pattern_no_match(first_line: str):
+    """Lines without the metadata comment do not yield a version."""
+    assert GTOPDB_VERSION_PATTERN.search(first_line) is None
+
+
+# Network-dependent: streams the first line of guidetopharmacology.org's interactions.csv.
+# Skipped to keep CI hermetic, matching the convention in test_panther.py.
+@pytest.mark.skip(reason="hits guidetopharmacology.org; run manually to verify the version metadata line")
+def test_get_latest_version_live():
+    version = get_latest_version()
+    major, _, minor = version.partition(".")
+    assert major.isdigit() and minor.isdigit()

@@ -382,14 +382,12 @@ def transform_record(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowle
         id=id_a,
         name=name_a if name_a else id_a,
         category=[type_to_category[type_a]],  # Category needs to be a list
-        taxon="NCBITaxon:9606",  # Human only, as per filters
     )
 
     entity_b = entity_b_class(
         id=id_b,
         name=name_b if name_b else id_b,
         category=[type_to_category[type_b]],  # Category needs to be a list
-        taxon="NCBITaxon:9606",  # Human only, as per filters
     )
 
     # Extract predicate from interaction type

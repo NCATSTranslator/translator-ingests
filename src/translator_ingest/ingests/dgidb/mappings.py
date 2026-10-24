@@ -19,15 +19,17 @@ supporting_data_sources = {    ## become a RetrievalSource object in sources pro
   "ChEMBL": util.INFORES_CHEMBL,
   "ClearityFoundationBiomarkers": util.INFORES_CLEARITY_BIOMARKERS,
   "ClearityFoundationClinicalTrial": util.INFORES_CLEARITY_CLINICAL,
+  "ClinPGx": util.INFORES_CLINPGX,
   "DTC": util.INFORES_DTC,
   "DoCM": util.INFORES_DOCM,
+  "Drug Repurposing Hub": util.INFORES_DRUG_REPURPOSING_HUB,
   "FDA": util.INFORES_FDA_PGX,
   "GuideToPharmacology": util.INFORES_GTOPDB,
+  "MOAlmanac": util.INFORES_MOALMANAC,
   "MyCancerGenome": util.INFORES_MYCANCERGENOME,
   "MyCancerGenomeClinicalTrial": util.INFORES_MYCANCERGENOME_TRIALS,
   "NCI": util.INFORES_NCIT,
   "OncoKB": util.INFORES_ONCOKB,
-  "PharmGKB":util.INFORES_PHARMGKB,
   "TTD": util.INFORES_TTD,
 }
 
@@ -38,6 +40,7 @@ publications = {     ## become an element in "publications" list
   "TALC": "PMID:25535693",
   "TEND": "PMID:21804595",
   "TdgClinicalTrial": "PMID:24016212",
+  "PRISM": "PMID:32613204",
 }
 
 

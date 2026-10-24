@@ -28,9 +28,9 @@ source_info:
   data_versioning_and_releases: >-
     Based on the FAQ section: content expansion and feature enhancements are announced on the front page.
     Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in
-    October 2024). The ingest derives the source version by scraping the download page
-    (https://www.guidetopharmacology.org/download.jsp), which reports text of the form
-    "Downloads are from the 2025.4 version." Release history is documented at
+    October 2024). The ingest reads the release version from the metadata comment on the first line of
+    interactions.csv (https://www.guidetopharmacology.org/DATA/interactions.csv).
+    Release history is documented at
     https://www.guidetopharmacology.org/databaseContent.jsp
   source_status: maintained_regular_updates
 
@@ -138,6 +138,10 @@ target_info:
       additional_notes:
         - "The choice between increased/decreased direction is based on the combination of the Type and Action columns in GtoPdb. The choice between the 'affects' and 'regulates' predicate is based on whether ENDOGENOUS = FALSE (affects) or TRUE (regulates). Records in the source data describe interactions demonstrated in specific experiments; records with the same ligand, target, and Type + Action are aggregated into a single edge, and publications from each merged record are combined into a list and attached to the edge. Examples of record sets that should get merged are documented at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
         - "The causal_mechanism_qualifier value depends on the Type + Action combination and is drawn from the Biolink CausalMechanismQualifierEnum (e.g. agonism, partial_agonism, inverse_agonism, antagonism, inhibition, competitive_inhibition, irreversible_inhibition, activation, potentiation, positive/negative/mixed_allosteric_modulation, molecular_channel_blockage, gating_inhibition, antibody_agonism, antibody_inhibition)."
+        - "For both affects and regulates edges, Full agonist actions under Activator, Agonist, and Allosteric modulator intentionally use agonism. Gating inhibitor + Voltage-dependent inhibition intentionally uses gating_inhibition. Physical edges retain their independently specified mechanisms."
+        - "Agonist + Irreversible agonist deliberately retains agonism to preserve the original ingest behavior. Biolink has no irreversible_agonism value; the emitted mechanism does not assert irreversibility. The physical edge is retained."
+        - "Inhibitor + Non-competitive uses the Biolink mechanism noncompetitive_inhibition (the reviewed sheet spells it non_competitive_inhibition). Antagonist + Non-competitive retains non_competitive_antagonism."
+        - "Antibody + Agonist follows the reviewed mapping: mechanism antibody_agonism with decreased direction for affects and downregulated direction for regulates."
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
@@ -169,6 +173,7 @@ target_info:
         - infores:gtopdb
       edge_properties:
         - biolink:publications
+        - biolink:species_context_qualifier
       ui_explanation: >-
         Source GtoPdb data provides expert-curated assertions about how an endogenous ligand regulates the
         activity of a target. This edge type is emitted when GtoPdb's ENDOGENOUS flag is TRUE, indicating
@@ -191,10 +196,13 @@ target_info:
       object_categories:
         - biolink:Protein
         - biolink:MacromolecularComplex
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_enumeration:
+            - binding
+            - allosteric_modulation
       knowledge_level:
         - knowledge_assertion
-      primary_knowledge_sources:
-        - infores:gtopdb
       agent_type:
         - manual_agent
       primary_knowledge_sources:
@@ -205,17 +213,17 @@ target_info:
       ui_explanation: >-
         Source GtoPdb data provides expert-curated assertions about ligand-target interactions. This edge
         reports that a ligand physically binds to a target, without asserting a direction of effect. It
-        is created (in addition to the corresponding 'affects'/'regulates' edge) when the GtoPdb Type + Action
+        is created independently of any 'affects'/'regulates' edge when the GtoPdb Type + Action
         values imply that a direct physical interaction is occurring (e.g. agonist, antagonist, binding,
         inhibitor mechanisms). This relationship is represented using the symmetric Biolink
-        'directly_physically_interacts_with' predicate, and carries no aspect, direction, or mechanism
-        qualifier.
+        'directly_physically_interacts_with' predicate, and carries no aspect or direction qualifier.
+        When specified by the mapping, its own causal mechanism is binding or allosteric_modulation.
       source_files:
         - interactions.csv
         - ligands.csv
       additional_notes:
-        - "This separate directly_physically_interacts_with edge is created when the Type + Action values in the source data report a mechanism that implies a direct physical interaction is occurring. The mapping table indicating when an additional physically-interacts-with edge is created is here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
-        - "This edge type is modeled as a Biolink PairwiseMolecularInteraction, which does not accept a causal_mechanism_qualifier; the mechanism detail is carried only on the paired 'affects'/'regulates' edge."
+        - "The mapping independently specifies the primary and physical edges and their causal mechanisms: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+        - "This edge type is modeled as a Biolink PairwiseMolecularInteraction and accepts its own causal_mechanism_qualifier. Physical-only mappings emit this edge without an 'affects'/'regulates' edge."
 
     - subject_categories:
         - biolink:ChemicalEntity

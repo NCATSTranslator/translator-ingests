@@ -85,6 +85,10 @@ target_info:
       - manual_agent
     edge_properties:
     - biolink:publications
+    # Affinity measurements are carried as a Study-wrapped ProteinLigandAssayResult:
+    # biolink-model 4.4.4 removed AffinityMeasurement and the has_affinity slot, and no
+    # slot links an Association to a StudyResult directly.
+    - biolink:has_supporting_studies
   node_type_info:
   - node_category: biolink:ChemicalEntity
     source_identifier_types:

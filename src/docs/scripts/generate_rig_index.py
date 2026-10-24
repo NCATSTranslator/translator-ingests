@@ -38,7 +38,7 @@ def main(rig_dir, template_dir, input_file, output_file):
             continue  # Skip test file
 
         try:
-            with open(yaml_file, "r") as f:
+            with open(yaml_file, "r", encoding="utf-8") as f:
                 rig_data = yaml.safe_load(f)
 
             # Extract key information
@@ -61,7 +61,7 @@ def main(rig_dir, template_dir, input_file, output_file):
     table_content = table_template.render(rigs=rigs)
 
     # Read the input markdown file
-    with open(input_path, "r") as f:
+    with open(input_path, "r", encoding="utf-8") as f:
         base_content = f.read()
 
     # Replace the table placeholder with generated content
@@ -71,7 +71,7 @@ def main(rig_dir, template_dir, input_file, output_file):
     )
 
     # Write output file
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(output_content)
 
     click.echo(f"Generated RIG index: {output_path}")

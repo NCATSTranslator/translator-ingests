@@ -6,7 +6,6 @@ from pathlib import Path
 import re
 from typing import Any, Iterable
 
-from bs4 import BeautifulSoup
 import koza
 from koza.model.graphs import KnowledgeGraph
 import pandas as pd
@@ -17,7 +16,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     ChemicalEntity,
     DirectionQualifierEnum,
-    GeneOrGeneProductOrChemicalEntityAspectEnum,
     KnowledgeLevelEnum,
     MacromolecularComplex,
     NamedThing,
@@ -25,10 +23,9 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Protein,
 )
 
-from translator_ingest.ingests.gtopdb.rules import InteractionRule, resolve_rule
+from translator_ingest.ingests.gtopdb.rules import InteractionRule, PrimaryAssociationRule, resolve_rule
 from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
-
 
 GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
 
@@ -36,26 +33,9 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
-
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
-
-SOURCE_COLUMNS = (
-    "Target",
-    "Target ID",
-    "Target Subunit IDs",
-    "Target Gene Symbol",
-    "Target UniProt ID",
-    "Target Species",
-    LIGAND_ID_COLUMN,
-    "Ligand",
-    "Type",
-    "Action",
-    "Endogenous",
-    "Ligand Context",
-    PUBLICATIONS_COLUMN,
-)
 
 GROUP_COLUMNS = (
     "Target",
@@ -70,6 +50,14 @@ GROUP_COLUMNS = (
     "Action",
     "Endogenous",
 )
+
+SOURCE_COLUMNS = (*GROUP_COLUMNS, "Ligand Context", PUBLICATIONS_COLUMN)
+
+# The interactions file that this ingest downloads; its first line carries the release version.
+GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
+
+# e.g. '"# GtoPdb Version: 2026.2 - published: 2026-06-15"'
+GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
 PREPARED_COLUMN_RENAMES = {
     "Ligand": "subject_name",
@@ -178,13 +166,11 @@ class TargetDescriptor:
         """Build a target descriptor from a prepared GtoPdb interaction record."""
         return cls(
             source_id=_source_text(record.get("target_id")),
-            name=_source_text(record.get("target_name"))
-            or _source_text(record.get("object_name")),
+            name=_source_text(record.get("target_name")) or _source_text(record.get("object_name")),
             species=_source_text(record.get("target_species")),
             subunit_ids=_pipe_values(record.get("target_subunit_ids")),
             gene_symbols=_pipe_values(record.get("target_gene_symbols")),
-            uniprot_ids=_pipe_values(record.get("target_uniprot_ids"))
-            or _pipe_values(record.get("object_id")),
+            uniprot_ids=_pipe_values(record.get("target_uniprot_ids")) or _pipe_values(record.get("object_id")),
         )
 
     @property
@@ -269,21 +255,29 @@ def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> froz
         species = _known_species(target.species)
         if target.source_id and species:
             species_by_source_id.setdefault(target.source_id, set()).add(species)
-    return frozenset(
-        source_id for source_id, species in species_by_source_id.items() if len(species) > 1
-    )
+    return frozenset(source_id for source_id, species in species_by_source_id.items() if len(species) > 1)
 
 
 def get_latest_version() -> str:
-    """Derive the GtoPdb release version from its download page."""
-    response = requests.get("https://www.guidetopharmacology.org/download.jsp")
-    soup = BeautifulSoup(response.content, "html.parser")
-    version_tag = soup.find("b", string=re.compile("Downloads are from the *"))
-    if version_tag is None:
-        raise RuntimeError("Could not find the GtoPdb download version text.")
+    """Determine the latest GtoPdb release version.
 
-    version_text = version_tag.text
-    return version_text[len("Downloads are from the "):].split(" version")[0]
+    The download.jsp web page that used to advertise the version now requires a login, so the version is
+    read from the metadata comment on the first line of the interactions file instead. That file is the
+    same one this ingest downloads, so the version is guaranteed to describe the data actually ingested.
+
+    :return: The GtoPdb version, e.g. '2026.2'
+    :raises RuntimeError: If the version could not be parsed from the file.
+    """
+    with requests.get(GTOPDB_INTERACTIONS_URL, stream=True, timeout=60) as response:
+        response.raise_for_status()
+        first_line = next(response.iter_lines(decode_unicode=True), "")
+
+    match = GTOPDB_VERSION_PATTERN.search(first_line)
+    if match is None:
+        raise RuntimeError(
+            f"Could not parse the GtoPdb version from the first line of {GTOPDB_INTERACTIONS_URL}: {first_line!r}"
+        )
+    return match.group("version")
 
 
 def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
@@ -314,13 +308,11 @@ def _prepare_interactions(
     source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
     source = source.astype({LIGAND_ID_COLUMN: "string", "Target ID": "string"})
     source = source.dropna(subset=["Target ID", LIGAND_ID_COLUMN])
-    source = source[
-        source["Target ID"].str.strip().ne("")
-        & source[LIGAND_ID_COLUMN].str.strip().ne("")
-    ]
+    source = source[source["Target ID"].str.strip().ne("") & source[LIGAND_ID_COLUMN].str.strip().ne("")]
 
-    aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
-    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
+    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(
+        {PUBLICATIONS_COLUMN: _join_publications}
+    )
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
     prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
@@ -334,7 +326,13 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[di
 
 
 def _publication_list(value: str | None) -> list[str] | None:
-    """Convert the source's pipe-delimited publication field into PubMed CURIEs."""
+    """Prefix publication tokens without changing whitespace or multiplicity.
+
+    >>> _publication_list("123|123|| 456 ")
+    ['PMID:123', 'PMID:123', 'PMID:', 'PMID: 456 ']
+    >>> _publication_list("") is None
+    True
+    """
     if not value:
         return None
     return [f"PMID:{pmid}" for pmid in value.split("|")]
@@ -350,9 +348,7 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
         object: NamedThing = Protein(
             id=target.protein_curie,
             name=target.name,
-            in_taxon=[target.species_context_qualifier]
-            if target.species_context_qualifier
-            else None,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
         )
     elif target.complex_curie:
         object = MacromolecularComplex(
@@ -361,9 +357,7 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
             # IUPHARobj identifies the source target concept. The taxon keeps
             # human target 378 (5-HT3AB) distinct in meaning from its mouse
             # descriptor, even though both use IUPHARobj:378 as the node ID.
-            in_taxon=[target.species_context_qualifier]
-            if target.species_context_qualifier
-            else None,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
         )
     else:
         raise ValueError(f"Cannot create a target node for {target.key}")
@@ -377,9 +371,7 @@ def _component_nodes(target: TargetDescriptor) -> list[Protein]:
     return [
         Protein(
             id=f"UniProtKB:{accession}",
-            in_taxon=[target.species_context_qualifier]
-            if target.species_context_qualifier
-            else None,
+            in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
         )
         for accession in target.canonical_uniprot_ids
     ]
@@ -392,47 +384,74 @@ def _attach_publications(edges: list[Association], publications: list[str] | Non
             edge.publications = publications
 
 
-def _build_primary_association(
+def _interaction_edges(
     subject: ChemicalEntity,
     object: NamedThing,
-    endogenous: str,
+    endogenous: Any,
     rule: InteractionRule,
-    species_context_qualifier: str | None,
-) -> Association:
-    """Construct the one pharmacological edge selected by an interaction rule."""
-    if rule.relation == "related":
-        return Association(
-            id=entity_id(),
-            subject=subject.id,
-            predicate=BIOLINK_RELATED,
-            object=object.id,
-            sources=GTOPDB_SOURCES,
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-        )
+    species_context_qualifier: str | None = None,
+) -> list[Association]:
+    """Build the optional primary and physical edges, each with its own qualifiers.
 
-    predicate, direction = _endogenous_projection(endogenous, rule)
-    return ChemicalAffectsGeneAssociation(
-        id=entity_id(),
-        subject=subject.id,
-        predicate=predicate,
-        object=object.id,
-        qualified_predicate=BIOLINK_CAUSES if rule.qualified else None,
-        object_aspect_qualifier=GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
-        object_direction_qualifier=direction,
-        causal_mechanism_qualifier=rule.mechanism,
-        sources=GTOPDB_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        species_context_qualifier=species_context_qualifier,
-    )
+    Endogenous projection applies only to an affects/regulates primary edge.
+    Related-to edges remain unqualified; physical edges carry their own mechanism
+    without asserting an effect on activity.
+    """
+    common_fields: dict[str, Any] = {
+        "subject": subject.id,
+        "object": object.id,
+        "sources": GTOPDB_SOURCES,
+        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+        "agent_type": AgentTypeEnum.manual_agent,
+    }
+    edges: list[Association] = []
+    primary = rule.primary
+    if primary is not None:
+        if primary.relation == "related":
+            edges.append(Association(id=entity_id(), predicate=BIOLINK_RELATED, **common_fields))
+        else:
+            predicate, direction = _endogenous_projection(endogenous, primary)
+            edges.append(
+                ChemicalAffectsGeneAssociation(
+                    id=entity_id(),
+                    predicate=predicate,
+                    qualified_predicate=BIOLINK_CAUSES if primary.qualified else None,
+                    object_aspect_qualifier=primary.aspect,
+                    object_direction_qualifier=direction,
+                    causal_mechanism_qualifier=primary.mechanism,
+                    species_context_qualifier=species_context_qualifier,
+                    **common_fields,
+                )
+            )
+    if rule.physical is not None:
+        edges.append(
+            PairwiseMolecularInteraction(
+                id=entity_id(),
+                predicate="biolink:directly_physically_interacts_with",
+                causal_mechanism_qualifier=rule.physical.mechanism,
+                species_context_qualifier=species_context_qualifier,
+                **common_fields,
+            )
+        )
+    return edges
 
 
 def _endogenous_projection(
-    endogenous: str,
-    rule: InteractionRule,
+    endogenous: Any,
+    rule: PrimaryAssociationRule,
 ) -> tuple[str, DirectionQualifierEnum | None]:
-    """Project source polarity into predicate and direction under endogenous policy."""
+    """Select endogenous context using the exact source string, including nulls.
+
+    >>> rule = PrimaryAssociationRule(polarity="positive")
+    >>> predicate, direction = _endogenous_projection("TRUE", rule)
+    >>> predicate, direction.value
+    ('biolink:regulates', 'upregulated')
+    >>> predicate, direction = _endogenous_projection(True, rule)
+    >>> predicate, direction.value
+    ('biolink:affects', 'increased')
+    >>> _endogenous_projection(None, PrimaryAssociationRule())
+    ('biolink:affects', None)
+    """
     if endogenous == "TRUE":
         predicate = BIOLINK_REGULATES
         directions = {
@@ -448,29 +467,11 @@ def _endogenous_projection(
     return predicate, directions.get(rule.polarity)
 
 
-def _build_physical_interaction(
-    subject: ChemicalEntity,
-    object: NamedThing,
-    species_context_qualifier: str | None,
-) -> PairwiseMolecularInteraction:
-    """Construct the companion direct physical-interaction edge for a rule."""
-    return PairwiseMolecularInteraction(
-        id=entity_id(),
-        subject=subject.id,
-        predicate="biolink:directly_physically_interacts_with",
-        object=object.id,
-        sources=GTOPDB_SOURCES,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        species_context_qualifier=species_context_qualifier,
-    )
-
-
 def _edges_for_record(
     subject: ChemicalEntity,
     object: NamedThing,
     target: TargetDescriptor,
-    endogenous: str,
+    endogenous: Any,
     rule: InteractionRule,
     publications: list[str] | None,
     emit_component_edges: bool,
@@ -483,19 +484,7 @@ def _edges_for_record(
     Therefore multi-species source IDs omit those edges conservatively; see
     https://github.com/biolink/biolink-model/pull/1797 and translator-ingests#510.
     """
-    edges: list[Association] = [
-        _build_primary_association(
-            subject,
-            object,
-            endogenous,
-            rule,
-            target.species_context_qualifier,
-        )
-    ]
-    if rule.physical_interaction:
-        edges.append(
-            _build_physical_interaction(subject, object, target.species_context_qualifier)
-        )
+    edges = _interaction_edges(subject, object, endogenous, rule, target.species_context_qualifier)
     if target.complex_curie and emit_component_edges:
         edges.extend(
             Association(
@@ -536,7 +525,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             continue
 
         rule = resolve_rule(record["Type"], record["Action"])
-        if rule is None or rule.skip:
+        if rule is None:
             continue
 
         subject, object = _nodes_for_record(record, target)
@@ -553,11 +542,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         # unqualified components for shared source IDs. See the RIG's
         # multi-species composition note, biolink-model#1797, and
         # translator-ingests#510.
-        component_nodes = (
-            _component_nodes(target)
-            if target.source_id not in multi_species_target_ids
-            else []
-        )
+        component_nodes = _component_nodes(target) if target.source_id not in multi_species_target_ids else []
         nodes.extend((subject, object, *component_nodes))
         edges.extend(emitted_edges)
 
