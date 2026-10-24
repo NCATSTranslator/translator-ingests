@@ -464,7 +464,9 @@ def _endogenous_projection(
             "positive": DirectionQualifierEnum.increased,
             "negative": DirectionQualifierEnum.decreased,
         }
-    return predicate, directions.get(rule.polarity)
+
+    direction = directions.get(rule.polarity) if rule.polarity is not None else None
+    return predicate, direction
 
 
 def _edges_for_record(
