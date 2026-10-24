@@ -174,7 +174,7 @@ ALLOSTERIC_ONLY = InteractionRule(primary=None, physical=ALLOSTERIC_PHYSICAL)
 # before endogenous projection and preserve the independent physical-edge rule.
 RULES: dict[str, dict[str, InteractionRule | None]] = {
     "Activator": {
-        "Activation": ACTIVATION,
+        "Activation": AGONISM,
         "Agonist": AGONISM,
         "Binding": POSITIVE_BINDING,
         "Full agonist": AGONISM,
