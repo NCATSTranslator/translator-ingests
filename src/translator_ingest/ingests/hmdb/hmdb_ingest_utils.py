@@ -8,7 +8,6 @@ import koza
 import xml.etree.cElementTree as E_Tree
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
-    NamedThing,
     Protein,
     Disease,
     Pathway,
@@ -282,7 +281,7 @@ def get_genes(
         metabolite_id
 ) -> list[tuple[Protein, GeneAffectsChemicalAssociation]]:
     """
-    This method creates the gene nodes and gene-to-metabolite edges.
+    This method creates the metabolite to gene (Protein) edges.
 
     Note that there are 2 potential edge directions (legacy records shown):
          It is unknown (to me) why these would have different

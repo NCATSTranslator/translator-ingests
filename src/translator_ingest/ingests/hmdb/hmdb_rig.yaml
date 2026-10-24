@@ -64,28 +64,12 @@ target_info:
   infores_id: infores:hmdb
   edge_type_info:
   - subject:
-    - biolink:Disease
-    - biolink:SmallMolecule
-    - biolink:Pathway
-    - biolink:PhenotypicFeature
-    - biolink:ChemicalMixture
-    - biolink:Gene
-    - biolink:MolecularMixture
-    - biolink:ChemicalEntity
     - biolink:Protein
     predicates:
-    - biolink:subclass_of
-    - biolink:has_participant
-    - biolink:correlated_with
+    - biolink:regulates
+    - biolink:affects
     object:
-    - biolink:Disease
-    - biolink:Protein
-    - biolink:PhenotypicFeature
-    - biolink:ChemicalMixture
-    - biolink:Gene
-    - biolink:MolecularMixture
-    - biolink:ChemicalEntity
-    - biolink:SmallMolecule
+    - biolink:MolecularEntity
     knowledge_level:
     - knowledge_assertion
     agent_type:
@@ -141,36 +125,9 @@ target_info:
   - node_category: biolink:Protein
     source_identifier_types:
     - UniProtKB
-    - PR
-  - node_category: biolink:SmallMolecule
+  - node_category: biolink:MolecularEntity
     source_identifier_types:
-    - GTOPDB
-    - CHEBI
-    - UNII
-    - PUBCHEM.COMPOUND
-    - CHEMBL.COMPOUND
     - HMDB
-  - node_category: biolink:Gene
-    source_identifier_types:
-    - NCBIGene
-  - node_category: biolink:ChemicalEntity
-    source_identifier_types:
-    - UNII
-    - HMDB
-    - CHEBI
-  - node_category: biolink:MolecularMixture
-    source_identifier_types:
-    - PUBCHEM.COMPOUND
-    - CHEBI
-    - CHEMBL.COMPOUND
-    - UNII
-  - node_category: biolink:PhenotypicFeature
-    source_identifier_types:
-    - NCIT
-    - HP
-  - node_category: biolink:ChemicalMixture
-    source_identifier_types:
-    - CHEBI
   - node_category: biolink:CellularComponent
     source_identifier_types:
     - GO
@@ -178,6 +135,9 @@ target_info:
     source_identifier_types:
     - UBERON
     - CL
+  - node_category: biolink:MaterialSample
+    source_identifier_types:
+    - UBERON
   future_considerations:
   - category: null
     consideration: null
