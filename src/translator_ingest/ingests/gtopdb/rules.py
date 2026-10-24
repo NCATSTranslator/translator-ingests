@@ -178,13 +178,13 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Agonist": AGONISM,
         "Binding": POSITIVE_BINDING,
         "Full agonist": AGONISM,
-        "None": None,
+        "None": POSITIVE_EFFECT,
         "Partial agonist": PARTIAL_AGONISM,
         "Positive": POSITIVE_EFFECT,
         "Potentiation": POTENTIATION,
     },
     "Agonist": {
-        "Activation": ACTIVATION,
+        "Activation": AGONISM,
         "Agonist": AGONISM,
         "Biased agonist": BIASED_AGONISM,
         "Binding": BINDING_AGONISM,
@@ -193,7 +193,7 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         # Preserve the original ingest's agonism fallback; Biolink lacks irreversible_agonism.
         "Irreversible agonist": AGONISM,
         "Mixed": MIXED_AGONISM,
-        "None": None,
+        "None": AGONISM,
         "Partial agonist": PARTIAL_AGONISM,
         "Unknown": AGONISM,
     },
@@ -210,7 +210,7 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Mixed": MIXED_ALLOSTERIC_MODULATION,
         "Negative": NEGATIVE_ALLOSTERIC_MODULATION,
         "Neutral": ALLOSTERIC_ONLY,
-        "None": None,
+        "None": ALLOSTERIC_ONLY,
         "Partial agonist": ALLOSTERIC_PARTIAL_AGONISM,
         "Positive": POSITIVE_ALLOSTERIC_MODULATION,
         "Potentiation": ALLOSTERIC_POTENTIATION,
@@ -230,7 +230,7 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Antagonist": ANTIBODY_INHIBITION,
         "Binding": BINDING,
         "Inhibition": ANTIBODY_INHIBITION,
-        "None": None,
+        "None": NEUTRAL_PHYSICAL,
     },
     "Channel blocker": {
         "Antagonist": MOLECULAR_CHANNEL_BLOCKAGE,
@@ -258,14 +258,14 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Inhibition": INHIBITION,
         "Irreversible inhibition": IRREVERSIBLE_INHIBITION,
         "Non-competitive": NONCOMPETITIVE_INHIBITION,
-        "None": None,
+        "None": INHIBITION,
         "Unknown": INHIBITION,
     },
     "None": {
         "Binding": BINDING_ONLY,
         "Competitive": PHYSICAL_ONLY,
         "Inhibition": INHIBITION,
-        "None": None,
+        "None": RELATED,
         "Potentiation": POTENTIATION,
     },
     "Subunit-specific": {
@@ -274,7 +274,6 @@ RULES: dict[str, dict[str, InteractionRule | None]] = {
         "Potentiation": POTENTIATION,
     },
 }
-
 
 TYPE_FALLBACKS: dict[str, InteractionRule] = {
     "Activator": POSITIVE_EFFECT,
