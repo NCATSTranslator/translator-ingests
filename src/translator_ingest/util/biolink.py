@@ -163,20 +163,22 @@ def _build_retrieval_source(
     )
 
 def build_association_knowledge_sources(
-        primary: Union[str,tuple[str, list[str]]],
-        supporting: Optional[list[Union[str,tuple[str, list[str]]]]] = None,
-        aggregating: Optional[Union[str,tuple[str, list[str]]]] = None
+    primary: Union[str, tuple[str, list[str]]],
+    supporting: Optional[list[Union[str, tuple[str, list[str]]]]] = None,
+    aggregating: Optional[Union[str,tuple[str, list[str]]]] = None,
+    aggregating_upstream: Optional[list[Union[str, tuple[str, list[str]]]]] = None,
 ) -> list[RetrievalSource]:
     """
     This function attempts to build a list of a well-formed RetrievalSource list
     for an Association **sources** slot, using given knowledge source parameters
     for primary, supporting and aggregating knowledge sources.
 
-    The use case for 'aggregating knowledge source' represents the limited use case where
-    only one primary knowledge source is specified, as a single upstream knowledge source.
-    This is, of course, not the general case for all aggregating knowledge sources;
-    however, the use case of aggregating knowledge sources with multiple upstream ('primary')
-    knowledge sources is not yet supported.
+    By default, an aggregating knowledge source is linked upstream to the primary
+    knowledge source. For an aggregator that combines multiple upstream resources,
+    ``aggregating_upstream`` can explicitly provide those resource identifiers. The
+    resources still need to be represented with their appropriate primary/supporting
+    roles in the returned ``sources`` list; this parameter controls the aggregator's
+    ``upstream_resource_ids`` only.
 
     This method is lenient in that it allows for strings that are not explicitly encoded
     as infores identifiers, converting these to infores identifiers by prefixing with
@@ -201,10 +203,13 @@ def build_association_knowledge_sources(
 
     aggregating:
         **Simple form:** With the infores 'resource_id' of the aggregating knowledge source.
-        The primary knowledge source given to the method is automatically assumed to be upstream
-        of the aggregating knowledge source and mapped accordingly.
+        By default, the primary knowledge source is assumed upstream of the aggregator.
         **Extended form:** 2-tuple of (resource_id, list[source_record_urls])
         for the aggregating knowledge source of an Association.
+
+    aggregating_upstream:
+        Optional list of InfoRes identifiers (or ``(resource_id, source_record_urls)`` tuples)
+        that the aggregating knowledge source consumes. When omitted, defaults to ``primary``.
 
     Returns
     -------
@@ -242,11 +247,18 @@ def build_association_knowledge_sources(
                 ResourceRoleEnum.aggregator_knowledge_source
             )
 
-        # The use case for 'aggregating knowledge source' represents the
-        # limited use case where only one primary knowledge source is specified
-        aggregating_knowledge_source.upstream_resource_ids = [
-            primary_knowledge_source.resource_id
-        ]
+        upstream_sources = (
+            [primary] if aggregating_upstream is None else aggregating_upstream
+        )
+        upstream_resource_ids = []
+        for upstream_source in upstream_sources:
+            upstream_resource = _build_retrieval_source(
+                upstream_source,
+                ResourceRoleEnum.primary_knowledge_source,
+            )
+            if upstream_resource.resource_id not in upstream_resource_ids:
+                upstream_resource_ids.append(upstream_resource.resource_id)
+        aggregating_knowledge_source.upstream_resource_ids = upstream_resource_ids
 
         sources.append(aggregating_knowledge_source)
 
