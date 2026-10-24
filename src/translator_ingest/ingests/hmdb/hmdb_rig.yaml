@@ -138,18 +138,10 @@ target_info:
     - NCIT
     - OMIM
     - MONDO
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:Protein
     source_identifier_types:
     - UniProtKB
     - PR
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:SmallMolecule
     source_identifier_types:
     - GTOPDB
@@ -158,50 +150,34 @@ target_info:
     - PUBCHEM.COMPOUND
     - CHEMBL.COMPOUND
     - HMDB
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:Gene
     source_identifier_types:
     - NCBIGene
-    node_properties:
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:ChemicalEntity
     source_identifier_types:
     - UNII
     - HMDB
     - CHEBI
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:MolecularMixture
     source_identifier_types:
     - PUBCHEM.COMPOUND
     - CHEBI
     - CHEMBL.COMPOUND
     - UNII
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:PhenotypicFeature
     source_identifier_types:
     - NCIT
     - HP
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
   - node_category: biolink:ChemicalMixture
     source_identifier_types:
     - CHEBI
-    node_properties:
-    - dct:description
-    - biolink:Attribute
-    - biolink:same_as
+  - node_category: biolink:CellularComponent
+    source_identifier_types:
+    - GO
+  - node_category: biolink:GrossAnatomicalStructure
+    source_identifier_types:
+    - UBERON
+    - CL
   future_considerations:
   - category: null
     consideration: null

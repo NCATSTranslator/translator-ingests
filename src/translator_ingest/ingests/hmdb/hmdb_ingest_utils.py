@@ -14,6 +14,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Pathway,
     CellularComponent,
     GrossAnatomicalStructure,
+    MaterialSample,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     Association,
     GeneAffectsChemicalAssociation,
@@ -695,16 +696,16 @@ def get_biospecimen_locations(
         koza_transform: koza.KozaTransform,
         el,
         metabolite_id
-) -> list[tuple[NamedThing, Association]]:
+) -> list[tuple[MaterialSample, Association]]:
     """
     This method creates edges associating HMDB-reported biospecimen locations of metabolites.
 
     :param koza_transform: The koza transform context
     :param el: the root of this XML fragment
     :param metabolite_id: the metabolite id (edge subject)
-    :return: list[tuple[NamedThing, Association]]
+    :return: list[tuple[MaterialSample, Association]]
     """
-    biospecimen_locations_list: list[tuple[NamedThing, Association]] = []
+    biospecimen_locations_list: list[tuple[MaterialSample, Association]] = []
 
     biological_properties: E_Tree.Element | None = el.find('biological_properties')
     if biological_properties is not None:
@@ -719,7 +720,7 @@ def get_biospecimen_locations(
                 for b in biospecimens:
                     biospecimen = str(b.text).strip()
                     biospecimen_id, biospecimen_name = get_anatomy_term(koza_transform, biospecimen)
-                    biospecimen_node = NamedThing(id=biospecimen_id,name=biospecimen_name)
+                    biospecimen_node = MaterialSample(id=biospecimen_id,name=biospecimen_name)
     
                     biospecimen_edge = Association(
                         id=entity_id(),
