@@ -3,7 +3,10 @@
 Expectations use the checked-in inventory, never production rules. Reviewed
 corrections cover physical-only interactions and independent edge qualifiers.
 Full agonism intentionally maps to agonism, voltage-dependent inhibition to
-gating_inhibition, and Agonist + Activation to activation without a physical edge.
+gating_inhibition, and both Activator + Activation and Agonist + Activation to
+agonism with a physical edge. Inhibitor + Antagonist maps to inhibition. The
+review decisions for Activator + Activation and Inhibitor + Antagonist supersede
+the older mapping-sheet entries.
 Non-competitive inhibition uses Biolink's noncompetitive_inhibition term;
 Antibody + Agonist follows the reviewed decreased/downregulated direction.
 Irreversible agonism deliberately retains the original ingest's agonism fallback
@@ -203,7 +206,7 @@ def test_type_action_context_matrix(context: KozaTransform, type_value: str, act
     "type_value,action,mechanism",
     [
         ("Inhibitor", "Binding", "inhibition"),
-        ("Inhibitor", "Antagonist", "antagonism"),
+        ("Inhibitor", "Antagonist", "inhibition"),
         ("Antagonist", "Binding", "antagonism"),
         ("Inhibitor", "Non-competitive", "noncompetitive_inhibition"),
         ("Antagonist", "Non-competitive", "non_competitive_antagonism"),

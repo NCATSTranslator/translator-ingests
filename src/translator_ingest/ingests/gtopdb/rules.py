@@ -296,8 +296,8 @@ def resolve_rule(type_value: Any, action_value: Any) -> InteractionRule | None:
     >>> resolve_rule("None", "None").primary.relation
     'related'
     >>> resolve_rule("Agonist", "Activation").primary.mechanism.value
-    'activation'
-    >>> resolve_rule("Agonist", "Activation").physical is None
+    'agonism'
+    >>> resolve_rule("Agonist", "Activation").physical is DIRECT_PHYSICAL
     True
     >>> resolve_rule("Allosteric modulator", "Activation").physical is DIRECT_PHYSICAL
     True

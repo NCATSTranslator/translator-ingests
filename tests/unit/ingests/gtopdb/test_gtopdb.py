@@ -193,7 +193,7 @@ def test_unknown_type_action_pair_has_no_rule():
 
 
 def test_canonical_rules_and_nested_lookup_are_the_registration_source():
-    assert RULES["Activator"]["Activation"] is ACTIVATION
+    assert RULES["Activator"]["Activation"] is AGONISM
     assert RULES["Agonist"]["Agonist"] is AGONISM
     assert RULES["Agonist"]["Inverse agonist"] == resolve_rule("Agonist", "Inverse agonist")
 
@@ -364,7 +364,7 @@ INTERACTION_RULE_GOLDEN = json.loads((Path(__file__).parent / "interaction_rule_
     ids=lambda case: f"{case['type']}:{case['action']}:{case['endogenous']}",
 )
 def test_transform_matches_current_source_rule_behavior(case):
-    """Verify the literal inventory, including reviewed corrections and the chosen activation mapping."""
+    """Verify the literal inventory, including the reviewed mapping decisions."""
     record = {
         "subject_id": "2244",
         "subject_name": "example ligand",

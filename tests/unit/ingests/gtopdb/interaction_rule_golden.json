@@ -12,7 +12,21 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "increased",
-        "causal_mechanism_qualifier": "activation",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
         "publications": [
           "PMID:123",
           "PMID:456"
@@ -33,7 +47,21 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "upregulated",
-        "causal_mechanism_qualifier": "activation",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
         "publications": [
           "PMID:123",
           "PMID:456"
@@ -460,7 +488,21 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "increased",
-        "causal_mechanism_qualifier": "activation",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
         "publications": [
           "PMID:123",
           "PMID:456"
@@ -481,7 +523,21 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "upregulated",
-        "causal_mechanism_qualifier": "activation",
+        "causal_mechanism_qualifier": "agonism",
+        "publications": [
+          "PMID:123",
+          "PMID:456"
+        ]
+      },
+      {
+        "class": "PairwiseMolecularInteraction",
+        "subject": "PUBCHEM.COMPOUND:2244",
+        "predicate": "biolink:directly_physically_interacts_with",
+        "object": "UniProtKB:P08588",
+        "qualified_predicate": null,
+        "object_aspect_qualifier": null,
+        "object_direction_qualifier": null,
+        "causal_mechanism_qualifier": null,
         "publications": [
           "PMID:123",
           "PMID:456"
@@ -3984,7 +4040,7 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "decreased",
-        "causal_mechanism_qualifier": "antagonism",
+        "causal_mechanism_qualifier": "inhibition",
         "publications": [
           "PMID:123",
           "PMID:456"
@@ -4019,7 +4075,7 @@
         "qualified_predicate": "biolink:causes",
         "object_aspect_qualifier": "activity",
         "object_direction_qualifier": "downregulated",
-        "causal_mechanism_qualifier": "antagonism",
+        "causal_mechanism_qualifier": "inhibition",
         "publications": [
           "PMID:123",
           "PMID:456"
