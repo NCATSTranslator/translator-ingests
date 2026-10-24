@@ -205,7 +205,7 @@ ASSOCIATION_TEST_SLOTS = (
                 {
                     "id": "UBERON:0000178",
                     "name": "blood",
-                    "category": ["biolink:NamedThing"]
+                    "category": ["biolink:MaterialSample"]
                 },
                 {
                     "id": "UBERON:0001987",
