@@ -61,14 +61,14 @@ def basic_mock_koza_transform(basic_mappings: Mappings) -> koza.KozaTransform:
     )
 
 def test_get_term_mapping(basic_mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="go", name="cytoplasm")
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="GO", name="cytoplasm")
     assert term_id == "GO:0005737" and term_name == "cytoplasm"
-    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="uberon", name="neck of uterus")
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="UBERON", name="neck of uterus")
     assert term_id == "UBERON:0000002" and term_name == "uterine cervix"
 
 
 def test_get_term_mapping_failure(basic_mock_koza_transform: koza.KozaTransform):
-    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="unknown", name="fake name")
+    term_id, term_name = get_term_mapping(basic_mock_koza_transform, ontology="UNKNOWN", name="fake name")
     assert term_id == "HMDB:fake_name" and term_name == "fake name"
 
 
