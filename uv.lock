@@ -327,14 +327,14 @@ requires-dist = [
     { name = "duckdb", specifier = ">=1.4.4" },
     { name = "hatchling" },
     { name = "kghub-downloader", specifier = ">=0.5.0" },
-    { name = "koza", specifier = ">=2.4.0" },
+    { name = "koza", specifier = ">=2.6.1" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
     { name = "openpyxl" },
     { name = "pandas", specifier = "==2.3.3" },
     { name = "polars", specifier = ">=1.35.2" },
     { name = "psycopg", extras = ["binary"] },
     { name = "requests" },
-    { name = "robokop-orion", specifier = "==1.3.3" },
+    { name = "robokop-orion", specifier = "==2.0.9" },
     { name = "uv-dynamic-versioning", specifier = ">=0.11.2" },
     { name = "xmltodict", specifier = ">=1.0.2" },
     { name = "zstandard", specifier = ">=0.25.0" },
@@ -1546,7 +1546,7 @@ wheels = [
 
 [[package]]
 name = "koza"
-version = "2.4.0"
+version = "2.6.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "biolink-model" },
@@ -1564,9 +1564,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/56/5e51dc9a24d40c4a601ea2b0d60c4638b63915ba98975ed420bcbf48b567/koza-2.4.0.tar.gz", hash = "sha256:dca0292aaa97efeac3f5929e5276b14a03504662a42e60613395aa470d1d368f", size = 352694, upload-time = "2026-05-06T23:55:35.582Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/ea/27cdf79c0cc060dafdd84874b6e3ec68ce8aad5c37f3b286973c1c82cd5a/koza-2.6.2.tar.gz", hash = "sha256:9f0a62d96fbacbe17b5e0c031ed46d1571df0c8a983c5dc73e955057067e43df", size = 435328, upload-time = "2026-07-28T05:12:26.922Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/63/be263a4389626338b8ce3e5df27c9262241d157877f8a00322dc027a9e6d/koza-2.4.0-py3-none-any.whl", hash = "sha256:b963c5d32ed16fe11b1d2e0aad4ea76112699fcadc715856c1f8c640cf998a1e", size = 112238, upload-time = "2026-05-06T23:55:34.403Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/60/1e8379044f3075c80f7ca9196191bded62d50f3535f9743f6e07e3735849/koza-2.6.2-py3-none-any.whl", hash = "sha256:70e2bdb07d938de128df5dcbcb7721e9d2403bde3d8faaa39c8ef24eb2a3d6cc", size = 168602, upload-time = "2026-07-28T05:12:25.604Z" },
 ]
 
 [[package]]
@@ -2219,7 +2219,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -2985,7 +2985,7 @@ wheels = [
 
 [[package]]
 name = "robokop-orion"
-version = "1.3.3"
+version = "2.0.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bmt" },
@@ -2999,9 +2999,9 @@ dependencies = [
     { name = "uuid-utils" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/53/cb7b2a62397299ca05513f2bbfdc7c1e2cdd488694fe25a92a171e267adb/robokop_orion-1.3.3.tar.gz", hash = "sha256:77cdceaef5f4f7a93828859dc613df7a736397ab75ac7647f8b8725c3ac3d218", size = 94876, upload-time = "2026-04-29T05:21:02.077Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/c0/aee26622342aa967919b128c4a2bed5b2018c561987832ea65d3eaa536cb/robokop_orion-2.0.9.tar.gz", hash = "sha256:d90e05417e5962c5ca2103d65773190ca28efb8544b8b6bd11009891947cf4e6", size = 120411, upload-time = "2026-09-23T20:52:02.298Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/23/d8ed9e246dede1179ad361137f2c69e498e214f9ac36e3a5a1f85e0f5742/robokop_orion-1.3.3-py3-none-any.whl", hash = "sha256:1a5cd9e5f12546e017bca322140b5bf9e2a4cedab848048129360e6d34b102b2", size = 110996, upload-time = "2026-04-29T05:21:00.618Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/cb/053e99fb31dfe9c9d581e81cee6ec4a4089b40350de50faaef2dcee34ef8/robokop_orion-2.0.9-py3-none-any.whl", hash = "sha256:8fb6e6d756326b684c0da92cfd27b0b136e9c2de0af1e7e0c59a8dac8e43097c", size = 139981, upload-time = "2026-09-23T20:52:01.011Z" },
 ]
 
 [[package]]
