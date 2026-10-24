@@ -319,6 +319,671 @@ def test_physical_only_interactions(
     assert type(edge).model_validate(edge.model_dump()) == edge
 
 
+def _assert_explicit_none_edges(
+    context: KozaTransform,
+    *,
+    type_value: str | None,
+    action: str | None,
+    endogenous: str,
+    expected_edges: list[dict[str, str | None]],
+) -> None:
+    """Compare emitted edges with literal expectations; never infer a mapping.
+
+    Qi's aspect review excerpt checked 2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/pull/504#discussion_r4138697143
+    Qi's direction review excerpt checked 2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/pull/504#discussion_r4138807786
+
+    Null qualifier expectations must also be omitted from serialized output.
+    """
+    record = RECORD | {"Type": type_value, "Action": action, "Endogenous": endogenous}
+    graph = list(transform_ingest_all(context, [record]))[0]
+    actual_edges = [
+        {
+            "class": type(edge).__name__,
+            "predicate": edge.predicate,
+            "qualified_predicate": getattr(edge, "qualified_predicate", None),
+            "object_aspect_qualifier": getattr(edge, "object_aspect_qualifier", None),
+            "object_direction_qualifier": getattr(edge, "object_direction_qualifier", None),
+            "causal_mechanism_qualifier": getattr(edge, "causal_mechanism_qualifier", None),
+        }
+        for edge in graph.edges
+    ]
+    assert actual_edges == expected_edges
+    if not expected_edges:
+        assert graph.nodes == []
+    for edge, expected in zip(graph.edges, expected_edges, strict=True):
+        serialized = edge.model_dump(mode="json", exclude_none=True)
+        for qualifier, value in expected.items():
+            if value is None:
+                assert qualifier not in serialized
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "increased"), ("TRUE", "biolink:regulates", "upregulated")],
+)
+def test_activator_literal_none_has_positive_effect_without_mechanism(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """Activator + "None" retains a positive effect and no mechanism or physical edge.
+
+    Source row 6, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E6:M6
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Activator",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": None,
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "increased"), ("TRUE", "biolink:regulates", "upregulated")],
+)
+def test_agonist_literal_none_emits_agonism_and_physical_interaction(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """Agonist + "None" emits agonism and a physical edge without a mechanism.
+
+    Source row 18, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E18:M18
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Agonist",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": "agonism",
+            },
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_allosteric_modulator_literal_none_emits_only_allosteric_interaction(
+    context: KozaTransform, endogenous: str
+) -> None:
+    """Allosteric modulator + "None" emits only an allosteric physical edge.
+
+    Source row 33, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E33:M33
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Allosteric modulator",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": "allosteric_modulation",
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous,predicate", [("FALSE", "biolink:affects"), ("TRUE", "biolink:regulates")])
+def test_antibody_literal_none_has_undirected_activity_and_physical_interaction(
+    context: KozaTransform, endogenous: str, predicate: str
+) -> None:
+    """Antibody + "None" has unqualified, undirected activity and a physical edge.
+
+    Source row 49, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E49:M49
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Antibody",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": None,
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous,predicate", [("FALSE", "biolink:affects"), ("TRUE", "biolink:regulates")])
+def test_channel_blocker_literal_none_has_undirected_channel_blockage(
+    context: KozaTransform, endogenous: str, predicate: str
+) -> None:
+    """Channel blocker + "None" has undirected channel blockage and a physical edge.
+
+    Source row 52, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E52:M52
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Channel blocker",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": None,
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": "molecular_channel_blockage",
+            },
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous,predicate", [("FALSE", "biolink:affects"), ("TRUE", "biolink:regulates")])
+def test_gating_inhibitor_literal_none_has_undirected_gating_inhibition(
+    context: KozaTransform, endogenous: str, predicate: str
+) -> None:
+    """Gating inhibitor + "None" has undirected gating inhibition and a physical edge.
+
+    Source row 58, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E58:M58
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Gating inhibitor",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": None,
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": "gating_inhibition",
+            },
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "decreased"), ("TRUE", "biolink:regulates", "downregulated")],
+)
+def test_inhibitor_literal_none_emits_inhibition_and_physical_interaction(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """Inhibitor + "None" emits inhibition and a physical edge.
+
+    Source row 69, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E69:M69
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Inhibitor",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": "inhibition",
+            },
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_literal_none_binding_emits_only_physical_binding(context: KozaTransform, endogenous: str) -> None:
+    """ "None" + Binding emits only a physical binding edge.
+
+    Source row 71, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E71:M71
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="None",
+        action="Binding",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": "binding",
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_literal_none_competitive_emits_only_physical_interaction(context: KozaTransform, endogenous: str) -> None:
+    """ "None" + Competitive emits only a physical edge without a mechanism.
+
+    Source row 72, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E72:M72
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="None",
+        action="Competitive",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "decreased"), ("TRUE", "biolink:regulates", "downregulated")],
+)
+def test_literal_none_inhibition_emits_inhibition_and_physical_interaction(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """ "None" + Inhibition emits inhibition and a physical edge.
+
+    Source row 73, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E73:M73
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="None",
+        action="Inhibition",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": "inhibition",
+            },
+            {
+                "class": "PairwiseMolecularInteraction",
+                "predicate": "biolink:directly_physically_interacts_with",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            },
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_literal_none_literal_none_emits_only_related_to(context: KozaTransform, endogenous: str) -> None:
+    """ "None" + "None" emits only an unqualified related_to edge.
+
+    Source row 74, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E74:M74
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="None",
+        action="None",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "Association",
+                "predicate": "biolink:related_to",
+                "qualified_predicate": None,
+                "object_aspect_qualifier": None,
+                "object_direction_qualifier": None,
+                "causal_mechanism_qualifier": None,
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "increased"), ("TRUE", "biolink:regulates", "upregulated")],
+)
+def test_literal_none_potentiation_emits_only_potentiation(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """ "None" + Potentiation emits only a positive potentiation edge.
+
+    Source row 75, checked against the supplied mapping snapshot at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142&range=E75:M75
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="None",
+        action="Potentiation",
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": "potentiation",
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "increased"), ("TRUE", "biolink:regulates", "upregulated")],
+)
+def test_activator_python_none_action_preserves_positive_fallback(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """Activator + Python None uses its effect-only fallback with no mechanism.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Activator",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": None,
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "endogenous,predicate,direction",
+    [("FALSE", "biolink:affects", "decreased"), ("TRUE", "biolink:regulates", "downregulated")],
+)
+def test_inhibitor_python_none_action_preserves_negative_fallback(
+    context: KozaTransform, endogenous: str, predicate: str, direction: str
+) -> None:
+    """Inhibitor + Python None uses its effect-only fallback with no mechanism.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Inhibitor",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[
+            {
+                "class": "ChemicalAffectsGeneAssociation",
+                "predicate": predicate,
+                "qualified_predicate": "biolink:causes",
+                "object_aspect_qualifier": "activity",
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": None,
+            }
+        ],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_agonist_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Agonist' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Agonist",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_allosteric_modulator_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Allosteric modulator' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Allosteric modulator",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_antagonist_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Antagonist' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Antagonist",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_antibody_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Antibody' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Antibody",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_channel_blocker_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Channel blocker' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Channel blocker",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_fusion_protein_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Fusion protein' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Fusion protein",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_gating_inhibitor_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Gating inhibitor' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Gating inhibitor",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_subunit_specific_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'Subunit-specific' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="Subunit-specific",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_literal_none_type_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """'None' + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value="None",
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
+@pytest.mark.parametrize("endogenous", ["FALSE", "TRUE"])
+def test_python_none_type_python_none_action_emits_nothing(context: KozaTransform, endogenous: str) -> None:
+    """None + Python None emits no nodes or edges.
+
+    Python-null fallback contract (not a spreadsheet claim), verified at
+    2026-10-24T12:29:55-07:00 (America/Vancouver):
+    https://github.com/NCATSTranslator/translator-ingests/blob/6633abb64ecd86a5a32a8e238459f38d3ff86621/src/translator_ingest/ingests/gtopdb/rules.py#L278-L305
+    """
+    _assert_explicit_none_edges(
+        context,
+        type_value=None,
+        action=None,
+        endogenous=endogenous,
+        expected_edges=[],
+    )
+
+
 @pytest.mark.parametrize(
     "uniprot_ids",
     [
