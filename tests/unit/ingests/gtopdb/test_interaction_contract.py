@@ -83,6 +83,7 @@ ACTION_LABELS = (
 )
 ENDOGENOUS_VALUES = ("TRUE", "FALSE", "", None, True, False, "true", "TRUE ", float("nan"))
 RECORD: dict[str, Any] = {
+    "Ligand ID": "1",
     "subject_id": "2244",
     "subject_name": "example ligand",
     "target_id": "1",
@@ -102,6 +103,7 @@ SOURCES = [
         "category": ["biolink:RetrievalSource"],
         "resource_id": "infores:gtopdb",
         "resource_role": "primary_knowledge_source",
+        "source_record_urls": ["https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?tab=biology&ligandId=1"],
     }
 ]
 
@@ -1209,7 +1211,9 @@ def test_publication_policy(context: KozaTransform, value: Any, expected: list[s
     assert [edge.publications for edge in graph.edges] == [expected, expected, None, None]
 
 
-@pytest.mark.parametrize("missing", ["Type", "Action", "subject_id", "subject_name", "Endogenous", "PubMed ID"])
+@pytest.mark.parametrize(
+    "missing", ["Type", "Action", "Ligand ID", "subject_id", "subject_name", "Endogenous", "PubMed ID"]
+)
 def test_missing_required_key(context: KozaTransform, missing: str) -> None:
     """Retain the missing-key exception on an otherwise supported record."""
     record = {key: value for key, value in RECORD.items() if key != missing}

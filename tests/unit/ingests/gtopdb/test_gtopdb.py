@@ -366,6 +366,7 @@ INTERACTION_RULE_GOLDEN = json.loads((Path(__file__).parent / "interaction_rule_
 def test_transform_matches_current_source_rule_behavior(case):
     """Verify the literal inventory, including the reviewed mapping decisions."""
     record = {
+        "Ligand ID": "1",
         "subject_id": "2244",
         "subject_name": "example ligand",
         "target_id": "1",
@@ -388,6 +389,7 @@ def test_transform_matches_current_source_rule_behavior(case):
 def test_transform_emits_source_defined_complex_targets():
     context = RecordingContext()
     record = {
+        "Ligand ID": "1",
         "subject_id": "2244",
         "subject_name": "example ligand",
         "object_id": "P46098|O95264",
@@ -450,6 +452,7 @@ def test_transform_omits_components_for_multi_species_source_complexes(
 ):
     """Avoid merging human and mouse target 378 components under IUPHARobj:378."""
     human = {
+        "Ligand ID": "1",
         "subject_id": "2244",
         "subject_name": "example ligand",
         "target_id": "378",
