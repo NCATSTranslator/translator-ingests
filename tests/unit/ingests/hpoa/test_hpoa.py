@@ -459,6 +459,66 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
     )
 
 
+# The gene_to_phenotype ingest keeps only rows whose underlying gene-disease association
+# asserts MENDELIAN inheritance: HPO infers G-P from G-D plus D-P, and that inference only
+# holds where a single gene is causal. See hpoa_rig.yaml included_content/filtered_content.
+# Regression test for https://github.com/NCATSTranslator/translator-ingests/issues/537, where
+# this filter lived in hpoa.yaml as a reader filter and therefore never ran: the reader filter
+# was applied to raw rows that prepare_gene_to_phenotype_data discards, so every Orphanet
+# (UNKNOWN) and OMIM POLYGENIC row was emitted as a 'causes' edge anyway.
+@pytest.mark.parametrize(
+    "hpo_id,disease_id,association_types,kept",
+    [
+        # MENDELIAN - the inference holds, row is kept
+        ("HP:0002463", "OMIM:301310", "MENDELIAN", True),
+        ("HP:0002470", "OMIM:301310", "MENDELIAN", True),
+        ("HP:0001133", "OMIM:601718", "MENDELIAN", True),
+        # the gene-disease pair carries both a MENDELIAN and a POLYGENIC assertion; a MENDELIAN
+        # assertion exists, so the inference holds and the row is kept
+        ("HP:0000548", "OMIM:248200", "MENDELIAN;POLYGENIC", True),
+        # POLYGENIC only - the gene may be one of many contributing factors, row is dropped
+        ("HP:0000510", "OMIM:153800", "POLYGENIC", False),
+        # UNKNOWN (every Orphanet gene-disease row is UNKNOWN), row is dropped
+        ("HP:0001105", "ORPHA:791", "UNKNOWN", False),
+    ],
+)
+def test_gene_to_phenotype_mendelian_filter(
+    mock_koza_transform_2: koza.KozaTransform,
+    hpo_id: str,
+    disease_id: str,
+    association_types: str,
+    kept: bool,
+):
+    """
+    Check that prepare_gene_to_phenotype_data keeps only gene-phenotype rows inferred over a
+    MENDELIAN gene-disease association, whatever the disease source.
+    """
+    result = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
+    assert result is not None
+    matches = [row for row in result if row["hpo_id"] == hpo_id and row["disease_id"] == disease_id]
+    if kept:
+        assert len(matches) == 1, f"expected {hpo_id}/{disease_id} ({association_types}) to be kept"
+        assert matches[0]["gene_to_disease_association_types"] == association_types
+    else:
+        assert not matches, f"expected {hpo_id}/{disease_id} ({association_types}) to be filtered out"
+
+
+def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2: koza.KozaTransform):
+    """
+    Check that no non-MENDELIAN gene-disease association type survives preparation. Guards the
+    whole prepared set rather than the specific sample rows above, so a filter that regresses
+    for an association type not represented in the sample data still fails here.
+    """
+    result = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
+    assert result is not None
+    rows = list(result)
+    assert rows, "expected at least one prepared gene_to_phenotype row"
+    non_mendelian = [row["gene_to_disease_association_types"] for row in rows if "MENDELIAN" not in row["gene_to_disease_association_types"]]
+    assert not non_mendelian, f"non-MENDELIAN association types survived preparation: {sorted(set(non_mendelian))}"
+
+
+
+
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
