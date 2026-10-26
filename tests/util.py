@@ -8,10 +8,7 @@ def find_project_root(start: Path = Path(__file__)) -> Path:
             return parent
     raise FileNotFoundError("Could not find project root from starting point.")
 
-# TODO: "bindingdb" is temporarily excluded from processing within the STRING PR branch
-#       due to a mutual dependency on release Biolink 4.4.4; This exclusion should
-#       be removed in the main branch once Biolink 4.4.4-compliant BindingDb is added.
-ingest_dir_ignore_list = ["__pycache__", "_ingest_template", "bindingdb"]
+ingest_dir_ignore_list = ["__pycache__", "_ingest_template"]
 
 
 def get_all_source_ids():
