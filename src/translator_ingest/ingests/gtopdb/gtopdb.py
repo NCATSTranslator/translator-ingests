@@ -27,7 +27,7 @@ from translator_ingest.ingests.gtopdb.rules import InteractionRule, PrimaryAssoc
 from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
-GTOPDB_SOURCES = build_association_knowledge_sources(primary=INFORES_GTOPDB)
+GTOPDB_RECORD_BASE_URL = "https://www.guidetopharmacology.org/GRAC"
 
 BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
@@ -116,6 +116,30 @@ def _source_text(value: Any) -> str:
     'Human'
     """
     return "" if value is None or pd.isna(value) else str(value).strip()
+
+
+def gtopdb_ligand_record_url(ligand_id: str) -> str:
+    """Link to a ligand's biology page using its source ID, never its PubChem ID.
+
+    >>> gtopdb_ligand_record_url("10250")
+    'https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?tab=biology&ligandId=10250'
+    """
+    identifier = _source_text(ligand_id)
+    if not re.fullmatch(r"[0-9]+", identifier):
+        raise ValueError(f"Expected a numeric GtoPdb Ligand ID, got {ligand_id!r}")
+    return f"{GTOPDB_RECORD_BASE_URL}/LigandDisplayForward?tab=biology&ligandId={identifier}"
+
+
+def gtopdb_target_record_url(target_id: str) -> str:
+    """Link complex membership evidence to its source target, independently of ligand.
+
+    >>> gtopdb_target_record_url("378")
+    'https://www.guidetopharmacology.org/GRAC/ObjectDisplayForward?objectId=378'
+    """
+    identifier = _source_text(target_id)
+    if not re.fullmatch(r"[0-9]+", identifier):
+        raise ValueError(f"Expected a numeric GtoPdb Target ID, got {target_id!r}")
+    return f"{GTOPDB_RECORD_BASE_URL}/ObjectDisplayForward?objectId={identifier}"
 
 
 class TargetClassification(str, Enum):
@@ -389,7 +413,8 @@ def _interaction_edges(
     object: NamedThing,
     endogenous: Any,
     rule: InteractionRule,
-    species_context_qualifier: str | None = None,
+    species_context_qualifier: str | None,
+    source_record_url: str,
 ) -> list[Association]:
     """Build the optional primary and physical edges, each with its own qualifiers.
 
@@ -400,7 +425,6 @@ def _interaction_edges(
     common_fields: dict[str, Any] = {
         "subject": subject.id,
         "object": object.id,
-        "sources": GTOPDB_SOURCES,
         "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
         "agent_type": AgentTypeEnum.manual_agent,
     }
@@ -408,7 +432,14 @@ def _interaction_edges(
     primary = rule.primary
     if primary is not None:
         if primary.relation == "related":
-            edges.append(Association(id=entity_id(), predicate=BIOLINK_RELATED, **common_fields))
+            edges.append(
+                Association(
+                    id=entity_id(),
+                    predicate=BIOLINK_RELATED,
+                    sources=build_association_knowledge_sources(primary=(INFORES_GTOPDB, [source_record_url])),
+                    **common_fields,
+                )
+            )
         else:
             predicate, direction = _endogenous_projection(endogenous, primary)
             edges.append(
@@ -420,6 +451,7 @@ def _interaction_edges(
                     object_direction_qualifier=direction,
                     causal_mechanism_qualifier=primary.mechanism,
                     species_context_qualifier=species_context_qualifier,
+                    sources=build_association_knowledge_sources(primary=(INFORES_GTOPDB, [source_record_url])),
                     **common_fields,
                 )
             )
@@ -430,6 +462,7 @@ def _interaction_edges(
                 predicate="biolink:directly_physically_interacts_with",
                 causal_mechanism_qualifier=rule.physical.mechanism,
                 species_context_qualifier=species_context_qualifier,
+                sources=build_association_knowledge_sources(primary=(INFORES_GTOPDB, [source_record_url])),
                 **common_fields,
             )
         )
@@ -477,6 +510,7 @@ def _edges_for_record(
     rule: InteractionRule,
     publications: list[str] | None,
     emit_component_edges: bool,
+    source_record_url: str,
 ) -> list[Association]:
     """Build every graph edge emitted for one supported source record.
 
@@ -486,7 +520,7 @@ def _edges_for_record(
     Therefore multi-species source IDs omit those edges conservatively; see
     https://github.com/biolink/biolink-model/pull/1797 and translator-ingests#510.
     """
-    edges = _interaction_edges(subject, object, endogenous, rule, target.species_context_qualifier)
+    edges = _interaction_edges(subject, object, endogenous, rule, target.species_context_qualifier, source_record_url)
     if target.complex_curie and emit_component_edges:
         edges.extend(
             Association(
@@ -494,7 +528,9 @@ def _edges_for_record(
                 subject=target.complex_curie,
                 predicate="biolink:has_part",
                 object=f"UniProtKB:{accession}",
-                sources=GTOPDB_SOURCES,
+                sources=build_association_knowledge_sources(
+                    primary=(INFORES_GTOPDB, [gtopdb_target_record_url(target.source_id)])
+                ),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
             )
@@ -539,6 +575,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
             rule,
             _publication_list(record[PUBLICATIONS_COLUMN]),
             emit_component_edges=target.source_id not in multi_species_target_ids,
+            source_record_url=gtopdb_ligand_record_url(record[LIGAND_ID_COLUMN]),
         )
         # Keep the species-qualified ligand-target assertion, but do not emit
         # unqualified components for shared source IDs. See the RIG's

@@ -51,6 +51,15 @@ ingest_info:
     ligand, target, species, and Type + Action are aggregated into a single edge, with publications from the
     merged records combined into a list. Only the interactions.csv and ligands.csv files are used in this phase.
 
+    Each interaction edge carries a ligand biology page in the infores:gtopdb RetrievalSource.source_record_urls:
+    https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?tab=biology&ligandId=<Ligand ID>.
+    The original Ligand ID is retained through preparation and is distinct from the normalized PubChem CID.
+    Complex has_part edges instead link to their source target page using
+    https://www.guidetopharmacology.org/GRAC/ObjectDisplayForward?objectId=<Target ID>.
+    These are source entity pages, not unique interaction or species-specific assertion URLs. Users must
+    inspect the matching target and species; the website currently requires registration and login.
+    The links are not release-pinned snapshots.
+
   relevant_files:
     - file_name: "interactions.csv"
       location: "https://www.guidetopharmacology.org/DATA/interactions.csv"
