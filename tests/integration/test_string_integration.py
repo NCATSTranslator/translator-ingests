@@ -152,12 +152,10 @@ PPI_CATEGORIES = {
     "biolink:GeneToGeneCoexpressionAssociation",
 }
 
-PPI_KNOWLEDGE_LEVELS = {
-    "knowledge_assertion",
-    "statistical_association",
-}
-PPI_AGENT_TYPES = {
-    "data_analysis_pipeline",
+PPI_KL_AT = {
+    "biolink:associated_with": ("knowledge_assertion", "automated_agent"),
+    "biolink:directly_physically_interacts_with": ("observation", "automated_agent"),
+    "biolink:coexpressed_with": ("prediction", "computational_model"),
 }
 
 
@@ -200,8 +198,7 @@ def test_ppi_edge_shape(koza_output):
         assert edge["predicate"] in PPI_PREDICATES, edge["predicate"]
         assert edge["subject"].startswith(ENSEMBL_PROTEIN_PREFIXES)
         assert edge["object"].startswith(ENSEMBL_PROTEIN_PREFIXES)
-        assert edge["knowledge_level"] in PPI_KNOWLEDGE_LEVELS, edge["knowledge_level"]
-        assert edge["agent_type"] in PPI_AGENT_TYPES, edge["agent_type"]
+        assert (edge["knowledge_level"], edge["agent_type"]) == PPI_KL_AT[edge["predicate"]]
 
 
 def test_ppi_no_duplicate_edges_by_pair_and_predicate(koza_output):
@@ -215,17 +212,14 @@ def test_ppi_no_duplicate_edges_by_pair_and_predicate(koza_output):
         "symmetric duplicates or duplicate (pair, predicate) leaked into PPI output"
 
 
-def test_ppi_knowledge_level_varies_by_edge_type(koza_output):
-    """
-    The "associated with" predicate uses the "statistical_association" knowledge_level;
-    the "coexpressed_with" predicate uses"prediction" — so the output should contain both.
-    """
+def test_ppi_functional_kl_at(koza_output: Path) -> None:
+    """Serialized functional associations carry STRING's assertion and automated-agent classification."""
     _, edges = _ppi_partition(*_load_all(koza_output))
-    kls = {e["knowledge_level"] for e in edges}
-    # If coexpressed_with edges are present (coexpression channel fires in fixtures)
-    # we expect statistical_association to appear. Only assert knowledge_assertion
-    # since associated_with always fires.
-    assert "statistical_association" in kls, f"knowledge_assertion missing: {kls}"
+    functional_edges = [e for e in edges if e["predicate"] == "biolink:associated_with"]
+    assert functional_edges, "no functional associations produced"
+    for edge in functional_edges:
+        assert edge["knowledge_level"] == "knowledge_assertion"
+        assert edge["agent_type"] == "automated_agent"
 
 
 # ──── output-wide assertions ─────────────────────────────────────────────────

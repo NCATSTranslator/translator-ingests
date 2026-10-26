@@ -60,10 +60,12 @@ DEFAULT_THRESHOLDS: dict[str, int] = {
 }
 
 # KL/AT is fixed per edge type rather than row-derived.
+# Functional KL/AT describes STRING's automated assertion of a functional
+# relationship, rather than the analysis methods used by its evidence channels.
 EDGE_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
     "biolink:associated_with": (
-        KnowledgeLevelEnum.statistical_association,
-        AgentTypeEnum.data_analysis_pipeline,
+        KnowledgeLevelEnum.knowledge_assertion,
+        AgentTypeEnum.automated_agent,
     ),
     "biolink:directly_physically_interacts_with": (
         KnowledgeLevelEnum.observation,

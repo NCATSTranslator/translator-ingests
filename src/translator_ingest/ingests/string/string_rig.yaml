@@ -223,9 +223,9 @@ target_info:
         edge_properties:
           - stringdb_combined_score
         knowledge_level:
-          - statistical_association
+          - knowledge_assertion
         agent_type:
-          - data_analysis_pipeline  # 7-17-26 call: "automated agent"; exact biolink enum TBD
+          - automated_agent
         primary_knowledge_sources:
           - "infores:string"
         supporting_data_sources:
@@ -239,7 +239,9 @@ target_info:
           The association_basis_qualifier:Functional qualifier encodes STRING's core claim: these proteins
           contribute to some shared biological program — a process, pathway, reaction, complex, or expression
           program — without asserting a specific mechanistic relationship. The stringdb_combined_score edge
-          property captures the calibrated aggregate evidence score. This edge replaces the prior
+          property captures the calibrated aggregate evidence score. The knowledge level and agent type
+          describe STRING's automated assertion of a functional relationship, rather than the analysis
+          methods used by its individual evidence channels. This edge replaces the prior
           "physically_interacts_with fallback" pattern, which overclaimed physical binding for rows whose
           dominant evidence was textmining or co-occurrence.
         source_files:

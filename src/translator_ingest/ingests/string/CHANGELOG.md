@@ -5,6 +5,21 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-10-26 — Functional association knowledge level and agent type
+
+Functional `associated_with` edges now carry `knowledge_assertion` / `automated_agent`,
+following [Matt's review of #398](https://github.com/NCATSTranslator/translator-ingests/pull/398#pullrequestreview-4967373666).
+These values classify STRING's automated assertion of a functional relationship;
+the statistical methods used by its evidence channels do not determine the classification
+of the reported claim. Both enum values are available in Biolink 4.4.4.
+
+The RIG and unit/integration expectations now match this assignment. Tests assert the
+expected values independently of the implementation's `EDGE_KL_AT` mapping.
+
+Confirmation is still pending for adoption of the functional qualifier pattern, the
+evidence and thresholds for conditional physical/coexpression claims, their KL/AT,
+and their primary-source attribution. This correction leaves those decisions open.
+
 ## 2026-08-11
 
 * Incorporated 'associated_basis_qualifier' and various 'string_*' scores from Biolink 4.4.4

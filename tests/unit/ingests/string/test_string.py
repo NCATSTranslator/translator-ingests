@@ -17,7 +17,6 @@ from translator_ingest.ingests.string.string import (
 from translator_ingest.ingests.string.string_utils import (
     ALWAYS_PREDICATE,
     CONDITIONAL_CHANNEL_PREDICATES,
-    EDGE_KL_AT,
     edges_for_row,
     load_string_to_entrez_mapping,
     parse_string_protein_id,
@@ -261,15 +260,19 @@ def test_transform_emits_associated_with_above_threshold(mock_koza, p1, p2, expe
         assert node.equivalent_identifiers
 
 
-def test_transform_associated_with_kl_at(mock_koza):
-    """The always-emitted associated_with edge carries the fixed KL/AT."""
-    result = transform_string_ppi(mock_koza, _full_row(H1, H2, combined_score=750))
+@pytest.mark.parametrize(
+    "channel_scores",
+    [{}, {"textmining": 800}, {"experiments": 800}, {"coexpression": 800}],
+    ids=["combined-only", "textmining", "experiments", "coexpression"],
+)
+def test_transform_associated_with_kl_at(mock_koza: koza.KozaTransform, channel_scores: dict[str, int]) -> None:
+    """Functional KL/AT describes STRING's assertion regardless of its evidence channels."""
+    result = transform_string_ppi(mock_koza, _full_row(H1, H2, combined_score=900, **channel_scores))
     assert result is not None and result.edges is not None
     edges = list(result.edges)
     assoc = next(e for e in edges if e.predicate == "biolink:associated_with")
-    expected_kl, expected_at = EDGE_KL_AT["biolink:associated_with"]
-    assert assoc.knowledge_level == expected_kl
-    assert assoc.agent_type == expected_at
+    assert assoc.knowledge_level == "knowledge_assertion"
+    assert assoc.agent_type == "automated_agent"
 
 
 def test_transform_experiments_fires_directly_physically_interacts_with(mock_koza):
@@ -320,17 +323,21 @@ def test_transform_both_channels_fire(mock_koza):
     }
 
 
-def test_transform_conditional_edges_carry_correct_kl_at(mock_koza):
-    """Each edge type carries its fixed KL/AT from EDGE_KL_AT."""
+def test_transform_conditional_edges_carry_correct_kl_at(mock_koza: koza.KozaTransform) -> None:
+    """Correcting functional KL/AT preserves the current conditional edge assignments."""
     result = transform_string_ppi(
         mock_koza,
         _full_row(H1, H2, combined_score=900, experiments=800, coexpression=800),
     )
     assert result is not None and result.edges is not None
-    for edge in result.edges:
-        expected_kl, expected_at = EDGE_KL_AT[edge.predicate]
-        assert edge.knowledge_level == expected_kl, f"KL mismatch on {edge.predicate}"
-        assert edge.agent_type == expected_at, f"AT mismatch on {edge.predicate}"
+    assert {
+        edge.predicate: (edge.knowledge_level, edge.agent_type)
+        for edge in result.edges
+    } == {
+        "biolink:associated_with": ("knowledge_assertion", "automated_agent"),
+        "biolink:directly_physically_interacts_with": ("observation", "automated_agent"),
+        "biolink:coexpressed_with": ("prediction", "computational_model"),
+    }
 
 
 def test_transform_non_predicate_channels_do_not_add_edges(mock_koza):
