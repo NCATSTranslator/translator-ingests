@@ -4,6 +4,7 @@ STRING protein–protein interaction ingest processing.
 """
 from typing import Any, Iterable
 from pathlib import Path
+from urllib.parse import urlencode
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     Association,
@@ -87,7 +88,8 @@ PREDICATE_TO_ASSOCIATION_CLASS: dict[str, type[Association]] = {
     "biolink:coexpressed_with":                   GeneToGeneCoexpressionAssociation,
 }
 
-STRING_SOURCES = build_association_knowledge_sources(primary=INFORES_STRING)
+# Match the v12.0 files pinned in string.yaml.
+STRING_NETWORK_URL = "https://version-12-0.string-db.org/cgi/network"
 
 
 # Note on identifier scheme: for the three Translator-target taxa (human / mouse / rat),
@@ -125,6 +127,46 @@ def parse_string_protein_id(string_id: str) -> tuple[str, str]:
             f"expected one of {sorted(SUPPORTED_TAXA)}"
         )
     return f"ENSEMBL:{ensp}", taxon_curie
+
+
+def string_source_record_url(protein1: str, protein2: str) -> str:
+    """Build a URL requesting a functional evidence network for two raw STRING IDs.
+
+    Preserve the source's taxon-prefixed protein identifiers, before any node
+    normalization. Canonical ordering makes symmetric rows share a URL. Request
+    no added neighbors or display score cutoff to focus on the ingested pair.
+    The intended view shows pair-level evidence shared by every predicate derived
+    from the row; it is not a predicate-specific assertion page.
+
+    URL parameters follow STRING's linking documentation:
+    https://string-db.org/help/api/#linking-to-the-search-results-page
+
+    >>> first = "9606.ENSP00000478725"
+    >>> second = "9606.ENSP00000478289"
+    >>> url = string_source_record_url(first, second)
+    >>> url.startswith("https://version-12-0.string-db.org/cgi/network?")
+    True
+    >>> "identifiers=9606.ENSP00000478289%0D9606.ENSP00000478725" in url
+    True
+    >>> url == string_source_record_url(second, first)
+    True
+    """
+    _, subject_taxon = parse_string_protein_id(protein1)
+    _, object_taxon = parse_string_protein_id(protein2)
+    if subject_taxon != object_taxon:
+        raise ValueError(f"Cross-species pair in STRING row: {protein1!r} vs {protein2!r}")
+
+    parameters = {
+        "identifiers": "\r".join(sorted((protein1, protein2))),
+        "species": protein1.partition(".")[0],
+        "network_flavor": "evidence",
+        "network_type": "functional",
+        "required_score": 0,
+        "add_color_nodes": 0,
+        "add_white_nodes": 0,
+    }
+    return f"{STRING_NETWORK_URL}?{urlencode(parameters)}"
+
 
 
 def edges_for_row(record: dict[str, Any]) -> list[tuple[str, int]]:
@@ -184,7 +226,8 @@ def make_string_ppi_edge(
     object_id: str,
     knowledge_level: KnowledgeLevelEnum,
     agent_type: AgentTypeEnum,
-):
+    source_record_url: str,
+) -> Association:
     """
     Construct one STRING PPI edge, dispatching to the correct biolink Association
     class for the predicate.
@@ -203,7 +246,7 @@ def make_string_ppi_edge(
         stringdb_combined_score = score if predicate == "biolink:associated_with" else None,
         stringdb_experimental_score = score if predicate == "biolink:directly_physically_interacts_with" else None,
         stringdb_coexpression_score = score if predicate == "biolink:coexpressed_with" else None,
-        sources=STRING_SOURCES,
+        sources=build_association_knowledge_sources(primary=(INFORES_STRING, [source_record_url])),
         knowledge_level=knowledge_level,
         agent_type=agent_type,
     )

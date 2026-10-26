@@ -18,6 +18,7 @@ can't see.
 import gzip
 import json
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from koza.runner import KozaRunner
@@ -243,3 +244,28 @@ def test_no_duplicate_nodes_in_output(koza_output):
     nodes, _ = _load_all(koza_output)
     ids = [n["id"] for n in nodes]
     assert len(ids) == len(set(ids)), "duplicate node IDs in output"
+
+
+def test_ppi_source_urls_identify_the_input_pair(koza_output):
+    """Every reader-to-writer edge links back to its exact pair in the source fixtures."""
+    original_pairs = {}
+    for fixture in PPI_FIXTURES:
+        with gzip.open(fixture, "rt") as stream:
+            next(stream)
+            for line in stream:
+                protein1, protein2, *_ = line.split()
+                pair = tuple(sorted((protein1, protein2)))
+                curies = tuple(sorted(f"ENSEMBL:{protein.partition('.')[2]}" for protein in pair))
+                original_pairs[curies] = pair
+    _, edges = _ppi_partition(*_load_all(koza_output))
+    assert edges
+    for edge in edges:
+        source = next(source for source in edge["sources"] if source["resource_id"] == "infores:string")
+        assert len(source["source_record_urls"]) == 1
+        parsed = urlsplit(source["source_record_urls"][0])
+        assert parsed.netloc == "version-12-0.string-db.org"
+        assert parsed.path == "/cgi/network"
+        query = parse_qs(parsed.query)
+        pair = original_pairs[tuple(sorted((edge["subject"], edge["object"])))]
+        assert query["identifiers"] == ["\r".join(pair)]
+        assert query["species"] == [pair[0].partition(".")[0]]
