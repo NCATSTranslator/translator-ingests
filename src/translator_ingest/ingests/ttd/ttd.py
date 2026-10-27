@@ -8,7 +8,7 @@ from translator_ingest.util.biolink import INFORES_TTD
 from translator_ingest.util.http_utils import get_modify_date
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,    ## carries clinical approval/research phase
     DiseaseOrPhenotypicFeature,
     Protein,    ## because ttd gives uniprot names
     ChemicalAffectsGeneAssociation,    ## ONLY for affects
@@ -47,7 +47,7 @@ def parse_header(file_path) -> Dict[str, Union[str, int]]:
     line_counter = 0  ## count lines read so far
     dash_counter = 0  ## count dash "divider" lines - header ends after 2nd one
 
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         for line in file:
             if dash_counter == 2:  ## already read the 2nd "divider" line
                 break
@@ -75,7 +75,7 @@ def parse_p1_03(file_path, header_len: int) -> Dict[str, list]:
     """
     ttd_drug_mappings = dict()
 
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         ## iterate from beginning of data (after 2nd dash divider line) to end of file
         for line in islice(file, header_len, None):
             ## skip "blank" lines that only contain whitespace (seem to be "\n")
@@ -189,7 +189,7 @@ def parse_p2_01(file_path, header_len: int):
     DELIMITER_PAT = "-|/|;"
     INVALID_CHAR = [" ", "(", ")"]
 
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         ## iterate from beginning of data (after 2nd dash divider line) to end of file
         for line in islice(file, header_len, None):
             ## skip "blank" lines that only contain whitespace (seem to be "\n")
@@ -272,7 +272,7 @@ def p1_05_prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> I
 
     ## not wrapping in function because this code won't be reused
     edges = list()  ## list of "edge" objects
-    with open(p1_05_path, "r") as file:
+    with open(p1_05_path, "r", encoding="utf-8") as file:
         ## iterate from beginning of data (after 2nd dash divider line) to end of file
         for line in islice(file, p1_05_header_info["len_header"], None):
             ## skip "blank" lines that only contain whitespace (seem to be "\n")
@@ -413,7 +413,7 @@ def p1_05_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowled
 
     chemical = ChemicalEntity(id=record["subject_pubchem"])
     indication = DiseaseOrPhenotypicFeature(id=record["object_nameres_id"])
-    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
+    association = ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation(
         id=entity_id(),
         subject=chemical.id,
         predicate=record["biolink_predicate"],

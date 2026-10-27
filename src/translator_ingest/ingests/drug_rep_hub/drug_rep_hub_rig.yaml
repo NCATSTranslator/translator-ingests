@@ -92,12 +92,6 @@ ingest_info:
         assignment is commented out as a TODO in create_disease_association / the chemical node build). Consider
         adding it as a node property once a suitable Biolink slot (or a registered attribute) is available.
       relevant_files: repo-drug-annotation.txt
-    - category: edge_property_content
-      consideration: >-
-        clinical_approval_status and max_research_phase are computed via clinical_approval_map and
-        research_phase_map but are currently commented out as TODOs; wire them onto the treatment edges as edge
-        properties in a future iteration.
-      relevant_files: repo-drug-annotation.txt
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -156,6 +150,9 @@ target_info:
         - manual_agent
       primary_knowledge_sources:
         - infores:drug-repurposing-hub
+      edge_properties:
+        - biolink:clinical_approval_status    ## Launched: approved_for_condition; Withdrawn: post_approval_withdrawal
+        - biolink:max_research_phase    ## Phase 1 ... Phase 3, Preclinical
       ui_explanation: >-
         The Drug Repurposing Hub provides manually curated annotations of the disease indication(s) for each
         compound, along with the compound's highest clinical development phase. This edge was created from a
@@ -176,8 +173,10 @@ target_info:
           DOID, EFO, NCBITaxon, and others), so downstream normalization may reassign some objects (e.g. an
           NCBITaxon-identified indication to biolink:OrganismTaxon). The listed predicates are not a single
           predicate-plus-descendants hierarchy; per schema guidance they should eventually be decomposed into
-          separate EdgeType objects (see future considerations). No edge properties are currently emitted on these
-          edges: clinical_approval_status and max_research_phase are computed but commented out as TODOs in the code.
+          separate EdgeType objects (see future considerations). Edges with a treatment predicate (all but
+          'diagnoses') are biolink:ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation, carrying the
+          clinical_approval_status and max_research_phase derived from the compound's clinical_phase. 'diagnoses'
+          edges are biolink:ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, which can't carry them.
 
     # Compound -> chemical role / drug category
     - subject_categories:
@@ -262,10 +261,8 @@ target_info:
         hierarchy as required by the schema for a shared EdgeType.
     - category: edge_properties
       consideration: >-
-        Emit the currently-computed-but-commented-out clinical_approval_status and max_research_phase as edge
-        properties on treatment edges, and consider a dedicated mechanism_of_action property (registered in the
-        attributes catalog with a biolink prefix) in place of the generic biolink:description slot for
-        compound-affects-gene edges.
+        Consider a dedicated mechanism_of_action property (registered in the attributes catalog with a biolink
+        prefix) in place of the generic biolink:description slot for compound-affects-gene edges.
 
 # Information about how the ingest was specified and performed
 provenance_info:
