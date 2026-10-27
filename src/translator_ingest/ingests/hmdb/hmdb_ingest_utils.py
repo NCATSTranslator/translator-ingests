@@ -16,6 +16,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     MaterialSample,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     Association,
+    ChemicalEntityToAnatomicalEntityAssociation,
     GeneAffectsChemicalAssociation,
     DiseaseAssociatedWithResponseToChemicalEntityAssociation,
     ChemicalEntityToPathwayAssociation,
@@ -604,7 +605,7 @@ def get_cellular_locations(
     :param metabolite_id: the metabolite id (edge subject)
     :return: list[tuple[CellularComponent, Association]]
     """
-    cellular_locations_list: list[tuple[CellularComponent, Association]] = []
+    cellular_locations_list: list[tuple[CellularComponent, ChemicalEntityToAnatomicalEntityAssociation]] = []
 
     biological_properties: E_Tree.Element | None = el.find('biological_properties')
     if biological_properties is not None:
@@ -621,7 +622,7 @@ def get_cellular_locations(
                     cellular_id, cellular_name = get_go_cellular_term(koza_transform, cellular)
                     cellular_node = CellularComponent(id=cellular_id, name=cellular_name)
 
-                    cellular_edge = Association(
+                    cellular_edge = ChemicalEntityToAnatomicalEntityAssociation(
                         id=entity_id(),
                         subject=metabolite_id,
                         predicate="biolink:located_in",
@@ -654,7 +655,7 @@ def get_tissue_locations(
     :param metabolite_id: the metabolite id (edge subject)
     :return: list[tuple[GrossAnatomicalStructure, Association]]
     """
-    tissue_locations_list: list[tuple[GrossAnatomicalStructure, Association]] = []
+    tissue_locations_list: list[tuple[GrossAnatomicalStructure, ChemicalEntityToAnatomicalEntityAssociation]] = []
 
     biological_properties: E_Tree.Element | None = el.find('biological_properties')
     if biological_properties is not None:
@@ -671,7 +672,7 @@ def get_tissue_locations(
                     tissue_id, tissue_name = get_anatomy_term(koza_transform, tissue)
                     tissue_node = GrossAnatomicalStructure(id=tissue_id, name=tissue_name)
 
-                    tissue_edge = Association(
+                    tissue_edge = ChemicalEntityToAnatomicalEntityAssociation(
                         id=entity_id(),
                         subject=metabolite_id,
                         predicate="biolink:located_in",
@@ -720,7 +721,9 @@ def get_biospecimen_locations(
                     biospecimen = str(b.text).strip()
                     biospecimen_id, biospecimen_name = get_anatomy_term(koza_transform, biospecimen)
                     biospecimen_node = MaterialSample(id=biospecimen_id,name=biospecimen_name)
-    
+
+                    # TODO: See Biolink Model PR #1845 - defines a novel association to use here:
+                    #       biospecimen_edge = ChemicalEntityOrGeneOrGeneProductToMaterialSampleAssociation
                     biospecimen_edge = Association(
                         id=entity_id(),
                         subject=metabolite_id,

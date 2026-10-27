@@ -177,41 +177,13 @@ ASSOCIATION_TEST_SLOTS = (
         (  # Query 0 -
             # Contents of some nodes expected in the results
             [
-                {
-                    "id": "SMPDB:SMP0124716",
-                    "name": "1-Methylhistidine Metabolism",
-                    "category": ["biolink:Pathway"]
-                },
-                {
-                    "id": "OMIM:125853",
-                    "name": "Diabetes mellitus type 2",
-                    "category": ["biolink:Disease"]
-                },
-                {
-                    "id": "UniProtKB:Q96KN2",
-                    "name": "Beta-Ala-His dipeptidase",
-                    "category": ["biolink:Protein"]
-                },
-                {
-                    "id": "HMDB:HMDB0000001",
-                    "name": "1-Methylhistidine",
-                    "category": ["biolink:MolecularEntity"]
-                },
-                {
-                    "id": "GO:0005737",
-                    "name": "cytoplasm",
-                    "category": ["biolink:CellularComponent"]
-                },
-                {
-                    "id": "UBERON:0000178",
-                    "name": "blood",
-                    "category": ["biolink:MaterialSample"]
-                },
-                {
-                    "id": "UBERON:0001987",
-                    "name": "placenta",
-                    "category": ["biolink:GrossAnatomicalStructure"]
-                }
+                {"id": "SMPDB:SMP0124716", "name": "1-Methylhistidine Metabolism", "category": ["biolink:Pathway"]},
+                {"id": "OMIM:125853", "name": "Diabetes mellitus type 2", "category": ["biolink:Disease"]},
+                {"id": "UniProtKB:Q96KN2", "name": "Beta-Ala-His dipeptidase", "category": ["biolink:Protein"]},
+                {"id": "HMDB:HMDB0000001", "name": "1-Methylhistidine", "category": ["biolink:MolecularEntity"]},
+                {"id": "GO:0005737", "name": "cytoplasm", "category": ["biolink:CellularComponent"]},
+                {"id": "UBERON:0000178", "name": "blood", "category": ["biolink:MaterialSample"]},
+                {"id": "UBERON:0001987", "name": "placenta", "category": ["biolink:GrossAnatomicalStructure"]},
             ],
             # Captured edge contents
             [
@@ -245,7 +217,7 @@ ASSOCIATION_TEST_SLOTS = (
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
                 {
-                    "category": ["biolink:Association"],
+                    "category": ["biolink:ChemicalEntityToAnatomicalEntityAssociation"],
                     "subject": "HMDB:HMDB0000001",
                     "predicate": "biolink:located_in",
                     "object": "GO:0005737",
@@ -254,6 +226,8 @@ ASSOCIATION_TEST_SLOTS = (
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
                 {
+                    # TODO: See Biolink Model PR #1845 - defines a novel association to use here:
+                    #       biospecimen_edge = ChemicalEntityOrGeneOrGeneProductToMaterialSampleAssociation
                     "category": ["biolink:Association"],
                     "subject": "HMDB:HMDB0000001",
                     "predicate": "biolink:located_in",
@@ -263,14 +237,14 @@ ASSOCIATION_TEST_SLOTS = (
                     "agent_type": AgentTypeEnum.manual_agent,
                 },
                 {
-                    "category": ["biolink:Association"],
+                    "category": ["biolink:ChemicalEntityToAnatomicalEntityAssociation"],
                     "subject": "HMDB:HMDB0000001",
                     "predicate": "biolink:located_in",
                     "object": "UBERON:0001987",
                     "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hmdb"}],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                     "agent_type": AgentTypeEnum.manual_agent,
-                }
+                },
             ],
         ),
     ],
