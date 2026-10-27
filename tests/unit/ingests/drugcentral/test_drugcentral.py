@@ -1,8 +1,10 @@
 import pytest
 from koza.runner import KozaRunner, KozaTransformHooks
 from tests.unit.ingests import MockKozaWriter
+from translator_ingest.util.biolink import get_treatment_indication_predicates
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalAffectsGeneAssociation,    ## ONLY for affects
     ChemicalGeneInteractionAssociation,    ## ONLY for interacts_with
     MacromolecularMachineHasSubstrateAssociation,    ## ONLY for has_substrate
@@ -27,14 +29,13 @@ from translator_ingest.ingests.drugcentral.mappings import (
 
 
 ## omop_relationship
-## testing record for "off-label use": has the extra edge-attribute
 @pytest.fixture
-def omop_off_label():
+def omop_output(request):
+    """Run omop_transform on a parsed record (df row after parsing with prepare) for the given relationship_name."""
     writer = MockKozaWriter()
-    ## example of df row after parsing with prepare, from notebook
     record = {
         "struct_id": 144,
-        "relationship_name": "off-label use",
+        "relationship_name": request.param,
         "umls_cui": "C0022336",
     }
     runner = KozaRunner(
@@ -43,29 +44,60 @@ def omop_off_label():
     runner.run()
     return writer.items
 
-def test_omop_output(omop_off_label):
-    ## check basic output
-    entities = omop_off_label
-    assert entities
+
+@pytest.mark.parametrize(
+    "omop_output, association_class, predicate, clinical_approval_status",
+    [
+        ("contraindication", ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+         "biolink:contraindicated_in", None),
+        ("indication", ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
+         "biolink:treats", "approved_for_condition"),
+        ("off-label use", ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
+         "biolink:treats", "off_label_use"),
+        ("reduce risk", ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
+         "biolink:preventative_for_condition", None),
+        ("symptomatic treatment", ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
+         "biolink:treats", None),
+        ("diagnosis", ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+         "biolink:diagnoses", None),
+    ],
+    indirect=["omop_output"],
+)
+def test_omop_output(omop_output, association_class, predicate, clinical_approval_status):
+    """Each relationship_name yields one edge of the expected class, predicate and clinical approval status."""
+    entities = omop_output
     ## 1 edge/association, 2 nodes
     assert len(entities) == 3
 
-    ## Doing because entities includes Nodes as well
-    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
-    assert association
-    ## go through contents of association, test stuff that isn't hard-coded or isn't subject/object
-
-    ## predicate + edge-attribute
-    assert association.predicate == OMOP_RELATION_MAPPING["off-label use"]["predicate"]
-    ## should have edge-attribute for off-label
-    assert association.clinical_approval_status == "off_label_use"
+    ## exact type: CODOT is not a subclass of ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, nor vice versa
+    associations = [e for e in entities if type(e) is association_class]
+    assert len(associations) == 1
+    association = associations[0]
+    assert association.predicate == predicate
+    assert getattr(association, "clinical_approval_status", None) == clinical_approval_status
 
     ## sources
     assert association.sources
     assert len(association.sources) == 1
     ## check source_record_url
-    assert len(association.sources[0].source_record_urls) == 1
+    assert association.sources[0].source_record_urls == ["https://drugcentral.org/drugcard/144#druguse"]
 
+
+def test_omop_mapping_covers_every_relationship_name():
+    """Keep test_omop_output in step with the mapping: a new relationship_name needs a test case."""
+    assert set(OMOP_RELATION_MAPPING) == {
+        "contraindication", "indication", "off-label use", "reduce risk", "symptomatic treatment", "diagnosis",
+    }
+
+
+@pytest.mark.parametrize("relationship_name", sorted(OMOP_RELATION_MAPPING))
+def test_omop_mapping_predicate_fits_association_class(relationship_name):
+    """Treatment predicates go to the class that carries clinical approval status; no other predicate is permitted there."""
+    data_modeling = OMOP_RELATION_MAPPING[relationship_name]
+    is_treatment_predicate = data_modeling["predicate"] in get_treatment_indication_predicates()
+    expected_class = (ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation if is_treatment_predicate
+                      else ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+    assert data_modeling["association_class"] is expected_class
 
 ## act_table_full
 ## BIOLINK_DP_INTERACTS main edge (uses same code-block as plain interacts_with)
@@ -204,7 +236,7 @@ EDGE_FIXTURES = [
         },
     },
     {
-        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+        "association_class": ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
         "params": {
             "id": "2424dcdd-80d2-41b6-818a-822e2ad90ad7",
             "subject": "CHEBI:46295",
@@ -335,3 +367,43 @@ def test_affects_extra(affects_extra):
     assert len(association_extra.sources) == 1
     assert association_extra.publications
     assert len(association_extra.publications) == 1
+
+
+## affects edge for COMPLEMENT INHIBITOR, an action_type added to DrugCentral in 2026
+@pytest.fixture
+def complement_inhibitor():
+    writer = MockKozaWriter()
+    ## danicopan acting on complement factor D, as in the source act_table_full
+    record = {
+        "struct_id": 5816,
+        "accession": "P00746",
+        "action_type": "COMPLEMENT INHIBITOR",
+        "act_source": "DRUG LABEL",
+        "act_source_url": None,
+    }
+    runner = KozaRunner(
+        data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[bioactivity_transform])
+    )
+    runner.run()
+    return writer.items
+
+
+def test_complement_inhibitor(complement_inhibitor):
+    """A complement inhibitor decreases its target's activity by inhibition, and directly binds it."""
+    entities = complement_inhibitor
+    ## 2 edge/association, 2 nodes
+    assert len(entities) == 4
+
+    association_affects = [e for e in entities if isinstance(e, ChemicalAffectsGeneAssociation)][0]
+    assert association_affects.subject == "DrugCentral:5816"
+    assert association_affects.object == "UniProtKB:P00746"
+    assert association_affects.predicate == "biolink:affects"
+    assert association_affects.qualified_predicate == "biolink:causes"
+    assert association_affects.object_direction_qualifier == "decreased"
+    assert association_affects.object_aspect_qualifier == "activity"
+    assert association_affects.causal_mechanism_qualifier == "inhibition"
+    assert association_affects.sources[0].resource_id == util.INFORES_DRUGCENTRAL
+    assert association_affects.sources[0].resource_role == ResourceRoleEnum.primary_knowledge_source
+
+    association_extra = [e for e in entities if isinstance(e, ChemicalGeneInteractionAssociation)][0]
+    assert association_extra.predicate == "biolink:directly_physically_interacts_with"

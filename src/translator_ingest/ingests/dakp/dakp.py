@@ -175,9 +175,9 @@ def transform(koza: koza.KozaTransform, record: dict[str, Any]) -> KnowledgeGrap
         else:
             edge_props["clinical_approval_status"] = record["clinical_approval_status"]
 
-    # Add FDA regulatory approvals
+    # Add regulatory (FDA) application numbers
     if "approvals" in record and record["approvals"]:
-        edge_props["FDA_regulatory_approvals"] = record["approvals"]
+        edge_props["regulatory_approvals"] = record["approvals"]
 
     # Handle has_evidence field - store as publications for now
     if "has_evidence" in record and record["has_evidence"]:

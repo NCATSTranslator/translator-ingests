@@ -1,3 +1,4 @@
+import koza
 import pytest
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -8,6 +9,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
+from koza.model.graphs import KnowledgeGraph
+
+from translator_ingest.ingests.dakp.dakp import transform
+
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 
 # -- Sources helpers built from real merged-edge data --
@@ -201,3 +207,62 @@ def test_pydantic_roundtrip(fixture):
     dumped = obj.model_dump()
     restored = cls.model_validate(dumped)
     assert restored == obj
+
+
+# -- Transform test: edge properties carried onto the association --
+@pytest.fixture
+def mock_koza_transform() -> koza.KozaTransform:
+    return MockKozaTransform(extra_fields=dict(), writer=MockKozaWriter(), mappings=dict())
+
+
+_TRANSFORM_NODES_LOOKUP = {
+    "CHEBI:27786": {"id": "CHEBI:27786", "name": "a drug", "category": ["biolink:SmallMolecule"]},
+    "MONDO:0020696": {"id": "MONDO:0020696", "name": "a disease", "category": ["biolink:Disease"]},
+    "HP:0100749": {"id": "HP:0100749", "name": "a phenotype", "category": ["biolink:PhenotypicFeature"]},
+}
+
+
+@pytest.mark.parametrize(
+    "category, object_id, association_class",
+    [
+        ("biolink:EntityToDiseaseAssociation", "MONDO:0020696", EntityToDiseaseAssociation),
+        ("biolink:EntityToPhenotypicFeatureAssociation", "HP:0100749", EntityToPhenotypicFeatureAssociation),
+    ],
+)
+@pytest.mark.parametrize(
+    "source_status, expected_status",
+    [
+        ("approved_for_condition", "approved_for_condition"),
+        ("?", "not_provided"),  # values that aren't in ClinicalApprovalStatusEnum become not_provided
+    ],
+)
+def test_transform_edge_properties(
+    mock_koza_transform: koza.KozaTransform,
+    category: str,
+    object_id: str,
+    association_class: type,
+    source_status: str,
+    expected_status: str,
+):
+    """The DAKP 'approvals' field is published as biolink:regulatory_approvals, alongside clinical_approval_status."""
+    mock_koza_transform.state["nodes_lookup"] = _TRANSFORM_NODES_LOOKUP
+    record = {
+        "id": "1f540160-47b7-3bec-8269-d0c817e400f0",
+        "subject": "CHEBI:27786",
+        "predicate": "biolink:treats",
+        "object": object_id,
+        "category": [category],
+        "N_cases": 3.0,
+        "clinical_approval_status": source_status,
+        "approvals": ["ANADA200536", "ANDA200536"],
+    }
+
+    result = transform(mock_koza_transform, record)
+
+    assert isinstance(result, KnowledgeGraph)
+    assert len(result.edges) == 1
+    association = result.edges[0]
+    assert type(association) is association_class
+    assert association.regulatory_approvals == ["ANADA200536", "ANDA200536"]
+    assert association.clinical_approval_status == expected_status
+    assert association.number_of_cases == 3
