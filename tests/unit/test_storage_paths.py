@@ -1,5 +1,6 @@
 """Tests for storage path resolution via INGESTS_DATA_PATH / INGESTS_RELEASES_PATH."""
 import os
+import platform
 import subprocess
 import sys
 import platform
