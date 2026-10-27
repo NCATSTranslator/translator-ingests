@@ -4,6 +4,8 @@ from translator_ingest.util.biolink import (
     INFORES_WOMBAT_PK,
 )
 from biolink_model.datamodel.pydanticmodel_v2 import (
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
     DirectionQualifierEnum,
     GeneOrGeneProductOrChemicalEntityAspectEnum,
     CausalMechanismQualifierEnum,
@@ -21,33 +23,41 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_INTERACTS = "biolink:interacts_with"
 BIOLINK_SUBSTRATE = "biolink:has_substrate"
 
-## omop_relationship: hard-coded mapping of relationship_name values to biolink predicates/edge attributes
-## currently only "off-label use" has an edge attribute included
+## omop_relationship: hard-coded mapping of relationship_name values to biolink association classes/predicates/edge attributes
+## currently only "indication" and "off-label use" have an edge attribute included
+## ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation carries clinical_approval_status, but only permits
+## 'treats_or_applied_or_studied_to_treat' predicates, so contraindicated_in and diagnoses edges use the more general class
 OMOP_RELATION_MAPPING = {
     "contraindication": {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
         "predicate": BIOLINK_CONTRAINDICATED,
         ## no "edge-attributes" key is handled in main py, by using .get(x, dict()) so "no key" returns empty dict
     },
     "indication": {
     ## seems to equate to on-label/approved use based on first two paragraphs of https://pmc.ncbi.nlm.nih.gov/articles/PMC10692006/#Sec15
+        "association_class": ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
         "predicate": BIOLINK_TREATS,
         "edge-attributes": {
             "clinical_approval_status": "approved_for_condition"
         },
     },
     "off-label use": {
+        "association_class": ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
         "predicate": BIOLINK_TREATS,
         "edge-attributes": {
             "clinical_approval_status": "off_label_use"
         },
     },
     "reduce risk": {
+        "association_class": ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
         "predicate": BIOLINK_PREVENTS,
     }, 
     "symptomatic treatment": {
+        "association_class": ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
         "predicate": BIOLINK_TREATS,
     }, 
     "diagnosis": {
+        "association_class": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
         "predicate": BIOLINK_DIAGNOSES,
     }, 
 }
@@ -148,6 +158,19 @@ ACTION_TYPE_MAPPING = {
             "object_direction_qualifier": DirectionQualifierEnum.decreased,
             "object_aspect_qualifier": GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
             "causal_mechanism_qualifier": CausalMechanismQualifierEnum.molecular_channel_blockage,
+        },
+        "extra_edge_pred": BIOLINK_DP_INTERACTS,
+    },
+    ## DrugCentral: "Binds to the complement system of the immune system and inhibits its function",
+    ## parent_type NEGATIVE MODULATOR (same as INHIBITOR). Its records cover both an antibody (crovalimab) and
+    ## a small molecule (danicopan), so the general "inhibition" mechanism is used
+    "COMPLEMENT INHIBITOR": {
+        "predicate": BIOLINK_AFFECTS,
+        "qualifiers": {
+            "qualified_predicate": BIOLINK_CAUSES,
+            "object_direction_qualifier": DirectionQualifierEnum.decreased,
+            "object_aspect_qualifier": GeneOrGeneProductOrChemicalEntityAspectEnum.activity,
+            "causal_mechanism_qualifier": CausalMechanismQualifierEnum.inhibition,
         },
         "extra_edge_pred": BIOLINK_DP_INTERACTS,
     },
