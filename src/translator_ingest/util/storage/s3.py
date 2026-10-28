@@ -45,7 +45,8 @@ from typing import Literal, TypedDict
 
 import boto3
 from boto3.exceptions import S3UploadFailedError
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, HTTPClientError
+from botocore.exceptions import ConnectionError as BotoConnectionError
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
 from translator_ingest.util.logging_utils import get_logger
@@ -61,6 +62,11 @@ LATEST_RELEASE_DIR_NAME = "latest"
 
 # How much of a file is read at once when hashing it, so hashing uses the same memory for any file size
 HASH_READ_SIZE = 8 * 1024 * 1024
+
+# Errors of one S3 request that count as a failed file instead of stopping the whole upload: an error response from
+# S3, a failed upload (boto3 raises it as S3UploadFailedError, which is not a ClientError) and network errors left
+# after botocore's retries. Missing credentials or invalid parameters are not caught, they are not about one file.
+S3_REQUEST_ERRORS = (ClientError, S3UploadFailedError, BotoConnectionError, HTTPClientError)
 
 # Error codes S3 returns for an object that does not exist
 S3_NOT_FOUND_ERROR_CODES = frozenset({"404", "NoSuchKey", "NotFound"})
@@ -297,8 +303,7 @@ class S3Uploader:
             status: UploadStatus | None
             try:
                 status = self.upload_file(local_path, s3_key)
-            # boto3 raises a failed upload itself as S3UploadFailedError, which is not a ClientError
-            except (ClientError, S3UploadFailedError) as error:
+            except S3_REQUEST_ERRORS as error:
                 self.logger.error(f"Failed to upload {local_path}: {error}")
                 status = None
 
@@ -389,21 +394,15 @@ class S3Uploader:
         self.logger.info(f"Uploading releases for {source}...")
         return self.upload_files(order_release_files(local_dir), local_dir, s3_prefix)
 
-    def upload_release_summary(self) -> UploadStatus:
+    def upload_release_summary(self) -> UploadStats:
         """Upload /releases/latest-release-summary.json to S3.
 
         Returns:
-            "uploaded", "skipped" if S3 already had the same summary, or "missing" if there is no local summary
+            Upload statistics, where a missing local summary counts as failed
         """
-        local_path = Path(INGESTS_RELEASES_PATH) / "latest-release-summary.json"
-        s3_key = "releases/latest-release-summary.json"
-
-        if not local_path.exists():
-            self.logger.warning(f"Release summary not found: {local_path}")
-            return "missing"
-
+        releases_dir = Path(INGESTS_RELEASES_PATH)
         self.logger.info("Uploading release summary...")
-        return self.upload_file(local_path, s3_key)
+        return self.upload_files([releases_dir / "latest-release-summary.json"], releases_dir, "releases")
 
     def published_release_build_version(self, source: str, release_version: str) -> str | None:
         """Return the build a release on S3 was made from, or None if that release version was never published.
@@ -710,8 +709,11 @@ def upload_and_cleanup(
         if release_files_failed:
             logger.error("Not uploading the release summary, because some releases failed to upload")
         else:
-            logger.info("Uploading release summary...")
-            uploader.upload_release_summary()
+            summary_stats = uploader.upload_release_summary()
+            total_uploaded += summary_stats['uploaded']
+            total_skipped += summary_stats['skipped']
+            total_failed += summary_stats['failed']
+            total_bytes_transferred += summary_stats['bytes_transferred']
 
     logger.info(f"Upload and cleanup complete: {sources_processed} sources processed, "
                f"{total_uploaded} files uploaded, {total_skipped} unchanged, {total_failed} failed, "
