@@ -44,6 +44,7 @@ from pathlib import Path
 from typing import Literal, TypedDict
 
 import boto3
+from boto3.exceptions import S3UploadFailedError
 from botocore.exceptions import ClientError
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
@@ -296,7 +297,8 @@ class S3Uploader:
             status: UploadStatus | None
             try:
                 status = self.upload_file(local_path, s3_key)
-            except ClientError as error:
+            # boto3 raises a failed upload itself as S3UploadFailedError, which is not a ClientError
+            except (ClientError, S3UploadFailedError) as error:
                 self.logger.error(f"Failed to upload {local_path}: {error}")
                 status = None
 
