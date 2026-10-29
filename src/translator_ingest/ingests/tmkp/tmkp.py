@@ -8,8 +8,10 @@ Data is provided as individual gzipped KGX files:
 
 """
 
+import gzip
 import json
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 from loguru import logger
 from bmt.utils import parse_name
@@ -54,6 +56,10 @@ PREDICATE_REMAP = {
 }
 
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
+
+# Source edge ids of text-mined treats edges that none of their supporting sentences support, as judged by a
+# typed-decision model (Jev) over every supporting sentence. See jev_treats_filter.md for how the list was made.
+JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
 
 # Map TMKP attribute names to Biolink slot names.
 TMKP_TO_BIOLINK_SLOT_MAP = {
@@ -269,6 +275,20 @@ def get_latest_version() -> str:
     return "tmkp-2024-09-07"
 
 
+def load_dropped_edge_ids(path: Path) -> frozenset[str]:
+    """
+    Load the source edge ids to drop: a gzipped text file with one TMKP edge id per line.
+
+    Args:
+        path: Path to the gzipped id list.
+
+    Returns:
+        Frozen set of edge ids.
+    """
+    with gzip.open(path, "rt") as f:
+        return frozenset(line.strip() for line in f if line.strip())
+
+
 def parse_attributes(
     attributes: List[Dict[str, Any]],
     association: Association,
@@ -417,6 +437,21 @@ def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, An
     return KnowledgeGraph(nodes=[node])
 
 
+@koza.on_data_begin(tag="edges")
+def on_data_begin_edges(koza_transform: koza.KozaTransform) -> None:
+    """Load the ids of treats edges whose supporting text doesn't support them, and start the drop count."""
+    path = Path(koza_transform.input_files_dir) / JEV_DROPPED_EDGES_FILE
+    koza_transform.state["jev_dropped_edge_ids"] = load_dropped_edge_ids(path)
+    koza_transform.state["jev_dropped_edge_count"] = 0
+    logger.info(f"Loaded {len(koza_transform.state['jev_dropped_edge_ids'])} TMKP edge ids to drop from {path}")
+
+
+@koza.on_data_end(tag="edges")
+def on_data_end_edges(koza_transform: koza.KozaTransform) -> None:
+    """Report how many edges the Jev filter dropped."""
+    logger.info(f"Dropped {koza_transform.state['jev_dropped_edge_count']} TMKP edges listed in {JEV_DROPPED_EDGES_FILE}")
+
+
 @koza.transform_record(tag="edges")
 def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
     """Transform TMKP-edge records with attribute parsing."""
@@ -426,6 +461,11 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     relation = record.get("relation")
 
     if not all([subject_id, predicate, object_id]):
+        return None
+
+    # Drop treats edges that none of their supporting sentences support (see jev_treats_filter.md)
+    if record.get("id") in koza_transform.state["jev_dropped_edge_ids"]:
+        koza_transform.state["jev_dropped_edge_count"] += 1
         return None
 
     # Validate subject/object prefixes match predicate domain/range constraints

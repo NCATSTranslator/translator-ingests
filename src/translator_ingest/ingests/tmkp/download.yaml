@@ -3,3 +3,6 @@
   local_name: nodes.tsv.gz
 - url: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/edges.tsv.gz
   local_name: edges.tsv.gz
+# Treats edges to drop; made with a typed-decision model over every supporting sentence (see jev_treats_filter.md)
+- url: https://stars.renci.org/var/data_services/translator-ingests/tmkp/tmkp_treats_jev_v3_dropped_edges.txt.gz
+  local_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
