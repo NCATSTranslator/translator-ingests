@@ -70,8 +70,18 @@ python build_drop_list.py treats_sentences.jsonl scores.jsonl treats_edges.jsonl
 
 **Rerunning step 2 gives a nearly, not exactly, identical list.** Jev's answers vary a little between calls. On a
 check of 60 sentences, the top answer matched the original run for 59, probabilities moved by up to 0.13, and all
-60 fell on the same side of the threshold. The original run's answers are the authoritative record: running step 3
-on them reproduces the published list exactly.
+60 fell on the same side of the threshold.
+
+The original run's answers are the authoritative record, at
+`https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_scores.jsonl.gz` (54 MB; one line per
+sentence with its edge and sentence ids, Jev's top choice and the probability of each option). Running step 3 on
+them reproduces the published list exactly, without a TypeSafe key:
+
+```bash
+curl -O https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_scores.jsonl.gz
+gunzip tmkp_treats_jev_v3_scores.jsonl.gz
+python build_drop_list.py treats_sentences.jsonl tmkp_treats_jev_v3_scores.jsonl treats_edges.jsonl tmkp_treats_jev_v3_dropped_edges.txt.gz
+```
 
 ## Validation
 
