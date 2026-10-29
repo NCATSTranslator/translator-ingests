@@ -173,6 +173,19 @@ def get_existing_release_build_version(release_dir: Path) -> str | None:
         graph_metadata = json.load(graph_metadata_file)
     return _graph_metadata_build_version(graph_metadata)
 
+
+def release_dir_holds_release(release_dir: Path) -> bool:
+    """Whether release_dir already holds a release, however incomplete its metadata is.
+
+    Metadata that records no build version does not mean there is no release: the directory
+    can hold the archive of a build nothing names any more. A directory left behind empty by
+    a crash holds no release, so releasing into it again is allowed.
+
+    Args:
+        release_dir: Directory of a single release, which may or may not exist yet
+    """
+    return release_dir.is_dir() and any(release_dir.iterdir())
+
 # Find the KGX files in a given directory
 def __find_transform_kgx_files(directory: Path) -> (str, str):
     if not (directory and directory.exists()):

@@ -240,10 +240,11 @@ def test_existing_release_without_release_metadata_is_still_detected(release_env
         release_ingest(SOURCE)
 
 
-def test_existing_release_recording_only_a_release_version_is_not_read_as_a_build(release_env):
+def test_existing_release_recording_only_a_release_version_is_refused(release_env):
     """Some releases record only their release version in graph-metadata.json, naming no build at all.
 
-    Reading "1.0.0" as if it were a build version would make releasing over such a release always fail.
+    Releasing over one would write metadata for the new build beside the archive of the old one, because
+    create_release keeps an archive and a graph metadata file that are already there.
     """
     write_latest_build, releases_path = release_env
     write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
@@ -255,9 +256,19 @@ def test_existing_release_recording_only_a_release_version_is_not_read_as_a_buil
     _write_json(releases_path / SOURCE / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME, {"version": "1.0.0"})
     write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
 
+    with pytest.raises(ValueError, match="was made from a build its metadata does not record"):
+        release_ingest(SOURCE)
+
+
+def test_empty_release_directory_does_not_block_a_release(release_env):
+    """A directory left behind by a crash before anything was written into it holds no release."""
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    (releases_path / SOURCE / "1.0.0").mkdir(parents=True)
+
     release_ingest(SOURCE)
 
-    assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build2"
+    assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build1"
 
 
 def test_release_ingest_same_build_is_noop(release_env):

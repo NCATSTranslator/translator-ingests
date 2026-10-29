@@ -9,7 +9,7 @@ from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
 from translator_ingest.util.storage.local import (get_existing_release_build_version,
                                                   get_versioned_file_paths, IngestFileType,
-                                                  write_ingest_file)
+                                                  release_dir_holds_release, write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -173,12 +173,16 @@ def release_ingest(source: str):
     # This prevents issues that could be caused by previous crashes or file manipulation, such as missing or
     # misleading latest-release metadata, or half completed releases. Here we check that if a release directory 
     # already exists where we are about to write to that it contains or was supposed to contain the same build.
+    # A release whose metadata records no build is still a release, so only a build known to match may be
+    # written over: anything else would label the existing archive as the new build.
     existing_build_version = get_existing_release_build_version(release_dir)
-    if existing_build_version is not None and existing_build_version != release_metadata.build_version:
+    if release_dir_holds_release(release_dir) and existing_build_version != release_metadata.build_version:
+        existing_build = (f"build {existing_build_version}" if existing_build_version
+                          else "a build its metadata does not record")
         raise ValueError(
-            f"Release {release_version} of {source} already exists and was made from build "
-            f"{existing_build_version}, but build {release_metadata.build_version} is being released. The latest "
-            f"release metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
+            f"Release {release_version} of {source} already exists and was made from {existing_build}, "
+            f"but build {release_metadata.build_version} is being released. The latest release "
+            f"metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
         )
 
     create_release(release_metadata,
