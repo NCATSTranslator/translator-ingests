@@ -6,9 +6,9 @@ import zstandard as zstd
 from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
-from translator_ingest.util.metadata import (PipelineMetadata, next_release_version, current_iso_date,
-                                             TRANSLATOR_BUILD_VERSION)
-from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
+from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
+from translator_ingest.util.storage.local import (get_existing_release_build_version,
+                                                  get_versioned_file_paths, IngestFileType,
                                                   write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -121,28 +121,6 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
 
     logger.info(f"Updated graph-metadata.json with release URL: {release_url}")
     return output_path
-
-
-def get_existing_release_build_version(release_dir: Path) -> str | None:
-    """Return the build version an existing release was made from, or None if there is no release in release_dir.
-
-    Releases made before release-metadata.json was written to every release directory recorded their build version
-    as the "version" of their graph-metadata.json. Newer graph metadata records the release version there instead,
-    and the build version under TRANSLATOR_BUILD_VERSION, so that is preferred when present.
-
-    Args:
-        release_dir: Directory of a single release, which may or may not exist yet
-    """
-    release_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
-    if release_metadata_path.exists():
-        with release_metadata_path.open() as release_metadata_file:
-            return PipelineMetadata.from_dict(json.load(release_metadata_file)).build_version
-    graph_metadata_path = release_dir / RELEASE_GRAPH_METADATA_FILENAME
-    if graph_metadata_path.exists():
-        with graph_metadata_path.open() as graph_metadata_file:
-            graph_metadata = json.load(graph_metadata_file)
-        return graph_metadata.get(TRANSLATOR_BUILD_VERSION) or graph_metadata.get("version")
-    return None
 
 
 def release_ingest(source: str):

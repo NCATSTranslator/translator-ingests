@@ -51,7 +51,7 @@ from botocore.exceptions import ConnectionError as BotoConnectionError
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
 from translator_ingest.util.logging_utils import get_logger
 from translator_ingest.util.metadata import PipelineMetadata
-from translator_ingest.util.storage.local import IngestFileName
+from translator_ingest.util.storage.local import get_existing_release_build_version, IngestFileName
 
 logger = get_logger(__name__)
 
@@ -195,7 +195,7 @@ def check_release_not_overwritten(source: str,
     Args:
         source: Source the release belongs to
         release_version: Version of the release, like "1.0.4"
-        local_build_version: Build the local release was made from, None if it has no release-metadata.json
+        local_build_version: Build the local release was made from, None if its metadata names none
         published_build_version: Build of the release with this version on S3, None if it was never published
 
     >>> check_release_not_overwritten("ctd", "1.0.4", local_build_version="ctd_b", published_build_version=None)
@@ -434,13 +434,10 @@ class S3Uploader:
             return
 
         for release_dir in release_version_dirs(source_releases_dir):
-            local_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
-            local_build_version = (read_release_build_version(local_metadata_path.read_bytes())
-                                   if local_metadata_path.exists() else None)
             check_release_not_overwritten(
                 source,
                 release_dir.name,
-                local_build_version=local_build_version,
+                local_build_version=get_existing_release_build_version(release_dir),
                 published_build_version=self.published_release_build_version(source, release_dir.name),
             )
 

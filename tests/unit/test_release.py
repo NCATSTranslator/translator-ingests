@@ -240,6 +240,26 @@ def test_existing_release_without_release_metadata_is_still_detected(release_env
         release_ingest(SOURCE)
 
 
+def test_existing_release_recording_only_a_release_version_is_not_read_as_a_build(release_env):
+    """Some releases record only their release version in graph-metadata.json, naming no build at all.
+
+    Reading "1.0.0" as if it were a build version would make releasing over such a release always fail.
+    """
+    write_latest_build, releases_path = release_env
+    write_latest_build({**BASE_METADATA, "build_version": "build1", "build_date": "2026-01-01"})
+    release_ingest(SOURCE)
+
+    # Reduce the existing release to graph metadata holding only a release version, like translator_kg 1.0.0.
+    (releases_path / SOURCE / "latest-release.json").unlink()
+    (releases_path / SOURCE / "1.0.0" / IngestFileName.RELEASE_METADATA_FILE).unlink()
+    _write_json(releases_path / SOURCE / "1.0.0" / RELEASE_GRAPH_METADATA_FILENAME, {"version": "1.0.0"})
+    write_latest_build({**BASE_METADATA, "build_version": "build2", "build_date": "2026-02-02"})
+
+    release_ingest(SOURCE)
+
+    assert _read_release_metadata(releases_path, "1.0.0")["build_version"] == "build2"
+
+
 def test_release_ingest_same_build_is_noop(release_env):
     """Re-releasing an unchanged build does not advance the release version."""
     write_latest_build, releases_path = release_env

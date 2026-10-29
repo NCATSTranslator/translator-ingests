@@ -103,7 +103,7 @@ def test_read_release_build_version():
     [
         ("ctd_build_b", None),  # never published
         ("ctd_build_b", "ctd_build_b"),  # published from the same build, uploading it again changes nothing
-        (None, None),  # incomplete local release that was never published
+        (None, None),  # local release naming no build, never published
     ],
 )
 def test_check_release_not_overwritten_allows(local_build_version, published_build_version):
@@ -114,7 +114,7 @@ def test_check_release_not_overwritten_allows(local_build_version, published_bui
     ("local_build_version", "published_build_version"),
     [
         ("ctd_build_b", "ctd_build_a"),  # versioning restarted, like after latest-release.json was lost
-        (None, "ctd_build_a"),  # incomplete local release would overwrite a published one
+        (None, "ctd_build_a"),  # local release naming no build would overwrite a published one
     ],
 )
 def test_check_release_not_overwritten_refuses(local_build_version, published_build_version):

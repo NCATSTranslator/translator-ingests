@@ -1,11 +1,16 @@
 import json
+from collections.abc import Mapping
 from enum import Enum, StrEnum
 from pathlib import Path
 
 from orion import MERGE_METADATA_FILENAME
 
 from translator_ingest import INGESTS_DATA_PATH, INGESTS_RELEASES_PATH
-from translator_ingest.util.metadata import PipelineMetadata
+from translator_ingest.util.metadata import (PipelineMetadata, SEMANTIC_VERSION_PATTERN,
+                                             TRANSLATOR_BUILD_VERSION)
+
+# Field of a release's graph-metadata.json that holds a version
+GRAPH_METADATA_VERSION_FIELD = "version"
 
 
 class IngestFileType(Enum):
@@ -119,6 +124,54 @@ def get_validation_directory(pipeline_metadata: PipelineMetadata) -> Path:
 
 def get_release_directory(pipeline_metadata: PipelineMetadata) -> Path:
     return Path(INGESTS_RELEASES_PATH) / pipeline_metadata.source / pipeline_metadata.release_version
+
+
+def _graph_metadata_build_version(graph_metadata: Mapping[str, object]) -> str | None:
+    """Return the build version a graph-metadata.json content records, or None if it records none.
+
+    Releases made before release-metadata.json was written to every release directory
+    recorded their build version as the "version" of their graph metadata. Newer graph
+    metadata records the release version there and the build version under
+    TRANSLATOR_BUILD_VERSION, so a semantic version is a release version and names no build.
+
+    >>> _graph_metadata_build_version({"version": "1.0.4", "translator:buildVersion": "ctd_b"})
+    'ctd_b'
+    >>> _graph_metadata_build_version({"version": "ctd_202609_9ed61ce7_4.4.4"})
+    'ctd_202609_9ed61ce7_4.4.4'
+    >>> _graph_metadata_build_version({"version": "1.0.0"}) is None
+    True
+    >>> _graph_metadata_build_version({}) is None
+    True
+    """
+    build_version = graph_metadata.get(TRANSLATOR_BUILD_VERSION)
+    if isinstance(build_version, str) and build_version:
+        return build_version
+    recorded_version = graph_metadata.get(GRAPH_METADATA_VERSION_FIELD)
+    if not isinstance(recorded_version, str) or SEMANTIC_VERSION_PATTERN.match(recorded_version):
+        return None
+    return recorded_version or None
+
+
+def get_existing_release_build_version(release_dir: Path) -> str | None:
+    """Return the build an existing release was made from, None if release_dir holds no release.
+
+    A release records its build version in its release-metadata.json. Releases made
+    before that file was written to every release directory are read from their
+    graph-metadata.json instead.
+
+    Args:
+        release_dir: Directory of a single release, which may or may not exist yet
+    """
+    release_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
+    if release_metadata_path.exists():
+        with release_metadata_path.open() as release_metadata_file:
+            return PipelineMetadata.from_dict(json.load(release_metadata_file)).build_version
+    graph_metadata_path = release_dir / IngestFileName.GRAPH_METADATA_FILE
+    if not graph_metadata_path.exists():
+        return None
+    with graph_metadata_path.open() as graph_metadata_file:
+        graph_metadata = json.load(graph_metadata_file)
+    return _graph_metadata_build_version(graph_metadata)
 
 # Find the KGX files in a given directory
 def __find_transform_kgx_files(directory: Path) -> (str, str):
