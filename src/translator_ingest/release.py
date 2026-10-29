@@ -6,10 +6,10 @@ import zstandard as zstd
 from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
-from translator_ingest.util.metadata import (PipelineMetadata, next_release_version, current_iso_date,
-                                             TRANSLATOR_BUILD_VERSION)
-from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
-                                                  write_ingest_file)
+from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
+from translator_ingest.util.storage.local import (get_existing_release_build_version,
+                                                  get_versioned_file_paths, IngestFileType,
+                                                  release_dir_holds_release, write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -123,28 +123,6 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
     return output_path
 
 
-def get_existing_release_build_version(release_dir: Path) -> str | None:
-    """Return the build version an existing release was made from, or None if there is no release in release_dir.
-
-    Releases made before release-metadata.json was written to every release directory recorded their build version
-    as the "version" of their graph-metadata.json. Newer graph metadata records the release version there instead,
-    and the build version under TRANSLATOR_BUILD_VERSION, so that is preferred when present.
-
-    Args:
-        release_dir: Directory of a single release, which may or may not exist yet
-    """
-    release_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
-    if release_metadata_path.exists():
-        with release_metadata_path.open() as release_metadata_file:
-            return PipelineMetadata.from_dict(json.load(release_metadata_file)).build_version
-    graph_metadata_path = release_dir / RELEASE_GRAPH_METADATA_FILENAME
-    if graph_metadata_path.exists():
-        with graph_metadata_path.open() as graph_metadata_file:
-            graph_metadata = json.load(graph_metadata_file)
-        return graph_metadata.get(TRANSLATOR_BUILD_VERSION) or graph_metadata.get("version")
-    return None
-
-
 def release_ingest(source: str):
     # Locate and read the latest build metadata for the source
     latest_build_metadata_file_path = get_versioned_file_paths(
@@ -195,12 +173,16 @@ def release_ingest(source: str):
     # This prevents issues that could be caused by previous crashes or file manipulation, such as missing or
     # misleading latest-release metadata, or half completed releases. Here we check that if a release directory 
     # already exists where we are about to write to that it contains or was supposed to contain the same build.
+    # A release whose metadata records no build is still a release, so only a build known to match may be
+    # written over: anything else would label the existing archive as the new build.
     existing_build_version = get_existing_release_build_version(release_dir)
-    if existing_build_version is not None and existing_build_version != release_metadata.build_version:
+    if release_dir_holds_release(release_dir) and existing_build_version != release_metadata.build_version:
+        existing_build = (f"build {existing_build_version}" if existing_build_version
+                          else "a build its metadata does not record")
         raise ValueError(
-            f"Release {release_version} of {source} already exists and was made from build "
-            f"{existing_build_version}, but build {release_metadata.build_version} is being released. The latest "
-            f"release metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
+            f"Release {release_version} of {source} already exists and was made from {existing_build}, "
+            f"but build {release_metadata.build_version} is being released. The latest release "
+            f"metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
         )
 
     create_release(release_metadata,
