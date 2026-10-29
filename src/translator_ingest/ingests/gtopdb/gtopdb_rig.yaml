@@ -28,9 +28,10 @@ source_info:
   data_versioning_and_releases: >-
     Based on the FAQ section: content expansion and feature enhancements are announced on the front page.
     Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in
-    October 2024). The ingest derives the source version by scraping the download page
-    (https://www.guidetopharmacology.org/download.jsp), which reports text of the form
-    "Downloads are from the 2025.4 version." Release history is documented at
+    October 2024). The ingest derives the source version from the metadata comment on the first line of
+    https://www.guidetopharmacology.org/DATA/interactions.csv, which reports text of the form
+    "# GtoPdb Version: 2026.2 - published: 2026-06-15". This public data file is also the ingest's interaction
+    source, so version detection does not depend on the login-gated download page. Release history is documented at
     https://www.guidetopharmacology.org/databaseContent.jsp
   source_status: maintained_regular_updates
 
@@ -48,6 +49,9 @@ ingest_info:
     chemical-to-protein edges. No species or record-level filtering is applied. Records with the same ligand,
     target, and Type + Action are aggregated into a single edge, with publications from the merged records
     combined into a list. Only the interactions.csv and ligands.csv files are used in this phase.
+    Species-qualified composition of source-defined complexes is planned under
+    https://github.com/NCATSTranslator/translator-ingests/issues/510; the future considerations below describe
+    the intended extension, rather than graph output currently emitted by the main branch.
 
   relevant_files:
     - file_name: "interactions.csv"
@@ -75,7 +79,14 @@ ingest_info:
 
   future_considerations:
     - category: edge_content
-      consideration: "Leverage the value of the ENDOGENOUS column to inform when to use the regulates predicate and upregulates/downregulates direction qualifier values."
+      consideration: >-
+        Planned for #510: use Target ID, Target Subunit IDs, Target UniProt ID, and Target Species from
+        interactions.csv to identify source-defined complexes and their species-specific components.
+        Multiple source subunit IDs provide complex evidence; multiple UniProt accessions alone must not
+        turn a target family or unresolved group into a complex. Preserve individual component identifiers
+        rather than constructing a pipe-delimited UniProt CURIE. If species or component identity is missing
+        or ambiguous, omit the unsupported composition assertions and report the omission rather than
+        assigning a default species or inferring unsupported components.
     - category: edge_content
       consideration: "Consider ingesting the file 'approved_drug_primary_target_interactions.csv', which contains a detailed interactions list for approved drugs."
     - category: edge_content
@@ -185,8 +196,6 @@ target_info:
         - biolink:Protein
       knowledge_level:
         - knowledge_assertion
-      primary_knowledge_sources:
-        - infores:gtopdb
       agent_type:
         - manual_agent
       primary_knowledge_sources:
@@ -255,6 +264,37 @@ target_info:
         - "Target nodes are identified by UniProt accession (UniProtKB prefix), taken from the Target UniProt ID column of interactions.csv."
 
   future_considerations:
+    - category: spoq_pattern
+      consideration: >-
+        Planned complex model for #510: identify each source-defined biolink:MacromolecularComplex by
+        the IUPHARobj prefix and Target ID, with biolink:Protein component nodes identified by individual UniProtKB
+        accessions. IUPHARobj identifies GtoPdb targets; GTOPDB remains the ligand namespace. Emit each
+        composition assertion as a biolink:Association from the complex to a component using
+        biolink:has_part, species_context_qualifier set to the source species' NCBITaxon CURIE,
+        knowledge_level knowledge_assertion, agent_type manual_agent, and primary_knowledge_source
+        infores:gtopdb. A shared IUPHARobj identifier can have different compositions in different species;
+        node-level in_taxon alone does not identify the species of an individual composition assertion.
+        Ligand-target assertions must retain the complex as their target and the applicable species context;
+        do not copy complex-level pharmacological activity to every component protein.
+    - category: spoq_pattern
+      consideration: >-
+        Required #510 example: IUPHARobj:378 (5-HT3AB) has four separate biolink:has_part assertions:
+        UniProtKB:P46098 and UniProtKB:O95264 each with species_context_qualifier NCBITaxon:9606 (human),
+        and UniProtKB:P23979 and UniProtKB:Q9JHJ5 each with species_context_qualifier NCBITaxon:10090 (mouse).
+        Preserve these edge qualifiers through serialization, normalization, and graph merging so the
+        organism-specific component sets remain distinguishable. Deduplication must preserve species context.
+    - category: spoq_pattern
+      consideration: >-
+        Completion of #510 requires adoption of a compatible Biolink schema and runtime model containing
+        https://github.com/biolink/biolink-model/pull/1797, which merged on 2026-09-02. The currently pinned
+        Biolink 4.4.4 predates that change. The merged schema change alone does not complete the ingest work;
+        https://github.com/NCATSTranslator/translator-ingests/pull/504 currently excludes composite targets.
+        Verify the human/mouse example with source-derived fixtures, qualifier preservation through the
+        pipeline, duplicate-row handling, the missing/ambiguous-species policy, and unchanged single-protein
+        behavior. Before closing #510, merge the implementation, demonstrate a successful pipeline run with
+        the compatible dependency, and update this RIG's scope, fields_used, filtering rules, node_type_info,
+        and edge_type_info (including complex targets, has_part, and species qualifiers) to describe the
+        implemented output. Move the completed specification out of future considerations at that point.
     - category: node_properties
       consideration: "Consider future new Biolink node types (e.g. stimulus and fusion protein) for more accurate mapping of GtoPdb target/ligand types into the Biolink Model."
     - category: spoq_pattern
@@ -269,6 +309,8 @@ provenance_info:
     - "Sierra Moxon: code support"
     - "Matthew Brush: data modeling, domain expertise"
   artifacts:
+    - "Species-qualified complex composition: https://github.com/NCATSTranslator/translator-ingests/issues/510"
+    - "Biolink support for IUPHARobj and species-qualified composition: https://github.com/biolink/biolink-model/pull/1797"
     - "Ingest Survey: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=583858205#gid=583858205"
     - "Data Examples: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
     - "Predicate/qualifier mapping: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
