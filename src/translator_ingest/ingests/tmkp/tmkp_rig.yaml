@@ -45,6 +45,9 @@ ingest_info:
     - file_name: edges.tsv.gz
       location: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/
       description: Gzipped TSV of text-mined assertions between entities
+    - file_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
+      location: https://stars.renci.org/var/translator/ingests/tmkp/
+      description: Ids of TMKP treats edges whose supporting sentences don't support them, one per line (see jev/README.md)
 
   included_content:
     - file_name: nodes.tsv.gz
@@ -58,6 +61,9 @@ ingest_info:
     - file_name: edges.tsv.gz
       filtered_records: Edges where subject/object ID prefixes violate Biolink Model domain/range constraints. For example, edges like "MONDO:xxx biolink:treats DRUGBANK:yyy" are excluded because the association type expects chemicals as subjects and diseases as objects, not the reverse.
       rationale: "Validation uses BMT to dynamically determine valid ID prefixes for each predicate's domain/range constraints, filtering out semantically invalid edges such as reversed ChemicalToDiseaseOrPhenotypicFeatureAssociation edges where diseases/phenotypes (MONDO, HP prefixes) are incorrectly positioned as subjects."
+    - file_name: edges.tsv.gz
+      filtered_records: "Treats edges listed in tmkp_treats_jev_v3_dropped_edges.txt.gz: 110,469 of 336,369 (33%). An edge is listed when none of its supporting sentences says the drug is used, tested or proposed to treat the condition in patients or live animals, as judged by a typed-decision model (Jev) over all 873,268 supporting sentences."
+      rationale: "Many text-mined treats edges are misreadings: the condition is only background, the drug causes the condition, the two are merely co-mentioned, a reagent is applied to cells, or the only evidence is in vitro. On hand-labeled samples the sentence filter had 0.97 precision and 0.87 recall for unsupported sentences. Methodology and scripts in jev/."
   transformed_content:
     - file_name: edges.tsv.gz
       transformation: "Predicate remap: 'biolink:treats' → 'biolink:treats_or_applied_or_studied_to_treat'"
