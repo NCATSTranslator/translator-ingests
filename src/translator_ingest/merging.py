@@ -11,8 +11,9 @@ from orion import (KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, KGXKnowl
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, extract_compressed_tar, atomic_copy_directory, \
     generate_release_summary, RELEASE_NODES_FILENAME, RELEASE_EDGES_FILENAME, RELEASE_GRAPH_METADATA_FILENAME
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, next_release_version, \
-    current_iso_date, to_translator_graph_metadata
+from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_release_metadata, get_kgx_source_from_rig, \
+    next_release_version, current_iso_date, to_translator_graph_metadata
+from translator_ingest.util import tablassert
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -325,10 +326,15 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
     merged_graph_metadata.data = data_path
 
     # Get KGXKnowledgeSource metadata from the rig files (isBasedOn in the graph metadata).
+    # Tablassert sources read their released provenance instead of a committed rig: upstream deletes
+    # historical dataset directories, so released graph-metadata.json is the only durable record.
     knowledge_sources = []
     for source, release_metadata in source_releases.items():
-        data_source_info = get_kgx_source_from_rig(source)
-        data_source_info.version = release_metadata.source_version
+        if tablassert.declares(source):
+            data_source_info = get_kgx_source_from_release_metadata(source, release_metadata)
+        else:
+            data_source_info = get_kgx_source_from_rig(source)
+            data_source_info.version = release_metadata.source_version
         knowledge_sources.append(data_source_info)
 
     logger.info(f"Graph {graph_id} versioned, release version: {release_version}, build version: {build_version}")
