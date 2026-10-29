@@ -16,8 +16,8 @@ docs-setup:  ## Setup documentation structure
 	mkdir -p docs/src/docs docs/rigs
 	cp README.md docs/index.md
 	if [ -d "src/docs" ]; then cp -r src/docs/* docs/src/docs/; fi
-	@echo "Copying RIG YAML files..."
-	find src/translator_ingest/ingests -name "*rig*.yaml" -exec cp {} docs/rigs/ \;
+	@echo "Staging RIG YAML files (committed copies plus fetched remote RIGs)..."
+	uv run python src/docs/scripts/stage_rigs.py --target-dir docs/rigs
 	@echo "Converting RIG YAML files to markdown..."
 	uv run python src/docs/scripts/rig_to_markdown.py --input-dir docs/rigs --output-dir docs/rigs
 	@echo "Generating RIG table..."
