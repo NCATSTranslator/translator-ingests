@@ -46,7 +46,7 @@ ingest_info:
       location: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/
       description: Gzipped TSV of text-mined assertions between entities
     - file_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
-      location: https://stars.renci.org/var/data_services/translator-ingests/tmkp/
+      location: https://stars.renci.org/var/translator/ingests/tmkp/
       description: Ids of TMKP treats edges whose supporting sentences don't support them, one per line (see jev_treats_filter.md)
 
   included_content:
